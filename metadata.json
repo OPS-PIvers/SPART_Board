@@ -1,0 +1,8 @@
+{
+  "name": "Classroom Dashboard Pro",
+  "description": "A professional-grade interactive classroom dashboard with widgets like timers, noise meters, and drawing boards, featuring drag-and-drop and real-time persistence.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
