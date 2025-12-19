@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { Layout, Save, Plus, Trash2, Palette, X, Menu } from 'lucide-react';
+import { Layout, Save, Plus, Trash2, Palette, X, Menu, Share2, Download } from 'lucide-react';
 import { useDashboard } from '../../context/DashboardContext';
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { 
     dashboards, activeDashboard, createNewDashboard, 
-    loadDashboard, deleteDashboard, saveCurrentDashboard, setBackground 
+    loadDashboard, deleteDashboard, saveCurrentDashboard, setBackground, addToast 
   } = useDashboard();
 
   const backgrounds = [
@@ -19,6 +19,26 @@ export const Sidebar: React.FC = () => {
     { id: 'bg-gradient-to-br from-indigo-500 to-purple-600', label: 'Vibrant' },
     { id: 'bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-slate-100', label: 'Grid' },
   ];
+
+  const handleShare = () => {
+    if (!activeDashboard) return;
+    const data = JSON.stringify(activeDashboard);
+    navigator.clipboard.writeText(data);
+    addToast('Board data copied to clipboard!', 'success');
+  };
+
+  const handleImport = () => {
+    const data = prompt("Paste your board data here:");
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        createNewDashboard(`Imported: ${parsed.name}`, parsed);
+        addToast('Board imported successfully');
+      } catch (e) {
+        addToast('Invalid board data', 'error');
+      }
+    }
+  };
 
   return (
     <>
@@ -67,23 +87,38 @@ export const Sidebar: React.FC = () => {
                 </div>
               ))}
 
-              <button 
-                onClick={() => {
-                  const name = prompt("Enter dashboard name:");
-                  if (name) createNewDashboard(name);
-                }}
-                className="w-full flex items-center justify-center gap-2 p-3 mt-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-all font-bold text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                NEW DASHBOARD
-              </button>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <button 
+                  onClick={() => {
+                    const name = prompt("Enter dashboard name:");
+                    if (name) createNewDashboard(name);
+                  }}
+                  className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-all font-bold text-[10px]"
+                >
+                  <Plus className="w-3 h-3" /> NEW
+                </button>
+                <button 
+                  onClick={handleImport}
+                  className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-all font-bold text-[10px]"
+                >
+                  <Download className="w-3 h-3" /> IMPORT
+                </button>
+              </div>
             </div>
 
             <div className="pt-6 border-t border-slate-100 space-y-6">
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleShare}
+                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] hover:bg-slate-200"
+                >
+                  <Share2 className="w-4 h-4" /> SHARE BOARD
+                </button>
+              </div>
+
               <div>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Palette className="w-4 h-4" />
-                  Background
+                  <Palette className="w-4 h-4" /> Background
                 </h3>
                 <div className="grid grid-cols-4 gap-2">
                   {backgrounds.map((bg) => (
@@ -105,8 +140,7 @@ export const Sidebar: React.FC = () => {
                 onClick={() => { saveCurrentDashboard(); setIsOpen(false); }}
                 className="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all"
               >
-                <Save className="w-5 h-5" />
-                SAVE ALL CHANGES
+                <Save className="w-5 h-5" /> SAVE BOARD
               </button>
             </div>
           </div>

@@ -1,8 +1,9 @@
 
 export type WidgetType = 
-  | 'clock' | 'timer' | 'traffic' | 'text' | 'checklist' 
+  | 'clock' | 'timer' | 'stopwatch' | 'traffic' | 'text' | 'checklist' 
   | 'random' | 'dice' | 'sound' | 'drawing' | 'qr' 
-  | 'embed' | 'poll' | 'webcam';
+  | 'embed' | 'poll' | 'webcam' | 'scoreboard' | 'workSymbols' 
+  | 'weather' | 'schedule' | 'calendar';
 
 export interface WidgetData {
   id: string;

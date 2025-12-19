@@ -9,7 +9,7 @@ interface DashboardContextType {
   toasts: Toast[];
   addToast: (message: string, type?: Toast['type']) => void;
   removeToast: (id: string) => void;
-  createNewDashboard: (name: string) => void;
+  createNewDashboard: (name: string, data?: Dashboard) => void;
   saveCurrentDashboard: () => void;
   deleteDashboard: (id: string) => void;
   loadDashboard: (id: string) => void;
@@ -27,7 +27,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [activeId, setActiveId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Load from LocalStorage (Simulating Persistence)
   useEffect(() => {
     const saved = localStorage.getItem('classroom_dashboards');
     if (saved) {
@@ -35,7 +34,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setDashboards(parsed);
       if (parsed.length > 0) setActiveId(parsed[0].id);
     } else {
-      // Default initial dashboard
       const defaultDb: Dashboard = {
         id: uuidv4(),
         name: 'My First Dashboard',
@@ -58,8 +56,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  const createNewDashboard = (name: string) => {
-    const newDb: Dashboard = {
+  const createNewDashboard = (name: string, data?: Dashboard) => {
+    const newDb: Dashboard = data ? { ...data, id: uuidv4(), name } : {
       id: uuidv4(),
       name,
       background: 'bg-slate-800',
@@ -68,12 +66,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
     setDashboards(prev => [...prev, newDb]);
     setActiveId(newDb.id);
-    addToast(`Dashboard "${name}" created`);
+    addToast(`Dashboard "${name}" ready`);
   };
 
   const saveCurrentDashboard = () => {
     localStorage.setItem('classroom_dashboards', JSON.stringify(dashboards));
-    addToast('Dashboard saved successfully', 'success');
+    addToast('All changes saved to storage', 'success');
   };
 
   const deleteDashboard = (id: string) => {
@@ -82,12 +80,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (activeId === id) {
       setActiveId(filtered.length > 0 ? filtered[0].id : null);
     }
-    addToast('Dashboard deleted');
+    addToast('Dashboard removed');
   };
 
   const loadDashboard = (id: string) => {
     setActiveId(id);
-    addToast('Loaded dashboard');
+    addToast('Board loaded');
   };
 
   const activeDashboard = dashboards.find(d => d.id === activeId) || null;
@@ -104,28 +102,34 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const defaults: Record<WidgetType, Partial<WidgetData>> = {
       clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
       timer: { w: 280, h: 180, config: { duration: 300, sound: true } },
+      stopwatch: { w: 280, h: 180, config: {} },
       traffic: { w: 120, h: 320, config: {} },
-      text: { w: 300, h: 250, config: { content: 'Type something...', bgColor: '#fef9c3', fontSize: 18 } },
-      checklist: { w: 280, h: 300, config: { items: ['Read a book', 'Finish math'] } },
-      random: { w: 300, h: 250, config: { list: 'Alice\nBob\nCharlie', mode: 'single' } },
-      dice: { w: 200, h: 200, config: { count: 1 } },
-      sound: { w: 300, h: 120, config: { sensitivity: 5 } },
-      drawing: { w: 400, h: 300, config: {} },
-      qr: { w: 220, h: 260, config: { url: 'https://google.com' } },
-      embed: { w: 480, h: 320, config: { url: '' } },
-      poll: { w: 300, h: 220, config: { labelA: 'Yes', labelB: 'No', votesA: 0, votesB: 0 } },
-      webcam: { w: 320, h: 240, config: {} }
+      text: { w: 300, h: 250, config: { content: 'Double click to edit...', bgColor: '#fef9c3', fontSize: 18 } },
+      checklist: { w: 280, h: 300, config: { items: [] } },
+      random: { w: 300, h: 320, config: { firstNames: '', lastNames: '', mode: 'single' } },
+      dice: { w: 240, h: 240, config: { count: 1 } },
+      sound: { w: 300, h: 180, config: { sensitivity: 5 } },
+      drawing: { w: 400, h: 350, config: { mode: 'window', paths: [] } },
+      qr: { w: 200, h: 250, config: { url: 'https://google.com' } },
+      embed: { w: 480, h: 350, config: { url: '' } },
+      poll: { w: 300, h: 250, config: { question: 'Vote now!', options: [{label: 'Option A', votes: 0}, {label: 'Option B', votes: 0}] } },
+      webcam: { w: 350, h: 300, config: {} },
+      scoreboard: { w: 320, h: 200, config: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' } },
+      workSymbols: { w: 300, h: 250, config: { voice: 'none', routine: 'none' } },
+      weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
+      schedule: { w: 300, h: 350, config: { items: [{time: '08:00', task: 'Morning Meeting'}, {time: '09:00', task: 'Math'}] } },
+      calendar: { w: 300, h: 350, config: { events: [{date: 'Friday', title: 'Pillar Power'}, {date: 'Monday', title: 'Loon Day - PE'}] } }
     };
 
     const newWidget: WidgetData = {
       id: uuidv4(),
       type,
-      x: 100 + (activeDashboard.widgets.length * 20),
-      y: 100 + (activeDashboard.widgets.length * 20),
+      x: 150 + (activeDashboard.widgets.length * 20),
+      y: 150 + (activeDashboard.widgets.length * 20),
       flipped: false,
       z: maxZ + 1,
       ...defaults[type],
-      config: defaults[type].config || {}
+      config: { ...(defaults[type].config || {}) }
     } as WidgetData;
 
     updateDashboard({ widgets: [...activeDashboard.widgets, newWidget] });
