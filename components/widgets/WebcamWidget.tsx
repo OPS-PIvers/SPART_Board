@@ -97,7 +97,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setOcrResult(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const base64Data = dataUrl.split(',')[1];
       
       const response = await ai.models.generateContent({

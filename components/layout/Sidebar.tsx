@@ -1,18 +1,24 @@
 
 import React, { useState, useRef } from 'react';
-import { Layout, Save, Plus, Trash2, Palette, X, Menu, Share2, Download, Upload, Grid, LayoutGrid, Check, CheckSquare, Square } from 'lucide-react';
+import { Layout, Save, Plus, Trash2, Palette, X, Menu, Share2, Download, Upload, Grid, LayoutGrid, Check, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { useDashboard } from '../../context/DashboardContext';
+import { useAuth } from '../../context/AuthContext';
+import { useStorage } from '../../hooks/useStorage';
 import { TOOLS } from '../../types';
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'presets' | 'colors' | 'gradients' | 'tools'>('presets');
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { 
+  const {
     dashboards, activeDashboard, visibleTools, toggleToolVisibility, setAllToolsVisibility,
-    createNewDashboard, loadDashboard, deleteDashboard, saveCurrentDashboard, setBackground, addToast 
+    createNewDashboard, loadDashboard, deleteDashboard, saveCurrentDashboard, setBackground, addToast
   } = useDashboard();
+
+  const { user } = useAuth();
+  const { uploadBackgroundImage } = useStorage();
 
   const presets = [
     { id: 'https://images.unsplash.com/photo-1531496681078-2742715e1c58?q=80&w=2000', label: 'Chalkboard' },
@@ -60,20 +66,25 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        addToast('Image too large (Max 2MB)', 'error');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setBackground(result);
-        addToast('Custom background uploaded', 'success');
-      };
-      reader.readAsDataURL(file);
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('Image too large (Max 5MB)', 'error');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const downloadURL = await uploadBackgroundImage(user.uid, file);
+      setBackground(downloadURL);
+      addToast('Custom background uploaded to cloud', 'success');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      addToast('Upload failed', 'error');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -191,12 +202,19 @@ export const Sidebar: React.FC = () => {
                         <img src={bg.id} alt={bg.label} className="w-full h-full object-cover" />
                       </button>
                     ))}
-                    <button 
+                    <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-500 transition-all"
+                      disabled={uploading}
+                      className="aspect-square rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-500 transition-all disabled:opacity-50"
                     >
-                      <Upload className="w-4 h-4" />
-                      <span className="text-[8px] font-bold mt-1">UPLOAD</span>
+                      {uploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span className="text-[8px] font-bold mt-1">UPLOAD</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 )}

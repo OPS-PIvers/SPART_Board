@@ -1,13 +1,16 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
+import { useAuth } from './AuthContext';
+import { useFirestore } from '../hooks/useFirestore';
+import { migrateLocalStorageToFirestore } from '../utils/migration';
 
 interface DashboardContextType {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
   toasts: Toast[];
   visibleTools: WidgetType[];
+  loading: boolean;
   addToast: (message: string, type?: Toast['type']) => void;
   removeToast: (id: string) => void;
   createNewDashboard: (name: string, data?: Dashboard) => void;
@@ -26,36 +29,92 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const { loadDashboards, saveDashboard, deleteDashboard: deleteDashboardFirestore, subscribeToDashboards } = useFirestore(user?.uid || null);
+  
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [visibleTools, setVisibleTools] = useState<WidgetType[]>(TOOLS.map(t => t.type));
+  const [loading, setLoading] = useState(true);
+  const [migrated, setMigrated] = useState(false);
 
+  // Load dashboards on mount and subscribe to changes
   useEffect(() => {
-    // Load Dashboards
-    const saved = localStorage.getItem('classroom_dashboards');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setDashboards(parsed);
-      if (parsed.length > 0) setActiveId(parsed[0].id);
-    } else {
-      const defaultDb: Dashboard = {
-        id: uuidv4(),
-        name: 'My First Dashboard',
-        background: 'bg-slate-900',
-        widgets: [],
-        createdAt: Date.now()
-      };
-      setDashboards([defaultDb]);
-      setActiveId(defaultDb.id);
+    if (!user) {
+      setLoading(false);
+      return;
     }
 
-    // Load Tool Visibility
+    setLoading(true);
+
+    // Real-time subscription to Firestore
+    const unsubscribe = subscribeToDashboards((updatedDashboards) => {
+      setDashboards(updatedDashboards);
+      
+      // If no active dashboard or active dashboard deleted, set to first
+      if (updatedDashboards.length > 0 && !activeId) {
+        setActiveId(updatedDashboards[0].id);
+      }
+      
+      // Create default dashboard if none exist
+      if (updatedDashboards.length === 0 && !migrated) {
+        const defaultDb: Dashboard = {
+          id: uuidv4(),
+          name: 'My First Dashboard',
+          background: 'bg-slate-900',
+          widgets: [],
+          createdAt: Date.now()
+        };
+        saveDashboard(defaultDb).then(() => {
+          addToast('Welcome! Dashboard created');
+        });
+      }
+      
+      setLoading(false);
+    });
+
+    // Load tool visibility from localStorage (user preference)
     const savedTools = localStorage.getItem('classroom_visible_tools');
     if (savedTools) {
       setVisibleTools(JSON.parse(savedTools));
     }
-  }, []);
+
+    // Migrate localStorage data on first sign-in
+    const localData = localStorage.getItem('classroom_dashboards');
+    if (localData && !migrated) {
+      migrateLocalStorageToFirestore(user.uid, saveDashboard)
+        .then(count => {
+          if (count > 0) {
+            addToast(`Migrated ${count} dashboard(s) to cloud`, 'success');
+          }
+          setMigrated(true);
+        })
+        .catch(err => {
+          console.error('Migration error:', err);
+          addToast('Failed to migrate local data', 'error');
+        });
+    }
+
+    return unsubscribe;
+  }, [user]);
+
+  // Auto-save to Firestore with debouncing
+  useEffect(() => {
+    if (!user || loading || !activeId) return;
+
+    const timeoutId = setTimeout(() => {
+      const active = dashboards.find(d => d.id === activeId);
+      if (active) {
+        saveDashboard(active).catch(err => {
+          console.error('Auto-save failed:', err);
+          addToast('Failed to sync changes', 'error');
+        });
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [dashboards, activeId, user, loading]);
 
   const toggleToolVisibility = (type: WidgetType) => {
     setVisibleTools(prev => {
@@ -82,6 +141,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const createNewDashboard = (name: string, data?: Dashboard) => {
+    if (!user) {
+      addToast('Must be signed in to create dashboard', 'error');
+      return;
+    }
+    
     const newDb: Dashboard = data ? { ...data, id: uuidv4(), name } : {
       id: uuidv4(),
       name,
@@ -89,24 +153,49 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       widgets: [],
       createdAt: Date.now()
     };
-    setDashboards(prev => [...prev, newDb]);
-    setActiveId(newDb.id);
-    addToast(`Dashboard "${name}" ready`);
+    
+    saveDashboard(newDb).then(() => {
+      setActiveId(newDb.id);
+      addToast(`Dashboard "${name}" ready`);
+    }).catch(err => {
+      console.error('Failed to create dashboard:', err);
+      addToast('Failed to create dashboard', 'error');
+    });
   };
 
   const saveCurrentDashboard = () => {
-    localStorage.setItem('classroom_dashboards', JSON.stringify(dashboards));
-    addToast('All changes saved to storage', 'success');
+    if (!user) {
+      addToast('Must be signed in to save', 'error');
+      return;
+    }
+    
+    const active = dashboards.find(d => d.id === activeId);
+    if (active) {
+      saveDashboard(active).then(() => {
+        addToast('All changes saved to cloud', 'success');
+      }).catch(err => {
+        console.error('Save failed:', err);
+        addToast('Save failed', 'error');
+      });
+    }
   };
 
   const deleteDashboard = (id: string) => {
-    const filtered = dashboards.filter(d => d.id !== id);
-    // Fixed typo: setBedboards -> setDashboards
-    setDashboards(filtered);
-    if (activeId === id) {
-      setActiveId(filtered.length > 0 ? filtered[0].id : null);
+    if (!user) {
+      addToast('Must be signed in to delete', 'error');
+      return;
     }
-    addToast('Dashboard removed');
+    
+    deleteDashboardFirestore(id).then(() => {
+      if (activeId === id) {
+        const filtered = dashboards.filter(d => d.id !== id);
+        setActiveId(filtered.length > 0 ? filtered[0].id : null);
+      }
+      addToast('Dashboard removed');
+    }).catch(err => {
+      console.error('Delete failed:', err);
+      addToast('Delete failed', 'error');
+    });
   };
 
   const loadDashboard = (id: string) => {
@@ -189,7 +278,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   return (
     <DashboardContext.Provider value={{
-      dashboards, activeDashboard, toasts, visibleTools, addToast, removeToast,
+      dashboards, activeDashboard, toasts, visibleTools, loading, addToast, removeToast,
       createNewDashboard, saveCurrentDashboard, deleteDashboard, loadDashboard,
       addWidget, removeWidget, updateWidget, bringToFront, setBackground,
       toggleToolVisibility, setAllToolsVisibility
