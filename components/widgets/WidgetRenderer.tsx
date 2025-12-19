@@ -21,6 +21,7 @@ import { PollWidget } from './PollWidget';
 import { WeatherWidget, WeatherSettings } from './WeatherWidget';
 import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
+import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 
 export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const getWidgetContent = () => {
@@ -44,6 +45,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({ widget }) => 
       case 'weather': return <WeatherWidget widget={widget} />;
       case 'schedule': return <ScheduleWidget widget={widget} />;
       case 'calendar': return <CalendarWidget widget={widget} />;
+      case 'lunchCount': return <LunchCountWidget widget={widget} />;
       default: return <div className="p-4 text-center text-slate-400 text-sm">Widget under construction</div>;
     }
   };
@@ -63,6 +65,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({ widget }) => 
       case 'qr': return <QRSettings widget={widget} />;
       case 'calendar': return <CalendarSettings widget={widget} />;
       case 'weather': return <WeatherSettings widget={widget} />;
+      case 'lunchCount': return <LunchCountSettings widget={widget} />;
       default: return <div className="text-slate-500 italic text-sm">Standard settings available.</div>;
     }
   };
@@ -73,6 +76,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({ widget }) => 
     if (widget.type === 'random') return 'Selector';
     if (widget.type === 'workSymbols') return 'Expectations';
     if (widget.type === 'calendar') return 'Class Events';
+    if (widget.type === 'lunchCount') return 'Lunch Orders';
     return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
   };
 

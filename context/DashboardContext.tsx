@@ -1,12 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Dashboard, WidgetData, WidgetType, Toast } from '../types';
+import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
 
 interface DashboardContextType {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
   toasts: Toast[];
+  visibleTools: WidgetType[];
   addToast: (message: string, type?: Toast['type']) => void;
   removeToast: (id: string) => void;
   createNewDashboard: (name: string, data?: Dashboard) => void;
@@ -18,6 +19,8 @@ interface DashboardContextType {
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
   setBackground: (bg: string) => void;
+  toggleToolVisibility: (type: WidgetType) => void;
+  setAllToolsVisibility: (visible: boolean) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -26,8 +29,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(TOOLS.map(t => t.type));
 
   useEffect(() => {
+    // Load Dashboards
     const saved = localStorage.getItem('classroom_dashboards');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -44,7 +49,27 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setDashboards([defaultDb]);
       setActiveId(defaultDb.id);
     }
+
+    // Load Tool Visibility
+    const savedTools = localStorage.getItem('classroom_visible_tools');
+    if (savedTools) {
+      setVisibleTools(JSON.parse(savedTools));
+    }
   }, []);
+
+  const toggleToolVisibility = (type: WidgetType) => {
+    setVisibleTools(prev => {
+      const next = prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type];
+      localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const setAllToolsVisibility = (visible: boolean) => {
+    const next = visible ? TOOLS.map(t => t.type) : [];
+    setVisibleTools(next);
+    localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
+  };
 
   const addToast = (message: string, type: Toast['type'] = 'info') => {
     const id = uuidv4();
@@ -76,6 +101,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteDashboard = (id: string) => {
     const filtered = dashboards.filter(d => d.id !== id);
+    // Fixed typo: setBedboards -> setDashboards
     setDashboards(filtered);
     if (activeId === id) {
       setActiveId(filtered.length > 0 ? filtered[0].id : null);
@@ -118,7 +144,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       workSymbols: { w: 300, h: 250, config: { voice: 'none', routine: 'none' } },
       weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
       schedule: { w: 300, h: 350, config: { items: [{time: '08:00', task: 'Morning Meeting'}, {time: '09:00', task: 'Math'}] } },
-      calendar: { w: 300, h: 350, config: { events: [{date: 'Friday', title: 'Pillar Power'}, {date: 'Monday', title: 'Loon Day - PE'}] } }
+      calendar: { w: 300, h: 350, config: { events: [{date: 'Friday', title: 'Pillar Power'}, {date: 'Monday', title: 'Loon Day - PE'}] } },
+      lunchCount: { w: 500, h: 400, config: { firstNames: '', lastNames: '', assignments: {}, recipient: 'paul.ivers@orono.k12.mn.us' } }
     };
 
     const newWidget: WidgetData = {
@@ -162,9 +189,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   return (
     <DashboardContext.Provider value={{
-      dashboards, activeDashboard, toasts, addToast, removeToast,
+      dashboards, activeDashboard, toasts, visibleTools, addToast, removeToast,
       createNewDashboard, saveCurrentDashboard, deleteDashboard, loadDashboard,
-      addWidget, removeWidget, updateWidget, bringToFront, setBackground
+      addWidget, removeWidget, updateWidget, bringToFront, setBackground,
+      toggleToolVisibility, setAllToolsVisibility
     }}>
       {children}
     </DashboardContext.Provider>

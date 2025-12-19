@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { DashboardProvider, useDashboard } from './context/DashboardContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dock } from './components/layout/Dock';
@@ -33,18 +33,48 @@ const ToastContainer: React.FC = () => {
 const DashboardView: React.FC = () => {
   const { activeDashboard } = useDashboard();
 
+  const backgroundStyles = useMemo(() => {
+    if (!activeDashboard) return {};
+    const bg = activeDashboard.background;
+    
+    // Check if it's a URL or Base64 image
+    if (bg.startsWith('http') || bg.startsWith('data:')) {
+      return {
+        backgroundImage: `url("${bg}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    }
+    return {};
+  }, [activeDashboard?.background]);
+
+  const backgroundClasses = useMemo(() => {
+    if (!activeDashboard) return '';
+    const bg = activeDashboard.background;
+    // If it's a URL, don't apply the class
+    if (bg.startsWith('http') || bg.startsWith('data:')) return '';
+    return bg;
+  }, [activeDashboard?.background]);
+
   if (!activeDashboard) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-900 text-white">
-        <div className="animate-pulse">Loading Classroom Dashboard...</div>
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="font-black uppercase tracking-[0.3em] text-xs">Waking up Classroom...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${activeDashboard.background}`}>
-      {/* Background Overlay for Depth */}
-      <div className="absolute inset-0 bg-black/5" />
+    <div 
+      className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses}`}
+      style={backgroundStyles}
+    >
+      {/* Background Overlay for Depth (especially for images) */}
+      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
       
       {/* Dynamic Widget Surface */}
       <div className="relative w-full h-full">
