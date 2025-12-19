@@ -10,20 +10,13 @@ This guide will help you set up automatic Firebase deployment when you push to t
 
 ## 🔧 Step-by-Step Setup
 
-### Step 1: Initialize Firebase Hosting (if not done already)
+### Step 1: Firebase Configuration Files ✅ (Already Created)
 
-```bash
-firebase login
-firebase init hosting
-```
+The Firebase configuration files have been created and are committed to the repository:
+- **`firebase.json`** - Hosting configuration (dist folder, SPA rewrites, caching headers)
+- **`.firebaserc`** - Project ID (spartboard)
 
-**Answers:**
-- Project: Select "spartboard"
-- Public directory: `dist`
-- Single-page app: `Yes`
-- Overwrite index.html: `No`
-
-This creates `firebase.json` and `.firebaserc` files (they're gitignored, so they won't be committed).
+**Note:** These files were previously gitignored which caused the workflow to fail. They are now tracked in git so GitHub Actions can use them.
 
 ### Step 2: Generate Firebase Service Account
 
