@@ -4,6 +4,7 @@ import { DashboardProvider } from './context/DashboardContext';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { DashboardView } from './components/layout/DashboardView';
 import { LogOut } from 'lucide-react';
+import { isConfigured } from './config/firebase';
 
 const AuthenticatedApp: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -38,6 +39,27 @@ const AuthenticatedApp: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  if (!isConfigured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+          <h1 className="text-2xl font-bold text-slate-800 mb-4">Configuration Required</h1>
+          <p className="text-slate-600 mb-6">
+            The application is missing Firebase configuration credentials.
+            Please check your environment variables or <code>.env</code> file.
+          </p>
+          <div className="bg-slate-100 p-4 rounded-lg text-left overflow-x-auto">
+            <code className="text-sm text-slate-700">
+              VITE_FIREBASE_API_KEY=...<br/>
+              VITE_FIREBASE_AUTH_DOMAIN=...<br/>
+              VITE_FIREBASE_PROJECT_ID=...
+            </code>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AuthProvider>
       <AuthenticatedApp />
