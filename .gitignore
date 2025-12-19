@@ -26,6 +26,7 @@ dist-ssr
 # Firebase
 .firebase
 firebase-debug.log
+service-account-key.json
 
 # Backups
 *.backup

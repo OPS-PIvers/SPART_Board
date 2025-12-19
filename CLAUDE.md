@@ -15,10 +15,18 @@ Classroom Dashboard Pro is an interactive classroom management dashboard built w
 
 ## Environment Configuration
 
-The app requires a Gemini API key for AI features:
+The app requires Firebase configuration and a Gemini API key:
 - Create `.env.local` in the root directory
-- Set `GEMINI_API_KEY=your_api_key_here`
-- The Vite config exposes this as `process.env.GEMINI_API_KEY` and `process.env.API_KEY`
+- Add Firebase config:
+  - `VITE_FIREBASE_API_KEY=your_firebase_api_key`
+  - `VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com`
+  - `VITE_FIREBASE_PROJECT_ID=your_project_id`
+  - `VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com`
+  - `VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id`
+  - `VITE_FIREBASE_APP_ID=your_app_id`
+- Add Gemini API key for AI features:
+  - `GEMINI_API_KEY=your_api_key_here`
+- The Vite config exposes these as environment variables
 
 ## Architecture
 
@@ -128,6 +136,67 @@ All data is stored in browser localStorage:
 - No backend or database required
 - Background images can be URLs or Base64-encoded data URIs
 
+## Admin User Management
+
+The app uses Firebase Authentication with admin role management through Firestore:
+
+### Admin Access Control
+- Admin status is checked via Firestore `admins` collection
+- Each admin email has a document in `/admins/{email}`
+- The `isAdmin` flag from `useAuth()` hook indicates admin status
+- Firestore Security Rules enforce admin-only access to sensitive collections
+
+### Setting Up Admin Users
+
+1. **Update admin email list** in [src/context/AuthContext.tsx](src/context/AuthContext.tsx):
+   ```typescript
+   const ADMIN_EMAILS = [
+     'your-email@example.com',
+     'teammate1@example.com',
+     'teammate2@example.com'
+   ];
+   ```
+
+2. **Deploy Firestore Security Rules**:
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+
+3. **Run the admin setup script**:
+   ```bash
+   # Install firebase-admin if not already installed
+   npm install firebase-admin
+
+   # Get service account credentials from Firebase Console:
+   # Project Settings > Service Accounts > Generate New Private Key
+   # Save as scripts/service-account-key.json
+
+   # Update ADMIN_EMAILS in scripts/setup-admins.js
+   # Then run:
+   node scripts/setup-admins.js
+   ```
+
+### Security Notes
+- Admin documents in Firestore can only be created via Firebase Console or Admin SDK
+- Regular users cannot grant themselves admin access
+- The `isAdmin` check is enforced server-side via Firestore Security Rules
+- Service account keys should never be committed to git (already in .gitignore)
+
+### Using Admin Status in Components
+```typescript
+import { useAuth } from '@/context/AuthContext';
+
+function MyComponent() {
+  const { isAdmin } = useAuth();
+
+  return isAdmin ? (
+    <AdminPanel />
+  ) : (
+    <RegularUserView />
+  );
+}
+```
+
 ## Common Gotchas
 
 - Widget z-index starts at 1 and increments. Don't manually set z-index; use `bringToFront(id)`
@@ -135,3 +204,4 @@ All data is stored in browser localStorage:
 - Widget dimensions use px values, not percentages
 - The `flipped` state is managed by DraggableWindow, not individual widgets
 - Audio contexts must be resumed on user interaction (see Timer/Stopwatch unlock patterns)
+- Admin status requires both the ADMIN_EMAILS list AND the Firestore admin document to exist
