@@ -3,8 +3,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CameraOff, Loader2, Camera, RefreshCw, FileText, X, Copy, Check } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { GoogleGenAI } from '@google/genai';
+import { useDashboard } from '../../context/DashboardContext';
 
 export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { addToast } = useDashboard();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +15,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [ocrResult, setOcrResult] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showFlash, setShowFlash] = useState(false);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -73,10 +76,17 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const handleScreenshot = () => {
     const dataUrl = captureFrame();
     if (!dataUrl) return;
+
+    // Visual feedback
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 150);
+
     const link = document.createElement('a');
     link.href = dataUrl;
     link.download = `screenshot-${new Date().getTime()}.jpg`;
     link.click();
+    
+    addToast('Screenshot saved!', 'success');
   };
 
   const handleOCR = async () => {
@@ -87,7 +97,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setOcrResult(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: (process.env as any).API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const base64Data = dataUrl.split(',')[1];
       
       const response = await ai.models.generateContent({
@@ -117,7 +127,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   return (
-    <div className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center">
+    <div className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center group">
       <canvas ref={canvasRef} className="hidden" />
       
       {loading && (
@@ -125,6 +135,11 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <Loader2 className="w-8 h-8 animate-spin" />
           <span className="text-[10px] font-bold uppercase tracking-widest">Waking up lens...</span>
         </div>
+      )}
+
+      {/* Camera Flash Effect */}
+      {showFlash && (
+        <div className="absolute inset-0 bg-white z-[30] animate-out fade-out duration-150 pointer-events-none" />
       )}
       
       {error ? (
@@ -144,25 +159,26 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           />
           
           {/* Controls Overlay */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/40 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-2xl p-3 rounded-3xl border border-white/20 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
             <button 
               onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-              className="p-3 hover:bg-white/20 rounded-xl text-white transition-all active:scale-90"
+              className="p-3 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-90"
               title="Flip Camera"
             >
               <RefreshCw className="w-5 h-5" />
             </button>
             <button 
               onClick={handleScreenshot}
-              className="p-3 bg-white text-slate-900 rounded-xl hover:scale-110 transition-all active:scale-95 shadow-lg"
+              className="p-4 bg-white text-slate-900 rounded-2xl hover:scale-110 hover:shadow-white/20 transition-all active:scale-95 shadow-xl flex items-center gap-2 group/btn"
               title="Take Screenshot"
             >
-              <Camera className="w-6 h-6" />
+              <Camera className="w-6 h-6 group-active/btn:scale-75 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-widest pr-1">Snap</span>
             </button>
             <button 
               onClick={handleOCR}
               disabled={isProcessing}
-              className={`p-3 rounded-xl transition-all active:scale-90 ${isProcessing ? 'bg-amber-500/50 text-white animate-pulse' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}
+              className={`p-3 rounded-2xl transition-all active:scale-90 ${isProcessing ? 'bg-amber-500/50 text-white animate-pulse' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}
               title="Extract Text (OCR)"
             >
               {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
