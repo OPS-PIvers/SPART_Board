@@ -6,7 +6,7 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
 
 // Export a flag to check if firebase is configured
-export const isConfigured = !!apiKey;
+export const isConfigured = !!apiKey || import.meta.env.VITE_AUTH_BYPASS === 'true';
 
 let app: FirebaseApp;
 let auth: Auth;
@@ -14,7 +14,7 @@ let db: Firestore;
 let storage: FirebaseStorage;
 let googleProvider: GoogleAuthProvider;
 
-if (isConfigured) {
+if (apiKey) {
   const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -30,6 +30,22 @@ if (isConfigured) {
   db = getFirestore(app);
   storage = getStorage(app);
   googleProvider = new GoogleAuthProvider();
+} else if (import.meta.env.VITE_AUTH_BYPASS === 'true') {
+  // Mock objects for bypass mode
+  auth = {
+    currentUser: null,
+    onAuthStateChanged: () => () => {},
+    signOut: async () => {},
+    signInWithPopup: async () => {},
+  } as unknown as Auth;
+
+  db = {
+    // Basic mock to prevent immediate crashes if db is accessed
+  } as unknown as Firestore;
+  storage = {} as unknown as FirebaseStorage;
+  googleProvider = {} as unknown as GoogleAuthProvider;
+  app = {} as unknown as FirebaseApp;
+  console.log('Auth Bypass Enabled: Firebase is not fully configured, using mocks.');
 } else {
   // Mock objects to prevent crashes when importing
   auth = {
