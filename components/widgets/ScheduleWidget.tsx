@@ -1,10 +1,11 @@
-
 import React from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import { Circle, CheckCircle2, Clock } from 'lucide-react';
 
-export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
   const { updateWidget } = useDashboard();
   const items = widget.config.items || [];
 
@@ -21,15 +22,29 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => 
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
         {items.map((item: any, i: number) => (
-          <button 
-            key={i} 
-            onClick={() => toggle(i)}
+          <button
+            key={i}
+            onClick={() => {
+              toggle(i);
+            }}
             className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${item.done ? 'bg-slate-50 border-slate-100' : 'bg-indigo-50 border-indigo-100'}`}
           >
-            {item.done ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-indigo-300" />}
+            {item.done ? (
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+            ) : (
+              <Circle className="w-5 h-5 text-indigo-300" />
+            )}
             <div className="flex flex-col items-start">
-              <span className={`text-[10px] font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}>{item.time}</span>
-              <span className={`text-sm font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{item.task}</span>
+              <span
+                className={`text-[10px] font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+              >
+                {item.time}
+              </span>
+              <span
+                className={`text-sm font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+              >
+                {item.task}
+              </span>
             </div>
           </button>
         ))}

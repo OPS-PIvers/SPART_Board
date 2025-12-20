@@ -6,7 +6,7 @@ import {
   deleteDoc,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Dashboard } from '../types';
@@ -18,8 +18,12 @@ export const useFirestore = (userId: string | null) => {
 
   const loadDashboards = async (): Promise<Dashboard[]> => {
     if (!dashboardsRef) return [];
-    const snapshot = await getDocs(query(dashboardsRef, orderBy('createdAt', 'desc')));
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Dashboard));
+    const snapshot = await getDocs(
+      query(dashboardsRef, orderBy('createdAt', 'desc'))
+    );
+    return snapshot.docs.map(
+      (doc) => ({ ...doc.data(), id: doc.id }) as Dashboard
+    );
   };
 
   const saveDashboard = async (dashboard: Dashboard): Promise<void> => {
@@ -27,7 +31,7 @@ export const useFirestore = (userId: string | null) => {
     const docRef = doc(dashboardsRef, dashboard.id);
     await setDoc(docRef, {
       ...dashboard,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
   };
 
@@ -36,16 +40,25 @@ export const useFirestore = (userId: string | null) => {
     await deleteDoc(doc(dashboardsRef, dashboardId));
   };
 
-  const subscribeToDashboards = (callback: (dashboards: Dashboard[]) => void) => {
+  const subscribeToDashboards = (
+    callback: (dashboards: Dashboard[]) => void
+  ) => {
     if (!dashboardsRef) return () => {};
     return onSnapshot(
       query(dashboardsRef, orderBy('createdAt', 'desc')),
       (snapshot) => {
-        const dashboards = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Dashboard));
+        const dashboards = snapshot.docs.map(
+          (doc) => ({ ...doc.data(), id: doc.id }) as Dashboard
+        );
         callback(dashboards);
       }
     );
   };
 
-  return { loadDashboards, saveDashboard, deleteDashboard, subscribeToDashboards };
+  return {
+    loadDashboards,
+    saveDashboard,
+    deleteDashboard,
+    subscribeToDashboards,
+  };
 };

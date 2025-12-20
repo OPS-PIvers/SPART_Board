@@ -3,9 +3,9 @@ name: Deploy Dev Branches to Firebase Preview
 on:
   push:
     branches:
-      - dev-lead        # Your branch
-      - dev-developer1  # Developer 1's branch
-      - dev-developer2  # Developer 2's branch
+      - dev-paul        # Your branch
+      - dev-jen  # Developer 1's branch
+      - dev-bailey  # Developer 2's branch
 
 jobs:
   build-and-deploy-preview:
@@ -23,6 +23,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Check code formatting
+        run: npm run format:check
 
       - name: Build project
         run: npm run build

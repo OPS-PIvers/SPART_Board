@@ -7,8 +7,8 @@ This document contains the steps to activate admin access for the four authorize
 The following emails have been configured as admins:
 - paul.ivers@orono.k12.mn.us
 - bailey.nett@orono.k12.mn.us
-- Jennifer.ivers@orono.k12.mn.us
-- Sean.beaverson@orono.k12.mn.us
+- jennifer.ivers@orono.k12.mn.us
+- sean.beaverson@orono.k12.mn.us
 
 ## Setup Steps
 

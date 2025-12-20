@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
@@ -9,16 +8,18 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, []);
 
-  const { 
-    format24 = true, 
-    showSeconds = true, 
-    themeColor = '#1e293b', 
+  const {
+    format24 = true,
+    showSeconds = true,
+    themeColor = '#1e293b',
     fontFamily = 'font-mono',
     clockStyle = 'modern',
-    glow = false
+    glow = false,
   } = widget.config;
 
   // Calculate font size based on widget width/height
@@ -29,56 +30,83 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [widget.w, widget.h, showSeconds]);
 
   const hours = time.getHours();
-  const displayHours = format24 ? hours.toString().padStart(2, '0') : (hours % 12 || 12).toString();
+  const displayHours = format24
+    ? hours.toString().padStart(2, '0')
+    : (hours % 12 || 12).toString();
   const minutes = time.getMinutes().toString().padStart(2, '0');
   const seconds = time.getSeconds().toString().padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
 
   const getStyleClasses = () => {
     switch (clockStyle) {
-      case 'lcd': return 'tracking-widest opacity-90';
-      case 'minimal': return 'font-light tracking-tighter';
-      default: return 'font-bold';
+      case 'lcd':
+        return 'tracking-widest opacity-90';
+      case 'minimal':
+        return 'font-light tracking-tighter';
+      default:
+        return 'font-bold';
     }
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-500 rounded-lg ${clockStyle === 'lcd' ? 'bg-black/5' : ''}`}>
-      <div 
-        className={`flex items-baseline leading-none transition-all ${fontFamily} ${getStyleClasses()}`} 
-        style={{ 
-          fontSize: `${fontSize}px`, 
+    <div
+      className={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-500 rounded-lg ${clockStyle === 'lcd' ? 'bg-black/5' : ''}`}
+    >
+      <div
+        className={`flex items-baseline leading-none transition-all ${fontFamily} ${getStyleClasses()}`}
+        style={{
+          fontSize: `${fontSize}px`,
           color: themeColor,
-          textShadow: glow ? `0 0 ${fontSize/4}px ${themeColor}66` : 'none'
+          textShadow: glow ? `0 0 ${fontSize / 4}px ${themeColor}66` : 'none',
         }}
       >
         {clockStyle === 'lcd' && (
           <div className="absolute opacity-5 pointer-events-none select-none flex">
-            <span>88</span><span className="mx-0.5">:</span><span>88</span>
-            {showSeconds && <><span className="mx-0.5">:</span><span>88</span></>}
+            <span>88</span>
+            <span className="mx-0.5">:</span>
+            <span>88</span>
+            {showSeconds && (
+              <>
+                <span className="mx-0.5">:</span>
+                <span>88</span>
+              </>
+            )}
           </div>
         )}
-        
+
         <span>{displayHours}</span>
-        <span className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-0.5`}>:</span>
+        <span
+          className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-0.5`}
+        >
+          :
+        </span>
         <span>{minutes}</span>
-        
+
         {showSeconds && (
           <>
             <span className="opacity-30 mx-0.5">:</span>
-            <span className="opacity-60" style={{ fontSize: '0.7em' }}>{seconds}</span>
+            <span className="opacity-60" style={{ fontSize: '0.7em' }}>
+              {seconds}
+            </span>
           </>
         )}
-        
+
         {!format24 && (
-          <span className="text-xs font-sans opacity-40 ml-2 uppercase font-black" style={{ fontSize: '0.2em' }}>
+          <span
+            className="text-xs font-sans opacity-40 ml-2 uppercase font-black"
+            style={{ fontSize: '0.2em' }}
+          >
             {ampm}
           </span>
         )}
       </div>
-      
+
       <div className="text-[10px] md:text-xs font-bold opacity-40 uppercase tracking-[0.2em] font-sans text-slate-900">
-        {time.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+        {time.toLocaleDateString(undefined, {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+        })}
       </div>
     </div>
   );
@@ -115,14 +143,22 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <div className="space-y-6">
       {/* Time Format */}
       <div className="grid grid-cols-2 gap-2">
-        <button 
-          onClick={() => updateWidget(widget.id, { config: { ...config, format24: !config.format24 } })}
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, format24: !config.format24 },
+            })
+          }
           className={`p-2 rounded-lg text-[10px] font-bold border-2 transition-all ${config.format24 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
         >
           24H FORMAT
         </button>
-        <button 
-          onClick={() => updateWidget(widget.id, { config: { ...config, showSeconds: !config.showSeconds } })}
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, showSeconds: !config.showSeconds },
+            })
+          }
           className={`p-2 rounded-lg text-[10px] font-bold border-2 transition-all ${config.showSeconds ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
         >
           SHOW SECONDS
@@ -135,14 +171,20 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <Type className="w-3 h-3" /> Typography
         </label>
         <div className="grid grid-cols-4 gap-2">
-          {fonts.map(f => (
+          {fonts.map((f) => (
             <button
               key={f.id}
-              onClick={() => updateWidget(widget.id, { config: { ...config, fontFamily: f.id } })}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, fontFamily: f.id },
+                })
+              }
               className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${config.fontFamily === f.id ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
             >
               <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
-              <span className="text-[8px] font-bold uppercase text-slate-600">{f.label}</span>
+              <span className="text-[8px] font-bold uppercase text-slate-600">
+                {f.label}
+              </span>
             </button>
           ))}
         </div>
@@ -154,10 +196,14 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <Sparkles className="w-3 h-3" /> Display Style
         </label>
         <div className="flex bg-slate-100 p-1 rounded-xl">
-          {styles.map(s => (
+          {styles.map((s) => (
             <button
               key={s.id}
-              onClick={() => updateWidget(widget.id, { config: { ...config, clockStyle: s.id } })}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, clockStyle: s.id },
+                })
+              }
               className={`flex-1 py-1.5 text-[9px] font-black rounded-lg transition-all ${config.clockStyle === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             >
               {s.label.toUpperCase()}
@@ -173,10 +219,14 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <Palette className="w-3 h-3" /> Color Palette
           </label>
           <div className="flex gap-1.5">
-            {colors.map(c => (
+            {colors.map((c) => (
               <button
                 key={c}
-                onClick={() => updateWidget(widget.id, { config: { ...config, themeColor: c } })}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, themeColor: c },
+                  })
+                }
                 className={`w-6 h-6 rounded-full border-2 transition-all ${config.themeColor === c ? 'border-slate-800 scale-125 shadow-md' : 'border-transparent hover:scale-110'}`}
                 style={{ backgroundColor: c }}
               />
@@ -184,7 +234,11 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         </div>
         <button
-          onClick={() => updateWidget(widget.id, { config: { ...config, glow: !config.glow } })}
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, glow: !config.glow },
+            })
+          }
           className={`p-2 rounded-lg border-2 flex items-center gap-2 transition-all ${config.glow ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
         >
           <Sun className={`w-4 h-4 ${config.glow ? 'fill-current' : ''}`} />

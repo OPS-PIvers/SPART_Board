@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
@@ -11,14 +10,22 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number>(null);
 
-  const { sensitivity = 5, orientation = 'horizontal', style = 'bar' } = widget.config;
+  const {
+    sensitivity = 5,
+    orientation = 'horizontal',
+    style = 'bar',
+  } = widget.config;
 
   useEffect(() => {
     const startAudio = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         streamRef.current = stream;
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -35,13 +42,13 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const average = sum / bufferLength;
           // Cap at 100 to ensure calculations stay in range
           const normalized = Math.min(100, average * (sensitivity / 2));
-          
+
           setVolume(normalized);
-          setHistory(prev => {
+          setHistory((prev) => {
             const next = [...prev, normalized];
             return next.slice(-50); // Keep last 50 points
           });
-          
+
           animationRef.current = requestAnimationFrame(update);
         };
         update();
@@ -55,7 +62,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, [sensitivity]);
@@ -71,30 +78,55 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       const points = history
         .map((val, i) => {
           const x = (i / (history.length - 1)) * 100;
-          // Baseline at 95. Max height at 15 (95 - 80). 
+          // Baseline at 95. Max height at 15 (95 - 80).
           // This ensures a 15% margin at the top so it never goes off-screen.
-          const y = 95 - (val * 0.8); 
+          const y = 95 - val * 0.8;
           return `${x},${y}`;
         })
         .join(' ');
 
       return (
         <div className="w-full h-full bg-slate-900 rounded-xl overflow-hidden p-2 ring-1 ring-white/10 shadow-inner">
-          <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <svg
+            className="w-full h-full overflow-visible"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
             <defs>
               <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.2" result="coloredBlur"/>
+                <feGaussianBlur stdDeviation="1.2" result="coloredBlur" />
                 <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
             </defs>
             {/* Background Grid Lines for Scale */}
-            <line x1="0" y1="95" x2="100" y2="95" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-            <line x1="0" y1="55" x2="100" y2="55" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-            <line x1="0" y1="15" x2="100" y2="15" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-            
+            <line
+              x1="0"
+              y1="95"
+              x2="100"
+              y2="95"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="0.5"
+            />
+            <line
+              x1="0"
+              y1="55"
+              x2="100"
+              y2="55"
+              stroke="rgba(255,255,255,0.05)"
+              strokeWidth="0.5"
+            />
+            <line
+              x1="0"
+              y1="15"
+              x2="100"
+              y2="15"
+              stroke="rgba(255,255,255,0.05)"
+              strokeWidth="0.5"
+            />
+
             <polyline
               fill="none"
               stroke={getBarColor(volume)}
@@ -111,14 +143,16 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     const isVertical = orientation === 'vertical';
     return (
-      <div className={`w-full h-full bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner p-1 flex ${isVertical ? 'flex-col-reverse' : 'flex-row'}`}>
-        <div 
+      <div
+        className={`w-full h-full bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner p-1 flex ${isVertical ? 'flex-col-reverse' : 'flex-row'}`}
+      >
+        <div
           className="rounded-lg transition-all duration-75 ease-out shadow-lg"
-          style={{ 
-            width: isVertical ? '100%' : `${volume}%`, 
+          style={{
+            width: isVertical ? '100%' : `${volume}%`,
             height: isVertical ? `${volume}%` : '100%',
             backgroundColor: getBarColor(volume),
-            boxShadow: `0 0 20px ${getBarColor(volume)}44`
+            boxShadow: `0 0 20px ${getBarColor(volume)}44`,
           }}
         />
       </div>
@@ -127,9 +161,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-3 w-full overflow-hidden">
-      <div className="flex-1 w-full relative">
-        {renderVisualization()}
-      </div>
+      <div className="flex-1 w-full relative">{renderVisualization()}</div>
       <div className="mt-2 w-full flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
         <span>Quiet</span>
         <span className="text-slate-500">{Math.round(volume)}%</span>
@@ -141,31 +173,55 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const { sensitivity = 5, orientation = 'horizontal', style = 'bar' } = widget.config;
+  const {
+    sensitivity = 5,
+    orientation = 'horizontal',
+    style = 'bar',
+  } = widget.config;
 
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-bold text-slate-500 uppercase mb-3 block">Microphone Sensitivity</label>
+        <label className="text-[10px] font-bold text-slate-500 uppercase mb-3 block">
+          Microphone Sensitivity
+        </label>
         <div className="flex items-center gap-4 px-2">
-          <input 
-            type="range" min="1" max="10" step="0.5"
+          <input
+            type="range"
+            min="1"
+            max="10"
+            step="0.5"
             value={sensitivity}
-            onChange={(e) => updateWidget(widget.id, { config: { ...widget.config, sensitivity: parseFloat(e.target.value) } })}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: {
+                  ...widget.config,
+                  sensitivity: parseFloat(e.target.value),
+                },
+              })
+            }
             className="flex-1 accent-pink-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
           />
-          <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">{sensitivity}</span>
+          <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
+            {sensitivity}
+          </span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">Orientation</label>
+          <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">
+            Orientation
+          </label>
           <div className="flex bg-slate-200 p-1 rounded-lg">
-            {(['horizontal', 'vertical'] as const).map(o => (
+            {(['horizontal', 'vertical'] as const).map((o) => (
               <button
                 key={o}
-                onClick={() => updateWidget(widget.id, { config: { ...widget.config, orientation: o } })}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...widget.config, orientation: o },
+                  })
+                }
                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${orientation === o ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 {o.toUpperCase()}
@@ -174,12 +230,18 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">Style</label>
+          <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">
+            Style
+          </label>
           <div className="flex bg-slate-200 p-1 rounded-lg">
-            {(['bar', 'line'] as const).map(s => (
+            {(['bar', 'line'] as const).map((s) => (
               <button
                 key={s}
-                onClick={() => updateWidget(widget.id, { config: { ...widget.config, style: s } })}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...widget.config, style: s },
+                  })
+                }
                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${style === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 {s.toUpperCase()}
