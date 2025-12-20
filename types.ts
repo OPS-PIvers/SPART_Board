@@ -123,3 +123,12 @@ export const TOOLS: ToolMetadata[] = [
     color: 'bg-orange-600',
   },
 ];
+
+export type AccessLevel = 'admin' | 'beta' | 'public';
+
+export interface FeaturePermission {
+  widgetType: WidgetType;
+  accessLevel: AccessLevel;
+  betaUsers: string[]; // Array of email addresses
+  enabled: boolean;
+}
