@@ -17,7 +17,7 @@ const getDiceAudioCtx = () => {
 const playRollSound = () => {
   try {
     const ctx = getDiceAudioCtx();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') void ctx.resume();
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -29,7 +29,9 @@ const playRollSound = () => {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
     osc.start();
     osc.stop(ctx.currentTime + 0.1);
-  } catch (e) {}
+  } catch (_e) {
+    // Audio failed - silently ignore
+  }
 };
 
 const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
@@ -67,7 +69,7 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
 };
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = widget.config.count || 1;
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
   const [isRolling, setIsRolling] = useState(false);

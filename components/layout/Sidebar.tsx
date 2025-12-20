@@ -11,8 +11,6 @@ import {
   Download,
   Upload,
   Grid,
-  LayoutGrid,
-  Check,
   CheckSquare,
   Square,
   Loader2,
@@ -97,7 +95,7 @@ export const Sidebar: React.FC = () => {
   const handleShare = () => {
     if (!activeDashboard) return;
     const data = JSON.stringify(activeDashboard);
-    navigator.clipboard.writeText(data);
+    void navigator.clipboard.writeText(data);
     addToast('Board data copied to clipboard!', 'success');
   };
 
@@ -108,7 +106,7 @@ export const Sidebar: React.FC = () => {
         const parsed = JSON.parse(data);
         createNewDashboard(`Imported: ${parsed.name}`, parsed);
         addToast('Board imported successfully');
-      } catch (e) {
+      } catch (_e) {
         addToast('Invalid board data', 'error');
       }
     }

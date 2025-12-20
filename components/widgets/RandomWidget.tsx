@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import {
@@ -14,9 +14,6 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-
-type Mode = 'single' | 'shuffle' | 'groups';
-type VisualStyle = 'flash' | 'slots' | 'wheel';
 
 // Singleton-like Audio Manager to prevent performance issues
 let audioCtx: AudioContext | null = null;
@@ -45,7 +42,7 @@ const playTick = (freq = 800, volume = 0.15) => {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
-  } catch (e) {
+  } catch (_e) {
     console.warn('Audio play failed');
   }
 };
@@ -66,7 +63,9 @@ const playWinner = () => {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
     osc.start();
     osc.stop(ctx.currentTime + 0.4);
-  } catch (e) {}
+  } catch (_e) {
+    // Audio failed - silently ignore
+  }
 };
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {

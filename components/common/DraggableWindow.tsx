@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Settings, ChevronDown, ChevronUp, Move } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Settings, Move } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { useDashboard } from '../../context/DashboardContext';
 
@@ -20,10 +20,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 }) => {
   const { updateWidget, removeWidget, bringToFront } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
+  const [_isResizing, setIsResizing] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
   };
 

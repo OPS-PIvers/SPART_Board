@@ -9,7 +9,6 @@ import {
   Briefcase,
   Sparkles,
   Trash2,
-  ArrowRight,
 } from 'lucide-react';
 
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({

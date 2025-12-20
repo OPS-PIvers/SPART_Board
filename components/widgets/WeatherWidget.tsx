@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import {
@@ -106,7 +106,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     isAuto = false,
     city = '',
     apiKey = '',
-    locationName = 'Classroom',
+    locationName: _locationName = 'Classroom',
   } = widget.config;
 
   const [loading, setLoading] = useState(false);
@@ -153,7 +153,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const syncByCity = () => {
     if (!city.trim()) return addToast('Please enter a city name', 'info');
-    fetchWeather(`q=${encodeURIComponent(city.trim())}`);
+    void fetchWeather(`q=${encodeURIComponent(city.trim())}`);
   };
 
   const syncByLocation = () => {
@@ -163,8 +163,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     setLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) =>
-        fetchWeather(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`),
-      (err) => {
+        void fetchWeather(
+          `lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
+        ),
+      (_err) => {
         addToast('Location access denied', 'error');
         setLoading(false);
       }

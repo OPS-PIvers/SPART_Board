@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 
@@ -27,7 +27,9 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         setTimeLeft((prev: number) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && isActive) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsActive(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsDone(true);
       if (widget.config.sound) {
         const ctx = getTimerAudioCtx();

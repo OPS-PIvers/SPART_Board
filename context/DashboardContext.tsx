@@ -41,7 +41,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { user } = useAuth();
   const {
-    loadDashboards,
+    loadDashboards: _loadDashboards,
     saveDashboard,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
@@ -56,13 +56,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
+  // Set loading false when no user
+  useEffect(() => {
+    if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+    }
+  }, [user]);
+
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
     if (!user) {
-      setLoading(false);
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     // Real-time subscription to Firestore
@@ -83,8 +91,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           widgets: [],
           createdAt: Date.now(),
         };
-        saveDashboard(defaultDb).then(() => {
-          addToast('Welcome! Dashboard created');
+        void saveDashboard(defaultDb).then(() => {
+          setToasts((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              message: 'Welcome! Dashboard created',
+              type: 'info' as const,
+            },
+          ]);
         });
       }
 
@@ -103,13 +118,27 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       migrateLocalStorageToFirestore(user.uid, saveDashboard)
         .then((count) => {
           if (count > 0) {
-            addToast(`Migrated ${count} dashboard(s) to cloud`, 'success');
+            setToasts((prev) => [
+              ...prev,
+              {
+                id: uuidv4(),
+                message: `Migrated ${count} dashboard(s) to cloud`,
+                type: 'success' as const,
+              },
+            ]);
           }
           setMigrated(true);
         })
         .catch((err) => {
           console.error('Migration error:', err);
-          addToast('Failed to migrate local data', 'error');
+          setToasts((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              message: 'Failed to migrate local data',
+              type: 'error' as const,
+            },
+          ]);
         });
     }
 
@@ -125,7 +154,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (active) {
         saveDashboard(active).catch((err) => {
           console.error('Auto-save failed:', err);
-          addToast('Failed to sync changes', 'error');
+          setToasts((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              message: 'Failed to sync changes',
+              type: 'error' as const,
+            },
+          ]);
         });
       }
     }, 500);

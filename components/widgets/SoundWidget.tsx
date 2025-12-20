@@ -57,7 +57,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
     };
 
-    startAudio();
+    void startAudio();
 
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);

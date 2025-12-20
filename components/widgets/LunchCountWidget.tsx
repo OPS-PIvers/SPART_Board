@@ -293,9 +293,9 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           Instructions
         </h4>
         <p className="text-[9px] text-blue-600 leading-normal font-medium">
-          Once students choose their lunch, click <b>"Send Lunch Report"</b>.
-          This opens a mail composer with the final counts pre-formatted for
-          your cafeteria staff.
+          Once students choose their lunch, click{' '}
+          <b>&quot;Send Lunch Report&quot;</b>. This opens a mail composer with
+          the final counts pre-formatted for your cafeteria staff.
         </p>
       </div>
     </div>

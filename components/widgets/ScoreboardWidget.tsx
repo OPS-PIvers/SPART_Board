@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
-import { Plus, Minus, Trophy } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,

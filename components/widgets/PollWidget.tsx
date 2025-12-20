@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
-import { BarChart3, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();

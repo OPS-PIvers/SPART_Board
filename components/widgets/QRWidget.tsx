@@ -1,7 +1,6 @@
 import React from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
-import { QrCode, Globe } from 'lucide-react';
 
 export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const url = widget.config.url || 'https://google.com';

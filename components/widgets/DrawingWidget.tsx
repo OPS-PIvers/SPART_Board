@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
@@ -8,7 +8,6 @@ import {
   Trash2,
   Maximize,
   Minimize,
-  Download,
   Palette,
   Undo2,
   MousePointer2,

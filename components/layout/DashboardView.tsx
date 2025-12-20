@@ -52,7 +52,7 @@ export const DashboardView: React.FC = () => {
       };
     }
     return {};
-  }, [activeDashboard?.background]);
+  }, [activeDashboard]);
 
   const backgroundClasses = useMemo(() => {
     if (!activeDashboard) return '';
@@ -60,7 +60,7 @@ export const DashboardView: React.FC = () => {
     // If it's a URL, don't apply the class
     if (bg.startsWith('http') || bg.startsWith('data:')) return '';
     return bg;
-  }, [activeDashboard?.background]);
+  }, [activeDashboard]);
 
   if (!activeDashboard) {
     return (
