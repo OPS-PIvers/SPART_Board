@@ -28,9 +28,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   // Dynamically calculate font size based on widget dimensions
   const dynamicFontSize = useMemo(() => {
     const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const scale: number = scaleMultiplier;
-    return Math.max(12, baseSize * scale);
+    return Math.max(12, baseSize * scaleMultiplier);
   }, [widget.w, widget.h, scaleMultiplier]);
 
   if (items.length === 0) {

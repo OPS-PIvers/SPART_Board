@@ -32,7 +32,9 @@ interface DashboardContextType {
   setAllToolsVisibility: (visible: boolean) => void;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(
+export type { DashboardContextType };
+
+export const DashboardContext = createContext<DashboardContextType | undefined>(
   undefined
 );
 

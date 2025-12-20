@@ -7,9 +7,9 @@ import { Dices, Hash, RefreshCw } from 'lucide-react';
 let diceAudioCtx: AudioContext | null = null;
 const getDiceAudioCtx = () => {
   if (!diceAudioCtx) {
-    diceAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
+    diceAudioCtx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
   }
   return diceAudioCtx;
 };

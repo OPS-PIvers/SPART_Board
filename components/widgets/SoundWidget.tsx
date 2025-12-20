@@ -28,9 +28,10 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           audio: true,
         });
         streamRef.current = stream;
-        const audioContext =
-          new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-          (window.AudioContext || (window as any).webkitAudioContext)();
+
+        const audioContext = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;

@@ -8,9 +8,9 @@ let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
   if (!timerAudioCtx) {
-    timerAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
+    timerAudioCtx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
   }
   return timerAudioCtx;
 };
@@ -71,7 +71,6 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const reset = () => {
     setIsActive(false);
     setIsDone(false);
-
     setTimeLeft(widget.config.duration);
   };
 
