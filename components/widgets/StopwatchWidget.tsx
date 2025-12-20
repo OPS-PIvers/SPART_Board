@@ -8,7 +8,7 @@ import {
   Type,
   Layout,
 } from 'lucide-react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
 export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
@@ -25,7 +25,12 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
     fontFamily = 'font-mono',
     showLaps = true,
     scaleMultiplier = 1,
-  } = widget.config;
+  } = (widget.config || {}) as {
+    themeColor?: string;
+    fontFamily?: string;
+    showLaps?: boolean;
+    scaleMultiplier?: number;
+  };
 
   const update = (now: number) => {
     if (isActive) {
@@ -44,6 +49,7 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   const formatTime = (ms: number) => {
@@ -119,7 +125,12 @@ export const StopwatchSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config;
+  const config = widget.config as {
+    themeColor?: string;
+    fontFamily?: string;
+    showLaps?: boolean;
+    scaleMultiplier?: number;
+  };
 
   const fonts = [
     { id: 'font-mono', label: 'Digital' },

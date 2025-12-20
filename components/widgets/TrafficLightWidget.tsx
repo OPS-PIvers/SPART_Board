@@ -1,12 +1,13 @@
 import React from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
 export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const current = widget.config.active || 'none';
+
+  const current = (widget.config.active as string) ?? 'none';
 
   const toggle = (light: 'red' | 'yellow' | 'green') => {
     updateWidget(widget.id, {

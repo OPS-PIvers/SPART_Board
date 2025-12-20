@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 
@@ -20,7 +20,14 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     fontFamily = 'font-mono',
     clockStyle = 'modern',
     glow = false,
-  } = widget.config;
+  } = widget.config as {
+    format24?: boolean;
+    showSeconds?: boolean;
+    themeColor?: string;
+    fontFamily?: string;
+    clockStyle?: string;
+    glow?: boolean;
+  };
 
   // Calculate font size based on widget width/height
   const fontSize = useMemo(() => {
@@ -114,7 +121,14 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config;
+  const config = widget.config as {
+    format24?: boolean;
+    showSeconds?: boolean;
+    themeColor?: string;
+    fontFamily?: string;
+    clockStyle?: string;
+    glow?: boolean;
+  };
 
   const fonts = [
     { id: 'font-mono', label: 'Digital', icon: '01' },

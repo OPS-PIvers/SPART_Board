@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Pencil,
@@ -30,8 +30,14 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'window',
     color = '#1e293b',
     width = 4,
+
     paths = [] as Path[],
-  } = widget.config;
+  } = widget.config as {
+    mode?: string;
+    color?: string;
+    width?: number;
+    paths?: Path[];
+  };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -276,7 +282,8 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const width = widget.config.width || 4;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const width = widget.config.width ?? 4;
 
   return (
     <div className="space-y-6">

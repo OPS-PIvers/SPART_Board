@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Users,
@@ -20,9 +20,9 @@ let audioCtx: AudioContext | null = null;
 
 const getAudioCtx = () => {
   if (!audioCtx) {
-    audioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    audioCtx =
+      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window.AudioContext || (window as any).webkitAudioContext)();
   }
   return audioCtx;
 };
@@ -76,11 +76,21 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'single',
     visualStyle = 'flash',
     groupSize = 3,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     lastResult = null,
     soundEnabled = true,
-  } = widget.config;
+  } = widget.config as {
+    firstNames?: string;
+    lastNames?: string;
+    mode?: string;
+    visualStyle?: string;
+    groupSize?: number;
+    lastResult?: any;
+    soundEnabled?: boolean;
+  };
 
   const [isSpinning, setIsSpinning] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
   const [displayResult, setDisplayResult] = useState<any>(lastResult);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<SVGSVGElement>(null);
@@ -88,16 +98,21 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const students = useMemo(() => {
     const firsts = firstNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
+
     const lasts = lastNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
+
     const count = Math.max(firsts.length, lasts.length);
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
+
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);
@@ -144,12 +159,16 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return {};
   }, [mode, visualStyle, displayResult, widget.w, widget.h]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shuffle = (array: any[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const newArr = [...array];
     for (let i = newArr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return newArr;
   };
 
@@ -530,7 +549,14 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     visualStyle = 'flash',
     groupSize = 3,
     soundEnabled = true,
-  } = widget.config;
+  } = widget.config as {
+    firstNames?: string;
+    lastNames?: string;
+    mode?: string;
+    visualStyle?: string;
+    groupSize?: number;
+    soundEnabled?: boolean;
+  };
 
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },

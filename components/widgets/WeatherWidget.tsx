@@ -1,5 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Sun,
@@ -25,7 +30,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   } = widget.config;
 
   const getIcon = () => {
-    switch (condition.toLowerCase()) {
+    switch ((condition as string).toLowerCase()) {
       case 'cloudy':
       case 'clouds':
         return <Cloud className="w-12 h-12 text-slate-400" />;
@@ -112,7 +117,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const [loading, setLoading] = useState(false);
 
   const fetchWeather = async (params: string) => {
-    const cleanKey = apiKey.trim();
+    const cleanKey = (apiKey as string).trim();
     if (!cleanKey) {
       addToast('OpenWeather API Key required', 'error');
       return;
@@ -132,28 +137,35 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const data = await res.json();
 
-      if (data.cod !== 200) throw new Error(data.message || 'Failed to fetch');
+      if (data.cod !== 200)
+        throw new Error((data.message as string) || 'Failed to fetch');
 
       updateWidget(widget.id, {
         config: {
           ...widget.config,
+
           temp: data.main.temp,
+
           condition: data.weather[0].main.toLowerCase(),
+
           locationName: data.name,
           lastSync: Date.now(),
         },
       });
-      addToast(`Weather updated for ${data.name}`, 'success');
+
+      addToast(`Weather updated for ${data.name as string}`, 'success');
     } catch (err: any) {
-      addToast(err.message || 'Weather sync failed', 'error');
+      addToast((err.message as string) || 'Weather sync failed', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const syncByCity = () => {
-    if (!city.trim()) return addToast('Please enter a city name', 'info');
-    void fetchWeather(`q=${encodeURIComponent(city.trim())}`);
+    if (!(city as string).trim())
+      return addToast('Please enter a city name', 'info');
+
+    void fetchWeather(`q=${encodeURIComponent((city as string).trim())}`);
   };
 
   const syncByLocation = () => {

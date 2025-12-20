@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   VolumeX,
@@ -15,7 +15,10 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { voice = 'none', routine = 'none' } = widget.config;
+  const { voice = 'none', routine = 'none' } = (widget.config || {}) as {
+    voice?: string;
+    routine?: string;
+  };
 
   const voices = [
     { id: 'silence', label: 'Silence', icon: VolumeX, color: 'bg-red-500' },

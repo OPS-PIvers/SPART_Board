@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import { Plus, Minus } from 'lucide-react';
 
@@ -12,7 +12,12 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     scoreB = 0,
     teamA = 'Team A',
     teamB = 'Team B',
-  } = widget.config;
+  } = (widget.config || {}) as {
+    scoreA?: number;
+    scoreB?: number;
+    teamA?: string;
+    teamB?: string;
+  };
 
   const updateScore = (team: 'A' | 'B', delta: number) => {
     if (team === 'A')

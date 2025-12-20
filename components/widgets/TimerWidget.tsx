@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
 // Global reference for Timer AudioContext
@@ -8,19 +8,23 @@ let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
   if (!timerAudioCtx) {
-    timerAudioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    timerAudioCtx =
+      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window.AudioContext || (window as any).webkitAudioContext)();
   }
   return timerAudioCtx;
 };
 
 export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const [timeLeft, setTimeLeft] = useState(widget.config.duration || 300);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const [timeLeft, setTimeLeft] = useState(widget.config.duration ?? 300);
   const [isActive, setIsActive] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const soundEnabled = widget.config.sound;
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let interval: any;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
@@ -29,9 +33,9 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     } else if (timeLeft === 0 && isActive) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsActive(false);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+
       setIsDone(true);
-      if (widget.config.sound) {
+      if (soundEnabled) {
         const ctx = getTimerAudioCtx();
         if (ctx.state !== 'suspended') {
           const osc = ctx.createOscillator();
@@ -48,9 +52,10 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
     }
     return () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       clearInterval(interval);
     };
-  }, [isActive, timeLeft, widget.config.sound]);
+  }, [isActive, timeLeft, soundEnabled]);
 
   const toggle = async () => {
     // Unlock audio context on interaction
@@ -66,6 +71,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const reset = () => {
     setIsActive(false);
     setIsDone(false);
+
     setTimeLeft(widget.config.duration);
   };
 
@@ -107,7 +113,8 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const duration = widget.config.duration || 300;
+
+  const duration = (widget.config.duration as number) ?? 300;
   const minutes = Math.floor(duration / 60);
 
   return (
