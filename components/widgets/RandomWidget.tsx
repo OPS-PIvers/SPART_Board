@@ -15,14 +15,19 @@ import {
   VolumeX,
 } from 'lucide-react';
 
+// Extend Window interface for webkit-prefixed AudioContext
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
+
 // Singleton-like Audio Manager to prevent performance issues
 let audioCtx: AudioContext | null = null;
 
 const getAudioCtx = () => {
   if (!audioCtx) {
-    audioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
   return audioCtx;
 };

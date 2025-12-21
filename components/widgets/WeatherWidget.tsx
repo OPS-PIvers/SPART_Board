@@ -156,6 +156,11 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       if (data.cod !== 200) throw new Error(data.message ?? 'Failed to fetch');
 
+      // Validate that weather array has data
+      if (!data.weather || data.weather.length === 0) {
+        throw new Error('Weather data is incomplete');
+      }
+
       updateWidget(widget.id, {
         config: {
           ...widget.config,
