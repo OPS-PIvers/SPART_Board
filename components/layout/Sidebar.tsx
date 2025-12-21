@@ -15,7 +15,7 @@ import {
   Square,
   Loader2,
 } from 'lucide-react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { useAuth } from '../../context/AuthContext';
 import { useStorage } from '../../hooks/useStorage';
 import { TOOLS } from '../../types';

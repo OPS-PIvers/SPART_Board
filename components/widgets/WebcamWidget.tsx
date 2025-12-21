@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { GoogleGenAI } from '@google/genai';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 
 export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   widget: _widget,

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Settings, Move } from 'lucide-react';
 import { WidgetData } from '../../types';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 
 interface DraggableWindowProps {
   widget: WidgetData;

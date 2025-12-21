@@ -8,7 +8,7 @@ import {
   Type,
   Layout,
 } from 'lucide-react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 
 export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
