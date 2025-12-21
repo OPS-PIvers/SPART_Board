@@ -28,10 +28,15 @@ export const FeaturePermissionsManager: React.FC = () => {
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const [unsavedChanges, setUnsavedChanges] = useState<Set<WidgetType>>(
+    new Set()
+  );
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
+    const timeoutId = setTimeout(() => setMessage(null), 3000);
+    // Return cleanup function
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const loadPermissions = useCallback(async () => {
@@ -77,6 +82,8 @@ export const FeaturePermissionsManager: React.FC = () => {
     const current = getPermission(widgetType);
     const updated = { ...current, ...updates };
     setPermissions(new Map(permissions).set(widgetType, updated));
+    // Mark as having unsaved changes
+    setUnsavedChanges(new Set(unsavedChanges).add(widgetType));
   };
 
   const savePermission = async (widgetType: WidgetType) => {
@@ -85,6 +92,13 @@ export const FeaturePermissionsManager: React.FC = () => {
       const permission = getPermission(widgetType);
 
       await setDoc(doc(db, 'feature_permissions', widgetType), permission);
+
+      // Clear unsaved changes flag for this widget
+      setUnsavedChanges((prev) => {
+        const next = new Set(prev);
+        next.delete(widgetType);
+        return next;
+      });
 
       showMessage('success', `Saved ${widgetType} permissions`);
     } catch (error) {
@@ -118,6 +132,13 @@ export const FeaturePermissionsManager: React.FC = () => {
         return next;
       });
 
+      // Clear unsaved changes flag for this widget
+      setUnsavedChanges((prev) => {
+        const next = new Set(prev);
+        next.delete(widgetType);
+        return next;
+      });
+
       showMessage('success', `Removed ${widgetType} permissions`);
     } catch (error) {
       console.error('Error deleting permission:', error);
@@ -132,12 +153,20 @@ export const FeaturePermissionsManager: React.FC = () => {
   };
 
   const addBetaUser = (widgetType: WidgetType, email: string) => {
-    if (!email.trim()) return;
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) return;
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      showMessage('error', 'Please enter a valid email address.');
+      return;
+    }
 
     const permission = getPermission(widgetType);
-    if (!permission.betaUsers.includes(email.trim())) {
+    if (!permission.betaUsers.includes(trimmedEmail)) {
       updatePermission(widgetType, {
-        betaUsers: [...permission.betaUsers, email.trim()],
+        betaUsers: [...permission.betaUsers, trimmedEmail],
       });
     }
   };
@@ -335,10 +364,18 @@ export const FeaturePermissionsManager: React.FC = () => {
               <button
                 onClick={() => savePermission(tool.type)}
                 disabled={isSaving}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  unsavedChanges.has(tool.type)
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
               >
                 <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save Permissions'}
+                {isSaving
+                  ? 'Saving...'
+                  : unsavedChanges.has(tool.type)
+                    ? 'Save Changes'
+                    : 'Save Permissions'}
               </button>
             </div>
           );

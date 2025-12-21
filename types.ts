@@ -126,9 +126,24 @@ export const TOOLS: ToolMetadata[] = [
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
 
+/**
+ * Feature permission settings for controlling widget access across different user groups.
+ *
+ * @remarks
+ * - If no permission record exists for a widget, it defaults to public access (all authenticated users)
+ * - When `enabled` is false, the widget is completely disabled for all users including admins
+ * - Access levels:
+ *   - 'admin': Only administrators can access (alpha testing)
+ *   - 'beta': Only users in the betaUsers email list can access (beta testing)
+ *   - 'public': All authenticated users can access (general availability)
+ */
 export interface FeaturePermission {
+  /** The type of widget this permission applies to */
   widgetType: WidgetType;
+  /** The access level determining who can use this widget */
   accessLevel: AccessLevel;
-  betaUsers: string[]; // Array of email addresses
+  /** Array of email addresses for beta testing access (only used when accessLevel is 'beta') */
+  betaUsers: string[];
+  /** When false, disables the widget for everyone including admins */
   enabled: boolean;
 }
