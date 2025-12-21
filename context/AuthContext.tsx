@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import {
   User,
   signInWithPopup,
@@ -12,7 +18,7 @@ import { FeaturePermission, WidgetType } from '../types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isAdmin: boolean;
+  isAdmin: boolean | null; // null = admin status not yet determined
   featurePermissions: FeaturePermission[];
   canAccessWidget: (widgetType: WidgetType) => boolean;
   signInWithGoogle: () => Promise<void>;
@@ -26,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not yet checked
   const [featurePermissions, setFeaturePermissions] = useState<
     FeaturePermission[]
   >([]);
@@ -35,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user?.email) {
-        setIsAdmin(false);
+        setIsAdmin(null);
         return;
       }
 
@@ -51,8 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     void checkAdminStatus();
   }, [user]);
 
-  // Listen to feature permissions
+  // Listen to feature permissions (only when authenticated)
   useEffect(() => {
+    // Don't set up listener if user is not authenticated
+    if (!user) {
+      // Don't call setState synchronously in an effect - let it happen naturally
+      return;
+    }
+
     const unsubscribe = onSnapshot(
       collection(db, 'feature_permissions'),
       (snapshot) => {
@@ -68,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     return unsubscribe;
-  }, []);
+  }, [user]);
 
   // Auth state listener
   useEffect(() => {
@@ -80,34 +92,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Check if user can access a specific widget
-  const canAccessWidget = (widgetType: WidgetType): boolean => {
-    if (!user) return false;
+  // Wrapped in useCallback to prevent unnecessary re-renders since this function
+  // is passed through context and used in component dependencies
+  const canAccessWidget = useCallback(
+    (widgetType: WidgetType): boolean => {
+      if (!user) return false;
 
-    const permission = featurePermissions.find(
-      (p) => p.widgetType === widgetType
-    );
+      const permission = featurePermissions.find(
+        (p) => p.widgetType === widgetType
+      );
 
-    // If no permission record exists, allow access (default behavior)
-    if (!permission) return true;
+      // Default behavior: If no permission record exists, allow public access
+      // This means new widgets are accessible to all authenticated users until
+      // an admin explicitly configures permissions
+      if (!permission) return true;
 
-    // If the feature is disabled, no one can access it
-    if (!permission.enabled) return false;
+      // If the feature is disabled, no one can access it (including admins)
+      if (!permission.enabled) return false;
 
-    // Admins can access everything
-    if (isAdmin) return true;
+      // Admins can access everything (except disabled features)
+      if (isAdmin) return true;
 
-    // Check access level
-    switch (permission.accessLevel) {
-      case 'admin':
-        return false; // Only admins can access
-      case 'beta':
-        return permission.betaUsers.includes(user.email || '');
-      case 'public':
-        return true;
-      default:
-        return false;
-    }
-  };
+      // Check access level for non-admin users
+      switch (permission.accessLevel) {
+        case 'admin':
+          return false; // Only admins can access
+        case 'beta':
+          return permission.betaUsers.includes(user.email ?? '');
+        case 'public':
+          return true;
+        default:
+          return false;
+      }
+    },
+    [user, featurePermissions, isAdmin]
+  );
 
   const signInWithGoogle = async () => {
     try {

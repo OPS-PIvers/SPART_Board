@@ -10,23 +10,51 @@ interface AdminSettingsProps {
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
 
+  // Close modal on Escape key press
+  React.useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   if (!isAdmin) {
     return null;
   }
 
+  // Handle backdrop click
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admin-settings-title"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="w-6 h-6" />
-            <h2 className="text-2xl font-bold">Admin Settings</h2>
+            <h2 id="admin-settings-title" className="text-2xl font-bold">
+              Admin Settings
+            </h2>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/20 rounded-lg transition-colors"
             title="Close"
+            aria-label="Close admin settings"
           >
             <X className="w-6 h-6" />
           </button>
