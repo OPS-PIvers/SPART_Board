@@ -8,7 +8,7 @@ import {
   Type,
   Layout,
 } from 'lucide-react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 
 export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
@@ -222,7 +222,7 @@ export const StopwatchSettings: React.FC<{ widget: WidgetData }> = ({
             min="0.5"
             max="2"
             step="0.1"
-            value={config.scaleMultiplier || 1}
+            value={config.scaleMultiplier ?? 1}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
@@ -234,7 +234,7 @@ export const StopwatchSettings: React.FC<{ widget: WidgetData }> = ({
             className="flex-1 accent-indigo-600"
           />
           <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
-            {config.scaleMultiplier || 1}x
+            {config.scaleMultiplier ?? 1}x
           </span>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
 

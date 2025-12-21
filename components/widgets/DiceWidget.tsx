@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
 
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
 const getDiceAudioCtx = () => {
-  if (!diceAudioCtx) {
-    diceAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
-  }
+  diceAudioCtx ??=
+    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    (window.AudioContext || (window as any).webkitAudioContext)();
   return diceAudioCtx;
 };
 
@@ -71,10 +69,12 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget: _updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const diceCount = widget.config.count ?? 1;
 
-  const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
+  const diceCount = (widget.config.count as number | undefined) ?? 1;
+
+  const [values, setValues] = useState<number[]>(
+    () => Array(diceCount).fill(1) as number[]
+  );
   const [isRolling, setIsRolling] = useState(false);
 
   const roll = async () => {
@@ -102,7 +102,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     // Reset values if count changes in settings
     if (values.length !== diceCount) {
-      setValues(new Array(diceCount).fill(1));
+      setValues(Array(diceCount).fill(1));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diceCount]);
@@ -136,9 +136,8 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const count = widget.config.count ?? 1;
 
+  const count = widget.config.count ?? 1;
   return (
     <div className="space-y-6">
       <div>
