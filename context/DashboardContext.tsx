@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
 import { useAuth } from './AuthContext';
@@ -26,9 +32,7 @@ interface DashboardContextType {
   setAllToolsVisibility: (visible: boolean) => void;
 }
 
-export type { DashboardContextType };
-
-export const DashboardContext = createContext<DashboardContextType | undefined>(
+const DashboardContext = createContext<DashboardContextType | undefined>(
   undefined
 );
 
@@ -437,4 +441,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
     </DashboardContext.Provider>
   );
+};
+
+export const useDashboard = () => {
+  const context = useContext(DashboardContext);
+  if (!context)
+    throw new Error('useDashboard must be used within DashboardProvider');
+  return context;
 };

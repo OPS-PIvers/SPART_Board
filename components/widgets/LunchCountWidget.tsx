@@ -32,11 +32,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const students = useMemo(() => {
     const firsts = firstNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
     const lasts = lastNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
@@ -44,6 +46,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
+
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);

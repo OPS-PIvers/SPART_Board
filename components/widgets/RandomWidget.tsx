@@ -15,19 +15,14 @@ import {
   VolumeX,
 } from 'lucide-react';
 
-// Extend Window interface for webkit-prefixed AudioContext
-declare global {
-  interface Window {
-    webkitAudioContext: typeof AudioContext;
-  }
-}
-
 // Singleton-like Audio Manager to prevent performance issues
 let audioCtx: AudioContext | null = null;
 
 const getAudioCtx = () => {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx =
+      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window.AudioContext || (window as any).webkitAudioContext)();
   }
   return audioCtx;
 };
@@ -103,11 +98,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const students = useMemo(() => {
     const firsts = firstNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
     const lasts = lastNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
@@ -115,6 +112,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
+
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);

@@ -3,18 +3,13 @@ import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
 
-// Extend Window interface for webkit-prefixed AudioContext
-declare global {
-  interface Window {
-    webkitAudioContext: typeof AudioContext;
-  }
-}
-
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
 const getDiceAudioCtx = () => {
   if (!diceAudioCtx) {
-    diceAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    diceAudioCtx =
+      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window.AudioContext || (window as any).webkitAudioContext)();
   }
   return diceAudioCtx;
 };

@@ -131,6 +131,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="flex-1 accent-blue-600"
           />
           <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
+            {}
             {widget.config.fontSize}
           </span>
         </div>

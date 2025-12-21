@@ -3,19 +3,14 @@ import { Play, Pause, RotateCcw } from 'lucide-react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
-// Extend Window interface for webkit-prefixed AudioContext
-declare global {
-  interface Window {
-    webkitAudioContext: typeof AudioContext;
-  }
-}
-
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
   if (!timerAudioCtx) {
-    timerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    timerAudioCtx =
+      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window.AudioContext || (window as any).webkitAudioContext)();
   }
   return timerAudioCtx;
 };
@@ -76,6 +71,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const reset = () => {
     setIsActive(false);
     setIsDone(false);
+
     setTimeLeft(widget.config.duration);
   };
 
