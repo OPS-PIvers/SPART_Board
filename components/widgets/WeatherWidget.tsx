@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Sun,

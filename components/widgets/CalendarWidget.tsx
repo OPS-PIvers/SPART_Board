@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import { Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
 
