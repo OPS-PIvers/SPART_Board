@@ -21,8 +21,8 @@ const AuthenticatedApp: React.FC = () => {
       {/* User profile and sign-out button */}
       <div className="fixed top-6 left-6 z-[999] flex items-center gap-3">
         <img
-          src={user.photoURL || ''}
-          alt={user.displayName || 'User'}
+          src={user.photoURL ?? ''}
+          alt={user.displayName ?? 'User'}
           className="w-10 h-10 rounded-full border-2 border-white shadow-lg"
         />
         <span className="text-white font-semibold text-sm drop-shadow-lg">

@@ -13,8 +13,8 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const items: ChecklistItem[] = widget.config.items || [];
-  const scaleMultiplier = widget.config.scaleMultiplier || 1;
+  const items: ChecklistItem[] = (widget.config.items as ChecklistItem[]) ?? [];
+  const scaleMultiplier = (widget.config.scaleMultiplier as number) ?? 1;
 
   const toggleItem = (itemId: string) => {
     const newItems = items.map((item) =>
@@ -107,8 +107,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const items: ChecklistItem[] = widget.config.items || [];
-  const scaleMultiplier = widget.config.scaleMultiplier || 1;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const items: ChecklistItem[] = widget.config.items ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const scaleMultiplier = widget.config.scaleMultiplier ?? 1;
 
   // Use local state for the text to prevent the "space-eating" bug during typing
   const [localText, setLocalText] = React.useState(
@@ -127,9 +129,9 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         const trimmedLine = line.trim();
         const existing = items.find((i) => i.text === trimmedLine);
         return {
-          id: existing?.id || `item-${idx}-${Date.now()}`,
+          id: existing?.id ?? `item-${idx}-${Date.now()}`,
           text: trimmedLine,
-          completed: existing?.completed || false,
+          completed: existing?.completed ?? false,
         };
       });
 
@@ -174,7 +176,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             min="0.5"
             max="2.0"
             step="0.1"
-            value={scaleMultiplier}
+            value={scaleMultiplier as number}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {

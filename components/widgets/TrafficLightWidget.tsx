@@ -6,7 +6,8 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const current = widget.config.active || 'none';
+
+  const current = (widget.config.active as string) ?? 'none';
 
   const toggle = (light: 'red' | 'yellow' | 'green') => {
     updateWidget(widget.id, {

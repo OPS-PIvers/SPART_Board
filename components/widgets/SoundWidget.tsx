@@ -5,6 +5,7 @@ import { WidgetData } from '../../types';
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
   // Pre-fill history with 50 zeros so the line is visible on start
+
   const [history, setHistory] = useState<number[]>(new Array(50).fill(0));
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -14,7 +15,11 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     sensitivity = 5,
     orientation = 'horizontal',
     style = 'bar',
-  } = widget.config;
+  } = widget.config as {
+    sensitivity?: number;
+    orientation?: 'horizontal' | 'vertical';
+    style?: 'bar' | 'line';
+  };
 
   useEffect(() => {
     const startAudio = async () => {
@@ -23,9 +28,9 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           audio: true,
         });
         streamRef.current = stream;
-        const audioContext = new (
-          window.AudioContext || (window as any).webkitAudioContext
-        )();
+        const audioContext =
+          new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+          (window.AudioContext || (window as any).webkitAudioContext)();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -177,7 +182,11 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     sensitivity = 5,
     orientation = 'horizontal',
     style = 'bar',
-  } = widget.config;
+  } = widget.config as {
+    sensitivity?: number;
+    orientation?: 'horizontal' | 'vertical';
+    style?: 'bar' | 'line';
+  };
 
   return (
     <div className="space-y-6">

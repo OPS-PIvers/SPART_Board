@@ -22,21 +22,31 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
-  } = widget.config;
+  } = widget.config as {
+    firstNames?: string;
+    lastNames?: string;
+    assignments?: Record<string, string>;
+    recipient?: string;
+  };
 
   const students = useMemo(() => {
     const firsts = firstNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
+
     const lasts = lastNames
       .split('\n')
+
       .map((n: string) => n.trim())
       .filter((n: string) => n);
+
     const count = Math.max(firsts.length, lasts.length);
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
+
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);
@@ -83,7 +93,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const categories: {
     type: LunchType;
     label: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     color: string;
     border: string;
   }[] = [
@@ -234,7 +244,11 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
-  } = widget.config;
+  } = widget.config as {
+    firstNames?: string;
+    lastNames?: string;
+    recipient?: string;
+  };
 
   return (
     <div className="space-y-6">

@@ -25,7 +25,12 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
     fontFamily = 'font-mono',
     showLaps = true,
     scaleMultiplier = 1,
-  } = widget.config;
+  } = (widget.config || {}) as {
+    themeColor?: string;
+    fontFamily?: string;
+    showLaps?: boolean;
+    scaleMultiplier?: number;
+  };
 
   const update = (now: number) => {
     if (isActive) {
@@ -44,6 +49,7 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   const formatTime = (ms: number) => {
@@ -119,7 +125,12 @@ export const StopwatchSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config;
+  const config = widget.config as {
+    themeColor?: string;
+    fontFamily?: string;
+    showLaps?: boolean;
+    scaleMultiplier?: number;
+  };
 
   const fonts = [
     { id: 'font-mono', label: 'Digital' },
@@ -211,7 +222,7 @@ export const StopwatchSettings: React.FC<{ widget: WidgetData }> = ({
             min="0.5"
             max="2"
             step="0.1"
-            value={config.scaleMultiplier || 1}
+            value={config.scaleMultiplier ?? 1}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
@@ -223,7 +234,7 @@ export const StopwatchSettings: React.FC<{ widget: WidgetData }> = ({
             className="flex-1 accent-indigo-600"
           />
           <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
-            {config.scaleMultiplier || 1}x
+            {config.scaleMultiplier ?? 1}x
           </span>
         </div>
       </div>

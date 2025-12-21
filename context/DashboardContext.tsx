@@ -45,7 +45,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     saveDashboard,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
-  } = useFirestore(user?.uid || null);
+  } = useFirestore(user?.uid ?? null);
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -59,7 +59,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // Set loading false when no user
   useEffect(() => {
     if (!user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     }
   }, [user]);
@@ -70,7 +69,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     // Real-time subscription to Firestore
@@ -109,7 +107,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     // Load tool visibility from localStorage (user preference)
     const savedTools = localStorage.getItem('classroom_visible_tools');
     if (savedTools) {
-      setVisibleTools(JSON.parse(savedTools));
+      setVisibleTools(JSON.parse(savedTools) as WidgetType[]);
     }
 
     // Migrate localStorage data on first sign-in
@@ -143,6 +141,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Auto-save to Firestore with debouncing
@@ -169,6 +168,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       clearTimeout(timeoutId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dashboards, activeId, user, loading]);
 
   const toggleToolVisibility = (type: WidgetType) => {
@@ -270,7 +270,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     addToast('Board loaded');
   };
 
-  const activeDashboard = dashboards.find((d) => d.id === activeId) || null;
+  const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
   const updateDashboard = useCallback(
     (updates: Partial<Dashboard>) => {
@@ -377,7 +377,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       flipped: false,
       z: maxZ + 1,
       ...defaults[type],
-      config: { ...(defaults[type].config || {}) },
+      config: { ...(defaults[type].config ?? {}) },
     } as WidgetData;
 
     updateDashboard({ widgets: [...activeDashboard.widgets, newWidget] });
@@ -443,6 +443,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useDashboard = () => {
   const context = useContext(DashboardContext);
   if (!context)
