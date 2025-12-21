@@ -5,26 +5,19 @@ import { RotateCcw } from 'lucide-react';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    question = 'Vote Now!',
-
-    options = [],
-  } = widget.config as {
+  const { question = 'Vote Now!', options = [] } = widget.config as {
     question?: string;
     options?: { label: string; votes: number }[];
   };
 
   const vote = (index: number) => {
     const newOptions = [...options];
-
-    newOptions[index] = {
-      ...newOptions[index],
-
-      votes: newOptions[index].votes + 1,
-    };
-    updateWidget(widget.id, {
-      config: { ...widget.config, options: newOptions },
-    });
+    if (newOptions[index]) {
+      newOptions[index] = { ...newOptions[index], votes: newOptions[index].votes + 1 };
+      updateWidget(widget.id, {
+        config: { ...widget.config, options: newOptions },
+      });
+    }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return

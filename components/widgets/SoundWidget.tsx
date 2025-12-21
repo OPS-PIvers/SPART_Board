@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
+// Extend Window interface for webkit-prefixed AudioContext
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
+
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
   // Pre-fill history with 50 zeros so the line is visible on start
@@ -28,9 +35,10 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           audio: true,
         });
         streamRef.current = stream;
-        const audioContext =
-          new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-          (window.AudioContext || (window as any).webkitAudioContext)();
+
+        const audioContext = new (
+          window.AudioContext || window.webkitAudioContext
+        )();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;

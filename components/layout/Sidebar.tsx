@@ -40,20 +40,7 @@ export const Sidebar: React.FC = () => {
     saveCurrentDashboard,
     setBackground,
     addToast,
-  } = useDashboard() as {
-    dashboards: { id: string; name: string }[];
-    activeDashboard: { id: string; background: string } | null;
-    visibleTools: string[];
-    toggleToolVisibility: (type: string) => void;
-    setAllToolsVisibility: (visible: boolean) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createNewDashboard: (name: string, data?: any) => void;
-    loadDashboard: (id: string) => void;
-    deleteDashboard: (id: string) => void;
-    saveCurrentDashboard: () => void;
-    setBackground: (bg: string) => void;
-    addToast: (msg: string, type: string) => void;
-  };
+  } = useDashboard();
 
   const { user } = useAuth();
   const { uploadBackgroundImage } = useStorage();
@@ -120,7 +107,6 @@ export const Sidebar: React.FC = () => {
         const parsed = JSON.parse(data);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         createNewDashboard(`Imported: ${parsed.name}`, parsed);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         addToast('Board imported successfully', 'success');
       } catch (_e) {
         addToast('Invalid board data', 'error');
