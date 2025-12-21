@@ -83,13 +83,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode?: string;
     visualStyle?: string;
     groupSize?: number;
-    lastResult?: string | string[][];
+    lastResult?: string | string[] | string[][];
     soundEnabled?: boolean;
   };
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
-    string | string[][] | null
+    string | string[] | string[][] | null
   >(lastResult ?? null);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<SVGSVGElement>(null);
@@ -146,7 +146,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       else if (widget.w > 400) cols = 2;
       const rows = Math.ceil(numGroups / cols);
       const maxItemsInGroup = Math.max(
-        ...displayResult.map((g: string[]) => g.length)
+        ...(displayResult as string[][]).map((g) => g.length)
       );
       const linesPerRow = maxItemsInGroup + 1.5;
       const fontSizeH = availableH / rows / linesPerRow;
@@ -453,21 +453,23 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="w-full h-full flex flex-col min-h-0">
             {mode === 'shuffle' ? (
               <div className="flex-1 overflow-y-auto w-full py-2 custom-scrollbar">
-                {(Array.isArray(displayResult) ? displayResult : []).map(
-                  (name: string, i: number) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
-                    >
-                      <span className="text-xs font-mono font-black text-slate-300">
-                        {i + 1}
-                      </span>
-                      <span className="text-lg leading-none font-bold text-slate-700">
-                        {name}
-                      </span>
-                    </div>
-                  )
-                )}
+                {(Array.isArray(displayResult) &&
+                !Array.isArray(displayResult[0])
+                  ? (displayResult as string[])
+                  : []
+                ).map((name: string, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
+                  >
+                    <span className="text-xs font-mono font-black text-slate-300">
+                      {i + 1}
+                    </span>
+                    <span className="text-lg leading-none font-bold text-slate-700">
+                      {name}
+                    </span>
+                  </div>
+                ))}
                 {!displayResult && (
                   <div className="flex-1 flex flex-col items-center justify-center text-slate-300 italic py-10 gap-2">
                     <Layers className="w-8 h-8 opacity-20" />
@@ -483,32 +485,34 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   gap: `${layoutSizing?.gap ?? 8}px`,
                 }}
               >
-                {(Array.isArray(displayResult) ? displayResult : []).map(
-                  (group: string[], i: number) => (
+                {(Array.isArray(displayResult) &&
+                Array.isArray(displayResult[0])
+                  ? (displayResult as string[][])
+                  : []
+                ).map((group: string[], i: number) => (
+                  <div
+                    key={i}
+                    className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
+                    style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
+                  >
                     <div
-                      key={i}
-                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
+                      className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
+                      style={{ fontSize: '0.6em' }}
                     >
-                      <div
-                        className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
-                        style={{ fontSize: '0.6em' }}
-                      >
-                        Group {i + 1}
-                      </div>
-                      <div className="space-y-0.5 overflow-hidden">
-                        {group.map((name, ni) => (
-                          <div
-                            key={ni}
-                            className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
-                          >
-                            {name}
-                          </div>
-                        ))}
-                      </div>
+                      Group {i + 1}
                     </div>
-                  )
-                )}
+                    <div className="space-y-0.5 overflow-hidden">
+                      {group.map((name, ni) => (
+                        <div
+                          key={ni}
+                          className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                        >
+                          {name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
                 {!displayResult && (
                   <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
                     <Users className="w-8 h-8 opacity-20" />

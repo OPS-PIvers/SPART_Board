@@ -70,9 +70,11 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget: _updateWidget } = useDashboard();
 
-  const diceCount = widget.config.count ?? 1;
+  const diceCount = (widget.config.count as number | undefined) ?? 1;
 
-  const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
+  const [values, setValues] = useState<number[]>(
+    () => Array(diceCount).fill(1) as number[]
+  );
   const [isRolling, setIsRolling] = useState(false);
 
   const roll = async () => {
@@ -100,7 +102,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     // Reset values if count changes in settings
     if (values.length !== diceCount) {
-      setValues(new Array(diceCount).fill(1));
+      setValues(Array(diceCount).fill(1));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diceCount]);

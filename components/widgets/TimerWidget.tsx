@@ -70,7 +70,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsActive(false);
     setIsDone(false);
 
-    setTimeLeft(widget.config.duration);
+    setTimeLeft((widget.config.duration as number | undefined) ?? 300);
   };
 
   const minutes = Math.floor(timeLeft / 60);

@@ -112,9 +112,11 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
 
-  const items: ChecklistItem[] = widget.config.items ?? [];
+  const items: ChecklistItem[] =
+    (widget.config.items as ChecklistItem[] | undefined) ?? [];
 
-  const scaleMultiplier = widget.config.scaleMultiplier ?? 1;
+  const scaleMultiplier =
+    (widget.config.scaleMultiplier as number | undefined) ?? 1;
 
   // Use local state for the text to prevent the "space-eating" bug during typing
   const [localText, setLocalText] = React.useState(
