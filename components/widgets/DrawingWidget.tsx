@@ -285,7 +285,6 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
 
   const width = (widget.config.width as number | undefined) ?? 4;
-
   return (
     <div className="space-y-6">
       <div>
