@@ -5,7 +5,6 @@ import { WidgetData } from '../../types';
 export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const url = (widget.config.url as string | undefined) ?? 'https://google.com';
   // Use a simple public API for QR codes
-
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
 
   return (
