@@ -138,7 +138,6 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
 
   const count = widget.config.count ?? 1;
-
   return (
     <div className="space-y-6">
       <div>
