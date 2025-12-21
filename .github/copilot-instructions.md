@@ -143,13 +143,13 @@ When creating a new widget:
 1. **Define type** in `types.ts`:
 
    ```typescript
-   // Add to WidgetType union
-   export type WidgetType = 'clock' | 'timer' | 'newWidget' | ...;
+   // Add to WidgetType union (replace 'yourWidget' with your widget name)
+   export type WidgetType = 'clock' | 'timer' | 'yourWidget' | ...;
 
-   // Add to TOOLS array (import icon from lucide-react)
-   import { Clock } from 'lucide-react';
+   // Add to TOOLS array (import an appropriate icon from lucide-react)
+   import { Plus } from 'lucide-react';
    export const TOOLS: ToolMetadata[] = [
-     { type: 'newWidget', icon: Clock, label: 'New Widget', color: 'bg-blue-500' },
+     { type: 'yourWidget', icon: Plus, label: 'Your Widget', color: 'bg-purple-500' },
      // ...
    ];
    ```
@@ -157,8 +157,8 @@ When creating a new widget:
 2. **Create component** in `components/widgets/`:
 
    ```typescript
-   // NewWidgetWidget.tsx
-   export const NewWidgetWidget: React.FC<{ widget: WidgetData }> = ({
+   // YourWidgetWidget.tsx
+   export const YourWidgetWidget: React.FC<{ widget: WidgetData }> = ({
      widget,
    }) => {
      const { updateWidget } = useDashboard();
@@ -166,7 +166,7 @@ When creating a new widget:
    };
 
    // Optional settings component
-   export const NewWidgetSettings: React.FC<{ widget: WidgetData }> = ({
+   export const YourWidgetSettings: React.FC<{ widget: WidgetData }> = ({
      widget,
    }) => {
      // Settings implementation
@@ -177,11 +177,13 @@ When creating a new widget:
 
    ```typescript
    const defaults = {
-     newWidget: {
+     yourWidget: {
        w: 300,
        h: 200,
        config: {
-         /* defaults */
+         title: 'Your Widget',
+         enabled: true,
+         // Add widget-specific configuration here
        },
      },
    };
@@ -191,13 +193,13 @@ When creating a new widget:
 
    ```typescript
    // Import components
-   import { NewWidgetWidget, NewWidgetSettings } from './NewWidgetWidget';
+   import { YourWidgetWidget, YourWidgetSettings } from './YourWidgetWidget';
 
    // Add to getWidgetContent()
-   case 'newWidget': return <NewWidgetWidget widget={widget} />;
+   case 'yourWidget': return <YourWidgetWidget widget={widget} />;
 
    // Add to getWidgetSettings() if settings exist
-   case 'newWidget': return <NewWidgetSettings widget={widget} />;
+   case 'yourWidget': return <YourWidgetSettings widget={widget} />;
    ```
 
 ### Important Patterns
