@@ -9,6 +9,7 @@ import {
   Box,
   RefreshCw,
   UserPlus,
+  type LucideIcon,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
@@ -93,7 +94,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const categories: {
     type: LunchType;
     label: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
     border: string;
   }[] = [

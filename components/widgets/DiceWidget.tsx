@@ -6,11 +6,9 @@ import { Dices, Hash, RefreshCw } from 'lucide-react';
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
 const getDiceAudioCtx = () => {
-  if (!diceAudioCtx) {
-    diceAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
-  }
+  diceAudioCtx ??=
+    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    (window.AudioContext || (window as any).webkitAudioContext)();
   return diceAudioCtx;
 };
 
@@ -71,7 +69,7 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget: _updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
   const diceCount = widget.config.count ?? 1;
 
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
@@ -136,7 +134,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
   const count = widget.config.count ?? 1;
 
   return (

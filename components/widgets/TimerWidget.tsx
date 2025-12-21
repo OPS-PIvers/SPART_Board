@@ -7,21 +7,19 @@ import { WidgetData } from '../../types';
 let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
-  if (!timerAudioCtx) {
-    timerAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
-  }
+  timerAudioCtx ??=
+    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    (window.AudioContext || (window as any).webkitAudioContext)();
   return timerAudioCtx;
 };
 
 export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const [timeLeft, setTimeLeft] = useState(widget.config.duration ?? 300);
+  const [timeLeft, setTimeLeft] = useState(
+    (widget.config.duration as number | undefined) ?? 300
+  );
   const [isActive, setIsActive] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const soundEnabled = widget.config.sound;
+  const soundEnabled = widget.config.sound as boolean | undefined;
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -150,7 +148,7 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </span>
         <input
           type="checkbox"
-          checked={widget.config.sound}
+          checked={(widget.config.sound as boolean | undefined) ?? false}
           onChange={(e) =>
             updateWidget(widget.id, {
               config: { ...widget.config, sound: e.target.checked },

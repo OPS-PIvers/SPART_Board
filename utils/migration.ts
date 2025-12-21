@@ -8,7 +8,7 @@ export const migrateLocalStorageToFirestore = async (
   if (!localData) return 0;
 
   try {
-    const dashboards: Dashboard[] = JSON.parse(localData);
+    const dashboards = JSON.parse(localData) as Dashboard[];
 
     for (const dashboard of dashboards) {
       await saveDashboard(dashboard);

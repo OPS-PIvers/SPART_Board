@@ -13,10 +13,10 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const items: ChecklistItem[] = widget.config.items ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const scaleMultiplier = widget.config.scaleMultiplier ?? 1;
+  const items: ChecklistItem[] =
+    (widget.config.items as ChecklistItem[] | undefined) ?? [];
+  const scaleMultiplier =
+    (widget.config.scaleMultiplier as number | undefined) ?? 1;
 
   const toggleItem = (itemId: string) => {
     const newItems = items.map((item) =>
@@ -28,7 +28,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   // Dynamically calculate font size based on widget dimensions
   const dynamicFontSize = useMemo(() => {
     const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     const scale: number = scaleMultiplier;
     return Math.max(12, baseSize * scale);
   }, [widget.w, widget.h, scaleMultiplier]);
@@ -111,9 +111,9 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
   const items: ChecklistItem[] = widget.config.items ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
   const scaleMultiplier = widget.config.scaleMultiplier ?? 1;
 
   // Use local state for the text to prevent the "space-eating" bug during typing

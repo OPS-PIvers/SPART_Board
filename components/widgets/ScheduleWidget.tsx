@@ -3,11 +3,17 @@ import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import { Circle, CheckCircle2, Clock } from 'lucide-react';
 
+interface ScheduleItem {
+  time: string;
+  task: string;
+  done: boolean;
+}
+
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const items = widget.config.items || [];
+  const items = (widget.config.items as ScheduleItem[] | undefined) ?? [];
 
   const toggle = (idx: number) => {
     const newItems = [...items];
@@ -21,7 +27,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         <Clock className="w-3 h-3" /> Our Daily Routine
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
-        {items.map((item: any, i: number) => (
+        {items.map((item: ScheduleItem, i: number) => (
           <button
             key={i}
             onClick={() => {

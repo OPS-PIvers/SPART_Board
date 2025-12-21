@@ -19,11 +19,9 @@ import {
 let audioCtx: AudioContext | null = null;
 
 const getAudioCtx = () => {
-  if (!audioCtx) {
-    audioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
-  }
+  audioCtx ??=
+    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    (window.AudioContext || (window as any).webkitAudioContext)();
   return audioCtx;
 };
 
@@ -76,7 +74,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'single',
     visualStyle = 'flash',
     groupSize = 3,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     lastResult = null,
     soundEnabled = true,
   } = widget.config as {
@@ -85,13 +83,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode?: string;
     visualStyle?: string;
     groupSize?: number;
-    lastResult?: any;
+    lastResult?: string | string[][];
     soundEnabled?: boolean;
   };
 
   const [isSpinning, setIsSpinning] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-  const [displayResult, setDisplayResult] = useState<any>(lastResult);
+  const [displayResult, setDisplayResult] = useState<
+    string | string[][] | null
+  >(lastResult ?? null);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<SVGSVGElement>(null);
 
@@ -386,7 +385,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <div
                 className="bg-white/95 backdrop-blur px-10 py-5 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500 font-bold text-indigo-900 animate-bounce text-center max-w-full break-words"
                 style={{
-                  fontSize: `${layoutSizing.fontSize || 32}px`,
+                  fontSize: `${layoutSizing.fontSize ?? 32}px`,
                   lineHeight: 1.1,
                 }}
               >
@@ -410,7 +409,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="text-white font-bold text-center px-4 transition-all duration-75 uppercase tracking-tighter"
             style={{ fontSize: `${layoutSizing.fontSize}px`, lineHeight: 1 }}
           >
-            {displayResult || 'Ready?'}
+            {displayResult ?? 'Ready?'}
           </div>
           <div className="absolute left-0 right-0 h-1 bg-indigo-500/20 top-1/2 -translate-y-1/2" />
         </div>
@@ -423,7 +422,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         style={{ fontSize: `${layoutSizing.fontSize}px`, height: '100%' }}
       >
         <span className="max-w-full break-words leading-tight uppercase">
-          {displayResult || 'Ready?'}
+          {displayResult ?? 'Ready?'}
         </span>
       </div>
     );
@@ -480,8 +479,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <div
                 className="flex-1 w-full grid"
                 style={{
-                  gridTemplateColumns: `repeat(${layoutSizing?.gridCols || 1}, minmax(0, 1fr))`,
-                  gap: `${layoutSizing?.gap || 8}px`,
+                  gridTemplateColumns: `repeat(${layoutSizing?.gridCols ?? 1}, minmax(0, 1fr))`,
+                  gap: `${layoutSizing?.gap ?? 8}px`,
                 }}
               >
                 {(Array.isArray(displayResult) ? displayResult : []).map(
@@ -489,7 +488,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     <div
                       key={i}
                       className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: `${layoutSizing?.fontSize || 14}px` }}
+                      style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
                     >
                       <div
                         className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
