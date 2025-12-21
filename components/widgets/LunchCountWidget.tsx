@@ -93,7 +93,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const categories: {
     type: LunchType;
     label: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     color: string;
     border: string;
   }[] = [

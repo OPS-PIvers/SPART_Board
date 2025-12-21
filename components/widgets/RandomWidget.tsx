@@ -19,11 +19,9 @@ import {
 let audioCtx: AudioContext | null = null;
 
 const getAudioCtx = () => {
-  if (!audioCtx) {
-    audioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
-  }
+  audioCtx ??=
+    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    (window.AudioContext || (window as any).webkitAudioContext)();
   return audioCtx;
 };
 
@@ -76,7 +74,6 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'single',
     visualStyle = 'flash',
     groupSize = 3,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     lastResult = null,
     soundEnabled = true,
   } = widget.config as {
@@ -85,13 +82,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode?: string;
     visualStyle?: string;
     groupSize?: number;
-    lastResult?: any;
+    lastResult?: string | string[] | string[][];
     soundEnabled?: boolean;
   };
 
   const [isSpinning, setIsSpinning] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-  const [displayResult, setDisplayResult] = useState<any>(lastResult);
+  const [displayResult, setDisplayResult] = useState<
+    string | string[] | string[][]
+  >(lastResult ?? '');
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<SVGSVGElement>(null);
 
@@ -147,7 +145,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       else if (widget.w > 400) cols = 2;
       const rows = Math.ceil(numGroups / cols);
       const maxItemsInGroup = Math.max(
-        ...displayResult.map((g: string[]) => g.length)
+        ...(displayResult as string[][]).map((g: string[]) => g.length)
       );
       const linesPerRow = maxItemsInGroup + 1.5;
       const fontSizeH = availableH / rows / linesPerRow;
@@ -386,7 +384,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <div
                 className="bg-white/95 backdrop-blur px-10 py-5 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500 font-bold text-indigo-900 animate-bounce text-center max-w-full break-words"
                 style={{
-                  fontSize: `${layoutSizing.fontSize || 32}px`,
+                  fontSize: `${layoutSizing.fontSize ?? 32}px`,
                   lineHeight: 1.1,
                 }}
               >
@@ -410,7 +408,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="text-white font-bold text-center px-4 transition-all duration-75 uppercase tracking-tighter"
             style={{ fontSize: `${layoutSizing.fontSize}px`, lineHeight: 1 }}
           >
-            {displayResult || 'Ready?'}
+            {displayResult ?? 'Ready?'}
           </div>
           <div className="absolute left-0 right-0 h-1 bg-indigo-500/20 top-1/2 -translate-y-1/2" />
         </div>
@@ -423,7 +421,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         style={{ fontSize: `${layoutSizing.fontSize}px`, height: '100%' }}
       >
         <span className="max-w-full break-words leading-tight uppercase">
-          {displayResult || 'Ready?'}
+          {displayResult ?? 'Ready?'}
         </span>
       </div>
     );
@@ -454,21 +452,22 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="w-full h-full flex flex-col min-h-0">
             {mode === 'shuffle' ? (
               <div className="flex-1 overflow-y-auto w-full py-2 custom-scrollbar">
-                {(Array.isArray(displayResult) ? displayResult : []).map(
-                  (name: string, i: number) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
-                    >
-                      <span className="text-xs font-mono font-black text-slate-300">
-                        {i + 1}
-                      </span>
-                      <span className="text-lg leading-none font-bold text-slate-700">
-                        {name}
-                      </span>
-                    </div>
-                  )
-                )}
+                {(Array.isArray(displayResult)
+                  ? (displayResult as string[])
+                  : []
+                ).map((name: string, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
+                  >
+                    <span className="text-xs font-mono font-black text-slate-300">
+                      {i + 1}
+                    </span>
+                    <span className="text-lg leading-none font-bold text-slate-700">
+                      {name}
+                    </span>
+                  </div>
+                ))}
                 {!displayResult && (
                   <div className="flex-1 flex flex-col items-center justify-center text-slate-300 italic py-10 gap-2">
                     <Layers className="w-8 h-8 opacity-20" />
@@ -480,36 +479,37 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <div
                 className="flex-1 w-full grid"
                 style={{
-                  gridTemplateColumns: `repeat(${layoutSizing?.gridCols || 1}, minmax(0, 1fr))`,
-                  gap: `${layoutSizing?.gap || 8}px`,
+                  gridTemplateColumns: `repeat(${layoutSizing?.gridCols ?? 1}, minmax(0, 1fr))`,
+                  gap: `${layoutSizing?.gap ?? 8}px`,
                 }}
               >
-                {(Array.isArray(displayResult) ? displayResult : []).map(
-                  (group: string[], i: number) => (
+                {(Array.isArray(displayResult)
+                  ? (displayResult as string[][])
+                  : []
+                ).map((group: string[], i: number) => (
+                  <div
+                    key={i}
+                    className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
+                    style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
+                  >
                     <div
-                      key={i}
-                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: `${layoutSizing?.fontSize || 14}px` }}
+                      className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
+                      style={{ fontSize: '0.6em' }}
                     >
-                      <div
-                        className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
-                        style={{ fontSize: '0.6em' }}
-                      >
-                        Group {i + 1}
-                      </div>
-                      <div className="space-y-0.5 overflow-hidden">
-                        {group.map((name, ni) => (
-                          <div
-                            key={ni}
-                            className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
-                          >
-                            {name}
-                          </div>
-                        ))}
-                      </div>
+                      Group {i + 1}
                     </div>
-                  )
-                )}
+                    <div className="space-y-0.5 overflow-hidden">
+                      {group.map((name, ni) => (
+                        <div
+                          key={ni}
+                          className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                        >
+                          {name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
                 {!displayResult && (
                   <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
                     <Users className="w-8 h-8 opacity-20" />

@@ -52,6 +52,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: Record<string, any>;
 }
 
@@ -71,7 +72,7 @@ export interface Toast {
 
 export interface ToolMetadata {
   type: WidgetType;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   color: string;
 }

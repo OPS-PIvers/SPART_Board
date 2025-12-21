@@ -7,6 +7,7 @@ import { WidgetData } from '../../types';
 let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!timerAudioCtx) {
     timerAudioCtx =
       new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
@@ -150,6 +151,7 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </span>
         <input
           type="checkbox"
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           checked={widget.config.sound}
           onChange={(e) =>
             updateWidget(widget.id, {

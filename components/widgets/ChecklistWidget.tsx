@@ -13,10 +13,8 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const items: ChecklistItem[] = widget.config.items ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const scaleMultiplier = widget.config.scaleMultiplier ?? 1;
+  const items: ChecklistItem[] = (widget.config.items as ChecklistItem[]) ?? [];
+  const scaleMultiplier = (widget.config.scaleMultiplier as number) ?? 1;
 
   const toggleItem = (itemId: string) => {
     const newItems = items.map((item) =>
@@ -28,9 +26,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   // Dynamically calculate font size based on widget dimensions
   const dynamicFontSize = useMemo(() => {
     const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const scale: number = scaleMultiplier;
-    return Math.max(12, baseSize * scale);
+    return Math.max(12, baseSize * scaleMultiplier);
   }, [widget.w, widget.h, scaleMultiplier]);
 
   if (items.length === 0) {
@@ -180,7 +176,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             min="0.5"
             max="2.0"
             step="0.1"
-            value={scaleMultiplier}
+            value={scaleMultiplier as number}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {

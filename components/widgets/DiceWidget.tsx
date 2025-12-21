@@ -6,6 +6,7 @@ import { Dices, Hash, RefreshCw } from 'lucide-react';
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
 const getDiceAudioCtx = () => {
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!diceAudioCtx) {
     diceAudioCtx =
       new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access

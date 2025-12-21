@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
@@ -6,7 +7,6 @@ import { Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const events = widget.config.events ?? [];
 
   return (
@@ -15,7 +15,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
         <CalendarIcon className="w-3 h-3" /> Important Dates
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-2">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {events.map((event: any, i: number) => (
           <div
             key={i}
@@ -26,19 +26,19 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 Day
               </span>
               <span className="text-sm font-black text-rose-600">
-                {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+                {}
                 {event.date}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-xs font-bold text-slate-700 leading-tight">
-                {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+                {}
                 {event.title}
               </span>
             </div>
           </div>
         ))}
-        {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+        {}
         {events.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 opacity-20">
             <CalendarIcon className="w-8 h-8 mb-2" />
@@ -56,7 +56,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
   const events = widget.config.events ?? [];
 
   const addEvent = () => {
@@ -64,7 +64,6 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
     const date = prompt('Day/Date (e.g., Monday, 10/12):');
     if (title && date) {
       updateWidget(widget.id, {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: { ...widget.config, events: [...events, { title, date }] },
       });
     }
@@ -80,14 +79,14 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
       </button>
 
       <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */}
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {events.map((event: any, i: number) => (
           <div
             key={i}
             className="flex items-center justify-between p-2 bg-slate-50 rounded-lg text-[10px]"
           >
             <span className="font-bold">
-              {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+              {}
               {event.date}: {event.title}
             </span>
             <button
@@ -95,7 +94,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
                 updateWidget(widget.id, {
                   config: {
                     ...widget.config,
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     events: events.filter((_: any, idx: number) => idx !== i),
                   },
                 })
