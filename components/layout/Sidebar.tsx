@@ -119,6 +119,7 @@ export const Sidebar: React.FC = () => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const parsed = JSON.parse(data);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         createNewDashboard(`Imported: ${parsed.name}`, parsed);
 
         addToast('Board imported successfully', 'success');
