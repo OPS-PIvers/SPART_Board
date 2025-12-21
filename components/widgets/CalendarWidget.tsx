@@ -40,7 +40,6 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
         ))}
-        {}
         {events.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 opacity-20">
             <CalendarIcon className="w-8 h-8 mb-2" />
