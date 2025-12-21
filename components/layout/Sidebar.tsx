@@ -15,7 +15,7 @@ import {
   Square,
   Loader2,
 } from 'lucide-react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { useAuth } from '../../context/AuthContext';
 import { useStorage } from '../../hooks/useStorage';
 import { TOOLS } from '../../types';
@@ -120,7 +120,7 @@ export const Sidebar: React.FC = () => {
         const parsed = JSON.parse(data);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         createNewDashboard(`Imported: ${parsed.name}`, parsed);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+
         addToast('Board imported successfully', 'success');
       } catch (_e) {
         addToast('Invalid board data', 'error');
