@@ -154,7 +154,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const data = (await res.json()) as OpenWeatherResponse;
 
-      if (data.cod !== 200) throw new Error(data.message ?? 'Failed to fetch');
+      if (data.cod !== 200 && data.cod !== '200')
+        throw new Error(data.message ?? 'Failed to fetch');
 
       // Validate that weather array has data
       if (!data.weather || data.weather.length === 0) {
