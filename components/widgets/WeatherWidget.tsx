@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 interface OpenWeatherResponse {
-  cod: number;
+  cod: number | string;
   message?: string;
   name: string;
   main: {
