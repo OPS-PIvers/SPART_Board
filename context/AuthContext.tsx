@@ -84,6 +84,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Auth state listener
   useEffect(() => {
+    if (import.meta.env.VITE_AUTH_BYPASS === 'true') {
+      // Initialize with a mock user
+      setUser({
+        uid: 'mock-user-123',
+        displayName: 'Test User',
+        email: 'test@example.com',
+        photoURL: 'https://ui-avatars.com/api/?name=Test+User',
+        emailVerified: true,
+        isAnonymous: false,
+        metadata: {},
+        providerData: [],
+        refreshToken: '',
+        tenantId: null,
+        delete: async () => {},
+        getIdToken: async () => 'mock-token',
+        getIdTokenResult: async () => ({
+          token: 'mock-token',
+          signInProvider: 'google',
+          claims: {},
+          authTime: Date.now().toString(),
+          issuedAtTime: Date.now().toString(),
+          expirationTime: (Date.now() + 3600000).toString(),
+        }),
+        reload: async () => {},
+        toJSON: () => ({}),
+      } as unknown as User);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -129,6 +159,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const signInWithGoogle = async () => {
+    if (import.meta.env.VITE_AUTH_BYPASS === 'true') {
+      setUser({
+        uid: 'mock-user-123',
+        displayName: 'Test User',
+        email: 'test@example.com',
+        photoURL: 'https://ui-avatars.com/api/?name=Test+User',
+        emailVerified: true,
+        isAnonymous: false,
+        metadata: {},
+        providerData: [],
+        refreshToken: '',
+        tenantId: null,
+        delete: async () => {},
+        getIdToken: async () => 'mock-token',
+        getIdTokenResult: async () => ({
+          token: 'mock-token',
+          signInProvider: 'google',
+          claims: {},
+          authTime: Date.now().toString(),
+          issuedAtTime: Date.now().toString(),
+          expirationTime: (Date.now() + 3600000).toString(),
+        }),
+        reload: async () => {},
+        toJSON: () => ({}),
+      } as unknown as User);
+      return;
+    }
+
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
@@ -138,6 +196,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signOut = async () => {
+    if (import.meta.env.VITE_AUTH_BYPASS === 'true') {
+      setUser(null);
+      return;
+    }
+
     try {
       await firebaseSignOut(auth);
     } catch (error) {
