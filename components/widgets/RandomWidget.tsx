@@ -74,7 +74,6 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'single',
     visualStyle = 'flash',
     groupSize = 3,
-
     lastResult = null,
     soundEnabled = true,
   } = widget.config as {
