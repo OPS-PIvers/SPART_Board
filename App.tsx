@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { DashboardView } from './components/layout/DashboardView';
-import { LogOut } from 'lucide-react';
+import { AdminSettings } from './components/admin/AdminSettings';
+import { LogOut, Settings } from 'lucide-react';
 import { isConfigured } from './config/firebase';
 
 const AuthenticatedApp: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
+  const [showAdminSettings, setShowAdminSettings] = useState(false);
 
   if (!user) {
     return <LoginScreen />;
@@ -26,6 +28,15 @@ const AuthenticatedApp: React.FC = () => {
         <span className="text-white font-semibold text-sm drop-shadow-lg">
           {user.displayName}
         </span>
+        {isAdmin && (
+          <button
+            onClick={() => setShowAdminSettings(true)}
+            className="p-3 bg-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
+            title="Admin Settings"
+          >
+            <Settings className="w-5 h-5 text-indigo-600" />
+          </button>
+        )}
         <button
           onClick={signOut}
           className="p-3 bg-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
@@ -34,6 +45,11 @@ const AuthenticatedApp: React.FC = () => {
           <LogOut className="w-5 h-5 text-slate-700" />
         </button>
       </div>
+
+      {/* Admin Settings Modal */}
+      {showAdminSettings && (
+        <AdminSettings onClose={() => setShowAdminSettings(false)} />
+      )}
     </DashboardProvider>
   );
 };

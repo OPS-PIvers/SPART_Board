@@ -1,15 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { LayoutGrid, ChevronDown } from 'lucide-react';
 import { useDashboard } from '../../context/DashboardContext';
+import { useAuth } from '../../context/AuthContext';
 import { TOOLS } from '../../types';
 
 export const Dock: React.FC = () => {
   const { addWidget, visibleTools } = useDashboard();
+  const { canAccessWidget } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const filteredTools = useMemo(() => {
-    return TOOLS.filter((tool) => visibleTools.includes(tool.type));
-  }, [visibleTools]);
+    return TOOLS.filter(
+      (tool) => visibleTools.includes(tool.type) && canAccessWidget(tool.type)
+    );
+  }, [visibleTools, canAccessWidget]);
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center">
