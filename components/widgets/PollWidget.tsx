@@ -13,7 +13,10 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const vote = (index: number) => {
     const newOptions = [...options];
     if (newOptions[index]) {
-      newOptions[index] = { ...newOptions[index], votes: newOptions[index].votes + 1 };
+      newOptions[index] = {
+        ...newOptions[index],
+        votes: newOptions[index].votes + 1,
+      };
       updateWidget(widget.id, {
         config: { ...widget.config, options: newOptions },
       });
