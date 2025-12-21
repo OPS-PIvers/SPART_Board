@@ -5,7 +5,15 @@ import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const { content, bgColor, fontSize } = widget.config;
+  const {
+    content = '',
+    bgColor = '#fef9c3',
+    fontSize = 18,
+  } = widget.config as {
+    content?: string;
+    bgColor?: string;
+    fontSize?: number;
+  };
 
   return (
     <div
@@ -110,6 +118,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             type="range"
             min="12"
             max="48"
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             value={widget.config.fontSize}
             onChange={(e) =>
               updateWidget(widget.id, {
@@ -122,6 +131,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="flex-1 accent-blue-600"
           />
           <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
+            {}
             {widget.config.fontSize}
           </span>
         </div>

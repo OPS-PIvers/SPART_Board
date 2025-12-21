@@ -27,7 +27,7 @@ const ADMIN_EMAILS = [
   'paul.ivers@orono.k12.mn.us',
   'bailey.nett@orono.k12.mn.us',
   'Jennifer.ivers@orono.k12.mn.us',
-  'Sean.beaverson@orono.k12.mn.us'
+  'Sean.beaverson@orono.k12.mn.us',
 ];
 
 async function setupAdmins() {
@@ -41,7 +41,9 @@ async function setupAdmins() {
     } catch (error) {
       console.error('\n❌ Error: service-account-key.json not found!');
       console.error('\nTo set up admin credentials:');
-      console.error('1. Go to Firebase Console > Project Settings > Service Accounts');
+      console.error(
+        '1. Go to Firebase Console > Project Settings > Service Accounts'
+      );
       console.error('2. Click "Generate New Private Key"');
       console.error('3. Save the file as scripts/service-account-key.json');
       console.error('4. Run this script again\n');
@@ -50,7 +52,7 @@ async function setupAdmins() {
 
     // Initialize Firebase Admin
     initializeApp({
-      credential: cert(serviceAccount)
+      credential: cert(serviceAccount),
     });
 
     const db = getFirestore();
@@ -62,14 +64,14 @@ async function setupAdmins() {
       await db.collection('admins').doc(email).set({
         email: email,
         isAdmin: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
       console.log(`✅ Admin access granted to: ${email}`);
     }
 
     console.log('\n✨ Admin setup complete!\n');
     console.log('These users now have admin access:');
-    ADMIN_EMAILS.forEach(email => console.log(`  - ${email}`));
+    ADMIN_EMAILS.forEach((email) => console.log(`  - ${email}`));
     console.log('\n');
 
     process.exit(0);

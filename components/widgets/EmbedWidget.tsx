@@ -44,7 +44,11 @@ const convertToEmbedUrl = (url: string): string => {
 };
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { mode = 'url', url = '', html = '' } = widget.config;
+  const {
+    mode = 'url',
+    url = '',
+    html = '',
+  } = widget.config as { mode?: string; url?: string; html?: string };
   const embedUrl = convertToEmbedUrl(url);
 
   if (mode === 'url' && !url) {
@@ -95,7 +99,11 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const { mode = 'url', url = '', html = '' } = widget.config;
+  const {
+    mode = 'url',
+    url = '',
+    html = '',
+  } = widget.config as { mode?: string; url?: string; html?: string };
 
   return (
     <div className="space-y-4">

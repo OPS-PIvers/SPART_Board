@@ -13,7 +13,9 @@ import { WidgetData } from '../../types';
 import { GoogleGenAI } from '@google/genai';
 import { useDashboard } from '../../context/DashboardContext';
 
-export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
+  widget: _widget,
+}) => {
   const { addToast } = useDashboard();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -55,7 +57,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
     };
 
-    startCamera();
+    void startCamera();
 
     return () => {
       if (stream) {
@@ -110,7 +112,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     try {
       const ai = new GoogleGenAI({
-        apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+        apiKey: (import.meta.env.VITE_GEMINI_API_KEY as string) || '',
       });
       const base64Data = dataUrl.split(',')[1];
 
@@ -126,7 +128,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         },
       });
 
-      setOcrResult(response.text || 'No text detected.');
+      setOcrResult(response.text ?? 'No text detected.');
     } catch (err) {
       console.error('OCR failed:', err);
       setOcrResult('Failed to extract text. Please try again.');
@@ -137,7 +139,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const copyToClipboard = () => {
     if (!ocrResult) return;
-    navigator.clipboard.writeText(ocrResult);
+    void navigator.clipboard.writeText(ocrResult);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

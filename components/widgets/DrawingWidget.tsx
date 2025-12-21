@@ -30,8 +30,14 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'window',
     color = '#1e293b',
     width = 4,
+
     paths = [] as Path[],
-  } = widget.config;
+  } = widget.config as {
+    mode?: string;
+    color?: string;
+    width?: number;
+    paths?: Path[];
+  };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -81,6 +87,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
 
     draw(ctx, paths, currentPath);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paths, currentPath, mode, widget.w, widget.h]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -108,6 +115,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
@@ -276,7 +284,8 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const width = widget.config.width || 4;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const width = widget.config.width ?? 4;
 
   return (
     <div className="space-y-6">
@@ -290,10 +299,14 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             min="1"
             max="20"
             step="1"
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             value={width}
             onChange={(e) =>
               updateWidget(widget.id, {
-                config: { ...widget.config, width: parseInt(e.target.value) },
+                config: {
+                  ...widget.config,
+                  width: parseInt(e.target.value, 10),
+                },
               })
             }
             className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
