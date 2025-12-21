@@ -27,18 +27,71 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Check for auth bypass flag
+const isAuthBypass = import.meta.env.VITE_AUTH_BYPASS === 'true';
+
+// Mock user for bypass mode
+const MOCK_USER = {
+  uid: 'mock-user-id',
+  email: 'mock@example.com',
+  displayName: 'Mock User',
+  emailVerified: true,
+  isAnonymous: false,
+  photoURL: null,
+  phoneNumber: null,
+  providerData: [],
+  metadata: {
+    creationTime: new Date().toISOString(),
+    lastSignInTime: new Date().toISOString(),
+  },
+  tenantId: null,
+  delete: async () => {
+    // Mock delete
+    await Promise.resolve();
+  },
+  getIdToken: async () => {
+    // Mock token
+    await Promise.resolve();
+    return 'mock-token';
+  },
+  getIdTokenResult: async () => {
+    // Mock token result
+    await Promise.resolve();
+    return {
+      token: 'mock-token',
+      expirationTime: new Date(Date.now() + 3600000).toISOString(),
+      authTime: new Date().toISOString(),
+      issuedAtTime: new Date().toISOString(),
+      signInProvider: 'google',
+      signInSecondFactor: null,
+      claims: {},
+    };
+  },
+  reload: async () => {
+    // Mock reload
+    await Promise.resolve();
+  },
+  toJSON: () => ({}),
+} as unknown as User;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not yet checked
+  const [user, setUser] = useState<User | null>(
+    isAuthBypass ? MOCK_USER : null
+  );
+  const [loading, setLoading] = useState(!isAuthBypass);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(
+    isAuthBypass ? true : null
+  ); // null = not yet checked
   const [featurePermissions, setFeaturePermissions] = useState<
     FeaturePermission[]
   >([]);
 
   // Check if user is admin
   useEffect(() => {
+    if (isAuthBypass) return;
+
     const checkAdminStatus = async () => {
       if (!user?.email) {
         setIsAdmin(null);
@@ -59,6 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Listen to feature permissions (only when authenticated)
   useEffect(() => {
+    if (isAuthBypass) return;
+
     // Don't set up listener if user is not authenticated
     if (!user) {
       // Don't call setState synchronously in an effect - let it happen naturally
@@ -84,6 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Auth state listener
   useEffect(() => {
+    if (isAuthBypass) return;
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -97,6 +154,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const canAccessWidget = useCallback(
     (widgetType: WidgetType): boolean => {
       if (!user) return false;
+
+      // In bypass mode, allow everything if no permissions are set
+      if (isAuthBypass && featurePermissions.length === 0) return true;
 
       const permission = featurePermissions.find(
         (p) => p.widgetType === widgetType
@@ -129,6 +189,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const signInWithGoogle = async () => {
+    if (isAuthBypass) {
+      console.warn('Bypassing Google Sign In');
+      setUser(MOCK_USER);
+      return;
+    }
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
@@ -138,6 +203,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signOut = async () => {
+    if (isAuthBypass) {
+      console.warn('Bypassing Sign Out');
+      setUser(null);
+      return;
+    }
     try {
       await firebaseSignOut(auth);
     } catch (error) {
