@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../context/DashboardContext';
 import { WidgetData } from '../../types';
 import { CheckSquare, Square, Trash2, ListPlus, Type } from 'lucide-react';
 
