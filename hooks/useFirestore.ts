@@ -43,10 +43,7 @@ export const useFirestore = (userId: string | null) => {
   const subscribeToDashboards = (
     callback: (dashboards: Dashboard[]) => void
   ) => {
-    if (!dashboardsRef)
-      return () => {
-        // Empty unsubscribe function
-      };
+    if (!dashboardsRef) return () => {};
     return onSnapshot(
       query(dashboardsRef, orderBy('createdAt', 'desc')),
       (snapshot) => {

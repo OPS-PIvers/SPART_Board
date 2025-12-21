@@ -5,7 +5,6 @@
 Each developer has their own persistent test environment on Firebase Hosting.
 
 ### Branch Names
-
 - `dev-lead` - Lead developer test environment
 - `dev-developer1` - Developer 1 test environment
 - `dev-developer2` - Developer 2 test environment
@@ -13,20 +12,17 @@ Each developer has their own persistent test environment on Firebase Hosting.
 ### How It Works
 
 1. **Create your branch** (if it doesn't exist):
-
    ```bash
    git checkout -b dev-lead  # or dev-developer1, dev-developer2
    ```
 
 2. **Make your changes and commit**:
-
    ```bash
    git add .
    git commit -m "Your commit message"
    ```
 
 3. **Push to your dev branch**:
-
    ```bash
    git push origin dev-lead  # or your specific branch
    ```

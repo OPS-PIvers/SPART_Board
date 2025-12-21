@@ -18,7 +18,6 @@ import {
   Calendar,
   TimerReset,
   Utensils,
-  type LucideIcon,
 } from 'lucide-react';
 
 export type WidgetType =
@@ -53,7 +52,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
 }
 
 export interface Dashboard {
@@ -72,7 +71,7 @@ export interface Toast {
 
 export interface ToolMetadata {
   type: WidgetType;
-  icon: LucideIcon;
+  icon: any;
   label: string;
   color: string;
 }

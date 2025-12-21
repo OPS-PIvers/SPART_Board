@@ -5,29 +5,24 @@ This document describes the linting and type checking setup for the Classroom Da
 ## Tools Installed
 
 ### ESLint
-
 - **Version**: 9.x with flat config format
 - **Purpose**: Enforces code quality and catches common bugs
 - **Config File**: `eslint.config.js`
 
 ### TypeScript
-
 - **Compiler**: TypeScript 5.8.2
 - **Purpose**: Static type checking to catch type errors before runtime
 - **Config File**: `tsconfig.json`
 
 ### Prettier
-
 - **Purpose**: Automatic code formatting for consistent style
 - **Config File**: `.prettierrc`
 
 ### Husky
-
 - **Purpose**: Git hooks to run linters before commits
 - **Config**: `.husky/pre-commit`
 
 ### lint-staged
-
 - **Purpose**: Only lint files that are staged for commit
 - **Config**: In `package.json` under `lint-staged` key
 
@@ -45,7 +40,6 @@ This document describes the linting and type checking setup for the Classroom Da
 ### Pre-commit Hook
 
 When you commit code, `husky` automatically runs `lint-staged`, which:
-
 1. Runs ESLint with auto-fix on staged `.ts` and `.tsx` files
 2. Runs Prettier on staged files
 3. Allows the commit if no errors are found (warnings are allowed)
@@ -53,15 +47,12 @@ When you commit code, `husky` automatically runs `lint-staged`, which:
 ## Current Status
 
 ### TypeScript Type Checking
-
 ✅ **PASSING** - All TypeScript compilation errors have been resolved
 
 ### ESLint Status
-
 ⚠️ **44 errors, 268 warnings**
 
 The remaining issues are primarily:
-
 - Unused variables and imports
 - Empty functions and catch blocks
 - Unfloated promises
@@ -74,14 +65,12 @@ These are tracked for future cleanup but won't block commits.
 ### ESLint Rules
 
 The ESLint configuration uses:
-
 - `@typescript-eslint` recommended rules for type checking
 - React and React Hooks rules
 - Prettier integration
 - Custom rules for code quality
 
 Key rules:
-
 - **Errors** (will block CI builds):
   - `@typescript-eslint/no-unused-vars` - Unused variables must start with `_`
   - `@typescript-eslint/no-floating-promises` - Promises must be handled
@@ -96,7 +85,6 @@ Key rules:
 ### TypeScript Compiler Options
 
 Strict type checking is enabled with:
-
 - `strict: true` - All strict type-checking options
 - `noImplicitAny: true` - Error on implicit any types
 - `strictNullChecks: true` - Strict null checking
@@ -105,9 +93,7 @@ Strict type checking is enabled with:
 ## Fixing Linting Issues
 
 ### Auto-fixable Issues
-
 Run `npm run lint:fix` to automatically fix:
-
 - Formatting issues
 - Import order
 - Simple code style issues
@@ -115,9 +101,7 @@ Run `npm run lint:fix` to automatically fix:
 ### Manual Fixes Required
 
 #### Unused Variables
-
 Prefix unused variables with underscore:
-
 ```typescript
 // Before
 const [isOpen, setIsOpen] = useState(false);
@@ -127,9 +111,7 @@ const [_isOpen, setIsOpen] = useState(false);
 ```
 
 #### Floating Promises
-
 Handle promises properly:
-
 ```typescript
 // Before
 fetchData();
@@ -141,9 +123,7 @@ await fetchData();
 ```
 
 #### Empty Functions
-
 Either implement or document why empty:
-
 ```typescript
 // Before
 catch (e) {}
@@ -161,9 +141,7 @@ catch (_e) {
 This project has three automated workflows configured:
 
 #### 1. PR Validation (`pr-validation.yml`)
-
 Runs on all pull requests to `main` and `dev-*` branches:
-
 - ✅ Type checking (`npm run type-check`)
 - ✅ Linting (`npm run lint`)
 - ✅ Code formatting check (`npm run format:check`)
@@ -173,9 +151,7 @@ Runs on all pull requests to `main` and `dev-*` branches:
 **Purpose**: Ensures no broken code can be merged via pull requests.
 
 #### 2. Main Branch Deploy (`firebase-deploy.yml`)
-
 Runs on pushes to `main` branch:
-
 - ✅ Type checking
 - ✅ Linting
 - ✅ Code formatting check
@@ -185,9 +161,7 @@ Runs on pushes to `main` branch:
 **Purpose**: Validates and deploys production code.
 
 #### 3. Dev Branch Deploy (`firebase-dev-deploy.yml`)
-
 Runs on pushes to `dev-paul`, `dev-jen`, `dev-bailey` branches:
-
 - ✅ Type checking
 - ✅ Linting
 - ✅ Code formatting check
@@ -215,18 +189,15 @@ Warnings are allowed but logged for review.
 ## Developer Guidelines
 
 ### Before Committing
-
 - The pre-commit hook will automatically format and lint your staged files
 - If you see errors, fix them before committing
 - Warnings won't block your commit but should be addressed eventually
 
 ### Before Pushing
-
 - Run `npm run validate` to ensure all checks pass
 - This runs type-check, lint, and format-check
 
 ### In Pull Requests
-
 - All type errors must be fixed
 - No new ESLint errors should be introduced
 - Warnings should be minimized but won't block merges
@@ -234,17 +205,13 @@ Warnings are allowed but logged for review.
 ## Troubleshooting
 
 ### "Unsafe assignment" warnings
-
 These occur when TypeScript can't verify type safety. Consider:
-
 1. Adding explicit type annotations
 2. Using type assertions carefully: `as Type`
 3. Refactoring to avoid `any` types
 
 ### ESLint ignoring files
-
 Check `.eslintignore` - currently ignores:
-
 - `dist/`
 - `node_modules/`
 - `*.config.js`
@@ -252,9 +219,7 @@ Check `.eslintignore` - currently ignores:
 - `scripts/`
 
 ### Pre-commit hook failing
-
 If the pre-commit hook fails:
-
 1. Check the error message
 2. Run `npm run lint:fix` to auto-fix issues
 3. Manually fix remaining errors

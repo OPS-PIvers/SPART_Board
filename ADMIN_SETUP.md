@@ -5,7 +5,6 @@ This document contains the steps to activate admin access for the four authorize
 ## Admin Users
 
 The following emails have been configured as admins:
-
 - paul.ivers@orono.k12.mn.us
 - bailey.nett@orono.k12.mn.us
 - jennifer.ivers@orono.k12.mn.us
@@ -114,17 +113,14 @@ function MyComponent() {
 ## Troubleshooting
 
 **Script fails with "service-account-key.json not found":**
-
 - Make sure you completed step 2 and saved the file in the correct location
 
 **Admin status is false after signing in:**
-
 - Verify the security rules were deployed (step 1)
 - Verify the admin setup script completed successfully (step 4)
 - Check that you're signing in with one of the exact email addresses listed above
 - Email addresses are case-sensitive in Firestore
 
 **"Permission denied" errors:**
-
 - Make sure you've deployed the Firestore security rules
 - Verify your Firebase project has Firestore enabled

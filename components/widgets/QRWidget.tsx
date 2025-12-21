@@ -1,10 +1,12 @@
 import React from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
 export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const url = (widget.config.url as string | undefined) ?? 'https://google.com';
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const url = widget.config.url ?? 'https://google.com';
   // Use a simple public API for QR codes
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
 
   return (
@@ -25,7 +27,6 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const QRSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const url = (widget.config.url as string | undefined) ?? '';
   return (
     <div className="space-y-4">
       <label className="text-xs font-bold text-slate-500 uppercase">
@@ -33,7 +34,8 @@ export const QRSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </label>
       <input
         type="text"
-        value={url}
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        value={widget.config.url}
         onChange={(e) =>
           updateWidget(widget.id, {
             config: { ...widget.config, url: e.target.value },

@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
-  timerAudioCtx ??=
-    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    (window.AudioContext || (window as any).webkitAudioContext)();
+  if (!timerAudioCtx) {
+    timerAudioCtx =
+      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window.AudioContext || (window as any).webkitAudioContext)();
+  }
   return timerAudioCtx;
 };
 
 export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const [timeLeft, setTimeLeft] = useState(
-    (widget.config.duration as number | undefined) ?? 300
-  );
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const [timeLeft, setTimeLeft] = useState(widget.config.duration ?? 300);
   const [isActive, setIsActive] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  const soundEnabled = widget.config.sound as boolean | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const soundEnabled = widget.config.sound;
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +72,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsActive(false);
     setIsDone(false);
 
-    setTimeLeft((widget.config.duration as number | undefined) ?? 300);
+    setTimeLeft(widget.config.duration);
   };
 
   const minutes = Math.floor(timeLeft / 60);
@@ -148,7 +150,7 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </span>
         <input
           type="checkbox"
-          checked={(widget.config.sound as boolean | undefined) ?? false}
+          checked={widget.config.sound}
           onChange={(e) =>
             updateWidget(widget.id, {
               config: { ...widget.config, sound: e.target.checked },

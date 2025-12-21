@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Users,
@@ -9,7 +9,6 @@ import {
   Box,
   RefreshCw,
   UserPlus,
-  type LucideIcon,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
@@ -94,7 +93,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const categories: {
     type: LunchType;
     label: string;
-    icon: LucideIcon;
+    icon: any;
     color: string;
     border: string;
   }[] = [

@@ -1,16 +1,15 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { Sidebar } from './Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { Toast, WidgetData } from '../../types';
 
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
     <div className="fixed top-6 right-6 z-[10000] space-y-3 pointer-events-none">
-      {toasts.map((toast: Toast) => (
+      {toasts.map((toast) => (
         <div
           key={toast.id}
           onClick={() => removeToast(toast.id)}
@@ -86,7 +85,7 @@ export const DashboardView: React.FC = () => {
 
       {/* Dynamic Widget Surface */}
       <div className="relative w-full h-full">
-        {activeDashboard.widgets.map((widget: WidgetData) => (
+        {activeDashboard.widgets.map((widget) => (
           <WidgetRenderer key={widget.id} widget={widget} />
         ))}
       </div>

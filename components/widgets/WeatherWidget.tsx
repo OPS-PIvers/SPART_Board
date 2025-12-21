@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Sun,
@@ -20,26 +21,16 @@ import {
 } from 'lucide-react';
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const config = widget.config as {
-    temp?: number;
-    condition?: string;
-    isAuto?: boolean;
-    locationName?: string;
-    lastSync?: number | null;
-    apiKey?: string;
-    city?: string;
-  };
-
   const {
     temp = 72,
     condition = 'sunny',
     isAuto = false,
     locationName = 'Classroom',
     lastSync = null,
-  } = config;
+  } = widget.config;
 
   const getIcon = () => {
-    switch (condition.toLowerCase()) {
+    switch ((condition as string).toLowerCase()) {
       case 'cloudy':
       case 'clouds':
         return <Cloud className="w-12 h-12 text-slate-400" />;
@@ -114,15 +105,6 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast } = useDashboard();
-  const config = widget.config as {
-    temp?: number;
-    condition?: string;
-    isAuto?: boolean;
-    city?: string;
-    apiKey?: string;
-    locationName?: string;
-  };
-
   const {
     temp = 72,
     condition = 'sunny',
@@ -130,12 +112,12 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     city = '',
     apiKey = '',
     locationName: _locationName = 'Classroom',
-  } = config;
+  } = widget.config;
 
   const [loading, setLoading] = useState(false);
 
   const fetchWeather = async (params: string) => {
-    const cleanKey = apiKey.trim();
+    const cleanKey = (apiKey as string).trim();
     if (!cleanKey) {
       addToast('OpenWeather API Key required', 'error');
       return;
@@ -180,9 +162,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   };
 
   const syncByCity = () => {
-    if (!city.trim()) return addToast('Please enter a city name', 'info');
+    if (!(city as string).trim())
+      return addToast('Please enter a city name', 'info');
 
-    void fetchWeather(`q=${encodeURIComponent(city.trim())}`);
+    void fetchWeather(`q=${encodeURIComponent((city as string).trim())}`);
   };
 
   const syncByLocation = () => {

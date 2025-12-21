@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Pencil,
@@ -26,50 +26,50 @@ interface Path {
 
 export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config as {
+  const {
+    mode = 'window',
+    color = '#1e293b',
+    width = 4,
+
+    paths = [] as Path[],
+  } = widget.config as {
     mode?: string;
     color?: string;
     width?: number;
     paths?: Path[];
   };
 
-  const {
-    mode = 'window',
-    color = '#1e293b',
-    width = 4,
-    paths = [] as Path[],
-  } = config;
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
 
   // Draw paths on the canvas whenever they change
-  const draw = useCallback(
-    (ctx: CanvasRenderingContext2D, allPaths: Path[], current: Point[]) => {
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+  const draw = (
+    ctx: CanvasRenderingContext2D,
+    allPaths: Path[],
+    current: Point[]
+  ) => {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-      const renderPath = (p: Path) => {
-        if (p.points.length < 2) return;
-        ctx.beginPath();
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = p.width;
-        ctx.moveTo(p.points[0].x, p.points[0].y);
-        for (let i = 1; i < p.points.length; i++) {
-          ctx.lineTo(p.points[i].x, p.points[i].y);
-        }
-        ctx.stroke();
-      };
-
-      allPaths.forEach(renderPath);
-      if (current.length > 1) {
-        renderPath({ points: current, color, width });
+    const renderPath = (p: Path) => {
+      if (p.points.length < 2) return;
+      ctx.beginPath();
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.width;
+      ctx.moveTo(p.points[0].x, p.points[0].y);
+      for (let i = 1; i < p.points.length; i++) {
+        ctx.lineTo(p.points[i].x, p.points[i].y);
       }
-    },
-    [color, width]
-  );
+      ctx.stroke();
+    };
+
+    allPaths.forEach(renderPath);
+    if (current.length > 1) {
+      renderPath({ points: current, color, width });
+    }
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,7 +87,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
 
     draw(ctx, paths, currentPath);
-  }, [paths, currentPath, mode, widget.w, widget.h, draw]);
+  }, [paths, currentPath, mode, widget.w, widget.h]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
     setIsDrawing(true);
@@ -114,8 +114,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
+    const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -283,8 +282,9 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const width = widget.config.width ?? 4;
 
-  const width = (widget.config.width as number | undefined) ?? 4;
   return (
     <div className="space-y-6">
       <div>

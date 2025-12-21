@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 
@@ -32,12 +32,6 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config as {
-    content?: string;
-    bgColor?: string;
-    fontSize?: number;
-  };
-  const { fontSize = 18, bgColor = '#fef9c3' } = config;
   const colors = ['#fef9c3', '#dcfce7', '#dbeafe', '#fce7f3', '#f3f4f6'];
 
   const templates = [
@@ -108,7 +102,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   config: { ...widget.config, bgColor: c },
                 })
               }
-              className={`w-8 h-8 rounded-full border-2 transition-all ${bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${widget.config.bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
               style={{ backgroundColor: c }}
             />
           ))}
@@ -124,7 +118,8 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             type="range"
             min="12"
             max="48"
-            value={fontSize}
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            value={widget.config.fontSize}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
@@ -137,7 +132,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           />
           <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
             {}
-            {fontSize}
+            {widget.config.fontSize}
           </span>
         </div>
       </div>
