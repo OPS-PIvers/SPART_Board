@@ -86,6 +86,7 @@ interface WidgetData {
   h: number;
   z: number; // Z-index for stacking
   flipped: boolean; // Settings panel visibility
+  minimized?: boolean; // Minimized state
   config: Record<string, any>; // Widget-specific config
 }
 ```
@@ -124,7 +125,7 @@ App.tsx (root)
 ### React Patterns
 
 - Use functional components with hooks
-- Prefer React 19 patterns (no need for React.FC unless explicitly typed)
+- Use `React.FC<Props>` for component typing (established pattern in this codebase)
 - Use `useDashboard()` hook for widget state updates
 - Call `updateWidget(id, { config: {...} })` to persist changes
 
@@ -145,9 +146,10 @@ When creating a new widget:
    // Add to WidgetType union
    export type WidgetType = 'clock' | 'timer' | 'newWidget' | ...;
 
-   // Add to TOOLS array
+   // Add to TOOLS array (import icon from lucide-react)
+   import { Clock } from 'lucide-react';
    export const TOOLS: ToolMetadata[] = [
-     { type: 'newWidget', icon: Icon, label: 'New Widget', color: 'bg-color-500' },
+     { type: 'newWidget', icon: Clock, label: 'New Widget', color: 'bg-blue-500' },
      // ...
    ];
    ```
@@ -248,21 +250,14 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ## Admin User Management
 
-Admin access is controlled via Firebase:
+Admin access can be set up via Firebase Firestore:
 
-- Admin emails listed in `context/AuthContext.tsx`
+- Admin emails are configured in `scripts/setup-admins.js`
 - Admin documents stored in Firestore `admins` collection
-- Use `useAuth()` hook to check `isAdmin` flag
-- See `ADMIN_SETUP.md` for setup instructions
+- See `ADMIN_SETUP.md` for detailed setup instructions
+- Current `AuthContext.tsx` provides basic authentication (user, signInWithGoogle, signOut)
 
-```typescript
-import { useAuth } from '@/context/AuthContext';
-
-function MyComponent() {
-  const { isAdmin } = useAuth();
-  return isAdmin ? <AdminPanel /> : <RegularView />;
-}
-```
+**Note**: Admin role checking (isAdmin flag) is documented in ADMIN_SETUP.md but not yet implemented in AuthContext. If you need admin functionality, refer to the setup documentation.
 
 ## Development Workflow
 
@@ -302,7 +297,6 @@ npm run validate  # Runs type-check + lint + format:check
 - Widget dimensions are in pixels, not percentages
 - `flipped` state managed by DraggableWindow, not individual widgets
 - Audio contexts must be resumed on user interaction
-- Admin status requires both ADMIN_EMAILS list AND Firestore admin document
 - Always use `@/` path alias for imports from root
 
 ## File Structure
