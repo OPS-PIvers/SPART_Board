@@ -35,6 +35,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * IMPORTANT SECURITY WARNING:
  * - This must only ever be used in development or automated testing.
  * - It must NEVER be enabled in production, as it bypasses normal auth.
+ * - Ideally, Firestore security rules should also be configured to allow access
+ *   from this mock user in the testing environment, as client-side bypass
+ *   does not override server-side rules.
  *
  * The check below enforces that even if VITE_AUTH_BYPASS is set to "true",
  * the bypass will only be honored when the build is not running in
@@ -43,19 +46,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const isAuthBypass =
   import.meta.env.DEV && import.meta.env.VITE_AUTH_BYPASS === 'true';
 
-// Safety check: Prevent bypass in production (Runtime check as a backup)
-if (import.meta.env.PROD && import.meta.env.VITE_AUTH_BYPASS === 'true') {
-  const errorMsg =
-    'Security Error: VITE_AUTH_BYPASS is enabled in production. This configuration is strictly for development and testing only.';
-  console.error(errorMsg);
-  // We don't throw here to avoid crashing the app if the env var is accidental,
-  // but the isAuthBypass flag above guarantees it's disabled.
-}
+// Constants for mock data consistency
+const MOCK_TOKEN = 'mock-token';
+const MOCK_TIME = new Date().toISOString(); // Fixed time at module load
 
 /**
  * Mock user object for bypass mode.
  * Defined at module level to ensure referential equality.
- * Timestamps are fixed at module load time.
+ * Timestamps are fixed at module load time for consistency.
  */
 const MOCK_USER = {
   uid: 'mock-user-id',
@@ -67,8 +65,8 @@ const MOCK_USER = {
   phoneNumber: null,
   providerData: [],
   metadata: {
-    creationTime: new Date().toISOString(),
-    lastSignInTime: new Date().toISOString(),
+    creationTime: MOCK_TIME,
+    lastSignInTime: MOCK_TIME,
   },
   tenantId: null,
   delete: () => {
@@ -77,15 +75,15 @@ const MOCK_USER = {
   },
   getIdToken: () => {
     // Return fixed mock token
-    return Promise.resolve('mock-token');
+    return Promise.resolve(MOCK_TOKEN);
   },
   getIdTokenResult: () => {
-    // Return fixed mock token result
+    // Return fixed mock token result with consistent timestamps
     return Promise.resolve({
-      token: 'mock-token',
-      expirationTime: new Date(Date.now() + 3600000).toISOString(),
-      authTime: new Date().toISOString(),
-      issuedAtTime: new Date().toISOString(),
+      token: MOCK_TOKEN,
+      expirationTime: new Date(Date.now() + 3600000).toISOString(), // Expiration can be relative to now
+      authTime: MOCK_TIME,
+      issuedAtTime: MOCK_TIME,
       signInProvider: 'google',
       signInSecondFactor: null,
       claims: {},
