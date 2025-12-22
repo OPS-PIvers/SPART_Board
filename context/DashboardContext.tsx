@@ -4,32 +4,7 @@ import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { migrateLocalStorageToFirestore } from '../utils/migration';
-
-interface DashboardContextType {
-  dashboards: Dashboard[];
-  activeDashboard: Dashboard | null;
-  toasts: Toast[];
-  visibleTools: WidgetType[];
-  loading: boolean;
-  addToast: (message: string, type?: Toast['type']) => void;
-  removeToast: (id: string) => void;
-  createNewDashboard: (name: string, data?: Dashboard) => void;
-  saveCurrentDashboard: () => void;
-  deleteDashboard: (id: string) => void;
-  loadDashboard: (id: string) => void;
-  addWidget: (type: WidgetType) => void;
-  removeWidget: (id: string) => void;
-  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
-  bringToFront: (id: string) => void;
-  setBackground: (bg: string) => void;
-  toggleToolVisibility: (type: WidgetType) => void;
-  setAllToolsVisibility: (visible: boolean) => void;
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const DashboardContext = createContext<DashboardContextType | undefined>(
-  undefined
-);
+import { DashboardContext } from './DashboardContextValue';
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
