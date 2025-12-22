@@ -210,7 +210,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return false;
       }
     },
-    // Although isAuthBypass is a constant, we include it in dependencies for correctness
     [user, featurePermissions, isAdmin]
   );
 
