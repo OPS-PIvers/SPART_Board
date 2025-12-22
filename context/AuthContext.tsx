@@ -233,8 +233,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     if (isAuthBypass) {
-      setUser(null);
-      setIsAdmin(true); // Maintain bypass state
+      // In bypass mode, immediately sign back in with a fresh mock user
+      // to maintain the bypass state
+      setUser(createMockUser());
       return;
     }
     try {
