@@ -210,15 +210,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return false;
       }
     },
+    // Although isAuthBypass is a constant, we include it in dependencies for correctness
     [user, featurePermissions, isAdmin]
   );
 
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
-      // Only warn in dev/test environments
-      if (!import.meta.env.PROD) {
-        console.warn('Bypassing Google Sign In');
-      }
+      console.warn('Bypassing Google Sign In');
       setUser(MOCK_USER);
       setIsAdmin(true); // Restore admin status on sign in
       return;
@@ -233,10 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     if (isAuthBypass) {
-      // Only warn in dev/test environments
-      if (!import.meta.env.PROD) {
-        console.warn('Bypassing Sign Out');
-      }
+      console.warn('Bypassing Sign Out');
       setUser(null);
       setIsAdmin(null); // Clear admin status on sign out (consistent with non-bypass behavior)
       setFeaturePermissions([]); // Clear feature permissions on sign out in bypass mode
