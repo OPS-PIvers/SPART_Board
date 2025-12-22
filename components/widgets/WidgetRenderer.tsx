@@ -1,5 +1,5 @@
 import React from 'react';
-import { WidgetData } from '../../types';
+import { WidgetData, DrawingConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimerWidget, TimerSettings } from './TimerWidget';
@@ -126,7 +126,8 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
   };
 
   const isDrawingOverlay =
-    widget.type === 'drawing' && widget.config.mode === 'overlay';
+    widget.type === 'drawing' &&
+    (widget.config as DrawingConfig).mode === 'overlay';
   const customStyle: React.CSSProperties = isDrawingOverlay
     ? { zIndex: 9995 }
     : {};

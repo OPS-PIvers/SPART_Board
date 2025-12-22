@@ -42,6 +42,208 @@ export type WidgetType =
   | 'calendar'
   | 'lunchCount';
 
+// Supporting types for widget configs
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface Path {
+  points: Point[];
+  color: string;
+  width: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface PollOption {
+  label: string;
+  votes: number;
+}
+
+export interface ScheduleItem {
+  time: string;
+  task: string;
+  done?: boolean;
+}
+
+export interface CalendarEvent {
+  date: string;
+  title: string;
+}
+
+// Widget-specific config types
+export interface ClockConfig {
+  format24: boolean;
+  showSeconds: boolean;
+}
+
+export interface TimerConfig {
+  duration: number;
+  sound: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface StopwatchConfig {
+  // No config properties
+}
+
+export interface TrafficConfig {
+  active?: string;
+}
+
+export interface TextConfig {
+  content: string;
+  bgColor: string;
+  fontSize: number;
+}
+
+export interface ChecklistConfig {
+  items: ChecklistItem[];
+  scaleMultiplier?: number;
+}
+
+export interface RandomConfig {
+  firstNames: string;
+  lastNames: string;
+  mode: string;
+}
+
+export interface DiceConfig {
+  count: number;
+}
+
+export interface SoundConfig {
+  sensitivity: number;
+}
+
+export interface DrawingConfig {
+  mode: string;
+  paths: Path[];
+  color?: string;
+  width?: number;
+}
+
+export interface QRConfig {
+  url: string;
+}
+
+export interface EmbedConfig {
+  url: string;
+}
+
+export interface PollConfig {
+  question: string;
+  options: PollOption[];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface WebcamConfig {
+  // No config properties
+}
+
+export interface ScoreboardConfig {
+  scoreA: number;
+  scoreB: number;
+  teamA: string;
+  teamB: string;
+}
+
+export interface WorkSymbolsConfig {
+  voice: string;
+  routine: string;
+}
+
+export interface WeatherConfig {
+  temp: number;
+  condition: string;
+}
+
+export interface ScheduleConfig {
+  items: ScheduleItem[];
+}
+
+export interface CalendarConfig {
+  events: CalendarEvent[];
+}
+
+export interface LunchCountConfig {
+  firstNames: string;
+  lastNames: string;
+  assignments: Record<string, string>;
+  recipient: string;
+}
+
+// Union of all widget configs
+export type WidgetConfig =
+  | ClockConfig
+  | TimerConfig
+  | StopwatchConfig
+  | TrafficConfig
+  | TextConfig
+  | ChecklistConfig
+  | RandomConfig
+  | DiceConfig
+  | SoundConfig
+  | DrawingConfig
+  | QRConfig
+  | EmbedConfig
+  | PollConfig
+  | WebcamConfig
+  | ScoreboardConfig
+  | WorkSymbolsConfig
+  | WeatherConfig
+  | ScheduleConfig
+  | CalendarConfig
+  | LunchCountConfig;
+
+// Helper type to get config type for a specific widget
+export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
+  ? ClockConfig
+  : T extends 'timer'
+    ? TimerConfig
+    : T extends 'stopwatch'
+      ? StopwatchConfig
+      : T extends 'traffic'
+        ? TrafficConfig
+        : T extends 'text'
+          ? TextConfig
+          : T extends 'checklist'
+            ? ChecklistConfig
+            : T extends 'random'
+              ? RandomConfig
+              : T extends 'dice'
+                ? DiceConfig
+                : T extends 'sound'
+                  ? SoundConfig
+                  : T extends 'drawing'
+                    ? DrawingConfig
+                    : T extends 'qr'
+                      ? QRConfig
+                      : T extends 'embed'
+                        ? EmbedConfig
+                        : T extends 'poll'
+                          ? PollConfig
+                          : T extends 'webcam'
+                            ? WebcamConfig
+                            : T extends 'scoreboard'
+                              ? ScoreboardConfig
+                              : T extends 'workSymbols'
+                                ? WorkSymbolsConfig
+                                : T extends 'weather'
+                                  ? WeatherConfig
+                                  : T extends 'schedule'
+                                    ? ScheduleConfig
+                                    : T extends 'calendar'
+                                      ? CalendarConfig
+                                      : T extends 'lunchCount'
+                                        ? LunchCountConfig
+                                        : never;
+
 export interface WidgetData {
   id: string;
   type: WidgetType;
@@ -52,8 +254,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: Record<string, any>;
+  config: WidgetConfig;
 }
 
 export interface Dashboard {

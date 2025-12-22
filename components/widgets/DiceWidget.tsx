@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, DiceConfig } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
 
 // Singleton-like Audio Manager for Dice
@@ -71,9 +71,9 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
 };
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const config = widget.config as DiceConfig;
   const { updateWidget: _updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const diceCount = widget.config.count ?? 1;
+  const diceCount = config.count ?? 1;
 
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
   const [isRolling, setIsRolling] = useState(false);
@@ -136,9 +136,9 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 };
 
 export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const config = widget.config as DiceConfig;
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const count = widget.config.count ?? 1;
+  const count = config.count ?? 1;
 
   return (
     <div className="space-y-6">
@@ -152,7 +152,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               key={n}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...widget.config, count: n },
+                  config: { ...config, count: n } as DiceConfig,
                 })
               }
               className={`

@@ -1,24 +1,21 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, ScheduleItem, ScheduleConfig } from '../../types';
 import { Circle, CheckCircle2, Clock } from 'lucide-react';
-
-interface ScheduleItem {
-  time: string;
-  task: string;
-  done?: boolean;
-}
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const items = (widget.config.items as ScheduleItem[]) ?? [];
+  const config = widget.config as ScheduleConfig;
+  const items = config.items ?? [];
 
   const toggle = (idx: number) => {
     const newItems = [...items];
     newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
-    updateWidget(widget.id, { config: { ...widget.config, items: newItems } });
+    updateWidget(widget.id, {
+      config: { ...config, items: newItems } as ScheduleConfig,
+    });
   };
 
   return (

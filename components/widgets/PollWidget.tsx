@@ -1,34 +1,25 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, PollConfig } from '../../types';
 import { RotateCcw } from 'lucide-react';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    question = 'Vote Now!',
-
-    options = [],
-  } = widget.config as {
-    question?: string;
-    options?: { label: string; votes: number }[];
-  };
+  const config = widget.config as PollConfig;
+  const { question = 'Vote Now!', options = [] } = config;
 
   const vote = (index: number) => {
     const newOptions = [...options];
-
     newOptions[index] = {
       ...newOptions[index],
-
       votes: newOptions[index].votes + 1,
     };
     updateWidget(widget.id, {
-      config: { ...widget.config, options: newOptions },
+      config: { ...config, options: newOptions } as PollConfig,
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-  const total = options.reduce((sum: number, o: any) => sum + o.votes, 0);
+  const total = options.reduce((sum, o) => sum + o.votes, 0);
 
   return (
     <div className="flex flex-col h-full p-4">
@@ -36,9 +27,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         {question}
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {options.map((o: any, i: number) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        {options.map((o, i: number) => {
           const percent = total === 0 ? 0 : Math.round((o.votes / total) * 100);
           return (
             <button
@@ -49,10 +38,8 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="w-full text-left group"
             >
               <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-wider text-slate-600">
-                {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
                 <span>{o.label}</span>
                 <span>
-                  {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
                   {o.votes} ({percent}%)
                 </span>
               </div>
@@ -70,10 +57,9 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={() =>
           updateWidget(widget.id, {
             config: {
-              ...widget.config,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-              options: options.map((o: any) => ({ ...o, votes: 0 })),
-            },
+              ...config,
+              options: options.map((o) => ({ ...o, votes: 0 })),
+            } as PollConfig,
           })
         }
         className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, DrawingConfig, Point, Path } from '../../types';
 import {
   Pencil,
   Eraser,
@@ -13,31 +13,10 @@ import {
   MousePointer2,
 } from 'lucide-react';
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface Path {
-  points: Point[];
-  color: string;
-  width: number;
-}
-
 export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    mode = 'window',
-    color = '#1e293b',
-    width = 4,
-
-    paths = [] as Path[],
-  } = widget.config as {
-    mode?: string;
-    color?: string;
-    width?: number;
-    paths?: Path[];
-  };
+  const config = widget.config as DrawingConfig;
+  const { mode = 'window', color = '#1e293b', width = 4, paths = [] } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -108,7 +87,10 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (currentPath.length > 1) {
       const newPath: Path = { points: currentPath, color, width };
       updateWidget(widget.id, {
-        config: { ...widget.config, paths: [...paths, newPath] },
+        config: {
+          ...config,
+          paths: [...paths, newPath],
+        } as DrawingConfig,
       });
     }
     setCurrentPath([]);
@@ -127,12 +109,20 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const clear = () => {
-    updateWidget(widget.id, { config: { ...widget.config, paths: [] } });
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        paths: [],
+      } as DrawingConfig,
+    });
   };
 
   const undo = () => {
     updateWidget(widget.id, {
-      config: { ...widget.config, paths: paths.slice(0, -1) },
+      config: {
+        ...config,
+        paths: paths.slice(0, -1),
+      } as DrawingConfig,
     });
   };
 
@@ -144,7 +134,10 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             key={c}
             onClick={() =>
               updateWidget(widget.id, {
-                config: { ...widget.config, color: c },
+                config: {
+                  ...config,
+                  color: c,
+                } as DrawingConfig,
               })
             }
             className={`w-6 h-6 rounded-md transition-all ${color === c ? 'scale-110 shadow-sm ring-2 ring-indigo-500' : 'hover:scale-105'}`}
@@ -154,7 +147,10 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <button
           onClick={() =>
             updateWidget(widget.id, {
-              config: { ...widget.config, color: '#ffffff' },
+              config: {
+                ...config,
+                color: '#ffffff',
+              } as DrawingConfig,
             })
           }
           className={`w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center transition-all ${color === '#ffffff' ? 'ring-2 ring-indigo-500' : ''}`}
@@ -186,9 +182,9 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={() =>
           updateWidget(widget.id, {
             config: {
-              ...widget.config,
+              ...config,
               mode: mode === 'window' ? 'overlay' : 'window',
-            },
+            } as DrawingConfig,
           })
         }
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
@@ -284,8 +280,8 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const width = widget.config.width ?? 4;
+  const config = widget.config as DrawingConfig;
+  const width = config.width ?? 4;
 
   return (
     <div className="space-y-6">
@@ -299,14 +295,13 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             min="1"
             max="20"
             step="1"
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             value={width}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...widget.config,
+                  ...config,
                   width: parseInt(e.target.value, 10),
-                },
+                } as DrawingConfig,
               })
             }
             className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
