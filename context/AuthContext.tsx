@@ -27,69 +27,86 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Check for auth bypass flag
-const isAuthBypass = import.meta.env.VITE_AUTH_BYPASS === 'true';
+/**
+ * Authentication bypass flag.
+ *
+ * Controlled via the Vite environment variable `VITE_AUTH_BYPASS`.
+ *
+ * IMPORTANT SECURITY WARNING:
+ * - This must only ever be used in development or automated testing.
+ * - It must NEVER be enabled in production, as it bypasses normal auth.
+ *
+ * The check below enforces that even if VITE_AUTH_BYPASS is set to "true",
+ * the bypass will only be honored when the build is not running in
+ * production mode (checked via import.meta.env.DEV).
+ */
+const isAuthBypass =
+  import.meta.env.DEV && import.meta.env.VITE_AUTH_BYPASS === 'true';
 
-// Safety check: Prevent bypass in production
-if (import.meta.env.PROD && isAuthBypass) {
+// Safety check: Prevent bypass in production (Runtime check as a backup)
+if (import.meta.env.PROD && import.meta.env.VITE_AUTH_BYPASS === 'true') {
   const errorMsg =
     'Security Error: VITE_AUTH_BYPASS is enabled in production. This configuration is strictly for development and testing only.';
   console.error(errorMsg);
-  throw new Error(errorMsg);
+  // We don't throw here to avoid crashing the app if the env var is accidental,
+  // but the isAuthBypass flag above guarantees it's disabled.
 }
 
 /**
- * Generates a mock user object for bypass mode.
- * Valid types are required to satisfy TypeScript constraints.
+ * Mock user object for bypass mode.
+ * Defined at module level to ensure referential equality.
+ * Timestamps are fixed at module load time.
  */
-const getMockUser = (): User =>
-  ({
-    uid: 'mock-user-id',
-    email: 'mock@example.com',
-    displayName: 'Mock User',
-    emailVerified: true,
-    isAnonymous: false,
-    photoURL: null,
-    phoneNumber: null,
-    providerData: [],
-    metadata: {
-      creationTime: new Date().toISOString(),
-      lastSignInTime: new Date().toISOString(),
-    },
-    tenantId: null,
-    delete: () => {
-      // No-op for mock user
-      return Promise.resolve();
-    },
-    getIdToken: () => {
-      // Return fixed mock token
-      return Promise.resolve('mock-token');
-    },
-    getIdTokenResult: () => {
-      // Return fixed mock token result
-      return Promise.resolve({
-        token: 'mock-token',
-        expirationTime: new Date(Date.now() + 3600000).toISOString(),
-        authTime: new Date().toISOString(),
-        issuedAtTime: new Date().toISOString(),
-        signInProvider: 'google',
-        signInSecondFactor: null,
-        claims: {},
-      });
-    },
-    reload: () => {
-      // No-op for mock user
-      return Promise.resolve();
-    },
-    toJSON: () => ({}),
-  }) as unknown as User;
+const MOCK_USER = {
+  uid: 'mock-user-id',
+  email: 'mock@example.com',
+  displayName: 'Mock User',
+  emailVerified: true,
+  isAnonymous: false,
+  photoURL: null,
+  phoneNumber: null,
+  providerData: [],
+  metadata: {
+    creationTime: new Date().toISOString(),
+    lastSignInTime: new Date().toISOString(),
+  },
+  tenantId: null,
+  delete: () => {
+    // No-op for mock user
+    return Promise.resolve();
+  },
+  getIdToken: () => {
+    // Return fixed mock token
+    return Promise.resolve('mock-token');
+  },
+  getIdTokenResult: () => {
+    // Return fixed mock token result
+    return Promise.resolve({
+      token: 'mock-token',
+      expirationTime: new Date(Date.now() + 3600000).toISOString(),
+      authTime: new Date().toISOString(),
+      issuedAtTime: new Date().toISOString(),
+      signInProvider: 'google',
+      signInSecondFactor: null,
+      claims: {},
+    });
+  },
+  reload: () => {
+    // No-op for mock user
+    return Promise.resolve();
+  },
+  toJSON: () => ({}),
+} as unknown as User;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(
-    isAuthBypass ? getMockUser() : null
+    isAuthBypass ? MOCK_USER : null
   );
+  // Note: In bypass mode we initialize `loading` to false because the mock user
+  // and admin status are set synchronously above. This makes the auth state
+  // appear "ready" immediately for faster local development and testing.
   const [loading, setLoading] = useState(!isAuthBypass);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(
     isAuthBypass ? true : null
@@ -204,7 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!import.meta.env.PROD) {
         console.warn('Bypassing Google Sign In');
       }
-      setUser(getMockUser());
+      setUser(MOCK_USER);
       setIsAdmin(true); // Restore admin status on sign in
       return;
     }
@@ -224,6 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       setUser(null);
       setIsAdmin(null); // Clear admin status on sign out (consistent with non-bypass behavior)
+      setFeaturePermissions([]); // Clear feature permissions on sign out in bypass mode
       return;
     }
     try {
