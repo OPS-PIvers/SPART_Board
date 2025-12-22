@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Users,

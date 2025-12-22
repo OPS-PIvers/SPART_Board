@@ -15,10 +15,15 @@ import {
   Square,
   Loader2,
 } from 'lucide-react';
-import { useDashboard } from '../../context/DashboardContext';
-import { useAuth } from '../../context/AuthContext';
+import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { TOOLS } from '../../types';
+import { Dashboard, TOOLS } from '../../types';
+
+interface DashboardData {
+  name: string;
+  [key: string]: unknown;
+}
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,20 +45,7 @@ export const Sidebar: React.FC = () => {
     saveCurrentDashboard,
     setBackground,
     addToast,
-  } = useDashboard() as {
-    dashboards: { id: string; name: string }[];
-    activeDashboard: { id: string; background: string } | null;
-    visibleTools: string[];
-    toggleToolVisibility: (type: string) => void;
-    setAllToolsVisibility: (visible: boolean) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createNewDashboard: (name: string, data?: any) => void;
-    loadDashboard: (id: string) => void;
-    deleteDashboard: (id: string) => void;
-    saveCurrentDashboard: () => void;
-    setBackground: (bg: string) => void;
-    addToast: (msg: string, type: string) => void;
-  };
+  } = useDashboard();
 
   const { user } = useAuth();
   const { uploadBackgroundImage } = useStorage();
@@ -116,12 +108,13 @@ export const Sidebar: React.FC = () => {
     const data = prompt('Paste your board data here:');
     if (data) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const parsed = JSON.parse(data);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        createNewDashboard(`Imported: ${parsed.name}`, parsed);
+        const parsed = JSON.parse(data) as DashboardData;
+        createNewDashboard(
+          `Imported: ${parsed.name}`,
+          parsed as unknown as Dashboard
+        );
         addToast('Board imported successfully', 'success');
-      } catch (_e) {
+      } catch {
         addToast('Invalid board data', 'error');
       }
     }
@@ -304,7 +297,7 @@ export const Sidebar: React.FC = () => {
                         onClick={() => setBackground(bg.id)}
                         className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${activeDashboard?.background === bg.id ? 'border-blue-600 scale-110 shadow-lg z-10' : 'border-transparent hover:scale-105'}`}
                         style={{ backgroundColor: bg.color }}
-                        title={bg.label}
+                        title={bg.label ?? bg.id}
                       >
                         {bg.id.includes('radial') && (
                           <div className={`w-full h-full ${bg.id}`} />
@@ -384,7 +377,7 @@ export const Sidebar: React.FC = () => {
                 ref={fileInputRef}
                 className="hidden"
                 accept="image/*"
-                onChange={handleFileUpload}
+                onChange={(e) => void handleFileUpload(e)}
               />
 
               <div className="flex gap-2 mt-4">
