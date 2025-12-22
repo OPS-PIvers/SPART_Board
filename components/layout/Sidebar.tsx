@@ -18,7 +18,7 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { TOOLS } from '../../types';
+import { Dashboard, TOOLS } from '../../types';
 
 interface DashboardData {
   name: string;
@@ -109,8 +109,10 @@ export const Sidebar: React.FC = () => {
     if (data) {
       try {
         const parsed = JSON.parse(data) as DashboardData;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-        createNewDashboard(`Imported: ${parsed.name}`, parsed as any);
+        createNewDashboard(
+          `Imported: ${parsed.name}`,
+          parsed as unknown as Dashboard
+        );
         addToast('Board imported successfully', 'success');
       } catch {
         addToast('Invalid board data', 'error');
