@@ -27,6 +27,13 @@ The app requires Firebase configuration and a Gemini API key:
   - `VITE_FIREBASE_APP_ID=your_app_id`
 - Add Gemini API key for AI features:
   - `GEMINI_API_KEY=your_api_key_here`
+- Optional: Enable authentication bypass for development/testing:
+  - `VITE_AUTH_BYPASS=true` - **DEVELOPMENT/TESTING ONLY**
+    - When enabled, the app uses a mock user with admin privileges
+    - Bypasses Firebase authentication and Firestore permission checks
+    - **CRITICAL**: This is automatically disabled in production builds for security
+    - **NEVER** enable this in production deployments
+    - Only use for local development or automated testing scenarios
 - The Vite config exposes these as environment variables
 
 ## Architecture

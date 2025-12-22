@@ -27,58 +27,87 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Check for auth bypass flag
-const isAuthBypass = import.meta.env.VITE_AUTH_BYPASS === 'true';
+/**
+ * Authentication bypass flag for development/testing only.
+ *
+ * Controlled via the Vite environment variable `VITE_AUTH_BYPASS`.
+ *
+ * IMPORTANT SECURITY WARNING:
+ * - This must only ever be used in development or automated testing.
+ * - It must NEVER be enabled in production, as it bypasses normal auth.
+ *
+ * The check below enforces that even if VITE_AUTH_BYPASS is set to "true",
+ * the bypass will only be honored when the build is not running in
+ * production mode.
+ */
+const isDevOrTest = import.meta.env.MODE !== 'production';
+const isAuthBypass = isDevOrTest && import.meta.env.VITE_AUTH_BYPASS === 'true';
 
-// Mock user for bypass mode
-const MOCK_USER = {
-  uid: 'mock-user-id',
-  email: 'mock@example.com',
-  displayName: 'Mock User',
-  emailVerified: true,
-  isAnonymous: false,
-  photoURL: null,
-  phoneNumber: null,
-  providerData: [],
-  metadata: {
-    creationTime: new Date().toISOString(),
-    lastSignInTime: new Date().toISOString(),
-  },
-  tenantId: null,
-  delete: async () => {
-    // Mock delete
-    await Promise.resolve();
-  },
-  getIdToken: async () => {
-    // Mock token
-    await Promise.resolve();
-    return 'mock-token';
-  },
-  getIdTokenResult: async () => {
-    // Mock token result
-    await Promise.resolve();
-    return {
-      token: 'mock-token',
-      expirationTime: new Date(Date.now() + 3600000).toISOString(),
-      authTime: new Date().toISOString(),
-      issuedAtTime: new Date().toISOString(),
-      signInProvider: 'google',
-      signInSecondFactor: null,
-      claims: {},
-    };
-  },
-  reload: async () => {
-    // Mock reload
-    await Promise.resolve();
-  },
-  toJSON: () => ({}),
-} as unknown as User;
+// Prevent auth bypass from being enabled in production
+if (import.meta.env.PROD && import.meta.env.VITE_AUTH_BYPASS === 'true') {
+  // Fail fast to avoid accidentally deploying with authentication disabled
+  console.error(
+    'Security error: VITE_AUTH_BYPASS is enabled in production. ' +
+      'Disable VITE_AUTH_BYPASS before deploying to production.'
+  );
+  throw new Error('VITE_AUTH_BYPASS must not be enabled in production.');
+}
+
+/**
+ * Creates a mock user for bypass mode.
+ * Returns a fresh object with current timestamps each time it's called.
+ */
+const createMockUser = (): User => {
+  const now = new Date().toISOString();
+  return {
+    uid: 'mock-user-id',
+    email: 'mock@example.com',
+    displayName: 'Mock User',
+    emailVerified: true,
+    isAnonymous: false,
+    photoURL: null,
+    phoneNumber: null,
+    providerData: [],
+    metadata: {
+      creationTime: now,
+      lastSignInTime: now,
+    },
+    tenantId: null,
+    delete: async () => {
+      // Mock delete
+      await Promise.resolve();
+    },
+    getIdToken: async () => {
+      // Mock token
+      await Promise.resolve();
+      return 'mock-token';
+    },
+    getIdTokenResult: async () => {
+      // Mock token result
+      await Promise.resolve();
+      return {
+        token: 'mock-token',
+        expirationTime: new Date(Date.now() + 3600000).toISOString(),
+        authTime: new Date().toISOString(),
+        issuedAtTime: new Date().toISOString(),
+        signInProvider: 'google',
+        signInSecondFactor: null,
+        claims: {},
+      };
+    },
+    reload: async () => {
+      // Mock reload
+      await Promise.resolve();
+    },
+    toJSON: () => ({}),
+  } as unknown as User;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(
-    isAuthBypass ? MOCK_USER : null
+    isAuthBypass ? createMockUser() : null
   );
   const [loading, setLoading] = useState(!isAuthBypass);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(
@@ -155,8 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     (widgetType: WidgetType): boolean => {
       if (!user) return false;
 
-      // In bypass mode, allow everything if no permissions are set
-      if (isAuthBypass && featurePermissions.length === 0) return true;
+      // In bypass mode, allow everything
+      if (isAuthBypass) return true;
 
       const permission = featurePermissions.find(
         (p) => p.widgetType === widgetType
@@ -190,8 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
-      console.warn('Bypassing Google Sign In');
-      setUser(MOCK_USER);
+      setUser(createMockUser());
       return;
     }
     try {
@@ -204,8 +232,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     if (isAuthBypass) {
-      console.warn('Bypassing Sign Out');
       setUser(null);
+      setIsAdmin(true); // Maintain bypass state
       return;
     }
     try {
