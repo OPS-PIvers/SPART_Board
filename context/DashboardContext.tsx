@@ -1,13 +1,7 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { migrateLocalStorageToFirestore } from '../utils/migration';
 
@@ -32,7 +26,8 @@ interface DashboardContextType {
   setAllToolsVisibility: (visible: boolean) => void;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(
+// eslint-disable-next-line react-refresh/only-export-components
+export const DashboardContext = createContext<DashboardContextType | undefined>(
   undefined
 );
 
@@ -441,12 +436,4 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
     </DashboardContext.Provider>
   );
-};
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useDashboard = () => {
-  const context = useContext(DashboardContext);
-  if (!context)
-    throw new Error('useDashboard must be used within DashboardProvider');
-  return context;
 };

@@ -1,10 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import {
   Sun,
@@ -20,17 +15,40 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+interface WeatherConfig {
+  temp?: number;
+  condition?: string;
+  isAuto?: boolean;
+  locationName?: string;
+  lastSync?: number | null;
+  city?: string;
+  apiKey?: string;
+}
+
+interface OpenWeatherData {
+  cod: number | string;
+  message?: string;
+  name: string;
+  main: {
+    temp: number;
+  };
+  weather: {
+    main: string;
+  }[];
+}
+
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const config = widget.config as WeatherConfig;
   const {
     temp = 72,
     condition = 'sunny',
     isAuto = false,
     locationName = 'Classroom',
     lastSync = null,
-  } = widget.config;
+  } = config;
 
   const getIcon = () => {
-    switch ((condition as string).toLowerCase()) {
+    switch (condition.toLowerCase()) {
       case 'cloudy':
       case 'clouds':
         return <Cloud className="w-12 h-12 text-slate-400" />;
@@ -105,6 +123,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast } = useDashboard();
+  const config = widget.config as WeatherConfig;
   const {
     temp = 72,
     condition = 'sunny',
@@ -112,12 +131,12 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     city = '',
     apiKey = '',
     locationName: _locationName = 'Classroom',
-  } = widget.config;
+  } = config;
 
   const [loading, setLoading] = useState(false);
 
   const fetchWeather = async (params: string) => {
-    const cleanKey = (apiKey as string).trim();
+    const cleanKey = apiKey.trim();
     if (!cleanKey) {
       addToast('OpenWeather API Key required', 'error');
       return;
@@ -135,10 +154,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         );
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as OpenWeatherData;
 
-      if (data.cod !== 200)
-        throw new Error((data.message as string) || 'Failed to fetch');
+      if (data.cod !== 200) throw new Error(data.message ?? 'Failed to fetch');
 
       updateWidget(widget.id, {
         config: {
@@ -153,19 +171,20 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         },
       });
 
-      addToast(`Weather updated for ${data.name as string}`, 'success');
-    } catch (err: any) {
-      addToast((err.message as string) || 'Weather sync failed', 'error');
+      addToast(`Weather updated for ${data.name}`, 'success');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Weather sync failed';
+      addToast(message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const syncByCity = () => {
-    if (!(city as string).trim())
-      return addToast('Please enter a city name', 'info');
+    if (!city.trim()) return addToast('Please enter a city name', 'info');
 
-    void fetchWeather(`q=${encodeURIComponent((city as string).trim())}`);
+    void fetchWeather(`q=${encodeURIComponent(city.trim())}`);
   };
 
   const syncByLocation = () => {
