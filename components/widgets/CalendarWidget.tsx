@@ -60,7 +60,10 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
     const date = prompt('Day/Date (e.g., Monday, 10/12):');
     if (title && date) {
       updateWidget(widget.id, {
-        config: { ...widget.config, events: [...events, { title, date }] },
+        config: {
+          ...config,
+          events: [...events, { title, date }],
+        } as CalendarConfig,
       });
     }
   };

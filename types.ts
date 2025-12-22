@@ -237,7 +237,7 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                 : T extends 'weather'
                                   ? WeatherConfig
                                   : T extends 'schedule'
-                                    ? ScheduleItem[]
+                                    ? ScheduleConfig
                                     : T extends 'calendar'
                                       ? CalendarConfig
                                       : T extends 'lunchCount'

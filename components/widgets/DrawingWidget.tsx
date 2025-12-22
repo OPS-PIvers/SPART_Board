@@ -88,7 +88,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       const newPath: Path = { points: currentPath, color, width };
       updateWidget(widget.id, {
         config: {
-          ...(widget.config as DrawingConfig),
+          ...config,
           paths: [...paths, newPath],
         } as DrawingConfig,
       });
@@ -111,7 +111,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const clear = () => {
     updateWidget(widget.id, {
       config: {
-        ...(widget.config as DrawingConfig),
+        ...config,
         paths: [],
       } as DrawingConfig,
     });
@@ -120,7 +120,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const undo = () => {
     updateWidget(widget.id, {
       config: {
-        ...(widget.config as DrawingConfig),
+        ...config,
         paths: paths.slice(0, -1),
       } as DrawingConfig,
     });
@@ -135,7 +135,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onClick={() =>
               updateWidget(widget.id, {
                 config: {
-                  ...(widget.config as DrawingConfig),
+                  ...config,
                   color: c,
                 } as DrawingConfig,
               })
@@ -148,7 +148,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           onClick={() =>
             updateWidget(widget.id, {
               config: {
-                ...(widget.config as DrawingConfig),
+                ...config,
                 color: '#ffffff',
               } as DrawingConfig,
             })
@@ -182,7 +182,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={() =>
           updateWidget(widget.id, {
             config: {
-              ...(widget.config as DrawingConfig),
+              ...config,
               mode: mode === 'window' ? 'overlay' : 'window',
             } as DrawingConfig,
           })
@@ -299,7 +299,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...(widget.config as DrawingConfig),
+                  ...config,
                   width: parseInt(e.target.value, 10),
                 } as DrawingConfig,
               })
