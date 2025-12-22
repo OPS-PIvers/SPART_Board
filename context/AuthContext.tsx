@@ -40,11 +40,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * the bypass will only be honored when the build is not running in
  * production mode.
  */
-const isDevOrTest = import.meta.env.MODE !== 'production';
-const isAuthBypass = isDevOrTest && import.meta.env.VITE_AUTH_BYPASS === 'true';
+const isProduction = import.meta.env.MODE === 'production';
+const isAuthBypass =
+  !isProduction && import.meta.env.VITE_AUTH_BYPASS === 'true';
 
 // Prevent auth bypass from being enabled in production
-if (import.meta.env.PROD && import.meta.env.VITE_AUTH_BYPASS === 'true') {
+if (isProduction && import.meta.env.VITE_AUTH_BYPASS === 'true') {
   // Fail fast to avoid accidentally deploying with authentication disabled
   console.error(
     'Security error: VITE_AUTH_BYPASS is enabled in production. ' +
