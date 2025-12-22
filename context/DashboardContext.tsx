@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
 import { useAuth } from './useAuth';
