@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Classroom Dashboard Pro is an interactive classroom management dashboard built with React 19, TypeScript, and Vite. It provides teachers with drag-and-drop widgets for classroom management including timers, noise meters, drawing boards, webcams, polls, schedules, and more.
 
 **Key Features:**
-- 21 widget types for classroom management
+
+- 20 widget types for classroom management
 - Firebase Authentication with Google Sign-In
 - Cloud-synced dashboards via Firestore
 - Feature permissions system for widget access control
@@ -122,7 +123,7 @@ The app requires Firebase configuration and a Gemini API key:
 
 **Data Model**:
 
-- `Dashboard`: Contains id, name, background, widgets array, createdAt, and updatedAt timestamps
+- `Dashboard`: Contains id, name, background, widgets array, and createdAt timestamp
 - `WidgetData`: Contains id, type, position (x, y), dimensions (w, h), z-index (z), flipped state, minimized state, and a flexible config object
 - `FeaturePermission`: Controls widget access with accessLevel ('admin' | 'beta' | 'public'), betaUsers array, and enabled flag
 
@@ -150,15 +151,18 @@ App.tsx (root)
 ### Key Files
 
 **Root Level:**
+
 - `App.tsx`: Root component with AuthProvider, DashboardProvider, and conditional rendering
 - `index.tsx`: Application entry point, mounts App to DOM
-- `types.ts`: All TypeScript type definitions and the TOOLS registry (21 widget types)
+- `types.ts`: All TypeScript type definitions and the TOOLS registry (20 widget types)
 
 **Context:**
+
 - `context/DashboardContext.tsx`: Global state management with 15+ actions for dashboard/widget manipulation
 - `context/AuthContext.tsx`: Authentication state, admin status, and permission checking
 
 **Components:**
+
 - `components/common/DraggableWindow.tsx`: Universal wrapper providing drag/resize/flip/z-index for all widgets
 - `components/layout/Sidebar.tsx`: Dashboard switcher, background selector (presets/colors/gradients), and tool visibility manager
 - `components/layout/Dock.tsx`: Collapsible bottom toolbar for adding widgets (respects permissions)
@@ -169,10 +173,12 @@ App.tsx (root)
 - `components/auth/LoginScreen.tsx`: Google Sign-In UI
 
 **Hooks:**
+
 - `hooks/useFirestore.ts`: Firestore CRUD operations for dashboards
 - `hooks/useStorage.ts`: Firebase Storage operations for file uploads
 
 **Config:**
+
 - `config/firebase.ts`: Firebase initialization with auth, firestore, and storage
 
 ### Path Aliasing
@@ -194,7 +200,6 @@ The project uses `@/` as an alias for the **root directory** (not `src/`):
   - background: string
   - widgets: WidgetData[]
   - createdAt: number
-  - updatedAt: number
 
 /admins/{email}
   - (document exists = user is admin)
@@ -230,6 +235,7 @@ See `firestore.rules` for complete security rules.
 ### Managing Permissions
 
 **As an Admin:**
+
 1. Access Admin Settings from the Sidebar (gear icon)
 2. Navigate to "Feature Permissions" tab
 3. For each widget, set:
@@ -239,6 +245,7 @@ See `firestore.rules` for complete security rules.
 4. Save changes
 
 **Programmatically:**
+
 ```typescript
 import { useAuth } from '@/context/useAuth';
 
@@ -265,23 +272,25 @@ function MyComponent() {
 In `types.ts`:
 
 **a) Add to WidgetType union** (around line 23-43):
+
 ```typescript
 export type WidgetType =
   | 'clock'
   | 'timer'
   // ... existing types
-  | 'yourNewWidget';  // Add here
+  | 'yourNewWidget'; // Add here
 ```
 
 **b) Add metadata to TOOLS array** (around line 80-126):
+
 ```typescript
 export const TOOLS: ToolMetadata[] = [
   // ... existing tools
   {
     type: 'yourNewWidget',
-    icon: YourIcon,  // from lucide-react
+    icon: YourIcon, // from lucide-react
     label: 'Your Widget',
-    color: 'bg-purple-500'
+    color: 'bg-purple-500',
   },
 ];
 ```
@@ -329,7 +338,7 @@ export const YourNewWidgetSettings: React.FC<{ widget: WidgetData }> = ({ widget
 
 ### 3. Add Default Config
 
-In `context/DashboardContext.tsx`, in the `addWidget` function (around line 200-250):
+In `context/DashboardContext.tsx`, in the `addWidget` function (around line 255-340):
 
 ```typescript
 const defaults: Record<string, Partial<WidgetData>> = {
@@ -350,11 +359,13 @@ const defaults: Record<string, Partial<WidgetData>> = {
 In `components/widgets/WidgetRenderer.tsx`:
 
 **a) Import component** (top of file):
+
 ```typescript
 import { YourNewWidget, YourNewWidgetSettings } from './YourNewWidget';
 ```
 
-**b) Add to getWidgetContent()** (around line 30-80):
+**b) Add to getWidgetContent()** (around line 28-77):
+
 ```typescript
 const getWidgetContent = (widget: WidgetData) => {
   switch (widget.type) {
@@ -366,7 +377,8 @@ const getWidgetContent = (widget: WidgetData) => {
 };
 ```
 
-**c) Add to getWidgetSettings()** if settings exist (around line 85-120):
+**c) Add to getWidgetSettings()** if settings exist (around line 79-116):
+
 ```typescript
 const getWidgetSettings = (widget: WidgetData) => {
   switch (widget.type) {
@@ -378,7 +390,8 @@ const getWidgetSettings = (widget: WidgetData) => {
 };
 ```
 
-**d) Optionally customize title in getTitle()** (around line 125-150):
+**d) Optionally customize title in getTitle()** (around line 118-126):
+
 ```typescript
 const getTitle = (widget: WidgetData) => {
   switch (widget.type) {
@@ -415,7 +428,7 @@ const getAudioContext = (): AudioContext => {
 };
 ```
 
-See `components/widgets/TimerWidget.tsx` lines 8-15 for reference.
+See `components/widgets/TimerWidget.tsx` lines 6-17 for reference.
 
 ### Persistence
 
@@ -444,6 +457,7 @@ All widgets are wrapped in `DraggableWindow` which provides:
 ### Using Hooks
 
 **Dashboard Actions:**
+
 ```typescript
 const {
   dashboards,
@@ -460,6 +474,7 @@ const {
 ```
 
 **Authentication & Permissions:**
+
 ```typescript
 const {
   user,
@@ -537,6 +552,7 @@ The app uses Firebase Authentication with admin role management through Firestor
    - Document can be empty (existence = admin)
 
 2. **Deploy Firestore Security Rules**:
+
    ```bash
    firebase deploy --only firestore:rules
    ```
@@ -576,18 +592,21 @@ function MyComponent() {
 ### GitHub Actions Workflows
 
 **1. PR Validation** (`.github/workflows/pr-validation.yml`)
+
 - Runs on PRs to `main` and `dev-*` branches
 - Checks: type-check, lint, format-check, build
 - Adds comment to PR with results
 - **Enforces**: Zero TypeScript errors, zero ESLint errors, proper formatting
 
 **2. Production Deploy** (`.github/workflows/firebase-deploy.yml`)
+
 - Runs on pushes to `main` branch
 - Same validation as PR + deploy to Firebase live site
 - Production URL: https://spartboard.web.app
 
 **3. Dev Branch Deploy** (`.github/workflows/firebase-dev-deploy.yml`)
-- Runs on pushes to `dev-paul`, `dev-jen`, `dev-bailey` branches
+
+- Runs on pushes to configured dev branches (`dev-lead`, `dev-developer1`, `dev-developer2`, etc.)
 - Creates persistent preview URLs (30 days)
 - Pattern: `https://spartboard--dev-{branch}-XXXXXXXX.web.app`
 
@@ -612,41 +631,48 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 ## Common Gotchas
 
 ### File Structure
+
 - **No `src/` directory!** All files are in root-level directories (`components/`, `context/`, etc.)
 - Path alias `@/` maps to root, not to `src/`
 
 ### Widget Development
+
 - Widget z-index starts at 1 and increments. Don't manually set z-index; use `bringToFront(id)`
 - Widget dimensions use px values, not percentages
 - The `flipped` state is managed by DraggableWindow, not individual widgets
 - Audio contexts must be resumed on user interaction (see Timer/Stopwatch unlock patterns)
 
 ### Authentication & Permissions
+
 - Admin status requires the Firestore admin document to exist
 - `isAdmin` is `null` while loading, `true`/`false` when loaded
 - Feature permissions default to public if not set
 - `canAccessWidget()` returns false if widget is disabled or user lacks permission
 
 ### Firestore
+
 - Dashboard IDs are UUIDs, not Firestore auto-IDs
 - Always check `user?.uid` before Firestore operations
 - Real-time listeners must be cleaned up (return unsubscribe function)
 
 ### Styling
-- Background can be a Tailwind class string OR a URL/data URI (handled in `App.tsx`)
+
+- Background can be a Tailwind class string OR a URL/data URI (handled in `components/layout/DashboardView.tsx`)
 - Custom backgrounds set via inline style, not className
 - Widgets should use transparent/semi-transparent backgrounds to blend with dashboard background
 
 ### Migration
+
 - localStorage data is automatically migrated to Firestore on first sign-in
 - Migration only runs once per user (tracked via `migrated` state)
-- Old localStorage data is NOT deleted after migration (for safety)
+- Old localStorage data is deleted after successful migration
 
 ## Testing
 
 **Current Status**: No automated tests yet
 
 **Future Plans**:
+
 - Vitest for unit tests
 - React Testing Library for component tests
 - Playwright for E2E tests
@@ -667,25 +693,30 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 ## Troubleshooting
 
 ### Build fails with "Cannot find module '@/...'"
+
 - Check `vite.config.ts` and `tsconfig.json` path alias configuration
 - Ensure path starts from root, not `src/`
 
 ### "User not authenticated" errors
+
 - Check Firebase config in `.env.local`
 - Ensure user is signed in before accessing Firestore
 - Check `useAuth()` `loading` state before rendering
 
 ### Widgets not saving
+
 - Check Firestore rules allow user to write to their dashboards
 - Check browser console for Firestore errors
 - Verify `updateWidget()` is called with correct widget ID
 
 ### Admin features not showing
+
 - Check Firestore `admins/{email}` document exists
 - Wait for `isAdmin` to load (check for `null` vs `false`)
 - Check `useAuth()` `loading` state
 
 ### Linting errors blocking commits
+
 - Run `npm run lint:fix` to auto-fix
 - Check pre-commit hook output for specific errors
 - See [LINTING_SETUP.md](LINTING_SETUP.md)
