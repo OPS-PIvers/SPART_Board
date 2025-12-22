@@ -40,7 +40,7 @@ if (import.meta.env.PROD && isAuthBypass) {
 
 /**
  * Generates a mock user object for bypass mode.
- * valid types are required to satisfy TypeScript constraints.
+ * Valid types are required to satisfy TypeScript constraints.
  */
 const getMockUser = (): User =>
   ({
@@ -57,19 +57,17 @@ const getMockUser = (): User =>
       lastSignInTime: new Date().toISOString(),
     },
     tenantId: null,
-    delete: async () => {
-      // Mock delete
-      await Promise.resolve();
+    delete: () => {
+      // No-op for mock user
+      return Promise.resolve();
     },
-    getIdToken: async () => {
-      // Mock token
-      await Promise.resolve();
-      return 'mock-token';
+    getIdToken: () => {
+      // Return fixed mock token
+      return Promise.resolve('mock-token');
     },
-    getIdTokenResult: async () => {
-      // Mock token result
-      await Promise.resolve();
-      return {
+    getIdTokenResult: () => {
+      // Return fixed mock token result
+      return Promise.resolve({
         token: 'mock-token',
         expirationTime: new Date(Date.now() + 3600000).toISOString(),
         authTime: new Date().toISOString(),
@@ -77,11 +75,11 @@ const getMockUser = (): User =>
         signInProvider: 'google',
         signInSecondFactor: null,
         claims: {},
-      };
+      });
     },
-    reload: async () => {
-      // Mock reload
-      await Promise.resolve();
+    reload: () => {
+      // No-op for mock user
+      return Promise.resolve();
     },
     toJSON: () => ({}),
   }) as unknown as User;
@@ -165,10 +163,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // is passed through context and used in component dependencies
   const canAccessWidget = useCallback(
     (widgetType: WidgetType): boolean => {
-      if (!user) return false;
-
       // In bypass mode, always allow everything
       if (isAuthBypass) return true;
+
+      if (!user) return false;
 
       const permission = featurePermissions.find(
         (p) => p.widgetType === widgetType
@@ -225,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.warn('Bypassing Sign Out');
       }
       setUser(null);
-      setIsAdmin(false); // Clear admin status on sign out
+      setIsAdmin(null); // Clear admin status on sign out (consistent with non-bypass behavior)
       return;
     }
     try {
