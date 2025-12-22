@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { LayoutGrid, ChevronDown } from 'lucide-react';
-import { useDashboard } from '../../context/DashboardContext';
-import { useAuth } from '../../context/AuthContext';
+import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 import { TOOLS } from '../../types';
 
 export const Dock: React.FC = () => {

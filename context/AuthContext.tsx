@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   User,
   signInWithPopup,
@@ -14,18 +8,7 @@ import {
 import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
 import { FeaturePermission, WidgetType } from '../types';
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  isAdmin: boolean | null; // null = admin status not yet determined
-  featurePermissions: FeaturePermission[];
-  canAccessWidget: (widgetType: WidgetType) => boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from './AuthContextValue';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -161,11 +144,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
     </AuthContext.Provider>
   );
-};
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 
