@@ -54,11 +54,11 @@ If this command reports _any_ issues, you must fix them.
 
 ### Directory Structure
 
-- `src/components/widgets/`: Individual widget components.
-- `src/context/`: Global state providers (`DashboardContext.tsx`, `AuthContext.tsx`).
-- `src/types.ts`: Central type definitions and the `TOOLS` registry.
-- `src/components/common/`: Shared UI components (e.g., `DraggableWindow`).
-- `src/config/`: Firebase and app configuration.
+- `components/widgets/`: Individual widget components.
+- `context/`: Global state providers (`DashboardContext.tsx`, `AuthContext.tsx`).
+- `types.ts`: Central type definitions and the `TOOLS` registry.
+- `components/common/`: Shared UI components (e.g., `DraggableWindow`).
+- `config/`: Firebase and app configuration.
 
 ### State Management
 
@@ -119,7 +119,7 @@ To add a new widget:
 
 ### Environment
 
-- **Local:** Create `.env.local` with `VITE_FIREBASE_*` keys and `GEMINI_API_KEY`.
+- **Local:** Create `.env.local` with `VITE_FIREBASE_*` keys and `VITE_GEMINI_API_KEY`.
 - **Secrets:** Never commit `.env` files.
 
 ---
