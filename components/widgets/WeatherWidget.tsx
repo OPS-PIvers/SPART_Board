@@ -32,9 +32,7 @@ interface OpenWeatherData {
   main: {
     temp: number;
   };
-  weather: {
-    main: string;
-  }[];
+  weather: [{ main: string }, ...{ main: string }[]];
 }
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
