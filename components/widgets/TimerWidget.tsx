@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, TimerConfig } from '../../types';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -17,16 +17,14 @@ const getTimerAudioCtx = () => {
 };
 
 export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const [timeLeft, setTimeLeft] = useState(widget.config.duration ?? 300);
+  const config = widget.config as TimerConfig;
+  const [timeLeft, setTimeLeft] = useState(config.duration ?? 300);
   const [isActive, setIsActive] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const soundEnabled = widget.config.sound;
+  const soundEnabled = config.sound;
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev: number) => prev - 1);
@@ -53,8 +51,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
     }
     return () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
   }, [isActive, timeLeft, soundEnabled]);
 
@@ -72,8 +69,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const reset = () => {
     setIsActive(false);
     setIsDone(false);
-
-    setTimeLeft(widget.config.duration);
+    setTimeLeft(config.duration);
   };
 
   const minutes = Math.floor(timeLeft / 60);
@@ -114,8 +110,8 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-
-  const duration = (widget.config.duration as number) ?? 300;
+  const config = widget.config as TimerConfig;
+  const duration = config.duration ?? 300;
   const minutes = Math.floor(duration / 60);
 
   return (
@@ -133,9 +129,9 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...widget.config,
+                  ...config,
                   duration: parseInt(e.target.value) * 60,
-                },
+                } as TimerConfig,
               })
             }
             className="flex-1 accent-blue-600"
@@ -151,11 +147,10 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </span>
         <input
           type="checkbox"
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          checked={widget.config.sound}
+          checked={config.sound}
           onChange={(e) =>
             updateWidget(widget.id, {
-              config: { ...widget.config, sound: e.target.checked },
+              config: { ...config, sound: e.target.checked } as TimerConfig,
             })
           }
           className="w-5 h-5 accent-blue-600"

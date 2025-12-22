@@ -1,19 +1,12 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, TextConfig } from '../../types';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    content = '',
-    bgColor = '#fef9c3',
-    fontSize = 18,
-  } = widget.config as {
-    content?: string;
-    bgColor?: string;
-    fontSize?: number;
-  };
+  const config = widget.config as TextConfig;
+  const { content = '', bgColor = '#fef9c3', fontSize = 18 } = config;
 
   return (
     <div
@@ -22,7 +15,10 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       contentEditable
       onBlur={(e) =>
         updateWidget(widget.id, {
-          config: { ...widget.config, content: e.currentTarget.innerHTML },
+          config: {
+            ...config,
+            content: e.currentTarget.innerHTML,
+          } as TextConfig,
         })
       }
       dangerouslySetInnerHTML={{ __html: content }}
@@ -32,6 +28,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
+  const config = widget.config as TextConfig;
   const colors = ['#fef9c3', '#dcfce7', '#dbeafe', '#fce7f3', '#f3f4f6'];
 
   const templates = [
@@ -62,7 +59,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ];
 
   const applyTemplate = (content: string) => {
-    updateWidget(widget.id, { config: { ...widget.config, content } });
+    updateWidget(widget.id, { config: { ...config, content } as TextConfig });
   };
 
   return (
@@ -99,10 +96,10 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               key={c}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...widget.config, bgColor: c },
+                  config: { ...config, bgColor: c } as TextConfig,
                 })
               }
-              className={`w-8 h-8 rounded-full border-2 transition-all ${widget.config.bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
               style={{ backgroundColor: c }}
             />
           ))}
@@ -118,21 +115,19 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             type="range"
             min="12"
             max="48"
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            value={widget.config.fontSize}
+            value={config.fontSize}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...widget.config,
+                  ...config,
                   fontSize: parseInt(e.target.value),
-                },
+                } as TextConfig,
               })
             }
             className="flex-1 accent-blue-600"
           />
           <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
-            {}
-            {widget.config.fontSize}
+            {config.fontSize}
           </span>
         </div>
       </div>

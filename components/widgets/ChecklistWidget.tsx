@@ -1,26 +1,23 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, ChecklistConfig, ChecklistItem } from '../../types';
 import { CheckSquare, Square, Trash2, ListPlus, Type } from 'lucide-react';
-
-interface ChecklistItem {
-  id: string;
-  text: string;
-  completed: boolean;
-}
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const items: ChecklistItem[] = (widget.config.items as ChecklistItem[]) ?? [];
-  const scaleMultiplier = (widget.config.scaleMultiplier as number) ?? 1;
+  const config = widget.config as ChecklistConfig;
+  const items = config.items ?? [];
+  const scaleMultiplier = config.scaleMultiplier ?? 1;
 
   const toggleItem = (itemId: string) => {
     const newItems = items.map((item) =>
       item.id === itemId ? { ...item, completed: !item.completed } : item
     );
-    updateWidget(widget.id, { config: { ...widget.config, items: newItems } });
+    updateWidget(widget.id, {
+      config: { ...config, items: newItems } as ChecklistConfig,
+    });
   };
 
   // Dynamically calculate font size based on widget dimensions
@@ -107,10 +104,9 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const items: ChecklistItem[] = widget.config.items ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const scaleMultiplier = widget.config.scaleMultiplier ?? 1;
+  const config = widget.config as ChecklistConfig;
+  const items = config.items ?? [];
+  const scaleMultiplier = config.scaleMultiplier ?? 1;
 
   // Use local state for the text to prevent the "space-eating" bug during typing
   const [localText, setLocalText] = React.useState(
@@ -135,19 +131,25 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         };
       });
 
-    updateWidget(widget.id, { config: { ...widget.config, items: newItems } });
+    updateWidget(widget.id, {
+      config: { ...config, items: newItems } as ChecklistConfig,
+    });
   };
 
   const clearAll = () => {
     if (confirm('Clear all tasks?')) {
       setLocalText('');
-      updateWidget(widget.id, { config: { ...widget.config, items: [] } });
+      updateWidget(widget.id, {
+        config: { ...config, items: [] } as ChecklistConfig,
+      });
     }
   };
 
   const resetProgress = () => {
     const reset = items.map((i) => ({ ...i, completed: false }));
-    updateWidget(widget.id, { config: { ...widget.config, items: reset } });
+    updateWidget(widget.id, {
+      config: { ...config, items: reset } as ChecklistConfig,
+    });
   };
 
   return (
@@ -176,13 +178,13 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             min="0.5"
             max="2.0"
             step="0.1"
-            value={scaleMultiplier as number}
+            value={scaleMultiplier}
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...widget.config,
+                  ...config,
                   scaleMultiplier: parseFloat(e.target.value),
-                },
+                } as ChecklistConfig,
               })
             }
             className="flex-1 accent-blue-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
