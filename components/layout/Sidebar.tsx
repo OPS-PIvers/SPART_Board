@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Layout,
   Save,
@@ -30,6 +30,14 @@ interface DashboardData {
   [key: string]: unknown;
 }
 
+// Grade filter options for consistent validation and rendering
+const GRADE_FILTER_OPTIONS = [
+  { value: 'all' as const, label: 'All' },
+  { value: 'k-5' as const, label: 'K-5' },
+  { value: '6-12' as const, label: '6-12' },
+  { value: 'k-12' as const, label: 'K-12' },
+] as const;
+
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -42,7 +50,11 @@ export const Sidebar: React.FC = () => {
   // Load grade filter preference from localStorage
   useEffect(() => {
     const savedFilter = localStorage.getItem('classroom_grade_filter');
-    if (savedFilter && ['all', 'k-5', '6-12', 'k-12'].includes(savedFilter)) {
+    const validValues = GRADE_FILTER_OPTIONS.map((opt) => opt.value);
+    if (
+      savedFilter &&
+      validValues.includes(savedFilter as GradeLevel | 'all')
+    ) {
       setGradeFilter(savedFilter as GradeLevel | 'all');
     }
   }, []);
@@ -161,6 +173,13 @@ export const Sidebar: React.FC = () => {
       setUploading(false);
     }
   };
+
+  // Memoize filtered tools to prevent unnecessary recalculations
+  const filteredTools = useMemo(
+    () =>
+      TOOLS.filter((tool) => widgetMatchesGradeFilter(tool.type, gradeFilter)),
+    [gradeFilter]
+  );
 
   return (
     <>
@@ -356,46 +375,21 @@ export const Sidebar: React.FC = () => {
                         </span>
                       </div>
                       <div className="grid grid-cols-4 gap-1">
-                        <button
-                          onClick={() => handleGradeFilterChange('all')}
-                          className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
-                            gradeFilter === 'all'
-                              ? 'bg-indigo-600 text-white shadow-sm'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
-                          }`}
-                        >
-                          All
-                        </button>
-                        <button
-                          onClick={() => handleGradeFilterChange('k-5')}
-                          className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
-                            gradeFilter === 'k-5'
-                              ? 'bg-indigo-600 text-white shadow-sm'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
-                          }`}
-                        >
-                          K-5
-                        </button>
-                        <button
-                          onClick={() => handleGradeFilterChange('6-12')}
-                          className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
-                            gradeFilter === '6-12'
-                              ? 'bg-indigo-600 text-white shadow-sm'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
-                          }`}
-                        >
-                          6-12
-                        </button>
-                        <button
-                          onClick={() => handleGradeFilterChange('k-12')}
-                          className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
-                            gradeFilter === 'k-12'
-                              ? 'bg-indigo-600 text-white shadow-sm'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
-                          }`}
-                        >
-                          K-12
-                        </button>
+                        {GRADE_FILTER_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() =>
+                              handleGradeFilterChange(option.value)
+                            }
+                            className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
+                              gradeFilter === option.value
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white text-slate-500 hover:bg-slate-100'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -416,9 +410,7 @@ export const Sidebar: React.FC = () => {
                     </div>
 
                     {/* Widget List with Grade Level Chips */}
-                    {TOOLS.filter((tool) =>
-                      widgetMatchesGradeFilter(tool.type, gradeFilter)
-                    ).map((tool) => {
+                    {filteredTools.map((tool) => {
                       const gradeLevels = getWidgetGradeLevels(tool.type);
                       const showChip = !gradeLevels.includes('k-12');
 

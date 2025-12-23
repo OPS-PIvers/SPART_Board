@@ -17,10 +17,10 @@ import { WidgetType, GradeLevel } from '../types';
  * - Use ['k-12'] for widgets appropriate for all grades
  *
  * Example:
- *   timer: ['k-12'],        // Shows in all grade filters (universal)
- *   dice: ['k-5'],          // Shows only in K-5 filter
- *   poll: ['6-12'],         // Shows only in 6-12 filter
- *   drawing: ['k-5', '6-12'], // Shows in both K-5 and 6-12 filters
+ *   timer: ['k-12'],              // Shows in all grade filters (universal)
+ *   dice: ['k-5'],                // Shows only in K-5 filter
+ *   poll: ['6-12'],               // Shows only in 6-12 filter
+ *   exampleWidget: ['k-5', '6-12'], // Shows in both K-5 and 6-12 filters
  */
 export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   // Clock & Time Tools
@@ -76,7 +76,14 @@ export function widgetMatchesGradeFilter(
 
   const levels = getWidgetGradeLevels(widgetType);
 
-  // Check if the widget's grade levels include the filter
-  // or if the widget is marked as k-12 (universal)
-  return levels.includes(filter) || levels.includes('k-12');
+  // Universal widgets (k-12) appear in any filter
+  if (levels.includes('k-12')) return true;
+
+  // For k-12 filter: show widgets available for both grade ranges
+  if (filter === 'k-12') {
+    return levels.includes('k-5') && levels.includes('6-12');
+  }
+
+  // For specific filters (k-5 or 6-12): check for direct match
+  return levels.includes(filter);
 }
