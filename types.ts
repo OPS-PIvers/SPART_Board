@@ -329,6 +329,12 @@ export const TOOLS: ToolMetadata[] = [
 export type AccessLevel = 'admin' | 'beta' | 'public';
 
 /**
+ * Grade level categories for widget relevance filtering.
+ * Used to help teachers discover age-appropriate widgets without restricting access.
+ */
+export type GradeLevel = 'k-5' | '6-12' | 'k-12';
+
+/**
  * Feature permission settings for controlling widget access across different user groups.
  *
  * @remarks
