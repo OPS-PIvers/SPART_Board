@@ -19,7 +19,7 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, TOOLS, GradeLevel } from '../../types';
+import { Dashboard, TOOLS, GradeLevel, GradeFilter } from '../../types';
 import {
   getWidgetGradeLevels,
   widgetMatchesGradeFilter,
@@ -52,25 +52,22 @@ export const Sidebar: React.FC = () => {
     'presets' | 'colors' | 'gradients' | 'tools'
   >('presets');
   const [uploading, setUploading] = useState(false);
-  const [gradeFilter, setGradeFilter] = useState<GradeLevel | 'all'>('all');
+  const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load grade filter preference from localStorage
   useEffect(() => {
-    const savedFilter = localStorage.getItem('classroom_grade_filter');
+    const savedFilter = localStorage.getItem('spartboard_gradeFilter');
     const validValues = GRADE_FILTER_OPTIONS.map((opt) => opt.value);
-    if (
-      savedFilter &&
-      validValues.includes(savedFilter as GradeLevel | 'all')
-    ) {
-      setGradeFilter(savedFilter as GradeLevel | 'all');
+    if (savedFilter && validValues.includes(savedFilter as GradeFilter)) {
+      setGradeFilter(savedFilter as GradeFilter);
     }
   }, []);
 
   // Save grade filter preference to localStorage
-  const handleGradeFilterChange = (newFilter: GradeLevel | 'all') => {
+  const handleGradeFilterChange = (newFilter: GradeFilter) => {
     setGradeFilter(newFilter);
-    localStorage.setItem('classroom_grade_filter', newFilter);
+    localStorage.setItem('spartboard_gradeFilter', newFilter);
   };
 
   const {
@@ -382,7 +379,11 @@ export const Sidebar: React.FC = () => {
                           Grade Level
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-1">
+                      <div
+                        className="grid grid-cols-3 gap-1"
+                        role="group"
+                        aria-label="Grade level filter options"
+                      >
                         {GRADE_FILTER_OPTIONS.map((option) => (
                           <button
                             key={option.value}
@@ -394,6 +395,8 @@ export const Sidebar: React.FC = () => {
                                 ? 'bg-indigo-600 text-white shadow-sm'
                                 : 'bg-white text-slate-500 hover:bg-slate-100'
                             }`}
+                            aria-pressed={gradeFilter === option.value}
+                            aria-label={`Filter widgets for ${option.label} grade level`}
                           >
                             {option.label}
                           </button>

@@ -1,4 +1,4 @@
-import { WidgetType, GradeLevel } from '../types';
+import { WidgetType, GradeLevel, GradeFilter } from '../types';
 
 /**
  * WIDGET GRADE LEVEL CONFIGURATION
@@ -65,7 +65,16 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
  * Helper function to get grade levels for a specific widget type
  */
 export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
-  return WIDGET_GRADE_LEVELS[widgetType] || ['universal'];
+  const levels = WIDGET_GRADE_LEVELS[widgetType];
+
+  // Development-mode warning for missing widget configuration
+  if (!levels && process.env.NODE_ENV === 'development') {
+    console.warn(
+      `Widget "${widgetType}" is missing from WIDGET_GRADE_LEVELS configuration. Defaulting to ['universal'].`
+    );
+  }
+
+  return levels || ['universal'];
 }
 
 /**
@@ -81,7 +90,7 @@ export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
  */
 export function widgetMatchesGradeFilter(
   widgetType: WidgetType,
-  filter: GradeLevel | 'all'
+  filter: GradeFilter
 ): boolean {
   if (filter === 'all') return true;
 

@@ -342,6 +342,12 @@ export type AccessLevel = 'admin' | 'beta' | 'public';
 export type GradeLevel = 'k-2' | '3-5' | '6-8' | '9-12' | 'universal';
 
 /**
+ * Grade filter values including 'all' option.
+ * Used for filtering widgets in the sidebar.
+ */
+export type GradeFilter = GradeLevel | 'all';
+
+/**
  * Feature permission settings for controlling widget access across different user groups.
  *
  * @remarks
