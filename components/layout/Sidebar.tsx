@@ -33,13 +33,16 @@ interface DashboardData {
 // Grade filter options for consistent validation and rendering
 const GRADE_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
-  { value: 'k-5', label: 'K-5' },
-  { value: '6-12', label: '6-12' },
-  { value: 'k-12', label: 'K-12' },
+  { value: 'k-2', label: 'K-2' },
+  { value: '3-5', label: '3-5' },
+  { value: '6-8', label: '6-8' },
+  { value: '9-12', label: '9-12' },
+  { value: 'universal', label: 'Universal' },
 ] as const;
 
 // Helper to format grade level for display with proper capitalization
 const formatGradeLevel = (level: GradeLevel): string => {
+  if (level === 'universal') return 'Universal';
   return level.toUpperCase();
 };
 
@@ -379,7 +382,7 @@ export const Sidebar: React.FC = () => {
                           Grade Level
                         </span>
                       </div>
-                      <div className="grid grid-cols-4 gap-1">
+                      <div className="grid grid-cols-3 gap-1">
                         {GRADE_FILTER_OPTIONS.map((option) => (
                           <button
                             key={option.value}
@@ -417,7 +420,7 @@ export const Sidebar: React.FC = () => {
                     {/* Widget List with Grade Level Chips */}
                     {filteredTools.map((tool) => {
                       const gradeLevels = getWidgetGradeLevels(tool.type);
-                      const showChip = !gradeLevels.includes('k-12');
+                      const showChips = !gradeLevels.includes('universal');
 
                       return (
                         <button
@@ -439,10 +442,17 @@ export const Sidebar: React.FC = () => {
                               <span className="text-[10px] font-bold uppercase tracking-tight truncate">
                                 {tool.label}
                               </span>
-                              {showChip && (
-                                <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 flex-shrink-0">
-                                  {gradeLevels.map(formatGradeLevel).join(', ')}
-                                </span>
+                              {showChips && (
+                                <div className="flex gap-1 flex-shrink-0">
+                                  {gradeLevels.map((level) => (
+                                    <span
+                                      key={level}
+                                      className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600"
+                                    >
+                                      {formatGradeLevel(level)}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           </div>

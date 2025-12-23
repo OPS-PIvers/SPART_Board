@@ -331,8 +331,15 @@ export type AccessLevel = 'admin' | 'beta' | 'public';
 /**
  * Grade level categories for widget relevance filtering.
  * Used to help teachers discover age-appropriate widgets without restricting access.
+ *
+ * Granular ranges:
+ * - 'k-2': Kindergarten through 2nd grade
+ * - '3-5': 3rd through 5th grade
+ * - '6-8': 6th through 8th grade (middle school)
+ * - '9-12': 9th through 12th grade (high school)
+ * - 'universal': Appropriate for all grades
  */
-export type GradeLevel = 'k-5' | '6-12' | 'k-12';
+export type GradeLevel = 'k-2' | '3-5' | '6-8' | '9-12' | 'universal';
 
 /**
  * Feature permission settings for controlling widget access across different user groups.
