@@ -11,8 +11,6 @@ import {
   Palette,
   MapPin,
   RefreshCw,
-  Key,
-  AlertCircle,
 } from 'lucide-react';
 
 interface WeatherConfig {
@@ -22,7 +20,6 @@ interface WeatherConfig {
   locationName?: string;
   lastSync?: number | null;
   city?: string;
-  apiKey?: string;
 }
 
 interface OpenWeatherData {
@@ -127,23 +124,25 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     condition = 'sunny',
     isAuto = false,
     city = '',
-    apiKey = '',
     locationName: _locationName = 'Classroom',
   } = config;
 
   const [loading, setLoading] = useState(false);
 
   const fetchWeather = async (params: string) => {
-    const cleanKey = apiKey.trim();
-    if (!cleanKey) {
-      addToast('OpenWeather API Key required', 'error');
+    const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
+      | string
+      | undefined;
+
+    if (!systemKey) {
+      addToast('System API Key missing', 'error');
       return;
     }
 
     setLoading(true);
     try {
       const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${cleanKey}&units=imperial`
+        `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
       );
 
       if (res.status === 401) {
@@ -291,32 +290,6 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       ) : (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-              <Key className="w-3 h-3" /> OpenWeather API Key
-            </label>
-            <input
-              type="password"
-              placeholder="Paste your API key here..."
-              value={apiKey}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...widget.config, apiKey: e.target.value },
-                })
-              }
-              className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900"
-            />
-            <div className="flex gap-1.5 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-              <AlertCircle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-[8px] text-slate-500 font-bold leading-normal">
-                New keys can take{' '}
-                <span className="text-amber-600">up to 2 hours</span> to
-                activate. If you just created yours, please wait a while before
-                syncing.
-              </p>
-            </div>
-          </div>
-
           <div>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
               <MapPin className="w-3 h-3" /> City / Zip
