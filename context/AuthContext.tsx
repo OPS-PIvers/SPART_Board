@@ -218,6 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn('Bypassing Google Sign In');
       setUser(MOCK_USER);
       setIsAdmin(true); // Restore admin status on sign in
+      setFeaturePermissions([]); // Reset feature permissions on sign in in bypass mode
       return;
     }
     try {
