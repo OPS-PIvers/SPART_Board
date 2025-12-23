@@ -11,6 +11,7 @@ import {
   Palette,
   MapPin,
   RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 interface WeatherConfig {
@@ -129,13 +130,16 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const [loading, setLoading] = useState(false);
 
-  const fetchWeather = async (params: string) => {
-    const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
-      | string
-      | undefined;
+  const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
+    | string
+    | undefined;
 
+  const fetchWeather = async (params: string) => {
     if (!systemKey) {
-      addToast('System API Key missing', 'error');
+      addToast(
+        'Weather service is not configured. Please contact your administrator.',
+        'error'
+      );
       return;
     }
 
@@ -290,6 +294,16 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       ) : (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {!systemKey && (
+            <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl items-start">
+              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] font-bold text-amber-800 leading-tight">
+                Weather service is not configured. Please contact your
+                administrator to set up the API key.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
               <MapPin className="w-3 h-3" /> City / Zip
@@ -304,11 +318,12 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                     config: { ...widget.config, city: e.target.value },
                   })
                 }
-                className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900"
+                disabled={!systemKey}
+                className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 disabled:opacity-50 disabled:bg-slate-50"
               />
               <button
                 onClick={syncByCity}
-                disabled={loading}
+                disabled={loading || !systemKey}
                 className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
                 <RefreshCw
@@ -329,7 +344,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
           <button
             onClick={syncByLocation}
-            disabled={loading}
+            disabled={loading || !systemKey}
             className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
           >
             <MapPin className="w-4 h-4" /> Use Current Location
