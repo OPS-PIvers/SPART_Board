@@ -329,6 +329,29 @@ export const TOOLS: ToolMetadata[] = [
 export type AccessLevel = 'admin' | 'beta' | 'public';
 
 /**
+ * Grade level categories for widget relevance filtering.
+ * Used to help teachers discover age-appropriate widgets without restricting access.
+ *
+ * Granular ranges (internal values → UI labels):
+ * - 'k-2'  → "K-2": Kindergarten through 2nd grade
+ * - '3-5'  → "3-5": 3rd through 5th grade
+ * - '6-8'  → "6-8": 6th through 8th grade (middle school)
+ * - '9-12' → "9-12": 9th through 12th grade (high school)
+ * - 'universal' → "Universal": Appropriate for all grades
+ *
+ * Together with the 'all' option in {@link GradeFilter}, this corresponds to the
+ * UI/metadata filter options: "K-2, 3-5, 6-8, 9-12, Universal, All".
+ */
+export type GradeLevel = 'k-2' | '3-5' | '6-8' | '9-12' | 'universal';
+
+/**
+ * Grade filter values including the 'all' ("All") option used in the UI.
+ * Combined with {@link GradeLevel}, this yields: "K-2, 3-5, 6-8, 9-12, Universal, All".
+ * Used for filtering widgets in the sidebar.
+ */
+export type GradeFilter = GradeLevel | 'all';
+
+/**
  * Feature permission settings for controlling widget access across different user groups.
  *
  * @remarks

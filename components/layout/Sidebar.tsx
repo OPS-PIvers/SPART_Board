@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Layout,
   Save,
@@ -14,16 +14,37 @@ import {
   CheckSquare,
   Square,
   Loader2,
+  Filter,
 } from 'lucide-react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, TOOLS } from '../../types';
+import { Dashboard, TOOLS, GradeLevel, GradeFilter } from '../../types';
+import {
+  getWidgetGradeLevels,
+  widgetMatchesGradeFilter,
+} from '../../config/widgetGradeLevels';
 
 interface DashboardData {
   name: string;
   [key: string]: unknown;
 }
+
+// Grade filter options for consistent validation and rendering
+const GRADE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'k-2', label: 'K-2' },
+  { value: '3-5', label: '3-5' },
+  { value: '6-8', label: '6-8' },
+  { value: '9-12', label: '9-12' },
+  { value: 'universal', label: 'Universal' },
+] as const;
+
+// Helper to format grade level for display with proper capitalization
+const formatGradeLevel = (level: GradeLevel): string => {
+  if (level === 'universal') return 'Universal';
+  return level.toUpperCase();
+};
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +52,23 @@ export const Sidebar: React.FC = () => {
     'presets' | 'colors' | 'gradients' | 'tools'
   >('presets');
   const [uploading, setUploading] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load grade filter preference from localStorage
+  useEffect(() => {
+    const savedFilter = localStorage.getItem('spartboard_gradeFilter');
+    const validValues = GRADE_FILTER_OPTIONS.map((opt) => opt.value);
+    if (savedFilter && validValues.includes(savedFilter as GradeFilter)) {
+      setGradeFilter(savedFilter as GradeFilter);
+    }
+  }, []);
+
+  // Save grade filter preference to localStorage
+  const handleGradeFilterChange = (newFilter: GradeFilter) => {
+    setGradeFilter(newFilter);
+    localStorage.setItem('spartboard_gradeFilter', newFilter);
+  };
 
   const {
     dashboards,
@@ -141,6 +178,13 @@ export const Sidebar: React.FC = () => {
       setUploading(false);
     }
   };
+
+  // Memoize filtered tools to prevent unnecessary recalculations
+  const filteredTools = useMemo(
+    () =>
+      TOOLS.filter((tool) => widgetMatchesGradeFilter(tool.type, gradeFilter)),
+    [gradeFilter]
+  );
 
   return (
     <>
@@ -327,6 +371,40 @@ export const Sidebar: React.FC = () => {
 
                 {activeTab === 'tools' && (
                   <div className="space-y-1">
+                    {/* Grade Level Filter */}
+                    <div className="mb-3 p-2 bg-slate-50 rounded-lg">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Filter className="w-3 h-3 text-slate-400" />
+                        <span className="text-[8px] font-black uppercase tracking-wide text-slate-400">
+                          Grade Level
+                        </span>
+                      </div>
+                      <div
+                        className="grid grid-cols-3 gap-1"
+                        role="group"
+                        aria-label="Grade level filter options"
+                      >
+                        {GRADE_FILTER_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() =>
+                              handleGradeFilterChange(option.value)
+                            }
+                            className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
+                              gradeFilter === option.value
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white text-slate-500 hover:bg-slate-100'
+                            }`}
+                            aria-pressed={gradeFilter === option.value}
+                            aria-label={`Filter widgets for ${option.label} grade level`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Enable/Disable All Buttons */}
                     <div className="flex gap-1 mb-2">
                       <button
                         onClick={() => setAllToolsVisibility(true)}
@@ -341,33 +419,54 @@ export const Sidebar: React.FC = () => {
                         None
                       </button>
                     </div>
-                    {TOOLS.map((tool) => (
-                      <button
-                        key={tool.type}
-                        onClick={() => toggleToolVisibility(tool.type)}
-                        className={`w-full flex items-center justify-between p-2 rounded-lg transition-all border ${
-                          visibleTools.includes(tool.type)
-                            ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
-                            : 'bg-white border-transparent text-slate-400 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`p-1 rounded ${tool.color} text-white`}
-                          >
-                            <tool.icon className="w-3 h-3" />
+
+                    {/* Widget List with Grade Level Chips */}
+                    {filteredTools.map((tool) => {
+                      const gradeLevels = getWidgetGradeLevels(tool.type);
+                      const showChips = !gradeLevels.includes('universal');
+
+                      return (
+                        <button
+                          key={tool.type}
+                          onClick={() => toggleToolVisibility(tool.type)}
+                          className={`w-full flex items-center justify-between p-2 rounded-lg transition-all border ${
+                            visibleTools.includes(tool.type)
+                              ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                              : 'bg-white border-transparent text-slate-400 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div
+                              className={`p-1 rounded ${tool.color} text-white flex-shrink-0`}
+                            >
+                              <tool.icon className="w-3 h-3" />
+                            </div>
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <span className="text-[10px] font-bold uppercase tracking-tight truncate">
+                                {tool.label}
+                              </span>
+                              {showChips && (
+                                <div className="flex gap-1 flex-shrink-0">
+                                  {gradeLevels.map((level) => (
+                                    <span
+                                      key={level}
+                                      className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600"
+                                    >
+                                      {formatGradeLevel(level)}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-tight">
-                            {tool.label}
-                          </span>
-                        </div>
-                        {visibleTools.includes(tool.type) ? (
-                          <CheckSquare className="w-3.5 h-3.5" />
-                        ) : (
-                          <Square className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    ))}
+                          {visibleTools.includes(tool.type) ? (
+                            <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                          ) : (
+                            <Square className="w-3.5 h-3.5 flex-shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
