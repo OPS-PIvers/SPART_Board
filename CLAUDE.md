@@ -29,6 +29,18 @@ The app requires Firebase configuration and a Gemini API key:
   - `GEMINI_API_KEY=your_api_key_here`
 - The Vite config exposes these as environment variables
 
+### Authentication Bypass (Testing Only)
+
+For development and automated testing, you can enable an authentication bypass mode.
+
+- **Enable**: Set `VITE_AUTH_BYPASS='true'` in your `.env.local` or environment.
+- **Behavior**:
+  - The app will use a mock user (`mock-user-id`) with full admin privileges.
+  - Firebase Auth and Firestore permission listeners are bypassed.
+  - Sign-in/Sign-out actions modify local state only.
+- **Safety**: This mode is automatically disabled in production builds (`import.meta.env.PROD`), but should never be enabled in a production environment configuration.
+- **Limitation**: This is a client-side bypass only. It does **not** bypass server-side Firestore security rules. If your testing involves real Firestore interactions, you must configure security rules to allow access for the mock user or use the Firebase Emulator Suite.
+
 ## Architecture
 
 ### Core Patterns
