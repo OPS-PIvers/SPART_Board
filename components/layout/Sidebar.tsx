@@ -32,11 +32,16 @@ interface DashboardData {
 
 // Grade filter options for consistent validation and rendering
 const GRADE_FILTER_OPTIONS = [
-  { value: 'all' as const, label: 'All' },
-  { value: 'k-5' as const, label: 'K-5' },
-  { value: '6-12' as const, label: '6-12' },
-  { value: 'k-12' as const, label: 'K-12' },
+  { value: 'all', label: 'All' },
+  { value: 'k-5', label: 'K-5' },
+  { value: '6-12', label: '6-12' },
+  { value: 'k-12', label: 'K-12' },
 ] as const;
+
+// Helper to format grade level for display with proper capitalization
+const formatGradeLevel = (level: GradeLevel): string => {
+  return level.toUpperCase();
+};
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -435,8 +440,8 @@ export const Sidebar: React.FC = () => {
                                 {tool.label}
                               </span>
                               {showChip && (
-                                <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 uppercase flex-shrink-0">
-                                  {gradeLevels.join(', ')}
+                                <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 flex-shrink-0">
+                                  {gradeLevels.map(formatGradeLevel).join(', ')}
                                 </span>
                               )}
                             </div>

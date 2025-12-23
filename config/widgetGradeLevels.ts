@@ -67,6 +67,12 @@ export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
 
 /**
  * Helper function to check if a widget matches a grade level filter
+ *
+ * Filter behavior:
+ * - 'all': Shows all widgets
+ * - 'k-5': Shows widgets tagged with 'k-5' or 'k-12' (universal)
+ * - '6-12': Shows widgets tagged with '6-12' or 'k-12' (universal)
+ * - 'k-12': Shows only universal widgets tagged with 'k-12'
  */
 export function widgetMatchesGradeFilter(
   widgetType: WidgetType,
@@ -79,11 +85,6 @@ export function widgetMatchesGradeFilter(
   // Universal widgets (k-12) appear in any filter
   if (levels.includes('k-12')) return true;
 
-  // For k-12 filter: show widgets available for both grade ranges
-  if (filter === 'k-12') {
-    return levels.includes('k-5') && levels.includes('6-12');
-  }
-
-  // For specific filters (k-5 or 6-12): check for direct match
+  // For other filters: check for direct match
   return levels.includes(filter);
 }
