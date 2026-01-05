@@ -36,6 +36,8 @@ Each developer has their own persistent test environment on Firebase Hosting.
    - Deploy to a Firebase preview channel
    - Give you a unique URL like: `https://spartboard--dev-lead-XXXXXXXX.web.app`
      - dev-paul: spartboard--dev-paul-g42pu859.web.app
+     - dev-jen: spartboard--dev-jen-w38uta3f.web.app
+     - dev-bailey:
 
 5. **Find your URL**:
    - Go to your repo's "Actions" tab on GitHub
