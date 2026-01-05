@@ -81,7 +81,9 @@ const MOCK_USER = {
     // Return fixed mock token result with consistent timestamps
     return Promise.resolve({
       token: MOCK_TOKEN,
-      expirationTime: new Date(Date.now() + 3600000).toISOString(), // Expiration can be relative to now
+      expirationTime: new Date(
+        new Date(MOCK_TIME).getTime() + 3600000
+      ).toISOString(),
       authTime: MOCK_TIME,
       issuedAtTime: MOCK_TIME,
       signInProvider: 'google',
