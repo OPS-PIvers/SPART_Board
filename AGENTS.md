@@ -64,7 +64,7 @@ If this command reports _any_ issues, you must fix them.
 
 - **Centralized Store:** `DashboardContext` manages all dashboard state, widget data, and persistence.
 - **Hook:** Use `useDashboard()` to access state and actions.
-- **Persistence:** State is automatically persisted to `localStorage` (`classroom_dashboards`, `classroom_visible_tools`).
+- **Persistence:** Dashboards are persisted to Firestore (cloud). Tool visibility preferences are persisted to `localStorage` (`classroom_visible_tools`). Legacy data is migrated from `classroom_dashboards` (localStorage) to Firestore.
 
 ### Widget System
 
