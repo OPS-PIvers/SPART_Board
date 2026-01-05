@@ -37,7 +37,7 @@ Each developer has their own persistent test environment on Firebase Hosting.
    - Give you a unique URL like: `https://spartboard--dev-lead-XXXXXXXX.web.app`
      - dev-paul: spartboard--dev-paul-g42pu859.web.app
      - dev-jen: spartboard--dev-jen-w38uta3f.web.app
-     - dev-bailey:
+     - dev-bailey: spartboard--dev-bailey-2w0bszdm.web.app
 
 5. **Find your URL**:
    - Go to your repo's "Actions" tab on GitHub
