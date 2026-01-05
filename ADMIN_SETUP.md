@@ -1,6 +1,6 @@
 # Admin Setup Instructions
 
-This document contains the steps to activate admin access for the four authorized users.
+This document contains steps to activate admin access for the four authorized users.
 
 ## Admin Users
 
