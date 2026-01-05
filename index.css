@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Flip Animations */
+.flip-container {
+  perspective: 1000px;
+  width: 100%;
+  height: 100%;
+}
+
+.flipper {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.flip-active {
+  transform: rotateY(180deg);
+}
+
+.front,
+.back {
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.back {
+  transform: rotateY(180deg);
+  background: #f8fafc;
+}
+
+/* Traffic Light Glows */
+.light-red.active {
+  background-color: #ef4444;
+  box-shadow: 0 0 20px #ef4444;
+}
+.light-yellow.active {
+  background-color: #eab308;
+  box-shadow: 0 0 20px #eab308;
+}
+.light-green.active {
+  background-color: #22c55e;
+  box-shadow: 0 0 20px #22c55e;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure inputs have dark text */
+input,
+select,
+textarea {
+  color: #1e293b !important;
+}
+
+/* Base body styles are handled by Tailwind's preflight and classes, 
+   but specific overrides can go here if needed */
+body {
+  overflow: hidden;
+  /* color/bg are typically set in App or specific components with Tailwind, 
+     but setting defaults here ensures consistency */
+  color: #1e293b;
+  background-color: #f8fafc;
+}
