@@ -13,6 +13,7 @@ import {
   Download,
   CheckCircle,
 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { WidgetData } from '../../types';
 import { GoogleGenAI } from '@google/genai';
 import { useDashboard } from '../../context/useDashboard';
@@ -131,7 +132,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
     // 2. Create and Queue Item
     const newItem: CapturedItem = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       timestamp: Date.now(),
       text: null,
       status: 'processing',
@@ -259,6 +260,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               }
               className="p-3 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-90"
               title="Flip Camera"
+              aria-label="Flip Camera"
             >
               <RefreshCw className="w-5 h-5" />
             </button>
@@ -266,6 +268,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={handleScreenshot}
               className="p-4 bg-white text-slate-900 rounded-2xl hover:scale-110 hover:shadow-white/20 transition-all active:scale-95 shadow-xl flex items-center gap-2 group/btn"
               title="Take Screenshot"
+              aria-label="Take Screenshot"
             >
               <Camera className="w-6 h-6 group-active/btn:scale-75 transition-transform" />
               <span className="text-[10px] font-black uppercase tracking-widest pr-1">
@@ -273,9 +276,10 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               </span>
             </button>
             <button
-              onClick={handleOCR}
+              onClick={() => void handleOCR()}
               className="p-3 bg-blue-600 hover:bg-blue-500 text-white shadow-lg rounded-2xl transition-all active:scale-90"
               title="Extract Text (OCR)"
+              aria-label="Extract Text (OCR)"
             >
               <FileText className="w-5 h-5" />
             </button>
@@ -283,6 +287,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() => setShowGallery(true)}
               className="relative p-3 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-90"
               title="View Captured Text"
+              aria-label="View Captured Text"
             >
               <List className="w-5 h-5" />
               {capturedItems.length > 0 && (
@@ -308,6 +313,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   onClick={clearAll}
                   className="p-2 hover:bg-white/10 rounded-lg text-red-400 hover:text-red-300 transition-colors"
                   title="Clear All"
+                  aria-label="Clear All"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -315,6 +321,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               <button
                 onClick={() => setShowGallery(false)}
                 className="p-2 hover:bg-white/10 rounded-lg text-white transition-colors"
+                aria-label="Close Gallery"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -358,6 +365,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                             }
                             className={`p-1.5 rounded-lg transition-colors ${copiedId === item.id ? 'bg-green-500/20 text-green-400' : 'hover:bg-white/10 text-slate-400 hover:text-white'}`}
                             title="Copy"
+                            aria-label="Copy Text"
                           >
                             {copiedId === item.id ? (
                               <Check className="w-3.5 h-3.5" />
@@ -371,6 +379,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                             }
                             className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                             title="Download"
+                            aria-label="Download Text"
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
@@ -380,6 +389,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                         onClick={() => deleteItem(item.id)}
                         className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
                         title="Delete"
+                        aria-label="Delete Item"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
