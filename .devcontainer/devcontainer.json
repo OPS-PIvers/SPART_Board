@@ -1,7 +1,7 @@
 {
   "name": "Gemini AI Workspace",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
-  
+
   // 1. AUTO-INSTALLATION
   // Installs Gemini CLI globally and your project dependencies automatically
   "postCreateCommand": "npm install -g @google/gemini-cli && npm install",
@@ -21,7 +21,7 @@
         "breadcrumbs.enabled": false,
         "terminal.integrated.fontSize": 15,
         "files.autoSave": "afterDelay",
-        
+
         // Hides files that non-coders don't need to worry about
         "files.exclude": {
           "**/.git": true,
@@ -34,10 +34,7 @@
         }
       },
       // Installs useful extensions silently
-      "extensions": [
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint"
-      ]
+      "extensions": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint"]
     }
   }
 }

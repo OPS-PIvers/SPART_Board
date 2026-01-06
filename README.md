@@ -8,12 +8,12 @@ Classroom Dashboard Pro is an interactive, widget-based application built with *
 
 ## ✨ Key Features
 
-* **🧩 Widget System:** 20+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, and more.
-* **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
-* **🔐 Authentication:** Secure Google Sign-In integration.
-* **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.
-* **🎨 Customization:** Drag-and-drop layout, resizable widgets, and custom backgrounds (colors, gradients, or images).
-* **🤖 AI Integration:** Features powered by Google Gemini (e.g., OCR text extraction in the Webcam widget).
+- **🧩 Widget System:** 20+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, and more.
+- **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
+- **🔐 Authentication:** Secure Google Sign-In integration.
+- **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.
+- **🎨 Customization:** Drag-and-drop layout, resizable widgets, and custom backgrounds (colors, gradients, or images).
+- **🤖 AI Integration:** Features powered by Google Gemini (e.g., OCR text extraction in the Webcam widget).
 
 ## 🚀 Getting Started
 
@@ -32,18 +32,21 @@ The easiest way to start coding is with GitHub Codespaces. This environment come
 **Prerequisites:** Node.js (v20+ recommended)
 
 1.  **Clone the repository:**
+
     ```bash
     git clone [https://github.com/OPS-PIvers/SPART_Board.git](https://github.com/OPS-PIvers/SPART_Board.git)
     cd SPART_Board
     ```
 
 2.  **Install dependencies:**
+
     ```bash
     npm install
     ```
 
 3.  **Configure Environment:**
     Create a `.env.local` file in the root directory and add your credentials:
+
     ```env
     VITE_FIREBASE_API_KEY=your_key
     VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
@@ -61,40 +64,40 @@ The easiest way to start coding is with GitHub Codespaces. This environment come
 
 ## 🛠 Tech Stack
 
-* **Frontend:** React 19, TypeScript, Vite
-* **Styling:** Tailwind CSS, Lucide React (Icons)
-* **Backend:** Firebase (Auth, Firestore, Storage)
-* **AI:** Google Gemini API (`@google/genai`)
-* **Tooling:** ESLint, Prettier, Husky
+- **Frontend:** React 19, TypeScript, Vite
+- **Styling:** Tailwind CSS, Lucide React (Icons)
+- **Backend:** Firebase (Auth, Firestore, Storage)
+- **AI:** Google Gemini API (`@google/genai`)
+- **Tooling:** ESLint, Prettier, Husky
 
 ## 📂 Project Structure
 
 This project uses a **flat file structure** (no `src/` directory). All source code resides at the project root.
 
-* `components/` - React components (Widgets, Layout, Admin, Auth)
-* `context/` - Global state (Dashboard & Auth contexts)
-* `hooks/` - Custom React hooks (`useFirestore`, `useStorage`)
-* `config/` - App configuration
-* `types.ts` - TypeScript definitions and Widget registry
+- `components/` - React components (Widgets, Layout, Admin, Auth)
+- `context/` - Global state (Dashboard & Auth contexts)
+- `hooks/` - Custom React hooks (`useFirestore`, `useStorage`)
+- `config/` - App configuration
+- `types.ts` - TypeScript definitions and Widget registry
 
 ## 📜 Available Scripts
 
-* `npm run dev` - Start the development server
-* `npm run build` - Build for production
-* `npm run preview` - Preview the production build
-* `npm run validate` - Run type-check, linting, and formatting checks
-* `npm run format` - Auto-format code with Prettier
+- `npm run dev` - Start the development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview the production build
+- `npm run validate` - Run type-check, linting, and formatting checks
+- `npm run format` - Auto-format code with Prettier
 
 ## 🤖 AI Development Workflow
 
 This repository is optimized for AI-assisted development using the **Gemini CLI**.
 Common slash commands available in the codespace:
 
-* `/preview` - Save changes and update the preview URL.
-* `/submit` - Create a Pull Request for review.
-* `/sync` - Update your workspace with the latest changes.
-* `/clean` - Discard unsaved changes.
-* `/undo` - Revert the most recent save (commit/push) to rewind back to previous `/preview` while retaining code changes in the branch.
+- `/preview` - Save changes and update the preview URL.
+- `/submit` - Create a Pull Request for review.
+- `/sync` - Update your workspace with the latest changes.
+- `/clean` - Discard unsaved changes.
+- `/undo` - Revert the most recent save (commit/push) to rewind back to previous `/preview` while retaining code changes in the branch.
 
 ## 📄 License
 
