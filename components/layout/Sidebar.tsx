@@ -216,11 +216,20 @@ export const Sidebar: React.FC = () => {
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
         <div className="flex items-center gap-2 px-1">
-          <img
-            src={user?.photoURL ?? ''}
-            alt={user?.displayName ?? 'User'}
-            className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
-          />
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user?.displayName ?? 'User'}
+              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-700"
+              aria-label={user?.displayName ?? 'User'}
+            >
+              {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
+            </div>
+          )}
           <span className="text-slate-700 font-bold text-sm hidden sm:block">
             {user?.displayName}
           </span>
