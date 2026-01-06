@@ -1,0 +1,21 @@
+description = "Submits your finished work for review by the team."
+prompt = """
+
+1. Run `git branch --show-current` to identify the branch.
+
+2. Run `gh pr list --head $BRANCH --json url --status open` to check for an existing submission.
+
+3. Run `git diff main... --stat` to summarize changes.
+
+4. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
+
+5. Logic:
+
+    5A) If no existing PR: Run `gh pr create --title "Review Request: $BRANCH" --body "$AI_SUMMARY" --base main`.
+
+    5B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
+
+6) Extract the URL from the command output.
+
+7) Report: "Your work has been submitted for review. View the submission here: [URL]. After review, it will be added to the main branch."
+"""

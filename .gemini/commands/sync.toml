@@ -1,0 +1,28 @@
+description = "Updates your workspace with the latest changes from the main project."
+prompt = """
+
+You are a technical assistant. Execute the following steps exactly:
+
+1. Run `git status --short`. 
+    1A) If the output is not empty, run `git stash` and notify the user: "Your current unsaved changes have been temporarily set aside to allow for the update."
+
+2. Run `git fetch origin main`.
+
+3. Run `git rebase origin/main`.
+
+4. If the rebase is successful:
+
+    4A) If you ran `git stash` earlier, run `git stash pop`.
+
+    4B) Report: "Update complete. Your workspace is now up-to-date with the latest version of the project."
+
+5. If the rebase fails (exit code non-zero):
+
+    5A) Run `git rebase --abort`.
+
+    5B) If you ran `git stash` earlier, run `git stash pop`.
+
+    5C) Identify conflicting files via `git status`.
+
+    5D) Report: "Update paused. Someone else has made changes to the exact same lines you are working on. To prevent overwriting your work, I have stopped the update. You can continue working, but you will eventually need to manually choose which changes to keep (yours or theirs). Alternatively, use the command /clean if you want to delete your current work and start fresh from the latest project version." 
+"""
