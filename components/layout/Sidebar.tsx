@@ -676,8 +676,101 @@ export const Sidebar: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => {
-                        const name = prompt('Enter dashboard name:');
-                        if (name) createNewDashboard(name);
+                        const overlay = document.createElement('div');
+                        overlay.className =
+                          'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm';
+
+                        const modal = document.createElement('div');
+                        modal.className =
+                          'bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6';
+
+                        const title = document.createElement('h2');
+                        title.className =
+                          'text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider';
+                        title.textContent = 'New Dashboard';
+
+                        const description = document.createElement('p');
+                        description.className =
+                          'text-xs text-slate-500 mb-4';
+                        description.textContent =
+                          'Enter a name for your new dashboard.';
+
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.placeholder = 'Dashboard name';
+                        input.className =
+                          'w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4';
+
+                        const buttonsContainer = document.createElement('div');
+                        buttonsContainer.className =
+                          'flex justify-end gap-2';
+
+                        const cancelButton = document.createElement('button');
+                        cancelButton.type = 'button';
+                        cancelButton.className =
+                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition';
+                        cancelButton.textContent = 'Cancel';
+
+                        const createButton = document.createElement('button');
+                        createButton.type = 'button';
+                        createButton.className =
+                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition';
+                        createButton.textContent = 'Create';
+
+                        const closeModal = () => {
+                          if (overlay.parentNode) {
+                            overlay.parentNode.removeChild(overlay);
+                          }
+                        };
+
+                        const handleCreate = () => {
+                          const name = input.value.trim();
+                          if (name) {
+                            createNewDashboard(name);
+                            closeModal();
+                          } else {
+                            input.focus();
+                          }
+                        };
+
+                        cancelButton.addEventListener('click', () => {
+                          closeModal();
+                        });
+
+                        createButton.addEventListener('click', () => {
+                          handleCreate();
+                        });
+
+                        input.addEventListener('keydown', (event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            handleCreate();
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            closeModal();
+                          }
+                        });
+
+                        overlay.addEventListener('click', (event) => {
+                          if (event.target === overlay) {
+                            closeModal();
+                          }
+                        });
+
+                        buttonsContainer.appendChild(cancelButton);
+                        buttonsContainer.appendChild(createButton);
+
+                        modal.appendChild(title);
+                        modal.appendChild(description);
+                        modal.appendChild(input);
+                        modal.appendChild(buttonsContainer);
+                        overlay.appendChild(modal);
+                        document.body.appendChild(overlay);
+
+                        // Slight delay to ensure element is in the DOM before focusing
+                        setTimeout(() => {
+                          input.focus();
+                        }, 0);
                       }}
                       className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                     >
