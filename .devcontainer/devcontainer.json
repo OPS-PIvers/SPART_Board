@@ -2,6 +2,10 @@
   "name": "Gemini AI Workspace",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
 
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
   // 1. AUTO-INSTALLATION
   // Installs Gemini CLI globally and your project dependencies automatically
   "postCreateCommand": "npm install -g @google/gemini-cli && npm install",
