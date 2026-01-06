@@ -56,7 +56,7 @@ export const Sidebar: React.FC = () => {
     'widgets'
   );
   // Sub-tab for design section
-  const [designTab, setDesignTab] = useState<'presets' | 'colors' | 'grads'>(
+  const [designTab, setDesignTab] = useState<'presets' | 'colors' | 'gradients'>(
     'presets'
   );
 
