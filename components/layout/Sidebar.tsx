@@ -4,7 +4,6 @@ import {
   Save,
   Plus,
   Trash2,
-  Palette,
   X,
   Menu,
   Share2,
@@ -12,9 +11,13 @@ import {
   Upload,
   Grid,
   CheckSquare,
-  Square,
   Loader2,
   Filter,
+  LogOut,
+  Settings,
+  LayoutGrid,
+  Paintbrush,
+  FolderOpen,
 } from 'lucide-react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
@@ -24,6 +27,7 @@ import {
   getWidgetGradeLevels,
   widgetMatchesGradeFilter,
 } from '../../config/widgetGradeLevels';
+import { AdminSettings } from '../admin/AdminSettings';
 
 interface DashboardData {
   name: string;
@@ -48,11 +52,17 @@ const formatGradeLevel = (level: GradeLevel): string => {
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    'presets' | 'colors' | 'gradients' | 'tools'
+  const [activeTab, setActiveTab] = useState<'widgets' | 'design' | 'manage'>(
+    'widgets'
+  );
+  // Sub-tab for design section
+  const [designTab, setDesignTab] = useState<
+    'presets' | 'colors' | 'gradients'
   >('presets');
+
   const [uploading, setUploading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
+  const [showAdminSettings, setShowAdminSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load grade filter preference from localStorage
@@ -84,7 +94,7 @@ export const Sidebar: React.FC = () => {
     addToast,
   } = useDashboard();
 
-  const { user } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { uploadBackgroundImage } = useStorage();
 
   const presets = [
@@ -129,8 +139,14 @@ export const Sidebar: React.FC = () => {
 
   const gradients = [
     { id: 'bg-gradient-to-br from-slate-900 to-slate-700', label: 'Slate' },
-    { id: 'bg-gradient-to-br from-indigo-500 to-purple-600', label: 'Vibrant' },
-    { id: 'bg-gradient-to-br from-emerald-400 to-cyan-500', label: 'Tropical' },
+    {
+      id: 'bg-gradient-to-br from-indigo-500 to-purple-600',
+      label: 'Vibrant',
+    },
+    {
+      id: 'bg-gradient-to-br from-emerald-400 to-cyan-500',
+      label: 'Tropical',
+    },
     { id: 'bg-gradient-to-br from-rose-400 to-orange-400', label: 'Sunset' },
   ];
 
@@ -188,12 +204,61 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-6 left-6 z-[1000] p-3 bg-white shadow-xl rounded-2xl hover:scale-110 transition-transform border border-slate-100"
-      >
-        <Menu className="w-6 h-6 text-slate-700" />
-      </button>
+      <div className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200"
+          title="Open Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="h-6 w-px bg-slate-200 mx-1" />
+
+        <div className="flex items-center gap-2 px-1">
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user?.displayName ?? 'User'}
+              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-700"
+              aria-label={user?.displayName ?? 'User'}
+            >
+              {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="text-slate-700 font-bold text-sm hidden sm:block">
+            {user?.displayName}
+          </span>
+        </div>
+
+        <div className="h-6 w-px bg-slate-200 mx-1" />
+
+        {isAdmin && (
+          <button
+            onClick={() => setShowAdminSettings(true)}
+            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+            title="Admin Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        )}
+
+        <button
+          onClick={signOut}
+          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+          title="Sign out"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
+      </div>
+
+      {showAdminSettings && (
+        <AdminSettings onClose={() => setShowAdminSettings(false)} />
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 z-[10000] flex">
@@ -201,256 +266,143 @@ export const Sidebar: React.FC = () => {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative w-80 h-full bg-white shadow-2xl flex flex-col p-6 animate-in slide-in-from-left duration-300">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Layout className="w-6 h-6 text-blue-600" />
-                Dashboards
-              </h2>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-slate-100 rounded-full"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-
-            <div className="space-y-2 mb-8 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {dashboards.map((db) => (
-                <div
-                  key={db.id}
-                  className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                    activeDashboard?.id === db.id
-                      ? 'bg-blue-50 border border-blue-200 shadow-sm'
-                      : 'hover:bg-slate-50 border border-transparent'
-                  }`}
-                  onClick={() => loadDashboard(db.id)}
-                >
-                  <span
-                    className={`font-semibold text-sm ${activeDashboard?.id === db.id ? 'text-blue-700' : 'text-slate-600'}`}
-                  >
-                    {db.name}
+          <div className="relative w-96 h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
+            {/* Header */}
+            <div className="p-6 pb-2 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-indigo-600">
+                  <Layout className="w-6 h-6" />
+                  <span className="font-black text-lg tracking-tight">
+                    SPARTBOARD
                   </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteDashboard(db.id);
-                    }}
-                    className="p-1.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
-              ))}
-
-              <div className="grid grid-cols-2 gap-2 mt-4">
                 <button
-                  onClick={() => {
-                    const name = prompt('Enter dashboard name:');
-                    if (name) createNewDashboard(name);
-                  }}
-                  className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-all font-bold text-[10px]"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                 >
-                  <Plus className="w-3 h-3" /> NEW
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="flex bg-slate-100 p-1 rounded-xl text-[10px] font-black uppercase tracking-wide">
+                <button
+                  onClick={() => setActiveTab('widgets')}
+                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                    activeTab === 'widgets'
+                      ? 'bg-white shadow-sm text-indigo-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" /> Widgets
                 </button>
                 <button
-                  onClick={handleImport}
-                  className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-all font-bold text-[10px]"
+                  onClick={() => setActiveTab('design')}
+                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                    activeTab === 'design'
+                      ? 'bg-white shadow-sm text-indigo-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
                 >
-                  <Download className="w-3 h-3" /> IMPORT
+                  <Paintbrush className="w-3.5 h-3.5" /> Design
+                </button>
+                <button
+                  onClick={() => setActiveTab('manage')}
+                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                    activeTab === 'manage'
+                      ? 'bg-white shadow-sm text-indigo-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <FolderOpen className="w-3.5 h-3.5" /> Manage
                 </button>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100 space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-indigo-500" /> Workspace
-                </h3>
-              </div>
-
-              {/* Settings Tabs */}
-              <div className="flex bg-slate-100 p-1 rounded-xl text-[9px] font-black uppercase tracking-tighter mb-4">
-                <button
-                  onClick={() => setActiveTab('presets')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all ${activeTab === 'presets' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-                >
-                  BGs
-                </button>
-                <button
-                  onClick={() => setActiveTab('colors')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all ${activeTab === 'colors' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-                >
-                  Clrs
-                </button>
-                <button
-                  onClick={() => setActiveTab('gradients')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all ${activeTab === 'gradients' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-                >
-                  Grads
-                </button>
-                <button
-                  onClick={() => setActiveTab('tools')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all ${activeTab === 'tools' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-                >
-                  Apps
-                </button>
-              </div>
-
-              <div className="h-48 overflow-y-auto pr-1 custom-scrollbar">
-                {activeTab === 'presets' && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {presets.map((bg) => (
-                      <button
-                        key={bg.id}
-                        onClick={() => setBackground(bg.id)}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${activeDashboard?.background === bg.id ? 'border-blue-600 scale-110 shadow-lg z-10' : 'border-transparent hover:scale-105'}`}
-                        title={bg.label}
-                      >
-                        <img
-                          src={bg.id}
-                          alt={bg.label}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="aspect-square rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-500 transition-all disabled:opacity-50"
-                    >
-                      {uploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          <span className="text-[8px] font-bold mt-1">
-                            UPLOAD
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {activeTab === 'colors' && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {colors.map((bg) => (
-                      <button
-                        key={bg.id}
-                        onClick={() => setBackground(bg.id)}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${activeDashboard?.background === bg.id ? 'border-blue-600 scale-110 shadow-lg z-10' : 'border-transparent hover:scale-105'}`}
-                        style={{ backgroundColor: bg.color }}
-                        title={bg.label ?? bg.id}
-                      >
-                        {bg.id.includes('radial') && (
-                          <div className={`w-full h-full ${bg.id}`} />
-                        )}
-                        {bg.label === 'Dot Grid' && (
-                          <Grid className="w-4 h-4 absolute inset-0 m-auto text-slate-300" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === 'gradients' && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {gradients.map((bg) => (
-                      <button
-                        key={bg.id}
-                        onClick={() => setBackground(bg.id)}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${activeDashboard?.background === bg.id ? 'border-blue-600 scale-110 shadow-lg z-10' : 'border-transparent hover:scale-105'}`}
-                        title={bg.label}
-                      >
-                        <div className={`w-full h-full ${bg.id}`} />
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === 'tools' && (
-                  <div className="space-y-1">
-                    {/* Grade Level Filter */}
-                    <div className="mb-3 p-2 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-1.5 mb-1.5">
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+              {/* WIDGETS TAB */}
+              {activeTab === 'widgets' && (
+                <div className="space-y-4">
+                  {/* Grade Level Filter */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
                         <Filter className="w-3 h-3 text-slate-400" />
-                        <span className="text-[8px] font-black uppercase tracking-wide text-slate-400">
-                          Grade Level
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                          Grade Filter
                         </span>
                       </div>
-                      <div
-                        className="grid grid-cols-3 gap-1"
-                        role="group"
-                        aria-label="Grade level filter options"
-                      >
-                        {GRADE_FILTER_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() =>
-                              handleGradeFilterChange(option.value)
-                            }
-                            className={`py-1 px-2 rounded text-[9px] font-black uppercase transition-all ${
-                              gradeFilter === option.value
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-white text-slate-500 hover:bg-slate-100'
-                            }`}
-                            aria-pressed={gradeFilter === option.value}
-                            aria-label={`Filter widgets for ${option.label} grade level`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
                     </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {GRADE_FILTER_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleGradeFilterChange(option.value)}
+                          className={`py-1.5 px-2 rounded-lg text-[9px] font-black uppercase transition-all ${
+                            gradeFilter === option.value
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'bg-white text-slate-500 hover:bg-slate-200'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                    {/* Enable/Disable All Buttons */}
-                    <div className="flex gap-1 mb-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Available Widgets
+                    </h3>
+                    <div className="flex gap-2">
                       <button
                         onClick={() => setAllToolsVisibility(true)}
-                        className="flex-1 py-1 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black uppercase"
+                        className="text-[9px] font-bold text-indigo-600 hover:underline"
                       >
-                        All
+                        Select All
                       </button>
+                      <span className="text-slate-300">|</span>
                       <button
                         onClick={() => setAllToolsVisibility(false)}
-                        className="flex-1 py-1 bg-slate-50 text-slate-500 rounded-md text-[9px] font-black uppercase"
+                        className="text-[9px] font-bold text-slate-500 hover:underline"
                       >
-                        None
+                        Clear
                       </button>
                     </div>
+                  </div>
 
-                    {/* Widget List with Grade Level Chips */}
+                  <div className="space-y-2">
                     {filteredTools.map((tool) => {
                       const gradeLevels = getWidgetGradeLevels(tool.type);
                       const showChips = !gradeLevels.includes('universal');
+                      const isActive = visibleTools.includes(tool.type);
 
                       return (
                         <button
                           key={tool.type}
                           onClick={() => toggleToolVisibility(tool.type)}
-                          className={`w-full flex items-center justify-between p-2 rounded-lg transition-all border ${
-                            visibleTools.includes(tool.type)
-                              ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
-                              : 'bg-white border-transparent text-slate-400 opacity-60'
+                          className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 group ${
+                            isActive
+                              ? 'bg-indigo-50 border-indigo-100 text-indigo-900'
+                              : 'bg-white border-transparent hover:border-slate-100 text-slate-500'
                           }`}
                         >
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div
-                              className={`p-1 rounded ${tool.color} text-white flex-shrink-0`}
+                              className={`p-2 rounded-lg ${isActive ? tool.color : 'bg-slate-100 group-hover:bg-slate-200'} ${isActive ? 'text-white' : 'text-slate-500'} transition-colors`}
                             >
-                              <tool.icon className="w-3 h-3" />
+                              <tool.icon className="w-4 h-4" />
                             </div>
-                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                              <span className="text-[10px] font-bold uppercase tracking-tight truncate">
+                            <div className="text-left">
+                              <div className="text-xs font-bold uppercase tracking-tight">
                                 {tool.label}
-                              </span>
+                              </div>
                               {showChips && (
-                                <div className="flex gap-1 flex-shrink-0">
+                                <div className="flex gap-1 mt-1">
                                   {gradeLevels.map((level) => (
                                     <span
                                       key={level}
-                                      className="text-[7px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600"
+                                      className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
                                     >
                                       {formatGradeLevel(level)}
                                     </span>
@@ -459,18 +411,389 @@ export const Sidebar: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          {visibleTools.includes(tool.type) ? (
-                            <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
-                          ) : (
-                            <Square className="w-3.5 h-3.5 flex-shrink-0" />
-                          )}
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                              isActive
+                                ? 'bg-indigo-600 border-indigo-600'
+                                : 'border-slate-200'
+                            }`}
+                          >
+                            {isActive && (
+                              <CheckSquare className="w-3.5 h-3.5 text-white" />
+                            )}
+                          </div>
                         </button>
                       );
                     })}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
+              {/* DESIGN TAB */}
+              {activeTab === 'design' && (
+                <div className="space-y-6">
+                  {/* Design Sub-tabs */}
+                  <div className="flex border-b border-slate-100 mb-4">
+                    <button
+                      onClick={() => setDesignTab('presets')}
+                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
+                        designTab === 'presets'
+                          ? 'border-indigo-600 text-indigo-600'
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Presets
+                    </button>
+                    <button
+                      onClick={() => setDesignTab('colors')}
+                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
+                        designTab === 'colors'
+                          ? 'border-indigo-600 text-indigo-600'
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Colors
+                    </button>
+                    <button
+                      onClick={() => setDesignTab('gradients')}
+                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
+                        designTab === 'gradients'
+                          ? 'border-indigo-600 text-indigo-600'
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Gradients
+                    </button>
+                  </div>
+
+                  {designTab === 'presets' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {presets.map((bg) => (
+                        <button
+                          key={bg.id}
+                          onClick={() => setBackground(bg.id)}
+                          className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
+                            activeDashboard?.background === bg.id
+                              ? 'border-indigo-600 ring-2 ring-indigo-200 ring-offset-2'
+                              : 'border-transparent hover:scale-[1.02]'
+                          }`}
+                        >
+                          <img
+                            src={bg.id}
+                            alt={bg.label}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-bold uppercase tracking-wider">
+                              {bg.label}
+                            </span>
+                          </div>
+                          {activeDashboard?.background === bg.id && (
+                            <div className="absolute top-2 right-2 bg-indigo-600 text-white p-1 rounded-full">
+                              <CheckSquare className="w-3 h-3" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="aspect-video rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all disabled:opacity-50"
+                      >
+                        {uploading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5 mb-2" />
+                            <span className="text-[9px] font-black uppercase">
+                              Upload Image
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {designTab === 'colors' && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {colors.map((bg) => (
+                        <button
+                          key={bg.id}
+                          onClick={() => setBackground(bg.id)}
+                          className={`aspect-square rounded-xl border-2 transition-all relative ${
+                            activeDashboard?.background === bg.id
+                              ? 'border-indigo-600 ring-2 ring-indigo-200 ring-offset-2'
+                              : 'border-slate-100 hover:border-slate-300'
+                          }`}
+                          style={{ backgroundColor: bg.color }}
+                        >
+                          {bg.id.includes('radial') && (
+                            <div className={`w-full h-full ${bg.id}`} />
+                          )}
+                          {bg.label === 'Dot Grid' && (
+                            <Grid className="w-6 h-6 absolute inset-0 m-auto text-slate-300" />
+                          )}
+                          {activeDashboard?.background === bg.id && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-full">
+                                <CheckSquare className="w-4 h-4 text-white drop-shadow-md" />
+                              </div>
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {designTab === 'gradients' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {gradients.map((bg) => (
+                        <button
+                          key={bg.id}
+                          onClick={() => setBackground(bg.id)}
+                          className={`aspect-video rounded-xl border-2 transition-all relative ${
+                            activeDashboard?.background === bg.id
+                              ? 'border-indigo-600 ring-2 ring-indigo-200 ring-offset-2'
+                              : 'border-transparent hover:scale-[1.02]'
+                          }`}
+                        >
+                          <div
+                            className={`w-full h-full rounded-lg ${bg.id}`}
+                          />
+                          <div className="absolute bottom-2 left-2 text-[9px] font-black uppercase text-white/90 drop-shadow-md">
+                            {bg.label}
+                          </div>
+                          {activeDashboard?.background === bg.id && (
+                            <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-md p-1 rounded-full">
+                              <CheckSquare className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* MANAGE TAB */}
+              {activeTab === 'manage' && (
+                <div className="space-y-6">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">
+                      My Dashboards
+                    </h3>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {dashboards.map((db) => (
+                        <div
+                          key={db.id}
+                          className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
+                            activeDashboard?.id === db.id
+                              ? 'bg-white border-indigo-200 shadow-md ring-1 ring-indigo-50'
+                              : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
+                          }`}
+                          onClick={() => loadDashboard(db.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-2 h-10 rounded-full ${
+                                activeDashboard?.id === db.id
+                                  ? 'bg-indigo-500'
+                                  : 'bg-slate-200 group-hover:bg-slate-300'
+                              }`}
+                            />
+                            <div>
+                              <div
+                                className={`font-bold text-sm ${
+                                  activeDashboard?.id === db.id
+                                    ? 'text-indigo-900'
+                                    : 'text-slate-700'
+                                }`}
+                              >
+                                {db.name}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-medium">
+                                {new Date(db.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              id={`delete-dashboard-${db.id}`}
+                              className="peer hidden"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <label
+                              htmlFor={`delete-dashboard-${db.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </label>
+                            <div className="peer-checked:flex hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/40">
+                              <div
+                                className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                                  Delete dashboard
+                                </h4>
+                                <p className="text-xs text-slate-600 mb-4">
+                                  Are you sure you want to delete “{db.name}”?
+                                  This action cannot be undone.
+                                </p>
+                                <div className="flex justify-end gap-2">
+                                  <label
+                                    htmlFor={`delete-dashboard-${db.id}`}
+                                    className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                                  >
+                                    Cancel
+                                  </label>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteDashboard(db.id);
+                                      const checkbox = document.getElementById(
+                                        `delete-dashboard-${db.id}`
+                                      ) as HTMLInputElement | null;
+                                      if (checkbox && checkbox.checked) {
+                                        checkbox.click();
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        const overlay = document.createElement('div');
+                        overlay.className =
+                          'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm';
+
+                        const modal = document.createElement('div');
+                        modal.className =
+                          'bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6';
+
+                        const title = document.createElement('h2');
+                        title.className =
+                          'text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider';
+                        title.textContent = 'New Dashboard';
+
+                        const description = document.createElement('p');
+                        description.className = 'text-xs text-slate-500 mb-4';
+                        description.textContent =
+                          'Enter a name for your new dashboard.';
+
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.placeholder = 'Dashboard name';
+                        input.className =
+                          'w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4';
+
+                        const buttonsContainer = document.createElement('div');
+                        buttonsContainer.className = 'flex justify-end gap-2';
+
+                        const cancelButton = document.createElement('button');
+                        cancelButton.type = 'button';
+                        cancelButton.className =
+                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition';
+                        cancelButton.textContent = 'Cancel';
+
+                        const createButton = document.createElement('button');
+                        createButton.type = 'button';
+                        createButton.className =
+                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition';
+                        createButton.textContent = 'Create';
+
+                        const closeModal = () => {
+                          if (overlay.parentNode) {
+                            overlay.parentNode.removeChild(overlay);
+                          }
+                        };
+
+                        const handleCreate = () => {
+                          const name = input.value.trim();
+                          if (name) {
+                            createNewDashboard(name);
+                            closeModal();
+                          } else {
+                            input.focus();
+                          }
+                        };
+
+                        cancelButton.addEventListener('click', () => {
+                          closeModal();
+                        });
+
+                        createButton.addEventListener('click', () => {
+                          handleCreate();
+                        });
+
+                        input.addEventListener('keydown', (event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            handleCreate();
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            closeModal();
+                          }
+                        });
+
+                        overlay.addEventListener('click', (event) => {
+                          if (event.target === overlay) {
+                            closeModal();
+                          }
+                        });
+
+                        buttonsContainer.appendChild(cancelButton);
+                        buttonsContainer.appendChild(createButton);
+
+                        modal.appendChild(title);
+                        modal.appendChild(description);
+                        modal.appendChild(input);
+                        modal.appendChild(buttonsContainer);
+                        overlay.appendChild(modal);
+                        document.body.appendChild(overlay);
+
+                        // Slight delay to ensure element is in the DOM before focusing
+                        setTimeout(() => {
+                          input.focus();
+                        }, 0);
+                      }}
+                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                    >
+                      <Plus className="w-6 h-6" />
+                      <span className="text-[10px] font-black uppercase">
+                        New Board
+                      </span>
+                    </button>
+                    <button
+                      onClick={handleImport}
+                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      <Download className="w-6 h-6" />
+                      <span className="text-[10px] font-black uppercase">
+                        Import
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 backdrop-blur">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -479,21 +802,21 @@ export const Sidebar: React.FC = () => {
                 onChange={(e) => void handleFileUpload(e)}
               />
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-3">
                 <button
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] hover:bg-slate-200"
+                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
                 >
-                  <Share2 className="w-4 h-4" /> SHARE
+                  <Share2 className="w-4 h-4" /> Share
                 </button>
                 <button
                   onClick={() => {
                     saveCurrentDashboard();
                     setIsOpen(false);
                   }}
-                  className="flex-1 bg-indigo-600 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all text-[10px]"
+                  className="flex-1 bg-indigo-600 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 active:scale-95 transition-all text-[10px] uppercase tracking-wider"
                 >
-                  <Save className="w-4 h-4" /> SAVE
+                  <Save className="w-4 h-4" /> Save & Close
                 </button>
               </div>
             </div>
