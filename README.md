@@ -1,19 +1,107 @@
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+# Classroom Dashboard Pro
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/OPS-PIvers/SPART_Board)
+
+**A professional-grade interactive classroom management dashboard.**
 </div>
 
-# Run and deploy your AI Studio app
+## 📋 Overview
 
-This contains everything you need to run your app locally.
+Classroom Dashboard Pro is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 20 specialized classroom tools—from timers and noise meters to polling and lunch counts. All data is synchronized in real-time using **Firebase**.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1hENYvQIU3099a1-_F8zaN3kS6AsFNbsI
+## ✨ Key Features
 
-## Run Locally
+* **🧩 Widget System:** 20+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, and more.
+* **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
+* **🔐 Authentication:** Secure Google Sign-In integration.
+* **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.
+* **🎨 Customization:** Drag-and-drop layout, resizable widgets, and custom backgrounds (colors, gradients, or images).
+* **🤖 AI Integration:** Features powered by Google Gemini (e.g., OCR text extraction in the Webcam widget).
 
-**Prerequisites:** Node.js
+## 🚀 Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Option 1: GitHub Codespaces (Recommended)
+
+The easiest way to start coding is with GitHub Codespaces. This environment comes pre-configured with the Gemini CLI and all necessary dependencies.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/OPS-PIvers/SPART_Board)
+
+1.  Click the button above.
+2.  Wait for the environment to load.
+3.  Follow the prompts in the terminal to authenticate with Gemini.
+
+### Option 2: Local Development
+
+**Prerequisites:** Node.js (v20+ recommended)
+
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/OPS-PIvers/SPART_Board.git](https://github.com/OPS-PIvers/SPART_Board.git)
+    cd SPART_Board
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Configure Environment:**
+    Create a `.env.local` file in the root directory and add your credentials:
+    ```env
+    VITE_FIREBASE_API_KEY=your_key
+    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+    VITE_FIREBASE_PROJECT_ID=your_project_id
+    VITE_FIREBASE_STORAGE_BUCKET=your_bucket.appspot.com
+    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+    VITE_FIREBASE_APP_ID=your_app_id
+    VITE_GEMINI_API_KEY=your_gemini_key
+    ```
+
+4.  **Run the app:**
+    ```bash
+    npm run dev
+    ```
+
+## 🛠 Tech Stack
+
+* **Frontend:** React 19, TypeScript, Vite
+* **Styling:** Tailwind CSS, Lucide React (Icons)
+* **Backend:** Firebase (Auth, Firestore, Storage)
+* **AI:** Google Gemini API (`@google/genai`)
+* **Tooling:** ESLint, Prettier, Husky
+
+## 📂 Project Structure
+
+This project uses a **flat file structure** (no `src/` directory). All source code resides at the project root.
+
+* `components/` - React components (Widgets, Layout, Admin, Auth)
+* `context/` - Global state (Dashboard & Auth contexts)
+* `hooks/` - Custom React hooks (`useFirestore`, `useStorage`)
+* `config/` - App configuration
+* `types.ts` - TypeScript definitions and Widget registry
+
+## 📜 Available Scripts
+
+* `npm run dev` - Start the development server
+* `npm run build` - Build for production
+* `npm run preview` - Preview the production build
+* `npm run validate` - Run type-check, linting, and formatting checks
+* `npm run format` - Auto-format code with Prettier
+
+## 🤖 AI Development Workflow
+
+This repository is optimized for AI-assisted development using the **Gemini CLI**.
+Common slash commands available in the codespace:
+
+* `/preview` - Save changes and update the preview URL.
+* `/submit` - Create a Pull Request for review.
+* `/sync` - Update your workspace with the latest changes.
+* `/clean` - Discard unsaved changes.
+* `/undo` - Revert the most recent save (commit/push) to rewind back to previous `/preview` while retaining code changes in the branch.
+
+## 📄 License
+
+Private Repository. All rights reserved.
