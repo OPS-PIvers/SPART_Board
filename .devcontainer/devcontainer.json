@@ -1,0 +1,43 @@
+{
+  "name": "Gemini AI Workspace",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  
+  // 1. AUTO-INSTALLATION
+  // Installs Gemini CLI globally and your project dependencies automatically
+  "postCreateCommand": "npm install -g @google/gemini-cli && npm install",
+
+  // 2. AUTO-START
+  // Automatically clears the terminal and starts Gemini
+  "postAttachCommand": "clear && echo 'Welcome to SPART Board AI! Starting Gemini...' && gemini",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // 3. SIMPLIFIED INTERFACE
+        // Hides sidebars and maps to focus purely on the AI tool
+        "workbench.activityBar.location": "hidden",
+        "workbench.statusBar.visible": true,
+        "editor.minimap.enabled": false,
+        "breadcrumbs.enabled": false,
+        "terminal.integrated.fontSize": 15,
+        "files.autoSave": "afterDelay",
+        
+        // Hides files that non-coders don't need to worry about
+        "files.exclude": {
+          "**/.git": true,
+          "**/.ds_store": true,
+          "**/node_modules": true,
+          "**/dist": true,
+          ".devcontainer": true,
+          ".github": true,
+          "package-lock.json": true
+        }
+      },
+      // Installs useful extensions silently
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}
