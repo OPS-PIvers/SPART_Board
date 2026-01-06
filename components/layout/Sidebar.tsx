@@ -616,21 +616,58 @@ export const Sidebar: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (
-                                confirm(
-                                  'Are you sure you want to delete this dashboard?'
-                                )
-                              ) {
-                                deleteDashboard(db.id);
-                              }
-                            }}
-                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              id={`delete-dashboard-${db.id}`}
+                              className="peer hidden"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <label
+                              htmlFor={`delete-dashboard-${db.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </label>
+                            <div className="peer-checked:flex hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/40">
+                              <div
+                                className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                                  Delete dashboard
+                                </h4>
+                                <p className="text-xs text-slate-600 mb-4">
+                                  Are you sure you want to delete “{db.name}”? This action cannot be undone.
+                                </p>
+                                <div className="flex justify-end gap-2">
+                                  <label
+                                    htmlFor={`delete-dashboard-${db.id}`}
+                                    className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                                  >
+                                    Cancel
+                                  </label>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteDashboard(db.id);
+                                      const checkbox = document.getElementById(
+                                        `delete-dashboard-${db.id}`
+                                      ) as HTMLInputElement | null;
+                                      if (checkbox && checkbox.checked) {
+                                        checkbox.click();
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
