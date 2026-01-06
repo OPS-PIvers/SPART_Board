@@ -1,9 +1,6 @@
 # Classroom Dashboard Pro
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/OPS-PIvers/SPART_Board)
-
 **A professional-grade interactive classroom management dashboard.**
-</div>
 
 ## 📋 Overview
 
