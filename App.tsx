@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth';
 import { DashboardProvider } from './context/DashboardContext';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { DashboardView } from './components/layout/DashboardView';
-import { AdminSettings } from './components/admin/AdminSettings';
-import { LogOut, Settings } from 'lucide-react';
 import { isConfigured } from './config/firebase';
 
 const AuthenticatedApp: React.FC = () => {
-  const { user, signOut, isAdmin } = useAuth();
-  const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const { user } = useAuth();
 
   if (!user) {
     return <LoginScreen />;
@@ -19,38 +16,6 @@ const AuthenticatedApp: React.FC = () => {
   return (
     <DashboardProvider>
       <DashboardView />
-      {/* User profile and sign-out button */}
-      <div className="fixed top-6 left-6 z-[999] flex items-center gap-3">
-        <img
-          src={user.photoURL ?? ''}
-          alt={user.displayName ?? 'User'}
-          className="w-10 h-10 rounded-full border-2 border-white shadow-lg"
-        />
-        <span className="text-white font-semibold text-sm drop-shadow-lg">
-          {user.displayName}
-        </span>
-        {isAdmin && (
-          <button
-            onClick={() => setShowAdminSettings(true)}
-            className="p-3 bg-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
-            title="Admin Settings"
-          >
-            <Settings className="w-5 h-5 text-indigo-600" />
-          </button>
-        )}
-        <button
-          onClick={signOut}
-          className="p-3 bg-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
-          title="Sign out"
-        >
-          <LogOut className="w-5 h-5 text-slate-700" />
-        </button>
-      </div>
-
-      {/* Admin Settings Modal */}
-      {showAdminSettings && (
-        <AdminSettings onClose={() => setShowAdminSettings(false)} />
-      )}
     </DashboardProvider>
   );
 };
