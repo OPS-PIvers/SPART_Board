@@ -56,9 +56,9 @@ export const Sidebar: React.FC = () => {
     'widgets'
   );
   // Sub-tab for design section
-  const [designTab, setDesignTab] = useState<'presets' | 'colors' | 'gradients'>(
-    'presets'
-  );
+  const [designTab, setDesignTab] = useState<
+    'presets' | 'colors' | 'gradients'
+  >('presets');
 
   const [uploading, setUploading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
@@ -455,9 +455,9 @@ export const Sidebar: React.FC = () => {
                       Colors
                     </button>
                     <button
-                      onClick={() => setDesignTab('grads')}
+                      onClick={() => setDesignTab('gradients')}
                       className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
-                        designTab === 'grads'
+                        designTab === 'gradients'
                           ? 'border-indigo-600 text-indigo-600'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
                       }`}
@@ -545,7 +545,7 @@ export const Sidebar: React.FC = () => {
                     </div>
                   )}
 
-                  {designTab === 'grads' && (
+                  {designTab === 'gradients' && (
                     <div className="grid grid-cols-2 gap-3">
                       {gradients.map((bg) => (
                         <button
@@ -639,7 +639,8 @@ export const Sidebar: React.FC = () => {
                                   Delete dashboard
                                 </h4>
                                 <p className="text-xs text-slate-600 mb-4">
-                                  Are you sure you want to delete “{db.name}”? This action cannot be undone.
+                                  Are you sure you want to delete “{db.name}”?
+                                  This action cannot be undone.
                                 </p>
                                 <div className="flex justify-end gap-2">
                                   <label
@@ -690,8 +691,7 @@ export const Sidebar: React.FC = () => {
                         title.textContent = 'New Dashboard';
 
                         const description = document.createElement('p');
-                        description.className =
-                          'text-xs text-slate-500 mb-4';
+                        description.className = 'text-xs text-slate-500 mb-4';
                         description.textContent =
                           'Enter a name for your new dashboard.';
 
@@ -702,8 +702,7 @@ export const Sidebar: React.FC = () => {
                           'w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4';
 
                         const buttonsContainer = document.createElement('div');
-                        buttonsContainer.className =
-                          'flex justify-end gap-2';
+                        buttonsContainer.className = 'flex justify-end gap-2';
 
                         const cancelButton = document.createElement('button');
                         cancelButton.type = 'button';
