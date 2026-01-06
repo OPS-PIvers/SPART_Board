@@ -264,7 +264,7 @@ export const Sidebar: React.FC = () => {
                 <div className="flex items-center gap-2 text-indigo-600">
                   <Layout className="w-6 h-6" />
                   <span className="font-black text-lg tracking-tight">
-                    SPART BOARD
+                    SPARTBOARD
                   </span>
                 </div>
                 <button
