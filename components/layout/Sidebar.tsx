@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import {
   Layout,
   Save,
@@ -22,7 +24,13 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, TOOLS, GradeLevel, GradeFilter } from '../../types';
+import {
+  Dashboard,
+  TOOLS,
+  GradeLevel,
+  GradeFilter,
+  BackgroundPreset,
+} from '../../types';
 import {
   getWidgetGradeLevels,
   widgetMatchesGradeFilter,
@@ -63,7 +71,13 @@ export const Sidebar: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [managedBackgrounds, setManagedBackgrounds] = useState<
+    BackgroundPreset[]
+  >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { user, signOut, isAdmin } = useAuth();
+  const { uploadBackgroundImage } = useStorage();
 
   // Load grade filter preference from localStorage
   useEffect(() => {
@@ -73,6 +87,40 @@ export const Sidebar: React.FC = () => {
       setGradeFilter(savedFilter as GradeFilter);
     }
   }, []);
+
+  // Fetch managed backgrounds from Firestore
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'admin_backgrounds'),
+      where('active', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const backgrounds: BackgroundPreset[] = [];
+      snapshot.forEach((doc) => {
+        const bg = doc.data() as BackgroundPreset;
+
+        // Filter based on access level
+        if (isAdmin) {
+          backgrounds.push(bg);
+        } else if (bg.accessLevel === 'public') {
+          backgrounds.push(bg);
+        } else if (
+          bg.accessLevel === 'beta' &&
+          bg.betaUsers.includes(user.email ?? '')
+        ) {
+          backgrounds.push(bg);
+        }
+      });
+      setManagedBackgrounds(
+        backgrounds.sort((a, b) => b.createdAt - a.createdAt)
+      );
+    });
+
+    return () => unsubscribe();
+  }, [user, isAdmin]);
 
   // Save grade filter preference to localStorage
   const handleGradeFilterChange = (newFilter: GradeFilter) => {
@@ -94,35 +142,41 @@ export const Sidebar: React.FC = () => {
     addToast,
   } = useDashboard();
 
-  const { user, signOut, isAdmin } = useAuth();
-  const { uploadBackgroundImage } = useStorage();
+  // Combine static and managed presets
+  const presets = useMemo(() => {
+    const staticPresets = [
+      {
+        id: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
+        label: 'Chalkboard',
+      },
+      {
+        id: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
+        label: 'Corkboard',
+      },
+      {
+        id: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
+        label: 'Geometric',
+      },
+      {
+        id: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
+        label: 'Nature',
+      },
+      {
+        id: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
+        label: 'Paper',
+      },
+      {
+        id: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
+        label: 'Tech',
+      },
+    ];
 
-  const presets = [
-    {
-      id: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
-      label: 'Chalkboard',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
-      label: 'Corkboard',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
-      label: 'Geometric',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
-      label: 'Nature',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
-      label: 'Paper',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
-      label: 'Tech',
-    },
-  ];
+    const managed = managedBackgrounds.map((bg) => ({
+      id: bg.url,
+      label: bg.label,
+    }));
+    return [...managed, ...staticPresets];
+  }, [managedBackgrounds]);
 
   const colors = [
     { id: 'bg-slate-900', color: '#0f172a' },
