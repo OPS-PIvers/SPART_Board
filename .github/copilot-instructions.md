@@ -22,7 +22,7 @@
 npm ci  # Takes ~10-15 seconds
 ```
 
-This is required after cloning or when `package-lock.json` changes.
+This is required after cloning or when `package-lock.json` changes. Note: README.md mentions `npm install` for convenience, but `npm ci` is strongly preferred for CI/CD and development to ensure consistent dependency versions.
 
 ### Environment Setup
 
@@ -115,7 +115,7 @@ npm run format
 ### Key Files (DO NOT MODIFY WITHOUT UNDERSTANDING)
 
 - **types.ts** (392 lines): Central type system, WidgetType union, TOOLS registry, all widget config interfaces
-- **DashboardContext.tsx** (14,300 lines): Global state management, widget CRUD, persistence
+- **DashboardContext.tsx** (467 lines): Global state management, widget CRUD, persistence
 - **WidgetRenderer.tsx** (145 lines): Maps widget types to components
 - **eslint.config.js**: ESLint 9 flat config - strict rules enforce code quality
 - **tsconfig.json**: Strict TypeScript with `strict: true`, `noImplicitAny: true`
@@ -125,7 +125,8 @@ npm run format
 Use `useDashboard()` hook to access centralized dashboard state:
 
 ```typescript
-import { useDashboard } from '@/context/useDashboard';
+// Import using relative paths (project uses relative imports, not @ alias)
+import { useDashboard } from '../../context/useDashboard'; // adjust path as needed
 const { widgets, addWidget, updateWidget, deleteWidget, bringToFront } =
   useDashboard();
 ```
