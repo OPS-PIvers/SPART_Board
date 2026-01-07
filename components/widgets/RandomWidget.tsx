@@ -85,6 +85,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     groupSize = 3,
     lastResult = null,
     soundEnabled = true,
+    remainingStudents = [],
   } = config;
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -179,6 +180,27 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsSpinning(true);
 
     if (mode === 'single') {
+      // Logic for "bag" selection:
+      // 1. Get current pool from config or init with all students
+      // 2. Filter pool to remove any students that were deleted from roster
+      let pool =
+        remainingStudents && remainingStudents.length > 0
+          ? remainingStudents
+          : [...students];
+      pool = pool.filter((s) => students.includes(s));
+
+      // 3. If pool is empty (everyone picked or all remaining deleted), reset
+      if (pool.length === 0) {
+        pool = [...students];
+      }
+
+      // 4. Pick winner
+      const winnerIndexInPool = Math.floor(Math.random() * pool.length);
+      const winnerName = pool[winnerIndexInPool];
+
+      // 5. Calculate new remaining list
+      const nextRemaining = pool.filter((_, i) => i !== winnerIndexInPool);
+
       if (visualStyle === 'flash') {
         let count = 0;
         const interval = setInterval(() => {
@@ -189,18 +211,24 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           count++;
           if (count > 20) {
             clearInterval(interval);
-            const final = students[Math.floor(Math.random() * students.length)];
-            setDisplayResult(final);
+            setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...config, lastResult: final },
+              config: {
+                ...config,
+                lastResult: winnerName,
+                remainingStudents: nextRemaining,
+              },
             });
           }
         }, 80);
       } else if (visualStyle === 'wheel') {
         const extraSpins = 5;
-        const winnerIndex = Math.floor(Math.random() * students.length);
+        // Find index of winnerName in the full students list for wheel targeting
+        let winnerIndex = students.indexOf(winnerName);
+        if (winnerIndex === -1) winnerIndex = 0; // Fallback
+
         const segmentAngle = 360 / students.length;
         const targetRotation =
           rotation +
@@ -216,11 +244,15 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         const tickSequence = (count: number) => {
           const elapsed = Date.now() - startTime;
           if (elapsed >= duration) {
-            setDisplayResult(students[winnerIndex]);
+            setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...config, lastResult: students[winnerIndex] },
+              config: {
+                ...config,
+                lastResult: winnerName,
+                remainingStudents: nextRemaining,
+              },
             });
             return;
           }
@@ -243,12 +275,15 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           count++;
           if (count > max) {
             clearInterval(interval);
-            const final = students[Math.floor(Math.random() * students.length)];
-            setDisplayResult(final);
+            setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...config, lastResult: final },
+              config: {
+                ...config,
+                lastResult: winnerName,
+                remainingStudents: nextRemaining,
+              },
             });
           }
         }, 100);
@@ -763,6 +798,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 firstNames: '',
                 lastNames: '',
                 lastResult: null,
+                remainingStudents: [],
               },
             });
           }

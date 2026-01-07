@@ -121,6 +121,7 @@ export interface RandomConfig {
   groupSize?: number;
   lastResult?: string | string[] | string[][] | null;
   soundEnabled?: boolean;
+  remainingStudents?: string[];
 }
 
 export interface DiceConfig {
