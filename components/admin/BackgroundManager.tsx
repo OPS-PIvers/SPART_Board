@@ -57,6 +57,8 @@ const DEFAULT_PRESETS = [
   },
 ];
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const BackgroundManager: React.FC = () => {
   const [presets, setPresets] = useState<BackgroundPreset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,9 +162,10 @@ export const BackgroundManager: React.FC = () => {
     }
 
     setUploading(true);
+    let downloadURL = '';
     try {
       // Use shared admin path instead of user-specific path
-      const downloadURL = await uploadAdminBackground(file);
+      downloadURL = await uploadAdminBackground(file);
 
       const newPreset: BackgroundPreset = {
         id: uuidv4(),
@@ -180,44 +183,46 @@ export const BackgroundManager: React.FC = () => {
     } catch (error) {
       console.error('Upload failed:', error);
       showMessage('error', 'Upload failed');
+      // Cleanup orphaned file if DB write failed
+      if (downloadURL) {
+        try {
+          const fileRef = ref(storage, downloadURL);
+          await deleteObject(fileRef);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup orphaned file:', cleanupError);
+        }
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const updatePreset = async (
-    id: string,
-    updates: Partial<BackgroundPreset>
-  ) => {
-    try {
-      await updateDoc(doc(db, 'admin_backgrounds', id), updates);
-      setPresets((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-      );
-    } catch (error) {
-      console.error('Error updating preset:', error);
-      showMessage('error', 'Failed to update background');
-    }
+  const updatePreset = (id: string, updates: Partial<BackgroundPreset>) => {
+    return updateDoc(doc(db, 'admin_backgrounds', id), updates)
+      .then(() => {
+        setPresets((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+        );
+      })
+      .catch((error) => {
+        console.error('Error updating preset:', error);
+        showMessage('error', 'Failed to update background');
+      });
   };
 
   const deletePreset = async (preset: BackgroundPreset) => {
     if (!confirm('Are you sure you want to delete this background?')) return;
 
     try {
+      // Delete file from Storage first if it's not a stock image (Unsplash)
+      if (preset.url.includes('firebasestorage.googleapis.com')) {
+        const fileRef = ref(storage, preset.url);
+        await deleteObject(fileRef);
+      }
+
       // Delete document from Firestore
       await deleteDoc(doc(db, 'admin_backgrounds', preset.id));
-
-      // Delete file from Storage if it's not a stock image (Unsplash)
-      if (preset.url.includes('firebasestorage.googleapis.com')) {
-        try {
-          const fileRef = ref(storage, preset.url);
-          await deleteObject(fileRef);
-        } catch (storageError) {
-          console.error('Error deleting file from storage:', storageError);
-          // Don't fail the whole operation if storage deletion fails (might already be gone)
-        }
-      }
 
       setPresets((prev) => prev.filter((p) => p.id !== preset.id));
       showMessage('success', 'Background deleted');
@@ -230,6 +235,11 @@ export const BackgroundManager: React.FC = () => {
   const addBetaUser = async (presetId: string, email: string) => {
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail) return;
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      showMessage('error', 'Invalid email format');
+      return;
+    }
 
     const preset = presets.find((p) => p.id === presetId);
     if (!preset) return;
@@ -466,7 +476,7 @@ export const BackgroundManager: React.FC = () => {
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block shrink-0">
                           Beta Users
                         </label>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 mb-1.5">
+                        <div className="flex-1 overflow-y-auto space-y-0.5 mb-1.5">
                           {preset.betaUsers.map((email) => (
                             <div
                               key={email}

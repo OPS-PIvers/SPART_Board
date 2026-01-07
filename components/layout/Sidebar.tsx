@@ -111,7 +111,7 @@ export const Sidebar: React.FC = () => {
             backgrounds.push(bg);
           } else if (
             bg.accessLevel === 'beta' &&
-            bg.betaUsers.includes(user.email ?? '')
+            bg.betaUsers.includes((user.email ?? '').toLowerCase())
           ) {
             backgrounds.push(bg);
           }
@@ -121,7 +121,15 @@ export const Sidebar: React.FC = () => {
         );
       },
       (error) => {
-        console.error('Error in managed backgrounds snapshot:', error);
+        // If it's a permission error, it's likely due to security rules filtering documents.
+        // We log it but don't show a toast to avoid spamming users who don't have access to all docs.
+        if (error.code === 'permission-denied') {
+          console.warn(
+            'Access restricted to some backgrounds by security rules.'
+          );
+        } else {
+          console.error('Error in managed backgrounds snapshot:', error);
+        }
       }
     );
 
