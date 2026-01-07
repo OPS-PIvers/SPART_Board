@@ -184,9 +184,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       // 1. Get current pool from config or init with all students
       // 2. Filter pool to remove any students that were deleted from roster
       let pool =
-        remainingStudents && remainingStudents.length > 0
-          ? remainingStudents
-          : [...students];
+        remainingStudents.length > 0 ? remainingStudents : [...students];
       pool = pool.filter((s) => students.includes(s));
 
       // 3. If pool is empty (everyone picked or all remaining deleted), reset
@@ -586,6 +584,8 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
   const [localFirstNames, setLocalFirstNames] = useState(firstNames);
   const [localLastNames, setLocalLastNames] = useState(lastNames);
+  const firstNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setLocalFirstNames(firstNames);
@@ -599,23 +599,31 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     const timer = setTimeout(() => {
       if (localFirstNames !== firstNames) {
         updateWidget(widget.id, {
-          config: { ...config, firstNames: localFirstNames },
+          config: {
+            ...(widget.config as RandomConfig),
+            firstNames: localFirstNames,
+          },
         });
       }
     }, 1000);
+    firstNamesTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [localFirstNames, firstNames, widget.id, updateWidget, config]);
+  }, [localFirstNames, firstNames, widget.id, widget.config, updateWidget]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (localLastNames !== lastNames) {
         updateWidget(widget.id, {
-          config: { ...config, lastNames: localLastNames },
+          config: {
+            ...(widget.config as RandomConfig),
+            lastNames: localLastNames,
+          },
         });
       }
     }, 1000);
+    lastNamesTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [localLastNames, lastNames, widget.id, updateWidget, config]);
+  }, [localLastNames, lastNames, widget.id, widget.config, updateWidget]);
 
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },
@@ -730,9 +738,17 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             value={localFirstNames}
             onChange={(e) => setLocalFirstNames(e.target.value)}
             onBlur={() => {
+              // Cancel debounce timer to prevent duplicate updates
+              if (firstNamesTimerRef.current) {
+                clearTimeout(firstNamesTimerRef.current);
+                firstNamesTimerRef.current = null;
+              }
               if (localFirstNames !== firstNames) {
                 updateWidget(widget.id, {
-                  config: { ...config, firstNames: localFirstNames },
+                  config: {
+                    ...(widget.config as RandomConfig),
+                    firstNames: localFirstNames,
+                  },
                 });
               }
             }}
@@ -748,9 +764,17 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             value={localLastNames}
             onChange={(e) => setLocalLastNames(e.target.value)}
             onBlur={() => {
+              // Cancel debounce timer to prevent duplicate updates
+              if (lastNamesTimerRef.current) {
+                clearTimeout(lastNamesTimerRef.current);
+                lastNamesTimerRef.current = null;
+              }
               if (localLastNames !== lastNames) {
                 updateWidget(widget.id, {
-                  config: { ...config, lastNames: localLastNames },
+                  config: {
+                    ...(widget.config as RandomConfig),
+                    lastNames: localLastNames,
+                  },
                 });
               }
             }}
