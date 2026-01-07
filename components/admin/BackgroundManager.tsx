@@ -316,32 +316,32 @@ export const BackgroundManager: React.FC = () => {
       {/* Grid */}
       <div className="flex-1">
         {presets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col"
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-[360px]"
               >
                 {/* Image Preview */}
-                <div className="relative aspect-video bg-slate-100 group">
+                <div className="relative aspect-video bg-slate-100 group shrink-0">
                   <img
                     src={preset.url}
                     alt={preset.label}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-1.5 right-1.5 z-10">
                     <button
                       onClick={() => void deletePreset(preset.id)}
-                      className="p-2 bg-white/90 text-red-600 rounded-lg hover:bg-red-50 shadow-sm transition-colors opacity-0 group-hover:opacity-100"
+                      className="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all scale-90 hover:scale-100"
                       title="Delete background"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5 flex justify-between items-center bg-black/20 backdrop-blur-sm rounded-lg px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     {/* Toggle Active */}
-                    <div className="bg-white/90 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-2 shadow-sm">
-                      <span className="text-[10px] font-bold uppercase text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-black uppercase text-white">
                         Active
                       </span>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -355,23 +355,23 @@ export const BackgroundManager: React.FC = () => {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-7 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
+                        <div className="w-6 h-3 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-green-500"></div>
                       </label>
                     </div>
                   </div>
                 </div>
 
                 {/* Controls */}
-                <div className="p-4 flex-1 flex flex-col gap-4">
+                <div className="p-3 flex-1 flex flex-col min-h-0">
                   {/* Label Editing */}
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
                     {editingId === preset.id ? (
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-1.5 flex-1">
                         <input
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1 px-2 py-1 text-sm border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="flex-1 px-2 py-1 text-xs border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           autoFocus
                         />
                         <button
@@ -385,19 +385,19 @@ export const BackgroundManager: React.FC = () => {
                           }}
                           className="p-1 text-green-600 hover:bg-green-50 rounded"
                         >
-                          <Check className="w-4 h-4" />
+                          <Check className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
                           className="p-1 text-red-500 hover:bg-red-50 rounded"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
                       <>
                         <h4
-                          className="font-bold text-slate-800 truncate"
+                          className="font-bold text-slate-800 truncate text-sm"
                           title={preset.label}
                         >
                           {preset.label}
@@ -409,15 +409,15 @@ export const BackgroundManager: React.FC = () => {
                           }}
                           className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Pencil className="w-3 h-3" />
                         </button>
                       </>
                     )}
                   </div>
 
                   {/* Access Level */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                  <div className="mb-3 shrink-0">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block shrink-0">
                       Access Level
                     </label>
                     <div className="flex gap-1">
@@ -430,10 +430,10 @@ export const BackgroundManager: React.FC = () => {
                                 accessLevel: level,
                               })
                             }
-                            className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase flex items-center justify-center gap-1 transition-all ${
+                            className={`flex-1 py-1 rounded-[4px] text-[9px] font-black uppercase flex items-center justify-center gap-1 transition-all ${
                               preset.accessLevel === level
                                 ? getAccessLevelColor(level)
-                                : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                                : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-100'
                             }`}
                             title={`Set to ${level}`}
                           >
@@ -446,36 +446,38 @@ export const BackgroundManager: React.FC = () => {
                   </div>
 
                   {/* Beta Users (only show if access level is beta) */}
-                  {preset.accessLevel === 'beta' && (
-                    <div className="mt-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-                        Beta Users
-                      </label>
-                      <div className="space-y-2">
-                        {preset.betaUsers.map((email) => (
-                          <div
-                            key={email}
-                            className="flex items-center justify-between p-1.5 bg-blue-50 rounded text-xs"
-                          >
-                            <span className="text-slate-700 truncate">
-                              {email}
-                            </span>
-                            <button
-                              onClick={() =>
-                                void removeBetaUser(preset.id, email)
-                              }
-                              className="text-red-600 hover:bg-red-100 p-0.5 rounded transition-colors"
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    {preset.accessLevel === 'beta' && (
+                      <div className="flex flex-col h-full">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block shrink-0">
+                          Beta Users
+                        </label>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-2">
+                          {preset.betaUsers.map((email) => (
+                            <div
+                              key={email}
+                              className="flex items-center justify-between p-1 px-1.5 bg-blue-50/50 rounded text-[10px] border border-blue-100/50"
                             >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
+                              <span className="text-slate-700 truncate mr-2">
+                                {email}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  void removeBetaUser(preset.id, email)
+                                }
+                                className="text-red-600 hover:bg-red-100 p-0.5 rounded transition-colors shrink-0"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
 
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 shrink-0">
                           <input
                             type="email"
-                            placeholder="email@example.com"
-                            className="flex-1 px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="Add email..."
+                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 void addBetaUser(
@@ -493,14 +495,14 @@ export const BackgroundManager: React.FC = () => {
                               void addBetaUser(preset.id, input.value);
                               input.value = '';
                             }}
-                            className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            className="p-1 px-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
