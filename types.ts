@@ -195,6 +195,8 @@ export interface LunchCountConfig {
   lastNames: string;
   assignments: Record<string, string>;
   recipient: string;
+  menuUrl?: string;
+  viewMode?: 'count' | 'menu';
 }
 
 // Union of all widget configs

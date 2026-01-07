@@ -9,6 +9,8 @@ import {
   Box,
   RefreshCw,
   UserPlus,
+  Utensils,
+  ExternalLink,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
@@ -23,18 +25,18 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
+    menuUrl = 'https://orono.nutrislice.com/menu/orono-intermediate-school/lunch',
+    viewMode = 'count',
   } = config;
 
   const students = useMemo(() => {
     const firsts = firstNames
       .split('\n')
-
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
     const lasts = lastNames
       .split('\n')
-
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
@@ -42,7 +44,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
-
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);
@@ -86,6 +87,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  const toggleView = () => {
+    updateWidget(widget.id, {
+      config: { ...config, viewMode: viewMode === 'menu' ? 'count' : 'menu' },
+    });
+  };
+
   const categories: {
     type: LunchType;
     label: string;
@@ -115,6 +122,38 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       border: 'border-blue-200',
     },
   ];
+
+  if (viewMode === 'menu') {
+    return (
+      <div className="h-full flex flex-col p-3 bg-white gap-3 select-none">
+        <div className="flex-1 rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-50">
+          <iframe
+            src={menuUrl}
+            className="w-full h-full border-0"
+            title="Lunch Menu"
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
+          <a
+            href={menuUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute top-2 right-2 p-2 bg-white/90 rounded-lg shadow-sm hover:bg-white text-slate-600 transition-colors"
+            title="Open in new tab"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={toggleView}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
+          >
+            <Users className="w-3 h-3" /> Back to Count
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (students.length === 0) {
     return (
@@ -217,15 +256,22 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex gap-2 shrink-0">
         <button
           onClick={resetCount}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+          title="Reset"
         >
-          <RefreshCw className="w-3 h-3" /> Reset
+          <RefreshCw className="w-3 h-3" />
+        </button>
+        <button
+          onClick={toggleView}
+          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors"
+        >
+          <Utensils className="w-3 h-3" /> Menu
         </button>
         <button
           onClick={handleSend}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
         >
-          <Send className="w-3 h-3" /> Send Lunch Report
+          <Send className="w-3 h-3" /> Send Report
         </button>
       </div>
     </div>
@@ -241,6 +287,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
+    menuUrl = 'https://orono.nutrislice.com/menu/orono-intermediate-school/lunch',
   } = config;
 
   return (
@@ -257,7 +304,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, firstNames: e.target.value },
               })
             }
-            placeholder="Alice&#10;Bob&#10;Charlie..."
+            placeholder="Alice\nBob\nCharlie..."
             className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
           />
         </div>
@@ -272,7 +319,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, lastNames: e.target.value },
               })
             }
-            placeholder="Smith&#10;Jones&#10;Brown..."
+            placeholder="Smith\nJones\nBrown..."
             className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
           />
         </div>
@@ -291,6 +338,23 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             })
           }
           placeholder="email@example.com"
+          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+        />
+      </div>
+
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <Utensils className="w-3 h-3" /> Menu URL
+        </label>
+        <input
+          type="url"
+          value={menuUrl}
+          onChange={(e) =>
+            updateWidget(widget.id, {
+              config: { ...config, menuUrl: e.target.value },
+            })
+          }
+          placeholder="https://orono.nutrislice.com/..."
           className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
         />
       </div>
