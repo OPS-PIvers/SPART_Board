@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, LunchCountConfig } from '../../types';
 import {
@@ -9,24 +9,9 @@ import {
   Box,
   RefreshCw,
   UserPlus,
-  Utensils,
-  ExternalLink,
-  School,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
-type SchoolId = 'IS' | 'SE';
-
-const SCHOOLS: Record<SchoolId, { label: string; url: string }> = {
-  IS: {
-    label: 'Orono Intermediate (3-5)',
-    url: 'https://orono.nutrislice.com/menu/orono-intermediate-school/lunch',
-  },
-  SE: {
-    label: 'Schumann Elementary (K-2)',
-    url: 'https://orono.nutrislice.com/menu/schumann-elementary/lunch',
-  },
-};
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -38,18 +23,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
-    menuUrl = SCHOOLS.IS.url,
-    schoolId = 'IS',
   } = config;
-
-  // Sync menuUrl with schoolId if they don't match
-  useEffect(() => {
-    if (schoolId && SCHOOLS[schoolId].url !== menuUrl) {
-      updateWidget(widget.id, {
-        config: { ...config, menuUrl: SCHOOLS[schoolId].url },
-      });
-    }
-  }, [schoolId, menuUrl, widget.id, updateWidget, config]);
 
   const students = useMemo(() => {
     const firsts = firstNames
@@ -157,25 +131,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col p-3 bg-white gap-3 select-none">
-      {/* Menu Area */}
-      <div className="flex-1 min-h-[200px] rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-50 shrink-0">
-        <iframe
-          src={menuUrl}
-          className="w-full h-full border-0"
-          title="Lunch Menu"
-          sandbox="allow-scripts allow-same-origin allow-popups"
-        />
-        <a
-          href={menuUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute top-2 right-2 p-2 bg-white/90 rounded-lg shadow-sm hover:bg-white text-slate-600 transition-colors"
-          title="Open in new tab"
-        >
-          <ExternalLink className="w-4 h-4" />
-        </a>
-      </div>
-
       {/* Category Buckets */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
         {categories.map((cat) => (
@@ -259,16 +214,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex gap-2 shrink-0">
         <button
           onClick={resetCount}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
-          title="Reset"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
         >
-          <RefreshCw className="w-3 h-3" />
+          <RefreshCw className="w-3 h-3" /> Reset
         </button>
         <button
           onClick={handleSend}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
         >
-          <Send className="w-3 h-3" /> Send Report
+          <Send className="w-3 h-3" /> Send Lunch Report
         </button>
       </div>
     </div>
@@ -284,8 +238,6 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
-    menuUrl = SCHOOLS.IS.url,
-    schoolId = 'IS',
   } = config;
 
   return (
@@ -323,51 +275,6 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-            <School className="w-3 h-3" /> School Menu
-          </label>
-          <select
-            value={schoolId}
-            onChange={(e) => {
-              const newSchoolId = e.target.value as SchoolId;
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  schoolId: newSchoolId,
-                  menuUrl: SCHOOLS[newSchoolId].url,
-                },
-              });
-            }}
-            className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
-          >
-            {Object.entries(SCHOOLS).map(([id, school]) => (
-              <option key={id} value={id}>
-                {school.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-            <Utensils className="w-3 h-3" /> Custom Menu URL (Optional)
-          </label>
-          <input
-            type="url"
-            value={menuUrl}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, menuUrl: e.target.value },
-              })
-            }
-            placeholder="https://orono.nutrislice.com/..."
-            className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
-        </div>
-      </div>
-
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Recipient Email
@@ -390,8 +297,9 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           Instructions
         </h4>
         <p className="text-[9px] text-blue-600 leading-normal font-medium">
-          Select your school to automatically load the correct lunch menu. You
-          can also manually override the URL if needed.
+          Once students choose their lunch, click{' '}
+          <b>&quot;Send Lunch Report&quot;</b>. This opens a mail composer with
+          the final counts pre-formatted for your cafeteria staff.
         </p>
       </div>
     </div>

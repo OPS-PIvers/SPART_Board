@@ -390,6 +390,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           recipient: 'paul.ivers@orono.k12.mn.us',
         },
       },
+      lunchMenu: {
+        w: 500,
+        h: 600,
+        config: {
+          schoolId: 'IS',
+          menuUrl:
+            'https://orono.nutrislice.com/menu/orono-intermediate-school/lunch',
+        },
+      },
     };
 
     const newWidget: WidgetData = {

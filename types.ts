@@ -40,7 +40,8 @@ export type WidgetType =
   | 'weather'
   | 'schedule'
   | 'calendar'
-  | 'lunchCount';
+  | 'lunchCount'
+  | 'lunchMenu';
 
 // Supporting types for widget configs
 export interface Point {
@@ -195,9 +196,11 @@ export interface LunchCountConfig {
   lastNames: string;
   assignments: Record<string, string>;
   recipient: string;
-  menuUrl?: string;
-  viewMode?: 'count' | 'menu';
-  schoolId?: 'IS' | 'SE';
+}
+
+export interface LunchMenuConfig {
+  schoolId: 'IS' | 'SE';
+  menuUrl: string;
 }
 
 // Union of all widget configs
@@ -221,7 +224,8 @@ export type WidgetConfig =
   | WeatherConfig
   | ScheduleConfig
   | CalendarConfig
-  | LunchCountConfig;
+  | LunchCountConfig
+  | LunchMenuConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -264,7 +268,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                       ? CalendarConfig
                                       : T extends 'lunchCount'
                                         ? LunchCountConfig
-                                        : never;
+                                        : T extends 'lunchMenu'
+                                          ? LunchMenuConfig
+                                          : never;
 
 export interface WidgetData {
   id: string;
@@ -345,6 +351,12 @@ export const TOOLS: ToolMetadata[] = [
     icon: Utensils,
     label: 'Lunch',
     color: 'bg-orange-600',
+  },
+  {
+    type: 'lunchMenu',
+    icon: Utensils,
+    label: 'Menu',
+    color: 'bg-orange-400',
   },
 ];
 

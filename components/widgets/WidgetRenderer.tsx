@@ -21,6 +21,7 @@ import { WeatherWidget, WeatherSettings } from './WeatherWidget';
 import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
+import { LunchMenuWidget, LunchMenuSettings } from './LunchMenuWidget';
 
 export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -67,6 +68,8 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
         return <CalendarWidget widget={widget} />;
       case 'lunchCount':
         return <LunchCountWidget widget={widget} />;
+      case 'lunchMenu':
+        return <LunchMenuWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -106,6 +109,8 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
         return <WeatherSettings widget={widget} />;
       case 'lunchCount':
         return <LunchCountSettings widget={widget} />;
+      case 'lunchMenu':
+        return <LunchMenuSettings widget={widget} />;
       default:
         return (
           <div className="text-slate-500 italic text-sm">
@@ -122,6 +127,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
     if (widget.type === 'workSymbols') return 'Expectations';
     if (widget.type === 'calendar') return 'Class Events';
     if (widget.type === 'lunchCount') return 'Lunch Orders';
+    if (widget.type === 'lunchMenu') return 'Lunch Menu';
     return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
   };
 

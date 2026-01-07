@@ -53,12 +53,13 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   poll: ['6-8', '9-12'],
   scoreboard: ['universal'],
   embed: ['6-8', '9-12'],
+  weather: ['universal'],
 
   // Planning & Organization
   schedule: ['universal'],
   calendar: ['universal'],
-  weather: ['universal'],
   lunchCount: ['k-2', '3-5'],
+  lunchMenu: ['k-2', '3-5'],
 };
 
 /**
