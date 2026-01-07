@@ -316,11 +316,11 @@ export const BackgroundManager: React.FC = () => {
       {/* Grid */}
       <div className="flex-1">
         {presets.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 items-start">
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-[280px]"
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-auto"
               >
                 {/* Image Preview */}
                 <div className="relative h-[120px] bg-slate-100 group shrink-0">
