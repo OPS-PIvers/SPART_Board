@@ -323,7 +323,7 @@ export const BackgroundManager: React.FC = () => {
                 className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-[360px]"
               >
                 {/* Image Preview */}
-                <div className="relative aspect-video bg-slate-100 group shrink-0">
+                <div className="relative h-40 bg-slate-100 group shrink-0">
                   <img
                     src={preset.url}
                     alt={preset.label}
