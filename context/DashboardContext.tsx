@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
 import { useAuth } from './useAuth';
@@ -26,6 +26,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
+  // Refs to prevent race conditions
+  const lastLocalUpdateAt = useRef<number>(0);
+  const activeIdRef = useRef<string | null>(null);
+
+  // Sync activeId to ref
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   // Set loading false when no user
   useEffect(() => {
     if (!user) {
@@ -42,37 +51,63 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
 
     // Real-time subscription to Firestore
-    const unsubscribe = subscribeToDashboards((updatedDashboards) => {
-      setDashboards(updatedDashboards);
+    const unsubscribe = subscribeToDashboards(
+      (updatedDashboards, hasPendingWrites) => {
+        setDashboards((prev) => {
+          // If this snapshot has pending writes, it already includes our local changes
+          if (hasPendingWrites) {
+            return updatedDashboards;
+          }
 
-      // If no active dashboard or active dashboard deleted, set to first
-      if (updatedDashboards.length > 0 && !activeId) {
-        setActiveId(updatedDashboards[0].id);
-      }
+          // If it's a server snapshot, check if we have very recent local changes
+          const now = Date.now();
+          if (now - lastLocalUpdateAt.current < 1500) {
+            // We have a recent local update that might not be in this snapshot.
+            // Merge: Keep our local version of the active dashboard, take others from server.
+            return updatedDashboards.map((db) => {
+              if (db.id === activeIdRef.current) {
+                const currentActive = prev.find(
+                  (p) => p.id === activeIdRef.current
+                );
+                return currentActive ?? db;
+              }
+              return db;
+            });
+          }
 
-      // Create default dashboard if none exist
-      if (updatedDashboards.length === 0 && !migrated) {
-        const defaultDb: Dashboard = {
-          id: uuidv4(),
-          name: 'My First Dashboard',
-          background: 'bg-slate-900',
-          widgets: [],
-          createdAt: Date.now(),
-        };
-        void saveDashboard(defaultDb).then(() => {
-          setToasts((prev) => [
-            ...prev,
-            {
-              id: uuidv4(),
-              message: 'Welcome! Dashboard created',
-              type: 'info' as const,
-            },
-          ]);
+          return updatedDashboards;
         });
-      }
 
-      setLoading(false);
-    });
+        // If no active dashboard or active dashboard deleted, set to first
+        // Use updatedDashboards here as it's the latest list from server
+        if (updatedDashboards.length > 0 && !activeIdRef.current) {
+          setActiveId(updatedDashboards[0].id);
+        }
+
+        // Create default dashboard if none exist
+        if (updatedDashboards.length === 0 && !migrated) {
+          const defaultDb: Dashboard = {
+            id: uuidv4(),
+            name: 'My First Dashboard',
+            background: 'bg-slate-900',
+            widgets: [],
+            createdAt: Date.now(),
+          };
+          void saveDashboard(defaultDb).then(() => {
+            setToasts((prev) => [
+              ...prev,
+              {
+                id: uuidv4(),
+                message: 'Welcome! Dashboard created',
+                type: 'info' as const,
+              },
+            ]);
+          });
+        }
+
+        setLoading(false);
+      }
+    );
 
     // Load tool visibility from localStorage (user preference)
     const savedTools = localStorage.getItem('classroom_visible_tools');
@@ -245,6 +280,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateDashboard = useCallback(
     (updates: Partial<Dashboard>) => {
       if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
       setDashboards((prev) =>
         prev.map((d) => (d.id === activeId ? { ...d, ...updates } : d))
       );

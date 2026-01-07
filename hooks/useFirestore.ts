@@ -41,7 +41,7 @@ export const useFirestore = (userId: string | null) => {
   };
 
   const subscribeToDashboards = (
-    callback: (dashboards: Dashboard[]) => void
+    callback: (dashboards: Dashboard[], hasPendingWrites: boolean) => void
   ) => {
     if (!dashboardsRef)
       return () => {
@@ -53,7 +53,7 @@ export const useFirestore = (userId: string | null) => {
         const dashboards = snapshot.docs.map(
           (doc) => ({ ...doc.data(), id: doc.id }) as Dashboard
         );
-        callback(dashboards);
+        callback(dashboards, snapshot.metadata.hasPendingWrites);
       }
     );
   };
