@@ -197,6 +197,7 @@ export interface LunchCountConfig {
   recipient: string;
   menuUrl?: string;
   viewMode?: 'count' | 'menu';
+  schoolId?: 'IS' | 'SE';
 }
 
 // Union of all widget configs
