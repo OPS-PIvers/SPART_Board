@@ -127,9 +127,16 @@ export const BackgroundManager: React.FC = () => {
     try {
       setLoading(true);
       for (const item of DEFAULT_PRESETS) {
-        // Check if already exists to avoid duplicates
-        const exists = presets.some((p) => p.url === item.url);
-        if (!exists) {
+        // More robust check: use a query or check by ID if IDs were deterministic.
+        // For now, since they are random, we'll stick to URL check but against Firestore
+        // to avoid race conditions with local state.
+        const q = query(
+          collection(db, 'admin_backgrounds'),
+          where('url', '==', item.url)
+        );
+        const existing = await getDocs(q);
+
+        if (existing.empty) {
           const newPreset: BackgroundPreset = {
             id: uuidv4(),
             url: item.url,

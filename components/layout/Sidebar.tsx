@@ -89,51 +89,89 @@ export const Sidebar: React.FC = () => {
   }, []);
 
   // Fetch managed backgrounds from Firestore
+
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, 'admin_backgrounds'),
-      where('active', '==', true)
-    );
+    const baseRef = collection(db, 'admin_backgrounds');
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const backgrounds: BackgroundPreset[] = [];
-        snapshot.forEach((doc) => {
-          const bg = doc.data() as BackgroundPreset;
+    const unsubscribes: (() => void)[] = [];
 
-          // Filter based on access level
-          if (isAdmin) {
-            backgrounds.push(bg);
-          } else if (bg.accessLevel === 'public') {
-            backgrounds.push(bg);
-          } else if (
-            bg.accessLevel === 'beta' &&
-            bg.betaUsers.includes((user.email ?? '').toLowerCase())
-          ) {
-            backgrounds.push(bg);
-          }
-        });
-        setManagedBackgrounds(
-          backgrounds.sort((a, b) => b.createdAt - a.createdAt)
-        );
-      },
-      (error) => {
-        // If it's a permission error, it's likely due to security rules filtering documents.
-        // We log it but don't show a toast to avoid spamming users who don't have access to all docs.
-        if (error.code === 'permission-denied') {
-          console.warn(
-            'Access restricted to some backgrounds by security rules.'
+    if (isAdmin) {
+      // Admins can query everything active without permission errors
+
+      const q = query(baseRef, where('active', '==', true));
+
+      unsubscribes.push(
+        onSnapshot(q, (snapshot) => {
+          const backgrounds: BackgroundPreset[] = [];
+
+          snapshot.forEach((doc) => {
+            backgrounds.push(doc.data() as BackgroundPreset);
+          });
+
+          setManagedBackgrounds(
+            backgrounds.sort((a, b) => b.createdAt - a.createdAt)
           );
-        } else {
-          console.error('Error in managed backgrounds snapshot:', error);
-        }
-      }
-    );
+        })
+      );
+    } else {
+      // Non-admins need separate queries to avoid reading restricted documents (admin-only)
 
-    return () => unsubscribe();
+      // Query 1: Public backgrounds
+
+      const qPublic = query(
+        baseRef,
+
+        where('active', '==', true),
+
+        where('accessLevel', '==', 'public')
+      );
+
+      // Query 2: Beta backgrounds where the user is authorized
+
+      const qBeta = query(
+        baseRef,
+
+        where('active', '==', true),
+
+        where('accessLevel', '==', 'beta'),
+
+        where('betaUsers', 'array-contains', (user.email ?? '').toLowerCase())
+      );
+
+      let publicBgs: BackgroundPreset[] = [];
+
+      let betaBgs: BackgroundPreset[] = [];
+
+      const updateBgs = () => {
+        const all = [...publicBgs, ...betaBgs];
+
+        // Deduplicate just in case (though paths should be unique)
+
+        const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
+
+        setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
+      };
+
+      unsubscribes.push(
+        onSnapshot(qPublic, (snapshot) => {
+          publicBgs = snapshot.docs.map((d) => d.data() as BackgroundPreset);
+
+          updateBgs();
+        })
+      );
+
+      unsubscribes.push(
+        onSnapshot(qBeta, (snapshot) => {
+          betaBgs = snapshot.docs.map((d) => d.data() as BackgroundPreset);
+
+          updateBgs();
+        })
+      );
+    }
+
+    return () => unsubscribes.forEach((unsub) => unsub());
   }, [user, isAdmin]);
 
   // Save grade filter preference to localStorage
