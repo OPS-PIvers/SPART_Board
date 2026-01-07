@@ -13,7 +13,7 @@ This document provides comprehensive instructions and context for AI assistants 
 ### Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite
-- **Styling:** Tailwind CSS (via CDN and custom classes)
+- **Styling:** Tailwind CSS (PostCSS)
 - **Backend:** Firebase (Auth, Firestore, Storage)
 - **State Management:** React Context (`DashboardContext`)
 - **AI Integration:** Google Gemini API
@@ -58,7 +58,8 @@ If this command reports _any_ issues, you must fix them.
 - `context/`: Global state providers (`DashboardContext.tsx`, `AuthContext.tsx`).
 - `types.ts`: Central type definitions and the `TOOLS` registry.
 - `components/common/`: Shared UI components (e.g., `DraggableWindow`).
-- `config/`: Firebase and app configuration.
+- `components/admin/`: Administrative tools (`AdminSettings.tsx`, `FeaturePermissionsManager.tsx`).
+- `config/`: Firebase and application configuration (`widgetGradeLevels.ts`).
 
 ### State Management
 
@@ -74,6 +75,16 @@ The app uses a plugin-based architecture for widgets.
 - **Implementation:** Each widget lives in `components/widgets/` (e.g., `TimerWidget.tsx`).
 - **Rendering:** `WidgetRenderer.tsx` maps types to components.
 - **Wrapper:** All widgets are wrapped in `DraggableWindow.tsx` for common functionality (drag, resize, flip).
+- **Grade Levels:** Every widget is assigned one or more grade levels in `config/widgetGradeLevels.ts` (K-2, 3-5, 6-8, 9-12, or Universal). This allows users to filter the sidebar by their relevant grade range.
+
+### Feature Permissions
+
+Access to specific widgets can be dynamically controlled:
+
+- **Access Levels:** 'public', 'beta', or 'admin'.
+- **Enabled Toggle:** Widgets can be completely disabled via the `enabled` flag.
+- **Beta Users:** A list of emails allowed to access 'beta' widgets.
+- **Management:** Admins can adjust these settings in the `AdminSettings` view.
 
 ### Audio Handling
 
@@ -83,25 +94,31 @@ The app uses a plugin-based architecture for widgets.
 
 ---
 
-## 4. Widget Development Guide
+## 4. Widget Development Guide (Type-Safe Workflow)
 
-To add a new widget:
+To add a new widget, you must follow these exact steps to maintain strict type safety:
 
-1.  **Define Type:**
-    - Add to `WidgetType` union in `types.ts`.
-    - Add metadata to `TOOLS` array in `types.ts` (icon, label, color).
+1.  **Define Types (`types.ts`):**
+    - Add the new type string to the `WidgetType` union.
+    - Create a specific configuration interface (e.g., `export interface YourWidgetConfig { ... }`).
+    - Add your new interface to the `WidgetConfig` union.
+    - Update the `ConfigForWidget` helper type to map your `WidgetType` to your `YourWidgetConfig`.
+    - Add metadata to the `TOOLS` array (icon, label, color).
 
-2.  **Create Component:**
-    - Create `components/widgets/<Name>Widget.tsx`.
-    - Implement the main view and an optional settings view (`<Name>Settings`).
-    - Props: `React.FC<{ widget: WidgetData }>`
+2.  **Create Component (`components/widgets/<Name>Widget.tsx`):**
+    - Implement the main view and optional settings view.
+    - **Crucial:** Always cast `widget.config` to your specific interface immediately (e.g., `const config = widget.config as YourWidgetConfig`).
 
-3.  **Register:**
-    - Import components in `WidgetRenderer.tsx`.
+3.  **Register Renderer (`components/widgets/WidgetRenderer.tsx`):**
+    - Import your component(s).
     - Add cases to `getWidgetContent()` and `getWidgetSettings()`.
 
-4.  **Configure Defaults:**
-    - Add default config/dimensions to the `addWidget` function in `DashboardContext.tsx`.
+4.  **Configure Defaults (`context/DashboardContext.tsx`):**
+    - Add default dimensions and initial `config` values to the `addWidget` function.
+    - Ensure the default config matches your interface exactly.
+
+5.  **Assign Grade Levels (`config/widgetGradeLevels.ts`):**
+    - Add the widget's intended grade levels to `WIDGET_GRADE_LEVELS`.
 
 ---
 

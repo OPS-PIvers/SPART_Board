@@ -18,7 +18,7 @@
 
 - `@/` (Root Alias): Maps to the project root directory.
 - `/components/`: React components.
-  - `admin/`: Admin-specific components (`FeaturePermissionsManager.tsx`).
+  - `admin/`: Admin-specific components (`AdminSettings.tsx`, `FeaturePermissionsManager.tsx`).
   - `auth/`: Authentication UI (`LoginScreen.tsx`).
   - `common/`: Reusable components (e.g., `DraggableWindow.tsx`).
   - `layout/`: Core layout (`Sidebar.tsx`, `Dock.tsx`, `DashboardView.tsx`).
@@ -34,6 +34,8 @@
 
 - **State Management:** Centralized via React Context (`DashboardContext`, `AuthContext`).
 - **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`, `TOOLS`), and mapped in `WidgetRenderer.tsx`.
+- **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12, Universal) in `config/widgetGradeLevels.ts`.
+- **Feature Permissions:** Access to widgets can be toggled and restricted to admins or beta users via the `FeaturePermission` system and managed in `AdminSettings`.
 - **Data Persistence:**
   - **Primary:** Firestore (real-time sync).
   - **Fallback:** `localStorage` (migrated to Firestore on sign-in).
