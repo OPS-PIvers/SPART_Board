@@ -7,24 +7,36 @@
   },
 
   // 1. AUTO-INSTALLATION
-  // Installs Gemini CLI globally and your project dependencies automatically
-  "postCreateCommand": "npm install -g @google/gemini-cli && npm install",
+  // Installs necessary CLI tools and project dependencies automatically
+  "postCreateCommand": "npm install -g @google/gemini-cli firebase-tools && npm install",
 
   // 2. AUTO-START
   // Automatically clears the terminal and starts Gemini
   "postAttachCommand": "clear && echo 'Welcome to SPART Board AI! Starting Gemini...' && gemini",
 
+  // 3. PORT FORWARDING
+  // Automatically forwards the Vite dev server port and labels it
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "App Preview",
+      "onAutoForward": "notify"
+    }
+  },
+
   "customizations": {
     "vscode": {
       "settings": {
-        // 3. SIMPLIFIED INTERFACE
+        // 4. SIMPLIFIED INTERFACE
         // Hides sidebars and maps to focus purely on the AI tool
         "workbench.activityBar.location": "hidden",
         "workbench.statusBar.visible": true,
         "editor.minimap.enabled": false,
         "breadcrumbs.enabled": false,
         "terminal.integrated.fontSize": 15,
+        "terminal.integrated.defaultLocation": "editor",
         "files.autoSave": "afterDelay",
+        "workbench.startupEditor": "none",
 
         // Hides files that non-coders don't need to worry about
         "files.exclude": {
@@ -34,7 +46,24 @@
           "**/dist": true,
           ".devcontainer": true,
           ".github": true,
-          "package-lock.json": true
+          "package-lock.json": true,
+          "package.json": true,
+          "tsconfig.json": true,
+          "vite.config.ts": true,
+          "tailwind.config.js": true,
+          "postcss.config.js": true,
+          "eslint.config.js": true,
+          "firebase.json": true,
+          "firestore.indexes.json": true,
+          "firestore.rules": true,
+          ".firebaserc": true,
+          ".prettierrc": true,
+          ".prettierignore": true,
+          "LINTING_SETUP.md": true,
+          "ADMIN_SETUP.md": true,
+          "CLAUDE.md": true,
+          "DEV_WORKFLOW.md": true,
+          "AGENTS.md": true
         }
       },
       // Installs useful extensions silently
