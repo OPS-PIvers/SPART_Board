@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, RandomConfig } from '../../types';
 import {
@@ -549,6 +549,39 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     soundEnabled = true,
   } = config;
 
+  const [localFirstNames, setLocalFirstNames] = useState(firstNames);
+  const [localLastNames, setLocalLastNames] = useState(lastNames);
+
+  useEffect(() => {
+    setLocalFirstNames(firstNames);
+  }, [firstNames]);
+
+  useEffect(() => {
+    setLocalLastNames(lastNames);
+  }, [lastNames]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localFirstNames !== firstNames) {
+        updateWidget(widget.id, {
+          config: { ...config, firstNames: localFirstNames },
+        });
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [localFirstNames, firstNames, widget.id, updateWidget, config]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localLastNames !== lastNames) {
+        updateWidget(widget.id, {
+          config: { ...config, lastNames: localLastNames },
+        });
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [localLastNames, lastNames, widget.id, updateWidget, config]);
+
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },
     { id: 'shuffle', label: 'Shuffle', icon: Layers },
@@ -659,12 +692,15 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             First Names
           </label>
           <textarea
-            value={firstNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, firstNames: e.target.value },
-              })
-            }
+            value={localFirstNames}
+            onChange={(e) => setLocalFirstNames(e.target.value)}
+            onBlur={() => {
+              if (localFirstNames !== firstNames) {
+                updateWidget(widget.id, {
+                  config: { ...config, firstNames: localFirstNames },
+                });
+              }
+            }}
             placeholder="John&#10;Jane..."
             className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
           />
@@ -674,12 +710,15 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             Last Names
           </label>
           <textarea
-            value={lastNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, lastNames: e.target.value },
-              })
-            }
+            value={localLastNames}
+            onChange={(e) => setLocalLastNames(e.target.value)}
+            onBlur={() => {
+              if (localLastNames !== lastNames) {
+                updateWidget(widget.id, {
+                  config: { ...config, lastNames: localLastNames },
+                });
+              }
+            }}
             placeholder="Smith&#10;Doe..."
             className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
           />
