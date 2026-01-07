@@ -155,8 +155,8 @@ export const Sidebar: React.FC = () => {
             );
 
             setManagedBackgrounds((prev) => {
-              const updatedIds = new Set(publicBgs.map((b) => b.id));
-              const remaining = prev.filter((b) => !updatedIds.has(b.id));
+              // Remove old public backgrounds, keep beta and admin
+              const remaining = prev.filter((b) => b.accessLevel !== 'public');
               const all = [...remaining, ...publicBgs];
 
               // Deduplicate just in case (though paths should be unique)
@@ -182,8 +182,8 @@ export const Sidebar: React.FC = () => {
             );
 
             setManagedBackgrounds((prev) => {
-              const updatedIds = new Set(betaBgs.map((b) => b.id));
-              const remaining = prev.filter((b) => !updatedIds.has(b.id));
+              // Remove old beta backgrounds, keep public and admin
+              const remaining = prev.filter((b) => b.accessLevel !== 'beta');
               const all = [...remaining, ...betaBgs];
 
               // Deduplicate just in case (though paths should be unique)
