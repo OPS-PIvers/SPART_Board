@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// auth.token.email is the email of the authenticated user
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is an admin in Firestore
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email != null &&
+             firestore.exists(/databases/(default)/documents/admins/$(request.auth.token.email.lower()));
+    }
+
+    match /backgrounds/{userId}/{allPaths=**} {
+      // Allow users to read and write their own backgrounds
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow admins to manage all backgrounds
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow read for authenticated users to backgrounds managed by admins
+    // This is a catch-all for now
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+    }
+  }
+}

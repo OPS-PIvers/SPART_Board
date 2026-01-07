@@ -97,27 +97,33 @@ export const Sidebar: React.FC = () => {
       where('active', '==', true)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const backgrounds: BackgroundPreset[] = [];
-      snapshot.forEach((doc) => {
-        const bg = doc.data() as BackgroundPreset;
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const backgrounds: BackgroundPreset[] = [];
+        snapshot.forEach((doc) => {
+          const bg = doc.data() as BackgroundPreset;
 
-        // Filter based on access level
-        if (isAdmin) {
-          backgrounds.push(bg);
-        } else if (bg.accessLevel === 'public') {
-          backgrounds.push(bg);
-        } else if (
-          bg.accessLevel === 'beta' &&
-          bg.betaUsers.includes(user.email ?? '')
-        ) {
-          backgrounds.push(bg);
-        }
-      });
-      setManagedBackgrounds(
-        backgrounds.sort((a, b) => b.createdAt - a.createdAt)
-      );
-    });
+          // Filter based on access level
+          if (isAdmin) {
+            backgrounds.push(bg);
+          } else if (bg.accessLevel === 'public') {
+            backgrounds.push(bg);
+          } else if (
+            bg.accessLevel === 'beta' &&
+            bg.betaUsers.includes(user.email ?? '')
+          ) {
+            backgrounds.push(bg);
+          }
+        });
+        setManagedBackgrounds(
+          backgrounds.sort((a, b) => b.createdAt - a.createdAt)
+        );
+      },
+      (error) => {
+        console.error('Error in managed backgrounds snapshot:', error);
+      }
+    );
 
     return () => unsubscribe();
   }, [user, isAdmin]);

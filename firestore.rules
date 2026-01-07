@@ -7,7 +7,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null &&
              request.auth.token.email != null &&
-             exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()));
+             get(/databases/$(database)/documents/admins/$(request.auth.token.email.lower())).data.isAdmin == true;
     }
 
     // Admins collection
