@@ -5,12 +5,17 @@ import { Dices, Hash, RefreshCw } from 'lucide-react';
 
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
+
+// Add type definition for webkitAudioContext
+interface CustomWindow extends Window {
+  webkitAudioContext: typeof AudioContext;
+}
+
 const getDiceAudioCtx = () => {
   if (!diceAudioCtx) {
     const AudioContextClass =
       window.AudioContext ||
-      (window as typeof window & { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
+      (window as unknown as CustomWindow).webkitAudioContext;
     diceAudioCtx = new AudioContextClass();
   }
   return diceAudioCtx;
@@ -105,8 +110,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (values.length !== diceCount) {
       setValues(new Array(diceCount).fill(1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [diceCount]);
+  }, [diceCount, values.length]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4 gap-6">

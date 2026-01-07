@@ -19,36 +19,38 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const activeIdRef = React.useRef(activeId);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(
-    TOOLS.map((t) => t.type)
-  );
+  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(() => {
+    const saved = localStorage.getItem('classroom_visible_tools');
+    if (saved) {
+      try {
+        return JSON.parse(saved) as WidgetType[];
+      } catch (e) {
+        console.error('Failed to parse saved tools', e);
+      }
+    }
+    return TOOLS.map((t) => t.type);
+  });
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
   // Refs to prevent race conditions
   const lastLocalUpdateAt = useRef<number>(0);
-  const activeIdRef = useRef<string | null>(null);
 
   // Sync activeId to ref
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
 
-  // Set loading false when no user
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-    }
-  }, [user]);
-
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
     if (!user) {
-      return;
+      const timer = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(timer);
     }
 
-    setLoading(true);
+    const timer = setTimeout(() => setLoading(true), 0);
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards(
@@ -75,11 +77,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             });
           }
 
+          // If no active dashboard or active dashboard deleted, set to first
+          if (updatedDashboards.length > 0 && !activeIdRef.current) {
+            // We need to set activeId, but we are inside setDashboards (render phase-ish).
+            // However, setActiveId is a state setter, so it's allowed but might trigger re-render.
+            // Better to do this in an effect? But we need to know WHEN dashboards update.
+            // This logic was in the PR inside this callback.
+            // We can't call setActiveId synchronously here if it causes a loop.
+            // But updatedDashboards is coming from an external event.
+            // Let's assume the PR logic was tested.
+            // Wait, we can't call setActiveId inside the setDashboards updater function technically?
+            // Actually we can, but it's a side effect.
+            // Ideally we check this AFTER setting dashboards.
+            // But for now I'll include the check logic here but maybe move the side effect out?
+            // No, I'll stick to the PR logic:
+            // The PR had:
+            // if (updatedDashboards.length > 0 && !activeIdRef.current) { setActiveId(...) }
+            // This was NOT inside setDashboards updater in the PR snippet I saw?
+            // Let me re-check the snippet.
+            // PR:
+            // const unsubscribe = subscribeToDashboards((updatedDashboards, hasPendingWrites) => {
+            //   setDashboards((prev) => { ... return updatedDashboards });
+            //   if (updatedDashboards.length > 0 && !activeIdRef.current) { setActiveId(...) }
+            // }
+            // Ah, it was OUTSIDE setDashboards.
+          }
+
           return updatedDashboards;
         });
 
-        // If no active dashboard or active dashboard deleted, set to first
-        // Use updatedDashboards here as it's the latest list from server
+        // The logic from PR was likely here, outside setDashboards
         if (updatedDashboards.length > 0 && !activeIdRef.current) {
           setActiveId(updatedDashboards[0].id);
         }
@@ -108,12 +135,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     );
-
-    // Load tool visibility from localStorage (user preference)
-    const savedTools = localStorage.getItem('classroom_visible_tools');
-    if (savedTools) {
-      setVisibleTools(JSON.parse(savedTools) as WidgetType[]);
-    }
 
     // Migrate localStorage data on first sign-in
     const localData = localStorage.getItem('classroom_dashboards');
@@ -145,9 +166,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         });
     }
 
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [user, subscribeToDashboards, migrated, saveDashboard]);
 
   // Auto-save to Firestore with debouncing
   useEffect(() => {
@@ -173,8 +196,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       clearTimeout(timeoutId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboards, activeId, user, loading]);
+  }, [dashboards, activeId, user, loading, saveDashboard]);
 
   const toggleToolVisibility = (type: WidgetType) => {
     setVisibleTools((prev) => {

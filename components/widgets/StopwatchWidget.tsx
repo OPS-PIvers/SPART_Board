@@ -17,7 +17,6 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
   const [time, setTime] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
-  const requestRef = useRef<number>(null);
   const startTimeRef = useRef<number>(0);
 
   const {
@@ -32,25 +31,29 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
     scaleMultiplier?: number;
   };
 
-  const update = (now: number) => {
-    if (isActive) {
-      setTime(now - startTimeRef.current);
-      requestRef.current = requestAnimationFrame(update);
-    }
-  };
-
   useEffect(() => {
-    if (isActive) {
-      startTimeRef.current = performance.now() - time;
-      requestRef.current = requestAnimationFrame(update);
-    } else {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    }
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    let animationFrameId: number;
+
+    const update = (now: number) => {
+      if (startTimeRef.current === 0) {
+        startTimeRef.current = now - time;
+      }
+      setTime(now - startTimeRef.current);
+      animationFrameId = requestAnimationFrame(update);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive]);
+
+    if (isActive) {
+      // Reset start time ref on activation to ensure correct offset calculation
+      startTimeRef.current = performance.now() - time;
+      animationFrameId = requestAnimationFrame(update);
+    }
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isActive, time]);
 
   const formatTime = (ms: number) => {
     const mins = Math.floor(ms / 60000);

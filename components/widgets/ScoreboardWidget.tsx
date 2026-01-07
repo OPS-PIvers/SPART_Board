@@ -1,32 +1,23 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, ScoreboardConfig } from '../../types';
 import { Plus, Minus } from 'lucide-react';
 
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const {
-    scoreA = 0,
-    scoreB = 0,
-    teamA = 'Team A',
-    teamB = 'Team B',
-  } = (widget.config || {}) as {
-    scoreA?: number;
-    scoreB?: number;
-    teamA?: string;
-    teamB?: string;
-  };
+  const config = widget.config as ScoreboardConfig;
+  const { scoreA = 0, scoreB = 0, teamA = 'Team A', teamB = 'Team B' } = config;
 
   const updateScore = (team: 'A' | 'B', delta: number) => {
     if (team === 'A')
       updateWidget(widget.id, {
-        config: { ...widget.config, scoreA: Math.max(0, scoreA + delta) },
+        config: { ...config, scoreA: Math.max(0, scoreA + delta) },
       });
     else
       updateWidget(widget.id, {
-        config: { ...widget.config, scoreB: Math.max(0, scoreB + delta) },
+        config: { ...config, scoreB: Math.max(0, scoreB + delta) },
       });
   };
 

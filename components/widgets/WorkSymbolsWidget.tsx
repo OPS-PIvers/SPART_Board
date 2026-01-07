@@ -15,8 +15,8 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { voice = 'none', routine = 'none' } =
-    widget.config as WorkSymbolsConfig;
+  const config = widget.config as WorkSymbolsConfig;
+  const { voice = 'none', routine = 'none' } = config;
 
   const voices = [
     { id: 'silence', label: 'Silence', icon: VolumeX, color: 'bg-red-500' },
@@ -49,7 +49,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() =>
                 updateWidget(widget.id, {
                   config: {
-                    ...widget.config,
+                    ...config,
                     voice: voice === v.id ? 'none' : v.id,
                   },
                 })
@@ -76,7 +76,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() =>
                 updateWidget(widget.id, {
                   config: {
-                    ...widget.config,
+                    ...config,
                     routine: routine === r.id ? 'none' : r.id,
                   },
                 })

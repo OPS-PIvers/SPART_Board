@@ -18,12 +18,16 @@ import {
 // Singleton-like Audio Manager to prevent performance issues
 let audioCtx: AudioContext | null = null;
 
+// Add type definition for webkitAudioContext
+interface CustomWindow extends Window {
+  webkitAudioContext: typeof AudioContext;
+}
+
 const getAudioCtx = () => {
   if (!audioCtx) {
     const AudioContextClass =
       window.AudioContext ||
-      (window as typeof window & { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
+      (window as unknown as CustomWindow).webkitAudioContext;
     audioCtx = new AudioContextClass();
   }
   return audioCtx;
@@ -72,6 +76,7 @@ const playWinner = () => {
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
+  const config = widget.config as RandomConfig;
   const {
     firstNames = '',
     lastNames = '',
@@ -80,7 +85,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     groupSize = 3,
     lastResult = null,
     soundEnabled = true,
-  } = widget.config as RandomConfig;
+  } = config;
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
@@ -189,7 +194,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...widget.config, lastResult: final },
+              config: { ...config, lastResult: final },
             });
           }
         }, 80);
@@ -215,7 +220,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...widget.config, lastResult: students[winnerIndex] },
+              config: { ...config, lastResult: students[winnerIndex] },
             });
             return;
           }
@@ -243,7 +248,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...widget.config, lastResult: final },
+              config: { ...config, lastResult: final },
             });
           }
         }, 100);
@@ -264,7 +269,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         if (soundEnabled) playWinner();
         setIsSpinning(false);
         updateWidget(widget.id, {
-          config: { ...widget.config, lastResult: result },
+          config: { ...config, lastResult: result },
         });
       }, 500);
     }
@@ -534,6 +539,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
+  const config = widget.config as RandomConfig;
   const {
     firstNames = '',
     lastNames = '',
@@ -541,7 +547,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     visualStyle = 'flash',
     groupSize = 3,
     soundEnabled = true,
-  } = widget.config as RandomConfig;
+  } = config;
 
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },
@@ -580,7 +586,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
         <button
           onClick={() =>
             updateWidget(widget.id, {
-              config: { ...widget.config, soundEnabled: !soundEnabled },
+              config: { ...config, soundEnabled: !soundEnabled },
             })
           }
           className={`w-12 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-indigo-500' : 'bg-slate-300'}`}
@@ -601,7 +607,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               key={m.id}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...widget.config, mode: m.id, lastResult: null },
+                  config: { ...config, mode: m.id, lastResult: null },
                 })
               }
               className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
@@ -628,7 +634,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 key={s.id}
                 onClick={() =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, visualStyle: s.id },
+                    config: { ...config, visualStyle: s.id },
                   })
                 }
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
@@ -656,7 +662,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             value={firstNames}
             onChange={(e) =>
               updateWidget(widget.id, {
-                config: { ...widget.config, firstNames: e.target.value },
+                config: { ...config, firstNames: e.target.value },
               })
             }
             placeholder="John&#10;Jane..."
@@ -671,7 +677,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             value={lastNames}
             onChange={(e) =>
               updateWidget(widget.id, {
-                config: { ...widget.config, lastNames: e.target.value },
+                config: { ...config, lastNames: e.target.value },
               })
             }
             placeholder="Smith&#10;Doe..."
@@ -695,7 +701,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               onChange={(e) =>
                 updateWidget(widget.id, {
                   config: {
-                    ...widget.config,
+                    ...config,
                     groupSize: parseInt(e.target.value),
                   },
                 })
@@ -714,7 +720,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
           if (confirm('Clear all student data?')) {
             updateWidget(widget.id, {
               config: {
-                ...widget.config,
+                ...config,
                 firstNames: '',
                 lastNames: '',
                 lastResult: null,

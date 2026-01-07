@@ -6,6 +6,11 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
   // Pre-fill history with 50 zeros so the line is visible on start
 
+  // Add type definition for webkitAudioContext
+  interface CustomWindow extends Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+
   const [history, setHistory] = useState<number[]>(new Array(50).fill(0));
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -26,11 +31,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         streamRef.current = stream;
         const AudioContextClass =
           window.AudioContext ||
-          (
-            window as typeof window & {
-              webkitAudioContext: typeof AudioContext;
-            }
-          ).webkitAudioContext;
+          (window as unknown as CustomWindow).webkitAudioContext;
         const audioContext = new AudioContextClass();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
@@ -179,11 +180,8 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    sensitivity = 5,
-    orientation = 'horizontal',
-    style = 'bar',
-  } = widget.config as SoundConfig;
+  const config = widget.config as SoundConfig;
+  const { sensitivity = 5, orientation = 'horizontal', style = 'bar' } = config;
 
   return (
     <div className="space-y-6">
@@ -201,7 +199,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...widget.config,
+                  ...config,
                   sensitivity: parseFloat(e.target.value),
                 },
               })
@@ -225,7 +223,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 key={o}
                 onClick={() =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, orientation: o },
+                    config: { ...config, orientation: o },
                   })
                 }
                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${orientation === o ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -245,7 +243,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 key={s}
                 onClick={() =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, style: s },
+                    config: { ...config, style: s },
                   })
                 }
                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${style === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}

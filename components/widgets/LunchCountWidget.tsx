@@ -17,12 +17,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast } = useDashboard();
+  const config = widget.config as LunchCountConfig;
   const {
     firstNames = '',
     lastNames = '',
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
-  } = widget.config as LunchCountConfig;
+  } = config;
 
   const students = useMemo(() => {
     const firsts = firstNames
@@ -58,7 +59,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     if (name) {
       const newAssignments = { ...assignments, [name]: type };
       updateWidget(widget.id, {
-        config: { ...widget.config, assignments: newAssignments },
+        config: { ...config, assignments: newAssignments },
       });
     }
   };
@@ -80,7 +81,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const resetCount = () => {
     if (confirm('Reset all lunch choices for today?')) {
       updateWidget(widget.id, {
-        config: { ...widget.config, assignments: {} },
+        config: { ...config, assignments: {} },
       });
     }
   };
@@ -235,11 +236,12 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
+  const config = widget.config as LunchCountConfig;
   const {
     firstNames = '',
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
-  } = widget.config as LunchCountConfig;
+  } = config;
 
   return (
     <div className="space-y-6">
@@ -252,7 +254,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             value={firstNames}
             onChange={(e) =>
               updateWidget(widget.id, {
-                config: { ...widget.config, firstNames: e.target.value },
+                config: { ...config, firstNames: e.target.value },
               })
             }
             placeholder="Alice&#10;Bob&#10;Charlie..."
@@ -267,7 +269,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             value={lastNames}
             onChange={(e) =>
               updateWidget(widget.id, {
-                config: { ...widget.config, lastNames: e.target.value },
+                config: { ...config, lastNames: e.target.value },
               })
             }
             placeholder="Smith&#10;Jones&#10;Brown..."
@@ -285,7 +287,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           value={recipient}
           onChange={(e) =>
             updateWidget(widget.id, {
-              config: { ...widget.config, recipient: e.target.value },
+              config: { ...config, recipient: e.target.value },
             })
           }
           placeholder="email@example.com"

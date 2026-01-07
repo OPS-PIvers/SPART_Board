@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
 
 const convertToEmbedUrl = (url: string): string => {
@@ -44,11 +44,8 @@ const convertToEmbedUrl = (url: string): string => {
 };
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const {
-    mode = 'url',
-    url = '',
-    html = '',
-  } = widget.config as { mode?: string; url?: string; html?: string };
+  const config = widget.config as EmbedConfig;
+  const { mode = 'url', url = '', html = '' } = config;
   const embedUrl = convertToEmbedUrl(url);
 
   if (mode === 'url' && !url) {
@@ -99,11 +96,8 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    mode = 'url',
-    url = '',
-    html = '',
-  } = widget.config as { mode?: string; url?: string; html?: string };
+  const config = widget.config as EmbedConfig;
+  const { mode = 'url', url = '', html = '' } = config;
 
   return (
     <div className="space-y-4">
@@ -112,7 +106,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <button
           onClick={() =>
             updateWidget(widget.id, {
-              config: { ...widget.config, mode: 'url' },
+              config: { ...config, mode: 'url' },
             })
           }
           className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'url' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
@@ -122,7 +116,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <button
           onClick={() =>
             updateWidget(widget.id, {
-              config: { ...widget.config, mode: 'code' },
+              config: { ...config, mode: 'code' },
             })
           }
           className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'code' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
@@ -144,7 +138,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 placeholder="https://example.com or Google Docs link..."
                 onChange={(e) =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, url: e.target.value },
+                    config: { ...config, url: e.target.value },
                   })
                 }
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10 text-slate-900"
@@ -187,7 +181,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               placeholder="<html>&#10;  <style>body { background: #f0f; }</style>&#10;  <body><h1>Hello Class!</h1></body>&#10;</html>"
               onChange={(e) =>
                 updateWidget(widget.id, {
-                  config: { ...widget.config, html: e.target.value },
+                  config: { ...config, html: e.target.value },
                 })
               }
               className="w-full h-48 p-3 text-[11px] font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none leading-relaxed custom-scrollbar"
