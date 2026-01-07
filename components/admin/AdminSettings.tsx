@@ -51,7 +51,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
       aria-modal="true"
       aria-labelledby="admin-settings-title"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 pb-0 flex flex-col gap-4">
           <div className="flex items-center justify-between">
