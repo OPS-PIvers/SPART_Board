@@ -14,7 +14,7 @@ const AuthenticatedApp: React.FC = () => {
   }
 
   return (
-    <DashboardProvider>
+    <DashboardProvider key={user.uid}>
       <DashboardView />
     </DashboardProvider>
   );

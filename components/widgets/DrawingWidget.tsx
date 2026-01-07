@@ -68,13 +68,14 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [paths, currentPath, mode, widget.w, widget.h, draw]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!canvasRef.current) return;
     setIsDrawing(true);
     const pos = getPos(e);
     setCurrentPath([pos]);
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
+    if (!isDrawing || !canvasRef.current) return;
     const pos = getPos(e);
     setCurrentPath((prev) => [...prev, pos]);
   };
@@ -96,9 +97,9 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      return { x: 0, y: 0 };
-    }
+    // Should be guaranteed by callers, but safe fallback
+    if (!canvas) return { x: 0, y: 0 };
+
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;

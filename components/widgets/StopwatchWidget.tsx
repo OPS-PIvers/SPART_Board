@@ -35,9 +35,6 @@ export const StopwatchWidget: React.FC<{ widget: WidgetData }> = ({
     let animationFrameId: number;
 
     const update = (now: number) => {
-      if (startTimeRef.current === 0) {
-        startTimeRef.current = now - time;
-      }
       setTime(now - startTimeRef.current);
       animationFrameId = requestAnimationFrame(update);
     };

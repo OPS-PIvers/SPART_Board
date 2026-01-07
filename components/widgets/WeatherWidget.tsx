@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, WeatherConfig } from '../../types';
 import {
   Sun,
   Cloud,
@@ -14,14 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-interface WeatherConfig {
-  temp?: number;
-  condition?: string;
-  isAuto?: boolean;
-  locationName?: string;
-  lastSync?: number | null;
-  city?: string;
-}
+// Interface now imported from types.ts
 
 interface OpenWeatherData {
   cod: number | string;
@@ -163,7 +156,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       updateWidget(widget.id, {
         config: {
-          ...widget.config,
+          ...config,
 
           temp: data.main.temp,
 
@@ -221,7 +214,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         <button
           onClick={() =>
             updateWidget(widget.id, {
-              config: { ...widget.config, isAuto: false },
+              config: { ...config, isAuto: false },
             })
           }
           className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${!isAuto ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
@@ -231,7 +224,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         <button
           onClick={() =>
             updateWidget(widget.id, {
-              config: { ...widget.config, isAuto: true },
+              config: { ...config, isAuto: true },
             })
           }
           className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${isAuto ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
@@ -256,7 +249,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                 onChange={(e) =>
                   updateWidget(widget.id, {
                     config: {
-                      ...widget.config,
+                      ...config,
                       temp: parseInt(e.target.value),
                       locationName: 'Manual Mode',
                     },
@@ -280,7 +273,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   key={c.id}
                   onClick={() =>
                     updateWidget(widget.id, {
-                      config: { ...widget.config, condition: c.id },
+                      config: { ...config, condition: c.id },
                     })
                   }
                   className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${condition === c.id ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-100 bg-white text-slate-400'}`}
@@ -317,7 +310,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                 value={city}
                 onChange={(e) =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, city: e.target.value },
+                    config: { ...config, city: e.target.value },
                   })
                 }
                 disabled={!hasApiKey}

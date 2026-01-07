@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, SoundConfig } from '../../types';
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
@@ -20,11 +20,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     sensitivity = 5,
     orientation = 'horizontal',
     style = 'bar',
-  } = widget.config as {
-    sensitivity?: number;
-    orientation?: 'horizontal' | 'vertical';
-    style?: 'bar' | 'line';
-  };
+  } = widget.config as SoundConfig;
 
   useEffect(() => {
     const startAudio = async () => {
@@ -184,15 +180,8 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-  const {
-    sensitivity = 5,
-    orientation = 'horizontal',
-    style = 'bar',
-  } = widget.config as {
-    sensitivity?: number;
-    orientation?: 'horizontal' | 'vertical';
-    style?: 'bar' | 'line';
-  };
+  const config = widget.config as SoundConfig;
+  const { sensitivity = 5, orientation = 'horizontal', style = 'bar' } = config;
 
   return (
     <div className="space-y-6">
@@ -210,7 +199,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             onChange={(e) =>
               updateWidget(widget.id, {
                 config: {
-                  ...widget.config,
+                  ...config,
                   sensitivity: parseFloat(e.target.value),
                 },
               })
@@ -234,7 +223,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 key={o}
                 onClick={() =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, orientation: o },
+                    config: { ...config, orientation: o },
                   })
                 }
                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${orientation === o ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -254,7 +243,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 key={s}
                 onClick={() =>
                   updateWidget(widget.id, {
-                    config: { ...widget.config, style: s },
+                    config: { ...config, style: s },
                   })
                 }
                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${style === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}

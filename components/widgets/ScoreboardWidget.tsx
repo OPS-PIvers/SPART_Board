@@ -1,32 +1,23 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, ScoreboardConfig } from '../../types';
 import { Plus, Minus } from 'lucide-react';
 
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const {
-    scoreA = 0,
-    scoreB = 0,
-    teamA = 'Team A',
-    teamB = 'Team B',
-  } = (widget.config || {}) as {
-    scoreA?: number;
-    scoreB?: number;
-    teamA?: string;
-    teamB?: string;
-  };
+  const config = widget.config as ScoreboardConfig;
+  const { scoreA = 0, scoreB = 0, teamA = 'Team A', teamB = 'Team B' } = config;
 
   const updateScore = (team: 'A' | 'B', delta: number) => {
     if (team === 'A')
       updateWidget(widget.id, {
-        config: { ...widget.config, scoreA: Math.max(0, scoreA + delta) },
+        config: { ...config, scoreA: Math.max(0, scoreA + delta) },
       });
     else
       updateWidget(widget.id, {
-        config: { ...widget.config, scoreB: Math.max(0, scoreB + delta) },
+        config: { ...config, scoreB: Math.max(0, scoreB + delta) },
       });
   };
 
@@ -83,6 +74,58 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             <Plus className="w-4 h-4" />
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
+  const { updateWidget } = useDashboard();
+  const config = widget.config as ScoreboardConfig;
+  const { teamA = 'Team A', teamB = 'Team B' } = config;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Team Names
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="text"
+            value={teamA}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, teamA: e.target.value },
+              })
+            }
+            placeholder="Team A Name"
+            className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-blue-700"
+          />
+          <input
+            type="text"
+            value={teamB}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, teamB: e.target.value },
+              })
+            }
+            placeholder="Team B Name"
+            className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-red-700"
+          />
+        </div>
+      </div>
+
+      <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+        <h4 className="text-[10px] font-black text-slate-700 uppercase mb-2">
+          Instructions
+        </h4>
+        <p className="text-[9px] text-slate-600 leading-normal font-medium">
+          Use the <b>+</b> and <b>-</b> buttons on the main widget to update the
+          score. Scores cannot go below zero.
+        </p>
       </div>
     </div>
   );

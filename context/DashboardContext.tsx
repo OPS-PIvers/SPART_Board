@@ -32,7 +32,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     return TOOLS.map((t) => t.type);
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!user);
   const [migrated, setMigrated] = useState(false);
 
   useEffect(() => {
@@ -42,11 +42,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
     if (!user) {
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(timer);
+      return;
     }
-
-    const timer = setTimeout(() => setLoading(true), 0);
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards((updatedDashboards) => {
@@ -111,10 +108,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         });
     }
 
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
+    return unsubscribe;
   }, [user, subscribeToDashboards, migrated, saveDashboard]);
 
   // Auto-save to Firestore with debouncing

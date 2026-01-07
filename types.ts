@@ -155,10 +155,7 @@ export interface PollConfig {
   options: PollOption[];
 }
 
-export interface WebcamConfig {
-  // Record<string, never> ensures an empty object
-  _dummy?: never;
-}
+export type WebcamConfig = Record<string, never>;
 
 export interface ScoreboardConfig {
   scoreA: number;
