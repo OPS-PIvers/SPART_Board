@@ -125,8 +125,9 @@ npm run format
 Use `useDashboard()` hook to access centralized dashboard state:
 
 ```typescript
-// Import using relative paths (project uses relative imports, not @ alias)
-import { useDashboard } from '../../context/useDashboard'; // adjust path as needed
+// Import using relative paths (project standard - NOT @ alias)
+// Example from components/widgets/ subdirectory:
+import { useDashboard } from '../../context/useDashboard';
 const { widgets, addWidget, updateWidget, deleteWidget, bringToFront } =
   useDashboard();
 ```
