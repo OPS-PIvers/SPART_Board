@@ -54,13 +54,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards(
-      (updatedDashboards, hasPendingWrites) => {
+      (updatedDashboards, _hasPendingWrites) => {
         setDashboards((prev) => {
-          // If this snapshot has pending writes, it already includes our local changes
-          if (hasPendingWrites) {
-            return updatedDashboards;
-          }
-
           // If it's a server snapshot, check if we have very recent local changes
           const now = Date.now();
           if (now - lastLocalUpdateAt.current < 5000) {
