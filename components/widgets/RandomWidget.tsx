@@ -587,6 +587,18 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   const firstNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Store latest values in refs to avoid unnecessary effect re-runs
+  const configRef = useRef(config);
+  const updateWidgetRef = useRef(updateWidget);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  useEffect(() => {
+    updateWidgetRef.current = updateWidget;
+  }, [updateWidget]);
+
   useEffect(() => {
     setLocalFirstNames(firstNames);
   }, [firstNames]);
@@ -598,9 +610,9 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (localFirstNames !== firstNames) {
-        updateWidget(widget.id, {
+        updateWidgetRef.current(widget.id, {
           config: {
-            ...(widget.config as RandomConfig),
+            ...configRef.current,
             firstNames: localFirstNames,
           },
         });
@@ -608,14 +620,14 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     }, 1000);
     firstNamesTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [localFirstNames, firstNames, widget.id, widget.config, updateWidget]);
+  }, [localFirstNames, firstNames, widget.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (localLastNames !== lastNames) {
-        updateWidget(widget.id, {
+        updateWidgetRef.current(widget.id, {
           config: {
-            ...(widget.config as RandomConfig),
+            ...configRef.current,
             lastNames: localLastNames,
           },
         });
@@ -623,7 +635,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     }, 1000);
     lastNamesTimerRef.current = timer;
     return () => clearTimeout(timer);
-  }, [localLastNames, lastNames, widget.id, widget.config, updateWidget]);
+  }, [localLastNames, lastNames, widget.id]);
 
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },
@@ -744,9 +756,9 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 firstNamesTimerRef.current = null;
               }
               if (localFirstNames !== firstNames) {
-                updateWidget(widget.id, {
+                updateWidgetRef.current(widget.id, {
                   config: {
-                    ...(widget.config as RandomConfig),
+                    ...configRef.current,
                     firstNames: localFirstNames,
                   },
                 });
@@ -770,9 +782,9 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 lastNamesTimerRef.current = null;
               }
               if (localLastNames !== lastNames) {
-                updateWidget(widget.id, {
+                updateWidgetRef.current(widget.id, {
                   config: {
-                    ...(widget.config as RandomConfig),
+                    ...configRef.current,
                     lastNames: localLastNames,
                   },
                 });
