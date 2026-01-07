@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, RandomConfig } from '../../types';
 import {
@@ -85,6 +85,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     groupSize = 3,
     lastResult = null,
     soundEnabled = true,
+    remainingStudents = [],
   } = config;
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -179,6 +180,25 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsSpinning(true);
 
     if (mode === 'single') {
+      // Logic for "bag" selection:
+      // 1. Get current pool from config or init with all students
+      // 2. Filter pool to remove any students that were deleted from roster
+      let pool =
+        remainingStudents.length > 0 ? remainingStudents : [...students];
+      pool = pool.filter((s) => students.includes(s));
+
+      // 3. If pool is empty (everyone picked or all remaining deleted), reset
+      if (pool.length === 0) {
+        pool = [...students];
+      }
+
+      // 4. Pick winner
+      const winnerIndexInPool = Math.floor(Math.random() * pool.length);
+      const winnerName = pool[winnerIndexInPool];
+
+      // 5. Calculate new remaining list
+      const nextRemaining = pool.filter((_, i) => i !== winnerIndexInPool);
+
       if (visualStyle === 'flash') {
         let count = 0;
         const interval = setInterval(() => {
@@ -189,18 +209,24 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           count++;
           if (count > 20) {
             clearInterval(interval);
-            const final = students[Math.floor(Math.random() * students.length)];
-            setDisplayResult(final);
+            setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...config, lastResult: final },
+              config: {
+                ...config,
+                lastResult: winnerName,
+                remainingStudents: nextRemaining,
+              },
             });
           }
         }, 80);
       } else if (visualStyle === 'wheel') {
         const extraSpins = 5;
-        const winnerIndex = Math.floor(Math.random() * students.length);
+        // Find index of winnerName in the full students list for wheel targeting
+        let winnerIndex = students.indexOf(winnerName);
+        if (winnerIndex === -1) winnerIndex = 0; // Fallback
+
         const segmentAngle = 360 / students.length;
         const targetRotation =
           rotation +
@@ -216,11 +242,15 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         const tickSequence = (count: number) => {
           const elapsed = Date.now() - startTime;
           if (elapsed >= duration) {
-            setDisplayResult(students[winnerIndex]);
+            setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...config, lastResult: students[winnerIndex] },
+              config: {
+                ...config,
+                lastResult: winnerName,
+                remainingStudents: nextRemaining,
+              },
             });
             return;
           }
@@ -243,12 +273,15 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           count++;
           if (count > max) {
             clearInterval(interval);
-            const final = students[Math.floor(Math.random() * students.length)];
-            setDisplayResult(final);
+            setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
             updateWidget(widget.id, {
-              config: { ...config, lastResult: final },
+              config: {
+                ...config,
+                lastResult: winnerName,
+                remainingStudents: nextRemaining,
+              },
             });
           }
         }, 100);
@@ -549,6 +582,61 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     soundEnabled = true,
   } = config;
 
+  const [localFirstNames, setLocalFirstNames] = useState(firstNames);
+  const [localLastNames, setLocalLastNames] = useState(lastNames);
+  const firstNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Store latest values in refs to avoid unnecessary effect re-runs
+  const configRef = useRef(config);
+  const updateWidgetRef = useRef(updateWidget);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  useEffect(() => {
+    updateWidgetRef.current = updateWidget;
+  }, [updateWidget]);
+
+  useEffect(() => {
+    setLocalFirstNames(firstNames);
+  }, [firstNames]);
+
+  useEffect(() => {
+    setLocalLastNames(lastNames);
+  }, [lastNames]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localFirstNames !== firstNames) {
+        updateWidgetRef.current(widget.id, {
+          config: {
+            ...configRef.current,
+            firstNames: localFirstNames,
+          },
+        });
+      }
+    }, 1000);
+    firstNamesTimerRef.current = timer;
+    return () => clearTimeout(timer);
+  }, [localFirstNames, firstNames, widget.id]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localLastNames !== lastNames) {
+        updateWidgetRef.current(widget.id, {
+          config: {
+            ...configRef.current,
+            lastNames: localLastNames,
+          },
+        });
+      }
+    }, 1000);
+    lastNamesTimerRef.current = timer;
+    return () => clearTimeout(timer);
+  }, [localLastNames, lastNames, widget.id]);
+
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },
     { id: 'shuffle', label: 'Shuffle', icon: Layers },
@@ -659,12 +747,23 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             First Names
           </label>
           <textarea
-            value={firstNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, firstNames: e.target.value },
-              })
-            }
+            value={localFirstNames}
+            onChange={(e) => setLocalFirstNames(e.target.value)}
+            onBlur={() => {
+              // Cancel debounce timer to prevent duplicate updates
+              if (firstNamesTimerRef.current) {
+                clearTimeout(firstNamesTimerRef.current);
+                firstNamesTimerRef.current = null;
+              }
+              if (localFirstNames !== firstNames) {
+                updateWidgetRef.current(widget.id, {
+                  config: {
+                    ...configRef.current,
+                    firstNames: localFirstNames,
+                  },
+                });
+              }
+            }}
             placeholder="John&#10;Jane..."
             className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
           />
@@ -674,12 +773,23 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             Last Names
           </label>
           <textarea
-            value={lastNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, lastNames: e.target.value },
-              })
-            }
+            value={localLastNames}
+            onChange={(e) => setLocalLastNames(e.target.value)}
+            onBlur={() => {
+              // Cancel debounce timer to prevent duplicate updates
+              if (lastNamesTimerRef.current) {
+                clearTimeout(lastNamesTimerRef.current);
+                lastNamesTimerRef.current = null;
+              }
+              if (localLastNames !== lastNames) {
+                updateWidgetRef.current(widget.id, {
+                  config: {
+                    ...configRef.current,
+                    lastNames: localLastNames,
+                  },
+                });
+              }
+            }}
             placeholder="Smith&#10;Doe..."
             className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
           />
@@ -724,6 +834,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 firstNames: '',
                 lastNames: '',
                 lastResult: null,
+                remainingStudents: [],
               },
             });
           }
