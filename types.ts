@@ -110,7 +110,11 @@ export interface ChecklistConfig {
 export interface RandomConfig {
   firstNames: string;
   lastNames: string;
-  mode: string;
+  mode: 'single' | 'shuffle' | 'groups';
+  visualStyle?: 'flash' | 'wheel' | 'slots';
+  groupSize?: number;
+  lastResult?: string | string[] | string[][];
+  soundEnabled?: boolean;
 }
 
 export interface DiceConfig {
@@ -119,10 +123,12 @@ export interface DiceConfig {
 
 export interface SoundConfig {
   sensitivity: number;
+  orientation?: 'horizontal' | 'vertical';
+  style?: 'bar' | 'line';
 }
 
 export interface DrawingConfig {
-  mode: string;
+  mode: 'window' | 'overlay';
   paths: Path[];
   color?: string;
   width?: number;

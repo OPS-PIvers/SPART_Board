@@ -7,11 +7,12 @@ import { WidgetData, TimerConfig } from '../../types';
 let timerAudioCtx: AudioContext | null = null;
 
 const getTimerAudioCtx = () => {
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!timerAudioCtx) {
-    timerAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    timerAudioCtx = new AudioContextClass();
   }
   return timerAudioCtx;
 };

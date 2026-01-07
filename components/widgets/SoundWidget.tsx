@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, SoundConfig } from '../../types';
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
@@ -15,11 +15,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     sensitivity = 5,
     orientation = 'horizontal',
     style = 'bar',
-  } = widget.config as {
-    sensitivity?: number;
-    orientation?: 'horizontal' | 'vertical';
-    style?: 'bar' | 'line';
-  };
+  } = widget.config as SoundConfig;
 
   useEffect(() => {
     const startAudio = async () => {
@@ -28,9 +24,14 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           audio: true,
         });
         streamRef.current = stream;
-        const audioContext =
-          new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-          (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass =
+          window.AudioContext ||
+          (
+            window as typeof window & {
+              webkitAudioContext: typeof AudioContext;
+            }
+          ).webkitAudioContext;
+        const audioContext = new AudioContextClass();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -182,11 +183,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     sensitivity = 5,
     orientation = 'horizontal',
     style = 'bar',
-  } = widget.config as {
-    sensitivity?: number;
-    orientation?: 'horizontal' | 'vertical';
-    style?: 'bar' | 'line';
-  };
+  } = widget.config as SoundConfig;
 
   return (
     <div className="space-y-6">

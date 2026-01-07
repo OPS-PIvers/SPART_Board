@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, RandomConfig } from '../../types';
 import {
   Users,
   UserPlus,
@@ -19,9 +19,13 @@ import {
 let audioCtx: AudioContext | null = null;
 
 const getAudioCtx = () => {
-  audioCtx ??=
-    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    (window.AudioContext || (window as any).webkitAudioContext)();
+  if (!audioCtx) {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    audioCtx = new AudioContextClass();
+  }
   return audioCtx;
 };
 
@@ -76,15 +80,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     groupSize = 3,
     lastResult = null,
     soundEnabled = true,
-  } = widget.config as {
-    firstNames?: string;
-    lastNames?: string;
-    mode?: string;
-    visualStyle?: string;
-    groupSize?: number;
-    lastResult?: string | string[] | string[][];
-    soundEnabled?: boolean;
-  };
+  } = widget.config as RandomConfig;
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
@@ -157,16 +153,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return {};
   }, [mode, visualStyle, displayResult, widget.w, widget.h]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shuffle = (array: any[]) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const shuffle = <T,>(array: T[]): T[] => {
     const newArr = [...array];
     for (let i = newArr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return newArr;
   };
 
@@ -549,14 +541,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     visualStyle = 'flash',
     groupSize = 3,
     soundEnabled = true,
-  } = widget.config as {
-    firstNames?: string;
-    lastNames?: string;
-    mode?: string;
-    visualStyle?: string;
-    groupSize?: number;
-    soundEnabled?: boolean;
-  };
+  } = widget.config as RandomConfig;
 
   const modes = [
     { id: 'single', label: 'Pick One', icon: UserPlus },

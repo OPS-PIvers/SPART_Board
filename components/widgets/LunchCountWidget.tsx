@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData } from '../../types';
+import { WidgetData, LunchCountConfig } from '../../types';
 import {
   Users,
   Send,
@@ -22,12 +22,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
-  } = widget.config as {
-    firstNames?: string;
-    lastNames?: string;
-    assignments?: Record<string, string>;
-    recipient?: string;
-  };
+  } = widget.config as LunchCountConfig;
 
   const students = useMemo(() => {
     const firsts = firstNames
@@ -244,11 +239,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
-  } = widget.config as {
-    firstNames?: string;
-    lastNames?: string;
-    recipient?: string;
-  };
+  } = widget.config as LunchCountConfig;
 
   return (
     <div className="space-y-6">
