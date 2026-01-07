@@ -14,6 +14,25 @@ interface AdminSettingsProps {
   onClose: () => void;
 }
 
+const TabButton: React.FC<{
+  isActive: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}> = ({ isActive, onClick, icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
+      isActive
+        ? 'bg-white text-indigo-600'
+        : 'text-white/70 hover:bg-white/10 hover:text-white'
+    }`}
+  >
+    {icon}
+    {label}
+  </button>
+);
+
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'features' | 'backgrounds'>(
@@ -73,28 +92,18 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
 
           {/* Tabs */}
           <div className="flex gap-1 mt-2">
-            <button
+            <TabButton
+              isActive={activeTab === 'features'}
               onClick={() => setActiveTab('features')}
-              className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
-                activeTab === 'features'
-                  ? 'bg-white text-indigo-600'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Shield className="w-4 h-4" />
-              Feature Permissions
-            </button>
-            <button
+              icon={<Shield className="w-4 h-4" />}
+              label="Feature Permissions"
+            />
+            <TabButton
+              isActive={activeTab === 'backgrounds'}
               onClick={() => setActiveTab('backgrounds')}
-              className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
-                activeTab === 'backgrounds'
-                  ? 'bg-white text-indigo-600'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <ImageIcon className="w-4 h-4" />
-              Background Manager
-            </button>
+              icon={<ImageIcon className="w-4 h-4" />}
+              label="Background Manager"
+            />
           </div>
         </div>
 

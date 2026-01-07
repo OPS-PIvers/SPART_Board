@@ -9,7 +9,9 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { v4 as uuidv4 } from 'uuid';
+import { db, storage } from '../../config/firebase';
+import { ref, deleteObject } from 'firebase/storage';
 import { BackgroundPreset, AccessLevel } from '../../types';
 import { useStorage } from '../../hooks/useStorage';
 import { useAuth } from '../../context/useAuth';
@@ -28,6 +30,33 @@ import {
   Check,
 } from 'lucide-react';
 
+const DEFAULT_PRESETS = [
+  {
+    url: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
+    label: 'Chalkboard',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
+    label: 'Corkboard',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
+    label: 'Geometric',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
+    label: 'Nature',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
+    label: 'Paper',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
+    label: 'Tech',
+  },
+];
+
 export const BackgroundManager: React.FC = () => {
   const [presets, setPresets] = useState<BackgroundPreset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,41 +69,23 @@ export const BackgroundManager: React.FC = () => {
   const [editName, setEditName] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadBackgroundImage } = useStorage();
+  const { uploadAdminBackground } = useStorage();
   const { user } = useAuth();
-
-  const DEFAULT_PRESETS = [
-    {
-      url: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
-      label: 'Chalkboard',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
-      label: 'Corkboard',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
-      label: 'Geometric',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
-      label: 'Nature',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
-      label: 'Paper',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
-      label: 'Tech',
-    },
-  ];
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-    const timeoutId = setTimeout(() => setMessage(null), 3000);
-    return () => clearTimeout(timeoutId);
   }, []);
+
+  // Manage message timeout lifecycle
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [message]);
 
   const loadPresets = useCallback(async () => {
     try {
@@ -118,7 +129,7 @@ export const BackgroundManager: React.FC = () => {
         const exists = presets.some((p) => p.url === item.url);
         if (!exists) {
           const newPreset: BackgroundPreset = {
-            id: crypto.randomUUID(),
+            id: uuidv4(),
             url: item.url,
             label: item.label,
             active: true,
@@ -150,14 +161,11 @@ export const BackgroundManager: React.FC = () => {
 
     setUploading(true);
     try {
-      // Use the existing storage hook, but we might want a specific folder for admin uploads
-      // For now, using the same user-based path is okay, or we could modify useStorage.
-      // Actually, useStorage puts it under `backgrounds/${userId}/${file.name}`.
-      // This is fine, as long as the URL is accessible.
-      const downloadURL = await uploadBackgroundImage(user.uid, file);
+      // Use shared admin path instead of user-specific path
+      const downloadURL = await uploadAdminBackground(file);
 
       const newPreset: BackgroundPreset = {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         url: downloadURL,
         label: file.name.split('.')[0].replace(/[-_]/g, ' '),
         active: true,
@@ -193,12 +201,25 @@ export const BackgroundManager: React.FC = () => {
     }
   };
 
-  const deletePreset = async (id: string) => {
+  const deletePreset = async (preset: BackgroundPreset) => {
     if (!confirm('Are you sure you want to delete this background?')) return;
 
     try {
-      await deleteDoc(doc(db, 'admin_backgrounds', id));
-      setPresets((prev) => prev.filter((p) => p.id !== id));
+      // Delete document from Firestore
+      await deleteDoc(doc(db, 'admin_backgrounds', preset.id));
+
+      // Delete file from Storage if it's not a stock image (Unsplash)
+      if (preset.url.includes('firebasestorage.googleapis.com')) {
+        try {
+          const fileRef = ref(storage, preset.url);
+          await deleteObject(fileRef);
+        } catch (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+          // Don't fail the whole operation if storage deletion fails (might already be gone)
+        }
+      }
+
+      setPresets((prev) => prev.filter((p) => p.id !== preset.id));
       showMessage('success', 'Background deleted');
     } catch (error) {
       console.error('Error deleting preset:', error);
@@ -207,7 +228,7 @@ export const BackgroundManager: React.FC = () => {
   };
 
   const addBetaUser = async (presetId: string, email: string) => {
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail) return;
 
     const preset = presets.find((p) => p.id === presetId);
@@ -274,12 +295,10 @@ export const BackgroundManager: React.FC = () => {
       )}
 
       {/* Header Actions */}
-
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-slate-700">
           Managed Backgrounds
         </h3>
-
         <div className="flex gap-2">
           <button
             onClick={() => void restoreDefaults()}
@@ -289,7 +308,6 @@ export const BackgroundManager: React.FC = () => {
             <Plus className="w-4 h-4" />
             Restore Defaults
           </button>
-
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
@@ -303,7 +321,6 @@ export const BackgroundManager: React.FC = () => {
             Upload New
           </button>
         </div>
-
         <input
           type="file"
           ref={fileInputRef}
@@ -331,7 +348,7 @@ export const BackgroundManager: React.FC = () => {
                   />
                   <div className="absolute top-1.5 right-1.5 z-10">
                     <button
-                      onClick={() => void deletePreset(preset.id)}
+                      onClick={() => void deletePreset(preset)}
                       className="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all scale-90 hover:scale-100"
                       title="Delete background"
                     >
@@ -470,33 +487,31 @@ export const BackgroundManager: React.FC = () => {
                           ))}
                         </div>
 
-                        <div className="flex gap-1 shrink-0">
+                        <form
+                          className="flex gap-1 shrink-0"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const form = e.currentTarget;
+                            const input = form.elements.namedItem(
+                              'betaEmail'
+                            ) as HTMLInputElement;
+                            void addBetaUser(preset.id, input.value);
+                            input.value = '';
+                          }}
+                        >
                           <input
+                            name="betaEmail"
                             type="email"
                             placeholder="Add email..."
                             className="flex-1 px-2 py-1 border border-slate-200 rounded text-[9px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                void addBetaUser(
-                                  preset.id,
-                                  (e.target as HTMLInputElement).value
-                                );
-                                (e.target as HTMLInputElement).value = '';
-                              }
-                            }}
                           />
                           <button
-                            onClick={(e) => {
-                              const input = e.currentTarget
-                                .previousElementSibling as HTMLInputElement;
-                              void addBetaUser(preset.id, input.value);
-                              input.value = '';
-                            }}
+                            type="submit"
                             className="p-1 px-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                           >
                             <Plus className="w-2.5 h-2.5" />
                           </button>
-                        </div>
+                        </form>
                       </div>
                     )}
                   </div>
