@@ -19,34 +19,41 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const activeIdRef = React.useRef(activeId);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(
-    TOOLS.map((t) => t.type)
-  );
+  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(() => {
+    const saved = localStorage.getItem('classroom_visible_tools');
+    if (saved) {
+      try {
+        return JSON.parse(saved) as WidgetType[];
+      } catch (e) {
+        console.error('Failed to parse saved tools', e);
+      }
+    }
+    return TOOLS.map((t) => t.type);
+  });
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
-  // Set loading false when no user
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-    }
-  }, [user]);
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
     if (!user) {
-      return;
+      const timer = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(timer);
     }
 
-    setLoading(true);
+    const timer = setTimeout(() => setLoading(true), 0);
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards((updatedDashboards) => {
       setDashboards(updatedDashboards);
 
       // If no active dashboard or active dashboard deleted, set to first
-      if (updatedDashboards.length > 0 && !activeId) {
+      if (updatedDashboards.length > 0 && !activeIdRef.current) {
         setActiveId(updatedDashboards[0].id);
       }
 
@@ -73,12 +80,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setLoading(false);
     });
-
-    // Load tool visibility from localStorage (user preference)
-    const savedTools = localStorage.getItem('classroom_visible_tools');
-    if (savedTools) {
-      setVisibleTools(JSON.parse(savedTools) as WidgetType[]);
-    }
 
     // Migrate localStorage data on first sign-in
     const localData = localStorage.getItem('classroom_dashboards');
@@ -110,9 +111,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         });
     }
 
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [user, subscribeToDashboards, migrated, saveDashboard]);
 
   // Auto-save to Firestore with debouncing
   useEffect(() => {
@@ -138,8 +141,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       clearTimeout(timeoutId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboards, activeId, user, loading]);
+  }, [dashboards, activeId, user, loading, saveDashboard]);
 
   const toggleToolVisibility = (type: WidgetType) => {
     setVisibleTools((prev) => {

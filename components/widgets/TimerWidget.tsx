@@ -6,12 +6,17 @@ import { WidgetData, TimerConfig } from '../../types';
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
 
+// Add type definition for webkitAudioContext
+interface CustomWindow extends Window {
+  webkitAudioContext: typeof AudioContext;
+}
+
 const getTimerAudioCtx = () => {
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!timerAudioCtx) {
-    timerAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as CustomWindow).webkitAudioContext;
+    timerAudioCtx = new AudioContextClass();
   }
   return timerAudioCtx;
 };
@@ -25,31 +30,39 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
+
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft((prev: number) => prev - 1);
+        setTimeLeft((prev: number) => {
+          if (prev <= 1) {
+            // Timer finished
+            setIsActive(false);
+            setIsDone(true);
+            if (soundEnabled) {
+              const ctx = getTimerAudioCtx();
+              if (ctx.state !== 'suspended') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(
+                  0.0001,
+                  ctx.currentTime + 1.5
+                );
+                osc.start();
+                osc.stop(ctx.currentTime + 1.5);
+              }
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (timeLeft === 0 && isActive) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsActive(false);
-
-      setIsDone(true);
-      if (soundEnabled) {
-        const ctx = getTimerAudioCtx();
-        if (ctx.state !== 'suspended') {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(440, ctx.currentTime);
-          gain.gain.setValueAtTime(0.3, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.5);
-          osc.start();
-          osc.stop(ctx.currentTime + 1.5);
-        }
-      }
     }
+
     return () => {
       if (interval) clearInterval(interval);
     };

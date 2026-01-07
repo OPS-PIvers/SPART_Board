@@ -5,12 +5,18 @@ import { Dices, Hash, RefreshCw } from 'lucide-react';
 
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
+
+// Add type definition for webkitAudioContext
+interface CustomWindow extends Window {
+  webkitAudioContext: typeof AudioContext;
+}
+
 const getDiceAudioCtx = () => {
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!diceAudioCtx) {
-    diceAudioCtx =
-      new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as CustomWindow).webkitAudioContext;
+    diceAudioCtx = new AudioContextClass();
   }
   return diceAudioCtx;
 };
@@ -57,8 +63,7 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
     `}
     >
       <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-1">
-        {/* eslint-disable-next-line @typescript-eslint/no-unsafe-assignment */}
-        {[...Array(9)].map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="flex items-center justify-center">
             {dotPositions[value]?.includes(i) && (
               <div className="w-3 h-3 bg-slate-800 rounded-full shadow-sm" />
@@ -105,8 +110,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (values.length !== diceCount) {
       setValues(new Array(diceCount).fill(1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [diceCount]);
+  }, [diceCount, values.length]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4 gap-6">

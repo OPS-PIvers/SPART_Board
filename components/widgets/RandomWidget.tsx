@@ -18,10 +18,18 @@ import {
 // Singleton-like Audio Manager to prevent performance issues
 let audioCtx: AudioContext | null = null;
 
+// Add type definition for webkitAudioContext
+interface CustomWindow extends Window {
+  webkitAudioContext: typeof AudioContext;
+}
+
 const getAudioCtx = () => {
-  audioCtx ??=
-    new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    (window.AudioContext || (window as any).webkitAudioContext)();
+  if (!audioCtx) {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as CustomWindow).webkitAudioContext;
+    audioCtx = new AudioContextClass();
+  }
   return audioCtx;
 };
 
@@ -157,16 +165,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return {};
   }, [mode, visualStyle, displayResult, widget.w, widget.h]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shuffle = (array: any[]) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const shuffle = <T,>(array: T[]): T[] => {
     const newArr = [...array];
     for (let i = newArr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+      const temp = newArr[i];
+      newArr[i] = newArr[j];
+      newArr[j] = temp;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return newArr;
   };
 

@@ -80,6 +80,10 @@ export interface CalendarEvent {
 export interface ClockConfig {
   format24: boolean;
   showSeconds: boolean;
+  themeColor?: string;
+  fontFamily?: string;
+  clockStyle?: string;
+  glow?: boolean;
 }
 
 export interface TimerConfig {
@@ -87,9 +91,11 @@ export interface TimerConfig {
   sound: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface StopwatchConfig {
-  // No config properties
+  themeColor?: string;
+  fontFamily?: string;
+  showLaps?: boolean;
+  scaleMultiplier?: number;
 }
 
 export interface TrafficConfig {
@@ -111,6 +117,10 @@ export interface RandomConfig {
   firstNames: string;
   lastNames: string;
   mode: string;
+  visualStyle?: string;
+  groupSize?: number;
+  lastResult?: string | string[] | string[][] | null;
+  soundEnabled?: boolean;
 }
 
 export interface DiceConfig {
@@ -119,6 +129,8 @@ export interface DiceConfig {
 
 export interface SoundConfig {
   sensitivity: number;
+  orientation?: 'horizontal' | 'vertical';
+  style?: 'bar' | 'line';
 }
 
 export interface DrawingConfig {
@@ -134,6 +146,8 @@ export interface QRConfig {
 
 export interface EmbedConfig {
   url: string;
+  mode?: string;
+  html?: string;
 }
 
 export interface PollConfig {
@@ -141,9 +155,9 @@ export interface PollConfig {
   options: PollOption[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface WebcamConfig {
-  // No config properties
+  // Record<string, never> ensures an empty object
+  _dummy?: never;
 }
 
 export interface ScoreboardConfig {
@@ -161,6 +175,10 @@ export interface WorkSymbolsConfig {
 export interface WeatherConfig {
   temp: number;
   condition: string;
+  isAuto?: boolean;
+  locationName?: string;
+  lastSync?: number | null;
+  city?: string;
 }
 
 export interface ScheduleConfig {

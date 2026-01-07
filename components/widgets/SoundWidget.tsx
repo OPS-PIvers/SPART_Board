@@ -6,6 +6,11 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
   // Pre-fill history with 50 zeros so the line is visible on start
 
+  // Add type definition for webkitAudioContext
+  interface CustomWindow extends Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+
   const [history, setHistory] = useState<number[]>(new Array(50).fill(0));
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -28,9 +33,10 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           audio: true,
         });
         streamRef.current = stream;
-        const audioContext =
-          new // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-          (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as CustomWindow).webkitAudioContext;
+        const audioContext = new AudioContextClass();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
