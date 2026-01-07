@@ -163,12 +163,13 @@ export const BackgroundManager: React.FC = () => {
 
     setUploading(true);
     let downloadURL = '';
+    const presetId = uuidv4();
     try {
-      // Use shared admin path instead of user-specific path
-      downloadURL = await uploadAdminBackground(file);
+      // Use shared admin path with the pre-generated ID for security rules
+      downloadURL = await uploadAdminBackground(presetId, file);
 
       const newPreset: BackgroundPreset = {
-        id: uuidv4(),
+        id: presetId,
         url: downloadURL,
         label: file.name.split('.')[0].replace(/[-_]/g, ' '),
         active: true,

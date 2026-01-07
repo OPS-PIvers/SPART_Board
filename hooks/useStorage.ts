@@ -44,11 +44,13 @@ export const useStorage = () => {
     await deleteObject(fileRef);
   };
 
-  const uploadAdminBackground = async (file: File): Promise<string> => {
-    const timestamp = Date.now();
+  const uploadAdminBackground = async (
+    backgroundId: string,
+    file: File
+  ): Promise<string> => {
     const storageRef = ref(
       storage,
-      `admin_backgrounds/${timestamp}-${file.name}`
+      `admin_backgrounds/${backgroundId}/${file.name}`
     );
 
     const snapshot = await uploadBytes(storageRef, file);
