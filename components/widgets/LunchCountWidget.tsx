@@ -39,7 +39,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
     menuUrl = SCHOOLS.IS.url,
-    viewMode = 'count',
     schoolId = 'IS',
   } = config;
 
@@ -110,12 +109,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const toggleView = () => {
-    updateWidget(widget.id, {
-      config: { ...config, viewMode: viewMode === 'menu' ? 'count' : 'menu' },
-    });
-  };
-
   const categories: {
     type: LunchType;
     label: string;
@@ -146,38 +139,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     },
   ];
 
-  if (viewMode === 'menu') {
-    return (
-      <div className="h-full flex flex-col p-3 bg-white gap-3 select-none">
-        <div className="flex-1 rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-50">
-          <iframe
-            src={menuUrl}
-            className="w-full h-full border-0"
-            title="Lunch Menu"
-            sandbox="allow-scripts allow-same-origin allow-popups"
-          />
-          <a
-            href={menuUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute top-2 right-2 p-2 bg-white/90 rounded-lg shadow-sm hover:bg-white text-slate-600 transition-colors"
-            title="Open in new tab"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={toggleView}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
-          >
-            <Users className="w-3 h-3" /> Back to Count
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (students.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
@@ -196,6 +157,25 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col p-3 bg-white gap-3 select-none">
+      {/* Menu Area */}
+      <div className="flex-1 min-h-[200px] rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-50 shrink-0">
+        <iframe
+          src={menuUrl}
+          className="w-full h-full border-0"
+          title="Lunch Menu"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        />
+        <a
+          href={menuUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute top-2 right-2 p-2 bg-white/90 rounded-lg shadow-sm hover:bg-white text-slate-600 transition-colors"
+          title="Open in new tab"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+
       {/* Category Buckets */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
         {categories.map((cat) => (
@@ -285,12 +265,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           <RefreshCw className="w-3 h-3" />
         </button>
         <button
-          onClick={toggleView}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors"
-        >
-          <Utensils className="w-3 h-3" /> Menu
-        </button>
-        <button
           onClick={handleSend}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
         >
@@ -328,7 +302,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, firstNames: e.target.value },
               })
             }
-            placeholder="Alice\nBob\nCharlie..."
+            placeholder="Alice&#10;Bob&#10;Charlie..."
             className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
           />
         </div>
@@ -343,7 +317,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, lastNames: e.target.value },
               })
             }
-            placeholder="Smith\nJones\nBrown..."
+            placeholder="Smith&#10;Jones&#10;Brown..."
             className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
           />
         </div>
