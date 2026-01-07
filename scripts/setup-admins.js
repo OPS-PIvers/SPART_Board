@@ -26,28 +26,48 @@ const __dirname = dirname(__filename);
 const ADMIN_EMAILS = [
   'paul.ivers@orono.k12.mn.us',
   'bailey.nett@orono.k12.mn.us',
-  'Jennifer.ivers@orono.k12.mn.us',
-  'Sean.beaverson@orono.k12.mn.us',
+  'jennifer.ivers@orono.k12.mn.us',
+  'sean.beaverson@orono.k12.mn.us',
 ];
 
 async function setupAdmins() {
   try {
-    // Load service account key
-    const serviceAccountPath = join(__dirname, 'service-account-key.json');
+    // Try to load credentials from environment variable first (for GitHub Actions/Secrets)
+    // then fall back to the service-account-key.json file
     let serviceAccount;
+    const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+    const serviceAccountPath = join(__dirname, 'service-account-key.json');
 
-    try {
-      serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
-    } catch (error) {
-      console.error('\n❌ Error: service-account-key.json not found!');
-      console.error('\nTo set up admin credentials:');
-      console.error(
-        '1. Go to Firebase Console > Project Settings > Service Accounts'
-      );
-      console.error('2. Click "Generate New Private Key"');
-      console.error('3. Save the file as scripts/service-account-key.json');
-      console.error('4. Run this script again\n');
-      process.exit(1);
+    if (serviceAccountEnv) {
+      try {
+        serviceAccount = JSON.parse(serviceAccountEnv);
+        console.log(
+          '✅ Using credentials from FIREBASE_SERVICE_ACCOUNT environment variable'
+        );
+      } catch (error) {
+        console.error(
+          '❌ Error parsing FIREBASE_SERVICE_ACCOUNT environment variable as JSON'
+        );
+        process.exit(1);
+      }
+    } else {
+      try {
+        serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+        console.log(
+          '✅ Using credentials from scripts/service-account-key.json'
+        );
+      } catch (error) {
+        console.error('\n❌ Error: Service account credentials not found!');
+        console.error('\nTo set up admin credentials, either:');
+        console.error(
+          '1. Set the FIREBASE_SERVICE_ACCOUNT environment variable with the JSON content'
+        );
+        console.error('   OR');
+        console.error(
+          '2. Save your service account key file as scripts/service-account-key.json\n'
+        );
+        process.exit(1);
+      }
     }
 
     // Initialize Firebase Admin
@@ -61,17 +81,18 @@ async function setupAdmins() {
 
     // Create admin documents
     for (const email of ADMIN_EMAILS) {
-      await db.collection('admins').doc(email).set({
-        email: email,
+      const normalizedEmail = email.toLowerCase();
+      await db.collection('admins').doc(normalizedEmail).set({
+        email: normalizedEmail,
         isAdmin: true,
         createdAt: new Date().toISOString(),
       });
-      console.log(`✅ Admin access granted to: ${email}`);
+      console.log(`✅ Admin access granted to: ${normalizedEmail}`);
     }
 
     console.log('\n✨ Admin setup complete!\n');
     console.log('These users now have admin access:');
-    ADMIN_EMAILS.forEach((email) => console.log(`  - ${email}`));
+    ADMIN_EMAILS.forEach((email) => console.log(`  - ${email.toLowerCase()}`));
     console.log('\n');
 
     process.exit(0);

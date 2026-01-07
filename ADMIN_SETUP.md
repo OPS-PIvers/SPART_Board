@@ -122,9 +122,10 @@ function MyComponent() {
 - Verify the security rules were deployed (step 1)
 - Verify the admin setup script completed successfully (step 4)
 - Check that you're signing in with one of the exact email addresses listed above
-- Email addresses are case-sensitive in Firestore
+- Email addresses are normalized to **lowercase** in Firestore. The system automatically handles this, but ensure you've re-run the setup script if you recently added/changed admins.
 
 **"Permission denied" errors:**
 
 - Make sure you've deployed the Firestore security rules
 - Verify your Firebase project has Firestore enabled
+- If you see "Missing or insufficient permissions" when checking admin status, it's usually because the user is not in the `admins` collection.

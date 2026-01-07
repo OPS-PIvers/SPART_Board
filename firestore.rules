@@ -6,26 +6,31 @@ service cloud.firestore {
     // Helper function to check if user is an admin
     function isAdmin() {
       return request.auth != null &&
-             exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+             request.auth.token.email != null &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()));
     }
 
-    // Admins collection - only admins can read, no one can write (managed via script/console)
+    // Admins collection
     match /admins/{email} {
-      allow read: if isAdmin();
+      // Users can read their own admin record to check status
+      // We use lower() to ensure case-insensitive matching
+      allow read: if request.auth != null && 
+                  request.auth.token.email != null && 
+                  request.auth.token.email.lower() == email.lower();
       allow write: if false; // Only create via Firebase Console or Admin SDK
     }
 
-    // Dashboards - users can only access their own dashboards
-    match /dashboards/{userId} {
+    // Dashboards - users can only access their own dashboards in their subcollection
+    match /users/{userId}/dashboards/{dashboardId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // User data collection (if you add other user-specific data)
+    // User data collection
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Admin-only collections (add your admin features here)
+    // Admin-only collections
     match /admin_settings/{document=**} {
       allow read, write: if isAdmin();
     }

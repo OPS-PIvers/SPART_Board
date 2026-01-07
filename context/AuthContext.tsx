@@ -109,7 +109,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       try {
-        const adminDoc = await getDoc(doc(db, 'admins', user.email));
+        const adminDoc = await getDoc(
+          doc(db, 'admins', user.email.toLowerCase())
+        );
         setIsAdmin(adminDoc.exists());
       } catch (error) {
         console.error('Error checking admin status:', error);
