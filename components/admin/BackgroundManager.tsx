@@ -43,6 +43,33 @@ export const BackgroundManager: React.FC = () => {
   const { uploadBackgroundImage } = useStorage();
   const { user } = useAuth();
 
+  const DEFAULT_PRESETS = [
+    {
+      url: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
+      label: 'Chalkboard',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
+      label: 'Corkboard',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
+      label: 'Geometric',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
+      label: 'Nature',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
+      label: 'Paper',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
+      label: 'Tech',
+    },
+  ];
+
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     const timeoutId = setTimeout(() => setMessage(null), 3000);
@@ -75,6 +102,42 @@ export const BackgroundManager: React.FC = () => {
   useEffect(() => {
     void loadPresets();
   }, [loadPresets]);
+
+  const restoreDefaults = async () => {
+    if (
+      !confirm(
+        'This will add the 6 stock images to your managed list. Continue?'
+      )
+    )
+      return;
+
+    try {
+      setLoading(true);
+      for (const item of DEFAULT_PRESETS) {
+        // Check if already exists to avoid duplicates
+        const exists = presets.some((p) => p.url === item.url);
+        if (!exists) {
+          const newPreset: BackgroundPreset = {
+            id: crypto.randomUUID(),
+            url: item.url,
+            label: item.label,
+            active: true,
+            accessLevel: 'public',
+            betaUsers: [],
+            createdAt: Date.now(),
+          };
+          await setDoc(doc(db, 'admin_backgrounds', newPreset.id), newPreset);
+        }
+      }
+      void loadPresets();
+      showMessage('success', 'Default presets restored');
+    } catch (error) {
+      console.error('Error restoring defaults:', error);
+      showMessage('error', 'Failed to restore defaults');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -211,22 +274,36 @@ export const BackgroundManager: React.FC = () => {
       )}
 
       {/* Header Actions */}
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-slate-700">
           Managed Backgrounds
         </h3>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
-        >
-          {uploading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Upload className="w-4 h-4" />
-          )}
-          Upload New
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => void restoreDefaults()}
+            className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2"
+            title="Restore original stock images"
+          >
+            <Plus className="w-4 h-4" />
+            Restore Defaults
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            Upload New
+          </button>
+        </div>
+
         <input
           type="file"
           ref={fileInputRef}

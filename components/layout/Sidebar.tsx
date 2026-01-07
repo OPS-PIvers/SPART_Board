@@ -150,38 +150,10 @@ export const Sidebar: React.FC = () => {
 
   // Combine static and managed presets
   const presets = useMemo(() => {
-    const staticPresets = [
-      {
-        id: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
-        label: 'Chalkboard',
-      },
-      {
-        id: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
-        label: 'Corkboard',
-      },
-      {
-        id: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
-        label: 'Geometric',
-      },
-      {
-        id: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
-        label: 'Nature',
-      },
-      {
-        id: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
-        label: 'Paper',
-      },
-      {
-        id: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
-        label: 'Tech',
-      },
-    ];
-
-    const managed = managedBackgrounds.map((bg) => ({
+    return managedBackgrounds.map((bg) => ({
       id: bg.url,
       label: bg.label,
     }));
-    return [...managed, ...staticPresets];
   }, [managedBackgrounds]);
 
   const colors = [
