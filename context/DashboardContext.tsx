@@ -63,7 +63,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
           // If it's a server snapshot, check if we have very recent local changes
           const now = Date.now();
-          if (now - lastLocalUpdateAt.current < 1500) {
+          if (now - lastLocalUpdateAt.current < 5000) {
             // We have a recent local update that might not be in this snapshot.
             // Merge: Keep our local version of the active dashboard, take others from server.
             return updatedDashboards.map((db) => {

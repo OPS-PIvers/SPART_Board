@@ -99,7 +99,7 @@ export const Sidebar: React.FC = () => {
 
   const presets = [
     {
-      id: 'https://images.unsplash.com/photo-1531496681078-2742715e1c58?q=80&w=2000',
+      id: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
       label: 'Chalkboard',
     },
     {
@@ -107,7 +107,7 @@ export const Sidebar: React.FC = () => {
       label: 'Corkboard',
     },
     {
-      id: 'https://images.unsplash.com/photo-1503387762-592dea58ef23?q=80&w=2000',
+      id: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
       label: 'Geometric',
     },
     {
@@ -115,7 +115,7 @@ export const Sidebar: React.FC = () => {
       label: 'Nature',
     },
     {
-      id: 'https://images.unsplash.com/photo-1586075010620-2253017124f8?q=80&w=2000',
+      id: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
       label: 'Paper',
     },
     {
