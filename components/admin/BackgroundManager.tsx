@@ -338,26 +338,23 @@ export const BackgroundManager: React.FC = () => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="absolute bottom-1.5 left-1.5 right-1.5 flex justify-between items-center bg-black/20 backdrop-blur-sm rounded-lg px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* Toggle Active */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-black uppercase text-white">
-                        Active
-                      </span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={preset.active}
-                          onChange={(e) =>
-                            void updatePreset(preset.id, {
-                              active: e.target.checked,
-                            })
-                          }
-                          className="sr-only peer"
-                        />
-                        <div className="w-6 h-3 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-green-500"></div>
-                      </label>
-                    </div>
+                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[9px] font-black uppercase text-white">
+                      Active
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={preset.active}
+                        onChange={(e) =>
+                          void updatePreset(preset.id, {
+                            active: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-6 h-3 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
                   </div>
                 </div>
 
