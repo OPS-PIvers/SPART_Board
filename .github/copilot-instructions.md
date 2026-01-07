@@ -59,7 +59,7 @@ npm run format:check
 npm run validate  # Takes ~10-15 seconds total
 ```
 
-**All three checks MUST pass with zero errors and zero warnings.** The ESLint config uses `--max-warnings 0`.
+**All checks MUST pass with zero errors and zero warnings.** The ESLint config uses `--max-warnings 0`.
 
 ### Build Commands
 
