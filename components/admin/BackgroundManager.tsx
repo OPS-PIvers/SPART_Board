@@ -320,10 +320,10 @@ export const BackgroundManager: React.FC = () => {
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-[360px]"
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-[280px]"
               >
                 {/* Image Preview */}
-                <div className="relative h-40 bg-slate-100 group shrink-0">
+                <div className="relative h-30 bg-slate-100 group shrink-0">
                   <img
                     src={preset.url}
                     alt={preset.label}
@@ -362,9 +362,9 @@ export const BackgroundManager: React.FC = () => {
                 </div>
 
                 {/* Controls */}
-                <div className="p-3 flex-1 flex flex-col min-h-0">
+                <div className="p-2.5 flex-1 flex flex-col min-h-0">
                   {/* Label Editing */}
-                  <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
+                  <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
                     {editingId === preset.id ? (
                       <div className="flex items-center gap-1.5 flex-1">
                         <input
@@ -397,7 +397,7 @@ export const BackgroundManager: React.FC = () => {
                     ) : (
                       <>
                         <h4
-                          className="font-bold text-slate-800 truncate text-sm"
+                          className="font-bold text-slate-800 truncate text-xs"
                           title={preset.label}
                         >
                           {preset.label}
@@ -416,8 +416,8 @@ export const BackgroundManager: React.FC = () => {
                   </div>
 
                   {/* Access Level */}
-                  <div className="mb-3 shrink-0">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block shrink-0">
+                  <div className="mb-2 shrink-0">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">
                       Access Level
                     </label>
                     <div className="flex gap-1">
@@ -430,7 +430,7 @@ export const BackgroundManager: React.FC = () => {
                                 accessLevel: level,
                               })
                             }
-                            className={`flex-1 py-1 rounded-[4px] text-[9px] font-black uppercase flex items-center justify-center gap-1 transition-all ${
+                            className={`flex-1 py-1 rounded-[4px] text-[8px] font-black uppercase flex items-center justify-center gap-1 transition-all ${
                               preset.accessLevel === level
                                 ? getAccessLevelColor(level)
                                 : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-100'
@@ -449,14 +449,14 @@ export const BackgroundManager: React.FC = () => {
                   <div className="flex-1 min-h-0 flex flex-col">
                     {preset.accessLevel === 'beta' && (
                       <div className="flex flex-col h-full">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block shrink-0">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block shrink-0">
                           Beta Users
                         </label>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mb-2">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 mb-1.5">
                           {preset.betaUsers.map((email) => (
                             <div
                               key={email}
-                              className="flex items-center justify-between p-1 px-1.5 bg-blue-50/50 rounded text-[10px] border border-blue-100/50"
+                              className="flex items-center justify-between p-0.5 px-1.5 bg-blue-50/50 rounded text-[9px] border border-blue-100/50"
                             >
                               <span className="text-slate-700 truncate mr-2">
                                 {email}
@@ -467,7 +467,7 @@ export const BackgroundManager: React.FC = () => {
                                 }
                                 className="text-red-600 hover:bg-red-100 p-0.5 rounded transition-colors shrink-0"
                               >
-                                <X className="w-2.5 h-2.5" />
+                                <X className="w-2 h-2" />
                               </button>
                             </div>
                           ))}
@@ -477,7 +477,7 @@ export const BackgroundManager: React.FC = () => {
                           <input
                             type="email"
                             placeholder="Add email..."
-                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-[9px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 void addBetaUser(
@@ -497,7 +497,7 @@ export const BackgroundManager: React.FC = () => {
                             }}
                             className="p-1 px-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                           >
-                            <Plus className="w-3 h-3" />
+                            <Plus className="w-2.5 h-2.5" />
                           </button>
                         </div>
                       </div>
