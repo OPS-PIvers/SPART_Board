@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import {
   collection,
   doc,
@@ -12,11 +13,12 @@ import { db } from '../config/firebase';
 import { Dashboard } from '../types';
 
 export const useFirestore = (userId: string | null) => {
-  const dashboardsRef = userId
-    ? collection(db, 'users', userId, 'dashboards')
-    : null;
+  const dashboardsRef = useMemo(
+    () => (userId ? collection(db, 'users', userId, 'dashboards') : null),
+    [userId]
+  );
 
-  const loadDashboards = async (): Promise<Dashboard[]> => {
+  const loadDashboards = useCallback(async (): Promise<Dashboard[]> => {
     if (!dashboardsRef) return [];
     const snapshot = await getDocs(
       query(dashboardsRef, orderBy('createdAt', 'desc'))
@@ -24,39 +26,48 @@ export const useFirestore = (userId: string | null) => {
     return snapshot.docs.map(
       (doc) => ({ ...doc.data(), id: doc.id }) as Dashboard
     );
-  };
+  }, [dashboardsRef]);
 
-  const saveDashboard = async (dashboard: Dashboard): Promise<void> => {
-    if (!dashboardsRef) throw new Error('User not authenticated');
-    const docRef = doc(dashboardsRef, dashboard.id);
-    await setDoc(docRef, {
-      ...dashboard,
-      updatedAt: Date.now(),
-    });
-  };
+  const saveDashboard = useCallback(
+    async (dashboard: Dashboard): Promise<void> => {
+      if (!dashboardsRef) throw new Error('User not authenticated');
+      const docRef = doc(dashboardsRef, dashboard.id);
+      await setDoc(docRef, {
+        ...dashboard,
+        updatedAt: Date.now(),
+      });
+    },
+    [dashboardsRef]
+  );
 
-  const deleteDashboard = async (dashboardId: string): Promise<void> => {
-    if (!dashboardsRef) throw new Error('User not authenticated');
-    await deleteDoc(doc(dashboardsRef, dashboardId));
-  };
+  const deleteDashboard = useCallback(
+    async (dashboardId: string): Promise<void> => {
+      if (!dashboardsRef) throw new Error('User not authenticated');
+      await deleteDoc(doc(dashboardsRef, dashboardId));
+    },
+    [dashboardsRef]
+  );
 
-  const subscribeToDashboards = (
-    callback: (dashboards: Dashboard[], hasPendingWrites: boolean) => void
-  ) => {
-    if (!dashboardsRef)
-      return () => {
-        /* no-op */
-      };
-    return onSnapshot(
-      query(dashboardsRef, orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        const dashboards = snapshot.docs.map(
-          (doc) => ({ ...doc.data(), id: doc.id }) as Dashboard
-        );
-        callback(dashboards, snapshot.metadata.hasPendingWrites);
-      }
-    );
-  };
+  const subscribeToDashboards = useCallback(
+    (
+      callback: (dashboards: Dashboard[], hasPendingWrites: boolean) => void
+    ) => {
+      if (!dashboardsRef)
+        return () => {
+          /* no-op */
+        };
+      return onSnapshot(
+        query(dashboardsRef, orderBy('createdAt', 'desc')),
+        (snapshot) => {
+          const dashboards = snapshot.docs.map(
+            (doc) => ({ ...doc.data(), id: doc.id }) as Dashboard
+          );
+          callback(dashboards, snapshot.metadata.hasPendingWrites);
+        }
+      );
+    },
+    [dashboardsRef]
+  );
 
   return {
     loadDashboards,
