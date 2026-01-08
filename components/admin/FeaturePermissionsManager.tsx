@@ -14,7 +14,10 @@ import {
   WidgetType,
   GradeLevel,
 } from '../../types';
-import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
+import {
+  getWidgetGradeLevels,
+  ALL_GRADE_LEVELS,
+} from '../../config/widgetGradeLevels';
 import {
   Shield,
   Users,
@@ -54,6 +57,13 @@ export const FeaturePermissionsManager: React.FC = () => {
 
       snapshot.forEach((doc) => {
         const data = doc.data() as FeaturePermission;
+        // Migration fix: If fetched permission still has "universal", clean it up
+        if (
+          data.gradeLevels &&
+          data.gradeLevels.includes('universal' as GradeLevel)
+        ) {
+          data.gradeLevels = ALL_GRADE_LEVELS;
+        }
         permMap.set(data.widgetType, data);
       });
 
@@ -192,28 +202,27 @@ export const FeaturePermissionsManager: React.FC = () => {
 
     let newLevels: GradeLevel[];
 
-    if (level === 'universal') {
-      // If toggling "All", it should clear everything else
-      if (currentLevels.includes('universal')) {
-        newLevels = [];
-      } else {
-        newLevels = ['universal'];
-      }
+    if (currentLevels.includes(level)) {
+      newLevels = currentLevels.filter((l) => l !== level);
     } else {
-      // If toggling a specific grade, remove "All" if present
-      let baseLevels = currentLevels;
-      if (baseLevels.includes('universal')) {
-        baseLevels = [];
-      }
-
-      if (baseLevels.includes(level)) {
-        newLevels = baseLevels.filter((l) => l !== level);
-      } else {
-        newLevels = [...baseLevels, level];
-      }
+      newLevels = [...currentLevels, level];
     }
 
     updatePermission(widgetType, { gradeLevels: newLevels });
+  };
+
+  const toggleAllGradeLevels = (widgetType: WidgetType) => {
+    const permission = getPermission(widgetType);
+    const currentLevels =
+      permission.gradeLevels ?? getWidgetGradeLevels(widgetType);
+
+    const allSelected = ALL_GRADE_LEVELS.every((l) =>
+      currentLevels.includes(l)
+    );
+
+    updatePermission(widgetType, {
+      gradeLevels: allSelected ? [] : [...ALL_GRADE_LEVELS],
+    });
   };
 
   const getAccessLevelIcon = (level: AccessLevel) => {
@@ -268,6 +277,12 @@ export const FeaturePermissionsManager: React.FC = () => {
           const permission = getPermission(tool.type);
           const hasCustomPermission = permissions.has(tool.type);
           const isSaving = saving.has(tool.type);
+
+          const currentLevels =
+            permission.gradeLevels ?? getWidgetGradeLevels(tool.type);
+          const isAllSelected = ALL_GRADE_LEVELS.every((l) =>
+            currentLevels.includes(l)
+          );
 
           return (
             <div
@@ -357,15 +372,19 @@ export const FeaturePermissionsManager: React.FC = () => {
 
               {/* Grade Levels */}
               <div className="mb-3">
-                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Grade Levels
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Grade Levels
+                  </label>
+                  <button
+                    onClick={() => toggleAllGradeLevels(tool.type)}
+                    className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-800"
+                  >
+                    {isAllSelected ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {(
-                    ['k-2', '3-5', '6-8', '9-12', 'universal'] as GradeLevel[]
-                  ).map((level) => {
-                    const currentLevels =
-                      permission.gradeLevels ?? getWidgetGradeLevels(tool.type);
+                  {ALL_GRADE_LEVELS.map((level) => {
                     const isSelected = currentLevels.includes(level);
 
                     return (
@@ -378,7 +397,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                             : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {level === 'universal' ? 'All' : level.toUpperCase()}
+                        {level.toUpperCase()}
                       </button>
                     );
                   })}

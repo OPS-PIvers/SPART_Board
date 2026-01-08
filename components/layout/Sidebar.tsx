@@ -47,12 +47,10 @@ const GRADE_FILTER_OPTIONS = [
   { value: '3-5', label: '3-5' },
   { value: '6-8', label: '6-8' },
   { value: '9-12', label: '9-12' },
-  { value: 'universal', label: 'Universal' },
 ] as const;
 
 // Helper to format grade level for display with proper capitalization
 const formatGradeLevel = (level: GradeLevel): string => {
-  if (level === 'universal') return 'All';
   return level.toUpperCase();
 };
 
@@ -302,7 +300,6 @@ export const Sidebar: React.FC = () => {
       );
       const levels = permission?.gradeLevels ?? getWidgetGradeLevels(tool.type);
 
-      if (levels.includes('universal')) return true;
       return levels.includes(gradeFilter);
     });
   }, [gradeFilter, featurePermissions]);
@@ -544,7 +541,6 @@ export const Sidebar: React.FC = () => {
                       const gradeLevels =
                         permission?.gradeLevels ??
                         getWidgetGradeLevels(tool.type);
-                      const showChips = !gradeLevels.includes('universal');
                       const isActive = visibleTools.includes(tool.type);
 
                       return (
@@ -567,18 +563,16 @@ export const Sidebar: React.FC = () => {
                               <div className="text-xs font-bold uppercase tracking-tight">
                                 {permission?.displayName ?? tool.label}
                               </div>
-                              {showChips && (
-                                <div className="flex gap-1 mt-1">
-                                  {gradeLevels.map((level) => (
-                                    <span
-                                      key={level}
-                                      className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
-                                    >
-                                      {formatGradeLevel(level)}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                              <div className="flex gap-1 mt-1">
+                                {gradeLevels.map((level) => (
+                                  <span
+                                    key={level}
+                                    className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
+                                  >
+                                    {formatGradeLevel(level)}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
                           <div
