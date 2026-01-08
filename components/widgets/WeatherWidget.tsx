@@ -139,10 +139,13 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const fetchWeatherRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const consecutiveFailuresRef = useRef(0);
   const currentBackoffRef = useRef(REFRESH_INTERVAL_MS);
+  const hasShownProxyWarningRef = useRef(false);
 
   // Update ref when config changes
   useEffect(() => {
     lastConfigRef.current = config;
+    // Reset proxy warning when proxyUrl changes
+    hasShownProxyWarningRef.current = false;
   }, [config]);
 
   // Validate proxy URL to prevent SSRF attacks
@@ -208,8 +211,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const targetUrl = `${baseUrl}?${params.toString()}`;
 
       // 2. Wrap it with the Proxy URL
-      // Handle empty proxy URL case - will attempt direct connection (likely fails due to CORS)
-      if (!proxyUrl) {
+      // Show warning for empty proxy URL only once per config change
+      if (!proxyUrl && !hasShownProxyWarningRef.current) {
+        hasShownProxyWarningRef.current = true;
         addToast(
           'No proxy URL configured. Direct connections may fail due to CORS restrictions. Configure a proxy URL in settings.',
           'info'
@@ -378,6 +382,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
+    let isMounted = true;
+
     // Initial fetch using current ref
     const doFetch = () => {
       if (fetchWeatherRef.current) {
@@ -388,9 +394,11 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     doFetch(); // Initial fetch
 
     // Set up interval with dynamic backoff
-    let intervalId: NodeJS.Timeout;
+    let intervalId: NodeJS.Timeout | undefined;
     const scheduleNext = () => {
+      if (!isMounted) return; // Prevent scheduling after unmount
       intervalId = setTimeout(() => {
+        if (!isMounted) return; // Check again before fetching
         doFetch();
         scheduleNext(); // Reschedule after each fetch
       }, currentBackoffRef.current);
@@ -399,6 +407,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     scheduleNext();
 
     return () => {
+      isMounted = false; // Signal that component is unmounting
       if (intervalId) {
         clearTimeout(intervalId);
       }

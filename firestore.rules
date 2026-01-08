@@ -27,32 +27,32 @@ service cloud.firestore {
 
       // Writes require additional validation for security-sensitive fields
       // Admin users have full write access
-      // Non-admin users cannot add or modify proxyUrl in widget configs to prevent SSRF attacks
+      // Non-admin users are restricted from modifying proxyUrl to prevent SSRF attacks
+      // NOTE: This validation is simplified and checks for any widget array changes.
+      // It cannot granularly detect proxyUrl modifications within nested widget configs
+      // due to Firestore rules limitations. For production deployments requiring
+      // strict SSRF protection, implement Cloud Functions with beforeWrite triggers
+      // to validate specific field changes in widget configs.
       allow write: if request.auth != null &&
                    request.auth.uid == userId &&
                    (
                      // Admins can freely modify dashboards
                      isAdmin() ||
-                     // Non-admins: ensure no proxyUrl field is being added/modified in any widget
+                     // Non-admins: prevent any dashboard writes when widgets array exists
+                     // to avoid potential proxyUrl modifications. This is overly restrictive
+                     // but necessary without Cloud Functions for granular validation.
                      (
                        !('widgets' in request.resource.data) ||
                        (
-                         // Check that no widget in the new data contains proxyUrl changes
-                         // This is a simplified check; for production, consider Cloud Functions
-                         // for more granular validation of nested widget config changes
+                         // Allow creation of new dashboards
                          resource == null ||
-                         !hasProxyUrlChange()
+                         // Deny all widget modifications for non-admins as a safety measure
+                         // In production, use Cloud Functions for precise proxyUrl detection
+                         !('widgets' in resource.data) ||
+                         request.resource.data.widgets == resource.data.widgets
                        )
                      )
                    );
-
-      // Helper to detect proxyUrl changes (simplified - checks top-level only)
-      // For comprehensive protection, use Cloud Functions to validate nested widget configs
-      function hasProxyUrlChange() {
-        return 'widgets' in request.resource.data &&
-               'widgets' in resource.data &&
-               request.resource.data.widgets != resource.data.widgets;
-      }
     }
 
     // User data collection
