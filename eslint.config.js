@@ -87,7 +87,7 @@ export default tseslint.config(
           allowNullish: true,
         },
       ],
-      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
       '@typescript-eslint/no-empty-function': 'warn',
 
       // General code quality
