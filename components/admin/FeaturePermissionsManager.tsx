@@ -248,7 +248,7 @@ export const FeaturePermissionsManager: React.FC = () => {
       )}
 
       {/* Widget Permission Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {TOOLS.map((tool) => {
           const permission = getPermission(tool.type);
           const hasCustomPermission = permissions.has(tool.type);
@@ -261,12 +261,22 @@ export const FeaturePermissionsManager: React.FC = () => {
             >
               {/* Widget Header */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className={`${tool.color} p-2 rounded-lg text-white`}>
                     <tool.icon className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800">{tool.label}</h4>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={permission.displayName ?? tool.label}
+                      onChange={(e) =>
+                        updatePermission(tool.type, {
+                          displayName: e.target.value,
+                        })
+                      }
+                      className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-0 py-0.5 transition-colors"
+                      placeholder={tool.label}
+                    />
                     <p className="text-xs text-slate-500">{tool.type}</p>
                   </div>
                 </div>

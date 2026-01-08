@@ -565,7 +565,7 @@ export const Sidebar: React.FC = () => {
                             </div>
                             <div className="text-left">
                               <div className="text-xs font-bold uppercase tracking-tight">
-                                {tool.label}
+                                {permission?.displayName ?? tool.label}
                               </div>
                               {showChips && (
                                 <div className="flex gap-1 mt-1">

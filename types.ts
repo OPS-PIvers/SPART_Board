@@ -393,6 +393,8 @@ export interface FeaturePermission {
   enabled: boolean;
   /** Optional override for grade levels. If set, this takes precedence over the static configuration. */
   gradeLevels?: GradeLevel[];
+  /** Optional override for the widget's display name. */
+  displayName?: string;
 }
 
 export interface BackgroundPreset {
