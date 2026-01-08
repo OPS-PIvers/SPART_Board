@@ -144,7 +144,11 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
     }
 
-    if (mode === 'groups' && Array.isArray(displayResult)) {
+    if (
+      mode === 'groups' &&
+      Array.isArray(displayResult) &&
+      (displayResult.length === 0 || Array.isArray(displayResult[0]))
+    ) {
       const numGroups = displayResult.length;
       let cols = 1;
       if (widget.w > 600) cols = 3;
@@ -486,7 +490,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="w-full h-full flex flex-col min-h-0">
             {mode === 'shuffle' ? (
               <div className="flex-1 overflow-y-auto w-full py-2 custom-scrollbar">
-                {(Array.isArray(displayResult)
+                {(Array.isArray(displayResult) &&
+                (displayResult.length === 0 || !Array.isArray(displayResult[0]))
                   ? (displayResult as string[])
                   : []
                 ).map((name: string, i: number) => (
@@ -502,7 +507,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     </span>
                   </div>
                 ))}
-                {!displayResult && (
+                {(!displayResult ||
+                  !Array.isArray(displayResult) ||
+                  (displayResult.length > 0 &&
+                    Array.isArray(displayResult[0]))) && (
                   <div className="flex-1 flex flex-col items-center justify-center text-slate-300 italic py-10 gap-2">
                     <Layers className="w-8 h-8 opacity-20" />
                     <span>Click Randomize to Shuffle</span>
@@ -517,7 +525,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   gap: `${layoutSizing?.gap ?? 8}px`,
                 }}
               >
-                {(Array.isArray(displayResult)
+                {(Array.isArray(displayResult) &&
+                (displayResult.length === 0 || Array.isArray(displayResult[0]))
                   ? (displayResult as string[][])
                   : []
                 ).map((group: string[], i: number) => {
@@ -547,7 +556,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     </div>
                   );
                 })}
-                {!displayResult && (
+                {(!displayResult ||
+                  !Array.isArray(displayResult) ||
+                  (displayResult.length > 0 &&
+                    !Array.isArray(displayResult[0]))) && (
                   <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
                     <Users className="w-8 h-8 opacity-20" />
                     <span>Click Randomize to Group</span>
