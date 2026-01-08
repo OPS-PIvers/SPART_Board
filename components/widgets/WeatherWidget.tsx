@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, WeatherConfig } from '../../types';
 import {
@@ -73,10 +73,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="flex justify-between items-start mb-2">
         <div className="flex flex-col">
           <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-            <MapPin className="w-2.5 h-2.5" /> {stationId}
+            <MapPin className="w-2.5 h-2.5" /> {locationName}
           </div>
           <div className="text-[8px] font-bold text-slate-300">
-            {locationName}
+            Station {stationId}
           </div>
         </div>
         {lastSync && (
@@ -123,7 +123,36 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const [loading, setLoading] = useState(false);
 
+  // Validate proxy URL to prevent SSRF attacks
+  const isValidProxyUrl = useCallback((url: string): boolean => {
+    if (!url) return true; // Allow empty (direct connection)
+    try {
+      const parsed = new URL(url);
+      // Only allow https protocol and trusted domains
+      const trustedDomains = [
+        'cors-anywhere.herokuapp.com',
+        'api.allorigins.win',
+        'corsproxy.io',
+      ];
+      return (
+        parsed.protocol === 'https:' &&
+        trustedDomains.some((domain) => parsed.hostname.includes(domain))
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+
   const fetchWeather = useCallback(async () => {
+    // Validate proxy URL before making request
+    if (proxyUrl && !isValidProxyUrl(proxyUrl)) {
+      addToast(
+        'Invalid proxy URL. Only trusted HTTPS proxy services are allowed.',
+        'error'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Construct the Target URL (Earth Networks)
@@ -131,7 +160,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         'https://owc.enterprise.earthnetworks.com/Data/GetData.ashx';
       const params = new URLSearchParams({
         dt: 'o', // Observations
-        pi: '3',
+        pi: '3', // Parameter ID: 3 = basic weather observations (temp, humidity, wind, precipitation)
         si: stationId,
         units: 'english',
         verbose: 'false',
@@ -145,9 +174,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const res = await fetch(finalUrl);
 
       if (!res.ok) {
-        if (res.status === 403 && proxyUrl.includes('cors-anywhere')) {
+        if (res.status === 403 && proxyUrl) {
           throw new Error(
-            'CORS Demo requires activation. Visit https://cors-anywhere.herokuapp.com/corsdemo'
+            'The CORS proxy responded with HTTP 403. Please ensure your proxy service is configured and accessible.'
           );
         }
         throw new Error(`HTTP ${res.status}`);
@@ -155,9 +184,41 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const data = (await res.json()) as EarthNetworksData;
 
-      // Determine condition loosely based on precipitation/cloud data
-      let condition = 'sunny';
-      if (data.precipitation?.rate > 0) condition = 'rainy';
+      // Validate API response structure
+      if (
+        typeof data !== 'object' ||
+        data === null ||
+        typeof data.temperature !== 'number'
+      ) {
+        throw new Error('Invalid API response structure');
+      }
+
+      // Determine condition based on precipitation, temperature, wind, and humidity
+      const precipRate = data.precipitation?.rate ?? 0;
+      const tempF = data.temperature;
+      const windSpeed = data.wind?.current?.speed ?? 0;
+      const windGust = data.wind?.current?.gust ?? 0;
+      const humidity = data.humidity;
+
+      let condition = config.condition ?? 'sunny'; // Keep existing if data unavailable
+
+      // Only update condition if we have valid data
+      if (typeof precipRate === 'number' && typeof tempF === 'number') {
+        if (precipRate > 0) {
+          // Treat precipitation at near-freezing temperatures as snow
+          if (tempF <= 34) {
+            condition = 'snowy';
+          } else {
+            condition = 'rainy';
+          }
+        } else if (windGust >= 25 || windSpeed >= 20) {
+          condition = 'windy';
+        } else if (humidity >= 80) {
+          condition = 'cloudy';
+        } else {
+          condition = 'sunny';
+        }
+      }
 
       updateWidget(widget.id, {
         config: {
@@ -176,7 +237,30 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     } finally {
       setLoading(false);
     }
-  }, [config, proxyUrl, stationId, updateWidget, widget.id, addToast]);
+  }, [
+    config,
+    proxyUrl,
+    stationId,
+    updateWidget,
+    widget.id,
+    addToast,
+    isValidProxyUrl,
+  ]);
+
+  // Auto-refresh mechanism: fetch weather every 30 seconds when enabled
+  useEffect(() => {
+    if (!isAuto) return;
+
+    // Initial fetch
+    void fetchWeather();
+
+    // Set up interval for subsequent fetches
+    const intervalId = setInterval(() => {
+      void fetchWeather();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [isAuto, fetchWeather]);
 
   return (
     <div className="space-y-6">

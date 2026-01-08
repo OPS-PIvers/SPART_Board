@@ -400,9 +400,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: {
           temp: 72,
           condition: 'sunny',
+          locationName: 'Orono IS',
           stationId: 'BLLST',
-          proxyUrl: 'https://cors-anywhere.herokuapp.com/',
-          isAuto: true,
+          proxyUrl: 'https://cors-anywhere.herokuapp.com/', // Note: Demo service requires manual activation at /corsdemo
+          isAuto: false, // Disabled by default to avoid rate limits
         },
       },
       schedule: {
