@@ -22,7 +22,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   title,
   style,
 }) => {
-  const { updateWidget, removeWidget, bringToFront } = useDashboard();
+  const { updateWidget, removeWidget, bringToFront, addToast } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -34,14 +34,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Auto-generate filename: "Classroom-[WidgetType]-[Date]"
-  const dateStr = new Date()
-    .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    .replace(' ', '-');
+  // Use ISO format YYYY-MM-DD
+  const dateStr = new Date().toISOString().split('T')[0];
   const fileName = `Classroom-${widget.type.charAt(0).toUpperCase() + widget.type.slice(1)}-${dateStr}`;
 
   const { takeScreenshot, isFlashing, isCapturing } = useScreenshot(
     contentRef,
-    fileName
+    fileName,
+    {
+      onSuccess: () => {
+        addToast('Screenshot saved', 'success');
+      },
+      onError: (err) => {
+        console.error('Screenshot error:', err);
+        addToast('Failed to save screenshot', 'error');
+      },
+    }
   );
 
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
@@ -208,6 +216,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     disabled={isCapturing}
                     className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
                     title="Take Screenshot"
+                    aria-label="Take screenshot"
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -238,7 +247,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               {isFlashing && (
                 <div
                   data-screenshot="flash"
-                  className="absolute inset-0 bg-white z-[9999] animate-out fade-out duration-300 pointer-events-none"
+                  className="absolute inset-0 bg-white z-50 animate-out fade-out duration-300 pointer-events-none isFlashing"
                 />
               )}
               {children}

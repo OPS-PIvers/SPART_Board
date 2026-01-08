@@ -7,9 +7,15 @@ interface UseScreenshotResult {
   isCapturing: boolean;
 }
 
+interface ScreenshotOptions {
+  onSuccess?: () => void;
+  onError?: (error: unknown) => void;
+}
+
 export const useScreenshot = (
   nodeRef: React.RefObject<HTMLElement | null>,
-  fileName: string
+  fileName: string,
+  options: ScreenshotOptions = {}
 ): UseScreenshotResult => {
   const [isFlashing, setIsFlashing] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -22,21 +28,30 @@ export const useScreenshot = (
 
       // Trigger Flash Animation
       setIsFlashing(true);
-      setTimeout(() => setIsFlashing(false), 150); // Flash duration
+      setTimeout(() => setIsFlashing(false), 300); // Flash duration matches CSS duration-300
+
+      // Allow a brief delay so React can process the flash state change before capture starts.
+      // The flash overlay is also excluded via the filter below as a secondary safeguard.
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Generate Image
-      // We use a slight delay to ensure the flash overlay isn't captured if it renders synchronously,
-      // though typically we want the flash visual to happen *after* the data capture in a real camera.
-      // However, for web, we capture *before* the flash blocks the view, or we exclude the flash element.
-      // html-to-image has a filter option we can use to exclude the flash div if needed.
       const dataUrl = await toPng(nodeRef.current, {
         cacheBust: true,
         pixelRatio: 2, // Higher quality
         filter: (node) => {
-          // Exclude the flash overlay from the screenshot itself
-          return !(
-            node instanceof HTMLElement && node.dataset.screenshot === 'flash'
-          );
+          if (!(node instanceof HTMLElement)) {
+            return true;
+          }
+
+          // Exclude the flash overlay from the screenshot itself.
+          // This targets elements explicitly marked for exclusion via:
+          // - data-screenshot="flash"
+          // - the "isFlashing" CSS class used by the flash overlay
+          const shouldExcludeFlash =
+            node.dataset.screenshot === 'flash' ||
+            node.classList.contains('isFlashing');
+
+          return !shouldExcludeFlash;
         },
       });
 
@@ -45,13 +60,15 @@ export const useScreenshot = (
       link.download = `${fileName}.png`;
       link.href = dataUrl;
       link.click();
+
+      options.onSuccess?.();
     } catch (err) {
       console.error('Screenshot failed:', err);
-      alert('Failed to capture widget. Please try again.');
+      options.onError?.(err);
     } finally {
       setIsCapturing(false);
     }
-  }, [nodeRef, fileName]);
+  }, [nodeRef, fileName, options]);
 
   return { takeScreenshot, isFlashing, isCapturing };
 };
