@@ -5,6 +5,7 @@ import {
   WidgetType,
   Toast,
   ClassRoster,
+  Student,
 } from '../types';
 
 export interface DashboardContextType {

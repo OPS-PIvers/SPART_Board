@@ -26,24 +26,52 @@ import { migrateLocalStorageToFirestore } from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 
 // Helper to validate roster data from Firestore
-const validateRoster = (id: string, data: any): ClassRoster | null => {
-  if (!data || typeof data.name !== 'string') return null;
 
-  const students: Student[] = Array.isArray(data.students)
-    ? data.students.filter(
-        (s: any) =>
-          s &&
-          typeof s.id === 'string' &&
-          typeof s.firstName === 'string' &&
-          typeof s.lastName === 'string'
-      )
+const validateRoster = (id: string, data: unknown): ClassRoster | null => {
+  if (!data || typeof data !== 'object') return null;
+
+  const d = data as Record<string, unknown>;
+
+  if (typeof d.name !== 'string') return null;
+
+  const rawStudents = d.students;
+
+  const students: Student[] = Array.isArray(rawStudents)
+    ? rawStudents
+
+        .map((s: unknown) => {
+          if (!s || typeof s !== 'object') return null;
+
+          const student = s as Record<string, unknown>;
+
+          if (
+            typeof student.id === 'string' &&
+            typeof student.firstName === 'string' &&
+            typeof student.lastName === 'string'
+          ) {
+            return {
+              id: student.id,
+
+              firstName: student.firstName,
+
+              lastName: student.lastName,
+            };
+          }
+
+          return null;
+        })
+
+        .filter((s): s is Student => s !== null)
     : [];
 
   return {
     id,
-    name: data.name,
+
+    name: d.name,
+
     students,
-    createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
+
+    createdAt: typeof d.createdAt === 'number' ? d.createdAt : Date.now(),
   };
 };
 
@@ -239,7 +267,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error('Roster subscription error:', error);
         // Fallback if index isn't created yet: try without orderBy
         if (error.code === 'failed-precondition') {
-          return onSnapshot(rostersRef, (innerSnapshot) => {
+          onSnapshot(rostersRef, (innerSnapshot) => {
             const innerLoaded: ClassRoster[] = [];
             innerSnapshot.forEach((doc) => {
               const validated = validateRoster(doc.id, doc.data());
