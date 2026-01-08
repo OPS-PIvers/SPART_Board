@@ -192,10 +192,25 @@ export const FeaturePermissionsManager: React.FC = () => {
 
     let newLevels: GradeLevel[];
 
-    if (currentLevels.includes(level)) {
-      newLevels = currentLevels.filter((l) => l !== level);
+    if (level === 'universal') {
+      // If toggling "All", it should clear everything else
+      if (currentLevels.includes('universal')) {
+        newLevels = [];
+      } else {
+        newLevels = ['universal'];
+      }
     } else {
-      newLevels = [...currentLevels, level];
+      // If toggling a specific grade, remove "All" if present
+      let baseLevels = currentLevels;
+      if (baseLevels.includes('universal')) {
+        baseLevels = [];
+      }
+
+      if (baseLevels.includes(level)) {
+        newLevels = baseLevels.filter((l) => l !== level);
+      } else {
+        newLevels = [...baseLevels, level];
+      }
     }
 
     updatePermission(widgetType, { gradeLevels: newLevels });
