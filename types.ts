@@ -196,6 +196,8 @@ export interface LunchCountConfig {
   lastNames: string;
   assignments: Record<string, string>;
   recipient: string;
+  schoolId?: string; // e.g., 'schumann-elementary'
+  menuText?: string; // Cached or manually entered menu
 }
 
 export interface LunchMenuConfig {
