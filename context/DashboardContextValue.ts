@@ -1,5 +1,12 @@
 import { createContext } from 'react';
-import { Dashboard, WidgetData, WidgetType, Toast } from '../types';
+import {
+  Dashboard,
+  WidgetData,
+  WidgetType,
+  Toast,
+  ClassRoster,
+  Student,
+} from '../types';
 
 export interface DashboardContextType {
   dashboards: Dashboard[];
@@ -23,6 +30,17 @@ export interface DashboardContextType {
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
+
+  // --- ROSTER SYSTEM ---
+  rosters: ClassRoster[];
+  activeRosterId: string | null;
+  addRoster: (name: string, students: Student[]) => Promise<string>;
+  updateRoster: (
+    rosterId: string,
+    updates: Partial<ClassRoster>
+  ) => Promise<void>;
+  deleteRoster: (rosterId: string) => Promise<void>;
+  setActiveRoster: (rosterId: string | null) => void;
 }
 
 export const DashboardContext = createContext<DashboardContextType | undefined>(

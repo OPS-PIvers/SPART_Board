@@ -6,6 +6,7 @@ import {
   RefreshCcw,
   Plus,
   Trash2,
+  Users,
 } from 'lucide-react';
 import {
   DndContext,
@@ -26,6 +27,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { TOOLS, ToolMetadata, WidgetType, WidgetData } from '../../types';
 import { getTitle } from '../../utils/widgetHelpers';
+import ClassRosterMenu from './ClassRosterMenu';
 
 // Dock Item with Popover Logic
 const DockItem = ({
@@ -229,6 +231,37 @@ export const Dock: React.FC = () => {
   } = useDashboard();
   const { canAccessWidget, featurePermissions } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showRosterMenu, setShowRosterMenu] = useState(false);
+  const classesButtonRef = useRef<HTMLButtonElement>(null);
+  const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
+    null
+  );
+
+  const openClassEditor = () => {
+    addWidget('classes');
+    setShowRosterMenu(false);
+  };
+
+  const handleToggleRosterMenu = () => {
+    if (!showRosterMenu && classesButtonRef.current) {
+      setClassesAnchorRect(classesButtonRef.current.getBoundingClientRect());
+    }
+    setShowRosterMenu(!showRosterMenu);
+  };
+
+  const classToolMetadata = useMemo(() => {
+    const tool = TOOLS.find((t) => t.type === 'classes');
+    if (!tool) return { label: 'Class', color: 'bg-indigo-600' };
+
+    const permission = featurePermissions.find(
+      (p) => p.widgetType === 'classes'
+    );
+    const displayName = permission?.displayName?.trim();
+    return {
+      ...tool,
+      label: displayName ?? tool.label,
+    };
+  }, [featurePermissions]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -258,7 +291,9 @@ export const Dock: React.FC = () => {
       .filter((t): t is ToolMetadata => t !== undefined);
 
     // Filter by access
-    return ordered.filter((tool) => canAccessWidget(tool.type));
+    return ordered.filter(
+      (tool) => canAccessWidget(tool.type) && tool.type !== 'classes'
+    );
   }, [visibleTools, canAccessWidget, featurePermissions]);
 
   // Memoize minimized widgets by type to avoid O(N*M) filtering in render loop
@@ -316,6 +351,13 @@ export const Dock: React.FC = () => {
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center">
+      {showRosterMenu && (
+        <ClassRosterMenu
+          onClose={() => setShowRosterMenu(false)}
+          onOpenFullEditor={openClassEditor}
+          anchorRect={classesAnchorRect}
+        />
+      )}
       <div className="relative group/dock">
         {isExpanded ? (
           <>
@@ -353,6 +395,25 @@ export const Dock: React.FC = () => {
                       })}
                     </SortableContext>
                   </DndContext>
+
+                  {/* Separator and Roster/Classes Button */}
+                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                  <button
+                    ref={classesButtonRef}
+                    onClick={handleToggleRosterMenu}
+                    aria-label="Toggle class roster menu"
+                    className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
+                  >
+                    <div
+                      className={`${classToolMetadata.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+                    >
+                      <Users className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                      {classToolMetadata.label}
+                    </span>
+                  </button>
 
                   {/* Separator and Minimize Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />

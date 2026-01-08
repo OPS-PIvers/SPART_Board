@@ -21,6 +21,7 @@ import { WeatherWidget, WeatherSettings } from './WeatherWidget';
 import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
+import ClassesWidget from './ClassesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 
 export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
@@ -68,6 +69,8 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
         return <CalendarWidget widget={widget} />;
       case 'lunchCount':
         return <LunchCountWidget widget={widget} />;
+      case 'classes':
+        return <ClassesWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -129,6 +132,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
       title={getTitle(widget)}
       settings={getWidgetSettings()}
       style={customStyle}
+      skipCloseConfirmation={widget.type === 'classes'}
     >
       {getWidgetContent()}
     </DraggableWindow>

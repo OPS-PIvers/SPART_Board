@@ -75,7 +75,7 @@ const playWinner = () => {
 };
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, rosters, activeRosterId } = useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
@@ -99,16 +99,38 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setDisplayResult(config.lastResult ?? '');
   }, [config.lastResult]);
 
+  // Clear session data when active roster changes to avoid cross-contamination
+  useEffect(() => {
+    if (activeRosterId) {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          lastResult: null,
+          remainingStudents: [],
+        },
+      });
+    }
+  }, [activeRosterId, widget.id, updateWidget, config]);
+
+  const activeRoster = useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
+
   const students = useMemo(() => {
+    if (activeRoster) {
+      return activeRoster.students.map((s) =>
+        `${s.firstName} ${s.lastName}`.trim()
+      );
+    }
+
     const firsts = firstNames
       .split('\n')
-
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
     const lasts = lastNames
       .split('\n')
-
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
@@ -116,13 +138,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
-
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);
     }
     return combined;
-  }, [firstNames, lastNames]);
+  }, [firstNames, lastNames, activeRoster]);
 
   // Dynamic sizing calculations for all animations
   const layoutSizing = useMemo(() => {
@@ -482,7 +503,15 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 font-handwritten bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden">
+    <div className="h-full flex flex-col p-4 font-handwritten bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden relative">
+      {activeRoster && (
+        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 animate-in fade-in slide-in-from-top-1">
+          <Target className="w-2.5 h-2.5 text-indigo-500" />
+          <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider">
+            {activeRoster.name}
+          </span>
+        </div>
+      )}
       <div className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden">
         {mode === 'single' ? (
           renderSinglePick()
