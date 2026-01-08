@@ -201,6 +201,7 @@ onClose={() => removeWidget(data.id)}
 onMinimize={() => updateWidget(data.id, { minimized: !data.minimized })}
 isMinimized={data.minimized}
 x={data.x} y={data.y} w={data.w} h={data.h} >
+
 <div className="flex flex-col h-full bg-slate-50 p-4 overflow-hidden">
 
         {view === 'list' && (
@@ -296,6 +297,7 @@ return () => document.removeEventListener('mousedown', handleClickOutside);
 }, [onClose]);
 
 return (
+
 <div 
       ref={menuRef}
       className="absolute bottom-20 left-20 w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200"
