@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { X, Settings, Move, Minus, Pencil, Camera } from 'lucide-react';
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
@@ -38,17 +38,24 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const dateStr = new Date().toISOString().split('T')[0];
   const fileName = `Classroom-${widget.type.charAt(0).toUpperCase() + widget.type.slice(1)}-${dateStr}`;
 
+  const handleScreenshotSuccess = useCallback(() => {
+    addToast('Screenshot saved', 'success');
+  }, [addToast]);
+
+  const handleScreenshotError = useCallback(
+    (err: unknown) => {
+      console.error('Screenshot error:', err);
+      addToast('Failed to save screenshot', 'error');
+    },
+    [addToast]
+  );
+
   const { takeScreenshot, isFlashing, isCapturing } = useScreenshot(
     contentRef,
     fileName,
     {
-      onSuccess: () => {
-        addToast('Screenshot saved', 'success');
-      },
-      onError: (err) => {
-        console.error('Screenshot error:', err);
-        addToast('Failed to save screenshot', 'error');
-      },
+      onSuccess: handleScreenshotSuccess,
+      onError: handleScreenshotError,
     }
   );
 

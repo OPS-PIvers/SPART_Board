@@ -19,6 +19,7 @@ export const useScreenshot = (
 ): UseScreenshotResult => {
   const [isFlashing, setIsFlashing] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const { onSuccess, onError } = options;
 
   const takeScreenshot = useCallback(async () => {
     if (!nodeRef.current) return;
@@ -61,14 +62,14 @@ export const useScreenshot = (
       link.href = dataUrl;
       link.click();
 
-      options.onSuccess?.();
+      onSuccess?.();
     } catch (err) {
       console.error('Screenshot failed:', err);
-      options.onError?.(err);
+      onError?.(err);
     } finally {
       setIsCapturing(false);
     }
-  }, [nodeRef, fileName, options]);
+  }, [nodeRef, fileName, onSuccess, onError]);
 
   return { takeScreenshot, isFlashing, isCapturing };
 };
