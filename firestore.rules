@@ -22,12 +22,37 @@ service cloud.firestore {
 
     // Dashboards - users can only access their own dashboards in their subcollection
     match /users/{userId}/dashboards/{dashboardId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // SECURITY NOTE: Weather widget proxyUrl changes should ideally be restricted to admins
-      // via server-side validation. Currently, this is only enforced client-side (UI disabled
-      // + onChange guard). For production deployments requiring strict SSRF protection,
-      // implement custom validation logic to check widget configs or use Cloud Functions
-      // to enforce proxy URL restrictions.
+      // All authenticated users can read their own dashboards
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Writes require additional validation for security-sensitive fields
+      // Admin users have full write access
+      // Non-admin users are restricted from modifying proxyUrl to prevent SSRF attacks
+      // NOTE: This validation is simplified and checks for any widget array changes.
+      // It cannot granularly detect proxyUrl modifications within nested widget configs
+      // due to Firestore rules limitations. For production deployments requiring
+      // strict SSRF protection, implement Cloud Functions with beforeWrite triggers
+      // to validate specific field changes in widget configs.
+      allow write: if request.auth != null &&
+                   request.auth.uid == userId &&
+                   (
+                     // Admins can freely modify dashboards
+                     isAdmin() ||
+                     // Non-admins: prevent any dashboard writes when widgets array exists
+                     // to avoid potential proxyUrl modifications. This is overly restrictive
+                     // but necessary without Cloud Functions for granular validation.
+                     (
+                       !('widgets' in request.resource.data) ||
+                       (
+                         // Allow creation of new dashboards
+                         resource == null ||
+                         // Deny all widget modifications for non-admins as a safety measure
+                         // In production, use Cloud Functions for precise proxyUrl detection
+                         !('widgets' in resource.data) ||
+                         request.resource.data.widgets == resource.data.widgets
+                       )
+                     )
+                   );
     }
 
     // User data collection

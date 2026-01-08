@@ -15,6 +15,12 @@ import {
   Lock,
 } from 'lucide-react';
 
+// Configuration constants
+const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+const MAX_CONSECUTIVE_FAILURES = 3;
+const BACKOFF_MULTIPLIER = 2;
+const MAX_BACKOFF_MS = 300000; // 5 minutes
+
 // Earth Networks Response Interface
 interface EarthNetworksData {
   temperature: number;
@@ -67,7 +73,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return { label: 'Short Sleeves', icon: '🩳' };
   };
 
-  const clothing = getClothingRecommendation();
+  const clothingRec = getClothingRecommendation();
 
   return (
     <div className="flex flex-col h-full p-4 relative">
@@ -77,14 +83,13 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
             <MapPin className="w-2.5 h-2.5" /> {locationName}
           </div>
-          <div className="text-[8px] font-bold text-slate-300">
-            Weather Station
-            {stationId && (
-              <span className="ml-1 text-[7px] font-normal text-slate-400">
+          {stationId && (
+            <div className="text-[8px] font-bold text-slate-300">
+              <span className="text-[7px] font-normal text-slate-400">
                 ({stationId})
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         {lastSync && (
           <div className="text-[8px] font-mono text-slate-300">
@@ -107,9 +112,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         {/* Recommendation Chip */}
         <div className="bg-indigo-50 px-3 py-1.5 rounded-full flex items-center gap-2 border border-indigo-100">
-          <span className="text-lg">{clothing.icon}</span>
+          <span className="text-lg">{clothingRec.icon}</span>
           <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide">
-            Wear {clothing.label}
+            Wear {clothingRec.label}
           </span>
         </div>
       </div>
@@ -132,10 +137,15 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const [loading, setLoading] = useState(false);
   const lastConfigRef = useRef(config);
   const fetchWeatherRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const consecutiveFailuresRef = useRef(0);
+  const currentBackoffRef = useRef(REFRESH_INTERVAL_MS);
+  const hasShownProxyWarningRef = useRef(false);
 
   // Update ref when config changes
   useEffect(() => {
     lastConfigRef.current = config;
+    // Reset proxy warning when proxyUrl changes
+    hasShownProxyWarningRef.current = false;
   }, [config]);
 
   // Validate proxy URL to prevent SSRF attacks
@@ -162,7 +172,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   // For security, only confirmed admin users can modify proxy URL
-  const isNonAdmin = isAdmin === false;
+  // Treat null (loading state) as non-admin for UI consistency
+  const isNonAdmin = isAdmin !== true;
   const canEditProxyUrl = isAdmin === true;
 
   const fetchWeather = useCallback(async () => {
@@ -200,12 +211,33 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const targetUrl = `${baseUrl}?${params.toString()}`;
 
       // 2. Wrap it with the Proxy URL
-      // Note: This assumes direct concatenation format (proxyUrl + targetUrl).
-      // Different CORS proxies may use different URL conventions:
+      // Show warning for empty proxy URL only once per config change
+      if (!proxyUrl && !hasShownProxyWarningRef.current) {
+        hasShownProxyWarningRef.current = true;
+        addToast(
+          'No proxy URL configured. Direct connections may fail due to CORS restrictions. Configure a proxy URL in settings.',
+          'info'
+        );
+      }
+
+      // Different CORS proxies use different URL conventions:
       // - cors-anywhere.herokuapp.com: Direct concatenation (https://proxy/target)
+      // - corsproxy.io: Direct concatenation (https://proxy/target)
       // - api.allorigins.win: Query parameter format (https://proxy?url=target)
-      // Current implementation only supports direct concatenation format.
-      const finalUrl = proxyUrl ? `${proxyUrl}${targetUrl}` : targetUrl;
+      const finalUrl = (() => {
+        if (!proxyUrl) {
+          return targetUrl;
+        }
+
+        if (proxyUrl.includes('api.allorigins.win')) {
+          // api.allorigins.win expects the target URL in a `url` query parameter.
+          const separator = proxyUrl.includes('?') ? '&' : '?';
+          return `${proxyUrl}${separator}url=${encodeURIComponent(targetUrl)}`;
+        }
+
+        // Default: assume direct concatenation format (proxyUrl + targetUrl).
+        return `${proxyUrl}${targetUrl}`;
+      })();
 
       const res = await fetch(finalUrl);
 
@@ -294,10 +326,25 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         },
       });
 
+      // Reset failure tracking on success
+      consecutiveFailuresRef.current = 0;
+      currentBackoffRef.current = REFRESH_INTERVAL_MS;
+
       addToast('Weather data updated from weather station', 'success');
     } catch (err) {
       console.error('Weather Fetch Error:', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
+
+      // Track consecutive failures for backoff logic
+      consecutiveFailuresRef.current += 1;
+
+      // Implement exponential backoff after reaching failure threshold
+      if (consecutiveFailuresRef.current >= MAX_CONSECUTIVE_FAILURES) {
+        currentBackoffRef.current = Math.min(
+          currentBackoffRef.current * BACKOFF_MULTIPLIER,
+          MAX_BACKOFF_MS
+        );
+      }
 
       // Provide guidance for CORS errors when no proxy is configured
       if (
@@ -322,9 +369,20 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     fetchWeatherRef.current = fetchWeather;
   }, [fetchWeather]);
 
-  // Auto-refresh mechanism: fetch weather every 30 seconds when enabled
+  // Auto-refresh mechanism with exponential backoff on failures
+  // Note: This uses a ref-based approach to avoid interval churn. The interval
+  // only depends on isAuto, so configuration changes (stationId, proxyUrl) won't
+  // take effect until the next scheduled fetch. This is intentional to prevent
+  // unnecessary interval recreation and ensure stable refresh behavior.
   useEffect(() => {
-    if (!isAuto) return;
+    if (!isAuto) {
+      // Reset backoff when auto-refresh is disabled
+      consecutiveFailuresRef.current = 0;
+      currentBackoffRef.current = REFRESH_INTERVAL_MS;
+      return;
+    }
+
+    let isMounted = true;
 
     // Initial fetch using current ref
     const doFetch = () => {
@@ -335,10 +393,25 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
     doFetch(); // Initial fetch
 
-    // Set up interval for subsequent fetches
-    const intervalId = setInterval(doFetch, 30000); // 30 seconds
+    // Set up interval with dynamic backoff
+    let intervalId: NodeJS.Timeout | undefined;
+    const scheduleNext = () => {
+      if (!isMounted) return; // Prevent scheduling after unmount
+      intervalId = setTimeout(() => {
+        if (!isMounted) return; // Check again before fetching
+        doFetch();
+        scheduleNext(); // Reschedule after each fetch
+      }, currentBackoffRef.current);
+    };
 
-    return () => clearInterval(intervalId);
+    scheduleNext();
+
+    return () => {
+      isMounted = false; // Signal that component is unmounting
+      if (intervalId) {
+        clearTimeout(intervalId);
+      }
+    };
   }, [isAuto]); // Only depend on isAuto to prevent interval churn
 
   return (
@@ -356,6 +429,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
             target="_blank"
             rel="noreferrer"
             className="underline font-bold"
+            aria-label="Open CORS Anywhere demo page to enable proxy access"
           >
             Click here to enable the demo proxy
           </a>{' '}
@@ -372,18 +446,13 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           value={stationId}
           onChange={(e) => {
             const newValue = e.target.value;
-            // Allow empty string during typing, but validate format if not empty
+            // Validate format: allow empty or valid characters only
             const stationIdRegex = /^[A-Z0-9_-]+$/i;
+            // Silently ignore invalid input to prevent it from appearing
             if (newValue === '' || stationIdRegex.test(newValue)) {
               updateWidget(widget.id, {
                 config: { ...config, stationId: newValue },
               });
-            } else {
-              // Show visual feedback for invalid input (non-empty invalid format)
-              addToast(
-                'Station ID can only contain letters, numbers, hyphens, and underscores',
-                'error'
-              );
             }
           }}
           className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
@@ -435,7 +504,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div className="flex items-center justify-between border-t border-slate-100 pt-4">
         <label className="text-[10px] font-bold text-slate-600 uppercase">
-          Auto-Refresh (30s)
+          Auto-Refresh ({REFRESH_INTERVAL_MS / 1000}s)
         </label>
         <input
           type="checkbox"
