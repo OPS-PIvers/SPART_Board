@@ -91,11 +91,35 @@ export const Dock: React.FC = () => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = visibleTools.indexOf(active.id as WidgetType);
-      const newIndex = visibleTools.indexOf(over.id as WidgetType);
+      const filteredToolTypes = filteredTools.map((tool) => tool.type);
+      const oldIndex = filteredToolTypes.indexOf(active.id as WidgetType);
+      const newIndex = filteredToolTypes.indexOf(over.id as WidgetType);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        reorderTools(arrayMove(visibleTools, oldIndex, newIndex));
+        const reorderedFilteredTypes = arrayMove(
+          filteredToolTypes,
+          oldIndex,
+          newIndex
+        );
+
+        // Reconstruct the full list, preserving the position of inaccessible items
+        // This is tricky: we want to replace the accessible items in visibleTools
+        // with the new order, while skipping over items we can't see/move.
+        const newVisibleTools: WidgetType[] = [];
+        let filteredIndex = 0;
+
+        for (const tool of visibleTools) {
+          if (canAccessWidget(tool)) {
+            if (filteredIndex < reorderedFilteredTypes.length) {
+              newVisibleTools.push(reorderedFilteredTypes[filteredIndex]);
+              filteredIndex++;
+            }
+          } else {
+            newVisibleTools.push(tool);
+          }
+        }
+
+        reorderTools(newVisibleTools);
       }
     }
   };

@@ -380,7 +380,10 @@ export const Sidebar: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   if (editingDashboard.name.trim()) {
-                    renameDashboard(editingDashboard.id, editingDashboard.name);
+                    renameDashboard(
+                      editingDashboard.id,
+                      editingDashboard.name.trim()
+                    );
                     setEditingDashboard(null);
                   }
                 } else if (e.key === 'Escape') {
@@ -400,7 +403,10 @@ export const Sidebar: React.FC = () => {
               <button
                 onClick={() => {
                   if (editingDashboard.name.trim()) {
-                    renameDashboard(editingDashboard.id, editingDashboard.name);
+                    renameDashboard(
+                      editingDashboard.id,
+                      editingDashboard.name.trim()
+                    );
                     setEditingDashboard(null);
                   }
                 }}
