@@ -129,39 +129,49 @@ export const Dock: React.FC = () => {
       <div className="relative group/dock">
         {isExpanded ? (
           <>
-            {/* The "little arrow" to minimize the toolbar */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(false);
-              }}
-              className="absolute -top-10 left-1/2 -translate-x-1/2 p-2 bg-white/80 backdrop-blur shadow-xl rounded-full text-slate-400 hover:text-indigo-600 transition-all opacity-0 group-hover/dock:opacity-100 hover:scale-110 active:scale-90"
-              title="Minimize Toolbar"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
-            {/* Expanded Toolbar with hover-to-reveal titles */}
+            {/* Expanded Toolbar with always-visible labels and minimize button */}
             <div className="bg-white/80 backdrop-blur-2xl px-4 py-3 rounded-[2rem] shadow-2xl border border-white/50 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {filteredTools.length > 0 ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={filteredTools.map((t) => t.type)}
-                    strategy={horizontalListSortingStrategy}
+                <>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    {filteredTools.map((tool) => (
-                      <SortableTool
-                        key={tool.type}
-                        tool={tool}
-                        onClick={() => addWidget(tool.type)}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
+                    <SortableContext
+                      items={filteredTools.map((t) => t.type)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {filteredTools.map((tool) => (
+                        <SortableTool
+                          key={tool.type}
+                          tool={tool}
+                          onClick={() => addWidget(tool.type)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+
+                  {/* Vertical Divider */}
+                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                  {/* Integrated Minimize Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsExpanded(false);
+                    }}
+                    className="flex flex-col items-center gap-1 min-w-[40px] transition-transform active:scale-90 touch-none text-slate-400 hover:text-indigo-600 group/min"
+                    title="Minimize Toolbar"
+                  >
+                    <div className="p-2 md:p-3 rounded-2xl bg-slate-100 group-hover/min:bg-slate-200 transition-colors">
+                      <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-tighter whitespace-nowrap">
+                      Hide
+                    </span>
+                  </button>
+                </>
               ) : (
                 <div className="px-6 py-2 text-[10px] font-black uppercase text-slate-400 italic">
                   No apps selected in settings
