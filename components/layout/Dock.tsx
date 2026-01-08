@@ -259,7 +259,7 @@ export const Dock: React.FC = () => {
     const displayName = permission?.displayName?.trim();
     return {
       ...tool,
-      label: displayName || tool.label,
+      label: displayName ?? tool.label,
     };
   }, [featurePermissions]);
 
