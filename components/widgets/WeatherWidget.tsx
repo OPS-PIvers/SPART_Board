@@ -372,14 +372,14 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           value={stationId}
           onChange={(e) => {
             const newValue = e.target.value;
-            // Validate station ID format in real-time (must have at least one character)
+            // Allow empty string during typing, but validate format if not empty
             const stationIdRegex = /^[A-Z0-9_-]+$/i;
             if (newValue === '' || stationIdRegex.test(newValue)) {
               updateWidget(widget.id, {
                 config: { ...config, stationId: newValue },
               });
             } else {
-              // Show visual feedback for invalid input
+              // Show visual feedback for invalid input (non-empty invalid format)
               addToast(
                 'Station ID can only contain letters, numbers, hyphens, and underscores',
                 'error'
