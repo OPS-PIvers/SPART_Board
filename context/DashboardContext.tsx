@@ -134,7 +134,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setDashboards((prev) => {
         // If we have very recent local changes, keep our local version of the active dashboard
         const now = Date.now();
-        if (now - lastLocalUpdateAt.current < 2000) {
+        if (now - lastLocalUpdateAt.current < 3000) {
           return updatedDashboards.map((db) => {
             if (db.id === activeIdRef.current) {
               const currentActive = prev.find(
@@ -299,9 +299,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const currentData =
       JSON.stringify(active.widgets) + active.background + active.name;
-    if (currentData === lastSavedDataRef.current) return;
 
+    // Always clear any pending timer, even if data hasn't changed
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    if (currentData === lastSavedDataRef.current) return;
 
     saveTimerRef.current = setTimeout(() => {
       lastSavedDataRef.current = currentData;

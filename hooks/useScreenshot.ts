@@ -39,7 +39,7 @@ export const useScreenshot = (
       const dataUrl = await toPng(nodeRef.current, {
         cacheBust: true,
         pixelRatio: 2, // Higher quality
-        filter: (node: Node) => {
+        filter: (node: Element) => {
           if (!(node instanceof HTMLElement)) {
             return true;
           }
