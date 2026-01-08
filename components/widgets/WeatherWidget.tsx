@@ -41,7 +41,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     temp = 72,
     condition = 'sunny',
-    locationName = 'Orono IS',
+    locationName = 'Weather Station',
     stationId = 'BLLST',
     lastSync = null,
   } = config;
@@ -131,15 +131,12 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const [loading, setLoading] = useState(false);
   const lastConfigRef = useRef(config);
+  const fetchWeatherRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Update ref when config changes
   useEffect(() => {
     lastConfigRef.current = config;
   }, [config]);
-
-  // For security, only confirmed admin users can modify proxy URL
-  const isNonAdmin = isAdmin === false;
-  const canEditProxyUrl = isAdmin === true;
 
   // Validate proxy URL to prevent SSRF attacks
   const isValidProxyUrl = useCallback((url: string): boolean => {
@@ -147,6 +144,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     try {
       const parsed = new URL(url);
       // Only allow https protocol and trusted domains
+      // Note: These are public CORS proxy services. For production, consider:
+      // 1. Setting up a dedicated backend proxy
+      // 2. Moving this list to admin-controlled Firestore configuration
+      // 3. Documenting proxy URL format requirements (direct concatenation)
       const trustedDomains = [
         'cors-anywhere.herokuapp.com',
         'api.allorigins.win',
@@ -159,6 +160,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       return false;
     }
   }, []);
+
+  // For security, only confirmed admin users can modify proxy URL
+  const isNonAdmin = isAdmin === false;
+  const canEditProxyUrl = isAdmin === true;
 
   const fetchWeather = useCallback(async () => {
     // Validate station ID to prevent parameter injection
@@ -195,7 +200,11 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const targetUrl = `${baseUrl}?${params.toString()}`;
 
       // 2. Wrap it with the Proxy URL
-      // If proxyUrl is present, append the targetUrl to it
+      // Note: This assumes direct concatenation format (proxyUrl + targetUrl).
+      // Different CORS proxies may use different URL conventions:
+      // - cors-anywhere.herokuapp.com: Direct concatenation (https://proxy/target)
+      // - api.allorigins.win: Query parameter format (https://proxy?url=target)
+      // Current implementation only supports direct concatenation format.
       const finalUrl = proxyUrl ? `${proxyUrl}${targetUrl}` : targetUrl;
 
       const res = await fetch(finalUrl);
@@ -247,8 +256,14 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const currentConfig = lastConfigRef.current;
       let condition = currentConfig?.condition ?? 'sunny'; // Keep existing if data unavailable
 
-      // Only update condition if we have valid data
-      if (typeof precipRate === 'number' && typeof tempF === 'number') {
+      // Determine weather condition using threshold-based logic
+      // Thresholds are based on common classroom weather station interpretations:
+      // - Precipitation rate > 0: Active rain or snow (classified by temperature)
+      // - Wind gust >= 25 mph or sustained >= 20 mph: Windy conditions worth noting
+      // - Humidity >= 80%: High moisture content, typically indicates cloudy/overcast
+      // - Otherwise: Clear/sunny conditions
+      // Priority: precipitation > wind > humidity > clear (most impactful first)
+      if (Number.isFinite(tempF) && Number.isFinite(precipRate)) {
         if (precipRate > 0) {
           // Treat precipitation at near-freezing temperatures as snow
           if (tempF <= 34) {
@@ -275,11 +290,11 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           stationId: currentConfig?.stationId ?? stationId,
           proxyUrl: currentConfig?.proxyUrl ?? proxyUrl,
           isAuto: currentConfig?.isAuto ?? false,
-          locationName: currentConfig?.locationName ?? 'Orono IS',
+          locationName: currentConfig?.locationName ?? 'Weather Station',
         },
       });
 
-      addToast('Weather data updated from Station', 'success');
+      addToast('Weather data updated from weather station', 'success');
     } catch (err) {
       console.error('Weather Fetch Error:', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -302,20 +317,29 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     }
   }, [proxyUrl, stationId, updateWidget, widget.id, addToast, isValidProxyUrl]);
 
+  // Store fetchWeather in ref to avoid recreating interval on every change
+  useEffect(() => {
+    fetchWeatherRef.current = fetchWeather;
+  }, [fetchWeather]);
+
   // Auto-refresh mechanism: fetch weather every 30 seconds when enabled
   useEffect(() => {
     if (!isAuto) return;
 
-    // Initial fetch
-    void fetchWeather();
+    // Initial fetch using current ref
+    const doFetch = () => {
+      if (fetchWeatherRef.current) {
+        void fetchWeatherRef.current();
+      }
+    };
+
+    doFetch(); // Initial fetch
 
     // Set up interval for subsequent fetches
-    const intervalId = setInterval(() => {
-      void fetchWeather();
-    }, 30000); // 30 seconds
+    const intervalId = setInterval(doFetch, 30000); // 30 seconds
 
     return () => clearInterval(intervalId);
-  }, [isAuto, fetchWeather]);
+  }, [isAuto]); // Only depend on isAuto to prevent interval churn
 
   return (
     <div className="space-y-6">
@@ -346,11 +370,22 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         <input
           type="text"
           value={stationId}
-          onChange={(e) =>
-            updateWidget(widget.id, {
-              config: { ...config, stationId: e.target.value },
-            })
-          }
+          onChange={(e) => {
+            const newValue = e.target.value;
+            // Allow empty string during typing, but validate format if not empty
+            const stationIdRegex = /^[A-Z0-9_-]+$/i;
+            if (newValue === '' || stationIdRegex.test(newValue)) {
+              updateWidget(widget.id, {
+                config: { ...config, stationId: newValue },
+              });
+            } else {
+              // Show visual feedback for invalid input (non-empty invalid format)
+              addToast(
+                'Station ID can only contain letters, numbers, hyphens, and underscores',
+                'error'
+              );
+            }
+          }}
           className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
           placeholder="e.g. BLLST"
         />
@@ -375,11 +410,14 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         <input
           type="text"
           value={proxyUrl}
-          onChange={(e) =>
-            updateWidget(widget.id, {
-              config: { ...config, proxyUrl: e.target.value },
-            })
-          }
+          onChange={(e) => {
+            // Enforce admin-only modification even if field is somehow enabled
+            if (canEditProxyUrl) {
+              updateWidget(widget.id, {
+                config: { ...config, proxyUrl: e.target.value },
+              });
+            }
+          }}
           disabled={!canEditProxyUrl}
           className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
           placeholder="https://cors-anywhere.herokuapp.com/"

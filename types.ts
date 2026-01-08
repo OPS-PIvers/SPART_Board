@@ -182,8 +182,8 @@ export interface WeatherConfig {
 
   // Earth Networks Configuration
   stationId?: string; // e.g., 'BLLST'
-  proxyUrl?: string; // e.g., 'https://cors-anywhere.herokuapp.com/'
-  isAuto?: boolean; // Acts as "Live Update" toggle
+  proxyUrl?: string; // e.g., 'https://cors-anywhere.herokuapp.com/' (admin-only for security)
+  isAuto?: boolean; // Enables automatic syncing of weather data from Earth Networks (backs the "Live Update" toggle)
 }
 
 export interface ScheduleConfig {
