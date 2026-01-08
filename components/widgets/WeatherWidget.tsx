@@ -183,7 +183,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       if (!res.ok) {
         if (res.status === 403 && proxyUrl) {
           throw new Error(
-            'The CORS proxy responded with HTTP 403. Please ensure your proxy service is configured and accessible.'
+            'Unable to connect to weather service. Check your proxy settings or contact an administrator.'
           );
         }
         throw new Error(`HTTP ${res.status}`);
