@@ -448,6 +448,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const removeWidgets = (ids: string[]) => {
+    if (!activeDashboard) return;
+    updateDashboard({
+      widgets: activeDashboard.widgets.filter((w) => !ids.includes(w.id)),
+    });
+  };
+
   const updateWidget = (id: string, updates: Partial<WidgetData>) => {
     if (!activeDashboard) return;
     updateDashboard({
@@ -490,6 +497,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         loadDashboard,
         addWidget,
         removeWidget,
+        removeWidgets,
         updateWidget,
         bringToFront,
         setBackground,

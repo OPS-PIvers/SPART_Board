@@ -221,6 +221,7 @@ export const Dock: React.FC = () => {
   const {
     addWidget,
     removeWidget,
+    removeWidgets,
     visibleTools,
     reorderTools,
     activeDashboard,
@@ -332,9 +333,7 @@ export const Dock: React.FC = () => {
                             }
                             onDelete={(id) => removeWidget(id)}
                             onDeleteAll={() => {
-                              minimizedWidgets.forEach((w) =>
-                                removeWidget(w.id)
-                              );
+                              removeWidgets(minimizedWidgets.map((w) => w.id));
                             }}
                           />
                         );
