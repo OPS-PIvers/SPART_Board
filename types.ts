@@ -213,12 +213,7 @@ export interface LunchCountConfig {
   recipient: string;
 }
 
-export interface ClassesConfig {
-  // Roster selection is global/local storage, not necessarily in widget config,
-  // but we might want to allow a widget to be "locked" to a specific class later.
-  // For now, keep it empty to satisfy type constraints.
-  _dummy?: never;
-}
+export type ClassesConfig = Record<string, never>;
 
 // Union of all widget configs
 export type WidgetConfig =

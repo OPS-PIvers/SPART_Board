@@ -1,4 +1,18 @@
-Implementation Plan: Global Class Roster System (Renamed to Groups in UI)ContextWe are implementing a global "Class Roster" system that persists across all dashboards for a user. Note: In the UI, this is displayed as "Groups" or "Group Rosters".Global Data: Rosters are stored in users/{uid}/rosters in Firestore.Dock Integration: A new "Groups" icon in the Dock opens a quick Popout Menu for switching active classes.Groups Widget: A full-featured widget for editing rosters, featuring Smart Paste (auto-splitting First/Last names).Step 1: Type DefinitionsWe need to define the Roster data shape and update the Widget definitions.types.tsAction: Append/Update these types.// ... existing types ...
+Implementation Plan: Global Class Roster System
+
+Context
+We are implementing a global "Class Roster" system that persists across all dashboards for a user. This feature is consistently branded as "Class" / "Class Roster" in the UI and codebase.
+
+Global Data: Rosters are stored in users/{uid}/rosters in Firestore.
+Dock Integration: A new "Class" icon in the Dock opens a quick Popout Menu for switching active classes.
+Class Roster Widget: A full-featured widget for editing rosters, featuring Smart Paste (auto-splitting First/Last names).
+
+Step 1: Type Definitions
+We need to define the Roster data shape and update the Widget definitions.
+
+types.ts
+Action: Append/Update these types.
+// ... existing types ...
 
 // --- ROSTER SYSTEM TYPES ---
 

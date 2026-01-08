@@ -402,6 +402,7 @@ export const Dock: React.FC = () => {
                   <button
                     ref={classesButtonRef}
                     onClick={handleToggleRosterMenu}
+                    aria-label="Toggle class roster menu"
                     className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
                   >
                     <div

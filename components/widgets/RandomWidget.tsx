@@ -99,6 +99,19 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setDisplayResult(config.lastResult ?? '');
   }, [config.lastResult]);
 
+  // Clear session data when active roster changes to avoid cross-contamination
+  useEffect(() => {
+    if (activeRosterId) {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          lastResult: null,
+          remainingStudents: [],
+        },
+      });
+    }
+  }, [activeRosterId, widget.id, updateWidget, config]);
+
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
     [rosters, activeRosterId]

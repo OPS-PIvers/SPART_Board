@@ -140,6 +140,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
 
   const [view, setView] = useState<'list' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const onSave = async (name: string, students: Student[]) => {
     if (!editingId) {
@@ -157,6 +158,32 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden rounded-lg">
       {view === 'list' && (
         <div className="flex flex-col h-full p-2">
+          {confirmDeleteId && (
+            <div className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200">
+              <p className="text-white font-semibold mb-4 text-sm">
+                Delete roster &quot;
+                {rosters.find((r) => r.id === confirmDeleteId)?.name}&quot;?
+                This cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="px-4 py-2 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await deleteRoster(confirmDeleteId);
+                    setConfirmDeleteId(null);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
           <button
             onClick={() => {
               setEditingId(null);
@@ -215,7 +242,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={() => deleteRoster(r.id)}
+                    onClick={() => setConfirmDeleteId(r.id)}
                     className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded transition-colors"
                     title="Delete Class"
                   >
