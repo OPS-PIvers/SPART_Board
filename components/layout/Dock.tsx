@@ -269,47 +269,53 @@ export const Dock: React.FC = () => {
       <div className="relative group/dock">
         {isExpanded ? (
           <>
-            {/* The "little arrow" to minimize the toolbar */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(false);
-              }}
-              className="absolute -top-10 left-1/2 -translate-x-1/2 p-2 bg-white/80 backdrop-blur shadow-xl rounded-full text-slate-400 hover:text-indigo-600 transition-all hover:scale-110 active:scale-90"
-              title="Minimize Toolbar"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
-            {/* Expanded Toolbar with hover-to-reveal titles */}
+            {/* Expanded Toolbar with integrated minimize button */}
             <div className="bg-white/80 backdrop-blur-2xl px-4 py-3 rounded-[2rem] shadow-2xl border border-white/50 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {filteredTools.length > 0 ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={filteredTools.map((t) => t.type)}
-                    strategy={horizontalListSortingStrategy}
+                <>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    {filteredTools.map((tool) => {
-                      const minimizedWidgets =
-                        minimizedWidgetsByType[tool.type] ?? [];
-                      return (
-                        <DockItem
-                          key={tool.type}
-                          tool={tool}
-                          minimizedWidgets={minimizedWidgets}
-                          onAdd={() => addWidget(tool.type)}
-                          onRestore={(id) =>
-                            updateWidget(id, { minimized: false })
-                          }
-                        />
-                      );
-                    })}
-                  </SortableContext>
-                </DndContext>
+                    <SortableContext
+                      items={filteredTools.map((t) => t.type)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {filteredTools.map((tool) => {
+                        const minimizedWidgets =
+                          minimizedWidgetsByType[tool.type] ?? [];
+                        return (
+                          <DockItem
+                            key={tool.type}
+                            tool={tool}
+                            minimizedWidgets={minimizedWidgets}
+                            onAdd={() => addWidget(tool.type)}
+                            onRestore={(id) =>
+                              updateWidget(id, { minimized: false })
+                            }
+                          />
+                        );
+                      })}
+                    </SortableContext>
+                  </DndContext>
+
+                  {/* Separator and Minimize Button */}
+                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                    title="Minimize Toolbar"
+                  >
+                    <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
+                      <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                      Hide
+                    </span>
+                  </button>
+                </>
               ) : (
                 <div className="px-6 py-2 text-[10px] font-black uppercase text-slate-400 italic">
                   No apps selected in settings
