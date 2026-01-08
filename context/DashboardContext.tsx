@@ -400,10 +400,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: {
           temp: 72,
           condition: 'sunny',
-          locationName: 'Orono IS',
+          locationName: 'Weather Station',
           stationId: 'BLLST',
-          proxyUrl: 'https://cors-anywhere.herokuapp.com/', // Demo CORS proxy; requires manual enabling
-          isAuto: false, // Disabled by default to avoid automatic weather updates until explicitly enabled
+          proxyUrl: '', // No default CORS proxy; configure in settings or documentation
+          isAuto: false, // UX default: auto-refresh is opt-in via widget settings (not a security control)
         },
       },
       schedule: {
