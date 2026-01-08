@@ -258,7 +258,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           ? data.humidity
           : 0;
 
-      let condition = lastConfigRef.current?.condition ?? 'sunny'; // Keep existing if data unavailable
+      const currentConfig = lastConfigRef.current;
+      let condition = currentConfig?.condition ?? 'sunny'; // Keep existing if data unavailable
 
       // Only update condition if we have valid data
       if (typeof precipRate === 'number' && typeof tempF === 'number') {
@@ -280,10 +281,15 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       updateWidget(widget.id, {
         config: {
-          ...(lastConfigRef.current || {}),
+          ...(currentConfig || {}),
           temp: data.temperature,
           condition,
           lastSync: Date.now(),
+          // Preserve essential fields if currentConfig is somehow null
+          stationId: currentConfig?.stationId ?? stationId,
+          proxyUrl: currentConfig?.proxyUrl ?? proxyUrl,
+          isAuto: currentConfig?.isAuto ?? false,
+          locationName: currentConfig?.locationName ?? 'Orono IS',
         },
       });
 
