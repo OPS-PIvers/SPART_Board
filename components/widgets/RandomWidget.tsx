@@ -95,6 +95,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<SVGSVGElement>(null);
 
+  useEffect(() => {
+    setDisplayResult(config.lastResult ?? '');
+  }, [config.lastResult]);
+
   const students = useMemo(() => {
     const firsts = firstNames
       .split('\n')
@@ -516,30 +520,33 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 {(Array.isArray(displayResult)
                   ? (displayResult as string[][])
                   : []
-                ).map((group: string[], i: number) => (
-                  <div
-                    key={i}
-                    className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
-                    style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
-                  >
+                ).map((group: string[], i: number) => {
+                  if (!Array.isArray(group)) return null;
+                  return (
                     <div
-                      className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
-                      style={{ fontSize: '0.6em' }}
+                      key={i}
+                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
+                      style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
                     >
-                      Group {i + 1}
+                      <div
+                        className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
+                        style={{ fontSize: '0.6em' }}
+                      >
+                        Group {i + 1}
+                      </div>
+                      <div className="space-y-0.5 overflow-hidden">
+                        {group.map((name, ni) => (
+                          <div
+                            key={ni}
+                            className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                          >
+                            {name}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-0.5 overflow-hidden">
-                      {group.map((name, ni) => (
-                        <div
-                          key={ni}
-                          className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
-                        >
-                          {name}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {!displayResult && (
                   <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
                     <Users className="w-8 h-8 opacity-20" />
