@@ -362,11 +362,11 @@ export type AccessLevel = 'admin' | 'beta' | 'public';
  * Together with the 'all' option in {@link GradeFilter}, this corresponds to the
  * UI/metadata filter options: "K-2, 3-5, 6-8, 9-12, Universal, All".
  */
-export type GradeLevel = 'k-2' | '3-5' | '6-8' | '9-12' | 'universal';
+export type GradeLevel = 'k-2' | '3-5' | '6-8' | '9-12';
 
 /**
  * Grade filter values including the 'all' ("All") option used in the UI.
- * Combined with {@link GradeLevel}, this yields: "K-2, 3-5, 6-8, 9-12, Universal, All".
+ * Combined with {@link GradeLevel}, this yields: "K-2, 3-5, 6-8, 9-12, All".
  * Used for filtering widgets in the sidebar.
  */
 export type GradeFilter = GradeLevel | 'all';
@@ -391,6 +391,10 @@ export interface FeaturePermission {
   betaUsers: string[];
   /** When false, disables the widget for everyone including admins */
   enabled: boolean;
+  /** Optional override for grade levels. If set, this takes precedence over the static configuration. */
+  gradeLevels?: GradeLevel[];
+  /** Optional override for the widget's display name. */
+  displayName?: string;
 }
 
 export interface BackgroundPreset {

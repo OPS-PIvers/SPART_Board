@@ -7,7 +7,17 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { TOOLS, FeaturePermission, AccessLevel, WidgetType } from '../../types';
+import {
+  TOOLS,
+  FeaturePermission,
+  AccessLevel,
+  WidgetType,
+  GradeLevel,
+} from '../../types';
+import {
+  getWidgetGradeLevels,
+  ALL_GRADE_LEVELS,
+} from '../../config/widgetGradeLevels';
 import {
   Shield,
   Users,
@@ -47,6 +57,13 @@ export const FeaturePermissionsManager: React.FC = () => {
 
       snapshot.forEach((doc) => {
         const data = doc.data() as FeaturePermission;
+        // Migration fix: If fetched permission still has "universal", clean it up
+        if (
+          data.gradeLevels &&
+          data.gradeLevels.includes('universal' as GradeLevel)
+        ) {
+          data.gradeLevels = ALL_GRADE_LEVELS;
+        }
         permMap.set(data.widgetType, data);
       });
 
@@ -178,6 +195,38 @@ export const FeaturePermissionsManager: React.FC = () => {
     });
   };
 
+  const toggleGradeLevel = (widgetType: WidgetType, level: GradeLevel) => {
+    const permission = getPermission(widgetType);
+    const currentLevels =
+      permission.gradeLevels ?? getWidgetGradeLevels(widgetType);
+
+    let newLevels: GradeLevel[];
+
+    if (currentLevels.includes(level)) {
+      newLevels = currentLevels.filter((l) => l !== level);
+    } else {
+      newLevels = [...currentLevels, level];
+    }
+
+    // NOTE: If newLevels is empty, the widget will be hidden from all specific grade filters
+    // but will still be visible when the 'All' filter is selected.
+    updatePermission(widgetType, { gradeLevels: newLevels });
+  };
+
+  const toggleAllGradeLevels = (widgetType: WidgetType) => {
+    const permission = getPermission(widgetType);
+    const currentLevels =
+      permission.gradeLevels ?? getWidgetGradeLevels(widgetType);
+
+    const allSelected = ALL_GRADE_LEVELS.every((l) =>
+      currentLevels.includes(l)
+    );
+
+    updatePermission(widgetType, {
+      gradeLevels: allSelected ? [] : [...ALL_GRADE_LEVELS],
+    });
+  };
+
   const getAccessLevelIcon = (level: AccessLevel) => {
     switch (level) {
       case 'admin':
@@ -225,11 +274,17 @@ export const FeaturePermissionsManager: React.FC = () => {
       )}
 
       {/* Widget Permission Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {TOOLS.map((tool) => {
           const permission = getPermission(tool.type);
           const hasCustomPermission = permissions.has(tool.type);
           const isSaving = saving.has(tool.type);
+
+          const currentLevels =
+            permission.gradeLevels ?? getWidgetGradeLevels(tool.type);
+          const isAllSelected = ALL_GRADE_LEVELS.every((l) =>
+            currentLevels.includes(l)
+          );
 
           return (
             <div
@@ -238,12 +293,23 @@ export const FeaturePermissionsManager: React.FC = () => {
             >
               {/* Widget Header */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className={`${tool.color} p-2 rounded-lg text-white`}>
                     <tool.icon className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800">{tool.label}</h4>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={permission.displayName ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updatePermission(tool.type, {
+                          displayName: val || undefined,
+                        });
+                      }}
+                      className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-0 py-0.5 transition-colors"
+                      placeholder={tool.label}
+                    />
                     <p className="text-xs text-slate-500">{tool.type}</p>
                   </div>
                 </div>
@@ -304,6 +370,42 @@ export const FeaturePermissionsManager: React.FC = () => {
                       </button>
                     )
                   )}
+                </div>
+              </div>
+
+              {/* Grade Levels */}
+              <div className="mb-3">
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Grade Levels
+                </label>
+                <div className="grid grid-cols-5 gap-1">
+                  {ALL_GRADE_LEVELS.map((level) => {
+                    const isSelected = currentLevels.includes(level);
+
+                    return (
+                      <button
+                        key={level}
+                        onClick={() => toggleGradeLevel(tool.type, level)}
+                        className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {level.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => toggleAllGradeLevels(tool.type)}
+                    className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
+                      isAllSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    ALL
+                  </button>
                 </div>
               </div>
 

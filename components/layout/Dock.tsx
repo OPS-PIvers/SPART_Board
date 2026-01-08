@@ -227,7 +227,7 @@ export const Dock: React.FC = () => {
     activeDashboard,
     updateWidget,
   } = useDashboard();
-  const { canAccessWidget } = useAuth();
+  const { canAccessWidget, featurePermissions } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const sensors = useSensors(
@@ -241,12 +241,25 @@ export const Dock: React.FC = () => {
   const filteredTools = useMemo(() => {
     // Map visibleTools to actual tool objects to preserve order
     const ordered = visibleTools
-      .map((type) => TOOLS.find((t) => t.type === type))
+      .map((type) => {
+        const tool = TOOLS.find((t) => t.type === type);
+        if (!tool) return undefined;
+
+        // Apply permission overrides (e.g., custom display name)
+        const permission = featurePermissions.find(
+          (p) => p.widgetType === tool.type
+        );
+        const displayName = permission?.displayName?.trim();
+        if (displayName) {
+          return { ...tool, label: displayName };
+        }
+        return tool;
+      })
       .filter((t): t is ToolMetadata => t !== undefined);
 
     // Filter by access
     return ordered.filter((tool) => canAccessWidget(tool.type));
-  }, [visibleTools, canAccessWidget]);
+  }, [visibleTools, canAccessWidget, featurePermissions]);
 
   // Memoize minimized widgets by type to avoid O(N*M) filtering in render loop
   const minimizedWidgetsByType = useMemo(() => {

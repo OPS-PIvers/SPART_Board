@@ -1,5 +1,7 @@
 import { WidgetType, GradeLevel, GradeFilter } from '../types';
 
+export const ALL_GRADE_LEVELS: GradeLevel[] = ['k-2', '3-5', '6-8', '9-12'];
+
 /**
  * WIDGET GRADE LEVEL CONFIGURATION
  *
@@ -11,53 +13,46 @@ import { WidgetType, GradeLevel, GradeFilter } from '../types';
  * - '3-5': 3rd through 5th grade
  * - '6-8': 6th through 8th grade (middle school)
  * - '9-12': 9th through 12th grade (high school)
- * - 'universal': Appropriate for all grades
  *
  * Instructions:
  * - To change a widget's grade levels, simply edit the array for that widget
  * - A widget can have multiple grade levels: ['k-2', '3-5'] means it shows in both filters
  * - Each grade level will be displayed as a separate chip in the UI
- * - Use ['universal'] for widgets appropriate for all grades
- *
- * Example:
- *   timer: ['universal'],         // Shows in all grade filters
- *   dice: ['k-2'],                // Shows only in K-2 filter
- *   poll: ['6-8', '9-12'],        // Shows in 6-8 and 9-12 filters
- *   exampleWidget: ['k-2', '3-5'], // Shows in K-2 and 3-5 filters with two separate chips
+ * - Use ALL_GRADE_LEVELS for widgets appropriate for all grades
  */
 export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   // Clock & Time Tools
-  clock: ['universal'],
-  timer: ['universal'],
-  stopwatch: ['universal'],
+  clock: ALL_GRADE_LEVELS,
+  timer: ALL_GRADE_LEVELS,
+  stopwatch: ALL_GRADE_LEVELS,
 
   // Classroom Management
   traffic: ['k-2', '3-5'],
   workSymbols: ['k-2', '3-5'],
-  sound: ['universal'],
+  sound: ALL_GRADE_LEVELS,
 
   // Content & Communication
-  text: ['universal'],
-  checklist: ['universal'],
+  text: ALL_GRADE_LEVELS,
+  checklist: ALL_GRADE_LEVELS,
   qr: ['6-8', '9-12'],
 
   // Random & Fun
-  random: ['universal'],
+  random: ALL_GRADE_LEVELS,
   dice: ['k-2', '3-5'],
 
   // Creative Tools
   drawing: ['k-2', '3-5'],
-  webcam: ['universal'],
+  webcam: ALL_GRADE_LEVELS,
 
   // Academic Tools
   poll: ['6-8', '9-12'],
-  scoreboard: ['universal'],
+  scoreboard: ALL_GRADE_LEVELS,
   embed: ['6-8', '9-12'],
 
   // Planning & Organization
-  schedule: ['universal'],
-  calendar: ['universal'],
-  weather: ['universal'],
+  schedule: ALL_GRADE_LEVELS,
+  calendar: ALL_GRADE_LEVELS,
+  weather: ALL_GRADE_LEVELS,
   lunchCount: ['k-2', '3-5'],
 };
 
@@ -70,11 +65,19 @@ export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
   // Development-mode warning for missing widget configuration
   if (!levels && process.env.NODE_ENV === 'development') {
     console.warn(
-      `Widget "${widgetType}" is missing from WIDGET_GRADE_LEVELS configuration. Defaulting to ['universal'].`
+      `Widget "${widgetType}" is missing from WIDGET_GRADE_LEVELS configuration. Defaulting to ALL_GRADE_LEVELS.`
     );
   }
 
-  return levels || ['universal'];
+  // Gracefully handle migration by filtering out any "universal" strings if they persist in data/cache
+  const safeLevels = (levels || ALL_GRADE_LEVELS).filter(
+    (l) => l !== ('universal' as string)
+  );
+
+  // If filtered result is empty (was only universal) or was missing, default to all
+  if (safeLevels.length === 0) return ALL_GRADE_LEVELS;
+
+  return safeLevels;
 }
 
 /**
@@ -82,11 +85,10 @@ export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
  *
  * Filter behavior:
  * - 'all': Shows all widgets
- * - 'k-2': Shows widgets tagged with 'k-2' or 'universal'
- * - '3-5': Shows widgets tagged with '3-5' or 'universal'
- * - '6-8': Shows widgets tagged with '6-8' or 'universal'
- * - '9-12': Shows widgets tagged with '9-12' or 'universal'
- * - 'universal': Shows only widgets tagged with 'universal'
+ * - 'k-2': Shows widgets tagged with 'k-2'
+ * - '3-5': Shows widgets tagged with '3-5'
+ * - '6-8': Shows widgets tagged with '6-8'
+ * - '9-12': Shows widgets tagged with '9-12'
  */
 export function widgetMatchesGradeFilter(
   widgetType: WidgetType,
@@ -96,9 +98,6 @@ export function widgetMatchesGradeFilter(
 
   const levels = getWidgetGradeLevels(widgetType);
 
-  // Universal widgets appear in any filter
-  if (levels.includes('universal')) return true;
-
-  // For other filters: check for direct match
+  // Direct match check (since universal is gone, we just check inclusion)
   return levels.includes(filter);
 }
