@@ -394,7 +394,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         h: 250,
         config: { voice: 'none', routine: 'none' },
       },
-      weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
+      weather: {
+        w: 250,
+        h: 280,
+        config: {
+          temp: 72,
+          condition: 'sunny',
+          stationId: 'BLLST',
+          proxyUrl: 'https://cors-anywhere.herokuapp.com/',
+          isAuto: true,
+        },
+      },
       schedule: {
         w: 300,
         h: 350,

@@ -174,12 +174,16 @@ export interface WorkSymbolsConfig {
 }
 
 export interface WeatherConfig {
+  // Core data (cached for display)
   temp: number;
   condition: string;
-  isAuto?: boolean;
   locationName?: string;
   lastSync?: number | null;
-  city?: string;
+
+  // Earth Networks Configuration
+  stationId: string; // e.g., 'BLLST'
+  proxyUrl?: string; // e.g., 'https://cors-anywhere.herokuapp.com/'
+  isAuto?: boolean; // Acts as "Live Update" toggle
 }
 
 export interface ScheduleConfig {
