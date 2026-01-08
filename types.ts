@@ -391,3 +391,13 @@ export interface FeaturePermission {
   /** When false, disables the widget for everyone including admins */
   enabled: boolean;
 }
+
+export interface BackgroundPreset {
+  id: string;
+  url: string;
+  label: string;
+  active: boolean; // Whether it shows up for users
+  accessLevel: AccessLevel; // Who can see it
+  betaUsers: string[]; // Specific users if beta
+  createdAt: number;
+}

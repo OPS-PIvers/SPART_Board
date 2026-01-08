@@ -41,6 +41,22 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Admin backgrounds - authenticated users can read based on access level, only admins can write
+    match /admin_backgrounds/{backgroundId} {
+      // Admins can read everything
+      allow read: if isAdmin();
+      
+      // Non-admins can read public backgrounds
+      allow read: if request.auth != null && resource.data.accessLevel == 'public';
+      
+      // Non-admins can read beta backgrounds if they are explicitly in the beta list
+      allow read: if request.auth != null && 
+                  resource.data.accessLevel == 'beta' && 
+                  request.auth.token.email.lower() in resource.data.betaUsers;
+
+      allow write: if isAdmin();
+    }
+
     // Default deny all other collections
     match /{document=**} {
       allow read, write: if false;

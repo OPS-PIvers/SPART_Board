@@ -1,14 +1,50 @@
-import React from 'react';
-import { Settings, X, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Settings,
+  X,
+  ArrowLeft,
+  Shield,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
+import { BackgroundManager } from './BackgroundManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
 }
 
+const TabButton: React.FC<{
+  isActive: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  id: string;
+  controls: string;
+}> = ({ isActive, onClick, icon, label, id, controls }) => (
+  <button
+    id={id}
+    role="tab"
+    aria-selected={isActive}
+    aria-controls={controls}
+    tabIndex={isActive ? 0 : -1}
+    onClick={onClick}
+    className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
+      isActive
+        ? 'bg-white text-indigo-600'
+        : 'text-white/70 hover:bg-white/10 hover:text-white'
+    }`}
+  >
+    {icon}
+    {label}
+  </button>
+);
+
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
+  const [activeTab, setActiveTab] = useState<'features' | 'backgrounds'>(
+    'features'
+  );
 
   // Close modal on Escape key press
   React.useEffect(() => {
@@ -41,43 +77,93 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
       aria-modal="true"
       aria-labelledby="admin-settings-title"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6" />
-            <h2 id="admin-settings-title" className="text-2xl font-bold">
-              Admin Settings
-            </h2>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 pb-0 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Settings className="w-6 h-6" />
+              <h2 id="admin-settings-title" className="text-2xl font-bold">
+                Admin Settings
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              title="Close"
+              aria-label="Close admin settings"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            title="Close"
-            aria-label="Close admin settings"
-          >
-            <X className="w-6 h-6" />
-          </button>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mt-2" role="tablist">
+            <TabButton
+              id="tab-features"
+              controls="panel-features"
+              isActive={activeTab === 'features'}
+              onClick={() => setActiveTab('features')}
+              icon={<Shield className="w-4 h-4" />}
+              label="Feature Permissions"
+            />
+            <TabButton
+              id="tab-backgrounds"
+              controls="panel-backgrounds"
+              isActive={activeTab === 'backgrounds'}
+              onClick={() => setActiveTab('backgrounds')}
+              icon={<ImageIcon className="w-4 h-4" />}
+              label="Background Manager"
+            />
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
-              Feature Permissions
-            </h3>
-            <p className="text-slate-600">
-              Control widget availability and access levels for different user
-              groups. Set features to admin-only (alpha testing), specific users
-              (beta testing), or public access.
-            </p>
-          </div>
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+          {activeTab === 'features' && (
+            <div
+              id="panel-features"
+              role="tabpanel"
+              aria-labelledby="tab-features"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  Feature Permissions
+                </h3>
+                <p className="text-slate-600">
+                  Control widget availability and access levels for different
+                  user groups. Set features to admin-only (alpha testing),
+                  specific users (beta testing), or public access.
+                </p>
+              </div>
+              <FeaturePermissionsManager />
+            </div>
+          )}
 
-          <FeaturePermissionsManager />
+          {activeTab === 'backgrounds' && (
+            <div
+              id="panel-backgrounds"
+              role="tabpanel"
+              aria-labelledby="tab-backgrounds"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  Background Management
+                </h3>
+                <p className="text-slate-600">
+                  Upload and manage background presets available to users.
+                  Control visibility and access permissions for each background.
+                </p>
+              </div>
+              <BackgroundManager />
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200 p-4 bg-slate-50">
+        <div className="border-t border-slate-200 p-4 bg-white">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-2"

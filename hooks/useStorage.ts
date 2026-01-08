@@ -44,5 +44,23 @@ export const useStorage = () => {
     await deleteObject(fileRef);
   };
 
-  return { uploadBackgroundImage, uploadScreenshot, deleteFile };
+  const uploadAdminBackground = async (
+    backgroundId: string,
+    file: File
+  ): Promise<string> => {
+    const storageRef = ref(
+      storage,
+      `admin_backgrounds/${backgroundId}/${file.name}`
+    );
+
+    const snapshot = await uploadBytes(storageRef, file);
+    return getDownloadURL(snapshot.ref);
+  };
+
+  return {
+    uploadBackgroundImage,
+    uploadScreenshot,
+    deleteFile,
+    uploadAdminBackground,
+  };
 };

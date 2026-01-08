@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import {
   Layout,
   Save,
@@ -22,7 +24,13 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, TOOLS, GradeLevel, GradeFilter } from '../../types';
+import {
+  Dashboard,
+  TOOLS,
+  GradeLevel,
+  GradeFilter,
+  BackgroundPreset,
+} from '../../types';
 import {
   getWidgetGradeLevels,
   widgetMatchesGradeFilter,
@@ -63,7 +71,15 @@ export const Sidebar: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [managedBackgrounds, setManagedBackgrounds] = useState<
+    BackgroundPreset[]
+  >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const publicBgsRef = useRef<BackgroundPreset[]>([]);
+  const betaBgsRef = useRef<BackgroundPreset[]>([]);
+
+  const { user, signOut, isAdmin } = useAuth();
+  const { uploadBackgroundImage } = useStorage();
 
   // Load grade filter preference from localStorage
   useEffect(() => {
@@ -73,6 +89,105 @@ export const Sidebar: React.FC = () => {
       setGradeFilter(savedFilter as GradeFilter);
     }
   }, []);
+
+  // Fetch managed backgrounds from Firestore
+
+  useEffect(() => {
+    if (!user) return;
+
+    const baseRef = collection(db, 'admin_backgrounds');
+
+    const unsubscribes: (() => void)[] = [];
+
+    if (isAdmin) {
+      // Admins can query everything active without permission errors
+
+      const q = query(baseRef, where('active', '==', true));
+
+      unsubscribes.push(
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const backgrounds: BackgroundPreset[] = [];
+
+            snapshot.forEach((doc) => {
+              backgrounds.push(doc.data() as BackgroundPreset);
+            });
+
+            setManagedBackgrounds(
+              backgrounds.sort((a, b) => b.createdAt - a.createdAt)
+            );
+          },
+          (error) => {
+            console.error('Error fetching admin backgrounds:', error);
+          }
+        )
+      );
+    } else {
+      // Non-admins need separate queries to avoid reading restricted documents (admin-only)
+      // Use refs to prevent race conditions when both queries update simultaneously
+
+      const updateCombinedBackgrounds = () => {
+        const all = [...publicBgsRef.current, ...betaBgsRef.current];
+        const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
+        setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
+      };
+
+      // Query 1: Public backgrounds
+
+      const qPublic = query(
+        baseRef,
+
+        where('active', '==', true),
+
+        where('accessLevel', '==', 'public')
+      );
+
+      // Query 2: Beta backgrounds where the user is authorized
+
+      const qBeta = query(
+        baseRef,
+
+        where('active', '==', true),
+
+        where('accessLevel', '==', 'beta'),
+
+        where('betaUsers', 'array-contains', (user.email ?? '').toLowerCase())
+      );
+
+      unsubscribes.push(
+        onSnapshot(
+          qPublic,
+          (snapshot) => {
+            publicBgsRef.current = snapshot.docs.map(
+              (d) => d.data() as BackgroundPreset
+            );
+            updateCombinedBackgrounds();
+          },
+          (error) => {
+            console.error('Error fetching public backgrounds:', error);
+          }
+        )
+      );
+
+      unsubscribes.push(
+        onSnapshot(
+          qBeta,
+          (snapshot) => {
+            betaBgsRef.current = snapshot.docs.map(
+              (d) => d.data() as BackgroundPreset
+            );
+            updateCombinedBackgrounds();
+          },
+          (error) => {
+            console.error('Error fetching beta backgrounds:', error);
+          }
+        )
+      );
+    }
+
+    return () => unsubscribes.forEach((unsub) => unsub());
+  }, [user, isAdmin]);
 
   // Save grade filter preference to localStorage
   const handleGradeFilterChange = (newFilter: GradeFilter) => {
@@ -94,35 +209,13 @@ export const Sidebar: React.FC = () => {
     addToast,
   } = useDashboard();
 
-  const { user, signOut, isAdmin } = useAuth();
-  const { uploadBackgroundImage } = useStorage();
-
-  const presets = [
-    {
-      id: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
-      label: 'Chalkboard',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
-      label: 'Corkboard',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
-      label: 'Geometric',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
-      label: 'Nature',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
-      label: 'Paper',
-    },
-    {
-      id: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
-      label: 'Tech',
-    },
-  ];
+  // Combine static and managed presets
+  const presets = useMemo(() => {
+    return managedBackgrounds.map((bg) => ({
+      id: bg.url,
+      label: bg.label,
+    }));
+  }, [managedBackgrounds]);
 
   const colors = [
     { id: 'bg-slate-900', color: '#0f172a' },
