@@ -1,7 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { X, Settings, Move, Minus, Pencil } from 'lucide-react';
-import { WidgetData } from '../../types';
+import { X, Settings, Move, Minus, Pencil, Camera } from 'lucide-react';
+import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
+import { useScreenshot } from '../../hooks/useScreenshot';
+
+// Widgets that cannot be snapshotted due to CORS/Technical limitations
+const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -25,6 +29,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const windowRef = useRef<HTMLDivElement>(null);
+
+  // Ref specifically for the inner content we want to capture
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-generate filename: "Classroom-[WidgetType]-[Date]"
+  const dateStr = new Date()
+    .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    .replace(' ', '-');
+  const fileName = `Classroom-${widget.type.charAt(0).toUpperCase() + widget.type.slice(1)}-${dateStr}`;
+
+  const { takeScreenshot, isFlashing, isCapturing } = useScreenshot(
+    contentRef,
+    fileName
+  );
+
+  const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
@@ -182,6 +202,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                {canScreenshot && (
+                  <button
+                    onClick={takeScreenshot}
+                    disabled={isCapturing}
+                    className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                    title="Take Screenshot"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
                   className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
@@ -203,7 +233,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto relative p-2">{children}</div>
+            <div ref={contentRef} className="flex-1 overflow-auto relative p-2">
+              {/* Flash Overlay */}
+              {isFlashing && (
+                <div
+                  data-screenshot="flash"
+                  className="absolute inset-0 bg-white z-[9999] animate-out fade-out duration-300 pointer-events-none"
+                />
+              )}
+              {children}
+            </div>
             <div
               onMouseDown={handleResizeStart}
               className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
