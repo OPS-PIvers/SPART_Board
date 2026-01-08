@@ -249,6 +249,20 @@ export const Dock: React.FC = () => {
     setShowRosterMenu(!showRosterMenu);
   };
 
+  const classToolMetadata = useMemo(() => {
+    const tool = TOOLS.find((t) => t.type === 'classes');
+    if (!tool) return { label: 'Class', color: 'bg-indigo-600' };
+
+    const permission = featurePermissions.find(
+      (p) => p.widgetType === 'classes'
+    );
+    const displayName = permission?.displayName?.trim();
+    return {
+      ...tool,
+      label: displayName || tool.label,
+    };
+  }, [featurePermissions]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -391,12 +405,12 @@ export const Dock: React.FC = () => {
                     className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
                   >
                     <div
-                      className={`bg-indigo-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+                      className={`${classToolMetadata.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                      Classes
+                      {classToolMetadata.label}
                     </span>
                   </button>
 

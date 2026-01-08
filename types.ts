@@ -373,7 +373,7 @@ export const TOOLS: ToolMetadata[] = [
   {
     type: 'classes',
     icon: Users,
-    label: 'Groups',
+    label: 'Class',
     color: 'bg-indigo-600',
   },
 ];
