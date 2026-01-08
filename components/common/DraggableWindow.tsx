@@ -162,6 +162,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     }}
                     onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
                     className="text-xs font-semibold text-slate-600 bg-white border border-indigo-300 rounded px-1 py-0.5 outline-none w-full shadow-sm"
+                    aria-label="Edit widget title"
                   />
                 ) : (
                   <div
