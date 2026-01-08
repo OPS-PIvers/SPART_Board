@@ -20,6 +20,7 @@ import {
   LayoutGrid,
   Paintbrush,
   FolderOpen,
+  Pencil,
 } from 'lucide-react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
@@ -71,6 +72,10 @@ export const Sidebar: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [editingDashboard, setEditingDashboard] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [managedBackgrounds, setManagedBackgrounds] = useState<
     BackgroundPreset[]
   >([]);
@@ -204,6 +209,7 @@ export const Sidebar: React.FC = () => {
     createNewDashboard,
     loadDashboard,
     deleteDashboard,
+    renameDashboard,
     saveCurrentDashboard,
     setBackground,
     addToast,
@@ -351,6 +357,66 @@ export const Sidebar: React.FC = () => {
 
       {showAdminSettings && (
         <AdminSettings onClose={() => setShowAdminSettings(false)} />
+      )}
+
+      {editingDashboard && (
+        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
+              Rename Dashboard
+            </h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Enter a new name for your dashboard.
+            </p>
+            <input
+              type="text"
+              value={editingDashboard.name}
+              onChange={(e) =>
+                setEditingDashboard({
+                  ...editingDashboard,
+                  name: e.target.value,
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (editingDashboard.name.trim()) {
+                    renameDashboard(
+                      editingDashboard.id,
+                      editingDashboard.name.trim()
+                    );
+                    setEditingDashboard(null);
+                  }
+                } else if (e.key === 'Escape') {
+                  setEditingDashboard(null);
+                }
+              }}
+              autoFocus
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEditingDashboard(null)}
+                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (editingDashboard.name.trim()) {
+                    renameDashboard(
+                      editingDashboard.id,
+                      editingDashboard.name.trim()
+                    );
+                    setEditingDashboard(null);
+                  }
+                }}
+                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isOpen && (
@@ -709,55 +775,71 @@ export const Sidebar: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              id={`delete-dashboard-${db.id}`}
-                              className="peer hidden"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <label
-                              htmlFor={`delete-dashboard-${db.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingDashboard({
+                                  id: db.id,
+                                  name: db.name,
+                                });
+                              }}
+                              className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                              title="Rename"
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </label>
-                            <div className="peer-checked:flex hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/40">
-                              <div
-                                className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                id={`delete-dashboard-${db.id}`}
+                                className="peer hidden"
                                 onClick={(e) => e.stopPropagation()}
+                              />
+                              <label
+                                htmlFor={`delete-dashboard-${db.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
                               >
-                                <h4 className="text-sm font-semibold text-slate-900 mb-2">
-                                  Delete dashboard
-                                </h4>
-                                <p className="text-xs text-slate-600 mb-4">
-                                  Are you sure you want to delete “{db.name}”?
-                                  This action cannot be undone.
-                                </p>
-                                <div className="flex justify-end gap-2">
-                                  <label
-                                    htmlFor={`delete-dashboard-${db.id}`}
-                                    className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
-                                  >
-                                    Cancel
-                                  </label>
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteDashboard(db.id);
-                                      const checkbox = document.getElementById(
-                                        `delete-dashboard-${db.id}`
-                                      ) as HTMLInputElement | null;
-                                      if (checkbox && checkbox.checked) {
-                                        checkbox.click();
-                                      }
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
+                                <Trash2 className="w-4 h-4" />
+                              </label>
+                              <div className="peer-checked:flex hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/40">
+                                <div
+                                  className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                                    Delete dashboard
+                                  </h4>
+                                  <p className="text-xs text-slate-600 mb-4">
+                                    Are you sure you want to delete “{db.name}”?
+                                    This action cannot be undone.
+                                  </p>
+                                  <div className="flex justify-end gap-2">
+                                    <label
+                                      htmlFor={`delete-dashboard-${db.id}`}
+                                      className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                                    >
+                                      Cancel
+                                    </label>
+                                    <button
+                                      type="button"
+                                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteDashboard(db.id);
+                                        const checkbox =
+                                          document.getElementById(
+                                            `delete-dashboard-${db.id}`
+                                          ) as HTMLInputElement | null;
+                                        if (checkbox && checkbox.checked) {
+                                          checkbox.click();
+                                        }
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </div>

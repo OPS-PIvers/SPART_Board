@@ -209,6 +209,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
   };
 
+  const reorderTools = (tools: WidgetType[]) => {
+    setVisibleTools(tools);
+    localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
+  };
+
   const addToast = (message: string, type: Toast['type'] = 'info') => {
     const id = uuidv4();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -284,6 +289,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       .catch((err) => {
         console.error('Delete failed:', err);
         addToast('Delete failed', 'error');
+      });
+  };
+
+  const renameDashboard = (id: string, name: string) => {
+    if (!user) {
+      addToast('Must be signed in to rename', 'error');
+      return;
+    }
+
+    const dashboard = dashboards.find((d) => d.id === id);
+    if (!dashboard) return;
+
+    const updated = { ...dashboard, name };
+
+    // Update local state immediately
+    setDashboards((prev) => prev.map((d) => (d.id === id ? updated : d)));
+
+    if (activeId === id) {
+      lastLocalUpdateAt.current = Date.now();
+    }
+
+    saveDashboard(updated)
+      .then(() => {
+        addToast('Dashboard renamed');
+      })
+      .catch((err) => {
+        console.error('Rename failed:', err);
+        addToast('Rename failed', 'error');
+        // Revert
+        setDashboards((prev) => prev.map((d) => (d.id === id ? dashboard : d)));
       });
   };
 
@@ -451,6 +486,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         createNewDashboard,
         saveCurrentDashboard,
         deleteDashboard,
+        renameDashboard,
         loadDashboard,
         addWidget,
         removeWidget,
@@ -459,6 +495,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setBackground,
         toggleToolVisibility,
         setAllToolsVisibility,
+        reorderTools,
       }}
     >
       {children}

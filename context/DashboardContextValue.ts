@@ -12,6 +12,7 @@ export interface DashboardContextType {
   createNewDashboard: (name: string, data?: Dashboard) => void;
   saveCurrentDashboard: () => void;
   deleteDashboard: (id: string) => void;
+  renameDashboard: (id: string, name: string) => void;
   loadDashboard: (id: string) => void;
   addWidget: (type: WidgetType) => void;
   removeWidget: (id: string) => void;
@@ -20,6 +21,7 @@ export interface DashboardContextType {
   setBackground: (bg: string) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
+  reorderTools: (tools: WidgetType[]) => void;
 }
 
 export const DashboardContext = createContext<DashboardContextType | undefined>(
