@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Settings, Move } from 'lucide-react';
+import { X, Settings, Move, Minus } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
@@ -21,6 +21,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const { updateWidget, removeWidget, bringToFront } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (_e: React.MouseEvent) => {
@@ -86,13 +87,45 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         width: widget.w,
         height: widget.h,
         zIndex: widget.z,
+        display: 'flex',
+        opacity: widget.minimized ? 0 : 1,
+        pointerEvents: widget.minimized ? 'none' : 'auto',
         ...style, // Merge custom styles
       }}
     >
       <div className="flip-container">
         <div className={`flipper ${widget.flipped ? 'flip-active' : ''}`}>
           {/* Front Face */}
-          <div className="front">
+          <div className="front relative">
+            {showConfirm && (
+              <div
+                className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200"
+                role="alertdialog"
+                aria-labelledby={`dialog-title-${widget.id}`}
+                aria-describedby={`dialog-desc-${widget.id}`}
+              >
+                <p
+                  id={`dialog-title-${widget.id}`}
+                  className="text-white font-semibold mb-4 text-sm"
+                >
+                  Close widget? Data will be lost.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => removeWidget(widget.id)}
+                    className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
             <div
               onMouseDown={handleDragStart}
               className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 cursor-grab active:cursor-grabbing"
@@ -105,13 +138,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </div>
               <div className="flex items-center gap-1">
                 <button
+                  onClick={() => updateWidget(widget.id, { minimized: true })}
+                  className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => updateWidget(widget.id, { flipped: true })}
                   className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => removeWidget(widget.id)}
+                  onClick={() => setShowConfirm(true)}
                   className="p-1 hover:bg-red-100 hover:text-red-600 rounded-md text-slate-500 transition-colors"
                 >
                   <X className="w-4 h-4" />
