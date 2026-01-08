@@ -146,7 +146,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       <div className="flip-container">
         <div className={`flipper ${widget.flipped ? 'flip-active' : ''}`}>
           {/* Front Face */}
-          <div className="front relative">
+          <div
+            className="front relative"
+            style={{ pointerEvents: widget.flipped ? 'none' : 'auto' }}
+          >
             {showConfirm && (
               <div
                 className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200"
@@ -276,7 +279,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           </div>
 
           {/* Back Face (Settings) */}
-          <div className="back rounded-xl overflow-hidden">
+          <div
+            className="back rounded-xl overflow-hidden"
+            style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
+          >
             <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border-b border-slate-200">
               <span className="text-xs font-bold text-slate-700 uppercase">
                 Settings
