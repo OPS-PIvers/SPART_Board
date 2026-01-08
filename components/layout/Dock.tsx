@@ -57,7 +57,7 @@ const SortableTool = ({
       >
         <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
       </div>
-      <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-0 group-hover/dock:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+      <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter whitespace-nowrap">
         {tool.label}
       </span>
     </button>
