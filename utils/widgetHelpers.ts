@@ -8,5 +8,6 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'workSymbols') return 'Expectations';
   if (widget.type === 'calendar') return 'Class Events';
   if (widget.type === 'lunchCount') return 'Lunch Orders';
+  if (widget.type === 'classes') return 'Class Rosters';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };

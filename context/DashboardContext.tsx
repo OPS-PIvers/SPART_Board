@@ -1,8 +1,24 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Dashboard, WidgetData, WidgetType, Toast, TOOLS } from '../types';
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from 'firebase/firestore';
+import {
+  Dashboard,
+  WidgetData,
+  WidgetType,
+  Toast,
+  TOOLS,
+  ClassRoster,
+} from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
+import { db } from '../config/firebase';
 import { migrateLocalStorageToFirestore } from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 
@@ -34,6 +50,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
+
+  // --- ROSTER STATE ---
+  const [rosters, setRosters] = useState<ClassRoster[]>([]);
+  const [activeRosterId, setActiveRosterIdState] = useState<string | null>(
+    () => {
+      return localStorage.getItem('spart_active_roster_id');
+    }
+  );
 
   // Refs to prevent race conditions
   const lastLocalUpdateAt = useRef<number>(0);
@@ -166,6 +190,62 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       unsubscribe();
     };
   }, [user, subscribeToDashboards, migrated, saveDashboard]);
+
+  // --- NEW ROSTER EFFECT ---
+  useEffect(() => {
+    if (!user) {
+      const timer = setTimeout(() => setRosters([]), 0);
+      return () => clearTimeout(timer);
+    }
+    const rostersRef = collection(db, 'users', user.uid, 'rosters');
+    // Simple client-side sort for now to avoid index creation requirements during dev
+    const unsubscribe = onSnapshot(rostersRef, (snapshot) => {
+      const loaded: ClassRoster[] = [];
+      snapshot.forEach((doc) =>
+        loaded.push({ id: doc.id, ...doc.data() } as ClassRoster)
+      );
+      loaded.sort((a, b) => a.name.localeCompare(b.name));
+      setRosters(loaded);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // --- ROSTER ACTIONS ---
+  const addRoster = useCallback(
+    async (name: string) => {
+      if (!user) throw new Error('No user');
+      const newRoster = { name, students: [], createdAt: Date.now() };
+      const ref = await addDoc(
+        collection(db, 'users', user.uid, 'rosters'),
+        newRoster
+      );
+      return ref.id;
+    },
+    [user]
+  );
+
+  const updateRoster = useCallback(
+    async (id: string, updates: Partial<ClassRoster>) => {
+      if (!user) return;
+      await updateDoc(doc(db, 'users', user.uid, 'rosters', id), updates);
+    },
+    [user]
+  );
+
+  const setActiveRoster = useCallback((id: string | null) => {
+    setActiveRosterIdState(id);
+    if (id) localStorage.setItem('spart_active_roster_id', id);
+    else localStorage.removeItem('spart_active_roster_id');
+  }, []);
+
+  const deleteRoster = useCallback(
+    async (id: string) => {
+      if (!user) return;
+      await deleteDoc(doc(db, 'users', user.uid, 'rosters', id));
+      if (activeRosterId === id) setActiveRoster(null);
+    },
+    [user, activeRosterId, setActiveRoster]
+  );
 
   // Auto-save to Firestore with debouncing
   useEffect(() => {
@@ -425,6 +505,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           recipient: 'paul.ivers@orono.k12.mn.us',
         },
       },
+      classes: {
+        w: 600,
+        h: 500,
+        config: {},
+      },
     };
 
     const newWidget: WidgetData = {
@@ -504,6 +589,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         toggleToolVisibility,
         setAllToolsVisibility,
         reorderTools,
+        rosters,
+        activeRosterId,
+        addRoster,
+        updateRoster,
+        deleteRoster,
+        setActiveRoster,
       }}
     >
       {children}

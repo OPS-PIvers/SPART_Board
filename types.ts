@@ -40,7 +40,23 @@ export type WidgetType =
   | 'weather'
   | 'schedule'
   | 'calendar'
-  | 'lunchCount';
+  | 'lunchCount'
+  | 'classes';
+
+// --- ROSTER SYSTEM TYPES ---
+
+export interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface ClassRoster {
+  id: string;
+  name: string;
+  students: Student[];
+  createdAt: number;
+}
 
 // Supporting types for widget configs
 export interface Point {
@@ -197,6 +213,13 @@ export interface LunchCountConfig {
   recipient: string;
 }
 
+export interface ClassesConfig {
+  // Roster selection is global/local storage, not necessarily in widget config,
+  // but we might want to allow a widget to be "locked" to a specific class later.
+  // For now, keep it empty to satisfy type constraints.
+  _dummy?: never;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -218,7 +241,8 @@ export type WidgetConfig =
   | WeatherConfig
   | ScheduleConfig
   | CalendarConfig
-  | LunchCountConfig;
+  | LunchCountConfig
+  | ClassesConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -261,7 +285,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                       ? CalendarConfig
                                       : T extends 'lunchCount'
                                         ? LunchCountConfig
-                                        : never;
+                                        : T extends 'classes'
+                                          ? ClassesConfig
+                                          : never;
 
 export interface WidgetData {
   id: string;
@@ -343,6 +369,12 @@ export const TOOLS: ToolMetadata[] = [
     icon: Utensils,
     label: 'Lunch',
     color: 'bg-orange-600',
+  },
+  {
+    type: 'classes',
+    icon: Users,
+    label: 'Classes',
+    color: 'bg-indigo-600',
   },
 ];
 

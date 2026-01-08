@@ -16,7 +16,7 @@ type LunchType = 'hot' | 'bento' | 'home' | 'none';
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {
     firstNames = '',
@@ -25,16 +25,25 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     recipient = 'paul.ivers@orono.k12.mn.us',
   } = config;
 
+  const activeRoster = useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
+
   const students = useMemo(() => {
+    if (activeRoster) {
+      return activeRoster.students.map((s) =>
+        `${s.firstName} ${s.lastName}`.trim()
+      );
+    }
+
     const firsts = firstNames
       .split('\n')
-
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
     const lasts = lastNames
       .split('\n')
-
       .map((n: string) => n.trim())
       .filter((n: string) => n);
 
@@ -42,13 +51,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const combined = [];
     for (let i = 0; i < count; i++) {
       const f = firsts[i] || '';
-
       const l = lasts[i] || '';
       const name = `${f} ${l}`.trim();
       if (name) combined.push(name);
     }
     return combined;
-  }, [firstNames, lastNames]);
+  }, [firstNames, lastNames, activeRoster]);
 
   const handleDragStart = (e: React.DragEvent, name: string) => {
     e.dataTransfer.setData('studentName', name);
@@ -133,7 +141,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none">
+    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none relative">
+      {activeRoster && (
+        <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 z-10 animate-in fade-in slide-in-from-top-1">
+          <Box className="w-2 h-2 text-orange-500" />
+          <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
+            {activeRoster.name}
+          </span>
+        </div>
+      )}
       {/* Category Buckets */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
         {categories.map((cat) => (

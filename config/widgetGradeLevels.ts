@@ -54,6 +54,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   calendar: ALL_GRADE_LEVELS,
   weather: ALL_GRADE_LEVELS,
   lunchCount: ['k-2', '3-5'],
+  classes: ALL_GRADE_LEVELS,
 };
 
 /**
