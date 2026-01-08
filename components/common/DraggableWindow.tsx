@@ -184,6 +184,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
                   className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
+                  aria-label="Minimize widget"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
