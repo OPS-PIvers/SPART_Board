@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 import { WidgetData, WeatherConfig } from '../../types';
 import {
   Sun,
@@ -11,6 +12,7 @@ import {
   RefreshCw,
   AlertCircle,
   Settings2,
+  Lock,
 } from 'lucide-react';
 
 // Earth Networks Response Interface
@@ -114,6 +116,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast } = useDashboard();
+  const { isAdmin } = useAuth();
   const config = widget.config as WeatherConfig;
   const {
     stationId = 'BLLST',
@@ -122,6 +125,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   } = config;
 
   const [loading, setLoading] = useState(false);
+
+  // For security, only confirmed admin users can modify proxy URL
+  const isConfirmedNonAdmin = isAdmin === false;
+  const canEditProxyUrl = isAdmin === true;
 
   // Validate proxy URL to prevent SSRF attacks
   const isValidProxyUrl = useCallback((url: string): boolean => {
@@ -304,7 +311,18 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
           <Settings2 className="w-3 h-3" /> Proxy URL
+          {isConfirmedNonAdmin && <Lock className="w-3 h-3" />}
         </label>
+        {isConfirmedNonAdmin && (
+          <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+            <Lock className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-[9px] text-amber-700 leading-relaxed">
+              <span className="font-bold">Admin Only:</span> Proxy URL
+              configuration is restricted to administrators for security
+              purposes.
+            </p>
+          </div>
+        )}
         <input
           type="text"
           value={proxyUrl}
@@ -313,7 +331,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, proxyUrl: e.target.value },
             })
           }
-          className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+          disabled={!canEditProxyUrl}
+          className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
           placeholder="https://cors-anywhere.herokuapp.com/"
         />
       </div>
