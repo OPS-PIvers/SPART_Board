@@ -375,18 +375,10 @@ export const FeaturePermissionsManager: React.FC = () => {
 
               {/* Grade Levels */}
               <div className="mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Grade Levels
-                  </label>
-                  <button
-                    onClick={() => toggleAllGradeLevels(tool.type)}
-                    className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-800"
-                  >
-                    {isAllSelected ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Grade Levels
+                </label>
+                <div className="grid grid-cols-5 gap-1">
                   {ALL_GRADE_LEVELS.map((level) => {
                     const isSelected = currentLevels.includes(level);
 
@@ -394,16 +386,26 @@ export const FeaturePermissionsManager: React.FC = () => {
                       <button
                         key={level}
                         onClick={() => toggleGradeLevel(tool.type, level)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+                        className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
                           isSelected
-                            ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
                         {level.toUpperCase()}
                       </button>
                     );
                   })}
+                  <button
+                    onClick={() => toggleAllGradeLevels(tool.type)}
+                    className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
+                      isAllSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    ALL
+                  </button>
                 </div>
               </div>
 
