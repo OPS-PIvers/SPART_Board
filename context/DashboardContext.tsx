@@ -316,7 +316,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           },
         ]);
       });
-    }, 1000); // Increased debounce to 1s for better performance
+    }, 500); // 500ms debounce to balance responsiveness and write frequency
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
