@@ -402,8 +402,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           condition: 'sunny',
           locationName: 'Orono IS',
           stationId: 'BLLST',
-          proxyUrl: 'https://cors-anywhere.herokuapp.com/', // Note: Demo service requires manual activation at /corsdemo
-          isAuto: true, // Enabled by default for automatic weather updates every 30 seconds
+          proxyUrl: 'https://cors-anywhere.herokuapp.com/', // Demo CORS proxy; requires manual enabling
+          isAuto: false, // Disabled by default to avoid automatic weather updates until explicitly enabled
         },
       },
       schedule: {
