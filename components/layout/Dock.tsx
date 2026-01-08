@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { LayoutGrid, ChevronDown } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { LayoutGrid, ChevronDown, RefreshCcw, Plus } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -17,15 +17,20 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
-import { TOOLS, ToolMetadata, WidgetType } from '../../types';
+import { TOOLS, ToolMetadata, WidgetType, WidgetData } from '../../types';
+import { getTitle } from '../../utils/widgetHelpers';
 
-// Sortable item component
-const SortableTool = ({
+// Dock Item with Popover Logic
+const DockItem = ({
   tool,
-  onClick,
+  minimizedWidgets,
+  onAdd,
+  onRestore,
 }: {
   tool: ToolMetadata;
-  onClick: () => void;
+  minimizedWidgets: WidgetData[];
+  onAdd: () => void;
+  onRestore: (id: string) => void;
 }) => {
   const {
     attributes,
@@ -36,36 +41,127 @@ const SortableTool = ({
     isDragging,
   } = useSortable({ id: tool.type });
 
+  const [showPopover, setShowPopover] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowPopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleClick = () => {
+    if (minimizedWidgets.length > 0) {
+      setShowPopover(!showPopover);
+    } else {
+      onAdd();
+    }
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
+    zIndex: isDragging ? 1000 : showPopover ? 1001 : 'auto', // Ensure popover parent has high z-index
   };
 
   return (
-    <button
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
-      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none"
-    >
-      <div
-        className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200`}
+    <div className="relative flex flex-col items-center">
+      {/* Popover Menu */}
+      {showPopover && minimizedWidgets.length > 0 && (
+        <div
+          ref={popoverRef}
+          className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden z-[1002] animate-in slide-in-from-bottom-2 duration-200"
+        >
+          <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              Restorable
+            </span>
+            <span className="bg-slate-200 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              {minimizedWidgets.length}
+            </span>
+          </div>
+          <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
+            {minimizedWidgets.map((widget) => (
+              <button
+                key={widget.id}
+                onClick={() => {
+                  onRestore(widget.id);
+                  if (minimizedWidgets.length <= 1) setShowPopover(false);
+                }}
+                className="w-full text-left px-2 py-2 hover:bg-indigo-50 rounded-lg text-xs text-slate-700 font-medium flex items-center justify-between group transition-colors"
+              >
+                <span className="truncate flex-1">{getTitle(widget)}</span>
+                <RefreshCcw className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
+          <div className="p-1 border-t border-slate-100">
+            <button
+              onClick={() => {
+                onAdd();
+                setShowPopover(false);
+              }}
+              className="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Create New</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dock Icon */}
+      <button
+        ref={(node) => {
+          setNodeRef(node);
+          if (node) {
+            buttonRef.current = node;
+          }
+        }}
+        style={style}
+        {...attributes}
+        {...listeners}
+        onClick={handleClick}
+        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative"
       >
-        <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
-      </div>
-      <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-0 group-hover/dock:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-        {tool.label}
-      </span>
-    </button>
+        <div
+          className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+        >
+          <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
+          {minimizedWidgets.length > 0 && (
+            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+              {minimizedWidgets.length}
+            </div>
+          )}
+        </div>
+        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-0 group-hover/dock:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+          {tool.label}
+        </span>
+      </button>
+    </div>
   );
 };
 
 export const Dock: React.FC = () => {
-  const { addWidget, visibleTools, reorderTools } = useDashboard();
+  const {
+    addWidget,
+    visibleTools,
+    reorderTools,
+    activeDashboard,
+    updateWidget,
+  } = useDashboard();
   const { canAccessWidget } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -153,13 +249,23 @@ export const Dock: React.FC = () => {
                     items={filteredTools.map((t) => t.type)}
                     strategy={horizontalListSortingStrategy}
                   >
-                    {filteredTools.map((tool) => (
-                      <SortableTool
-                        key={tool.type}
-                        tool={tool}
-                        onClick={() => addWidget(tool.type)}
-                      />
-                    ))}
+                    {filteredTools.map((tool) => {
+                      const minimizedWidgets =
+                        activeDashboard?.widgets.filter(
+                          (w) => w.type === tool.type && w.minimized
+                        ) ?? [];
+                      return (
+                        <DockItem
+                          key={tool.type}
+                          tool={tool}
+                          minimizedWidgets={minimizedWidgets}
+                          onAdd={() => addWidget(tool.type)}
+                          onRestore={(id) =>
+                            updateWidget(id, { minimized: false })
+                          }
+                        />
+                      );
+                    })}
                   </SortableContext>
                 </DndContext>
               ) : (
