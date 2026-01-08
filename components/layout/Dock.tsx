@@ -249,8 +249,9 @@ export const Dock: React.FC = () => {
         const permission = featurePermissions.find(
           (p) => p.widgetType === tool.type
         );
-        if (permission?.displayName) {
-          return { ...tool, label: permission.displayName };
+        const displayName = permission?.displayName?.trim();
+        if (displayName) {
+          return { ...tool, label: displayName };
         }
         return tool;
       })

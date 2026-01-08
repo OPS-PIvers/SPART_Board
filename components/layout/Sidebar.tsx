@@ -542,6 +542,12 @@ export const Sidebar: React.FC = () => {
                         permission?.gradeLevels ??
                         getWidgetGradeLevels(tool.type);
                       const isActive = visibleTools.includes(tool.type);
+                      const trimmedDisplayName =
+                        permission?.displayName?.trim();
+                      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+                      const displayLabel = trimmedDisplayName
+                        ? trimmedDisplayName
+                        : tool.label;
 
                       return (
                         <button
@@ -561,7 +567,7 @@ export const Sidebar: React.FC = () => {
                             </div>
                             <div className="text-left">
                               <div className="text-xs font-bold uppercase tracking-tight">
-                                {permission?.displayName ?? tool.label}
+                                {displayLabel}
                               </div>
                               <div className="flex gap-1 mt-1">
                                 {gradeLevels.map((level) => (

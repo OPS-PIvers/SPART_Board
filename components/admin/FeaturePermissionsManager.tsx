@@ -208,6 +208,8 @@ export const FeaturePermissionsManager: React.FC = () => {
       newLevels = [...currentLevels, level];
     }
 
+    // NOTE: If newLevels is empty, the widget will be hidden from all specific grade filters
+    // but will still be visible when the 'All' filter is selected.
     updatePermission(widgetType, { gradeLevels: newLevels });
   };
 
@@ -298,12 +300,13 @@ export const FeaturePermissionsManager: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <input
                       type="text"
-                      value={permission.displayName ?? tool.label}
-                      onChange={(e) =>
+                      value={permission.displayName ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         updatePermission(tool.type, {
-                          displayName: e.target.value,
-                        })
-                      }
+                          displayName: val || undefined,
+                        });
+                      }}
                       className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-0 py-0.5 transition-colors"
                       placeholder={tool.label}
                     />
