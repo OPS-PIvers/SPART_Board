@@ -391,6 +391,8 @@ export interface FeaturePermission {
   betaUsers: string[];
   /** When false, disables the widget for everyone including admins */
   enabled: boolean;
+  /** Optional override for grade levels. If set, this takes precedence over the static configuration. */
+  gradeLevels?: GradeLevel[];
 }
 
 export interface BackgroundPreset {

@@ -7,7 +7,14 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { TOOLS, FeaturePermission, AccessLevel, WidgetType } from '../../types';
+import {
+  TOOLS,
+  FeaturePermission,
+  AccessLevel,
+  WidgetType,
+  GradeLevel,
+} from '../../types';
+import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import {
   Shield,
   Users,
@@ -178,6 +185,22 @@ export const FeaturePermissionsManager: React.FC = () => {
     });
   };
 
+  const toggleGradeLevel = (widgetType: WidgetType, level: GradeLevel) => {
+    const permission = getPermission(widgetType);
+    const currentLevels =
+      permission.gradeLevels ?? getWidgetGradeLevels(widgetType);
+
+    let newLevels: GradeLevel[];
+
+    if (currentLevels.includes(level)) {
+      newLevels = currentLevels.filter((l) => l !== level);
+    } else {
+      newLevels = [...currentLevels, level];
+    }
+
+    updatePermission(widgetType, { gradeLevels: newLevels });
+  };
+
   const getAccessLevelIcon = (level: AccessLevel) => {
     switch (level) {
       case 'admin':
@@ -304,6 +327,38 @@ export const FeaturePermissionsManager: React.FC = () => {
                       </button>
                     )
                   )}
+                </div>
+              </div>
+
+              {/* Grade Levels */}
+              <div className="mb-3">
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Grade Levels
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    ['k-2', '3-5', '6-8', '9-12', 'universal'] as GradeLevel[]
+                  ).map((level) => {
+                    const currentLevels =
+                      permission.gradeLevels ?? getWidgetGradeLevels(tool.type);
+                    const isSelected = currentLevels.includes(level);
+
+                    return (
+                      <button
+                        key={level}
+                        onClick={() => toggleGradeLevel(tool.type, level)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+                          isSelected
+                            ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {level === 'universal'
+                          ? 'Universal'
+                          : level.toUpperCase()}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

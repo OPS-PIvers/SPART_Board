@@ -32,10 +32,7 @@ import {
   GradeFilter,
   BackgroundPreset,
 } from '../../types';
-import {
-  getWidgetGradeLevels,
-  widgetMatchesGradeFilter,
-} from '../../config/widgetGradeLevels';
+import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 
 interface DashboardData {
@@ -83,7 +80,7 @@ export const Sidebar: React.FC = () => {
   const publicBgsRef = useRef<BackgroundPreset[]>([]);
   const betaBgsRef = useRef<BackgroundPreset[]>([]);
 
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, featurePermissions } = useAuth();
   const { uploadBackgroundImage } = useStorage();
 
   // Load grade filter preference from localStorage
@@ -295,11 +292,20 @@ export const Sidebar: React.FC = () => {
   };
 
   // Memoize filtered tools to prevent unnecessary recalculations
-  const filteredTools = useMemo(
-    () =>
-      TOOLS.filter((tool) => widgetMatchesGradeFilter(tool.type, gradeFilter)),
-    [gradeFilter]
-  );
+  const filteredTools = useMemo(() => {
+    return TOOLS.filter((tool) => {
+      if (gradeFilter === 'all') return true;
+
+      // Check for override in feature permissions
+      const permission = featurePermissions.find(
+        (p) => p.widgetType === tool.type
+      );
+      const levels = permission?.gradeLevels ?? getWidgetGradeLevels(tool.type);
+
+      if (levels.includes('universal')) return true;
+      return levels.includes(gradeFilter);
+    });
+  }, [gradeFilter, featurePermissions]);
 
   return (
     <>
@@ -532,7 +538,12 @@ export const Sidebar: React.FC = () => {
 
                   <div className="space-y-2">
                     {filteredTools.map((tool) => {
-                      const gradeLevels = getWidgetGradeLevels(tool.type);
+                      const permission = featurePermissions.find(
+                        (p) => p.widgetType === tool.type
+                      );
+                      const gradeLevels =
+                        permission?.gradeLevels ??
+                        getWidgetGradeLevels(tool.type);
                       const showChips = !gradeLevels.includes('universal');
                       const isActive = visibleTools.includes(tool.type);
 
