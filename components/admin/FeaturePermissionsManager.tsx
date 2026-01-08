@@ -363,9 +363,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                             : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {level === 'universal'
-                          ? 'Universal'
-                          : level.toUpperCase()}
+                        {level === 'universal' ? 'All' : level.toUpperCase()}
                       </button>
                     );
                   })}

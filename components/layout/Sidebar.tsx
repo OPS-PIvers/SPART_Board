@@ -52,7 +52,7 @@ const GRADE_FILTER_OPTIONS = [
 
 // Helper to format grade level for display with proper capitalization
 const formatGradeLevel = (level: GradeLevel): string => {
-  if (level === 'universal') return 'Universal';
+  if (level === 'universal') return 'All';
   return level.toUpperCase();
 };
 
