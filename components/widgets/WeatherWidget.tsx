@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { WidgetData, WeatherConfig } from '../../types';
@@ -78,7 +78,12 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <MapPin className="w-2.5 h-2.5" /> {locationName}
           </div>
           <div className="text-[8px] font-bold text-slate-300">
-            Station {stationId}
+            Weather Station
+            {stationId && (
+              <span className="ml-1 text-[7px] font-normal text-slate-400">
+                ({stationId})
+              </span>
+            )}
           </div>
         </div>
         {lastSync && (
@@ -121,13 +126,19 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const {
     stationId = 'BLLST',
     proxyUrl = 'https://cors-anywhere.herokuapp.com/',
-    isAuto = true,
+    isAuto = false,
   } = config;
 
   const [loading, setLoading] = useState(false);
+  const lastConfigRef = useRef(config);
+
+  // Update ref when config changes
+  useEffect(() => {
+    lastConfigRef.current = config;
+  }, [config]);
 
   // For security, only confirmed admin users can modify proxy URL
-  const isConfirmedNonAdmin = isAdmin === false;
+  const isNonAdmin = isAdmin === false;
   const canEditProxyUrl = isAdmin === true;
 
   // Validate proxy URL to prevent SSRF attacks
@@ -142,8 +153,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         'corsproxy.io',
       ];
       return (
-        parsed.protocol === 'https:' &&
-        trustedDomains.some((domain) => parsed.hostname === domain)
+        parsed.protocol === 'https:' && trustedDomains.includes(parsed.hostname)
       );
     } catch {
       return false;
@@ -151,6 +161,16 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   const fetchWeather = useCallback(async () => {
+    // Validate station ID to prevent parameter injection
+    const stationIdRegex = /^[A-Z0-9_-]+$/i;
+    if (!stationId || !stationIdRegex.test(stationId)) {
+      addToast(
+        'Invalid station ID. Only alphanumeric characters, hyphens, and underscores are allowed.',
+        'error'
+      );
+      return;
+    }
+
     // Validate proxy URL before making request
     if (proxyUrl && !isValidProxyUrl(proxyUrl)) {
       addToast(
@@ -224,7 +244,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           ? data.humidity
           : 0;
 
-      let condition = config.condition ?? 'sunny'; // Keep existing if data unavailable
+      const currentConfig = lastConfigRef.current;
+      let condition = currentConfig?.condition ?? 'sunny'; // Keep existing if data unavailable
 
       // Only update condition if we have valid data
       if (typeof precipRate === 'number' && typeof tempF === 'number') {
@@ -246,10 +267,15 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       updateWidget(widget.id, {
         config: {
-          ...config,
+          ...(currentConfig || {}),
           temp: data.temperature,
           condition,
           lastSync: Date.now(),
+          // Preserve essential fields if currentConfig is somehow null
+          stationId: currentConfig?.stationId ?? stationId,
+          proxyUrl: currentConfig?.proxyUrl ?? proxyUrl,
+          isAuto: currentConfig?.isAuto ?? false,
+          locationName: currentConfig?.locationName ?? 'Orono IS',
         },
       });
 
@@ -257,19 +283,24 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     } catch (err) {
       console.error('Weather Fetch Error:', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      addToast(`Fetch Failed: ${msg}`, 'error');
+
+      // Provide guidance for CORS errors when no proxy is configured
+      if (
+        !proxyUrl &&
+        (msg.toLowerCase().includes('cors') ||
+          msg.toLowerCase().includes('cross-origin'))
+      ) {
+        addToast(
+          'Connection blocked by CORS policy. Configure a proxy URL in settings to bypass CORS restrictions.',
+          'error'
+        );
+      } else {
+        addToast(`Fetch Failed: ${msg}`, 'error');
+      }
     } finally {
       setLoading(false);
     }
-  }, [
-    config,
-    proxyUrl,
-    stationId,
-    updateWidget,
-    widget.id,
-    addToast,
-    isValidProxyUrl,
-  ]);
+  }, [proxyUrl, stationId, updateWidget, widget.id, addToast, isValidProxyUrl]);
 
   // Auto-refresh mechanism: fetch weather every 30 seconds when enabled
   useEffect(() => {
@@ -328,15 +359,16 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
           <Settings2 className="w-3 h-3" /> Proxy URL
-          {isConfirmedNonAdmin && <Lock className="w-3 h-3" />}
+          {isNonAdmin && <Lock className="w-3 h-3" />}
         </label>
-        {isConfirmedNonAdmin && (
+        {isNonAdmin && (
           <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
             <Lock className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-[9px] text-amber-700 leading-relaxed">
               <span className="font-bold">Admin Only:</span> Proxy URL
               configuration is restricted to administrators for security
-              purposes.
+              purposes. Note: Security must also be enforced via Firestore
+              security rules.
             </p>
           </div>
         )}

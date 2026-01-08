@@ -181,7 +181,7 @@ export interface WeatherConfig {
   lastSync?: number | null;
 
   // Earth Networks Configuration
-  stationId: string; // e.g., 'BLLST'
+  stationId?: string; // e.g., 'BLLST'
   proxyUrl?: string; // e.g., 'https://cors-anywhere.herokuapp.com/'
   isAuto?: boolean; // Acts as "Live Update" toggle
 }
