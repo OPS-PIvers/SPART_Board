@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { LayoutGrid, ChevronDown, RefreshCcw, Plus } from 'lucide-react';
 import {
   DndContext,
@@ -44,6 +45,10 @@ const DockItem = ({
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [popoverPos, setPopoverPos] = useState<{
+    left: number;
+    bottom: number;
+  } | null>(null);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -63,7 +68,18 @@ const DockItem = ({
 
   const handleClick = () => {
     if (minimizedWidgets.length > 0) {
-      setShowPopover(!showPopover);
+      if (showPopover) {
+        setShowPopover(false);
+      } else {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          setPopoverPos({
+            left: rect.left + rect.width / 2,
+            bottom: window.innerHeight - rect.top + 10, // 10px spacing
+          });
+        }
+        setShowPopover(true);
+      }
     } else {
       onAdd();
     }
@@ -73,55 +89,66 @@ const DockItem = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: showPopover ? 1001 : isDragging ? 1000 : 'auto', // Ensure popover parent has high z-index
+    zIndex: isDragging ? 1000 : 'auto',
   };
 
   return (
     <div className="relative flex flex-col items-center">
-      {/* Popover Menu */}
-      {showPopover && minimizedWidgets.length > 0 && (
-        <div
-          ref={popoverRef}
-          className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden z-[1002] animate-in slide-in-from-bottom-2 duration-200"
-        >
-          <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
-            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              Restorable
-            </span>
-            <span className="bg-slate-200 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-              {minimizedWidgets.length}
-            </span>
-          </div>
-          <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
-            {minimizedWidgets.map((widget) => (
+      {/* Popover Menu - Rendered in Portal to avoid clipping */}
+      {showPopover &&
+        minimizedWidgets.length > 0 &&
+        popoverPos &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            style={{
+              position: 'fixed',
+              left: popoverPos.left,
+              bottom: popoverPos.bottom,
+              transform: 'translateX(-50%)',
+              zIndex: 10000,
+            }}
+            className="w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+          >
+            <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                Restorable
+              </span>
+              <span className="bg-slate-200 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                {minimizedWidgets.length}
+              </span>
+            </div>
+            <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
+              {minimizedWidgets.map((widget) => (
+                <button
+                  key={widget.id}
+                  onClick={() => {
+                    onRestore(widget.id);
+                    // Close if this was the last widget
+                    if (minimizedWidgets.length <= 1) setShowPopover(false);
+                  }}
+                  className="w-full text-left px-2 py-2 hover:bg-indigo-50 rounded-lg text-xs text-slate-700 font-medium flex items-center justify-between group transition-colors"
+                >
+                  <span className="truncate flex-1">{getTitle(widget)}</span>
+                  <RefreshCcw className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              ))}
+            </div>
+            <div className="p-1 border-t border-slate-100">
               <button
-                key={widget.id}
                 onClick={() => {
-                  onRestore(widget.id);
-                  // Close if this was the last widget
-                  if (minimizedWidgets.length <= 1) setShowPopover(false);
+                  onAdd();
+                  setShowPopover(false);
                 }}
-                className="w-full text-left px-2 py-2 hover:bg-indigo-50 rounded-lg text-xs text-slate-700 font-medium flex items-center justify-between group transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
               >
-                <span className="truncate flex-1">{getTitle(widget)}</span>
-                <RefreshCcw className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Plus className="w-3 h-3" />
+                <span>Create New</span>
               </button>
-            ))}
-          </div>
-          <div className="p-1 border-t border-slate-100">
-            <button
-              onClick={() => {
-                onAdd();
-                setShowPopover(false);
-              }}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Create New</span>
-            </button>
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Dock Icon */}
       <button
