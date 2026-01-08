@@ -23,12 +23,11 @@ service cloud.firestore {
     // Dashboards - users can only access their own dashboards in their subcollection
     match /users/{userId}/dashboards/{dashboardId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Note: Weather widget proxyUrl changes should be restricted to admins.
-      // This is enforced client-side with UI restrictions. For production security,
-      // implement server-side validation here to check if non-admin users are
-      // attempting to modify the proxyUrl field in weather widget configs.
-      // Example approach: validate that weather widget proxyUrl fields match
-      // existing values when isAdmin() == false.
+      // SECURITY NOTE: Weather widget proxyUrl changes should ideally be restricted to admins
+      // via server-side validation. Currently, this is only enforced client-side (UI disabled
+      // + onChange guard). For production deployments requiring strict SSRF protection,
+      // implement custom validation logic to check widget configs or use Cloud Functions
+      // to enforce proxy URL restrictions.
     }
 
     // User data collection

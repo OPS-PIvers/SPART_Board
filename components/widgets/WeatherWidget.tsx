@@ -263,7 +263,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       // - Humidity >= 80%: High moisture content, typically indicates cloudy/overcast
       // - Otherwise: Clear/sunny conditions
       // Priority: precipitation > wind > humidity > clear (most impactful first)
-      if (Number.isFinite(tempF)) {
+      if (Number.isFinite(tempF) && Number.isFinite(precipRate)) {
         if (precipRate > 0) {
           // Treat precipitation at near-freezing temperatures as snow
           if (tempF <= 34) {
@@ -372,9 +372,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           value={stationId}
           onChange={(e) => {
             const newValue = e.target.value;
-            // Validate station ID format in real-time
-            const stationIdRegex = /^[A-Z0-9_-]*$/i;
-            if (stationIdRegex.test(newValue)) {
+            // Validate station ID format in real-time (must have at least one character)
+            const stationIdRegex = /^[A-Z0-9_-]+$/i;
+            if (newValue === '' || stationIdRegex.test(newValue)) {
               updateWidget(widget.id, {
                 config: { ...config, stationId: newValue },
               });
