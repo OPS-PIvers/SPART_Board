@@ -195,17 +195,34 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       if (
         typeof data !== 'object' ||
         data === null ||
-        typeof data.temperature !== 'number'
+        typeof data.temperature !== 'number' ||
+        !Number.isFinite(data.temperature)
       ) {
         throw new Error('Invalid API response structure');
       }
 
       // Determine condition based on precipitation, temperature, wind, and humidity
-      const precipRate = data.precipitation?.rate ?? 0;
+      // Use type guards to ensure numeric values are finite
+      const precipRate =
+        typeof data.precipitation?.rate === 'number' &&
+        Number.isFinite(data.precipitation?.rate)
+          ? data.precipitation.rate
+          : 0;
       const tempF = data.temperature;
-      const windSpeed = data.wind?.current?.speed ?? 0;
-      const windGust = data.wind?.current?.gust ?? 0;
-      const humidity = data.humidity;
+      const windSpeed =
+        typeof data.wind?.current?.speed === 'number' &&
+        Number.isFinite(data.wind?.current?.speed)
+          ? data.wind.current.speed
+          : 0;
+      const windGust =
+        typeof data.wind?.current?.gust === 'number' &&
+        Number.isFinite(data.wind?.current?.gust)
+          ? data.wind.current.gust
+          : 0;
+      const humidity =
+        typeof data.humidity === 'number' && Number.isFinite(data.humidity)
+          ? data.humidity
+          : 0;
 
       let condition = config.condition ?? 'sunny'; // Keep existing if data unavailable
 
