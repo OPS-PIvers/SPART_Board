@@ -126,7 +126,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const {
     stationId = 'BLLST',
     proxyUrl = 'https://cors-anywhere.herokuapp.com/',
-    isAuto = true,
+    isAuto = false,
   } = config;
 
   const [loading, setLoading] = useState(false);
@@ -162,7 +162,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const fetchWeather = useCallback(async () => {
     // Validate station ID to prevent parameter injection
-    const stationIdRegex = /^[A-Z0-9\-_]+$/i;
+    const stationIdRegex = /^[A-Z0-9_-]+$/i;
     if (!stationId || !stationIdRegex.test(stationId)) {
       addToast(
         'Invalid station ID. Only alphanumeric characters, hyphens, and underscores are allowed.',
@@ -293,7 +293,11 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const msg = err instanceof Error ? err.message : 'Unknown error';
 
       // Provide guidance for CORS errors when no proxy is configured
-      if (!proxyUrl && msg.includes('CORS')) {
+      if (
+        !proxyUrl &&
+        (msg.toLowerCase().includes('cors') ||
+          msg.toLowerCase().includes('cross-origin'))
+      ) {
         addToast(
           'Connection blocked by CORS policy. Configure a proxy URL in settings to enable direct connections.',
           'error'
