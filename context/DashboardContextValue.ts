@@ -12,6 +12,7 @@ export interface DashboardContextType {
   createNewDashboard: (name: string, data?: Dashboard) => void;
   saveCurrentDashboard: () => void;
   deleteDashboard: (id: string) => void;
+  renameDashboard: (id: string, name: string) => void;
   loadDashboard: (id: string) => void;
   addWidget: (type: WidgetType) => void;
   removeWidget: (id: string) => void;

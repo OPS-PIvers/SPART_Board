@@ -287,6 +287,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       });
   };
 
+  const renameDashboard = (id: string, name: string) => {
+    if (!user) {
+      addToast('Must be signed in to rename', 'error');
+      return;
+    }
+
+    const dashboard = dashboards.find((d) => d.id === id);
+    if (!dashboard) return;
+
+    const updated = { ...dashboard, name };
+
+    // Update local state immediately
+    setDashboards((prev) => prev.map((d) => (d.id === id ? updated : d)));
+
+    if (activeId === id) {
+      lastLocalUpdateAt.current = Date.now();
+    }
+
+    saveDashboard(updated)
+      .then(() => {
+        addToast('Dashboard renamed');
+      })
+      .catch((err) => {
+        console.error('Rename failed:', err);
+        addToast('Rename failed', 'error');
+        // Revert
+        setDashboards((prev) => prev.map((d) => (d.id === id ? dashboard : d)));
+      });
+  };
+
   const loadDashboard = (id: string) => {
     setActiveId(id);
     addToast('Board loaded');
@@ -451,6 +481,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         createNewDashboard,
         saveCurrentDashboard,
         deleteDashboard,
+        renameDashboard,
         loadDashboard,
         addWidget,
         removeWidget,
