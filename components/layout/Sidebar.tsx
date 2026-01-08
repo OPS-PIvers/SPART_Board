@@ -103,17 +103,23 @@ export const Sidebar: React.FC = () => {
       const q = query(baseRef, where('active', '==', true));
 
       unsubscribes.push(
-        onSnapshot(q, (snapshot) => {
-          const backgrounds: BackgroundPreset[] = [];
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const backgrounds: BackgroundPreset[] = [];
 
-          snapshot.forEach((doc) => {
-            backgrounds.push(doc.data() as BackgroundPreset);
-          });
+            snapshot.forEach((doc) => {
+              backgrounds.push(doc.data() as BackgroundPreset);
+            });
 
-          setManagedBackgrounds(
-            backgrounds.sort((a, b) => b.createdAt - a.createdAt)
-          );
-        })
+            setManagedBackgrounds(
+              backgrounds.sort((a, b) => b.createdAt - a.createdAt)
+            );
+          },
+          (error) => {
+            console.error('Error fetching admin backgrounds:', error);
+          }
+        )
       );
     } else {
       // Non-admins need separate queries to avoid reading restricted documents (admin-only)
@@ -140,34 +146,58 @@ export const Sidebar: React.FC = () => {
         where('betaUsers', 'array-contains', (user.email ?? '').toLowerCase())
       );
 
-      let publicBgs: BackgroundPreset[] = [];
-
-      let betaBgs: BackgroundPreset[] = [];
-
-      const updateBgs = () => {
-        const all = [...publicBgs, ...betaBgs];
-
-        // Deduplicate just in case (though paths should be unique)
-
-        const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
-
-        setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
-      };
-
       unsubscribes.push(
-        onSnapshot(qPublic, (snapshot) => {
-          publicBgs = snapshot.docs.map((d) => d.data() as BackgroundPreset);
+        onSnapshot(
+          qPublic,
+          (snapshot) => {
+            const publicBgs = snapshot.docs.map(
+              (d) => d.data() as BackgroundPreset
+            );
 
-          updateBgs();
-        })
+            setManagedBackgrounds((prev) => {
+              // Remove old public backgrounds, keep beta and admin
+              const remaining = prev.filter((b) => b.accessLevel !== 'public');
+              const all = [...remaining, ...publicBgs];
+
+              // Deduplicate just in case (though paths should be unique)
+              const unique = Array.from(
+                new Map(all.map((b) => [b.id, b])).values()
+              );
+
+              return unique.sort((a, b) => b.createdAt - a.createdAt);
+            });
+          },
+          (error) => {
+            console.error('Error fetching public backgrounds:', error);
+          }
+        )
       );
 
       unsubscribes.push(
-        onSnapshot(qBeta, (snapshot) => {
-          betaBgs = snapshot.docs.map((d) => d.data() as BackgroundPreset);
+        onSnapshot(
+          qBeta,
+          (snapshot) => {
+            const betaBgs = snapshot.docs.map(
+              (d) => d.data() as BackgroundPreset
+            );
 
-          updateBgs();
-        })
+            setManagedBackgrounds((prev) => {
+              // Remove old beta backgrounds, keep public and admin
+              const remaining = prev.filter((b) => b.accessLevel !== 'beta');
+              const all = [...remaining, ...betaBgs];
+
+              // Deduplicate just in case (though paths should be unique)
+              const unique = Array.from(
+                new Map(all.map((b) => [b.id, b])).values()
+              );
+
+              return unique.sort((a, b) => b.createdAt - a.createdAt);
+            });
+          },
+          (error) => {
+            console.error('Error fetching beta backgrounds:', error);
+          }
+        )
       );
     }
 
