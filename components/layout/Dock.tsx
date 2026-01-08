@@ -1,6 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { LayoutGrid, ChevronDown, RefreshCcw, Plus } from 'lucide-react';
+import {
+  LayoutGrid,
+  ChevronDown,
+  RefreshCcw,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -27,11 +33,15 @@ const DockItem = ({
   minimizedWidgets,
   onAdd,
   onRestore,
+  onDelete,
+  onDeleteAll,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
   onAdd: () => void;
   onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDeleteAll: () => void;
 }) => {
   const {
     attributes,
@@ -108,7 +118,7 @@ const DockItem = ({
               transform: 'translateX(-50%)',
               zIndex: 10000,
             }}
-            className="w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+            className="w-56 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
             <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
               <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
@@ -120,30 +130,55 @@ const DockItem = ({
             </div>
             <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
               {minimizedWidgets.map((widget) => (
-                <button
+                <div
                   key={widget.id}
-                  onClick={() => {
-                    onRestore(widget.id);
-                    // Close if this was the last widget
-                    if (minimizedWidgets.length <= 1) setShowPopover(false);
-                  }}
-                  className="w-full text-left px-2 py-2 hover:bg-indigo-50 rounded-lg text-xs text-slate-700 font-medium flex items-center justify-between group transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-indigo-50 rounded-lg group transition-colors"
                 >
-                  <span className="truncate flex-1">{getTitle(widget)}</span>
-                  <RefreshCcw className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
+                  <button
+                    onClick={() => {
+                      onRestore(widget.id);
+                      if (minimizedWidgets.length <= 1) setShowPopover(false);
+                    }}
+                    className="flex-1 text-left flex items-center gap-2 min-w-0"
+                  >
+                    <span className="truncate text-xs text-slate-700 font-medium">
+                      {getTitle(widget)}
+                    </span>
+                    <RefreshCcw className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDelete(widget.id);
+                      if (minimizedWidgets.length <= 1) setShowPopover(false);
+                    }}
+                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                    title="Close Widget"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               ))}
             </div>
-            <div className="p-1 border-t border-slate-100">
+            <div className="p-1 border-t border-slate-100 grid grid-cols-2 gap-1">
               <button
                 onClick={() => {
                   onAdd();
                   setShowPopover(false);
                 }}
-                className="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
               >
                 <Plus className="w-3 h-3" />
-                <span>Create New</span>
+                <span>Create</span>
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteAll();
+                  setShowPopover(false);
+                }}
+                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 text-xs font-bold rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear All</span>
               </button>
             </div>
           </div>,
@@ -185,6 +220,7 @@ const DockItem = ({
 export const Dock: React.FC = () => {
   const {
     addWidget,
+    removeWidget,
     visibleTools,
     reorderTools,
     activeDashboard,
@@ -294,6 +330,12 @@ export const Dock: React.FC = () => {
                             onRestore={(id) =>
                               updateWidget(id, { minimized: false })
                             }
+                            onDelete={(id) => removeWidget(id)}
+                            onDeleteAll={() => {
+                              minimizedWidgets.forEach((w) =>
+                                removeWidget(w.id)
+                              );
+                            }}
                           />
                         );
                       })}
