@@ -9,6 +9,7 @@ interface DraggableWindowProps {
   settings: React.ReactNode;
   title: string;
   style?: React.CSSProperties; // Added style prop
+  skipCloseConfirmation?: boolean;
 }
 
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -17,6 +18,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   settings,
   title,
   style,
+  skipCloseConfirmation = false,
 }) => {
   const { updateWidget, removeWidget, bringToFront } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
@@ -196,7 +198,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   <Settings className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setShowConfirm(true)}
+                  onClick={() => {
+                    if (skipCloseConfirmation) {
+                      removeWidget(widget.id);
+                    } else {
+                      setShowConfirm(true);
+                    }
+                  }}
                   className="p-1 hover:bg-red-100 hover:text-red-600 rounded-md text-slate-500 transition-colors"
                 >
                   <X className="w-4 h-4" />

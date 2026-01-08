@@ -5,9 +5,14 @@ import { Star, Plus } from 'lucide-react';
 interface Props {
   onClose: () => void;
   onOpenFullEditor: () => void;
+  anchorRect?: DOMRect | null;
 }
 
-const ClassRosterMenu: React.FC<Props> = ({ onClose, onOpenFullEditor }) => {
+const ClassRosterMenu: React.FC<Props> = ({
+  onClose,
+  onOpenFullEditor,
+  anchorRect,
+}) => {
   const { rosters, activeRosterId, setActiveRoster } = useDashboard();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -22,11 +27,27 @@ const ClassRosterMenu: React.FC<Props> = ({ onClose, onOpenFullEditor }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
+  const menuStyle: React.CSSProperties = anchorRect
+    ? {
+        position: 'fixed',
+        left: anchorRect.left + anchorRect.width / 2,
+        bottom: window.innerHeight - anchorRect.top + 10,
+        transform: 'translateX(-50%)',
+      }
+    : {
+        position: 'absolute',
+        bottom: '5rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+      };
+
   return (
     <div
       ref={menuRef}
-      className="absolute bottom-20 left-1/2 -translate-x-1/2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200"
+      style={menuStyle}
+      className="w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-[10000] flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200"
     >
+      {' '}
       <div className="p-3 bg-slate-50 border-b flex justify-between items-center">
         <span className="font-bold text-xs text-slate-500 uppercase">
           Quick Select
@@ -35,7 +56,6 @@ const ClassRosterMenu: React.FC<Props> = ({ onClose, onOpenFullEditor }) => {
           {rosters.length}
         </span>
       </div>
-
       <div className="max-h-64 overflow-y-auto p-1">
         {rosters.length === 0 && (
           <div className="p-4 text-center text-slate-400 text-xs">
@@ -71,7 +91,6 @@ const ClassRosterMenu: React.FC<Props> = ({ onClose, onOpenFullEditor }) => {
           </div>
         ))}
       </div>
-
       <div className="p-2 border-t bg-slate-50">
         <button
           onClick={onOpenFullEditor}
@@ -80,7 +99,6 @@ const ClassRosterMenu: React.FC<Props> = ({ onClose, onOpenFullEditor }) => {
           <Plus size={14} /> Open Full Editor
         </button>
       </div>
-
       {/* Little arrow at the bottom */}
       <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-50 border-r border-b border-slate-200 transform rotate-45"></div>
     </div>

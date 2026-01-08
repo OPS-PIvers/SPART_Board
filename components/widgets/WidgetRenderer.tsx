@@ -132,6 +132,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
       title={getTitle(widget)}
       settings={getWidgetSettings()}
       style={customStyle}
+      skipCloseConfirmation={widget.type === 'classes'}
     >
       {getWidgetContent()}
     </DraggableWindow>

@@ -232,10 +232,21 @@ export const Dock: React.FC = () => {
   const { canAccessWidget, featurePermissions } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
+  const classesButtonRef = useRef<HTMLButtonElement>(null);
+  const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
+    null
+  );
 
   const openClassEditor = () => {
     addWidget('classes');
     setShowRosterMenu(false);
+  };
+
+  const handleToggleRosterMenu = () => {
+    if (!showRosterMenu && classesButtonRef.current) {
+      setClassesAnchorRect(classesButtonRef.current.getBoundingClientRect());
+    }
+    setShowRosterMenu(!showRosterMenu);
   };
 
   const sensors = useSensors(
@@ -330,6 +341,7 @@ export const Dock: React.FC = () => {
         <ClassRosterMenu
           onClose={() => setShowRosterMenu(false)}
           onOpenFullEditor={openClassEditor}
+          anchorRect={classesAnchorRect}
         />
       )}
       <div className="relative group/dock">
@@ -337,23 +349,6 @@ export const Dock: React.FC = () => {
           <>
             {/* Expanded Toolbar with integrated minimize button */}
             <div className="bg-white/80 backdrop-blur-2xl px-4 py-3 rounded-[2rem] shadow-2xl border border-white/50 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
-              {/* --- NEW ROSTER ICON --- */}
-              <button
-                onClick={() => setShowRosterMenu(!showRosterMenu)}
-                className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
-              >
-                <div
-                  className={`bg-indigo-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
-                >
-                  <Users className="w-5 h-5 md:w-6 md:h-6" />
-                </div>
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                  Classes
-                </span>
-              </button>
-
-              <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-
               {filteredTools.length > 0 ? (
                 <>
                   <DndContext
@@ -386,6 +381,24 @@ export const Dock: React.FC = () => {
                       })}
                     </SortableContext>
                   </DndContext>
+
+                  {/* Separator and Roster/Classes Button */}
+                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                  <button
+                    ref={classesButtonRef}
+                    onClick={handleToggleRosterMenu}
+                    className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
+                  >
+                    <div
+                      className={`bg-indigo-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+                    >
+                      <Users className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                      Classes
+                    </span>
+                  </button>
 
                   {/* Separator and Minimize Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
