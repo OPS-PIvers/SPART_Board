@@ -22,14 +22,14 @@ const SCHOOL_OPTIONS = [
   { id: 'orono-high-school', label: 'Orono High School' },
 ];
 
-// OFFICIAL ORONO TECHNOLOGY BRANDING
-const ORONO: Record<string, string> = {
+// OFFICIAL ORONO BRAND COLORS
+const ORONO = {
   bluePrimary: '#2d3f89',
   blueDark: '#1d2a5d',
-  blueLight: '#4356a0',
   blueLighter: '#eaecf5',
   redPrimary: '#ad2122',
   grayPrimary: '#666666',
+  grayDark: '#333333',
   grayLight: '#999999',
   grayLightest: '#f3f3f3',
 };
@@ -52,6 +52,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Re-implemented "Working Version" Sync Logic
   const fetchMenu = useCallback(
     async (force = false) => {
       if (!schoolId || (menuText && !force)) return;
@@ -63,15 +64,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           ? new Date(testDate + 'T12:00:00')
           : new Date();
         const year = targetDate.getFullYear();
-        const m = (targetDate.getMonth() + 1).toString().padStart(2, '0');
-        const d = targetDate.getDate().toString().padStart(2, '0');
-        const searchStr = `${year}-${m}-${d}`;
+        const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = targetDate.getDate().toString().padStart(2, '0');
 
-        const apiSubdomain = 'orono.api.nutrislice.com';
-        const digestUrl = `https://${apiSubdomain}/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${m}/${d}/?format=json`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(digestUrl)}&timestamp=${Date.now()}`;
+        // Verified API structure from Orono Schumann
+        const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}&timestamp=${Date.now()}`;
 
         const res = await fetch(proxyUrl);
+        if (!res.ok) throw new Error('API unreachable');
+
         const proxyData = (await res.json()) as { contents: string };
         const data = JSON.parse(proxyData.contents) as {
           menu_items?: {
@@ -81,66 +83,40 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           }[];
         };
 
-        let finalItems: string[] = [];
-
-        if (data && data.menu_items && data.menu_items.length > 0) {
-          finalItems = data.menu_items
+        if (data && data.menu_items) {
+          const items = data.menu_items
             .filter(
               (item) => !item.is_section_title && (item.food?.name || item.text)
             )
             .map((item) => item.food?.name || item.text || '');
-        } else {
-          const weekUrl = `https://${apiSubdomain}/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${m}/${d}/?format=json`;
-          const weekProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(weekUrl)}`;
-          const weekRes = await fetch(weekProxy);
-          const weekProxyData = (await weekRes.json()) as { contents: string };
-          const weekData = JSON.parse(weekProxyData.contents) as {
-            days?: {
-              date: string;
-              menu_items?: {
-                is_section_title?: boolean;
-                food?: { name: string };
-                text?: string;
-              }[];
-            }[];
-          };
-          const dayMatch = weekData.days?.find((day) => day.date === searchStr);
-          if (dayMatch?.menu_items) {
-            finalItems = dayMatch.menu_items
-              .filter(
-                (item) =>
-                  !item.is_section_title && (item.food?.name || item.text)
-              )
-              .map((item) => item.food?.name || item.text || '');
+
+          const uniqueItems = Array.from(new Set(items)).filter(Boolean);
+
+          if (uniqueItems.length > 0) {
+            updateWidget(widget.id, {
+              config: { ...config, menuText: uniqueItems.join(', ') },
+            });
+            addToast('Menu Updated', 'success');
+          } else {
+            setFetchError(`No menu listed for today.`);
           }
         }
-
-        const cleanItems = Array.from(new Set(finalItems)).filter(Boolean);
-
-        if (cleanItems.length > 0) {
-          updateWidget(widget.id, {
-            config: { ...config, menuText: cleanItems.join(', ') },
-          });
-          addToast('Orono Menu Synced', 'success');
-        } else {
-          setFetchError(`No menu listed for ${searchStr}.`);
-        }
-      } catch (err: unknown) {
-        console.error('Fetch error:', err);
-        setFetchError('Connection error. Check settings.');
+      } catch (err) {
+        console.error('Sync error:', err);
+        setFetchError('Connection error. Try re-syncing.');
+      } finally {
+        setIsFetching(false);
       }
     },
     [schoolId, menuText, config, widget.id, testDate, updateWidget, addToast]
   );
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchMenu();
-    }, 0);
-    return () => clearTimeout(timer);
+    void fetchMenu();
   }, [fetchMenu]);
 
-  const menuItems = useMemo(() => {
+  // Helper to split text for 3-column UI
+  const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '', bento: '' };
     const parts = menuText.split(',').map((p) => p.trim());
     return { hot: parts[0] || '', bento: parts[1] || '' };
@@ -215,7 +191,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col p-3 bg-white gap-3 select-none pt-2 font-['Lexend']">
-      {/* 1. BRANDED BUTTONS */}
+      {/* 1. BRANDED ACTIONS */}
       <div className="flex gap-2 shrink-0 px-1">
         <button
           onClick={() =>
@@ -242,7 +218,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               const type = (assignments[s] as LunchType) || 'none';
               counts[type]++;
             });
-            const summary = `Orono Lunch Report:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
+            const summary = `Lunch Count Summary:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
             window.open(
               `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(
                 summary
@@ -250,7 +226,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             );
           }}
           style={{ backgroundColor: ORONO.redPrimary }}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm transition-all hover:brightness-110 active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm transition-all hover:brightness-110"
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
@@ -258,6 +234,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
       {/* 2. THREE-COLUMN MENU HEADER (BRANDED) */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
+        {/* Hot Header */}
         <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
           <span
             style={{ color: ORONO.grayPrimary }}
@@ -266,10 +243,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Option 1
           </span>
           <div className="text-[10px] font-bold text-orange-900 leading-tight">
-            {menuItems.hot || '---'}
+            {parsedMenu.hot || (isFetching ? '...' : '---')}
           </div>
         </div>
 
+        {/* Bento Header */}
         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
           <span
             style={{ color: ORONO.grayPrimary }}
@@ -278,10 +256,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Option 2
           </span>
           <div className="text-[10px] font-bold text-emerald-900 leading-tight">
-            {menuItems.bento || '---'}
+            {parsedMenu.bento || (isFetching ? '...' : '---')}
           </div>
         </div>
 
+        {/* Branded Anchor Box */}
         <div
           style={{
             backgroundColor: ORONO.blueLighter,
@@ -310,7 +289,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             ) : fetchError ? (
               <div
                 style={{ color: ORONO.redPrimary }}
-                className="text-[8px] font-bold leading-tight"
+                className="text-[8px] font-bold leading-tight line-clamp-2"
               >
                 {fetchError}
               </div>
@@ -319,7 +298,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 style={{ color: ORONO.blueDark, opacity: 0.6 }}
                 className="text-[8px] font-bold italic uppercase leading-none"
               >
-                Live Data
+                Live Sync
               </div>
             )}
           </div>
@@ -420,7 +399,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           backgroundColor: ORONO.blueLighter,
           borderColor: ORONO.bluePrimary,
         }}
-        className="p-4 rounded-2xl border space-y-4 shadow-sm"
+        className="p-4 rounded-2xl border space-y-4"
       >
         <div>
           <label
@@ -436,7 +415,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, schoolId: e.target.value, menuText: '' },
               })
             }
-            className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl outline-none bg-white text-slate-900"
+            className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-white text-slate-900"
           >
             {SCHOOL_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -451,33 +430,18 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             style={{ color: ORONO.bluePrimary }}
             className="text-[10px] font-bold uppercase tracking-widest mb-2 block flex items-center gap-2"
           >
-            <CalendarDays className="w-3 h-3" /> Simulate Date
+            <CalendarDays className="w-3 h-3" /> Testing Date (Override)
           </label>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={testDate}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, testDate: e.target.value, menuText: '' },
-                })
-              }
-              className="flex-1 p-2 text-[10px] border border-slate-200 rounded-lg outline-none bg-white text-slate-900"
-            />
-            {testDate && (
-              <button
-                onClick={() =>
-                  updateWidget(widget.id, {
-                    config: { ...config, testDate: '', menuText: '' },
-                  })
-                }
-                style={{ backgroundColor: ORONO.grayLight }}
-                className="p-2 text-white rounded-lg text-[9px] font-bold uppercase"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          <input
+            type="date"
+            value={testDate}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, testDate: e.target.value, menuText: '' },
+              })
+            }
+            className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-white text-slate-900"
+          />
         </div>
 
         <div>
@@ -485,7 +449,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             style={{ color: ORONO.bluePrimary }}
             className="text-[10px] font-bold uppercase tracking-widest mb-2 block flex items-center gap-2"
           >
-            <UtensilsCrossed className="w-3 h-3" /> Menu Override
+            <UtensilsCrossed className="w-3 h-3" /> Manual Text Override
           </label>
           <textarea
             value={menuText}
@@ -495,7 +459,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
               })
             }
             placeholder="Hot Item, Bento Item..."
-            className="w-full h-20 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed text-slate-900"
+            className="w-full h-20 p-3 text-xs font-bold border border-slate-200 rounded-2xl bg-white text-slate-900"
           />
         </div>
       </div>
@@ -512,7 +476,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, firstNames: e.target.value },
               })
             }
-            className="w-full h-32 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none text-slate-900"
+            className="w-full h-32 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl text-slate-900"
           />
         </div>
         <div>
@@ -526,7 +490,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, lastNames: e.target.value },
               })
             }
-            className="w-full h-32 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none text-slate-900"
+            className="w-full h-32 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl text-slate-900"
           />
         </div>
       </div>
@@ -543,7 +507,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, recipient: e.target.value },
             })
           }
-          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl outline-none bg-white text-slate-900"
+          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-white text-slate-900"
         />
       </div>
     </div>
