@@ -305,7 +305,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           msg.toLowerCase().includes('cross-origin'))
       ) {
         addToast(
-          'Connection blocked by CORS policy. Configure a proxy URL in settings to enable direct connections.',
+          'Connection blocked by CORS policy. Configure a proxy URL in settings to bypass CORS restrictions.',
           'error'
         );
       } else {
