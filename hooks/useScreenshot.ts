@@ -50,7 +50,7 @@ export const useScreenshot = (
           // - the "isFlashing" CSS class used by the flash overlay
           const dataset = node.dataset;
           const shouldExcludeFlash =
-            dataset?.screenshot === 'flash' ||
+            dataset.screenshot === 'flash' ||
             node.classList.contains('isFlashing');
 
           return !shouldExcludeFlash;
