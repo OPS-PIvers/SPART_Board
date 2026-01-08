@@ -22,14 +22,14 @@ const SCHOOL_OPTIONS = [
   { id: 'orono-high-school', label: 'Orono High School' },
 ];
 
-// Orono ISD Style Guide Colors
-const ORONO = {
+// OFFICIAL ORONO TECHNOLOGY BRANDING
+const ORONO: Record<string, string> = {
   bluePrimary: '#2d3f89',
   blueDark: '#1d2a5d',
+  blueLight: '#4356a0',
   blueLighter: '#eaecf5',
   redPrimary: '#ad2122',
   grayPrimary: '#666666',
-  grayDark: '#333333',
   grayLight: '#999999',
   grayLightest: '#f3f3f3',
 };
@@ -52,7 +52,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Advanced Resilient Fetcher - "The SPART Way"
   const fetchMenu = useCallback(
     async (force = false) => {
       if (!schoolId || (menuText && !force)) return;
@@ -64,15 +63,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           ? new Date(testDate + 'T12:00:00')
           : new Date();
         const year = targetDate.getFullYear();
-        const monthNum = targetDate.getMonth() + 1;
-        const dayNum = targetDate.getDate();
+        const m = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+        const d = targetDate.getDate().toString().padStart(2, '0');
+        const searchStr = `${year}-${m}-${d}`;
 
-        const month = monthNum.toString().padStart(2, '0');
-        const day = dayNum.toString().padStart(2, '0');
-        const searchDate = `${year}-${month}-${day}`;
-
-        // Strategy 1: Attempt Digest API (Specific Day)
-        const digestUrl = `https://orono.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+        const apiSubdomain = 'orono.api.nutrislice.com';
+        const digestUrl = `https://${apiSubdomain}/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${m}/${d}/?format=json`;
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(digestUrl)}&timestamp=${Date.now()}`;
 
         const res = await fetch(proxyUrl);
@@ -94,9 +90,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             )
             .map((item) => item.food?.name || item.text || '');
         } else {
-          // Strategy 2: Fallback to Weekly API if Digest is empty
-          const weekUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${month}/${day}/?format=json`;
-          const weekProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(weekUrl)}&timestamp=${Date.now()}`;
+          const weekUrl = `https://${apiSubdomain}/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${m}/${d}/?format=json`;
+          const weekProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(weekUrl)}`;
           const weekRes = await fetch(weekProxy);
           const weekProxyData = (await weekRes.json()) as { contents: string };
           const weekData = JSON.parse(weekProxyData.contents) as {
@@ -109,10 +104,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               }[];
             }[];
           };
-
-          const targetDay = weekData.days?.find((d) => d.date === searchDate);
-          if (targetDay && targetDay.menu_items) {
-            finalItems = targetDay.menu_items
+          const dayMatch = weekData.days?.find((day) => day.date === searchStr);
+          if (dayMatch?.menu_items) {
+            finalItems = dayMatch.menu_items
               .filter(
                 (item) =>
                   !item.is_section_title && (item.food?.name || item.text)
@@ -121,34 +115,34 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           }
         }
 
-        const uniqueItems = Array.from(new Set(finalItems)).filter(Boolean);
-        if (uniqueItems.length > 0) {
+        const cleanItems = Array.from(new Set(finalItems)).filter(Boolean);
+
+        if (cleanItems.length > 0) {
           updateWidget(widget.id, {
-            config: { ...config, menuText: uniqueItems.join(', ') },
+            config: { ...config, menuText: cleanItems.join(', ') },
           });
           addToast('Orono Menu Synced', 'success');
         } else {
-          setFetchError(`No menu data found for ${searchDate}.`);
+          setFetchError(`No menu listed for ${searchStr}.`);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Fetch error:', err);
-        setFetchError('Connection error. Please try again.');
-      } finally {
-        setIsFetching(false);
+        setFetchError('Connection error. Check settings.');
       }
     },
     [schoolId, menuText, config, widget.id, testDate, updateWidget, addToast]
   );
 
   useEffect(() => {
-    void fetchMenu();
+    const timer = setTimeout(() => {
+      void fetchMenu();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchMenu]);
 
   const menuItems = useMemo(() => {
     if (!menuText) return { hot: '', bento: '' };
-    const parts = menuText
-      .split(',')
-      .map((p) => p.trim().replace(/^"|"$/g, ''));
+    const parts = menuText.split(',').map((p) => p.trim());
     return { hot: parts[0] || '', bento: parts[1] || '' };
   }, [menuText]);
 
@@ -168,6 +162,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
     return combined;
   }, [firstNames, lastNames]);
+
+  const handleDrop = (e: React.DragEvent, type: LunchType) => {
+    const name = e.dataTransfer.getData('studentName');
+    if (name) {
+      updateWidget(widget.id, {
+        config: { ...config, assignments: { ...assignments, [name]: type } },
+      });
+    }
+  };
 
   const categories: {
     type: LunchType;
@@ -201,7 +204,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (students.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3 font-sans">
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3 font-['Lexend'] text-slate-400">
         <Users className="w-12 h-12 opacity-20" />
         <p className="text-sm font-bold uppercase tracking-widest">
           Roster Empty
@@ -239,7 +242,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               const type = (assignments[s] as LunchType) || 'none';
               counts[type]++;
             });
-            const summary = `Lunch Count:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
+            const summary = `Orono Lunch Report:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
             window.open(
               `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(
                 summary
@@ -253,7 +256,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </button>
       </div>
 
-      {/* 2. THREE-COLUMN MENU HEADER (ORONO BRANDED) */}
+      {/* 2. THREE-COLUMN MENU HEADER (BRANDED) */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
         <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
           <span
@@ -263,7 +266,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Option 1
           </span>
           <div className="text-[10px] font-bold text-orange-900 leading-tight">
-            {menuItems.hot || (isFetching ? '...' : '---')}
+            {menuItems.hot || '---'}
           </div>
         </div>
 
@@ -275,7 +278,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Option 2
           </span>
           <div className="text-[10px] font-bold text-emerald-900 leading-tight">
-            {menuItems.bento || (isFetching ? '...' : '---')}
+            {menuItems.bento || '---'}
           </div>
         </div>
 
@@ -284,7 +287,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             backgroundColor: ORONO.blueLighter,
             borderColor: ORONO.bluePrimary,
           }}
-          className="border-2 rounded-2xl p-2 flex items-center gap-2 min-h-[4.5rem] shadow-sm"
+          className="border-2 rounded-2xl p-2 flex items-center gap-2 min-h-[4.5rem]"
         >
           <UtensilsCrossed
             style={{ color: ORONO.bluePrimary }}
@@ -313,7 +316,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
             ) : (
               <div
-                style={{ color: ORONO.blueDark, opacity: 0.7 }}
+                style={{ color: ORONO.blueDark, opacity: 0.6 }}
                 className="text-[8px] font-bold italic uppercase leading-none"
               >
                 Live Data
@@ -329,26 +332,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           <div
             key={cat.type}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              const name = e.dataTransfer.getData('studentName');
-              if (name) {
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    assignments: { ...assignments, [name]: cat.type },
-                  },
-                });
-              }
-            }}
+            onDrop={(e) => handleDrop(e, cat.type)}
             className={`flex flex-col min-h-[6rem] rounded-2xl border-2 border-dashed ${cat.color} ${cat.border} transition-all`}
           >
             <div className="p-2 flex items-center justify-between border-b border-dashed border-inherit bg-white/40">
-              <div className="flex items-center gap-1.5">
-                <cat.icon className="w-3 h-3 text-slate-500" />
-                <span className="text-[9px] font-bold uppercase text-slate-700">
-                  {cat.label}
-                </span>
-              </div>
+              <span className="text-[9px] font-bold uppercase text-slate-700">
+                {cat.label}
+              </span>
               <span className="text-[10px] font-bold bg-white px-1.5 py-0.5 rounded-full shadow-sm text-slate-900">
                 {students.filter((s) => assignments[s] === cat.type).length}
               </span>
@@ -363,7 +353,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
-                    className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing hover:border-slate-400"
+                    className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-sm cursor-grab"
                   >
                     {name}
                   </div>
@@ -430,7 +420,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           backgroundColor: ORONO.blueLighter,
           borderColor: ORONO.bluePrimary,
         }}
-        className="p-4 rounded-2xl border space-y-4"
+        className="p-4 rounded-2xl border space-y-4 shadow-sm"
       >
         <div>
           <label
