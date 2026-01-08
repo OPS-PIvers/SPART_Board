@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Settings, Move, Minus } from 'lucide-react';
+import { X, Settings, Move, Minus, Pencil } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
@@ -22,10 +22,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
+  };
+
+  const saveTitle = () => {
+    if (tempTitle.trim()) {
+      updateWidget(widget.id, { customTitle: tempTitle.trim() });
+    } else {
+      // If empty, revert to default (remove custom title)
+      updateWidget(widget.id, { customTitle: undefined });
+      setTempTitle(title);
+    }
+    setIsEditingTitle(false);
   };
 
   const handleDragStart = (e: React.MouseEvent) => {
@@ -130,13 +143,44 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               onMouseDown={handleDragStart}
               className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 cursor-grab active:cursor-grabbing"
             >
-              <div className="flex items-center gap-2">
-                <Move className="w-3 h-3 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  {title}
-                </span>
+              <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+                <Move className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                {isEditingTitle ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    onBlur={saveTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveTitle();
+                      if (e.key === 'Escape') {
+                        setTempTitle(widget.customTitle ?? title);
+                        setIsEditingTitle(false);
+                      }
+                      e.stopPropagation(); // Prevent triggering other listeners
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
+                    className="text-xs font-semibold text-slate-600 bg-white border border-indigo-300 rounded px-1 py-0.5 outline-none w-full shadow-sm"
+                  />
+                ) : (
+                  <div
+                    className="flex items-center gap-2 group/title cursor-text min-w-0 overflow-hidden"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent drag start
+                      setTempTitle(widget.customTitle ?? title);
+                      setIsEditingTitle(true);
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()} // Allow click without drag
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider truncate">
+                      {widget.customTitle ?? title}
+                    </span>
+                    <Pencil className="w-3 h-3 text-slate-300 opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0" />
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
                   className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"

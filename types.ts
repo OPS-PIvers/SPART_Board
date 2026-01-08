@@ -273,6 +273,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
+  customTitle?: string;
   config: WidgetConfig;
 }
 

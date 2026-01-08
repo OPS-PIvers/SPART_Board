@@ -1,6 +1,7 @@
 import { WidgetData } from '../types';
 
 export const getTitle = (widget: WidgetData): string => {
+  if (widget.customTitle) return widget.customTitle;
   if (widget.type === 'sound') return 'Noise Meter';
   if (widget.type === 'checklist') return 'Task List';
   if (widget.type === 'random') return 'Selector';
