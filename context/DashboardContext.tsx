@@ -390,6 +390,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           recipient: 'paul.ivers@orono.k12.mn.us',
           schoolId: 'schumann-elementary',
           menuText: '',
+          testDate: '',
         },
       },
       lunchMenu: {

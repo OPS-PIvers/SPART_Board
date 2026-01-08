@@ -4,25 +4,22 @@ import { WidgetData, LunchCountConfig } from '../../types';
 import {
   Users,
   Send,
-  Coffee,
-  Home,
-  Box,
   RefreshCw,
   UtensilsCrossed,
-  School,
-  CalendarDays,
+  UserPlus,
+  AlertTriangle,
+  Coffee,
+  Box,
+  Home,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
 
 const SCHOOL_OPTIONS = [
   { id: 'schumann-elementary', label: 'Schumann Elementary' },
-  { id: 'orono-intermediate', label: 'Orono Intermediate' },
-  { id: 'orono-middle', label: 'Orono Middle School' },
-  { id: 'orono-high-school', label: 'Orono High School' },
+  { id: 'orono-intermediate-school', label: 'Orono Intermediate' },
 ];
 
-// OFFICIAL ORONO BRAND COLORS
 const ORONO = {
   bluePrimary: '#2d3f89',
   blueDark: '#1d2a5d',
@@ -52,7 +49,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Advanced Fetcher with Proxy Fallback
   const fetchMenu = useCallback(
     async (force = false) => {
       if (!schoolId || (menuText && !force)) return;
@@ -69,18 +65,17 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
       const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
 
-      // Attempt with multiple proxies to bypass congestion
       const proxies = [
+        (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
         (url: string) =>
           `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&ts=${Date.now()}`,
-        (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
       ];
 
       let success = false;
       for (const getProxyUrl of proxies) {
         try {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout per proxy
+          const timeout = setTimeout(() => controller.abort(), 8000);
 
           const res = await fetch(getProxyUrl(apiUrl), {
             signal: controller.signal,
@@ -90,7 +85,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           if (!res.ok) continue;
 
           const rawData = (await res.json()) as { contents?: string };
-          // Handle different proxy response shapes
           const content =
             typeof rawData.contents === 'string'
               ? (JSON.parse(rawData.contents) as {
@@ -126,13 +120,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               break;
             }
           }
-        } catch (err) {
-          console.warn('Proxy attempt failed, trying next...', err);
+        } catch (_err) {
+          console.warn('Proxy attempt failed, trying next...');
         }
       }
 
       if (!success) {
-        setFetchError('Connection slow. Try again or check Orono Nutrislice.');
+        setFetchError('Menu sync slow. Check Nutrislice.');
       }
       setIsFetching(false);
     },
@@ -147,9 +141,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [fetchMenu]);
 
   const parsedMenu = useMemo(() => {
-    if (!menuText) return { hot: '', bento: '' };
+    if (!menuText) return { hot: 'Loading menu...', bento: 'Loading menu...' };
     const parts = menuText.split(',').map((p) => p.trim());
-    return { hot: parts[0] || '', bento: parts[1] || '' };
+    return {
+      hot: parts[0] || 'Menu Unavailable',
+      bento: parts[1] || 'Menu Unavailable',
+    };
   }, [menuText]);
 
   const students = useMemo(() => {
@@ -169,13 +166,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     return combined;
   }, [firstNames, lastNames]);
 
-  const handleDrop = (e: React.DragEvent, type: LunchType) => {
-    const name = e.dataTransfer.getData('studentName');
-    if (name) {
-      updateWidget(widget.id, {
-        config: { ...config, assignments: { ...assignments, [name]: type } },
-      });
-    }
+  const handleSend = () => {
+    const counts = { hot: 0, bento: 0, home: 0, none: 0 };
+    students.forEach((s) => counts[(assignments[s] as LunchType) || 'none']++);
+    const summary = `Lunch Count Summary (${new Date().toLocaleDateString()}):\n\nHot Lunch (${parsedMenu.hot}): ${counts.hot}\nBento Box (${parsedMenu.bento}): ${counts.bento}\nHome Lunch: ${counts.home}\n\nSent from Classroom Dashboard Pro.`;
+    window.open(
+      `mailto:${recipient}?subject=Lunch Count - ${schoolId}&body=${encodeURIComponent(summary)}`
+    );
   };
 
   const categories: {
@@ -184,6 +181,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     icon: React.ComponentType<{ className?: string }>;
     color: string;
     border: string;
+    menuLabel: string;
   }[] = [
     {
       type: 'hot',
@@ -191,6 +189,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       icon: Coffee,
       color: 'bg-orange-50',
       border: 'border-orange-200',
+      menuLabel: parsedMenu.hot,
     },
     {
       type: 'bento',
@@ -198,6 +197,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       icon: Box,
       color: 'bg-emerald-50',
       border: 'border-emerald-200',
+      menuLabel: parsedMenu.bento,
     },
     {
       type: 'home',
@@ -205,146 +205,116 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       icon: Home,
       color: 'bg-blue-50',
       border: 'border-blue-200',
+      menuLabel: 'Brought from home',
     },
   ];
 
   if (students.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3 font-['Lexend'] text-slate-400">
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3 text-slate-400 font-['Lexend']">
         <Users className="w-12 h-12 opacity-20" />
         <p className="text-sm font-bold uppercase tracking-widest">
           Roster Empty
         </p>
+        <p className="text-[10px]">Flip widget to add names.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none pt-2 font-['Lexend']">
-      <div className="flex gap-2 shrink-0 px-1">
+    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none font-['Lexend']">
+      {/* Header Actions */}
+      <div className="flex gap-2 shrink-0">
         <button
           onClick={() =>
             updateWidget(widget.id, { config: { ...config, assignments: {} } })
           }
-          style={{
-            color: ORONO.grayDark,
-            backgroundColor: ORONO.grayLightest,
-            border: `1px solid ${ORONO.grayLight}`,
-          }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all hover:bg-slate-200"
+          style={{ color: ORONO.grayDark, backgroundColor: ORONO.grayLightest }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase border border-slate-200 hover:bg-slate-200 transition-all"
         >
           <RefreshCw className="w-3 h-3" /> Reset
         </button>
         <button
-          onClick={() => {
-            const counts: Record<LunchType, number> = {
-              hot: 0,
-              bento: 0,
-              home: 0,
-              none: 0,
-            };
-            students.forEach((s) => {
-              const type = (assignments[s] as LunchType) || 'none';
-              counts[type]++;
-            });
-            const summary = `Lunch Count:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
-            window.open(
-              `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(summary)}`
-            );
-          }}
+          onClick={handleSend}
           style={{ backgroundColor: ORONO.redPrimary }}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm transition-all hover:brightness-110 active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-xl text-[9px] font-black uppercase shadow-lg hover:brightness-110 active:scale-95 transition-all"
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 shrink-0">
-        <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
-          <span
-            style={{ color: ORONO.grayPrimary }}
-            className="text-[8px] font-bold uppercase mb-1 leading-none"
-          >
-            Option 1
+      {/* Daily Menu Display */}
+      <div className="grid grid-cols-2 gap-3 shrink-0">
+        <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 flex flex-col justify-center min-h-[5rem]">
+          <span className="text-[8px] font-black uppercase text-orange-400 mb-1 leading-none">
+            Hot Lunch
           </span>
-          <div className="text-[10px] font-bold text-orange-900 leading-tight">
-            {parsedMenu.hot || (isFetching ? '...' : '---')}
+          <div className="text-[11px] font-bold text-orange-900 leading-tight">
+            {isFetching ? 'Syncing...' : parsedMenu.hot}
           </div>
         </div>
-
-        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
-          <span
-            style={{ color: ORONO.grayPrimary }}
-            className="text-[8px] font-bold uppercase mb-1 leading-none"
-          >
-            Option 2
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 flex flex-col justify-center min-h-[5rem]">
+          <span className="text-[8px] font-black uppercase text-emerald-400 mb-1 leading-none">
+            Bento Box
           </span>
-          <div className="text-[10px] font-bold text-emerald-900 leading-tight">
-            {parsedMenu.bento || (isFetching ? '...' : '---')}
-          </div>
-        </div>
-
-        <div
-          style={{
-            backgroundColor: ORONO.blueLighter,
-            borderColor: ORONO.bluePrimary,
-          }}
-          className="border-2 rounded-2xl p-2 flex items-center gap-2 min-h-[4.5rem]"
-        >
-          <UtensilsCrossed
-            style={{ color: ORONO.bluePrimary }}
-            className={`w-4 h-4 shrink-0 ${isFetching ? 'animate-pulse' : ''}`}
-          />
-          <div className="flex-1 min-w-0">
-            <div
-              style={{ color: ORONO.bluePrimary }}
-              className="text-[8px] font-bold uppercase leading-none mb-1"
-            >
-              Today&apos;s Menu
-            </div>
-            {isFetching ? (
-              <div
-                style={{ color: ORONO.blueDark }}
-                className="text-[9px] italic animate-pulse"
-              >
-                Syncing...
-              </div>
-            ) : fetchError ? (
-              <div
-                style={{ color: ORONO.redPrimary }}
-                className="text-[8px] font-bold leading-tight"
-              >
-                {fetchError}
-              </div>
-            ) : (
-              <div
-                style={{ color: ORONO.blueDark, opacity: 0.6 }}
-                className="text-[8px] font-bold italic uppercase leading-none"
-              >
-                Live Data
-              </div>
-            )}
+          <div className="text-[11px] font-bold text-emerald-900 leading-tight">
+            {isFetching ? 'Syncing...' : parsedMenu.bento}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 shrink-0">
+      {/* Sync Status Badge */}
+      <div
+        style={{
+          backgroundColor: ORONO.blueLighter,
+          borderColor: ORONO.bluePrimary,
+        }}
+        className="border rounded-2xl p-2 flex items-center justify-center gap-2"
+      >
+        <UtensilsCrossed
+          style={{ color: ORONO.bluePrimary }}
+          className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`}
+        />
+        <span
+          style={{ color: ORONO.bluePrimary }}
+          className="text-[9px] font-black uppercase tracking-tight"
+        >
+          {SCHOOL_OPTIONS.find((s) => s.id === schoolId)?.label} Menu • Today
+        </span>
+        {fetchError && (
+          <div title={fetchError}>
+            <AlertTriangle className="w-3 h-3 text-red-500" />
+          </div>
+        )}
+      </div>
+
+      {/* Category Buckets */}
+      <div className="grid grid-cols-3 gap-2 shrink-0">
         {categories.map((cat) => (
           <div
             key={cat.type}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, cat.type)}
-            className={`flex flex-col min-h-[6rem] rounded-2xl border-2 border-dashed ${cat.color} ${cat.border} transition-all`}
+            onDrop={(e) => {
+              const name = e.dataTransfer.getData('studentName');
+              if (name)
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    assignments: { ...assignments, [name]: cat.type },
+                  },
+                });
+            }}
+            className={`flex flex-col min-h-[5rem] rounded-2xl border-2 border-dashed ${cat.color} ${cat.border} transition-all`}
           >
             <div className="p-2 flex items-center justify-between border-b border-dashed border-inherit bg-white/40">
-              <span className="text-[9px] font-bold uppercase text-slate-700">
+              <span className="text-[8px] font-black uppercase text-slate-700">
                 {cat.label}
               </span>
-              <span className="text-[10px] font-bold bg-white px-1.5 py-0.5 rounded-full shadow-sm text-slate-900">
+              <span className="text-[10px] font-black bg-white px-1.5 py-0.5 rounded-full shadow-sm">
                 {students.filter((s) => assignments[s] === cat.type).length}
               </span>
             </div>
-            <div className="flex-1 p-2 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar max-h-32">
+            <div className="flex-1 p-1.5 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar max-h-24">
               {students
                 .filter((s) => assignments[s] === cat.type)
                 .map((name) => (
@@ -354,7 +324,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
-                    className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-sm cursor-grab"
+                    className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:scale-95 transition-transform"
                   >
                     {name}
                   </div>
@@ -364,22 +334,22 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         ))}
       </div>
 
+      {/* Unassigned Area */}
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           const name = e.dataTransfer.getData('studentName');
-          if (name) {
+          if (name)
             updateWidget(widget.id, {
               config: {
                 ...config,
                 assignments: { ...assignments, [name]: 'none' },
               },
             });
-          }
         }}
         className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 overflow-y-auto custom-scrollbar flex flex-wrap gap-2 content-start min-h-[4rem]"
       >
-        <div className="w-full text-[9px] font-bold uppercase text-slate-400 mb-1">
+        <div className="w-full text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
           Waiting to Choose...
         </div>
         {students
@@ -409,7 +379,6 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
     schoolId = 'schumann-elementary',
-    menuText = '',
     testDate = '',
   } = config;
 
@@ -420,14 +389,14 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           backgroundColor: ORONO.blueLighter,
           borderColor: ORONO.bluePrimary,
         }}
-        className="p-4 rounded-2xl border space-y-4 shadow-sm text-slate-900"
+        className="p-4 rounded-2xl border space-y-4 shadow-sm"
       >
         <div>
           <label
             style={{ color: ORONO.bluePrimary }}
-            className="text-[10px] font-bold uppercase tracking-widest mb-2 block flex items-center gap-2"
+            className="text-[10px] font-black uppercase tracking-widest mb-2 block"
           >
-            <School className="w-3 h-3" /> School Selection
+            Orono School Sync
           </label>
           <select
             value={schoolId}
@@ -436,7 +405,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, schoolId: e.target.value, menuText: '' },
               })
             }
-            className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-white text-slate-900"
+            className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
           >
             {SCHOOL_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -445,13 +414,12 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             ))}
           </select>
         </div>
-
         <div>
           <label
             style={{ color: ORONO.bluePrimary }}
-            className="text-[10px] font-bold uppercase tracking-widest mb-2 block flex items-center gap-2"
+            className="text-[10px] font-black uppercase tracking-widest mb-2 block text-center"
           >
-            <CalendarDays className="w-3 h-3" /> Testing Date (Override)
+            Sync Date Override
           </label>
           <input
             type="date"
@@ -461,63 +429,41 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 config: { ...config, testDate: e.target.value, menuText: '' },
               })
             }
-            className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-white text-slate-900"
-          />
-        </div>
-
-        <div>
-          <label
-            style={{ color: ORONO.bluePrimary }}
-            className="text-[10px] font-bold uppercase tracking-widest mb-2 block flex items-center gap-2"
-          >
-            <UtensilsCrossed className="w-3 h-3" /> Manual Text Override
-          </label>
-          <textarea
-            value={menuText}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, menuText: e.target.value },
-              })
-            }
-            placeholder="Hot Item, Bento Item..."
-            className="w-full h-20 p-3 text-xs font-bold border border-slate-200 rounded-2xl bg-white text-slate-900"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">
-            First Names
-          </label>
-          <textarea
-            value={firstNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, firstNames: e.target.value },
-              })
-            }
-            className="w-full h-32 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl text-slate-900"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">
-            Last Names
-          </label>
-          <textarea
-            value={lastNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, lastNames: e.target.value },
-              })
-            }
-            className="w-full h-32 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl text-slate-900"
+            className="w-full p-2 text-[10px] font-bold border border-slate-200 rounded-xl text-center"
           />
         </div>
       </div>
 
       <div>
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <UserPlus className="w-3 h-3" /> Class Roster (One per line)
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <textarea
+            value={firstNames}
+            placeholder="First Names..."
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, firstNames: e.target.value },
+              })
+            }
+            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none leading-relaxed"
+          />
+          <textarea
+            value={lastNames}
+            placeholder="Last Names..."
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, lastNames: e.target.value },
+              })
+            }
+            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none leading-relaxed"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Recipient Email
         </label>
         <input
@@ -528,7 +474,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, recipient: e.target.value },
             })
           }
-          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-white text-slate-900"
+          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
         />
       </div>
     </div>
