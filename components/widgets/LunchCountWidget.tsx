@@ -52,70 +52,100 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Re-implemented "Working Version" Sync Logic
+  // Advanced Fetcher with Proxy Fallback
   const fetchMenu = useCallback(
     async (force = false) => {
       if (!schoolId || (menuText && !force)) return;
 
       setIsFetching(true);
       setFetchError(null);
-      try {
-        const targetDate = testDate
-          ? new Date(testDate + 'T12:00:00')
-          : new Date();
-        const year = targetDate.getFullYear();
-        const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
-        const day = targetDate.getDate().toString().padStart(2, '0');
 
-        // Verified API structure from Orono Schumann
-        const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}&timestamp=${Date.now()}`;
+      const targetDate = testDate
+        ? new Date(testDate + 'T12:00:00')
+        : new Date();
+      const year = targetDate.getFullYear();
+      const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = targetDate.getDate().toString().padStart(2, '0');
 
-        const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error('API unreachable');
+      const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
 
-        const proxyData = (await res.json()) as { contents: string };
-        const data = JSON.parse(proxyData.contents) as {
-          menu_items?: {
-            is_section_title?: boolean;
-            food?: { name: string };
-            text?: string;
-          }[];
-        };
+      // Attempt with multiple proxies to bypass congestion
+      const proxies = [
+        (url: string) =>
+          `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&ts=${Date.now()}`,
+        (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      ];
 
-        if (data && data.menu_items) {
-          const items = data.menu_items
-            .filter(
-              (item) => !item.is_section_title && (item.food?.name || item.text)
-            )
-            .map((item) => item.food?.name || item.text || '');
+      let success = false;
+      for (const getProxyUrl of proxies) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout per proxy
 
-          const uniqueItems = Array.from(new Set(items)).filter(Boolean);
+          const res = await fetch(getProxyUrl(apiUrl), {
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
 
-          if (uniqueItems.length > 0) {
-            updateWidget(widget.id, {
-              config: { ...config, menuText: uniqueItems.join(', ') },
-            });
-            addToast('Menu Updated', 'success');
-          } else {
-            setFetchError(`No menu listed for today.`);
+          if (!res.ok) continue;
+
+          const rawData = (await res.json()) as { contents?: string };
+          // Handle different proxy response shapes
+          const content =
+            typeof rawData.contents === 'string'
+              ? (JSON.parse(rawData.contents) as {
+                  menu_items?: {
+                    is_section_title?: boolean;
+                    food?: { name: string };
+                    text?: string;
+                  }[];
+                })
+              : (rawData as {
+                  menu_items?: {
+                    is_section_title?: boolean;
+                    food?: { name: string };
+                    text?: string;
+                  }[];
+                });
+
+          if (content?.menu_items) {
+            const items = content.menu_items
+              .filter(
+                (item) =>
+                  !item.is_section_title && (item.food?.name || item.text)
+              )
+              .map((item) => item.food?.name || item.text || '');
+
+            const uniqueItems = Array.from(new Set(items)).filter(Boolean);
+            if (uniqueItems.length > 0) {
+              updateWidget(widget.id, {
+                config: { ...config, menuText: uniqueItems.join(', ') },
+              });
+              addToast('Menu Synced', 'success');
+              success = true;
+              break;
+            }
           }
+        } catch (err) {
+          console.warn('Proxy attempt failed, trying next...', err);
         }
-      } catch (err) {
-        console.error('Sync error:', err);
-        setFetchError('Connection error. Try re-syncing.');
-      } finally {
-        setIsFetching(false);
       }
+
+      if (!success) {
+        setFetchError('Connection slow. Try again or check Orono Nutrislice.');
+      }
+      setIsFetching(false);
     },
     [schoolId, menuText, config, widget.id, testDate, updateWidget, addToast]
   );
 
   useEffect(() => {
-    void fetchMenu();
+    const timer = setTimeout(() => {
+      void fetchMenu();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchMenu]);
 
-  // Helper to split text for 3-column UI
   const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '', bento: '' };
     const parts = menuText.split(',').map((p) => p.trim());
@@ -191,7 +221,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col p-3 bg-white gap-3 select-none pt-2 font-['Lexend']">
-      {/* 1. BRANDED ACTIONS */}
       <div className="flex gap-2 shrink-0 px-1">
         <button
           onClick={() =>
@@ -200,9 +229,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           style={{
             color: ORONO.grayDark,
             backgroundColor: ORONO.grayLightest,
-            borderColor: ORONO.grayLight,
+            border: `1px solid ${ORONO.grayLight}`,
           }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase border transition-all hover:bg-slate-200"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all hover:bg-slate-200"
         >
           <RefreshCw className="w-3 h-3" /> Reset
         </button>
@@ -218,23 +247,19 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               const type = (assignments[s] as LunchType) || 'none';
               counts[type]++;
             });
-            const summary = `Lunch Count Summary:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
+            const summary = `Lunch Count:\n\nHot: ${counts.hot}\nBento: ${counts.bento}\nHome: ${counts.home}\n\nSent from Dashboard.`;
             window.open(
-              `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(
-                summary
-              )}`
+              `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(summary)}`
             );
           }}
           style={{ backgroundColor: ORONO.redPrimary }}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm transition-all hover:brightness-110"
+          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm transition-all hover:brightness-110 active:scale-95"
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
       </div>
 
-      {/* 2. THREE-COLUMN MENU HEADER (BRANDED) */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
-        {/* Hot Header */}
         <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
           <span
             style={{ color: ORONO.grayPrimary }}
@@ -247,7 +272,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
 
-        {/* Bento Header */}
         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-2 flex flex-col justify-center min-h-[4.5rem]">
           <span
             style={{ color: ORONO.grayPrimary }}
@@ -260,7 +284,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
 
-        {/* Branded Anchor Box */}
         <div
           style={{
             backgroundColor: ORONO.blueLighter,
@@ -289,7 +312,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             ) : fetchError ? (
               <div
                 style={{ color: ORONO.redPrimary }}
-                className="text-[8px] font-bold leading-tight line-clamp-2"
+                className="text-[8px] font-bold leading-tight"
               >
                 {fetchError}
               </div>
@@ -298,14 +321,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 style={{ color: ORONO.blueDark, opacity: 0.6 }}
                 className="text-[8px] font-bold italic uppercase leading-none"
               >
-                Live Sync
+                Live Data
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* 3. CATEGORY BUCKETS */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
         {categories.map((cat) => (
           <div
@@ -322,7 +344,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 {students.filter((s) => assignments[s] === cat.type).length}
               </span>
             </div>
-            <div className="flex-1 p-2 flex flex-wrap gap-1 content-start">
+            <div className="flex-1 p-2 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar max-h-32">
               {students
                 .filter((s) => assignments[s] === cat.type)
                 .map((name) => (
@@ -342,7 +364,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         ))}
       </div>
 
-      {/* 4. WAITING AREA */}
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -399,7 +420,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           backgroundColor: ORONO.blueLighter,
           borderColor: ORONO.bluePrimary,
         }}
-        className="p-4 rounded-2xl border space-y-4"
+        className="p-4 rounded-2xl border space-y-4 shadow-sm text-slate-900"
       >
         <div>
           <label
