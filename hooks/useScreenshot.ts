@@ -39,7 +39,7 @@ export const useScreenshot = (
       const dataUrl = await toPng(nodeRef.current, {
         cacheBust: true,
         pixelRatio: 2, // Higher quality
-        filter: (node) => {
+        filter: (node: Node) => {
           if (!(node instanceof HTMLElement)) {
             return true;
           }
@@ -48,8 +48,9 @@ export const useScreenshot = (
           // This targets elements explicitly marked for exclusion via:
           // - data-screenshot="flash"
           // - the "isFlashing" CSS class used by the flash overlay
+          const dataset = node.dataset;
           const shouldExcludeFlash =
-            node.dataset.screenshot === 'flash' ||
+            dataset?.screenshot === 'flash' ||
             node.classList.contains('isFlashing');
 
           return !shouldExcludeFlash;
@@ -61,11 +62,11 @@ export const useScreenshot = (
       link.download = `${fileName}.png`;
       link.href = dataUrl;
       link.click();
-
       onSuccess?.();
-    } catch (err) {
-      console.error('Screenshot failed:', err);
-      onError?.(err);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      console.error('Screenshot failed:', error);
+      onError?.(error);
     } finally {
       setIsCapturing(false);
     }

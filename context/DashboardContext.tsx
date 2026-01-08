@@ -130,83 +130,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const timer = setTimeout(() => setLoading(true), 0);
 
     // Real-time subscription to Firestore
-    const unsubscribe = subscribeToDashboards(
-      (updatedDashboards, _hasPendingWrites) => {
-        setDashboards((prev) => {
-          // If it's a server snapshot, check if we have very recent local changes
-          const now = Date.now();
-          if (now - lastLocalUpdateAt.current < 5000) {
-            // We have a recent local update that might not be in this snapshot.
-            // Merge: Keep our local version of the active dashboard, take others from server.
-            return updatedDashboards.map((db) => {
-              if (db.id === activeIdRef.current) {
-                const currentActive = prev.find(
-                  (p) => p.id === activeIdRef.current
-                );
-                return currentActive ?? db;
-              }
-              return db;
-            });
-          }
+    const unsubscribe = subscribeToDashboards((updatedDashboards) => {
+      setDashboards(updatedDashboards);
 
-          // If no active dashboard or active dashboard deleted, set to first
-          if (updatedDashboards.length > 0 && !activeIdRef.current) {
-            // We need to set activeId, but we are inside setDashboards (render phase-ish).
-            // However, setActiveId is a state setter, so it's allowed but might trigger re-render.
-            // Better to do this in an effect? But we need to know WHEN dashboards update.
-            // This logic was in the PR inside this callback.
-            // We can't call setActiveId synchronously here if it causes a loop.
-            // But updatedDashboards is coming from an external event.
-            // Let's assume the PR logic was tested.
-            // Wait, we can't call setActiveId inside the setDashboards updater function technically?
-            // Actually we can, but it's a side effect.
-            // Ideally we check this AFTER setting dashboards.
-            // But for now I'll include the check logic here but maybe move the side effect out?
-            // No, I'll stick to the PR logic:
-            // The PR had:
-            // if (updatedDashboards.length > 0 && !activeIdRef.current) { setActiveId(...) }
-            // This was NOT inside setDashboards updater in the PR snippet I saw?
-            // Let me re-check the snippet.
-            // PR:
-            // const unsubscribe = subscribeToDashboards((updatedDashboards, hasPendingWrites) => {
-            //   setDashboards((prev) => { ... return updatedDashboards });
-            //   if (updatedDashboards.length > 0 && !activeIdRef.current) { setActiveId(...) }
-            // }
-            // Ah, it was OUTSIDE setDashboards.
-          }
-
-          return updatedDashboards;
-        });
-
-        // The logic from PR was likely here, outside setDashboards
-        if (updatedDashboards.length > 0 && !activeIdRef.current) {
-          setActiveId(updatedDashboards[0].id);
-        }
-
-        // Create default dashboard if none exist
-        if (updatedDashboards.length === 0 && !migrated) {
-          const defaultDb: Dashboard = {
-            id: uuidv4(),
-            name: 'My First Dashboard',
-            background: 'bg-slate-900',
-            widgets: [],
-            createdAt: Date.now(),
-          };
-          void saveDashboard(defaultDb).then(() => {
-            setToasts((prev) => [
-              ...prev,
-              {
-                id: uuidv4(),
-                message: 'Welcome! Dashboard created',
-                type: 'info' as const,
-              },
-            ]);
-          });
-        }
-
-        setLoading(false);
+      if (updatedDashboards.length > 0 && !activeIdRef.current) {
+        setActiveId(updatedDashboards[0].id);
       }
-    );
+
+      // Create default dashboard if none exist
+      if (updatedDashboards.length === 0 && !migrated) {
+        const defaultDb: Dashboard = {
+          id: uuidv4(),
+          name: 'My First Dashboard',
+          background: 'bg-slate-900',
+          widgets: [],
+          createdAt: Date.now(),
+        };
+        void saveDashboard(defaultDb).then(() => {
+          setToasts((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              message: 'Welcome! Dashboard created',
+              type: 'info' as const,
+            },
+          ]);
+        });
+      }
+
+      setLoading(false);
+    });
 
     // Migrate localStorage data on first sign-in
     const localData = localStorage.getItem('classroom_dashboards');
@@ -481,23 +434,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
-  const updateDashboard = useCallback(
-    (updates: Partial<Dashboard>) => {
-      if (!activeId) return;
-      lastLocalUpdateAt.current = Date.now();
-      setDashboards((prev) =>
-        prev.map((d) => (d.id === activeId ? { ...d, ...updates } : d))
-      );
-    },
-    [activeId]
-  );
-
   const addWidget = (type: WidgetType) => {
-    if (!activeDashboard) return;
-    const maxZ = activeDashboard.widgets.reduce(
-      (max, w) => Math.max(max, w.z),
-      0
-    );
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
 
     const defaults: Record<WidgetType, Partial<WidgetData>> = {
       clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
@@ -584,57 +523,100 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       },
     };
 
-    const newWidget: WidgetData = {
-      id: uuidv4(),
-      type,
-      x: 150 + activeDashboard.widgets.length * 20,
-      y: 150 + activeDashboard.widgets.length * 20,
-      flipped: false,
-      z: maxZ + 1,
-      ...defaults[type],
-      config: { ...(defaults[type].config ?? {}) },
-    } as WidgetData;
-
-    updateDashboard({ widgets: [...activeDashboard.widgets, newWidget] });
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeId) return d;
+        const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+        const newWidget: WidgetData = {
+          id: uuidv4(),
+          type,
+          x: 150 + d.widgets.length * 20,
+          y: 150 + d.widgets.length * 20,
+          flipped: false,
+          z: maxZ + 1,
+          ...defaults[type],
+          config: { ...(defaults[type].config ?? {}) },
+        } as WidgetData;
+        return { ...d, widgets: [...d.widgets, newWidget] };
+      })
+    );
   };
 
   const removeWidget = (id: string) => {
-    if (!activeDashboard) return;
-    updateDashboard({
-      widgets: activeDashboard.widgets.filter((w) => w.id !== id),
-    });
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeId
+          ? { ...d, widgets: d.widgets.filter((w) => w.id !== id) }
+          : d
+      )
+    );
   };
 
   const removeWidgets = (ids: string[]) => {
-    if (!activeDashboard) return;
-    updateDashboard({
-      widgets: activeDashboard.widgets.filter((w) => !ids.includes(w.id)),
-    });
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeId
+          ? { ...d, widgets: d.widgets.filter((w) => !ids.includes(w.id)) }
+          : d
+      )
+    );
   };
 
-  const updateWidget = (id: string, updates: Partial<WidgetData>) => {
-    if (!activeDashboard) return;
-    updateDashboard({
-      widgets: activeDashboard.widgets.map((w) =>
-        w.id === id ? { ...w, ...updates } : w
-      ),
-    });
-  };
+  const updateWidget = useCallback(
+    (id: string, updates: Partial<WidgetData>) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) =>
+              w.id === id ? { ...w, ...updates } : w
+            ),
+          };
+        })
+      );
+    },
+    [activeId]
+  );
 
   const bringToFront = (id: string) => {
-    if (!activeDashboard) return;
-    const maxZ = activeDashboard.widgets.reduce(
-      (max, w) => Math.max(max, w.z),
-      0
-    );
-    const target = activeDashboard.widgets.find((w) => w.id === id);
-    if (target && target.z < maxZ) {
-      updateWidget(id, { z: maxZ + 1 });
-    }
+    if (!activeId) return;
+
+    setDashboards((prev) => {
+      const active = prev.find((d) => d.id === activeId);
+      if (!active) return prev;
+
+      const maxZ = active.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+      const target = active.widgets.find((w) => w.id === id);
+
+      if (target && target.z < maxZ) {
+        lastLocalUpdateAt.current = Date.now();
+        return prev.map((d) => {
+          if (d.id !== activeId) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) =>
+              w.id === id ? { ...w, z: maxZ + 1 } : w
+            ),
+          };
+        });
+      }
+      return prev;
+    });
   };
 
   const setBackground = (bg: string) => {
-    updateDashboard({ background: bg });
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => (d.id === activeId ? { ...d, background: bg } : d))
+    );
   };
 
   return (
