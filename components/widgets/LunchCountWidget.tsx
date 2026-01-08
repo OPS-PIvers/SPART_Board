@@ -1,4 +1,10 @@
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import React, {
+  useMemo,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, LunchCountConfig } from '../../types';
 import {
@@ -6,14 +12,11 @@ import {
   Send,
   RefreshCw,
   UtensilsCrossed,
-  UserPlus,
   AlertTriangle,
   Coffee,
   Box,
   Home,
 } from 'lucide-react';
-
-type LunchType = 'hot' | 'bento' | 'home' | 'none';
 
 const SCHOOL_OPTIONS = [
   { id: 'schumann-elementary', label: 'Schumann Elementary' },
@@ -30,6 +33,22 @@ const ORONO = {
   grayLight: '#999999',
   grayLightest: '#f3f3f3',
 };
+
+// Define LunchType locally since it's not exported from types.ts
+type LunchType = 'hot' | 'bento' | 'home' | 'none';
+
+interface NutrisliceItem {
+  is_section_title: boolean;
+  text?: string;
+  food?: {
+    name?: string;
+  };
+}
+
+interface NutrisliceResponse {
+  contents?: string | { menu_items?: NutrisliceItem[] };
+  menu_items?: NutrisliceItem[];
+}
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -49,99 +68,97 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const fetchMenu = useCallback(
-    async (force = false) => {
-      if (!schoolId || (menuText && !force)) return;
-
-      setIsFetching(true);
-      setFetchError(null);
-
-      const targetDate = testDate
-        ? new Date(testDate + 'T12:00:00')
-        : new Date();
-      const year = targetDate.getFullYear();
-      const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
-      const day = targetDate.getDate().toString().padStart(2, '0');
-
-      const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
-
-      const proxies = [
-        (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        (url: string) =>
-          `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&ts=${Date.now()}`,
-      ];
-
-      let success = false;
-      for (const getProxyUrl of proxies) {
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-
-          const res = await fetch(getProxyUrl(apiUrl), {
-            signal: controller.signal,
-          });
-          clearTimeout(timeout);
-
-          if (!res.ok) continue;
-
-          const rawData = (await res.json()) as { contents?: string };
-          const content =
-            typeof rawData.contents === 'string'
-              ? (JSON.parse(rawData.contents) as {
-                  menu_items?: {
-                    is_section_title?: boolean;
-                    food?: { name: string };
-                    text?: string;
-                  }[];
-                })
-              : (rawData as {
-                  menu_items?: {
-                    is_section_title?: boolean;
-                    food?: { name: string };
-                    text?: string;
-                  }[];
-                });
-
-          if (content?.menu_items) {
-            const items = content.menu_items
-              .filter(
-                (item) =>
-                  !item.is_section_title && (item.food?.name || item.text)
-              )
-              .map((item) => item.food?.name || item.text || '');
-
-            const uniqueItems = Array.from(new Set(items)).filter(Boolean);
-            if (uniqueItems.length > 0) {
-              updateWidget(widget.id, {
-                config: { ...config, menuText: uniqueItems.join(', ') },
-              });
-              addToast('Menu Synced', 'success');
-              success = true;
-              break;
-            }
-          }
-        } catch (_err) {
-          console.warn('Proxy attempt failed, trying next...');
-        }
-      }
-
-      if (!success) {
-        setFetchError('Menu sync slow. Check Nutrislice.');
-      }
-      setIsFetching(false);
-    },
-    [schoolId, menuText, config, widget.id, testDate, updateWidget, addToast]
-  );
-
+  // Ref to store current config to prevent dependency loops in fetchMenu
+  const configRef = useRef(config);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchMenu();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchMenu]);
+    configRef.current = config;
+  }, [config]);
+
+  const fetchMenu = useCallback(async () => {
+    if (!schoolId) return;
+
+    setIsFetching(true);
+    setFetchError(null);
+
+    const targetDate = testDate ? new Date(testDate + 'T12:00:00') : new Date();
+    const year = targetDate.getFullYear();
+    const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = targetDate.getDate().toString().padStart(2, '0');
+
+    const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+
+    const proxies = [
+      (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      (url: string) =>
+        `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&ts=${Date.now()}`,
+    ];
+
+    let success = false;
+    for (const getProxyUrl of proxies) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+
+        const res = await fetch(getProxyUrl(apiUrl), {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!res.ok) continue;
+
+        const rawData = (await res.json()) as NutrisliceResponse;
+        const contentVal = rawData.contents;
+
+        let items: NutrisliceItem[] | undefined;
+
+        if (typeof contentVal === 'string') {
+          const parsed = JSON.parse(contentVal) as {
+            menu_items?: NutrisliceItem[];
+          };
+          items = parsed?.menu_items;
+        } else {
+          items =
+            rawData.menu_items ??
+            (rawData.contents as { menu_items?: NutrisliceItem[] })?.menu_items;
+        }
+
+        if (items) {
+          const entrees = items
+            .filter(
+              (item) => !item.is_section_title && (item.food?.name || item.text)
+            )
+            .map((item) => item.food?.name || item.text || '');
+
+          const uniqueEntrees = Array.from(new Set(entrees)).filter(Boolean);
+          if (uniqueEntrees.length > 0) {
+            updateWidget(widget.id, {
+              config: {
+                ...configRef.current,
+                menuText: uniqueEntrees.join(', '),
+              },
+            });
+            addToast('Menu Synced', 'success');
+            success = true;
+            break;
+          }
+        }
+      } catch (_err) {
+        console.warn('Proxy attempt failed, trying next...');
+      }
+    }
+
+    if (!success) setFetchError('Sync failed. Check Orono Nutrislice.');
+    setIsFetching(false);
+  }, [schoolId, testDate, widget.id, updateWidget, addToast]);
+
+  // Only trigger sync on mount or when school/date selection changes
+  useEffect(() => {
+    void fetchMenu();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId, testDate]);
 
   const parsedMenu = useMemo(() => {
-    if (!menuText) return { hot: 'Loading menu...', bento: 'Loading menu...' };
+    if (!menuText) return { hot: '---', bento: '---' };
     const parts = menuText.split(',').map((p) => p.trim());
     return {
       hot: parts[0] || 'Menu Unavailable',
@@ -167,21 +184,25 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [firstNames, lastNames]);
 
   const handleSend = () => {
-    const counts = { hot: 0, bento: 0, home: 0, none: 0 };
+    const counts: Record<string, number> = {
+      hot: 0,
+      bento: 0,
+      home: 0,
+      none: 0,
+    };
     students.forEach((s) => counts[(assignments[s] as LunchType) || 'none']++);
-    const summary = `Lunch Count Summary (${new Date().toLocaleDateString()}):\n\nHot Lunch (${parsedMenu.hot}): ${counts.hot}\nBento Box (${parsedMenu.bento}): ${counts.bento}\nHome Lunch: ${counts.home}\n\nSent from Classroom Dashboard Pro.`;
+    const summary = `Lunch Count (${new Date().toLocaleDateString()}):\n\nHot Lunch (${parsedMenu.hot}): ${counts.hot}\nBento Box (${parsedMenu.bento}): ${counts.bento}\nHome Lunch: ${counts.home}\n\nSent from Dashboard.`;
     window.open(
-      `mailto:${recipient}?subject=Lunch Count - ${schoolId}&body=${encodeURIComponent(summary)}`
+      `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(summary)}`
     );
   };
 
   const categories: {
     type: LunchType;
     label: string;
-    icon: React.ComponentType<{ className?: string }>;
+    icon: React.ElementType;
     color: string;
     border: string;
-    menuLabel: string;
   }[] = [
     {
       type: 'hot',
@@ -189,7 +210,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       icon: Coffee,
       color: 'bg-orange-50',
       border: 'border-orange-200',
-      menuLabel: parsedMenu.hot,
     },
     {
       type: 'bento',
@@ -197,7 +217,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       icon: Box,
       color: 'bg-emerald-50',
       border: 'border-emerald-200',
-      menuLabel: parsedMenu.bento,
     },
     {
       type: 'home',
@@ -205,48 +224,50 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       icon: Home,
       color: 'bg-blue-50',
       border: 'border-blue-200',
-      menuLabel: 'Brought from home',
     },
   ];
 
   if (students.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3 text-slate-400 font-['Lexend']">
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3 text-slate-400">
         <Users className="w-12 h-12 opacity-20" />
         <p className="text-sm font-bold uppercase tracking-widest">
-          Roster Empty
+          Class Roster Empty
         </p>
-        <p className="text-[10px]">Flip widget to add names.</p>
+        <button
+          onClick={() => updateWidget(widget.id, { flipped: true })}
+          className="text-[10px] font-bold text-indigo-500 underline"
+        >
+          Add Students in Settings
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none font-['Lexend']">
-      {/* Header Actions */}
+    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none font-sans">
       <div className="flex gap-2 shrink-0">
         <button
           onClick={() =>
             updateWidget(widget.id, { config: { ...config, assignments: {} } })
           }
           style={{ color: ORONO.grayDark, backgroundColor: ORONO.grayLightest }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase border border-slate-200 hover:bg-slate-200 transition-all"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase border border-slate-200 hover:bg-slate-200"
         >
           <RefreshCw className="w-3 h-3" /> Reset
         </button>
         <button
           onClick={handleSend}
           style={{ backgroundColor: ORONO.redPrimary }}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-xl text-[9px] font-black uppercase shadow-lg hover:brightness-110 active:scale-95 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-xl text-[9px] font-black uppercase shadow-lg hover:brightness-110 active:scale-95"
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
       </div>
 
-      {/* Daily Menu Display */}
       <div className="grid grid-cols-2 gap-3 shrink-0">
         <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 flex flex-col justify-center min-h-[5rem]">
-          <span className="text-[8px] font-black uppercase text-orange-400 mb-1 leading-none">
+          <span className="text-[8px] font-black uppercase text-orange-400 mb-1">
             Hot Lunch
           </span>
           <div className="text-[11px] font-bold text-orange-900 leading-tight">
@@ -254,7 +275,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 flex flex-col justify-center min-h-[5rem]">
-          <span className="text-[8px] font-black uppercase text-emerald-400 mb-1 leading-none">
+          <span className="text-[8px] font-black uppercase text-emerald-400 mb-1">
             Bento Box
           </span>
           <div className="text-[11px] font-bold text-emerald-900 leading-tight">
@@ -263,7 +284,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      {/* Sync Status Badge */}
       <div
         style={{
           backgroundColor: ORONO.blueLighter,
@@ -282,13 +302,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           {SCHOOL_OPTIONS.find((s) => s.id === schoolId)?.label} Menu • Today
         </span>
         {fetchError && (
-          <div title={fetchError}>
-            <AlertTriangle className="w-3 h-3 text-red-500" />
-          </div>
+          <AlertTriangle className="w-3 h-3 text-red-500" title={fetchError} />
         )}
       </div>
 
-      {/* Category Buckets */}
       <div className="grid grid-cols-3 gap-2 shrink-0">
         {categories.map((cat) => (
           <div
@@ -308,7 +325,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <div className="p-2 flex items-center justify-between border-b border-dashed border-inherit bg-white/40">
               <span className="text-[8px] font-black uppercase text-slate-700">
-                {cat.label}
+                {cat.type}
               </span>
               <span className="text-[10px] font-black bg-white px-1.5 py-0.5 rounded-full shadow-sm">
                 {students.filter((s) => assignments[s] === cat.type).length}
@@ -324,7 +341,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
-                    className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:scale-95 transition-transform"
+                    className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:scale-95"
                   >
                     {name}
                   </div>
@@ -334,7 +351,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         ))}
       </div>
 
-      {/* Unassigned Area */}
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -349,7 +365,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         }}
         className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 overflow-y-auto custom-scrollbar flex flex-wrap gap-2 content-start min-h-[4rem]"
       >
-        <div className="w-full text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+        <div className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
           Waiting to Choose...
         </div>
         {students
@@ -383,13 +399,13 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
   } = config;
 
   return (
-    <div className="space-y-6 font-['Lexend']">
+    <div className="space-y-6">
       <div
         style={{
           backgroundColor: ORONO.blueLighter,
           borderColor: ORONO.bluePrimary,
         }}
-        className="p-4 rounded-2xl border space-y-4 shadow-sm"
+        className="p-4 rounded-2xl border space-y-4"
       >
         <div>
           <label
@@ -435,8 +451,8 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <UserPlus className="w-3 h-3" /> Class Roster (One per line)
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Class Roster (One per line)
         </label>
         <div className="grid grid-cols-2 gap-3">
           <textarea
