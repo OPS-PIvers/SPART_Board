@@ -16,6 +16,7 @@ export interface DashboardContextType {
   loadDashboard: (id: string) => void;
   addWidget: (type: WidgetType) => void;
   removeWidget: (id: string) => void;
+  removeWidgets: (ids: string[]) => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
   setBackground: (bg: string) => void;

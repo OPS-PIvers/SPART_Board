@@ -21,6 +21,7 @@ import { WeatherWidget, WeatherSettings } from './WeatherWidget';
 import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
+import { getTitle } from '../../utils/widgetHelpers';
 
 export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -115,16 +116,6 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const getTitle = () => {
-    if (widget.type === 'sound') return 'Noise Meter';
-    if (widget.type === 'checklist') return 'Task List';
-    if (widget.type === 'random') return 'Selector';
-    if (widget.type === 'workSymbols') return 'Expectations';
-    if (widget.type === 'calendar') return 'Class Events';
-    if (widget.type === 'lunchCount') return 'Lunch Orders';
-    return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
-  };
-
   const isDrawingOverlay =
     widget.type === 'drawing' &&
     (widget.config as DrawingConfig).mode === 'overlay';
@@ -135,7 +126,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
   return (
     <DraggableWindow
       widget={widget}
-      title={getTitle()}
+      title={getTitle(widget)}
       settings={getWidgetSettings()}
       style={customStyle}
     >
