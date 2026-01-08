@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDashboard } from '../../context/useDashboard';
 import { Star, Plus } from 'lucide-react';
 
@@ -19,35 +20,43 @@ const ClassRosterMenu: React.FC<Props> = ({
   // Close if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        anchorRect
+      ) {
+        // Check if the click was on the anchor (which toggles it)
+        const isClickOnAnchor =
+          event.clientX >= anchorRect.left &&
+          event.clientX <= anchorRect.right &&
+          event.clientY >= anchorRect.top &&
+          event.clientY <= anchorRect.bottom;
+
+        if (!isClickOnAnchor) {
+          onClose();
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, anchorRect]);
 
-  const menuStyle: React.CSSProperties = anchorRect
-    ? {
-        position: 'fixed',
-        left: anchorRect.left + anchorRect.width / 2,
-        bottom: window.innerHeight - anchorRect.top + 10,
-        transform: 'translateX(-50%)',
-      }
-    : {
-        position: 'absolute',
-        bottom: '5rem',
-        left: '50%',
-        transform: 'translateX(-50%)',
-      };
+  if (!anchorRect) return null;
 
-  return (
+  const menuStyle: React.CSSProperties = {
+    position: 'fixed',
+    left: anchorRect.left + anchorRect.width / 2,
+    bottom: window.innerHeight - anchorRect.top + 10,
+    transform: 'translateX(-50%)',
+    zIndex: 10000,
+  };
+
+  return createPortal(
     <div
       ref={menuRef}
       style={menuStyle}
-      className="w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-[10000] flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200"
+      className="w-72 bg-white rounded-xl shadow-xl border border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200"
     >
-      {' '}
       <div className="p-3 bg-slate-50 border-b flex justify-between items-center">
         <span className="font-bold text-xs text-slate-500 uppercase">
           Quick Select
@@ -56,6 +65,7 @@ const ClassRosterMenu: React.FC<Props> = ({
           {rosters.length}
         </span>
       </div>
+
       <div className="max-h-64 overflow-y-auto p-1">
         {rosters.length === 0 && (
           <div className="p-4 text-center text-slate-400 text-xs">
@@ -91,6 +101,7 @@ const ClassRosterMenu: React.FC<Props> = ({
           </div>
         ))}
       </div>
+
       <div className="p-2 border-t bg-slate-50">
         <button
           onClick={onOpenFullEditor}
@@ -99,9 +110,11 @@ const ClassRosterMenu: React.FC<Props> = ({
           <Plus size={14} /> Open Full Editor
         </button>
       </div>
+
       {/* Little arrow at the bottom */}
-      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-50 border-r border-b border-slate-200 transform rotate-45"></div>
-    </div>
+      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 transform rotate-45"></div>
+    </div>,
+    document.body
   );
 };
 export default ClassRosterMenu;
