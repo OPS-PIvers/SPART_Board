@@ -143,7 +143,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       ];
       return (
         parsed.protocol === 'https:' &&
-        trustedDomains.some((domain) => parsed.hostname.includes(domain))
+        trustedDomains.some((domain) => parsed.hostname === domain)
       );
     } catch {
       return false;
