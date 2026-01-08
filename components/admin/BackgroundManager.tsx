@@ -244,21 +244,25 @@ export const BackgroundManager: React.FC = () => {
     try {
       const url = new URL(preset.url);
       if (
-        url.protocol === 'https:' &&
-        url.hostname === 'firebasestorage.googleapis.com'
-      ) {
-        try {
-          const fileRef = ref(storage, preset.url);
-          await deleteObject(fileRef);
-        } catch (storageError) {
-          console.warn(
-            'Failed to delete background file from storage:',
-            storageError
-          );
-        }
+    // First, delete the Firestore document (source of truth)
+    try {
+      await deleteDoc(doc(db, 'admin_backgrounds', preset.id));
+      setPresets((prev) => prev.filter((p) => p.id !== preset.id));
+      showMessage('success', 'Background deleted');
+    } catch (error) {
+      console.error('Error deleting preset document:', error);
+      showMessage('error', 'Failed to delete background');
+      return;
+    }
+
+    // Then, best-effort delete file from Storage if it's not a stock image (Unsplash)
+    if (preset.url.includes('firebasestorage.googleapis.com')) {
+      try {
+        const fileRef = ref(storage, preset.url);
+        await deleteObject(fileRef);
+      } catch (error) {
+        console.warn('Failed to delete background file from storage:', error);
       }
-    } catch (_urlError) {
-      // Invalid URL, skip deletion (no need to log as this is expected for external URLs)
     }
   };
 
