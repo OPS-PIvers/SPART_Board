@@ -73,7 +73,7 @@ const DockItem = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : showPopover ? 1001 : 'auto', // Ensure popover parent has high z-index
+    zIndex: showPopover ? 1001 : isDragging ? 1000 : 'auto', // Ensure popover parent has high z-index
   };
 
   return (
@@ -98,6 +98,7 @@ const DockItem = ({
                 key={widget.id}
                 onClick={() => {
                   onRestore(widget.id);
+                  // Close if this was the last widget
                   if (minimizedWidgets.length <= 1) setShowPopover(false);
                 }}
                 className="w-full text-left px-2 py-2 hover:bg-indigo-50 rounded-lg text-xs text-slate-700 font-medium flex items-center justify-between group transition-colors"
@@ -183,6 +184,22 @@ export const Dock: React.FC = () => {
     return ordered.filter((tool) => canAccessWidget(tool.type));
   }, [visibleTools, canAccessWidget]);
 
+  // Memoize minimized widgets by type to avoid O(N*M) filtering in render loop
+  const minimizedWidgetsByType = useMemo(() => {
+    if (!activeDashboard) return {} as Record<WidgetType, WidgetData[]>;
+    return activeDashboard.widgets.reduce<Record<WidgetType, WidgetData[]>>(
+      (acc, widget) => {
+        if (widget.minimized) {
+          const existing = acc[widget.type] ?? [];
+          existing.push(widget);
+          acc[widget.type] = existing;
+        }
+        return acc;
+      },
+      {} as Record<WidgetType, WidgetData[]>
+    );
+  }, [activeDashboard]);
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -251,9 +268,7 @@ export const Dock: React.FC = () => {
                   >
                     {filteredTools.map((tool) => {
                       const minimizedWidgets =
-                        activeDashboard?.widgets.filter(
-                          (w) => w.type === tool.type && w.minimized
-                        ) ?? [];
+                        minimizedWidgetsByType[tool.type] ?? [];
                       return (
                         <DockItem
                           key={tool.type}

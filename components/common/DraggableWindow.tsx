@@ -87,7 +87,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         width: widget.w,
         height: widget.h,
         zIndex: widget.z,
-        display: widget.minimized ? 'none' : 'flex',
+        display: 'flex',
+        opacity: widget.minimized ? 0 : 1,
+        pointerEvents: widget.minimized ? 'none' : 'auto',
         ...style, // Merge custom styles
       }}
     >
@@ -96,8 +98,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           {/* Front Face */}
           <div className="front relative">
             {showConfirm && (
-              <div className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200">
-                <p className="text-white font-semibold mb-4 text-sm">
+              <div
+                className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200"
+                role="alertdialog"
+                aria-labelledby={`dialog-title-${widget.id}`}
+                aria-describedby={`dialog-desc-${widget.id}`}
+              >
+                <p
+                  id={`dialog-title-${widget.id}`}
+                  className="text-white font-semibold mb-4 text-sm"
+                >
                   Close widget? Data will be lost.
                 </p>
                 <div className="flex gap-2">
