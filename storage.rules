@@ -13,12 +13,13 @@ service firebase.storage {
 
     // Helper function to check if a user can read a specific admin background
     function canReadAdminBackground(backgroundId) {
+      let background = firestore.get(/databases/(default)/documents/admin_backgrounds/$(backgroundId));
       return request.auth != null && (
                isAdmin() ||
-               firestore.get(/databases/(default)/documents/admin_backgrounds/$(backgroundId)).data.accessLevel == "public" ||
+               background.data.accessLevel == "public" ||
                (
-                 firestore.get(/databases/(default)/documents/admin_backgrounds/$(backgroundId)).data.accessLevel == "beta" && 
-                 request.auth.token.email.lower() in firestore.get(/databases/(default)/documents/admin_backgrounds/$(backgroundId)).data.betaUsers
+                 background.data.accessLevel == "beta" && 
+                 request.auth.token.email.lower() in background.data.betaUsers
                )
              );
     }

@@ -176,10 +176,15 @@ export const BackgroundManager: React.FC = () => {
       // Use shared admin path with the pre-generated ID for security rules
       downloadURL = await uploadAdminBackground(presetId, file);
 
+      const lastDotIndex = file.name.lastIndexOf('.');
+      const baseName =
+        lastDotIndex > 0 ? file.name.substring(0, lastDotIndex) : file.name;
+      const label = baseName.replace(/[-_]/g, ' ');
+
       const newPreset: BackgroundPreset = {
         id: presetId,
         url: downloadURL,
-        label: file.name.split('.')[0].replace(/[-_]/g, ' '),
+        label,
         active: true,
         accessLevel: 'public',
         betaUsers: [],
@@ -223,21 +228,37 @@ export const BackgroundManager: React.FC = () => {
   const deletePreset = async (preset: BackgroundPreset) => {
     if (!confirm('Are you sure you want to delete this background?')) return;
 
+    // First, delete the Firestore document (source of truth)
     try {
-      // Delete file from Storage first if it's not a stock image (Unsplash)
-      if (preset.url.includes('firebasestorage.googleapis.com')) {
-        const fileRef = ref(storage, preset.url);
-        await deleteObject(fileRef);
-      }
-
-      // Delete document from Firestore
       await deleteDoc(doc(db, 'admin_backgrounds', preset.id));
-
       setPresets((prev) => prev.filter((p) => p.id !== preset.id));
       showMessage('success', 'Background deleted');
     } catch (error) {
-      console.error('Error deleting preset:', error);
+      console.error('Error deleting preset document:', error);
       showMessage('error', 'Failed to delete background');
+      return;
+    }
+
+    // Then, best-effort delete file from Storage if it's not a stock image (Unsplash)
+    // Check if it's a Firebase Storage URL by validating the protocol and hostname
+    try {
+      const url = new URL(preset.url);
+      if (
+        url.protocol === 'https:' &&
+        url.hostname === 'firebasestorage.googleapis.com'
+      ) {
+        try {
+          const fileRef = ref(storage, preset.url);
+          await deleteObject(fileRef);
+        } catch (storageError) {
+          console.warn(
+            'Failed to delete background file from storage:',
+            storageError
+          );
+        }
+      }
+    } catch (_urlError) {
+      // Invalid URL, skip deletion (no need to log as this is expected for external URLs)
     }
   };
 
