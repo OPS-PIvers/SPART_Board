@@ -198,6 +198,7 @@ export interface LunchCountConfig {
   recipient: string;
   schoolId?: string; // e.g., 'schumann-elementary'
   menuText?: string; // Cached or manually entered menu
+  testDate?: string; // Simulated date for testing (YYYY-MM-DD)
 }
 
 export interface LunchMenuConfig {
