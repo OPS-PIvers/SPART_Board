@@ -174,7 +174,7 @@ const DockItem = ({
             </div>
           )}
         </div>
-        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-0 group-hover/dock:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
           {tool.label}
         </span>
       </button>
@@ -275,7 +275,7 @@ export const Dock: React.FC = () => {
                 e.stopPropagation();
                 setIsExpanded(false);
               }}
-              className="absolute -top-10 left-1/2 -translate-x-1/2 p-2 bg-white/80 backdrop-blur shadow-xl rounded-full text-slate-400 hover:text-indigo-600 transition-all opacity-0 group-hover/dock:opacity-100 hover:scale-110 active:scale-90"
+              className="absolute -top-10 left-1/2 -translate-x-1/2 p-2 bg-white/80 backdrop-blur shadow-xl rounded-full text-slate-400 hover:text-indigo-600 transition-all hover:scale-110 active:scale-90"
               title="Minimize Toolbar"
             >
               <ChevronDown className="w-4 h-4" />
