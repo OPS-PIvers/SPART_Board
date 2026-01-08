@@ -12,21 +12,9 @@ interface EditorProps {
   roster: ClassRoster | null;
   onSave: (name: string, students: Student[]) => void;
   onBack: () => void;
-  handleSmartPaste: (
-    e: React.ClipboardEvent,
-    firsts: string,
-    lasts: string,
-    setFirsts: (val: string) => void,
-    setLasts: (val: string) => void
-  ) => void;
 }
 
-const RosterEditor: React.FC<EditorProps> = ({
-  roster,
-  onSave,
-  onBack,
-  handleSmartPaste,
-}) => {
+const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
   const [name, setName] = useState(roster?.name ?? '');
   const [firsts, setFirsts] = useState(
     roster?.students.map((s) => s.firstName).join('\n') ?? ''
@@ -35,17 +23,49 @@ const RosterEditor: React.FC<EditorProps> = ({
     roster?.students.map((s) => s.lastName).join('\n') ?? ''
   );
 
+  const handleSmartPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text');
+    const rows = text.split(/\r\n|\r|\n/);
+    const newF: string[] = [];
+    const newL: string[] = [];
+
+    rows.forEach((row) => {
+      const parts = row.trim().split(' ');
+      if (parts.length > 0 && parts[0]) {
+        newF.push(parts[0]);
+        newL.push(parts.slice(1).join(' '));
+      }
+    });
+
+    const prefix = firsts ? '\n' : '';
+    setFirsts(firsts + prefix + newF.join('\n'));
+    setLasts(lasts + (lasts ? '\n' : '') + newL.join('\n'));
+  };
+
   const handleSave = () => {
     if (!name.trim()) return;
 
     const fList = firsts.split('\n');
     const lList = lasts.split('\n');
+
+    // Maintain stable IDs by matching against existing students in the roster
+    const existingStudents = roster?.students ?? [];
+
     const students: Student[] = fList
       .map((f, i) => {
         const first = f.trim();
         const last = lList[i] ? lList[i].trim() : '';
         if (!first && !last) return null;
-        return { id: uuidv4(), firstName: first, lastName: last };
+
+        // Try to find an existing student at this position to preserve ID
+        // This is a simple heuristic: if index matches, reuse ID.
+        // For more complex reordering, we'd need a more advanced diffing logic,
+        // but this already significantly improves upon regenerating everything.
+        const existing = existingStudents[i];
+        const id = existing ? existing.id : uuidv4();
+
+        return { id, firstName: first, lastName: last };
       })
       .filter((s): s is Student => s !== null);
 
@@ -85,9 +105,7 @@ const RosterEditor: React.FC<EditorProps> = ({
             className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
             value={firsts}
             onChange={(e) => setFirsts(e.target.value)}
-            onPaste={(e) =>
-              handleSmartPaste(e, firsts, lasts, setFirsts, setLasts)
-            }
+            onPaste={handleSmartPaste}
             placeholder="Paste names here..."
           />
         </div>
@@ -123,35 +141,9 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
   const [view, setView] = useState<'list' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleSmartPaste = (
-    e: React.ClipboardEvent,
-    firsts: string,
-    lasts: string,
-    setFirsts: (val: string) => void,
-    setLasts: (val: string) => void
-  ) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData('text');
-    const rows = text.split(/\r\n|\r|\n/);
-    const newF: string[] = [];
-    const newL: string[] = [];
-
-    rows.forEach((row) => {
-      const parts = row.trim().split(' ');
-      if (parts.length > 0 && parts[0]) {
-        newF.push(parts[0]);
-        newL.push(parts.slice(1).join(' '));
-      }
-    });
-
-    const prefix = firsts ? '\n' : '';
-    setFirsts(firsts + prefix + newF.join('\n'));
-    setLasts(lasts + (lasts ? '\n' : '') + newL.join('\n'));
-  };
-
   const onSave = async (name: string, students: Student[]) => {
     if (!editingId) {
-      await addRoster(name);
+      await addRoster(name, students);
     } else {
       await updateRoster(editingId, { name, students });
     }
@@ -242,7 +234,6 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           roster={editingRoster}
           onSave={onSave}
           onBack={() => setView('list')}
-          handleSmartPaste={handleSmartPaste}
         />
       )}
     </div>

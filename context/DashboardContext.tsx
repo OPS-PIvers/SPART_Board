@@ -7,6 +7,8 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 import {
   Dashboard,
@@ -15,12 +17,35 @@ import {
   Toast,
   TOOLS,
   ClassRoster,
+  Student,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { db } from '../config/firebase';
 import { migrateLocalStorageToFirestore } from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
+
+// Helper to validate roster data from Firestore
+const validateRoster = (id: string, data: any): ClassRoster | null => {
+  if (!data || typeof data.name !== 'string') return null;
+
+  const students: Student[] = Array.isArray(data.students)
+    ? data.students.filter(
+        (s: any) =>
+          s &&
+          typeof s.id === 'string' &&
+          typeof s.firstName === 'string' &&
+          typeof s.lastName === 'string'
+      )
+    : [];
+
+  return {
+    id,
+    name: data.name,
+    students,
+    createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
+  };
+};
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -198,23 +223,42 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       return () => clearTimeout(timer);
     }
     const rostersRef = collection(db, 'users', user.uid, 'rosters');
-    // Simple client-side sort for now to avoid index creation requirements during dev
-    const unsubscribe = onSnapshot(rostersRef, (snapshot) => {
-      const loaded: ClassRoster[] = [];
-      snapshot.forEach((doc) =>
-        loaded.push({ id: doc.id, ...doc.data() } as ClassRoster)
-      );
-      loaded.sort((a, b) => a.name.localeCompare(b.name));
-      setRosters(loaded);
-    });
+    const q = query(rostersRef, orderBy('name'));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const loaded: ClassRoster[] = [];
+        snapshot.forEach((doc) => {
+          const validated = validateRoster(doc.id, doc.data());
+          if (validated) loaded.push(validated);
+        });
+        setRosters(loaded);
+      },
+      (error) => {
+        console.error('Roster subscription error:', error);
+        // Fallback if index isn't created yet: try without orderBy
+        if (error.code === 'failed-precondition') {
+          return onSnapshot(rostersRef, (innerSnapshot) => {
+            const innerLoaded: ClassRoster[] = [];
+            innerSnapshot.forEach((doc) => {
+              const validated = validateRoster(doc.id, doc.data());
+              if (validated) innerLoaded.push(validated);
+            });
+            innerLoaded.sort((a, b) => a.name.localeCompare(b.name));
+            setRosters(innerLoaded);
+          });
+        }
+      }
+    );
     return () => unsubscribe();
   }, [user]);
 
   // --- ROSTER ACTIONS ---
   const addRoster = useCallback(
-    async (name: string) => {
+    async (name: string, students: Student[] = []) => {
       if (!user) throw new Error('No user');
-      const newRoster = { name, students: [], createdAt: Date.now() };
+      const newRoster = { name, students, createdAt: Date.now() };
       const ref = await addDoc(
         collection(db, 'users', user.uid, 'rosters'),
         newRoster

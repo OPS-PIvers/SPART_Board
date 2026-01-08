@@ -33,7 +33,7 @@ export interface DashboardContextType {
   // --- ROSTER SYSTEM ---
   rosters: ClassRoster[];
   activeRosterId: string | null;
-  addRoster: (name: string) => Promise<string>;
+  addRoster: (name: string, students: Student[]) => Promise<string>;
   updateRoster: (
     rosterId: string,
     updates: Partial<ClassRoster>

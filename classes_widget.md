@@ -149,21 +149,18 @@ const handleSave = async () => {
 if (!editingId) {
 // Create new
 if(!name.trim()) return;
-const id = await addRoster(name);
-setEditingId(id); // Continue editing the new one? Or go back to list?
-// Let's go back to list for simplicity
+const id = await addRoster(name, students);
 setView('list');
 return;
 }
-
-    const fList = firsts.split('\n');
-    const lList = lasts.split('\n');
-    const students: Student[] = fList.map((f, i) => {
-      const first = f.trim();
-      const last = lList[i] ? lList[i].trim() : '';
-      if (!first && !last) return null;
-      return { id: crypto.randomUUID(), firstName: first, lastName: last };
-    }).filter((s): s is Student => s !== null);
+const fList = firsts.split('\n');
+const lList = lasts.split('\n');
+const students: Student[] = fList.map((f, i) => {
+const first = f.trim();
+const last = lList[i] ? lList[i].trim() : '';
+if (!first && !last) return null;
+return { id: crypto.randomUUID(), firstName: first, lastName: last };
+}).filter((s): s is Student => s !== null);
 
     await updateRoster(editingId, { name, students });
     setView('list');
