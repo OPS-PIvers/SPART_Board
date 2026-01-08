@@ -198,18 +198,18 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       // Use type guards to ensure numeric values are finite
       const precipRate =
         typeof data.precipitation?.rate === 'number' &&
-        Number.isFinite(data.precipitation.rate)
+        Number.isFinite(data.precipitation?.rate)
           ? data.precipitation.rate
           : 0;
       const tempF = data.temperature;
       const windSpeed =
         typeof data.wind?.current?.speed === 'number' &&
-        Number.isFinite(data.wind.current.speed)
+        Number.isFinite(data.wind?.current?.speed)
           ? data.wind.current.speed
           : 0;
       const windGust =
         typeof data.wind?.current?.gust === 'number' &&
-        Number.isFinite(data.wind.current.gust)
+        Number.isFinite(data.wind?.current?.gust)
           ? data.wind.current.gust
           : 0;
       const humidity =
