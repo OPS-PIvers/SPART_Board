@@ -19,8 +19,15 @@ const TabButton: React.FC<{
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
-}> = ({ isActive, onClick, icon, label }) => (
+  id: string;
+  controls: string;
+}> = ({ isActive, onClick, icon, label, id, controls }) => (
   <button
+    id={id}
+    role="tab"
+    aria-selected={isActive}
+    aria-controls={controls}
+    tabIndex={isActive ? 0 : -1}
     onClick={onClick}
     className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
       isActive
@@ -91,14 +98,18 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mt-2">
+          <div className="flex gap-1 mt-2" role="tablist">
             <TabButton
+              id="tab-features"
+              controls="panel-features"
               isActive={activeTab === 'features'}
               onClick={() => setActiveTab('features')}
               icon={<Shield className="w-4 h-4" />}
               label="Feature Permissions"
             />
             <TabButton
+              id="tab-backgrounds"
+              controls="panel-backgrounds"
               isActive={activeTab === 'backgrounds'}
               onClick={() => setActiveTab('backgrounds')}
               icon={<ImageIcon className="w-4 h-4" />}
@@ -110,7 +121,12 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
           {activeTab === 'features' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div
+              id="panel-features"
+              role="tabpanel"
+              aria-labelledby="tab-features"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-slate-800 mb-2">
                   Feature Permissions
@@ -126,7 +142,12 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
           )}
 
           {activeTab === 'backgrounds' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div
+              id="panel-backgrounds"
+              role="tabpanel"
+              aria-labelledby="tab-backgrounds"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-slate-800 mb-2">
                   Background Management
