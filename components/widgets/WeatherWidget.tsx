@@ -221,20 +221,6 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         throw new Error('Invalid API response structure');
       }
 
-      // Validate nested objects exist before accessing their properties
-      if (
-        data.wind &&
-        (typeof data.wind !== 'object' ||
-          !data.wind.current ||
-          typeof data.wind.current !== 'object')
-      ) {
-        throw new Error('Invalid wind data structure');
-      }
-
-      if (data.precipitation && typeof data.precipitation !== 'object') {
-        throw new Error('Invalid precipitation data structure');
-      }
-
       // Determine condition based on precipitation, temperature, wind, and humidity
       // Use type guards to ensure numeric values are finite
       const precipRate =
