@@ -131,7 +131,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards((updatedDashboards) => {
-      setDashboards(updatedDashboards);
+      setDashboards((prev) => {
+        // If we have very recent local changes, keep our local version of the active dashboard
+        const now = Date.now();
+        if (now - lastLocalUpdateAt.current < 2000) {
+          return updatedDashboards.map((db) => {
+            if (db.id === activeIdRef.current) {
+              const currentActive = prev.find(
+                (p) => p.id === activeIdRef.current
+              );
+              return currentActive ?? db;
+            }
+            return db;
+          });
+        }
+        return updatedDashboards;
+      });
 
       if (updatedDashboards.length > 0 && !activeIdRef.current) {
         setActiveId(updatedDashboards[0].id);
@@ -273,28 +288,38 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // Auto-save to Firestore with debouncing
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedDataRef = useRef<string>('');
+
   useEffect(() => {
     if (!user || loading || !activeId) return;
 
-    const timeoutId = setTimeout(() => {
-      const active = dashboards.find((d) => d.id === activeId);
-      if (active) {
-        saveDashboard(active).catch((err) => {
-          console.error('Auto-save failed:', err);
-          setToasts((prev) => [
-            ...prev,
-            {
-              id: uuidv4(),
-              message: 'Failed to sync changes',
-              type: 'error' as const,
-            },
-          ]);
-        });
-      }
-    }, 500);
+    const active = dashboards.find((d) => d.id === activeId);
+    if (!active) return;
+
+    const currentData =
+      JSON.stringify(active.widgets) + active.background + active.name;
+    if (currentData === lastSavedDataRef.current) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(() => {
+      lastSavedDataRef.current = currentData;
+      saveDashboard(active).catch((err) => {
+        console.error('Auto-save failed:', err);
+        setToasts((prev) => [
+          ...prev,
+          {
+            id: uuidv4(),
+            message: 'Failed to sync changes',
+            type: 'error' as const,
+          },
+        ]);
+      });
+    }, 1000); // Increased debounce to 1s for better performance
 
     return () => {
-      clearTimeout(timeoutId);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
