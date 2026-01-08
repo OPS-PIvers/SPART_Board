@@ -307,9 +307,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
           <Settings2 className="w-3 h-3" /> Proxy URL
-          {!isAdmin && <Lock className="w-3 h-3" />}
+          {isAdmin === false && <Lock className="w-3 h-3" />}
         </label>
-        {!isAdmin && (
+        {isAdmin === false && (
           <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
             <Lock className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-[9px] text-amber-700 leading-relaxed">
@@ -327,7 +327,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, proxyUrl: e.target.value },
             })
           }
-          disabled={!isAdmin}
+          disabled={isAdmin !== true}
           className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
           placeholder="https://cors-anywhere.herokuapp.com/"
         />
