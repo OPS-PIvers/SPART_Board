@@ -240,13 +240,25 @@ export const BackgroundManager: React.FC = () => {
     }
 
     // Then, best-effort delete file from Storage if it's not a stock image (Unsplash)
-    if (preset.url.includes('firebasestorage.googleapis.com')) {
-      try {
-        const fileRef = ref(storage, preset.url);
-        await deleteObject(fileRef);
-      } catch (error) {
-        console.warn('Failed to delete background file from storage:', error);
+    // Check if it's a Firebase Storage URL by validating the protocol and hostname
+    try {
+      const url = new URL(preset.url);
+      if (
+        url.protocol === 'https:' &&
+        url.hostname === 'firebasestorage.googleapis.com'
+      ) {
+        try {
+          const fileRef = ref(storage, preset.url);
+          await deleteObject(fileRef);
+        } catch (storageError) {
+          console.warn(
+            'Failed to delete background file from storage:',
+            storageError
+          );
+        }
       }
+    } catch (_urlError) {
+      // Invalid URL, skip deletion (no need to log as this is expected for external URLs)
     }
   };
 
