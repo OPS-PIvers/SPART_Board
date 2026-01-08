@@ -75,6 +75,8 @@ export const Sidebar: React.FC = () => {
     BackgroundPreset[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const publicBgsRef = useRef<BackgroundPreset[]>([]);
+  const betaBgsRef = useRef<BackgroundPreset[]>([]);
 
   const { user, signOut, isAdmin } = useAuth();
   const { uploadBackgroundImage } = useStorage();
@@ -123,6 +125,13 @@ export const Sidebar: React.FC = () => {
       );
     } else {
       // Non-admins need separate queries to avoid reading restricted documents (admin-only)
+      // Use refs to prevent race conditions when both queries update simultaneously
+
+      const updateCombinedBackgrounds = () => {
+        const all = [...publicBgsRef.current, ...betaBgsRef.current];
+        const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
+        setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
+      };
 
       // Query 1: Public backgrounds
 
@@ -150,22 +159,10 @@ export const Sidebar: React.FC = () => {
         onSnapshot(
           qPublic,
           (snapshot) => {
-            const publicBgs = snapshot.docs.map(
+            publicBgsRef.current = snapshot.docs.map(
               (d) => d.data() as BackgroundPreset
             );
-
-            setManagedBackgrounds((prev) => {
-              // Remove old public backgrounds, keep beta and admin
-              const remaining = prev.filter((b) => b.accessLevel !== 'public');
-              const all = [...remaining, ...publicBgs];
-
-              // Deduplicate just in case (though paths should be unique)
-              const unique = Array.from(
-                new Map(all.map((b) => [b.id, b])).values()
-              );
-
-              return unique.sort((a, b) => b.createdAt - a.createdAt);
-            });
+            updateCombinedBackgrounds();
           },
           (error) => {
             console.error('Error fetching public backgrounds:', error);
@@ -177,22 +174,10 @@ export const Sidebar: React.FC = () => {
         onSnapshot(
           qBeta,
           (snapshot) => {
-            const betaBgs = snapshot.docs.map(
+            betaBgsRef.current = snapshot.docs.map(
               (d) => d.data() as BackgroundPreset
             );
-
-            setManagedBackgrounds((prev) => {
-              // Remove old beta backgrounds, keep public and admin
-              const remaining = prev.filter((b) => b.accessLevel !== 'beta');
-              const all = [...remaining, ...betaBgs];
-
-              // Deduplicate just in case (though paths should be unique)
-              const unique = Array.from(
-                new Map(all.map((b) => [b.id, b])).values()
-              );
-
-              return unique.sort((a, b) => b.createdAt - a.createdAt);
-            });
+            updateCombinedBackgrounds();
           },
           (error) => {
             console.error('Error fetching beta backgrounds:', error);
