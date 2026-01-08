@@ -21,6 +21,7 @@ export interface DashboardContextType {
   setBackground: (bg: string) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
+  reorderTools: (tools: WidgetType[]) => void;
 }
 
 export const DashboardContext = createContext<DashboardContextType | undefined>(

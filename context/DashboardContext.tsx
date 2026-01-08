@@ -209,6 +209,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
   };
 
+  const reorderTools = (tools: WidgetType[]) => {
+    setVisibleTools(tools);
+    localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
+  };
+
   const addToast = (message: string, type: Toast['type'] = 'info') => {
     const id = uuidv4();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -490,6 +495,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setBackground,
         toggleToolVisibility,
         setAllToolsVisibility,
+        reorderTools,
       }}
     >
       {children}
