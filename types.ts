@@ -244,6 +244,7 @@ export interface LunchCountConfig {
   roster: string[]; // List of student names
   assignments: Record<string, 'hot' | 'bento' | 'home' | null>;
   recipient?: string;
+  syncError?: string; // To display E-SYNC-404 etc.
 }
 
 export type ClassesConfig = Record<string, never>;

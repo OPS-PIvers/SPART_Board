@@ -6,7 +6,6 @@ import {
   RefreshCw,
   School,
   Loader2,
-  AlertTriangle,
   Settings,
   CheckCircle2,
   Box,
@@ -51,10 +50,39 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
     roster = [],
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
+    syncError,
   } = config;
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const fetchWithFallback = async (url: string) => {
+    const proxies = [
+      (u: string) =>
+        `https://api.allorigins.win/get?url=${encodeURIComponent(
+          u
+        )}&timestamp=${Date.now()}`,
+      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    ];
+
+    for (const getProxyUrl of proxies) {
+      try {
+        const response = await fetch(getProxyUrl(url));
+        if (!response.ok) continue;
+
+        const data = (await response.json()) as { contents?: string };
+        // AllOrigins wraps the result in a .contents string
+        const jsonContent =
+          typeof data.contents === 'string'
+            ? (JSON.parse(data.contents) as NutrisliceWeek)
+            : (data as NutrisliceWeek);
+
+        if (jsonContent && jsonContent.days) return jsonContent;
+      } catch (e) {
+        console.warn('Proxy attempt failed, trying next...', e);
+      }
+    }
+    throw new Error('All proxies failed');
+  };
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
@@ -73,7 +101,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
   const fetchNutrislice = useCallback(async () => {
     if (isManualMode) return;
     setIsSyncing(true);
-    setSyncError(null);
+    updateWidget(widget.id, {
+      config: { ...config, syncError: undefined },
+    });
 
     try {
       const now = new Date();
@@ -81,22 +111,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
       const month = now.getMonth() + 1;
       const day = now.getDate();
 
-      // Using the weeks API as requested in the plan
       const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(
-        apiUrl
-      )}&timestamp=${Date.now()}`;
+      const data = await fetchWithFallback(apiUrl);
 
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error('Network response was not ok');
-      const proxyData = (await res.json()) as { contents: string };
-      const data = JSON.parse(proxyData.contents) as NutrisliceWeek;
-
-      // Parsing logic: Find hot lunch (Entree/Main) and Bento Box
       let hotLunch = 'No Hot Lunch Listed';
       let bentoBox = 'No Bento Box Listed';
 
-      // Simple parsing of the weeks data structure
       if (data && data.days) {
         const todayStr = now.toISOString().split('T')[0];
         const dayData = data.days.find((d) => d.date === todayStr);
@@ -104,7 +124,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
         if (dayData && dayData.menu_items) {
           const items = dayData.menu_items;
 
-          // Look for Hot Lunch (usually first Entree)
+          // Hot Lunch: Map to the first item in the "Entrees" section
           const entree = items.find(
             (i) =>
               !i.is_section_title &&
@@ -113,15 +133,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
           );
           if (entree) hotLunch = entree.food?.name ?? entree.text ?? hotLunch;
 
-          // Look for Bento
+          // Bento Box: Map to any item in Entrees or Sides that contains "Bento"
           const bento = items.find(
             (i) =>
-              i.food?.name?.toLowerCase().includes('bento') ??
-              i.text?.toLowerCase().includes('bento')
+              (i.food?.name?.toLowerCase().includes('bento') ??
+                i.text?.toLowerCase().includes('bento')) &&
+              !i.is_section_title
           );
           if (bento) bentoBox = bento.food?.name ?? bento.text ?? bentoBox;
 
-          // Fallback if no specific section found
+          // Fallback for Hot Lunch if no section matched
           if (hotLunch === 'No Hot Lunch Listed' && items.length > 0) {
             const firstFood = items.find(
               (i) => !i.is_section_title && (i.food?.name ?? i.text)
@@ -143,12 +164,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
           ...config,
           cachedMenu: newMenu,
           lastSyncDate: now.toISOString(),
+          syncError: undefined,
         },
       });
       addToast('Menu synced from Nutrislice', 'success');
     } catch (err) {
       console.error('Nutrislice Sync Error:', err);
-      setSyncError('E-SYNC-404');
+      updateWidget(widget.id, {
+        config: { ...config, syncError: 'E-SYNC-404' },
+      });
       addToast('Failed to sync menu', 'error');
     } finally {
       setIsSyncing(false);
@@ -204,20 +228,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
         };
 
     const summary =
-      `Lunch Count Report - ${new Date().toLocaleDateString()}
-
-` +
-      `Hot Lunch (${menu.hot}): ${counts.hot}
-` +
-      `Bento Box (${menu.bento}): ${counts.bento}
-` +
-      `Home Lunch: ${counts.home}
-
-` +
+      `Lunch Count Report - ${new Date().toLocaleDateString()}\n\n` +
+      `Hot Lunch (${menu.hot}): ${counts.hot}\n` +
+      `Bento Box (${menu.bento}): ${counts.bento}\n` +
+      `Home Lunch: ${counts.home}\n\n` +
       `Sent from Dashboard.`;
 
-    // eslint-disable-next-line no-console
-    console.log('Final Counts:', counts);
     window.open(
       `mailto:${recipient}?subject=Lunch Count Report&body=${encodeURIComponent(
         summary
@@ -275,7 +291,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
               <RefreshCw className="w-4 h-4" />
             )}
             {syncError && (
-              <AlertTriangle className="w-3 h-3 text-red-500 absolute -top-0.5 -right-0.5" />
+              <div
+                className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
+                title={syncError}
+              >
+                !
+              </div>
             )}
           </button>
           <button
@@ -396,7 +417,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) =
           </div>
         </div>
 
-        {/* Roster (Unassigned) */}
+        {/* Waiting Area (Bottom) */}
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => handleDrop(e, null)}
