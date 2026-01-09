@@ -176,6 +176,8 @@ export const WidgetRenderer: React.FC<{
           isLive={isThisWidgetLive ?? false}
           studentCount={students.length}
           students={students}
+          code={session?.code}
+          joinUrl={`${window.location.origin}/join`}
           onToggleLive={handleToggleLive}
           onFreezeStudent={(id, status) => {
             void toggleFreezeStudent(id, status);

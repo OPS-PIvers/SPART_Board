@@ -6,6 +6,8 @@ interface LiveControlProps {
   isLive: boolean;
   studentCount: number;
   students: LiveStudent[];
+  code?: string;
+  joinUrl?: string;
   onToggleLive: () => void;
   onFreezeStudent: (id: string, status: 'active' | 'frozen') => void;
   onFreezeAll: () => void;
@@ -15,6 +17,8 @@ export const LiveControl: React.FC<LiveControlProps> = ({
   isLive,
   studentCount,
   students,
+  code,
+  joinUrl,
   onToggleLive,
   onFreezeStudent,
   onFreezeAll,
@@ -59,6 +63,21 @@ export const LiveControl: React.FC<LiveControlProps> = ({
               <X size={14} className="text-slate-400 hover:text-slate-600" />
             </button>
           </div>
+
+          {/* SESSION INFO */}
+          {code && (
+            <div className="p-3 bg-indigo-50 border-b border-indigo-100 flex flex-col items-center gap-1">
+              <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                Join Code
+              </div>
+              <div className="text-2xl font-black text-indigo-600 font-mono tracking-widest">
+                {code}
+              </div>
+              <div className="text-[10px] text-indigo-400">
+                {joinUrl?.replace(/^https?:\/\//, '')}
+              </div>
+            </div>
+          )}
 
           <div className="max-h-64 overflow-y-auto p-1">
             {students.length === 0 && (

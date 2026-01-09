@@ -7,6 +7,7 @@ import {
   Plus,
   Trash2,
   Users,
+  Wifi,
 } from 'lucide-react';
 import {
   DndContext,
@@ -25,6 +26,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
+import { useLiveSession } from '../../hooks/useLiveSession';
 import { TOOLS, ToolMetadata, WidgetType, WidgetData } from '../../types';
 import { getTitle } from '../../utils/widgetHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
@@ -229,13 +231,20 @@ export const Dock: React.FC = () => {
     activeDashboard,
     updateWidget,
   } = useDashboard();
-  const { canAccessWidget, featurePermissions } = useAuth();
+  const { canAccessWidget, featurePermissions, user } = useAuth();
+  const { session } = useLiveSession(user?.uid, 'teacher');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
+  const [showLiveInfo, setShowLiveInfo] = useState(false);
   const classesButtonRef = useRef<HTMLButtonElement>(null);
+  const liveButtonRef = useRef<HTMLButtonElement>(null);
   const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
     null
   );
+  const [livePopoverPos, setLivePopoverPos] = useState<{
+    left: number;
+    bottom: number;
+  } | null>(null);
 
   const openClassEditor = () => {
     addWidget('classes');
@@ -398,6 +407,78 @@ export const Dock: React.FC = () => {
 
                   {/* Separator and Roster/Classes Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                  {/* LIVE INFO BUTTON (Visible when active) */}
+                  {session?.isActive && (
+                    <>
+                      <button
+                        ref={liveButtonRef}
+                        onClick={() => {
+                          if (showLiveInfo) {
+                            setShowLiveInfo(false);
+                          } else if (liveButtonRef.current) {
+                            const rect =
+                              liveButtonRef.current.getBoundingClientRect();
+                            setLivePopoverPos({
+                              left: rect.left + rect.width / 2,
+                              bottom: window.innerHeight - rect.top + 10,
+                            });
+                            setShowLiveInfo(true);
+                          }
+                        }}
+                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative"
+                      >
+                        <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 transition-all duration-200 relative animate-pulse">
+                          <Wifi className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                          Live
+                        </span>
+                      </button>
+
+                      {/* LIVE POPOVER */}
+                      {showLiveInfo &&
+                        livePopoverPos &&
+                        createPortal(
+                          <div
+                            style={{
+                              position: 'fixed',
+                              left: livePopoverPos.left,
+                              bottom: livePopoverPos.bottom,
+                              transform: 'translateX(-50%)',
+                              zIndex: 10000,
+                            }}
+                            className="w-64 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+                          >
+                            <div className="p-4 flex flex-col items-center gap-2 text-center">
+                              <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">
+                                Live Session
+                              </h3>
+                              <div className="text-3xl font-black text-indigo-600 font-mono tracking-widest my-1">
+                                {session.code}
+                              </div>
+                              <div className="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                                {window.location.origin}/join
+                              </div>
+                              <div className="text-[10px] text-slate-400 mt-2">
+                                Provide this code to your students.
+                              </div>
+                            </div>
+                            <div className="p-2 border-t border-slate-100">
+                              <button
+                                onClick={() => setShowLiveInfo(false)}
+                                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-colors"
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+
+                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                    </>
+                  )}
 
                   <button
                     ref={classesButtonRef}
