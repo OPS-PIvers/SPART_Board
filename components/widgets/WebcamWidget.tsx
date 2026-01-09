@@ -29,7 +29,8 @@ interface CapturedItem {
 
 export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast } = useDashboard();
-  const config = widget.config as WebcamConfig;
+  // Safe cast with fallback
+  const config = (widget.config || {}) as WebcamConfig;
 
   // Default values
   const deviceId = config.deviceId;
@@ -149,7 +150,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       const base64Data = dataUrl.split(',')[1];
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash', // Updated to stable model name
+        model: 'gemini-1.5-flash',
         contents: {
           parts: [
             { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
@@ -160,8 +161,8 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         },
       });
 
-      const result = await response.response;
-      const text = result.text() ?? 'No text detected.';
+      // FIXED: Access text directly from the response object for @google/genai
+      const text = response.text ?? 'No text detected.';
 
       setCapturedItems((prev) =>
         prev.map((item) =>
@@ -387,13 +388,14 @@ export const WebcamSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config as WebcamConfig;
+  const config = (widget.config || {}) as WebcamConfig;
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 
   useEffect(() => {
     const getDevices = async () => {
       try {
-        await navigator.mediaDevices.getUserMedia({ video: true }); // Request perm first
+        // Request permission first to get labels
+        await navigator.mediaDevices.getUserMedia({ video: true });
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         setDevices(allDevices.filter((d) => d.kind === 'videoinput'));
       } catch (e) {
