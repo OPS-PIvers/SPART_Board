@@ -30,11 +30,11 @@ service cloud.firestore {
       // Non-admin users: Client-side UI restricts proxyUrl editing to admins only,
       // but this can be bypassed by directly calling Firestore API, creating SSRF risk.
       //
-      // SECURITY LIMITATION: Firestore rules cannot validate nested fields within arrays.
-      // The proxyUrl field exists inside widget configs in the widgets array, and we
-      // cannot write rules to detect or block specific proxyUrl changes without blocking
-      // ALL widget operations (add, remove, configure, reposition), which would make the
-      // dashboard unusable for non-admin users.
+      // SECURITY LIMITATION: While Firestore rules can technically access nested fields,
+      // validating that NO widget in the widgets array has been modified to add/change
+      // a proxyUrl field is complex and would require comparing every widget's config.
+      // Blocking all widget modifications would prevent legitimate operations (add, remove,
+      // configure, reposition), making the dashboard unusable for non-admin users.
       //
       // RECOMMENDED FOR PRODUCTION:
       // 1. Implement Cloud Functions with beforeWrite triggers to validate proxyUrl changes
