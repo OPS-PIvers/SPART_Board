@@ -31,7 +31,7 @@ const TabButton: React.FC<{
     onClick={onClick}
     className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
       isActive
-        ? 'bg-white text-indigo-600'
+        ? 'bg-white text-brand-blue-primary'
         : 'text-white/70 hover:bg-white/10 hover:text-white'
     }`}
   >
@@ -79,7 +79,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
     >
       <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 pb-0 flex flex-col gap-4">
+        <div className="bg-gradient-to-r from-brand-blue-primary to-brand-blue-dark text-white p-6 pb-0 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Settings className="w-6 h-6" />

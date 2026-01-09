@@ -339,7 +339,7 @@ export const BackgroundManager: React.FC = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             {uploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -365,7 +365,7 @@ export const BackgroundManager: React.FC = () => {
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-all flex flex-col h-auto"
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-brand-blue-light transition-all flex flex-col h-auto"
               >
                 {/* Image Preview */}
                 <div className="relative h-[120px] bg-slate-100 group shrink-0">
@@ -413,7 +413,7 @@ export const BackgroundManager: React.FC = () => {
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1 px-2 py-1 text-xs border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="flex-1 px-2 py-1 text-xs border border-brand-blue-light rounded focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
                           autoFocus
                         />
                         <button
@@ -449,7 +449,7 @@ export const BackgroundManager: React.FC = () => {
                             setEditingId(preset.id);
                             setEditName(preset.label);
                           }}
-                          className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-brand-blue-primary rounded transition-colors"
                         >
                           <Pencil className="w-3 h-3" />
                         </button>
@@ -531,7 +531,7 @@ export const BackgroundManager: React.FC = () => {
                             name="betaEmail"
                             type="email"
                             placeholder="Add email..."
-                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-[9px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-[9px] focus:outline-none focus:ring-1 focus:ring-brand-blue-primary"
                           />
                           <button
                             type="submit"

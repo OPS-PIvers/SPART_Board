@@ -219,11 +219,11 @@ export const Sidebar: React.FC = () => {
   }, [managedBackgrounds]);
 
   const colors = [
-    { id: 'bg-slate-900', color: '#0f172a' },
-    { id: 'bg-indigo-950', color: '#1e1b4b' },
+    { id: 'bg-brand-gray-darkest', color: '#1a1a1a' },
+    { id: 'bg-brand-blue-dark', color: '#1d2a5d' },
     { id: 'bg-emerald-950', color: '#064e3b' },
-    { id: 'bg-rose-950', color: '#450a0a' },
-    { id: 'bg-slate-50', color: '#f8fafc' },
+    { id: 'bg-brand-red-dark', color: '#7a1718' },
+    { id: 'bg-brand-gray-lightest', color: '#f3f3f3' },
     { id: 'bg-white', color: '#ffffff' },
     {
       id: 'bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-slate-100',
@@ -234,8 +234,8 @@ export const Sidebar: React.FC = () => {
   const gradients = [
     { id: 'bg-gradient-to-br from-slate-900 to-slate-700', label: 'Slate' },
     {
-      id: 'bg-gradient-to-br from-indigo-500 to-purple-600',
-      label: 'Vibrant',
+      id: 'bg-gradient-to-br from-brand-blue-primary to-brand-blue-dark',
+      label: 'Brand',
     },
     {
       id: 'bg-gradient-to-br from-emerald-400 to-cyan-500',
@@ -309,7 +309,7 @@ export const Sidebar: React.FC = () => {
       <div className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]">
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200"
+          className="p-2 bg-brand-blue-primary text-white rounded-full hover:bg-brand-blue-dark transition-colors shadow-md shadow-brand-blue-lighter"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
@@ -342,7 +342,7 @@ export const Sidebar: React.FC = () => {
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+            className="p-2 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-full transition-all"
             title="Admin Settings"
           >
             <Settings className="w-5 h-5" />
@@ -351,7 +351,7 @@ export const Sidebar: React.FC = () => {
 
         <button
           onClick={signOut}
-          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+          className="p-2 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-full transition-all"
           title="Sign out"
         >
           <LogOut className="w-5 h-5" />
@@ -394,7 +394,7 @@ export const Sidebar: React.FC = () => {
                 }
               }}
               autoFocus
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4"
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary focus:border-brand-blue-primary mb-4"
             />
             <div className="flex justify-end gap-2">
               <button
@@ -413,7 +413,7 @@ export const Sidebar: React.FC = () => {
                     setEditingDashboard(null);
                   }
                 }}
-                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition"
+                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition"
               >
                 Save
               </button>
@@ -432,7 +432,7 @@ export const Sidebar: React.FC = () => {
             {/* Header */}
             <div className="p-6 pb-2 border-b border-slate-100">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-indigo-600">
+                <div className="flex items-center gap-2 text-brand-blue-primary">
                   <Layout className="w-6 h-6" />
                   <span className="font-black text-lg tracking-tight">
                     SPARTBOARD
@@ -451,7 +451,7 @@ export const Sidebar: React.FC = () => {
                   onClick={() => setActiveTab('widgets')}
                   className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'widgets'
-                      ? 'bg-white shadow-sm text-indigo-600'
+                      ? 'bg-white shadow-sm text-brand-blue-primary'
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
@@ -461,7 +461,7 @@ export const Sidebar: React.FC = () => {
                   onClick={() => setActiveTab('design')}
                   className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'design'
-                      ? 'bg-white shadow-sm text-indigo-600'
+                      ? 'bg-white shadow-sm text-brand-blue-primary'
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
@@ -471,7 +471,7 @@ export const Sidebar: React.FC = () => {
                   onClick={() => setActiveTab('manage')}
                   className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'manage'
-                      ? 'bg-white shadow-sm text-indigo-600'
+                      ? 'bg-white shadow-sm text-brand-blue-primary'
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
@@ -502,7 +502,7 @@ export const Sidebar: React.FC = () => {
                           onClick={() => handleGradeFilterChange(option.value)}
                           className={`py-1.5 px-2 rounded-lg text-[9px] font-black uppercase transition-all ${
                             gradeFilter === option.value
-                              ? 'bg-indigo-600 text-white shadow-sm'
+                              ? 'bg-brand-blue-primary text-white shadow-sm'
                               : 'bg-white text-slate-500 hover:bg-slate-200'
                           }`}
                         >
@@ -519,7 +519,7 @@ export const Sidebar: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setAllToolsVisibility(true)}
-                        className="text-[9px] font-bold text-indigo-600 hover:underline"
+                        className="text-[9px] font-bold text-brand-blue-primary hover:underline"
                       >
                         Select All
                       </button>
@@ -555,7 +555,7 @@ export const Sidebar: React.FC = () => {
                           onClick={() => toggleToolVisibility(tool.type)}
                           className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 group ${
                             isActive
-                              ? 'bg-indigo-50 border-indigo-100 text-indigo-900'
+                              ? 'bg-brand-blue-lighter border-brand-blue-lighter text-brand-blue-dark'
                               : 'bg-white border-transparent hover:border-slate-100 text-slate-500'
                           }`}
                         >
@@ -584,7 +584,7 @@ export const Sidebar: React.FC = () => {
                           <div
                             className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                               isActive
-                                ? 'bg-indigo-600 border-indigo-600'
+                                ? 'bg-brand-blue-primary border-brand-blue-primary'
                                 : 'border-slate-200'
                             }`}
                           >
@@ -608,7 +608,7 @@ export const Sidebar: React.FC = () => {
                       onClick={() => setDesignTab('presets')}
                       className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'presets'
-                          ? 'border-indigo-600 text-indigo-600'
+                          ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
                       }`}
                     >
@@ -618,7 +618,7 @@ export const Sidebar: React.FC = () => {
                       onClick={() => setDesignTab('colors')}
                       className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'colors'
-                          ? 'border-indigo-600 text-indigo-600'
+                          ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
                       }`}
                     >
@@ -628,7 +628,7 @@ export const Sidebar: React.FC = () => {
                       onClick={() => setDesignTab('gradients')}
                       className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'gradients'
-                          ? 'border-indigo-600 text-indigo-600'
+                          ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
                       }`}
                     >
@@ -644,7 +644,7 @@ export const Sidebar: React.FC = () => {
                           onClick={() => setBackground(bg.id)}
                           className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
                             activeDashboard?.background === bg.id
-                              ? 'border-indigo-600 ring-2 ring-indigo-200 ring-offset-2'
+                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
                               : 'border-transparent hover:scale-[1.02]'
                           }`}
                         >
@@ -659,7 +659,7 @@ export const Sidebar: React.FC = () => {
                             </span>
                           </div>
                           {activeDashboard?.background === bg.id && (
-                            <div className="absolute top-2 right-2 bg-indigo-600 text-white p-1 rounded-full">
+                            <div className="absolute top-2 right-2 bg-brand-blue-primary text-white p-1 rounded-full">
                               <CheckSquare className="w-3 h-3" />
                             </div>
                           )}
@@ -668,7 +668,7 @@ export const Sidebar: React.FC = () => {
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="aspect-video rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all disabled:opacity-50"
+                        className="aspect-video rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-light hover:text-brand-blue-light hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
                       >
                         {uploading ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -692,7 +692,7 @@ export const Sidebar: React.FC = () => {
                           onClick={() => setBackground(bg.id)}
                           className={`aspect-square rounded-xl border-2 transition-all relative ${
                             activeDashboard?.background === bg.id
-                              ? 'border-indigo-600 ring-2 ring-indigo-200 ring-offset-2'
+                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
                               : 'border-slate-100 hover:border-slate-300'
                           }`}
                           style={{ backgroundColor: bg.color }}
@@ -723,7 +723,7 @@ export const Sidebar: React.FC = () => {
                           onClick={() => setBackground(bg.id)}
                           className={`aspect-video rounded-xl border-2 transition-all relative ${
                             activeDashboard?.background === bg.id
-                              ? 'border-indigo-600 ring-2 ring-indigo-200 ring-offset-2'
+                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
                               : 'border-transparent hover:scale-[1.02]'
                           }`}
                         >
@@ -758,7 +758,7 @@ export const Sidebar: React.FC = () => {
                           key={db.id}
                           className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
                             activeDashboard?.id === db.id
-                              ? 'bg-white border-indigo-200 shadow-md ring-1 ring-indigo-50'
+                              ? 'bg-white border-brand-blue-light shadow-md ring-1 ring-brand-blue-lighter'
                               : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
                           }`}
                           onClick={() => loadDashboard(db.id)}
@@ -767,7 +767,7 @@ export const Sidebar: React.FC = () => {
                             <div
                               className={`w-2 h-10 rounded-full ${
                                 activeDashboard?.id === db.id
-                                  ? 'bg-indigo-500'
+                                  ? 'bg-brand-blue-primary'
                                   : 'bg-slate-200 group-hover:bg-slate-300'
                               }`}
                             />
@@ -775,7 +775,7 @@ export const Sidebar: React.FC = () => {
                               <div
                                 className={`font-bold text-sm ${
                                   activeDashboard?.id === db.id
-                                    ? 'text-indigo-900'
+                                    ? 'text-brand-blue-dark'
                                     : 'text-slate-700'
                                 }`}
                               >
@@ -795,7 +795,7 @@ export const Sidebar: React.FC = () => {
                                   name: db.name,
                                 });
                               }}
-                              className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                              className="p-2 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100"
                               title="Rename"
                             >
                               <Pencil className="w-4 h-4" />
@@ -810,7 +810,7 @@ export const Sidebar: React.FC = () => {
                               <label
                                 htmlFor={`delete-dashboard-${db.id}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
+                                className="p-2 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </label>
@@ -835,7 +835,7 @@ export const Sidebar: React.FC = () => {
                                     </label>
                                     <button
                                       type="button"
-                                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg"
+                                      className="px-3 py-1.5 text-xs font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         deleteDashboard(db.id);
@@ -885,7 +885,7 @@ export const Sidebar: React.FC = () => {
                         input.type = 'text';
                         input.placeholder = 'Dashboard name';
                         input.className =
-                          'w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4';
+                          'w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary focus:border-brand-blue-primary mb-4';
 
                         const buttonsContainer = document.createElement('div');
                         buttonsContainer.className = 'flex justify-end gap-2';
@@ -899,7 +899,7 @@ export const Sidebar: React.FC = () => {
                         const createButton = document.createElement('button');
                         createButton.type = 'button';
                         createButton.className =
-                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition';
+                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition';
                         createButton.textContent = 'Create';
 
                         const closeModal = () => {
@@ -957,7 +957,7 @@ export const Sidebar: React.FC = () => {
                           input.focus();
                         }, 0);
                       }}
-                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
                       <Plus className="w-6 h-6" />
                       <span className="text-[10px] font-black uppercase">
@@ -966,7 +966,7 @@ export const Sidebar: React.FC = () => {
                     </button>
                     <button
                       onClick={handleImport}
-                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
                       <Download className="w-6 h-6" />
                       <span className="text-[10px] font-black uppercase">
@@ -1000,7 +1000,7 @@ export const Sidebar: React.FC = () => {
                     saveCurrentDashboard();
                     setIsOpen(false);
                   }}
-                  className="flex-1 bg-indigo-600 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 active:scale-95 transition-all text-[10px] uppercase tracking-wider"
+                  className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-[10px] uppercase tracking-wider"
                 >
                   <Save className="w-4 h-4" /> Save & Close
                 </button>
