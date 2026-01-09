@@ -480,7 +480,7 @@ export const Sidebar: React.FC = () => {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative w-96 h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
+          <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
             {/* Header */}
             <div className="p-6 pb-2 border-b border-slate-100">
               <div className="flex items-center justify-between mb-4">
@@ -498,7 +498,7 @@ export const Sidebar: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex bg-slate-100 p-1 rounded-xl text-[10px] font-black uppercase tracking-wide">
+              <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold uppercase tracking-wide">
                 <button
                   onClick={() => setActiveTab('widgets')}
                   className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
@@ -541,18 +541,18 @@ export const Sidebar: React.FC = () => {
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
-                        <Filter className="w-3 h-3 text-slate-400" />
-                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        <Filter className="w-4 h-4 text-slate-400" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           Grade Filter
                         </span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-5 gap-1.5">
                       {GRADE_FILTER_OPTIONS.map((option) => (
                         <button
                           key={option.value}
                           onClick={() => handleGradeFilterChange(option.value)}
-                          className={`py-1.5 px-2 rounded-lg text-[9px] font-black uppercase transition-all ${
+                          className={`py-1.5 px-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase transition-all ${
                             gradeFilter === option.value
                               ? 'bg-brand-blue-primary text-white shadow-sm'
                               : 'bg-white text-slate-500 hover:bg-slate-200'
@@ -565,20 +565,20 @@ export const Sidebar: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
                       Available Widgets
                     </h3>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setAllToolsVisibility(true)}
-                        className="text-[9px] font-bold text-brand-blue-primary hover:underline"
+                        className="text-xs font-bold text-brand-blue-primary hover:underline"
                       >
                         Select All
                       </button>
                       <span className="text-slate-300">|</span>
                       <button
                         onClick={() => setAllToolsVisibility(false)}
-                        className="text-[9px] font-bold text-slate-500 hover:underline"
+                        className="text-xs font-bold text-slate-500 hover:underline"
                       >
                         Clear
                       </button>
@@ -613,19 +613,19 @@ export const Sidebar: React.FC = () => {
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div
-                              className={`p-2 rounded-lg ${isActive ? tool.color : 'bg-slate-100 group-hover:bg-slate-200'} ${isActive ? 'text-white' : 'text-slate-500'} transition-colors`}
+                              className={`p-2.5 rounded-lg ${isActive ? tool.color : 'bg-slate-100 group-hover:bg-slate-200'} ${isActive ? 'text-white' : 'text-slate-500'} transition-colors`}
                             >
-                              <tool.icon className="w-4 h-4" />
+                              <tool.icon className="w-5 h-5" />
                             </div>
                             <div className="text-left">
-                              <div className="text-xs font-bold uppercase tracking-tight">
+                              <div className="text-sm font-bold uppercase tracking-tight">
                                 {displayLabel}
                               </div>
                               <div className="flex gap-1 mt-1">
                                 {gradeLevels.map((level) => (
                                   <span
                                     key={level}
-                                    className="text-[7px] font-black px-1.5 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
+                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
                                   >
                                     {formatGradeLevel(level)}
                                   </span>
@@ -658,7 +658,7 @@ export const Sidebar: React.FC = () => {
                   <div className="flex border-b border-slate-100 mb-4">
                     <button
                       onClick={() => setDesignTab('presets')}
-                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'presets'
                           ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -668,7 +668,7 @@ export const Sidebar: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setDesignTab('colors')}
-                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'colors'
                           ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -678,7 +678,7 @@ export const Sidebar: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setDesignTab('gradients')}
-                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'gradients'
                           ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -706,7 +706,7 @@ export const Sidebar: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-xs font-bold uppercase tracking-wider">
+                            <span className="text-white text-sm font-bold uppercase tracking-wider">
                               {bg.label}
                             </span>
                           </div>
@@ -727,7 +727,7 @@ export const Sidebar: React.FC = () => {
                         ) : (
                           <>
                             <Upload className="w-5 h-5 mb-2" />
-                            <span className="text-[9px] font-black uppercase">
+                            <span className="text-xs font-bold uppercase">
                               Upload Image
                             </span>
                           </>
@@ -920,7 +920,7 @@ export const Sidebar: React.FC = () => {
                       className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
                       <Plus className="w-6 h-6" />
-                      <span className="text-[10px] font-black uppercase">
+                      <span className="text-xs font-bold uppercase">
                         New Board
                       </span>
                     </button>
@@ -929,7 +929,7 @@ export const Sidebar: React.FC = () => {
                       className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
                       <Download className="w-6 h-6" />
-                      <span className="text-[10px] font-black uppercase">
+                      <span className="text-xs font-bold uppercase">
                         Import
                       </span>
                     </button>
@@ -951,7 +951,7 @@ export const Sidebar: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
                 >
                   <Share2 className="w-4 h-4" /> Share
                 </button>
@@ -960,7 +960,7 @@ export const Sidebar: React.FC = () => {
                     saveCurrentDashboard();
                     setIsOpen(false);
                   }}
-                  className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-[10px] uppercase tracking-wider"
+                  className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-xs uppercase tracking-wider"
                 >
                   <Save className="w-4 h-4" /> Save & Close
                 </button>

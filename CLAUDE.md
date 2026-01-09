@@ -8,7 +8,7 @@ Classroom Dashboard Pro is an interactive classroom management dashboard built w
 
 **Key Features:**
 
-- 20 widget types for classroom management
+- 21+ widget types for classroom management
 - Firebase Authentication with Google Sign-In
 - Cloud-synced dashboards via Firestore
 - Feature permissions system for widget access control
@@ -166,7 +166,7 @@ App.tsx (root)
 
 - `App.tsx`: Root component with AuthProvider, DashboardProvider, and conditional rendering
 - `index.tsx`: Application entry point, mounts App to DOM
-- `types.ts`: All TypeScript type definitions and the TOOLS registry (20 widget types)
+- `types.ts`: All TypeScript type definitions and the TOOLS registry (21 widget types)
 
 **Context:**
 
@@ -501,11 +501,18 @@ const {
 
 ## UI Styling
 
-- **Design System**: Tailwind CSS with custom classes
-- **Color Palette**: Primarily slate grays with accent colors per widget type
-- **Animations**: Uses Tailwind's `animate-in`, `slide-in-from-*`, and custom transitions
-- **Responsive**: Mobile-friendly dock and sidebar designs with viewport-based scaling
-- **Dark Mode**: Default slate-900 background, designed for dark UI
+- **Design System**: Tailwind CSS with custom classes and a defined brand identity.
+- **Typography**:
+  - `sans` (UI): **Lexend** - Clean, modern, high legibility.
+  - `handwritten` (Accents): **Patrick Hand** - Playful, classroom-friendly vibe.
+  - `mono` (Data/Code): **Roboto Mono** - Technical precision.
+- **Color Palette**: Custom brand colors configured in `tailwind.config.js`:
+  - **Brand Blue**: Primary (`#2d3f89`), Dark (`#1d2a5d`), Light (`#4356a0`).
+  - **Brand Red**: Primary (`#ad2122`), Dark (`#7a1718`), Light (`#c13435`).
+  - **Neutrals**: Slate grays with specialized widget accent colors.
+- **Animations**: Uses Tailwind's `animate-in`, `slide-in-from-*`, and custom animations like `spin-slow`.
+- **Responsive**: Mobile-friendly dock and sidebar designs with viewport-based scaling.
+- **Dark Mode**: Default slate-900 background, designed for dark UI.
 
 ### Tailwind Configuration
 

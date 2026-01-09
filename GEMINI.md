@@ -6,7 +6,7 @@
 
 **Key Technologies:**
 
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Lucide React
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS (Custom Brand Theme), Lucide React
 - **Backend:** Firebase (Auth, Firestore, Storage)
 - **AI:** Gemini API (via `@google/genai`)
 
@@ -40,6 +40,14 @@
   - **Primary:** Firestore (real-time sync).
   - **Fallback:** `localStorage` (migrated to Firestore on sign-in).
 - **Security:** Firestore Security Rules enforce ownership (users can only edit their own dashboards) and admin privileges.
+
+## Design System & Styling
+
+- **Typography**: 'Lexend' (UI), 'Patrick Hand' (Accents), 'Roboto Mono' (Code).
+- **Brand Colors**:
+  - Blue: `#2d3f89` (Primary)
+  - Red: `#ad2122` (Primary)
+- **Theme Config**: See `tailwind.config.js` for full palette and extensions.
 
 ## Slash Commands
 
