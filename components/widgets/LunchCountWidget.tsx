@@ -16,6 +16,7 @@ import {
   Coffee,
   Box,
   Home,
+  Activity,
 } from 'lucide-react';
 
 const SCHOOL_OPTIONS = [
@@ -36,6 +37,14 @@ const ORONO = {
 
 // Define LunchType locally since it's not exported from types.ts
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
+
+// Internal interface for debug logs
+interface SyncLog {
+  source: string;
+  status: 'pending' | 'success' | 'error';
+  message: string;
+  timestamp: number;
+}
 
 interface NutrisliceItem {
   is_section_title: boolean;
@@ -68,92 +77,146 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Local state for debug logs (not persisted to Firestore to save space)
+  const [debugLogs, setDebugLogs] = useState<SyncLog[]>([]);
+
+  // Ref to store current config to prevent dependency loops
   const configRef = useRef(config);
   useEffect(() => {
     configRef.current = config;
   }, [config]);
+
+  const addLog = (
+    source: string,
+    status: SyncLog['status'],
+    message: string
+  ) => {
+    setDebugLogs((prev) =>
+      [{ source, status, message, timestamp: Date.now() }, ...prev].slice(0, 10)
+    ); // Keep last 10 logs
+  };
 
   const fetchMenu = useCallback(async () => {
     if (!schoolId) return;
 
     setIsFetching(true);
     setFetchError(null);
+    setDebugLogs([]); // Clear old logs on new attempt
 
     const targetDate = testDate ? new Date(testDate + 'T12:00:00') : new Date();
     const year = targetDate.getFullYear();
     const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
     const day = targetDate.getDate().toString().padStart(2, '0');
 
-    const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+    // UPDATED URL: Removed .api subdomain
+    const apiUrl = `https://orono.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+
+    addLog(
+      'Init',
+      'pending',
+      `Fetching for ${schoolId} on ${year}-${month}-${day}`
+    );
 
     const proxies = [
-      (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      (url: string) =>
-        `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&ts=${Date.now()}`,
+      {
+        name: 'CORSProxy',
+        url: (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      },
+      {
+        name: 'AllOrigins',
+        url: (u: string) =>
+          `https://api.allorigins.win/get?url=${encodeURIComponent(u)}&ts=${Date.now()}`,
+      },
     ];
 
     let success = false;
-    for (const getProxyUrl of proxies) {
+
+    for (const proxy of proxies) {
       try {
+        addLog(proxy.name, 'pending', 'Attempting fetch...');
+
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
 
-        const res = await fetch(getProxyUrl(apiUrl), {
+        const res = await fetch(proxy.url(apiUrl), {
           signal: controller.signal,
         });
         clearTimeout(timeout);
 
-        if (!res.ok) continue;
+        if (!res.ok) {
+          addLog(proxy.name, 'error', `HTTP ${res.status}`);
+          continue;
+        }
 
         const rawData = (await res.json()) as NutrisliceResponse;
-        const contentVal = rawData.contents;
 
-        let items: NutrisliceItem[] | undefined;
-
-        if (typeof contentVal === 'string') {
-          const parsed = JSON.parse(contentVal) as {
-            menu_items?: NutrisliceItem[];
-          };
-          items = parsed?.menu_items;
-        } else {
-          items =
-            rawData.menu_items ??
-            (rawData.contents as { menu_items?: NutrisliceItem[] })?.menu_items;
+        // Handle AllOrigins wrapper if present
+        let content: NutrisliceResponse = rawData;
+        if (rawData.contents && typeof rawData.contents === 'string') {
+          try {
+            content = JSON.parse(rawData.contents) as NutrisliceResponse;
+          } catch {
+            addLog(
+              proxy.name,
+              'error',
+              'Failed to parse AllOrigins JSON string'
+            );
+            continue;
+          }
+        } else if (rawData.contents && typeof rawData.contents === 'object') {
+          content = rawData.contents as NutrisliceResponse;
         }
+
+        const items = content.menu_items ?? content.contents?.menu_items;
 
         if (items) {
           const entrees = items
             .filter(
-              (item) => !item.is_section_title && (item.food?.name || item.text)
+              (item: NutrisliceItem) =>
+                !item.is_section_title && (item.food?.name || item.text)
             )
-            .map((item) => item.food?.name || item.text || '');
+            .map((item: NutrisliceItem) => item.food?.name || item.text || '');
 
           const uniqueEntrees = Array.from(new Set(entrees)).filter(Boolean);
+
           if (uniqueEntrees.length > 0) {
+            const menuString = uniqueEntrees.join(', ');
             updateWidget(widget.id, {
-              config: {
-                ...configRef.current,
-                menuText: uniqueEntrees.join(', '),
-              },
+              config: { ...configRef.current, menuText: menuString },
             });
+            addLog(
+              proxy.name,
+              'success',
+              `Found: ${menuString.substring(0, 30)}...`
+            );
             addToast('Menu Synced', 'success');
             success = true;
             break;
+          } else {
+            addLog(proxy.name, 'error', 'API returned 0 menu items');
           }
+        } else {
+          addLog(proxy.name, 'error', 'Invalid data structure (no menu_items)');
         }
-      } catch (_err) {
-        console.warn('Proxy attempt failed, trying next...');
+      } catch (err) {
+        const error = err as Error;
+        addLog(proxy.name, 'error', error.message || 'Network error');
       }
     }
 
-    if (!success) setFetchError('Sync failed. Check Orono Nutrislice.');
+    if (!success) {
+      const msg = 'Sync failed. See Settings for logs.';
+      setFetchError(msg);
+      addLog('Final', 'error', 'All proxies failed');
+    }
     setIsFetching(false);
   }, [schoolId, testDate, widget.id, updateWidget, addToast]);
 
+  // Initial Sync
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchMenu();
-  }, [schoolId, testDate, fetchMenu]);
+  }, [schoolId, testDate, fetchMenu]); // Added fetchMenu to deps
 
   const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '---', bento: '---' };
@@ -246,7 +309,30 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none font-sans">
+    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none font-sans relative">
+      {/* Error/Log Overlay */}
+      {fetchError && (
+        <div className="absolute top-2 right-2 z-50">
+          <button
+            onClick={() =>
+              alert(
+                debugLogs
+                  .map(
+                    (l) =>
+                      `[${l.status.toUpperCase()}] ${l.source}: ${l.message}`
+                  )
+                  .join('\n')
+              )
+            }
+            className="bg-red-100 text-red-600 p-1.5 rounded-lg hover:bg-red-200 transition-colors shadow-sm flex items-center gap-1"
+            title="Click to view debug logs"
+          >
+            <Activity className="w-3 h-3" />
+            <span className="text-[9px] font-bold">Logs</span>
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-2 shrink-0">
         <button
           onClick={() =>
