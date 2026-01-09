@@ -17,6 +17,7 @@ import {
   Box,
   Home,
   Activity,
+  ExternalLink,
 } from 'lucide-react';
 
 const SCHOOL_OPTIONS = [
@@ -62,6 +63,10 @@ interface NutrisliceWeeksResponse {
   days: NutrisliceDay[];
 }
 
+interface AllOriginsResponse {
+  contents: string | NutrisliceWeeksResponse;
+}
+
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
@@ -96,7 +101,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       setDebugLogs((prev) =>
         [{ source, status, message, timestamp: Date.now() }, ...prev].slice(
           0,
-          10
+          15
         )
       );
     },
@@ -118,13 +123,18 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const day = targetDateObj.getDate().toString().padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
 
-    // NEW ENDPOINT: "Weeks" API (Standard for Web View)
-    // This returns the whole week containing the date
+    // API URL Construction
     const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${month}/${day}/?format=json`;
 
-    addLog('Init', 'pending', `Fetching week for ${dateString}`);
+    addLog('Init', 'pending', `Target: ${dateString}`);
 
+    // Expanded Proxy List
     const proxies = [
+      { name: 'Direct', url: (u: string) => u },
+      {
+        name: 'ThingProxy',
+        url: (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+      },
       {
         name: 'CORSProxy',
         url: (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
@@ -143,7 +153,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         addLog(proxy.name, 'pending', 'Fetching...');
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
 
         const res = await fetch(proxy.url(apiUrl), {
           signal: controller.signal,
@@ -151,39 +161,52 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         clearTimeout(timeout);
 
         if (!res.ok) {
-          addLog(proxy.name, 'error', `HTTP ${res.status}`);
+          addLog(proxy.name, 'error', `HTTP ${res.status} ${res.statusText}`);
           continue;
         }
 
-        const rawData = (await res.json()) as NutrisliceWeeksResponse & {
-          contents?: string | NutrisliceWeeksResponse;
-        };
+        const rawText = await res.text();
+
+        // Check for HTML error pages masquerading as 200 OK
+        if (rawText.trim().startsWith('<')) {
+          addLog(proxy.name, 'error', 'Received HTML instead of JSON');
+          continue;
+        }
+
+        let rawData: NutrisliceWeeksResponse | AllOriginsResponse;
+        try {
+          rawData = JSON.parse(rawText) as
+            | NutrisliceWeeksResponse
+            | AllOriginsResponse;
+        } catch {
+          addLog(proxy.name, 'error', 'Invalid JSON response');
+          continue;
+        }
 
         // Parse AllOrigins wrapper if needed
         let responseData: NutrisliceWeeksResponse | null = null;
 
-        if (rawData.contents) {
-          if (typeof rawData.contents === 'string') {
+        const maybeAllOrigins = rawData as AllOriginsResponse;
+        if (maybeAllOrigins.contents) {
+          if (typeof maybeAllOrigins.contents === 'string') {
             try {
               responseData = JSON.parse(
-                rawData.contents
+                maybeAllOrigins.contents
               ) as NutrisliceWeeksResponse;
             } catch {
-              addLog(proxy.name, 'error', 'JSON Parse Error');
+              addLog(proxy.name, 'error', 'Failed to parse AllOrigins wrapper');
               continue;
             }
           } else {
-            // Sometimes AllOrigins returns JSON directly
-            responseData = rawData.contents;
+            responseData = maybeAllOrigins.contents;
           }
         } else {
-          // Direct JSON (CORSProxy)
-          responseData = rawData;
+          responseData = rawData as NutrisliceWeeksResponse;
         }
 
         // Validate structure
         if (!responseData || !Array.isArray(responseData.days)) {
-          addLog(proxy.name, 'error', 'Invalid API format (no days array)');
+          addLog(proxy.name, 'error', 'Missing "days" array in response');
           continue;
         }
 
@@ -191,13 +214,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         const dayData = responseData.days.find((d) => d.date === dateString);
 
         if (!dayData) {
-          addLog(
-            proxy.name,
-            'error',
-            `Date ${dateString} not found in week data`
-          );
-          // Fallback: Check if it's a weekend or holiday?
-          // For now, just fail gracefully
+          addLog(proxy.name, 'error', `Date ${dateString} not in week data`);
           continue;
         }
 
@@ -218,25 +235,25 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             addLog(
               proxy.name,
               'success',
-              `Found: ${menuString.substring(0, 30)}...`
+              `Found ${uniqueEntrees.length} items`
             );
             addToast('Menu Synced', 'success');
             success = true;
             break;
           } else {
-            addLog(proxy.name, 'error', 'Day found, but 0 items');
+            addLog(proxy.name, 'error', 'Day has 0 menu items');
           }
         } else {
-          addLog(proxy.name, 'error', 'No menu_items in day');
+          addLog(proxy.name, 'error', 'No menu_items property');
         }
-      } catch (err) {
-        const error = err as Error;
-        addLog(proxy.name, 'error', error.message || 'Network error');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Network error';
+        addLog(proxy.name, 'error', message);
       }
     }
 
     if (!success) {
-      setFetchError('Sync failed. See Logs.');
+      setFetchError('Sync failed. Check Logs in Settings.');
     }
     setIsFetching(false);
   }, [schoolId, testDate, widget.id, updateWidget, addToast, addLog]);
@@ -251,8 +268,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     if (!menuText) return { hot: '---', bento: '---' };
     const parts = menuText.split(',').map((p) => p.trim());
     return {
-      hot: parts[0] || 'Menu Unavailable',
-      bento: parts[1] || 'Menu Unavailable',
+      hot: parts[0] || 'Unavailable',
+      bento: parts[1] || 'Unavailable',
     };
   }, [menuText]);
 
@@ -343,21 +360,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       {fetchError && (
         <div className="absolute top-2 right-2 z-50">
           <button
-            onClick={() =>
-              alert(
-                debugLogs
-                  .map(
-                    (l) =>
-                      `[${l.status.toUpperCase()}] ${l.source}: ${l.message}`
-                  )
-                  .join('\n')
-              )
-            }
+            onClick={() => updateWidget(widget.id, { flipped: true })}
             className="bg-red-100 text-red-600 p-1.5 rounded-lg hover:bg-red-200 transition-colors shadow-sm flex items-center gap-1"
-            title="Click to view debug logs"
+            title="Open Settings to view logs"
           >
             <Activity className="w-3 h-3" />
-            <span className="text-[9px] font-bold">Logs</span>
+            <span className="text-[9px] font-bold">Error</span>
           </button>
         </div>
       )}
@@ -423,6 +431,25 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         )}
       </div>
+
+      {/* Mini log viewer when fetching or error */}
+      {(isFetching || fetchError) && debugLogs.length > 0 && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-2 max-h-24 overflow-y-auto custom-scrollbar">
+          <div className="text-[8px] font-black text-slate-400 uppercase mb-1">
+            Recent Logs
+          </div>
+          {debugLogs.map((log, i) => (
+            <div key={i} className="text-[8px] flex gap-2">
+              <span
+                className={`font-bold ${log.status === 'success' ? 'text-green-600' : log.status === 'error' ? 'text-red-600' : 'text-blue-600'}`}
+              >
+                {log.source}:
+              </span>
+              <span className="text-slate-600 truncate">{log.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2 shrink-0">
         {categories.map((cat) => (
@@ -516,6 +543,14 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     testDate = '',
   } = config;
 
+  const targetDateObj = testDate
+    ? new Date(testDate + 'T12:00:00')
+    : new Date();
+  const year = targetDateObj.getFullYear();
+  const month = (targetDateObj.getMonth() + 1).toString().padStart(2, '0');
+  const day = targetDateObj.getDate().toString().padStart(2, '0');
+  const generatedUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${month}/${day}/?format=json`;
+
   return (
     <div className="space-y-6">
       <div
@@ -548,6 +583,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             ))}
           </select>
         </div>
+
         <div>
           <label
             style={{ color: ORONO.bluePrimary }}
@@ -565,6 +601,27 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             }
             className="w-full p-2 text-[10px] font-bold border border-slate-200 rounded-xl text-center"
           />
+        </div>
+
+        {/* Diagnostic Link */}
+        <div className="bg-white p-3 rounded-xl border border-slate-200">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[9px] font-bold text-slate-500 uppercase">
+              Diagnostic
+            </span>
+            <span className="text-[8px] text-slate-400">
+              If sync fails, check this link:
+            </span>
+          </div>
+          <a
+            href={generatedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[10px] text-blue-600 font-bold hover:underline break-all"
+          >
+            <ExternalLink className="w-3 h-3 shrink-0" />
+            Test API Link
+          </a>
         </div>
       </div>
 
