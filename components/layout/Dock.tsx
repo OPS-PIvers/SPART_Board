@@ -442,7 +442,7 @@ export const Dock: React.FC = () => {
           /* Compressed down to a single icon */
           <button
             onClick={() => setIsExpanded(true)}
-            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-[0_10px_30px_rgba(45,63,137,0.4)] animate-in fade-in zoom-in duration-300"
+            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
             title="Open Tools"
           >
             <LayoutGrid className="w-6 h-6" />

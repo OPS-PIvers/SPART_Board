@@ -441,7 +441,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           {!isSpinning && displayResult && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-30">
               <div
-                className="bg-white/95 backdrop-blur px-10 py-5 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500 font-bold text-indigo-900 animate-bounce text-center max-w-full break-words"
+                className="bg-white/95 backdrop-blur px-10 py-5 rounded-[2rem] shadow-2xl border-4 border-brand-blue-primary font-bold text-brand-blue-dark animate-bounce text-center max-w-full break-words"
                 style={{
                   fontSize: `${layoutSizing.fontSize ?? 32}px`,
                   lineHeight: 1.1,
@@ -469,14 +469,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           >
             {displayResult ?? 'Ready?'}
           </div>
-          <div className="absolute left-0 right-0 h-1 bg-indigo-500/20 top-1/2 -translate-y-1/2" />
+          <div className="absolute left-0 right-0 h-1 bg-brand-blue-primary/20 top-1/2 -translate-y-1/2" />
         </div>
       );
     }
 
     return (
       <div
-        className={`text-center font-bold px-4 transition-all duration-300 w-full flex items-center justify-center ${isSpinning ? 'scale-90 opacity-30 grayscale' : 'scale-100 text-indigo-600 drop-shadow-xl'}`}
+        className={`text-center font-bold px-4 transition-all duration-300 w-full flex items-center justify-center ${isSpinning ? 'scale-90 opacity-30 grayscale' : 'scale-100 text-brand-blue-primary drop-shadow-xl'}`}
         style={{ fontSize: `${layoutSizing.fontSize}px`, height: '100%' }}
       >
         <span className="max-w-full break-words leading-tight uppercase">
@@ -505,9 +505,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="h-full flex flex-col p-4 font-handwritten bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden relative">
       {activeRoster && (
-        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 animate-in fade-in slide-in-from-top-1">
-          <Target className="w-2.5 h-2.5 text-indigo-500" />
-          <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider">
+        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
+          <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
+          <span className="text-[9px] font-black uppercase text-brand-blue-primary tracking-wider">
             {activeRoster.name}
           </span>
         </div>
@@ -606,7 +606,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         className={`mt-4 w-full py-4 rounded-[2rem] flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all shrink-0 ${
           isSpinning
             ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-            : 'bg-indigo-600 text-white shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-95 hover:-translate-y-1'
+            : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark active:scale-95 hover:-translate-y-1'
         }`}
       >
         <RefreshCw className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
@@ -702,7 +702,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
       <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
         <div className="flex items-center gap-3">
           <div
-            className={`p-2 rounded-lg ${soundEnabled ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}
+            className={`p-2 rounded-lg ${soundEnabled ? 'bg-brand-blue-lighter text-brand-blue-primary' : 'bg-slate-100 text-slate-400'}`}
           >
             {soundEnabled ? (
               <Volume2 className="w-4 h-4" />
@@ -725,7 +725,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, soundEnabled: !soundEnabled },
             })
           }
-          className={`w-12 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-indigo-500' : 'bg-slate-300'}`}
+          className={`w-12 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-brand-blue-primary' : 'bg-slate-300'}`}
         >
           <div
             className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`}
@@ -748,7 +748,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               }
               className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
                 mode === m.id
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary'
                   : 'border-slate-100 text-slate-400 hover:border-slate-200'
               }`}
             >
@@ -813,7 +813,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               }
             }}
             placeholder="John&#10;Jane..."
-            className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
+            className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
           />
         </div>
         <div>
@@ -839,7 +839,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               }
             }}
             placeholder="Smith&#10;Doe..."
-            className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
+            className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
           />
         </div>
       </div>
@@ -864,7 +864,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                   },
                 })
               }
-              className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+              className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
             />
             <span className="w-10 text-center font-mono font-bold text-slate-700 text-sm">
               {groupSize}

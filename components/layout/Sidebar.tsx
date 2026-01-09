@@ -67,6 +67,8 @@ export const Sidebar: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
+  const [newDashboardName, setNewDashboardName] = useState('');
   const [editingDashboard, setEditingDashboard] = useState<{
     id: string;
     name: string;
@@ -219,12 +221,12 @@ export const Sidebar: React.FC = () => {
   }, [managedBackgrounds]);
 
   const colors = [
-    { id: 'bg-brand-gray-darkest', color: '#1a1a1a' },
-    { id: 'bg-brand-blue-dark', color: '#1d2a5d' },
-    { id: 'bg-emerald-950', color: '#064e3b' },
-    { id: 'bg-brand-red-dark', color: '#7a1718' },
-    { id: 'bg-brand-gray-lightest', color: '#f3f3f3' },
-    { id: 'bg-white', color: '#ffffff' },
+    { id: 'bg-brand-gray-darkest' },
+    { id: 'bg-brand-blue-dark' },
+    { id: 'bg-emerald-950' },
+    { id: 'bg-brand-red-dark' },
+    { id: 'bg-brand-gray-lightest' },
+    { id: 'bg-white' },
     {
       id: 'bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-slate-100',
       label: 'Dot Grid',
@@ -416,6 +418,56 @@ export const Sidebar: React.FC = () => {
                 className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition"
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewDashboardModal && (
+        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
+              New Dashboard
+            </h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Enter a name for your new dashboard.
+            </p>
+            <input
+              type="text"
+              value={newDashboardName}
+              onChange={(e) => setNewDashboardName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (newDashboardName.trim()) {
+                    createNewDashboard(newDashboardName.trim());
+                    setShowNewDashboardModal(false);
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowNewDashboardModal(false);
+                }
+              }}
+              autoFocus
+              placeholder="Dashboard name"
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary focus:border-brand-blue-primary mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowNewDashboardModal(false)}
+                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newDashboardName.trim()) {
+                    createNewDashboard(newDashboardName.trim());
+                    setShowNewDashboardModal(false);
+                  }
+                }}
+                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition"
+              >
+                Create
               </button>
             </div>
           </div>
@@ -690,12 +742,11 @@ export const Sidebar: React.FC = () => {
                         <button
                           key={bg.id}
                           onClick={() => setBackground(bg.id)}
-                          className={`aspect-square rounded-xl border-2 transition-all relative ${
+                          className={`aspect-square rounded-xl border-2 transition-all relative ${bg.id} ${
                             activeDashboard?.background === bg.id
                               ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
                               : 'border-slate-100 hover:border-slate-300'
                           }`}
-                          style={{ backgroundColor: bg.color }}
                         >
                           {bg.id.includes('radial') && (
                             <div className={`w-full h-full ${bg.id}`} />
@@ -863,99 +914,8 @@ export const Sidebar: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => {
-                        const overlay = document.createElement('div');
-                        overlay.className =
-                          'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm';
-
-                        const modal = document.createElement('div');
-                        modal.className =
-                          'bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6';
-
-                        const title = document.createElement('h2');
-                        title.className =
-                          'text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider';
-                        title.textContent = 'New Dashboard';
-
-                        const description = document.createElement('p');
-                        description.className = 'text-xs text-slate-500 mb-4';
-                        description.textContent =
-                          'Enter a name for your new dashboard.';
-
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.placeholder = 'Dashboard name';
-                        input.className =
-                          'w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary focus:border-brand-blue-primary mb-4';
-
-                        const buttonsContainer = document.createElement('div');
-                        buttonsContainer.className = 'flex justify-end gap-2';
-
-                        const cancelButton = document.createElement('button');
-                        cancelButton.type = 'button';
-                        cancelButton.className =
-                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition';
-                        cancelButton.textContent = 'Cancel';
-
-                        const createButton = document.createElement('button');
-                        createButton.type = 'button';
-                        createButton.className =
-                          'px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-sm transition';
-                        createButton.textContent = 'Create';
-
-                        const closeModal = () => {
-                          if (overlay.parentNode) {
-                            overlay.parentNode.removeChild(overlay);
-                          }
-                        };
-
-                        const handleCreate = () => {
-                          const name = input.value.trim();
-                          if (name) {
-                            createNewDashboard(name);
-                            closeModal();
-                          } else {
-                            input.focus();
-                          }
-                        };
-
-                        cancelButton.addEventListener('click', () => {
-                          closeModal();
-                        });
-
-                        createButton.addEventListener('click', () => {
-                          handleCreate();
-                        });
-
-                        input.addEventListener('keydown', (event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault();
-                            handleCreate();
-                          } else if (event.key === 'Escape') {
-                            event.preventDefault();
-                            closeModal();
-                          }
-                        });
-
-                        overlay.addEventListener('click', (event) => {
-                          if (event.target === overlay) {
-                            closeModal();
-                          }
-                        });
-
-                        buttonsContainer.appendChild(cancelButton);
-                        buttonsContainer.appendChild(createButton);
-
-                        modal.appendChild(title);
-                        modal.appendChild(description);
-                        modal.appendChild(input);
-                        modal.appendChild(buttonsContainer);
-                        overlay.appendChild(modal);
-                        document.body.appendChild(overlay);
-
-                        // Slight delay to ensure element is in the DOM before focusing
-                        setTimeout(() => {
-                          input.focus();
-                        }, 0);
+                        setNewDashboardName('');
+                        setShowNewDashboardModal(true);
                       }}
                       className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
