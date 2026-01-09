@@ -43,7 +43,7 @@
 
 ## Design System & Styling
 
-- **Typography**: 'Lexend' (UI), 'Patrick Hand' (Accents), 'Roboto Mono' (Code).
+- **Typography**: **Lexend** (UI), **Patrick Hand** (Accents), **Roboto Mono** (Code).
 - **Brand Colors**:
   - Blue: `#2d3f89` (Primary)
   - Red: `#ad2122` (Primary)
