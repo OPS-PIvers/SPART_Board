@@ -26,6 +26,7 @@ import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
+import { getJoinUrl } from '../../utils/urlHelpers';
 
 export const WidgetRenderer: React.FC<{
   widget: WidgetData;
@@ -206,7 +207,7 @@ export const WidgetRenderer: React.FC<{
           studentCount={students.length}
           students={students}
           code={session?.code}
-          joinUrl={`${window.location.origin}/join`}
+          joinUrl={getJoinUrl()}
           onToggleLive={handleToggleLive}
           onFreezeStudent={(id, status) => {
             void toggleFreezeStudent(id, status);

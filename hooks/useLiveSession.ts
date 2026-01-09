@@ -112,10 +112,10 @@ export const useLiveSession = (
 
   // --- ACTIONS ---
 
-  const joinSession = async (name: string, codeInput: string) => {
+  const joinSession = async (name: string, rawCode: string) => {
     // 1. Find session by Code with robust sanitization
     // Remove all non-alphanumeric characters and normalize to uppercase
-    const normalizedCode = codeInput
+    const normalizedCode = rawCode
       .trim()
       .replace(/[^a-zA-Z0-9]/g, '')
       .toUpperCase();
