@@ -1,6 +1,9 @@
 import React from 'react';
 import { WidgetData, DrawingConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
+import { useAuth } from '../../context/useAuth';
+import { useLiveSession } from '../../hooks/useLiveSession';
+import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimerWidget, TimerSettings } from './TimerWidget';
 import { StopwatchWidget, StopwatchSettings } from './StopwatchWidget';
@@ -27,6 +30,30 @@ import { getTitle } from '../../utils/widgetHelpers';
 export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
+  const { user } = useAuth();
+
+  // Initialize the hook (only active if user exists)
+  const {
+    session,
+    students,
+    startSession,
+    endSession,
+    toggleFreezeStudent,
+    toggleGlobalFreeze,
+  } = useLiveSession(user?.uid, 'teacher');
+
+  // Logic to determine if THIS widget is the live one
+  const isThisWidgetLive =
+    session?.isActive && session?.activeWidgetId === widget.id;
+
+  const handleToggleLive = () => {
+    if (isThisWidgetLive) {
+      void endSession();
+    } else {
+      void startSession(widget.id, widget.type);
+    }
+  };
+
   const getWidgetContent = () => {
     switch (widget.type) {
       case 'clock':
@@ -133,6 +160,20 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
       settings={getWidgetSettings()}
       style={customStyle}
       skipCloseConfirmation={widget.type === 'classes'}
+      headerActions={
+        <LiveControl
+          isLive={isThisWidgetLive ?? false}
+          studentCount={students.length}
+          students={students}
+          onToggleLive={handleToggleLive}
+          onFreezeStudent={(id, status) => {
+            void toggleFreezeStudent(id, status);
+          }}
+          onFreezeAll={() => {
+            void toggleGlobalFreeze(!session?.frozen);
+          }}
+        />
+      }
     >
       {getWidgetContent()}
     </DraggableWindow>
