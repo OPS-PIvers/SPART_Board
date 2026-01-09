@@ -9,11 +9,8 @@ export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
 
   // Hook usage for 'student' role
-  const { session, loading, joinSession, studentId } = useLiveSession(
-    undefined,
-    'student',
-    joinedCode ?? undefined
-  );
+  const { session, loading, joinSession, studentId, individualFrozen } =
+    useLiveSession(undefined, 'student', joinedCode ?? undefined);
 
   const handleJoin = async (code: string, name: string) => {
     try {
@@ -48,8 +45,8 @@ export const StudentApp = () => {
     );
   }
 
-  // 3. Frozen State Overlay
-  if (session.frozen) {
+  // 3. Frozen State Overlay (Global or Individual)
+  if (session.frozen || individualFrozen) {
     return (
       <div className="fixed inset-0 z-50 bg-indigo-900 flex flex-col items-center justify-center p-8 text-center text-white">
         <Snowflake className="w-20 h-20 mb-6 animate-spin-slow opacity-80" />

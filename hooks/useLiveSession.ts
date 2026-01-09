@@ -28,6 +28,7 @@ export const useLiveSession = (
     role === 'teacher' || (role === 'student' && !!joinCode)
   );
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [individualFrozen, setIndividualFrozen] = useState(false);
 
   // TEACHER: Subscribe to own session
   useEffect(() => {
@@ -83,7 +84,7 @@ export const useLiveSession = (
       setLoading(false);
     });
 
-    // 2. Subscribe to My Student Status (Am I frozen?)
+    // 2. Subscribe to My Student Status (Am I individually frozen?)
     let unsubscribeStudent = () => {
       // Cleanup
     };
@@ -95,11 +96,11 @@ export const useLiveSession = (
         STUDENTS_COLLECTION,
         studentId
       );
-      unsubscribeStudent = onSnapshot(myStudentRef, (_docSnap) => {
-        // Here we could update local state if we needed specific student data
-        // For now, the global session 'frozen' is the main thing,
-        // but individual freeze status is checked via the students list or this doc.
-        // We might want to expose 'isFrozen' for this student.
+      unsubscribeStudent = onSnapshot(myStudentRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const studentData = docSnap.data() as LiveStudent;
+          setIndividualFrozen(studentData.status === 'frozen');
+        }
       });
     }
 
@@ -243,5 +244,6 @@ export const useLiveSession = (
     toggleGlobalFreeze,
     joinSession,
     studentId,
+    individualFrozen,
   };
 };

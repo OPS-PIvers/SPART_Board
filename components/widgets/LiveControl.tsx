@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Wifi, Snowflake, X } from 'lucide-react';
 import { LiveStudent } from '../../types';
 
@@ -24,6 +24,25 @@ export const LiveControl: React.FC<LiveControlProps> = ({
   onFreezeAll,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+
+    return undefined;
+  }, [showMenu]);
 
   return (
     <div className="flex items-center gap-2 relative z-50">
@@ -56,7 +75,10 @@ export const LiveControl: React.FC<LiveControlProps> = ({
 
       {/* POPOUT MENU */}
       {showMenu && isLive && (
-        <div className="absolute top-8 right-0 w-64 bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col animate-in fade-in slide-in-from-top-2">
+        <div
+          ref={menuRef}
+          className="absolute top-8 right-0 w-64 bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col animate-in fade-in slide-in-from-top-2"
+        >
           <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-xl">
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Classroom ({studentCount})

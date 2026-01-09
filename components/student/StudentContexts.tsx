@@ -25,6 +25,17 @@ const mockAuth: AuthContextType = {
 };
 
 // --- MOCK DASHBOARD ---
+// NOTE: Widgets in student view are read-only. The mock dashboard context
+// returns no-op functions for critical operations like updateWidget, which
+// is called by widgets for state management. This means widgets that attempt
+// to update their configuration will silently fail.
+//
+// Widget Compatibility:
+// - READ-ONLY COMPATIBLE: Clock, Timer, Stopwatch, Text, Embed, QR, Weather,
+//   Schedule, Calendar, Drawing (display only), Poll (display only)
+// - LIMITED SUPPORT: Traffic Light, Dice, Random (state changes won't persist)
+// - NOT COMPATIBLE: Checklist, Scoreboard, WorkSymbols, LunchCount, Classes
+//   (require user interaction and state updates)
 const mockDashboard: DashboardContextType = {
   dashboards: [],
   activeDashboard: null,
