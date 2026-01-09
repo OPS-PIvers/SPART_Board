@@ -93,34 +93,27 @@ export const StudentApp = () => {
 
   // 4. Active Widget State
   // We mock a Widget object here based on session data.
-  // Widget dimensions are set based on the widget type and viewport size for optimal display
+  // Widget dimensions are set as grid units based on widget type for optimal display
   const getWidgetDimensions = (
     widgetType: string
   ): { w: number; h: number } => {
-    // Get viewport dimensions for responsive sizing
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    // Calculate responsive base units (loosely based on viewport)
-    const baseW = Math.min(vw * 0.8, 800); // Max 800px or 80% of viewport
-    const baseH = Math.min(vh * 0.7, 600); // Max 600px or 70% of viewport
-
-    // Map widget types to appropriate dimensions as percentages of base
+    // Map widget types to appropriate dimensions in grid units
+    // These are interpreted by the layout for full-screen student view
     switch (widgetType) {
       case 'timer':
       case 'stopwatch':
       case 'clock':
-        return { w: baseW * 0.5, h: baseH * 0.5 }; // Square for time displays
+        return { w: 8, h: 8 }; // Square for time displays
       case 'text':
       case 'poll':
-        return { w: baseW * 0.9, h: baseH * 0.8 }; // Wide for text content
+        return { w: 16, h: 12 }; // Wide for text content
       case 'drawing':
       case 'embed':
-        return { w: baseW, h: baseH }; // Large for interactive content
+        return { w: 16, h: 16 }; // Large for interactive content
       case 'qr':
-        return { w: baseW * 0.4, h: baseH * 0.5 }; // Compact for QR codes
+        return { w: 8, h: 10 }; // Compact for QR codes
       default:
-        return { w: baseW * 0.7, h: baseH * 0.7 }; // Default balanced dimensions
+        return { w: 12, h: 12 }; // Default balanced dimensions
     }
   };
 

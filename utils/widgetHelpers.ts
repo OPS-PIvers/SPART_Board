@@ -44,8 +44,8 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     webcam: {},
     scoreboard: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
     workSymbols: { voice: 'none', routine: 'none' },
-    weather: {},
-    schedule: {},
+    weather: { temp: 72, condition: 'sunny' },
+    schedule: { items: [] },
     calendar: { events: [] },
     lunchCount: {
       firstNames: '',
