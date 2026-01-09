@@ -5,7 +5,8 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { Snowflake, Radio } from 'lucide-react';
-import { WidgetData, WidgetConfig } from '../../types';
+import { WidgetData } from '../../types';
+import { getDefaultWidgetConfig } from '../../utils/widgetHelpers';
 
 export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
@@ -125,7 +126,9 @@ export const StudentApp = () => {
     h: dimensions.h,
     z: 1,
     flipped: false,
-    config: session.activeWidgetConfig ?? ({} as WidgetConfig),
+    config:
+      session.activeWidgetConfig ??
+      getDefaultWidgetConfig(session.activeWidgetType ?? 'clock'),
     isLive: true,
   };
 

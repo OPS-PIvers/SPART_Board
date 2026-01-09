@@ -208,7 +208,10 @@ export const useLiveSession = (
   }, [userId]);
 
   const toggleFreezeStudent = useCallback(
-    async (studentId: string, currentStatus: 'active' | 'frozen') => {
+    async (
+      studentId: string,
+      currentStatus: 'active' | 'frozen' | 'disconnected'
+    ) => {
       if (!userId) return;
       const studentRef = doc(
         db,

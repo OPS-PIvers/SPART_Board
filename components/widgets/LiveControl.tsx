@@ -10,7 +10,10 @@ interface LiveControlProps {
   code?: string;
   joinUrl?: string;
   onToggleLive: () => void;
-  onFreezeStudent: (id: string, status: 'active' | 'frozen') => void;
+  onFreezeStudent: (
+    id: string,
+    status: 'active' | 'frozen' | 'disconnected'
+  ) => void;
   onFreezeAll: () => void;
 }
 

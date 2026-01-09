@@ -74,7 +74,7 @@ export interface LiveSession {
 export interface LiveStudent {
   id: string; // Unique ID for this session
   name: string;
-  status: 'active' | 'frozen';
+  status: 'active' | 'frozen' | 'disconnected';
   joinedAt: number;
   lastActive: number;
 }
