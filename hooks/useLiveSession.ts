@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   doc,
   onSnapshot,
@@ -11,7 +11,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { LiveSession, LiveStudent, WidgetType } from '../types';
+import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 
 // Constants for Firestore Paths
 const SESSIONS_COL = 'sessions';
@@ -137,7 +137,11 @@ export const useLiveSession = (
     return teacherId;
   };
 
-  const startSession = async (widgetId: string, widgetType: string) => {
+  const startSession = async (
+    widgetId: string,
+    widgetType: string,
+    config?: WidgetConfig
+  ) => {
     if (!userId) return;
     const sessionRef = doc(db, SESSIONS_COL, userId);
     const newSession: LiveSession = {
@@ -145,12 +149,22 @@ export const useLiveSession = (
       isActive: true,
       activeWidgetId: widgetId,
       activeWidgetType: widgetType as WidgetType,
+      activeWidgetConfig: config,
       code: Math.random().toString(36).substring(2, 8).toUpperCase(),
       frozen: false,
       createdAt: Date.now(),
     };
     await setDoc(sessionRef, newSession);
   };
+
+  const updateSessionConfig = useCallback(
+    async (config: WidgetConfig) => {
+      if (!userId) return;
+      const sessionRef = doc(db, SESSIONS_COL, userId);
+      await updateDoc(sessionRef, { activeWidgetConfig: config });
+    },
+    [userId]
+  );
 
   const endSession = async () => {
     if (!userId) return;
@@ -180,6 +194,7 @@ export const useLiveSession = (
     students,
     loading,
     startSession,
+    updateSessionConfig,
     endSession,
     toggleFreezeStudent,
     toggleGlobalFreeze,

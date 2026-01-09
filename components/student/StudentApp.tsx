@@ -63,7 +63,7 @@ export const StudentApp = () => {
     h: 12,
     z: 1,
     flipped: false,
-    config: {} as WidgetConfig, // Config syncing to be implemented in V3
+    config: session.activeWidgetConfig ?? ({} as WidgetConfig),
     isLive: true,
   };
 

@@ -41,6 +41,7 @@ export const WidgetRenderer: React.FC<{
     endSession,
     toggleFreezeStudent,
     toggleGlobalFreeze,
+    updateSessionConfig,
   } = useLiveSession(user?.uid, 'teacher');
 
   // Logic to determine if THIS widget is the live one
@@ -51,9 +52,19 @@ export const WidgetRenderer: React.FC<{
     if (isThisWidgetLive) {
       void endSession();
     } else {
-      void startSession(widget.id, widget.type);
+      void startSession(widget.id, widget.type, widget.config);
     }
   };
+
+  // Sync config changes to session when live
+  React.useEffect(() => {
+    if (isThisWidgetLive) {
+      const timer = setTimeout(() => {
+        void updateSessionConfig(widget.config);
+      }, 500); // Debounce updates
+      return () => clearTimeout(timer);
+    }
+  }, [widget.config, isThisWidgetLive, updateSessionConfig]);
 
   const getWidgetContent = () => {
     switch (widget.type) {

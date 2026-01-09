@@ -65,6 +65,7 @@ export interface LiveSession {
   isActive: boolean;
   activeWidgetId: string | null;
   activeWidgetType: WidgetType | null;
+  activeWidgetConfig?: WidgetConfig; // Config for the active widget
   code: string; // A short 4-6 digit join code
   frozen: boolean; // Global freeze state
   createdAt: number;
