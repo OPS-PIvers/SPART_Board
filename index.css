@@ -83,3 +83,8 @@ body {
   color: #1e293b;
   background-color: #f8fafc;
 }
+
+/* Disable pointer events on iframes during drag/resize to prevent event swallowing */
+body.is-dragging-widget iframe {
+  pointer-events: none !important;
+}

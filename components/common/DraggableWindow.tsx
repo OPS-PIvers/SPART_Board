@@ -81,6 +81,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const handleDragStart = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.resize-handle')) return;
     setIsDragging(true);
+    document.body.classList.add('is-dragging-widget');
     const startX = e.clientX - widget.x;
     const startY = e.clientY - widget.y;
 
@@ -93,6 +94,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     const onMouseUp = () => {
       setIsDragging(false);
+      document.body.classList.remove('is-dragging-widget');
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
@@ -104,6 +106,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsResizing(true);
+    document.body.classList.add('is-dragging-widget');
     const startW = widget.w;
     const startH = widget.h;
     const startX = e.clientX;
@@ -118,6 +121,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     const onMouseUp = () => {
       setIsResizing(false);
+      document.body.classList.remove('is-dragging-widget');
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
