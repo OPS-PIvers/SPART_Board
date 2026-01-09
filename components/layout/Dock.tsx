@@ -134,7 +134,7 @@ const DockItem = ({
               {minimizedWidgets.map((widget) => (
                 <div
                   key={widget.id}
-                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-indigo-50 rounded-lg group transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-brand-blue-lighter rounded-lg group transition-colors"
                 >
                   <button
                     onClick={() => {
@@ -146,7 +146,7 @@ const DockItem = ({
                     <span className="truncate text-xs text-slate-700 font-medium">
                       {getTitle(widget)}
                     </span>
-                    <RefreshCcw className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    <RefreshCcw className="w-3 h-3 text-brand-blue-light opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                   </button>
                   <button
                     onClick={() => {
@@ -167,7 +167,7 @@ const DockItem = ({
                   onAdd();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-xs font-bold rounded-lg transition-colors"
               >
                 <Plus className="w-3 h-3" />
                 <span>Create</span>
@@ -206,7 +206,7 @@ const DockItem = ({
         >
           <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
           {minimizedWidgets.length > 0 && (
-            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
               {minimizedWidgets.length}
             </div>
           )}
@@ -251,7 +251,7 @@ export const Dock: React.FC = () => {
 
   const classToolMetadata = useMemo(() => {
     const tool = TOOLS.find((t) => t.type === 'classes');
-    if (!tool) return { label: 'Class', color: 'bg-indigo-600' };
+    if (!tool) return { label: 'Class', color: 'bg-brand-blue-primary' };
 
     const permission = featurePermissions.find(
       (p) => p.widgetType === 'classes'
@@ -442,7 +442,7 @@ export const Dock: React.FC = () => {
           /* Compressed down to a single icon */
           <button
             onClick={() => setIsExpanded(true)}
-            className="w-14 h-14 flex items-center justify-center bg-indigo-600 text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-[0_10px_30px_rgba(79,70,229,0.4)] animate-in fade-in zoom-in duration-300"
+            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
             title="Open Tools"
           >
             <LayoutGrid className="w-6 h-6" />

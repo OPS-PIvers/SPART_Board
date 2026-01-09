@@ -289,7 +289,7 @@ export const FeaturePermissionsManager: React.FC = () => {
           return (
             <div
               key={tool.type}
-              className="bg-white border-2 border-slate-200 rounded-xl p-4 hover:border-indigo-300 transition-colors"
+              className="bg-white border-2 border-slate-200 rounded-xl p-4 hover:border-brand-blue-light transition-colors"
             >
               {/* Widget Header */}
               <div className="flex items-center justify-between mb-4">
@@ -307,7 +307,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                           displayName: val || undefined,
                         });
                       }}
-                      className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-0 py-0.5 transition-colors"
+                      className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand-blue-primary focus:outline-none px-0 py-0.5 transition-colors"
                       placeholder={tool.label}
                     />
                     <p className="text-xs text-slate-500">{tool.type}</p>
@@ -342,7 +342,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-blue-lighter rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue-primary"></div>
                 </label>
               </div>
 
@@ -388,7 +388,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                         onClick={() => toggleGradeLevel(tool.type, level)}
                         className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
                           isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                             : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
@@ -400,7 +400,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                     onClick={() => toggleAllGradeLevels(tool.type)}
                     className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
                       isAllSelected
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                         : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
@@ -435,7 +435,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                       <input
                         type="email"
                         placeholder="user@example.com"
-                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             addBetaUser(
@@ -453,7 +453,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                           addBetaUser(tool.type, input.value);
                           input.value = '';
                         }}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-3 py-2 bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -469,7 +469,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                 className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                   unsavedChanges.has(tool.type)
                     ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    : 'bg-brand-blue-primary hover:bg-brand-blue-dark text-white'
                 }`}
               >
                 <Save className="w-4 h-4" />
