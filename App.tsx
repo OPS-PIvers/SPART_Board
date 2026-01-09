@@ -6,6 +6,8 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { DashboardView } from './components/layout/DashboardView';
 import { UpdateNotification } from './components/layout/UpdateNotification';
 import { isConfigured } from './config/firebase';
+import { StudentApp } from './components/student/StudentApp';
+import { StudentProvider } from './components/student/StudentContexts';
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
@@ -23,6 +25,15 @@ const AuthenticatedApp: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Simple routing for Student View
+  if (window.location.pathname === '/join') {
+    return (
+      <StudentProvider>
+        <StudentApp />
+      </StudentProvider>
+    );
+  }
+
   if (!isConfigured) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">

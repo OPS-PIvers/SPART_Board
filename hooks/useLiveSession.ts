@@ -5,6 +5,7 @@ import {
   updateDoc,
   setDoc,
   collection,
+  addDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType } from '../types';
@@ -15,11 +16,15 @@ const STUDENTS_COL = 'students';
 
 export const useLiveSession = (
   userId: string | undefined,
-  role: 'teacher' | 'student'
+  role: 'teacher' | 'student',
+  joinCode?: string
 ) => {
   const [session, setSession] = useState<LiveSession | null>(null);
   const [students, setStudents] = useState<LiveStudent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    role === 'teacher' || (role === 'student' && !!joinCode)
+  );
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   // TEACHER: Subscribe to own session
   useEffect(() => {
@@ -52,10 +57,69 @@ export const useLiveSession = (
     };
   }, [userId, role]);
 
-  // STUDENT: Subscribe to joined session (logic to be expanded in Student App)
-  // For V1 in this hook, we focus on the Teacher's "Control" side.
+  // STUDENT: Subscribe to joined session
+  useEffect(() => {
+    if (role !== 'student' || !joinCode) {
+      return;
+    }
+
+    // 1. Subscribe to the Session (Global State: Active Widget, Freeze)
+    // Assuming joinCode is Teacher ID for V1
+    const sessionRef = doc(db, SESSIONS_COL, joinCode);
+    const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSession(docSnap.data() as LiveSession);
+      } else {
+        setSession(null); // Session ended or invalid code
+      }
+      setLoading(false);
+    });
+
+    // 2. Subscribe to My Student Status (Am I frozen?)
+    let unsubscribeStudent = () => {
+      // Cleanup
+    };
+    if (studentId) {
+      const myStudentRef = doc(
+        db,
+        SESSIONS_COL,
+        joinCode,
+        STUDENTS_COL,
+        studentId
+      );
+      unsubscribeStudent = onSnapshot(myStudentRef, (_docSnap) => {
+        // Here we could update local state if we needed specific student data
+        // For now, the global session 'frozen' is the main thing,
+        // but individual freeze status is checked via the students list or this doc.
+        // We might want to expose 'isFrozen' for this student.
+      });
+    }
+
+    return () => {
+      unsubscribeSession();
+      unsubscribeStudent();
+    };
+  }, [joinCode, role, studentId]);
 
   // --- ACTIONS ---
+
+  const joinSession = async (name: string, teacherId: string) => {
+    // 1. Add student to subcollection
+    const studentsRef = collection(db, SESSIONS_COL, teacherId, STUDENTS_COL);
+    const newStudent: LiveStudent = {
+      id: '', // Will be set by Firestore
+      name,
+      status: 'active',
+      joinedAt: Date.now(),
+      lastActive: Date.now(),
+    };
+
+    const docRef = await addDoc(studentsRef, newStudent);
+    setStudentId(docRef.id);
+    // Save to sessionStorage so reload doesn't kill session (optional for V1)
+    sessionStorage.setItem('spart_student_id', docRef.id);
+    return docRef.id;
+  };
 
   const startSession = async (widgetId: string, widgetType: string) => {
     if (!userId) return;
@@ -103,5 +167,7 @@ export const useLiveSession = (
     endSession,
     toggleFreezeStudent,
     toggleGlobalFreeze,
+    joinSession,
+    studentId,
   };
 };

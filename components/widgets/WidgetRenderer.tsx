@@ -27,9 +27,10 @@ import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 
-export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
-  widget,
-}) => {
+export const WidgetRenderer: React.FC<{
+  widget: WidgetData;
+  isStudentView?: boolean;
+}> = ({ widget, isStudentView = false }) => {
   const { user } = useAuth();
 
   // Initialize the hook (only active if user exists)
@@ -153,6 +154,16 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
     ? { zIndex: 9995 }
     : {};
 
+  const content = getWidgetContent();
+
+  if (isStudentView) {
+    return (
+      <div className="h-full w-full bg-white rounded-xl shadow-sm overflow-hidden relative">
+        {content}
+      </div>
+    );
+  }
+
   return (
     <DraggableWindow
       widget={widget}
@@ -175,7 +186,7 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
         />
       }
     >
-      {getWidgetContent()}
+      {content}
     </DraggableWindow>
   );
 };
