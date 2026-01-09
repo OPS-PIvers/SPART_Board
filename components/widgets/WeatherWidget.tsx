@@ -168,11 +168,12 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   // Normalize proxy URL by ensuring it has a trailing slash for concatenation
-  // (unless it uses query parameter format like api.allorigins.win)
+  // Query parameter-based proxies (detected by presence of '?url=' pattern) don't need normalization
   const normalizeProxyUrl = useCallback((url: string): string => {
     if (!url) return url;
     // Query parameter format proxies don't need trailing slash
-    if (url.includes('api.allorigins.win')) {
+    // This pattern detects proxies that use ?url= or &url= for the target
+    if (url.includes('?url=') || url.includes('&url=')) {
       return url;
     }
     // Ensure trailing slash for concatenation format
@@ -304,13 +305,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       // - Humidity >= 80%: High moisture content, typically indicates cloudy/overcast
       // - Otherwise: Clear/sunny conditions
       // Priority: precipitation > wind > humidity > clear (most impactful first)
-      // Check if precipitation data exists before accessing rate property
-      if (
-        data.precipitation &&
-        typeof data.precipitation.rate === 'number' &&
-        Number.isFinite(tempF) &&
-        Number.isFinite(precipRate)
-      ) {
+      if (Number.isFinite(tempF)) {
         if (precipRate > 0) {
           // Treat precipitation at near-freezing temperatures as snow
           if (tempF <= 34) {
@@ -319,15 +314,6 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
             condition = 'rainy';
           }
         } else if (windGust >= 25 || windSpeed >= 20) {
-          condition = 'windy';
-        } else if (humidity >= 80) {
-          condition = 'cloudy';
-        } else {
-          condition = 'sunny';
-        }
-      } else if (Number.isFinite(tempF)) {
-        // If precipitation data is missing, fall back to wind/humidity/clear logic
-        if (windGust >= 25 || windSpeed >= 20) {
           condition = 'windy';
         } else if (humidity >= 80) {
           condition = 'cloudy';
