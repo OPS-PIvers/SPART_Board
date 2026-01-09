@@ -7,14 +7,14 @@ const __dirname = path.dirname(__filename);
 
 const versionInfo = {
   version: new Date().getTime().toString(),
-  buildDate: new Date().toISOString()
+  buildDate: new Date().toISOString(),
 };
 
 const publicDir = path.resolve(__dirname, '../public');
 
 try {
-  if (!fs.existsSync(publicDir)){
-      fs.mkdirSync(publicDir, { recursive: true });
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
   }
 
   // Ensure version.json is ignored in git

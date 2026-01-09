@@ -44,13 +44,17 @@ export const useAppVersion = (checkIntervalMs = 60000) => {
       }
       timeoutRef.current = setTimeout(async () => {
         const latestVersion = await fetchVersion();
-        if (latestVersion && currentVersion && latestVersion !== currentVersion) {
+        if (
+          latestVersion &&
+          currentVersion &&
+          latestVersion !== currentVersion
+        ) {
           setUpdateAvailable(true);
         } else {
           // Schedule next poll only if no update found yet (or keep polling? usually stop after update found)
           // If update found, we stop polling? Usually yes.
           if (!latestVersion || latestVersion === currentVersion) {
-             schedulePoll();
+            schedulePoll();
           }
         }
       }, checkIntervalMs);
