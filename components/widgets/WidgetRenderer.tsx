@@ -10,7 +10,7 @@ import { StopwatchWidget, StopwatchSettings } from './StopwatchWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
 import { TextWidget, TextSettings } from './TextWidget';
 import { SoundWidget, SoundSettings } from './SoundWidget';
-import { WebcamWidget } from './WebcamWidget';
+import { WebcamWidget, WebcamSettings } from './WebcamWidget';
 import { EmbedWidget, EmbedSettings } from './EmbedWidget';
 import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
 import { RandomWidget, RandomSettings } from './RandomWidget';
@@ -165,6 +165,8 @@ export const WidgetRenderer: React.FC<{
         return <DrawingSettings widget={widget} />;
       case 'qr':
         return <QRSettings widget={widget} />;
+      case 'webcam':
+        return <WebcamSettings widget={widget} />;
       case 'calendar':
         return <CalendarSettings widget={widget} />;
       case 'weather':

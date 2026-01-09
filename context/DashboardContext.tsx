@@ -501,7 +501,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           ],
         },
       },
-      webcam: { w: 350, h: 300, config: {} },
+      webcam: {
+        w: 400,
+        h: 300,
+        config: {
+          zoomLevel: 1,
+          isMirrored: true,
+        },
+      },
       scoreboard: {
         w: 320,
         h: 200,

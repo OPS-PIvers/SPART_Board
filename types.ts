@@ -196,8 +196,8 @@ export interface PollConfig {
 
 export interface WebcamConfig {
   deviceId?: string;
+  zoomLevel?: number;
   isMirrored?: boolean;
-  zoom?: number;
 }
 
 export interface ScoreboardConfig {
