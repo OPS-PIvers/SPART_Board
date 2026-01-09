@@ -6,6 +6,9 @@ import {
   setDoc,
   collection,
   addDoc,
+  query,
+  where,
+  getDocs,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType } from '../types';
@@ -103,8 +106,22 @@ export const useLiveSession = (
 
   // --- ACTIONS ---
 
-  const joinSession = async (name: string, teacherId: string) => {
-    // 1. Add student to subcollection
+  const joinSession = async (name: string, codeInput: string) => {
+    // 1. Find session by Code (Case insensitive lookup would require a specific field or storage strategy,
+    // but for now we assume exact match or uppercase match if we store it uppercase)
+    const normalizedCode = codeInput.toUpperCase().trim();
+    const sessionsRef = collection(db, SESSIONS_COL);
+    const q = query(sessionsRef, where('code', '==', normalizedCode));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      throw new Error('Session not found');
+    }
+
+    const sessionDoc = querySnapshot.docs[0];
+    const teacherId = sessionDoc.id;
+
+    // 2. Add student to subcollection
     const studentsRef = collection(db, SESSIONS_COL, teacherId, STUDENTS_COL);
     const newStudent: LiveStudent = {
       id: '', // Will be set by Firestore
@@ -118,7 +135,7 @@ export const useLiveSession = (
     setStudentId(docRef.id);
     // Save to sessionStorage so reload doesn't kill session (optional for V1)
     sessionStorage.setItem('spart_student_id', docRef.id);
-    return docRef.id;
+    return teacherId;
   };
 
   const startSession = async (widgetId: string, widgetType: string) => {

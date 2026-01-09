@@ -16,8 +16,13 @@ export const StudentApp = () => {
   );
 
   const handleJoin = async (code: string, name: string) => {
-    await joinSession(name, code);
-    setJoinedCode(code);
+    try {
+      const sessionId = await joinSession(name, code);
+      setJoinedCode(sessionId);
+    } catch (error) {
+      console.error('Join error:', error);
+      alert('Could not join session. Check the code and try again.');
+    }
   };
 
   // 1. Lobby State
