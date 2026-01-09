@@ -486,7 +486,7 @@ export const Sidebar: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-brand-blue-primary">
                   <Layout className="w-6 h-6" />
-                  <span className="font-black text-lg tracking-tight">
+                  <span className="font-black text-xl tracking-tight">
                     SPARTBOARD
                   </span>
                 </div>
@@ -498,7 +498,7 @@ export const Sidebar: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold uppercase tracking-wide">
+              <div className="flex bg-slate-100 p-1 rounded-xl text-sm font-bold uppercase tracking-wide">
                 <button
                   onClick={() => setActiveTab('widgets')}
                   className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
@@ -507,7 +507,7 @@ export const Sidebar: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" /> Widgets
+                  <LayoutGrid className="w-4 h-4" /> Widgets
                 </button>
                 <button
                   onClick={() => setActiveTab('design')}
@@ -517,7 +517,7 @@ export const Sidebar: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <Paintbrush className="w-3.5 h-3.5" /> Design
+                  <Paintbrush className="w-4 h-4" /> Design
                 </button>
                 <button
                   onClick={() => setActiveTab('manage')}
@@ -527,7 +527,7 @@ export const Sidebar: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <FolderOpen className="w-3.5 h-3.5" /> Manage
+                  <FolderOpen className="w-4 h-4" /> Manage
                 </button>
               </div>
             </div>
@@ -538,11 +538,11 @@ export const Sidebar: React.FC = () => {
               {activeTab === 'widgets' && (
                 <div className="space-y-4">
                   {/* Grade Level Filter */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1.5">
-                        <Filter className="w-4 h-4 text-slate-400" />
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        <Filter className="w-5 h-5 text-slate-400" />
+                        <span className="text-sm font-bold uppercase tracking-wider text-slate-400">
                           Grade Filter
                         </span>
                       </div>
@@ -552,7 +552,7 @@ export const Sidebar: React.FC = () => {
                         <button
                           key={option.value}
                           onClick={() => handleGradeFilterChange(option.value)}
-                          className={`py-1.5 px-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase transition-all ${
+                          className={`py-2 px-1 rounded-lg text-xs sm:text-sm font-bold uppercase transition-all ${
                             gradeFilter === option.value
                               ? 'bg-brand-blue-primary text-white shadow-sm'
                               : 'bg-white text-slate-500 hover:bg-slate-200'
@@ -565,20 +565,20 @@ export const Sidebar: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    <h3 className="text-base font-bold text-slate-800 uppercase tracking-wider">
                       Available Widgets
                     </h3>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setAllToolsVisibility(true)}
-                        className="text-xs font-bold text-brand-blue-primary hover:underline"
+                        className="text-sm font-bold text-brand-blue-primary hover:underline"
                       >
                         Select All
                       </button>
                       <span className="text-slate-300">|</span>
                       <button
                         onClick={() => setAllToolsVisibility(false)}
-                        className="text-xs font-bold text-slate-500 hover:underline"
+                        className="text-sm font-bold text-slate-500 hover:underline"
                       >
                         Clear
                       </button>
@@ -605,27 +605,27 @@ export const Sidebar: React.FC = () => {
                         <button
                           key={tool.type}
                           onClick={() => toggleToolVisibility(tool.type)}
-                          className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 group ${
+                          className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 group ${
                             isActive
                               ? 'bg-brand-blue-lighter border-brand-blue-lighter text-brand-blue-dark'
                               : 'bg-white border-transparent hover:border-slate-100 text-slate-500'
                           }`}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-4 min-w-0">
                             <div
-                              className={`p-2.5 rounded-lg ${isActive ? tool.color : 'bg-slate-100 group-hover:bg-slate-200'} ${isActive ? 'text-white' : 'text-slate-500'} transition-colors`}
+                              className={`p-3 rounded-lg ${isActive ? tool.color : 'bg-slate-100 group-hover:bg-slate-200'} ${isActive ? 'text-white' : 'text-slate-500'} transition-colors`}
                             >
-                              <tool.icon className="w-5 h-5" />
+                              <tool.icon className="w-6 h-6" />
                             </div>
                             <div className="text-left">
-                              <div className="text-sm font-bold uppercase tracking-tight">
+                              <div className="text-base font-bold uppercase tracking-tight">
                                 {displayLabel}
                               </div>
-                              <div className="flex gap-1 mt-1">
+                              <div className="flex gap-1.5 mt-1">
                                 {gradeLevels.map((level) => (
                                   <span
                                     key={level}
-                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
+                                    className="text-xs font-bold px-2 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
                                   >
                                     {formatGradeLevel(level)}
                                   </span>
@@ -634,14 +634,14 @@ export const Sidebar: React.FC = () => {
                             </div>
                           </div>
                           <div
-                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
                               isActive
                                 ? 'bg-brand-blue-primary border-brand-blue-primary'
                                 : 'border-slate-200'
                             }`}
                           >
                             {isActive && (
-                              <CheckSquare className="w-3.5 h-3.5 text-white" />
+                              <CheckSquare className="w-4 h-4 text-white" />
                             )}
                           </div>
                         </button>
@@ -658,7 +658,7 @@ export const Sidebar: React.FC = () => {
                   <div className="flex border-b border-slate-100 mb-4">
                     <button
                       onClick={() => setDesignTab('presets')}
-                      className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      className={`flex-1 pb-2 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'presets'
                           ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -668,7 +668,7 @@ export const Sidebar: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setDesignTab('colors')}
-                      className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      className={`flex-1 pb-2 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'colors'
                           ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -678,7 +678,7 @@ export const Sidebar: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setDesignTab('gradients')}
-                      className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      className={`flex-1 pb-2 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
                         designTab === 'gradients'
                           ? 'border-brand-blue-primary text-brand-blue-primary'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -706,7 +706,7 @@ export const Sidebar: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-sm font-bold uppercase tracking-wider">
+                            <span className="text-white text-base font-bold uppercase tracking-wider">
                               {bg.label}
                             </span>
                           </div>
@@ -726,8 +726,8 @@ export const Sidebar: React.FC = () => {
                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                           <>
-                            <Upload className="w-5 h-5 mb-2" />
-                            <span className="text-xs font-bold uppercase">
+                            <Upload className="w-6 h-6 mb-2" />
+                            <span className="text-sm font-bold uppercase">
                               Upload Image
                             </span>
                           </>
@@ -781,7 +781,7 @@ export const Sidebar: React.FC = () => {
                           <div
                             className={`w-full h-full rounded-lg ${bg.id}`}
                           />
-                          <div className="absolute bottom-2 left-2 text-[9px] font-black uppercase text-white/90 drop-shadow-md">
+                          <div className="absolute bottom-3 left-3 text-xs font-bold uppercase text-white/90 drop-shadow-md">
                             {bg.label}
                           </div>
                           {activeDashboard?.background === bg.id && (
@@ -800,7 +800,7 @@ export const Sidebar: React.FC = () => {
               {activeTab === 'manage' && (
                 <div className="space-y-6">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
                       My Dashboards
                     </h3>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -824,7 +824,7 @@ export const Sidebar: React.FC = () => {
                             />
                             <div>
                               <div
-                                className={`font-bold text-sm ${
+                                className={`font-bold text-base ${
                                   activeDashboard?.id === db.id
                                     ? 'text-brand-blue-dark'
                                     : 'text-slate-700'
@@ -832,7 +832,7 @@ export const Sidebar: React.FC = () => {
                               >
                                 {db.name}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-medium">
+                              <div className="text-xs text-slate-400 font-medium">
                                 {new Date(db.createdAt).toLocaleDateString()}
                               </div>
                             </div>
@@ -849,7 +849,7 @@ export const Sidebar: React.FC = () => {
                               className="p-2 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100"
                               title="Rename"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <Pencil className="w-5 h-5" />
                             </button>
                             <div className="relative">
                               <input
@@ -863,30 +863,30 @@ export const Sidebar: React.FC = () => {
                                 onClick={(e) => e.stopPropagation()}
                                 className="p-2 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-5 h-5" />
                               </label>
                               <div className="peer-checked:flex hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/40">
                                 <div
                                   className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <h4 className="text-sm font-semibold text-slate-900 mb-2">
+                                  <h4 className="text-base font-semibold text-slate-900 mb-2">
                                     Delete dashboard
                                   </h4>
-                                  <p className="text-xs text-slate-600 mb-4">
+                                  <p className="text-sm text-slate-600 mb-4">
                                     Are you sure you want to delete “{db.name}”?
                                     This action cannot be undone.
                                   </p>
                                   <div className="flex justify-end gap-2">
                                     <label
                                       htmlFor={`delete-dashboard-${db.id}`}
-                                      className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                                      className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
                                     >
                                       Cancel
                                     </label>
                                     <button
                                       type="button"
-                                      className="px-3 py-1.5 text-xs font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
+                                      className="px-4 py-2 text-sm font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         deleteDashboard(db.id);
@@ -917,19 +917,19 @@ export const Sidebar: React.FC = () => {
                         setNewDashboardName('');
                         setShowNewDashboardModal(true);
                       }}
-                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
+                      className="flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
-                      <Plus className="w-6 h-6" />
-                      <span className="text-xs font-bold uppercase">
+                      <Plus className="w-8 h-8" />
+                      <span className="text-sm font-bold uppercase">
                         New Board
                       </span>
                     </button>
                     <button
                       onClick={handleImport}
-                      className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
+                      className="flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
                     >
-                      <Download className="w-6 h-6" />
-                      <span className="text-xs font-bold uppercase">
+                      <Download className="w-8 h-8" />
+                      <span className="text-sm font-bold uppercase">
                         Import
                       </span>
                     </button>
@@ -948,21 +948,21 @@ export const Sidebar: React.FC = () => {
                 onChange={(e) => void handleFileUpload(e)}
               />
 
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 p-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
                 >
-                  <Share2 className="w-4 h-4" /> Share
+                  <Share2 className="w-5 h-5" /> Share
                 </button>
                 <button
                   onClick={() => {
                     saveCurrentDashboard();
                     setIsOpen(false);
                   }}
-                  className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-xs uppercase tracking-wider"
+                  className="flex-1 bg-brand-blue-primary text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-sm uppercase tracking-wider"
                 >
-                  <Save className="w-4 h-4" /> Save & Close
+                  <Save className="w-5 h-5" /> Save & Close
                 </button>
               </div>
             </div>
