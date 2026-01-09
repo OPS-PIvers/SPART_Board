@@ -68,7 +68,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Ref to store current config to prevent dependency loops in fetchMenu
   const configRef = useRef(config);
   useEffect(() => {
     configRef.current = config;
@@ -151,11 +150,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     setIsFetching(false);
   }, [schoolId, testDate, widget.id, updateWidget, addToast]);
 
-  // Only trigger sync on mount or when school/date selection changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchMenu();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId, testDate]);
+  }, [schoolId, testDate, fetchMenu]);
 
   const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '---', bento: '---' };
@@ -190,7 +188,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       home: 0,
       none: 0,
     };
-    students.forEach((s) => counts[(assignments[s] as LunchType) || 'none']++);
+    students.forEach((s) => {
+      const assigned = (assignments[s] as LunchType) || 'none';
+      counts[assigned]++;
+    });
     const summary = `Lunch Count (${new Date().toLocaleDateString()}):\n\nHot Lunch (${parsedMenu.hot}): ${counts.hot}\nBento Box (${parsedMenu.bento}): ${counts.bento}\nHome Lunch: ${counts.home}\n\nSent from Dashboard.`;
     window.open(
       `mailto:${recipient}?subject=Lunch Count&body=${encodeURIComponent(summary)}`
@@ -259,7 +260,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         <button
           onClick={handleSend}
           style={{ backgroundColor: ORONO.redPrimary }}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-xl text-[9px] font-black uppercase shadow-lg hover:brightness-110 active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-xl text-[9px] font-black uppercase shadow-lg hover:brightness-110 active:scale-95 transition-all"
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
@@ -302,7 +303,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           {SCHOOL_OPTIONS.find((s) => s.id === schoolId)?.label} Menu • Today
         </span>
         {fetchError && (
-          <AlertTriangle className="w-3 h-3 text-red-500" title={fetchError} />
+          <span title={fetchError}>
+            <AlertTriangle className="w-3 h-3 text-red-500" />
+          </span>
         )}
       </div>
 
@@ -325,7 +328,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <div className="p-2 flex items-center justify-between border-b border-dashed border-inherit bg-white/40">
               <span className="text-[8px] font-black uppercase text-slate-700">
-                {cat.type}
+                {cat.label}
               </span>
               <span className="text-[10px] font-black bg-white px-1.5 py-0.5 rounded-full shadow-sm">
                 {students.filter((s) => assignments[s] === cat.type).length}
