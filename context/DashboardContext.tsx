@@ -537,13 +537,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         w: 500,
         h: 400,
         config: {
-          firstNames: '',
-          lastNames: '',
+          schoolSite: 'schumann-elementary',
+          isManualMode: false,
+          manualHotLunch: '',
+          manualBentoBox: '',
+          roster: [],
           assignments: {},
           recipient: 'paul.ivers@orono.k12.mn.us',
-          schoolId: 'schumann-elementary',
-          menuText: '',
-          testDate: '',
         },
       },
       classes: {

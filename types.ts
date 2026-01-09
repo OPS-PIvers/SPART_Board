@@ -228,14 +228,22 @@ export interface CalendarConfig {
   events: CalendarEvent[];
 }
 
+export interface LunchMenuDay {
+  hotLunch: string;
+  bentoBox: string;
+  date: string; // ISO String
+}
+
 export interface LunchCountConfig {
-  firstNames: string;
-  lastNames: string;
-  assignments: Record<string, string>;
-  recipient: string;
-  schoolId?: string;
-  menuText?: string;
-  testDate?: string;
+  schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
+  cachedMenu?: LunchMenuDay;
+  lastSyncDate?: string;
+  isManualMode: boolean;
+  manualHotLunch: string;
+  manualBentoBox: string;
+  roster: string[]; // List of student names
+  assignments: Record<string, 'hot' | 'bento' | 'home' | null>;
+  recipient?: string;
 }
 
 export type ClassesConfig = Record<string, never>;
