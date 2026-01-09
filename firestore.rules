@@ -26,25 +26,21 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
 
       // Writes require additional validation for security-sensitive fields
-      // Admin users have full write access
-      // Non-admin users cannot create dashboards with widgets to prevent SSRF via proxyUrl
-      // NOTE: Due to Firestore limitations, we cannot granularly validate nested proxyUrl
-      // changes within existing widget configs. For production deployments requiring
-      // strict SSRF protection, implement Cloud Functions with beforeWrite triggers
+      // Admin users have full write access, including widgets/proxyUrl
+      // Non-admin users are completely restricted from writing widgets field to prevent
+      // SSRF attacks via attacker-controlled proxyUrl values
+      // NOTE: This is intentionally strict. Non-admins cannot modify widgets at all.
+      // For more granular control allowing non-admins to modify certain widget properties
+      // while protecting proxyUrl, implement Cloud Functions with beforeWrite triggers
       // to validate specific field changes in widget configs.
       allow write: if request.auth != null &&
                    request.auth.uid == userId &&
                    (
-                     // Admins can freely modify dashboards
+                     // Admins can freely modify dashboards, including widgets/proxyUrl
                      isAdmin() ||
-                     // Non-admins: allow updates to existing dashboards but prevent
-                     // creating new dashboards with widgets field to reduce SSRF risk
-                     (
-                       // Allow updates to existing dashboards (resource exists)
-                       resource != null ||
-                       // For new dashboards, widgets field must not be present
-                       (resource == null && !('widgets' in request.resource.data))
-                     )
+                     // Non-admins: completely disallow writes that include a widgets field
+                     // to prevent attacker-controlled proxyUrl values from being persisted.
+                     !('widgets' in request.resource.data)
                    );
     }
 
