@@ -48,8 +48,8 @@ export const useLiveSession = (
     const studentsRef = collection(db, SESSIONS_COL, userId, STUDENTS_COL);
     const unsubscribeStudents = onSnapshot(studentsRef, (snapshot) => {
       const studentList = snapshot.docs.map((doc) => ({
-        id: doc.id,
         ...doc.data(),
+        id: doc.id,
       })) as LiveStudent[];
       setStudents(studentList);
     });
@@ -123,8 +123,7 @@ export const useLiveSession = (
 
     // 2. Add student to subcollection
     const studentsRef = collection(db, SESSIONS_COL, teacherId, STUDENTS_COL);
-    const newStudent: LiveStudent = {
-      id: '', // Will be set by Firestore
+    const newStudent: Omit<LiveStudent, 'id'> = {
       name,
       status: 'active',
       joinedAt: Date.now(),
