@@ -35,10 +35,7 @@ const ORONO = {
   grayLightest: '#f3f3f3',
 };
 
-// Define LunchType locally since it's not exported from types.ts
-type LunchType = 'hot' | 'bento' | 'home' | 'none';
-
-// Internal interface for debug logs
+// Internal interfaces for type safety
 interface SyncLog {
   source: string;
   status: 'pending' | 'success' | 'error';
@@ -47,17 +44,19 @@ interface SyncLog {
 }
 
 interface NutrisliceItem {
-  is_section_title: boolean;
   text?: string;
   food?: {
-    name?: string;
+    name: string;
   };
+  is_section_title?: boolean;
 }
 
 interface NutrisliceResponse {
-  contents?: string | { menu_items?: NutrisliceItem[] };
   menu_items?: NutrisliceItem[];
+  contents?: string | NutrisliceResponse;
 }
+
+type LunchType = 'hot' | 'bento' | 'home' | 'none';
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -86,15 +85,17 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     configRef.current = config;
   }, [config]);
 
-  const addLog = (
-    source: string,
-    status: SyncLog['status'],
-    message: string
-  ) => {
-    setDebugLogs((prev) =>
-      [{ source, status, message, timestamp: Date.now() }, ...prev].slice(0, 10)
-    ); // Keep last 10 logs
-  };
+  const addLog = useCallback(
+    (source: string, status: SyncLog['status'], message: string) => {
+      setDebugLogs((prev) =>
+        [{ source, status, message, timestamp: Date.now() }, ...prev].slice(
+          0,
+          10
+        )
+      ); // Keep last 10 logs
+    },
+    []
+  );
 
   const fetchMenu = useCallback(async () => {
     if (!schoolId) return;
@@ -148,34 +149,36 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           continue;
         }
 
-        const rawData = (await res.json()) as NutrisliceResponse;
+        const rawData = (await res.json()) as NutrisliceResponse & {
+          contents?: string | NutrisliceResponse;
+        };
 
         // Handle AllOrigins wrapper if present
         let content: NutrisliceResponse = rawData;
-        if (rawData.contents && typeof rawData.contents === 'string') {
-          try {
-            content = JSON.parse(rawData.contents) as NutrisliceResponse;
-          } catch {
-            addLog(
-              proxy.name,
-              'error',
-              'Failed to parse AllOrigins JSON string'
-            );
-            continue;
+
+        if (rawData.contents) {
+          if (typeof rawData.contents === 'string') {
+            try {
+              content = JSON.parse(rawData.contents) as NutrisliceResponse;
+            } catch {
+              addLog(
+                proxy.name,
+                'error',
+                'Failed to parse AllOrigins JSON string'
+              );
+              continue;
+            }
+          } else {
+            content = rawData.contents;
           }
-        } else if (rawData.contents && typeof rawData.contents === 'object') {
-          content = rawData.contents as NutrisliceResponse;
         }
 
-        const items = content.menu_items ?? content.contents?.menu_items;
-
-        if (items) {
-          const entrees = items
+        if (content && Array.isArray(content.menu_items)) {
+          const entrees = content.menu_items
             .filter(
-              (item: NutrisliceItem) =>
-                !item.is_section_title && (item.food?.name || item.text)
+              (item) => !item.is_section_title && (item.food?.name || item.text)
             )
-            .map((item: NutrisliceItem) => item.food?.name || item.text || '');
+            .map((item) => item.food?.name || item.text || '');
 
           const uniqueEntrees = Array.from(new Set(entrees)).filter(Boolean);
 
@@ -210,13 +213,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       addLog('Final', 'error', 'All proxies failed');
     }
     setIsFetching(false);
-  }, [schoolId, testDate, widget.id, updateWidget, addToast]);
+  }, [schoolId, testDate, widget.id, updateWidget, addToast, addLog]);
 
   // Initial Sync
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchMenu();
-  }, [schoolId, testDate, fetchMenu]); // Added fetchMenu to deps
+  }, [schoolId, testDate, fetchMenu]);
 
   const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '---', bento: '---' };
@@ -245,7 +248,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [firstNames, lastNames]);
 
   const handleSend = () => {
-    const counts: Record<string, number> = {
+    const counts: Record<LunchType, number> = {
       hot: 0,
       bento: 0,
       home: 0,
