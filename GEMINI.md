@@ -44,9 +44,9 @@
 ## Design System & Styling
 
 - **Typography**: **Lexend** (UI), **Patrick Hand** (Accents), **Roboto Mono** (Code).
-- **Brand Colors**:
-  - Blue: `#2d3f89` (Primary)
-  - Red: `#ad2122` (Primary)
+- **Brand Colors**: Custom brand colors configured in tailwind.config.js:
+  - **Brand Blue**: Primary (#2d3f89), Dark (#1d2a5d), Light (#4356a0).
+  - **Brand Red**: Primary (#ad2122), Dark (#7a1718), Light (#c13435).
 - **Theme Config**: See `tailwind.config.js` for full palette and extensions.
 
 ## Slash Commands
