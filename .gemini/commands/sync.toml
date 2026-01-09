@@ -24,5 +24,5 @@ You are a technical assistant. Execute the following steps exactly:
 
     5C) Identify conflicting files via `git status`.
 
-    5D) Report: "Update paused. Someone else has made changes to the exact same lines you are working on. To prevent overwriting your work, I have stopped the update. You can continue working, but you will eventually need to manually choose which changes to keep (yours or theirs). Alternatively, use the command /clean if you want to delete your current work and start fresh from the latest project version." 
+    5D) Report: "Update paused. There are conflicting changes between your work and the latest updates from Main. To keep your work safe, I have stopped the update.\n\nPlease type this to me now: **'Help me fix the sync conflicts'**\n\nI will then help you manually merge the updates so nothing gets lost." 
 """
