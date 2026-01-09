@@ -64,23 +64,20 @@ service cloud.firestore {
 
     // Sessions - Teacher owns it, Students can join
     match /sessions/{userId} {
-      allow read: if true; // Public read to find session by code and listen to status
+      // Only authenticated users (including anonymous) can read sessions
+      // This allows students to find sessions by code and listen to updates
+      allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId; // Teacher controls it
       
       match /students/{studentId} {
-        // Only authenticated users may access student session records.
-        // Access is limited to:
-        // - The teacher who owns the session (userId),
-        // - The student whose record it is (studentId == request.auth.uid),
-        // - Admins (via isAdmin()).
-        allow read: if request.auth != null &&
+        // Student session records access:
+        // - Authenticated users (including anonymous students) can read
+        // - Authenticated users can create (students join with anonymous auth)
+        // - Only the teacher (userId) or admins can update/delete
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null &&
           (request.auth.uid == userId ||
-           request.auth.uid == studentId ||
-           isAdmin());
-
-        allow create, update, delete: if request.auth != null &&
-          (request.auth.uid == userId ||
-           request.auth.uid == studentId ||
            isAdmin());
       }
     }

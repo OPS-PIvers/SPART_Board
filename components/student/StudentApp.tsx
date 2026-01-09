@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { signInAnonymously } from 'firebase/auth';
+import { auth } from '../../config/firebase';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
@@ -7,6 +9,22 @@ import { WidgetData, WidgetConfig } from '../../types';
 
 export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Sign in anonymously when component mounts
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        await signInAnonymously(auth);
+        setAuthInitialized(true);
+      } catch (error) {
+        console.error('Failed to initialize anonymous auth:', error);
+        setAuthInitialized(true); // Continue anyway to show error
+      }
+    };
+
+    void initAuth();
+  }, []);
 
   // Hook usage for 'student' role
   const { session, loading, joinSession, studentId, individualFrozen } =
@@ -18,7 +36,14 @@ export const StudentApp = () => {
       setJoinedCode(sessionId);
     } catch (error) {
       console.error('Join error:', error);
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      let message: string;
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (typeof error === 'string') {
+        message = error;
+      } else {
+        message = 'Failed to join session due to an unexpected error.';
+      }
       if (message.includes('Session not found')) {
         alert('Session not found. Please check your join code and try again.');
       } else if (message.includes('network') || message.includes('fetch')) {
@@ -28,6 +53,15 @@ export const StudentApp = () => {
       }
     }
   };
+
+  // Wait for auth to initialize before showing lobby
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white">Initializing...</div>
+      </div>
+    );
+  }
 
   // 1. Lobby State
   if (!joinedCode || !studentId) {
