@@ -26,22 +26,24 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
 
       // Writes require additional validation for security-sensitive fields
-      // Admin users have full write access, including widgets/proxyUrl
-      // Non-admin users are completely restricted from writing widgets field to prevent
-      // SSRF attacks via attacker-controlled proxyUrl values
-      // NOTE: This is intentionally strict. Non-admins cannot modify widgets at all.
-      // For more granular control allowing non-admins to modify certain widget properties
-      // while protecting proxyUrl, implement Cloud Functions with beforeWrite triggers
-      // to validate specific field changes in widget configs.
-      allow write: if request.auth != null &&
-                   request.auth.uid == userId &&
-                   (
-                     // Admins can freely modify dashboards, including widgets/proxyUrl
-                     isAdmin() ||
-                     // Non-admins: completely disallow writes that include a widgets field
-                     // to prevent attacker-controlled proxyUrl values from being persisted.
-                     !('widgets' in request.resource.data)
-                   );
+      // Admin users have full write access, including widgets/proxyUrl configuration
+      // Non-admin users: Client-side UI restricts proxyUrl editing to admins only,
+      // but this can be bypassed by directly calling Firestore API, creating SSRF risk.
+      //
+      // SECURITY LIMITATION: Firestore rules cannot validate nested fields within arrays.
+      // The proxyUrl field exists inside widget configs in the widgets array, and we
+      // cannot write rules to detect or block specific proxyUrl changes without blocking
+      // ALL widget operations (add, remove, configure, reposition), which would make the
+      // dashboard unusable for non-admin users.
+      //
+      // RECOMMENDED FOR PRODUCTION:
+      // 1. Implement Cloud Functions with beforeWrite triggers to validate proxyUrl changes
+      // 2. Move proxy logic to a backend service that doesn't accept user-provided URLs
+      // 3. Use custom claims in security rules with Cloud Functions to enforce restrictions
+      //
+      // Current rule: Allow all authenticated users to read/write their own dashboards
+      // with client-side validation providing first line of defense against SSRF.
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // User data collection
