@@ -13,7 +13,7 @@ This document provides comprehensive instructions and context for AI assistants 
 ### Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite
-- **Styling:** Tailwind CSS (PostCSS)
+- **Styling:** Tailwind CSS (Custom Brand Theme: Lexend, Patrick Hand fonts, Blue/Red brand colors)
 - **Backend:** Firebase (Auth, Firestore, Storage)
 - **State Management:** React Context (`DashboardContext`)
 - **AI Integration:** Google Gemini API

@@ -8,11 +8,11 @@ Classroom Dashboard Pro is an interactive, widget-based application built with *
 
 ## ✨ Key Features
 
-- **🧩 Widget System:** 20+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, and more.
+- **🧩 Widget System:** 21+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, Traffic Lights, Work Symbols, and more.
 - **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
 - **🔐 Authentication:** Secure Google Sign-In integration.
 - **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.
-- **🎨 Customization:** Drag-and-drop layout, resizable widgets, and custom backgrounds (colors, gradients, or images).
+- **🎨 Customization:** Drag-and-drop layout, resizable widgets, custom backgrounds, and a professional design system featuring 'Lexend' and 'Patrick Hand' fonts.
 - **🤖 AI Integration:** Features powered by Google Gemini (e.g., OCR text extraction in the Webcam widget).
 
 ## 🚀 Getting Started
@@ -65,7 +65,8 @@ The easiest way to start coding is with GitHub Codespaces. This environment come
 ## 🛠 Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite
-- **Styling:** Tailwind CSS, Lucide React (Icons)
+- **Styling:** Tailwind CSS (Custom Brand Theme), Lucide React (Icons)
+- **Fonts:** Lexend (UI), Patrick Hand (Handwritten), Roboto Mono (Code)
 - **Backend:** Firebase (Auth, Firestore, Storage)
 - **AI:** Google Gemini API (`@google/genai`)
 - **Tooling:** ESLint, Prettier, Husky
