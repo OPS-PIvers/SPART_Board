@@ -128,11 +128,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, addToast } = useDashboard();
   const { isAdmin } = useAuth();
   const config = widget.config as WeatherConfig;
-  const {
-    stationId = 'BLLST',
-    proxyUrl = 'https://cors-anywhere.herokuapp.com/',
-    isAuto = false,
-  } = config;
+  const { stationId = 'BLLST', proxyUrl, isAuto = false } = config;
 
   const [loading, setLoading] = useState(false);
   const lastConfigRef = useRef(config);
@@ -157,7 +153,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       // Note: These are public CORS proxy services. For production, consider:
       // 1. Setting up a dedicated backend proxy
       // 2. Moving this list to admin-controlled Firestore configuration
-      // 3. Documenting proxy URL format requirements (direct concatenation)
+      // 3. Documenting proxy URL format requirements (trailing slash required for concatenation)
       const trustedDomains = [
         'cors-anywhere.herokuapp.com',
         'api.allorigins.win',
@@ -169,6 +165,18 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     } catch {
       return false;
     }
+  }, []);
+
+  // Normalize proxy URL by ensuring it has a trailing slash for concatenation
+  // (unless it uses query parameter format like api.allorigins.win)
+  const normalizeProxyUrl = useCallback((url: string): string => {
+    if (!url) return url;
+    // Query parameter format proxies don't need trailing slash
+    if (url.includes('api.allorigins.win')) {
+      return url;
+    }
+    // Ensure trailing slash for concatenation format
+    return url.endsWith('/') ? url : `${url}/`;
   }, []);
 
   // For security, only confirmed admin users can modify proxy URL
@@ -235,8 +243,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           return `${proxyUrl}${separator}url=${encodeURIComponent(targetUrl)}`;
         }
 
-        // Default: assume direct concatenation format (proxyUrl + targetUrl).
-        return `${proxyUrl}${targetUrl}`;
+        // Default: assume direct concatenation format with normalized trailing slash
+        const normalizedProxy = normalizeProxyUrl(proxyUrl);
+        return `${normalizedProxy}${targetUrl}`;
       })();
 
       const res = await fetch(finalUrl);
@@ -295,7 +304,13 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       // - Humidity >= 80%: High moisture content, typically indicates cloudy/overcast
       // - Otherwise: Clear/sunny conditions
       // Priority: precipitation > wind > humidity > clear (most impactful first)
-      if (Number.isFinite(tempF) && Number.isFinite(precipRate)) {
+      // Check if precipitation data exists before accessing rate property
+      if (
+        data.precipitation &&
+        typeof data.precipitation.rate === 'number' &&
+        Number.isFinite(tempF) &&
+        Number.isFinite(precipRate)
+      ) {
         if (precipRate > 0) {
           // Treat precipitation at near-freezing temperatures as snow
           if (tempF <= 34) {
@@ -304,6 +319,15 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
             condition = 'rainy';
           }
         } else if (windGust >= 25 || windSpeed >= 20) {
+          condition = 'windy';
+        } else if (humidity >= 80) {
+          condition = 'cloudy';
+        } else {
+          condition = 'sunny';
+        }
+      } else if (Number.isFinite(tempF)) {
+        // If precipitation data is missing, fall back to wind/humidity/clear logic
+        if (windGust >= 25 || windSpeed >= 20) {
           condition = 'windy';
         } else if (humidity >= 80) {
           condition = 'cloudy';
@@ -362,7 +386,15 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     } finally {
       setLoading(false);
     }
-  }, [proxyUrl, stationId, updateWidget, widget.id, addToast, isValidProxyUrl]);
+  }, [
+    proxyUrl,
+    stationId,
+    updateWidget,
+    widget.id,
+    addToast,
+    isValidProxyUrl,
+    normalizeProxyUrl,
+  ]);
 
   // Store fetchWeather in ref to avoid recreating interval on every change
   useEffect(() => {
@@ -381,6 +413,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       currentBackoffRef.current = REFRESH_INTERVAL_MS;
       return;
     }
+
+    // Reset backoff when auto-refresh is enabled
+    consecutiveFailuresRef.current = 0;
+    currentBackoffRef.current = REFRESH_INTERVAL_MS;
 
     let isMounted = true;
 
@@ -435,6 +471,23 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           </a>{' '}
           if connection fails.
         </div>
+      </div>
+
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+          <MapPin className="w-3 h-3" /> Location Name
+        </label>
+        <input
+          type="text"
+          value={config.locationName ?? 'Weather Station'}
+          onChange={(e) => {
+            updateWidget(widget.id, {
+              config: { ...config, locationName: e.target.value },
+            });
+          }}
+          className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+          placeholder="e.g. Main Campus"
+        />
       </div>
 
       <div>
