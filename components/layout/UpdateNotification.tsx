@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppVersion } from '../../hooks/useAppVersion';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface UpdateNotificationProps {
   checkInterval?: number;
@@ -10,8 +11,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   checkInterval = 60000,
 }) => {
   const { updateAvailable, reloadApp } = useAppVersion(checkInterval);
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!updateAvailable) return null;
+  if (!updateAvailable || dismissed) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
@@ -25,13 +27,22 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
             A new version of the dashboard is available. Refresh to update.
           </p>
         </div>
-        <button
-          onClick={reloadApp}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+        <div className="flex gap-2">
+            <button
+            onClick={reloadApp}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
+            >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+            </button>
+            <button
+            onClick={() => setDismissed(true)}
+            className="p-2 hover:bg-slate-700 rounded-md transition-colors text-slate-400 hover:text-white"
+            aria-label="Dismiss"
+            >
+            <X className="w-4 h-4" />
+            </button>
+        </div>
       </div>
     </div>
   );
