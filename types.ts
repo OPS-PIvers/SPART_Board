@@ -195,8 +195,9 @@ export interface PollConfig {
 }
 
 export interface WebcamConfig {
-  // Record<string, never> ensures an empty object
-  _dummy?: never;
+  deviceId?: string;
+  isMirrored?: boolean;
+  zoom?: number;
 }
 
 export interface ScoreboardConfig {
@@ -331,6 +332,9 @@ export interface WidgetData {
   customTitle?: string;
   isLive?: boolean;
   config: WidgetConfig;
+  deviceId?: string;
+  isMirrored?: boolean;
+  zoom?: number;
 }
 
 export interface Dashboard {
