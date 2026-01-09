@@ -17,6 +17,47 @@ import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 const SESSIONS_COLLECTION = 'sessions';
 const STUDENTS_COLLECTION = 'students';
 
+/**
+ * Custom hook for managing live classroom sessions.
+ * Supports both teacher and student roles with different behaviors:
+ *
+ * **Teacher Mode** (`role: 'teacher'`):
+ * - Creates and manages live sessions
+ * - Broadcasts widget state to students
+ * - Controls freeze state (global and per-student)
+ * - Monitors connected students
+ *
+ * **Student Mode** (`role: 'student'`):
+ * - Joins sessions via join code
+ * - Receives real-time updates of active widget
+ * - Responds to freeze commands from teacher
+ * - Maintains connection status
+ *
+ * @param userId - The authenticated user's ID (required for teachers, undefined for students)
+ * @param role - Either 'teacher' or 'student' to determine behavior
+ * @param joinCode - Optional join code for students to connect to a session
+ *
+ * @returns {Object} Hook state and actions:
+ * - `session`: Current live session data (null if no active session)
+ * - `students`: Array of connected students (teacher mode only)
+ * - `loading`: Whether initial data is being loaded
+ * - `studentId`: The student's unique ID (student mode only)
+ * - `individualFrozen`: Whether this student is individually frozen (student mode only)
+ * - `joinSession`: Function to join a session with name and code (student mode)
+ * - `startSession`: Function to start a new live session (teacher mode)
+ * - `updateSessionConfig`: Function to update active widget config (teacher mode)
+ * - `endSession`: Function to end the current session (teacher mode)
+ * - `toggleFreezeStudent`: Function to freeze/unfreeze a student (teacher mode)
+ * - `toggleGlobalFreeze`: Function to freeze/unfreeze all students (teacher mode)
+ *
+ * @example
+ * // Teacher creating a session
+ * const { session, students, startSession, endSession } = useLiveSession(userId, 'teacher');
+ *
+ * @example
+ * // Student joining a session
+ * const { session, loading, joinSession, individualFrozen } = useLiveSession(undefined, 'student', code);
+ */
 export const useLiveSession = (
   userId: string | undefined,
   role: 'teacher' | 'student',

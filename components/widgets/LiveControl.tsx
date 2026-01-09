@@ -41,9 +41,26 @@ export const LiveControl: React.FC<LiveControlProps> = ({
   const handleToggleMenu = () => {
     if (!showMenu && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const horizontalMargin = 8; // pixels
+
+      // Initial position aligns the menu's right edge with the button's right edge
+      let left = rect.right - MENU_WIDTH;
+
+      // Clamp to keep menu within viewport bounds
+      const maxLeft = Math.max(
+        horizontalMargin,
+        viewportWidth - MENU_WIDTH - horizontalMargin
+      );
+      if (left < horizontalMargin) {
+        left = horizontalMargin;
+      } else if (left > maxLeft) {
+        left = maxLeft;
+      }
+
       const newPosition = {
         top: rect.bottom + 8,
-        left: rect.right - MENU_WIDTH,
+        left,
       };
       setMenuPosition(newPosition);
       setShowMenu(true);
