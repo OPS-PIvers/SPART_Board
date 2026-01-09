@@ -14,6 +14,8 @@ interface LiveControlProps {
   onFreezeAll: () => void;
 }
 
+const MENU_WIDTH = 256; // Width in pixels (w-64 in Tailwind = 16rem = 256px)
+
 export const LiveControl: React.FC<LiveControlProps> = ({
   isLive,
   studentCount,
@@ -38,7 +40,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
       const rect = buttonRef.current.getBoundingClientRect();
       const newPosition = {
         top: rect.bottom + 8,
-        left: rect.right - 256, // 256px is menu width (w-64)
+        left: rect.right - MENU_WIDTH,
       };
       setMenuPosition(newPosition);
       setShowMenu(true);

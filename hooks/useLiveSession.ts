@@ -193,7 +193,7 @@ export const useLiveSession = (
       frozen: false,
     });
 
-    // Clean up students subcollection
+    // Mark students as disconnected when session ends
     const studentsRef = collection(
       db,
       SESSIONS_COLLECTION,
@@ -201,10 +201,10 @@ export const useLiveSession = (
       STUDENTS_COLLECTION
     );
     const studentsSnapshot = await getDocs(studentsRef);
-    const deletePromises = studentsSnapshot.docs.map((doc) =>
+    const disconnectPromises = studentsSnapshot.docs.map((doc) =>
       updateDoc(doc.ref, { status: 'disconnected' })
     );
-    await Promise.all(deletePromises);
+    await Promise.all(disconnectPromises);
   }, [userId]);
 
   const toggleFreezeStudent = useCallback(
