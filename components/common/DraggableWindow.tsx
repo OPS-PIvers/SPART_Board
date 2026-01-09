@@ -280,7 +280,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
           {/* Back Face (Settings) */}
           <div
-            className="back rounded-xl overflow-hidden"
+            className="back rounded-xl overflow-hidden relative"
             style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
           >
             <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border-b border-slate-200">
@@ -295,6 +295,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </button>
             </div>
             <div className="flex-1 p-4 overflow-y-auto">{settings}</div>
+            <div
+              onMouseDown={handleResizeStart}
+              className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
+            >
+              <div className="w-2 h-2 border-r-2 border-b-2 border-slate-400 rounded-br-[2px]" />
+            </div>
           </div>
         </div>
       </div>
