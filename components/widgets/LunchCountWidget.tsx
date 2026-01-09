@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, LunchCountConfig } from '../../types';
 import {
@@ -9,13 +9,36 @@ import {
   Box,
   RefreshCw,
   UserPlus,
+  UtensilsCrossed,
+  School,
+  Loader2,
+  CalendarDays,
+  FlaskConical,
+  AlertTriangle,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
 
-export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
-  widget,
-}) => {
+interface NutrisliceItem {
+  is_section_title?: boolean;
+  food?: {
+    name: string;
+  };
+  text?: string;
+}
+
+interface NutrisliceDigest {
+  menu_items?: NutrisliceItem[];
+}
+
+const SCHOOL_OPTIONS = [
+  { id: 'schumann-elementary', label: 'Schumann Elementary' },
+  { id: 'orono-intermediate', label: 'Orono Intermediate' },
+  { id: 'orono-middle', label: 'Orono Middle School' },
+  { id: 'orono-high-school', label: 'Orono High School' },
+];
+
+export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {
@@ -23,12 +46,92 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
+    schoolId = 'schumann-elementary',
+    menuText = '',
+    testDate = '',
   } = config;
+
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
     [rosters, activeRosterId]
   );
+
+  // Refined Menu Sync Logic - "The SPART Way"
+  const fetchMenu = useCallback(
+    async (force = false) => {
+      if (!schoolId || (menuText && !force)) return;
+
+      setIsFetching(true);
+      setFetchError(null);
+      try {
+        const targetDate = testDate
+          ? new Date(testDate + 'T12:00:00')
+          : new Date();
+        const year = targetDate.getFullYear();
+        const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = targetDate.getDate().toString().padStart(2, '0');
+
+        // We use the "Digest" API which is more reliable for single-day lookups
+        const apiUrl = `https://orono.api.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+
+        // AllOrigins proxy to bypass browser security
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(
+          apiUrl
+        )}&timestamp=${Date.now()}`;
+
+        const res = await fetch(proxyUrl);
+        if (!res.ok) throw new Error('API unreachable');
+
+        const proxyData = (await res.json()) as { contents: string };
+        const data = JSON.parse(proxyData.contents) as NutrisliceDigest;
+
+        // Log for debugging - can be seen in browser console (F12)
+        // eslint-disable-next-line no-console
+        console.log('SPARTY: Menu Data Received', data);
+
+        if (data && data.menu_items) {
+          // Extract names from all food items, skipping section headers
+          const items = data.menu_items
+            .filter(
+              (item) => !item.is_section_title && (item.food?.name ?? item.text)
+            )
+            .map((item) => item.food?.name ?? item.text)
+            .filter((name): name is string => typeof name === 'string');
+
+          const uniqueItems = Array.from(new Set(items));
+
+          if (uniqueItems.length > 0) {
+            const menuString = uniqueItems.join(', ');
+            updateWidget(widget.id, {
+              config: { ...config, menuText: menuString },
+            });
+            addToast('Menu found!', 'success');
+          } else {
+            setFetchError(
+              "No lunch items found in the school's digital menu for this day."
+            );
+          }
+        } else {
+          setFetchError(`School reports no menu scheduled for today.`);
+        }
+      } catch (err) {
+        console.error('SPARTY: Sync Error', err);
+        setFetchError(
+          'Menu sync unavailable. Browser security or school server issue.'
+        );
+      } finally {
+        setIsFetching(false);
+      }
+    },
+    [schoolId, menuText, config, widget.id, testDate, updateWidget, addToast]
+  );
+
+  useEffect(() => {
+    void fetchMenu();
+  }, [fetchMenu]);
 
   const students = useMemo(() => {
     if (activeRoster) {
@@ -80,7 +183,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     });
 
     const summary = `Lunch Count Summary:\n\nHot Lunch: ${counts.hot}\nBento Box: ${counts.bento}\nHome Lunch: ${counts.home}\nNot Reported: ${counts.none}\n\nSent from School Boards.`;
-    const mailto = `mailto:${recipient}?subject=Lunch Count - ${new Date().toLocaleDateString()}&body=${encodeURIComponent(summary)}`;
+    const mailto = `mailto:${recipient}?subject=Lunch Count - ${new Date().toLocaleDateString()}&body=${encodeURIComponent(
+      summary
+    )}`;
 
     window.open(mailto);
     addToast('Lunch report summary generated!', 'success');
@@ -150,6 +255,41 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </span>
         </div>
       )}
+
+      {(menuText || isFetching || fetchError) && (
+        <div className="bg-amber-50 border-2 border-amber-100 rounded-2xl p-3 shrink-0 flex items-start gap-3 relative animate-in fade-in zoom-in duration-300 min-h-[4rem]">
+          <UtensilsCrossed
+            className={`w-5 h-5 text-amber-500 shrink-0 mt-0.5 ${ isFetching ? 'animate-pulse' : ''}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-0.5">
+              <div className="text-[8px] font-black uppercase text-amber-400 tracking-wider">
+                Today&apos;s Menu
+              </div>
+              {testDate && (
+                <div className="flex items-center gap-1 bg-amber-500 text-white px-1.5 rounded text-[7px] font-black uppercase shadow-sm">
+                  <FlaskConical className="w-2 h-2" /> TEST: {testDate}
+                </div>
+              )}
+            </div>
+            {isFetching ? (
+              <div className="text-xs text-amber-900/50 italic flex items-center gap-2 mt-1">
+                <Loader2 className="w-3 h-3 animate-spin" /> Syncing Orono
+                ISD...
+              </div>
+            ) : fetchError ? (
+              <div className="flex items-start gap-1.5 text-[10px] text-amber-700/70 font-bold italic mt-1 leading-tight">
+                <AlertTriangle className="w-3 h-3 shrink-0" /> {fetchError}
+              </div>
+            ) : (
+              <div className="text-xs font-bold text-amber-900 leading-tight italic mt-1">
+                &quot;{menuText}&quot;
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Category Buckets */}
       <div className="grid grid-cols-3 gap-3 shrink-0">
         {categories.map((cat) => (
@@ -255,10 +395,93 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
+    schoolId = 'schumann-elementary',
+    menuText = '',
+    testDate = '',
   } = config;
 
   return (
     <div className="space-y-6">
+      <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-4">
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+            <School className="w-3 h-3" /> Select Your School
+          </label>
+          <select
+            value={schoolId}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  schoolId: e.target.value,
+                  menuText: '',
+                },
+              })
+            }
+            className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl outline-none bg-white text-slate-900"
+          >
+            {SCHOOL_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="bg-white/50 p-3 rounded-xl border border-indigo-100 space-y-2">
+          <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest block flex items-center gap-2">
+            <CalendarDays className="w-3 h-3" /> Simulated Testing Date
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={testDate}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    testDate: e.target.value,
+                    menuText: '',
+                  },
+                })
+              }
+              className="flex-1 p-2 text-[10px] border border-slate-200 rounded-lg outline-none bg-white text-slate-900"
+            />
+            {testDate && (
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, testDate: '', menuText: '' },
+                  })
+                }
+                className="p-2 bg-slate-200 text-slate-600 rounded-lg text-[9px] font-bold uppercase"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+            <UtensilsCrossed className="w-3 h-3" /> Daily Menu Text
+          </label>
+          <textarea
+            value={menuText}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, menuText: e.target.value },
+              })
+            }
+            placeholder="Manual override..."
+            className="w-full h-20 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none leading-relaxed text-slate-900"
+          />
+          <p className="mt-1 text-[8px] text-slate-400 italic font-medium">
+            Clear to force a re-fetch.
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
@@ -305,18 +528,8 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             })
           }
           placeholder="email@example.com"
-          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-slate-900"
         />
-      </div>
-      <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-        <h4 className="text-[10px] font-black text-blue-700 uppercase mb-2">
-          Instructions
-        </h4>
-        <p className="text-[9px] text-blue-600 leading-normal font-medium">
-          Once students choose their lunch, click{' '}
-          <b>&quot;Send Lunch Report&quot;</b>. This opens a mail composer with
-          the final counts pre-formatted for your cafeteria staff.
-        </p>
       </div>
     </div>
   );

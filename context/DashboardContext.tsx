@@ -541,6 +541,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           lastNames: '',
           assignments: {},
           recipient: 'paul.ivers@orono.k12.mn.us',
+          schoolId: 'schumann-elementary',
+          menuText: '',
+          testDate: '',
         },
       },
       classes: {

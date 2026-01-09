@@ -233,6 +233,9 @@ export interface LunchCountConfig {
   lastNames: string;
   assignments: Record<string, string>;
   recipient: string;
+  schoolId?: string;
+  menuText?: string;
+  testDate?: string;
 }
 
 export type ClassesConfig = Record<string, never>;
