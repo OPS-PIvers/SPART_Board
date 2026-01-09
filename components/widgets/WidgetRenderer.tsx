@@ -48,23 +48,40 @@ export const WidgetRenderer: React.FC<{
   const isThisWidgetLive =
     session?.isActive && session?.activeWidgetId === widget.id;
 
-  const handleToggleLive = () => {
-    if (isThisWidgetLive) {
-      void endSession();
-    } else {
-      void startSession(widget.id, widget.type, widget.config);
+  const handleToggleLive = async () => {
+    try {
+      if (isThisWidgetLive) {
+        await endSession();
+      } else {
+        await startSession(widget.id, widget.type, widget.config);
+      }
+    } catch (error) {
+      console.error('Failed to toggle live session:', error);
     }
   };
 
   // Sync config changes to session when live
   React.useEffect(() => {
-    if (isThisWidgetLive) {
-      const timer = setTimeout(() => {
-        void updateSessionConfig(widget.config);
-      }, 500); // Debounce updates
-      return () => clearTimeout(timer);
+    if (!isThisWidgetLive) {
+      return undefined;
     }
-    return undefined;
+
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          await updateSessionConfig(widget.config);
+        } catch (error) {
+          // Log the error so failures are visible during development and debugging
+          // while avoiding disruption to the UI.
+
+          console.error('Failed to update live session config', error);
+        }
+      })();
+    }, 800); // Debounce updates to reduce write frequency under rapid changes
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [widget.config, isThisWidgetLive, updateSessionConfig]);
 
   const getWidgetContent = () => {

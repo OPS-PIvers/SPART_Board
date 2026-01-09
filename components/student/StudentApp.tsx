@@ -21,7 +21,14 @@ export const StudentApp = () => {
       setJoinedCode(sessionId);
     } catch (error) {
       console.error('Join error:', error);
-      alert('Could not join session. Check the code and try again.');
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      if (message.includes('Session not found')) {
+        alert('Session not found. Please check your join code and try again.');
+      } else if (message.includes('network') || message.includes('fetch')) {
+        alert('Connection error. Please check your internet and try again.');
+      } else {
+        alert('Could not join session. Please check the code and try again.');
+      }
     }
   };
 

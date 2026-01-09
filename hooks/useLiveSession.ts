@@ -14,8 +14,8 @@ import { db } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 
 // Constants for Firestore Paths
-const SESSIONS_COL = 'sessions';
-const STUDENTS_COL = 'students';
+const SESSIONS_COLLECTION = 'sessions';
+const STUDENTS_COLLECTION = 'students';
 
 export const useLiveSession = (
   userId: string | undefined,
@@ -33,7 +33,7 @@ export const useLiveSession = (
   useEffect(() => {
     if (role !== 'teacher' || !userId) return;
 
-    const sessionRef = doc(db, SESSIONS_COL, userId);
+    const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
 
     const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -45,7 +45,12 @@ export const useLiveSession = (
     });
 
     // Subscribe to students in this session
-    const studentsRef = collection(db, SESSIONS_COL, userId, STUDENTS_COL);
+    const studentsRef = collection(
+      db,
+      SESSIONS_COLLECTION,
+      userId,
+      STUDENTS_COLLECTION
+    );
     const unsubscribeStudents = onSnapshot(studentsRef, (snapshot) => {
       const studentList = snapshot.docs.map((doc) => ({
         ...doc.data(),
@@ -67,8 +72,8 @@ export const useLiveSession = (
     }
 
     // 1. Subscribe to the Session (Global State: Active Widget, Freeze)
-    // Assuming joinCode is Teacher ID for V1
-    const sessionRef = doc(db, SESSIONS_COL, joinCode);
+    // In V1, joinCode is the teacher's userId which we use as the session document ID
+    const sessionRef = doc(db, SESSIONS_COLLECTION, joinCode);
     const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
       if (docSnap.exists()) {
         setSession(docSnap.data() as LiveSession);
@@ -85,9 +90,9 @@ export const useLiveSession = (
     if (studentId) {
       const myStudentRef = doc(
         db,
-        SESSIONS_COL,
+        SESSIONS_COLLECTION,
         joinCode,
-        STUDENTS_COL,
+        STUDENTS_COLLECTION,
         studentId
       );
       unsubscribeStudent = onSnapshot(myStudentRef, (_docSnap) => {
@@ -107,10 +112,18 @@ export const useLiveSession = (
   // --- ACTIONS ---
 
   const joinSession = async (name: string, codeInput: string) => {
-    // 1. Find session by Code (Case insensitive lookup would require a specific field or storage strategy,
-    // but for now we assume exact match or uppercase match if we store it uppercase)
-    const normalizedCode = codeInput.toUpperCase().trim();
-    const sessionsRef = collection(db, SESSIONS_COL);
+    // 1. Find session by Code with robust sanitization
+    // Remove all non-alphanumeric characters and normalize to uppercase
+    const normalizedCode = codeInput
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .toUpperCase();
+
+    if (!normalizedCode) {
+      throw new Error('Invalid code format');
+    }
+
+    const sessionsRef = collection(db, SESSIONS_COLLECTION);
     const q = query(sessionsRef, where('code', '==', normalizedCode));
     const querySnapshot = await getDocs(q);
 
@@ -122,7 +135,12 @@ export const useLiveSession = (
     const teacherId = sessionDoc.id;
 
     // 2. Add student to subcollection
-    const studentsRef = collection(db, SESSIONS_COL, teacherId, STUDENTS_COL);
+    const studentsRef = collection(
+      db,
+      SESSIONS_COLLECTION,
+      teacherId,
+      STUDENTS_COLLECTION
+    );
     const newStudent: Omit<LiveStudent, 'id'> = {
       name,
       status: 'active',
@@ -137,57 +155,82 @@ export const useLiveSession = (
     return teacherId;
   };
 
-  const startSession = async (
-    widgetId: string,
-    widgetType: string,
-    config?: WidgetConfig
-  ) => {
-    if (!userId) return;
-    const sessionRef = doc(db, SESSIONS_COL, userId);
-    const newSession: LiveSession = {
-      id: userId,
-      isActive: true,
-      activeWidgetId: widgetId,
-      activeWidgetType: widgetType as WidgetType,
-      activeWidgetConfig: config,
-      code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-      frozen: false,
-      createdAt: Date.now(),
-    };
-    await setDoc(sessionRef, newSession);
-  };
+  const startSession = useCallback(
+    async (widgetId: string, widgetType: string, config?: WidgetConfig) => {
+      if (!userId) return;
+      const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
+      const newSession: LiveSession = {
+        id: userId,
+        isActive: true,
+        activeWidgetId: widgetId,
+        activeWidgetType: widgetType as WidgetType,
+        activeWidgetConfig: config,
+        code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        frozen: false,
+        createdAt: Date.now(),
+      };
+      await setDoc(sessionRef, newSession);
+    },
+    [userId]
+  );
 
   const updateSessionConfig = useCallback(
     async (config: WidgetConfig) => {
       if (!userId) return;
-      const sessionRef = doc(db, SESSIONS_COL, userId);
+      const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
       await updateDoc(sessionRef, { activeWidgetConfig: config });
     },
     [userId]
   );
 
-  const endSession = async () => {
+  const endSession = useCallback(async () => {
     if (!userId) return;
-    const sessionRef = doc(db, SESSIONS_COL, userId);
-    await updateDoc(sessionRef, { isActive: false, activeWidgetId: null });
-  };
-
-  const toggleFreezeStudent = async (
-    studentId: string,
-    currentStatus: 'active' | 'frozen'
-  ) => {
-    if (!userId) return;
-    const studentRef = doc(db, SESSIONS_COL, userId, STUDENTS_COL, studentId);
-    await updateDoc(studentRef, {
-      status: currentStatus === 'active' ? 'frozen' : 'active',
+    const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
+    await updateDoc(sessionRef, {
+      isActive: false,
+      activeWidgetId: null,
+      frozen: false,
     });
-  };
 
-  const toggleGlobalFreeze = async (freeze: boolean) => {
-    if (!userId) return;
-    const sessionRef = doc(db, SESSIONS_COL, userId);
-    await updateDoc(sessionRef, { frozen: freeze });
-  };
+    // Clean up students subcollection
+    const studentsRef = collection(
+      db,
+      SESSIONS_COLLECTION,
+      userId,
+      STUDENTS_COLLECTION
+    );
+    const studentsSnapshot = await getDocs(studentsRef);
+    const deletePromises = studentsSnapshot.docs.map((doc) =>
+      updateDoc(doc.ref, { status: 'disconnected' })
+    );
+    await Promise.all(deletePromises);
+  }, [userId]);
+
+  const toggleFreezeStudent = useCallback(
+    async (studentId: string, currentStatus: 'active' | 'frozen') => {
+      if (!userId) return;
+      const studentRef = doc(
+        db,
+        SESSIONS_COLLECTION,
+        userId,
+        STUDENTS_COLLECTION,
+        studentId
+      );
+      await updateDoc(studentRef, {
+        status: currentStatus === 'active' ? 'frozen' : 'active',
+      });
+    },
+    [userId]
+  );
+
+  const toggleGlobalFreeze = useCallback(
+    async (freeze: boolean) => {
+      if (!userId) return;
+      const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
+      await updateDoc(sessionRef, { frozen: freeze });
+    },
+    [userId]
+  );
 
   return {
     session,

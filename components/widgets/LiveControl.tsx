@@ -30,6 +30,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
       {/* GO LIVE BUTTON */}
       <button
         onClick={onToggleLive}
+        aria-label={isLive ? 'End live session' : 'Start live session'}
         className={`
           flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
           ${
@@ -46,6 +47,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
       {isLive && (
         <button
           onClick={() => setShowMenu(!showMenu)}
+          aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''}`}
           className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
         >
           <span className="text-[10px] font-bold">{studentCount}</span>
@@ -59,7 +61,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Classroom ({studentCount})
             </span>
-            <button onClick={() => setShowMenu(false)}>
+            <button onClick={() => setShowMenu(false)} aria-label="Close menu">
               <X size={14} className="text-slate-400 hover:text-slate-600" />
             </button>
           </div>
@@ -104,6 +106,11 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                   <button
                     onClick={() => onFreezeStudent(s.id, s.status)}
                     className={`p-1 rounded hover:bg-blue-50 ${s.status === 'frozen' ? 'text-blue-600' : 'text-slate-300 hover:text-blue-500'}`}
+                    aria-label={
+                      s.status === 'frozen'
+                        ? `Unfreeze ${s.name}`
+                        : `Freeze ${s.name}`
+                    }
                   >
                     <Snowflake size={14} />
                   </button>
@@ -115,6 +122,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           <div className="p-2 border-t border-slate-100 bg-slate-50 rounded-b-xl">
             <button
               onClick={onFreezeAll}
+              aria-label="Toggle freeze for all students"
               className="w-full flex items-center justify-center gap-2 py-2 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase hover:bg-blue-200 transition-colors"
             >
               <Snowflake size={12} /> Freeze / Unfreeze All
