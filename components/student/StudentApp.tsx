@@ -9,11 +9,8 @@ export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
 
   // Hook usage for 'student' role
-  const { session, loading, joinSession, studentId } = useLiveSession(
-    undefined,
-    'student',
-    joinedCode ?? undefined
-  );
+  const { session, loading, joinSession, studentId, individualFrozen } =
+    useLiveSession(undefined, 'student', joinedCode ?? undefined);
 
   const handleJoin = async (code: string, name: string) => {
     try {
@@ -21,7 +18,14 @@ export const StudentApp = () => {
       setJoinedCode(sessionId);
     } catch (error) {
       console.error('Join error:', error);
-      alert('Could not join session. Check the code and try again.');
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      if (message.includes('Session not found')) {
+        alert('Session not found. Please check your join code and try again.');
+      } else if (message.includes('network') || message.includes('fetch')) {
+        alert('Connection error. Please check your internet and try again.');
+      } else {
+        alert('Could not join session. Please check the code and try again.');
+      }
     }
   };
 
@@ -41,8 +45,8 @@ export const StudentApp = () => {
     );
   }
 
-  // 3. Frozen State Overlay
-  if (session.frozen) {
+  // 3. Frozen State Overlay (Global or Individual)
+  if (session.frozen || individualFrozen) {
     return (
       <div className="fixed inset-0 z-50 bg-indigo-900 flex flex-col items-center justify-center p-8 text-center text-white">
         <Snowflake className="w-20 h-20 mb-6 animate-spin-slow opacity-80" />
@@ -54,13 +58,37 @@ export const StudentApp = () => {
 
   // 4. Active Widget State
   // We mock a Widget object here based on session data.
+  // Widget dimensions are set based on the widget type for optimal display
+  const getWidgetDimensions = (
+    widgetType: string
+  ): { w: number; h: number } => {
+    // Map widget types to appropriate dimensions for full-screen student view
+    switch (widgetType) {
+      case 'timer':
+      case 'stopwatch':
+      case 'clock':
+        return { w: 8, h: 8 }; // Square for time displays
+      case 'text':
+      case 'poll':
+        return { w: 16, h: 12 }; // Wide for text content
+      case 'drawing':
+      case 'embed':
+        return { w: 16, h: 16 }; // Large square for interactive content
+      case 'qr':
+        return { w: 8, h: 10 }; // Compact for QR codes
+      default:
+        return { w: 12, h: 12 }; // Default balanced dimensions
+    }
+  };
+
+  const dimensions = getWidgetDimensions(session.activeWidgetType ?? 'clock');
   const activeWidgetStub: WidgetData = {
     id: session.activeWidgetId,
     type: session.activeWidgetType ?? 'clock',
     x: 0,
     y: 0,
-    w: 12,
-    h: 12,
+    w: dimensions.w,
+    h: dimensions.h,
     z: 1,
     flipped: false,
     config: session.activeWidgetConfig ?? ({} as WidgetConfig),

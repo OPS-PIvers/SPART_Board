@@ -426,6 +426,7 @@ export const Dock: React.FC = () => {
                             setShowLiveInfo(true);
                           }
                         }}
+                        aria-label="View live session information"
                         className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative"
                       >
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 transition-all duration-200 relative animate-pulse">
