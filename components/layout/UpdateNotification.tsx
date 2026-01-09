@@ -1,23 +1,36 @@
-import React from 'react';
 import { useAppVersion } from '../../hooks/useAppVersion';
 import { RefreshCw, AlertCircle, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface UpdateNotificationProps {
   checkInterval?: number;
 }
 
-export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
+export const UpdateNotification = ({
   checkInterval = 60000,
-}) => {
+}: UpdateNotificationProps) => {
   const { updateAvailable, reloadApp } = useAppVersion(checkInterval);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    // Restore dismissed state from sessionStorage
+    const stored = sessionStorage.getItem('update-notification-dismissed');
+    return stored === 'true';
+  });
+
+  // Persist dismissed state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('update-notification-dismissed', String(dismissed));
+  }, [dismissed]);
 
   if (!updateAvailable || dismissed) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-      <div className="bg-slate-800 text-white p-4 rounded-lg shadow-lg flex items-center gap-4 max-w-md border border-slate-700">
+      <div
+        className="bg-slate-800 text-white p-4 rounded-lg shadow-lg flex items-center gap-4 max-w-md border border-slate-700"
+        role="status"
+        aria-live="polite"
+        aria-label="Application update available"
+      >
         <div className="bg-blue-500/20 p-2 rounded-full">
           <AlertCircle className="w-6 h-6 text-blue-400" />
         </div>
