@@ -196,9 +196,9 @@ export interface LunchCountConfig {
   lastNames: string;
   assignments: Record<string, string>;
   recipient: string;
-  schoolId?: string; // e.g., 'schumann-elementary'
-  menuText?: string; // Cached or manually entered menu
-  testDate?: string; // Simulated date for testing (YYYY-MM-DD)
+  schoolId?: string; // School slug for Nutrislice
+  menuText?: string; // Persisted daily menu items
+  testDate?: string; // Debug date override (YYYY-MM-DD)
 }
 
 export interface LunchMenuConfig {
