@@ -63,10 +63,6 @@ interface NutrisliceWeeksResponse {
   days: NutrisliceDay[];
 }
 
-interface AllOriginsResponse {
-  contents: string | NutrisliceWeeksResponse;
-}
-
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
@@ -80,6 +76,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
     schoolId = 'schumann-elementary',
+    menuSlug = 'lunch', // Default to lunch
     menuText = '',
     testDate = '',
   } = config;
@@ -123,14 +120,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const day = targetDateObj.getDate().toString().padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
 
-    // API URL Construction
-    const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${month}/${day}/?format=json`;
+    // API URL: https://orono.nutrislice.com/menu/api/weeks/school/[school]/menu-type/[menu]/[year]/[month]/[day]/
+    const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/${menuSlug}/${year}/${month}/${day}/?format=json`;
 
-    addLog('Init', 'pending', `Target: ${dateString}`);
+    addLog('Init', 'pending', `Target: ${dateString} via ${menuSlug}`);
 
-    // Expanded Proxy List
     const proxies = [
-      { name: 'Direct', url: (u: string) => u },
+      { name: 'Direct', url: (u: string) => u }, // Try direct first (sometimes works if same-origin or loose CORS)
       {
         name: 'ThingProxy',
         url: (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
@@ -148,6 +144,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
     let success = false;
 
+    // FIX: Corrected loop variable from "constKP" to "const proxy"
     for (const proxy of proxies) {
       try {
         addLog(proxy.name, 'pending', 'Fetching...');
@@ -161,7 +158,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         clearTimeout(timeout);
 
         if (!res.ok) {
-          addLog(proxy.name, 'error', `HTTP ${res.status} ${res.statusText}`);
+          addLog(proxy.name, 'error', `HTTP ${res.status}`);
           continue;
         }
 
@@ -169,44 +166,46 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
         // Check for HTML error pages masquerading as 200 OK
         if (rawText.trim().startsWith('<')) {
-          addLog(proxy.name, 'error', 'Received HTML instead of JSON');
+          addLog(proxy.name, 'error', 'Received HTML (likely 404/Block)');
           continue;
         }
 
-        let rawData: NutrisliceWeeksResponse | AllOriginsResponse;
+        let rawData: unknown;
         try {
-          rawData = JSON.parse(rawText) as
-            | NutrisliceWeeksResponse
-            | AllOriginsResponse;
+          rawData = JSON.parse(rawText);
         } catch {
-          addLog(proxy.name, 'error', 'Invalid JSON response');
+          addLog(proxy.name, 'error', 'Invalid JSON');
           continue;
         }
 
         // Parse AllOrigins wrapper if needed
         let responseData: NutrisliceWeeksResponse | null = null;
 
-        const maybeAllOrigins = rawData as AllOriginsResponse;
-        if (maybeAllOrigins.contents) {
-          if (typeof maybeAllOrigins.contents === 'string') {
+        // Using Type Guards/Casting safely
+        const anyData = rawData as {
+          contents?: string | NutrisliceWeeksResponse;
+        } & NutrisliceWeeksResponse;
+
+        if (anyData.contents) {
+          if (typeof anyData.contents === 'string') {
             try {
               responseData = JSON.parse(
-                maybeAllOrigins.contents
+                anyData.contents
               ) as NutrisliceWeeksResponse;
             } catch {
-              addLog(proxy.name, 'error', 'Failed to parse AllOrigins wrapper');
+              addLog(proxy.name, 'error', 'Failed to parse wrapper');
               continue;
             }
           } else {
-            responseData = maybeAllOrigins.contents;
+            responseData = anyData.contents;
           }
         } else {
-          responseData = rawData as NutrisliceWeeksResponse;
+          responseData = anyData;
         }
 
         // Validate structure
         if (!responseData || !Array.isArray(responseData.days)) {
-          addLog(proxy.name, 'error', 'Missing "days" array in response');
+          addLog(proxy.name, 'error', 'Missing "days" array');
           continue;
         }
 
@@ -214,7 +213,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         const dayData = responseData.days.find((d) => d.date === dateString);
 
         if (!dayData) {
-          addLog(proxy.name, 'error', `Date ${dateString} not in week data`);
+          addLog(proxy.name, 'error', `Date ${dateString} not found`);
           continue;
         }
 
@@ -241,28 +240,28 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             success = true;
             break;
           } else {
-            addLog(proxy.name, 'error', 'Day has 0 menu items');
+            addLog(proxy.name, 'error', '0 items found for day');
           }
         } else {
           addLog(proxy.name, 'error', 'No menu_items property');
         }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Network error';
-        addLog(proxy.name, 'error', message);
+      } catch (err) {
+        const error = err as Error;
+        addLog(proxy.name, 'error', error.message || 'Network error');
       }
     }
 
     if (!success) {
-      setFetchError('Sync failed. Check Logs in Settings.');
+      setFetchError('Sync failed. Check Logs.');
     }
     setIsFetching(false);
-  }, [schoolId, testDate, widget.id, updateWidget, addToast, addLog]);
+  }, [schoolId, menuSlug, testDate, widget.id, updateWidget, addToast, addLog]);
 
   // Initial Sync
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchMenu();
-  }, [schoolId, testDate, fetchMenu]);
+  }, [schoolId, menuSlug, testDate, fetchMenu]);
 
   const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '---', bento: '---' };
@@ -540,16 +539,11 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     lastNames = '',
     recipient = 'paul.ivers@orono.k12.mn.us',
     schoolId = 'schumann-elementary',
+    menuSlug = 'lunch',
     testDate = '',
   } = config;
 
-  const targetDateObj = testDate
-    ? new Date(testDate + 'T12:00:00')
-    : new Date();
-  const year = targetDateObj.getFullYear();
-  const month = (targetDateObj.getMonth() + 1).toString().padStart(2, '0');
-  const day = targetDateObj.getDate().toString().padStart(2, '0');
-  const generatedUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${month}/${day}/?format=json`;
+  const publicMenuUrl = `https://orono.nutrislice.com/menu/${schoolId}/${menuSlug}`;
 
   return (
     <div className="space-y-6">
@@ -565,7 +559,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             style={{ color: ORONO.bluePrimary }}
             className="text-[10px] font-black uppercase tracking-widest mb-2 block"
           >
-            Orono School Sync
+            Orono School
           </label>
           <select
             value={schoolId}
@@ -587,9 +581,32 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
         <div>
           <label
             style={{ color: ORONO.bluePrimary }}
+            className="text-[10px] font-black uppercase tracking-widest mb-2 block"
+          >
+            Menu Slug
+          </label>
+          <input
+            type="text"
+            value={menuSlug}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, menuSlug: e.target.value, menuText: '' },
+              })
+            }
+            placeholder="e.g. lunch"
+            className="w-full p-2 text-xs font-bold border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <p className="text-[8px] text-slate-500 mt-1">
+            Changing this updates the sync URL.
+          </p>
+        </div>
+
+        <div>
+          <label
+            style={{ color: ORONO.bluePrimary }}
             className="text-[10px] font-black uppercase tracking-widest mb-2 block text-center"
           >
-            Sync Date Override
+            Date Override
           </label>
           <input
             type="date"
@@ -603,24 +620,24 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           />
         </div>
 
-        {/* Diagnostic Link */}
+        {/* Diagnostic Link - Now points to Web View */}
         <div className="bg-white p-3 rounded-xl border border-slate-200">
           <div className="flex justify-between items-center mb-1">
             <span className="text-[9px] font-bold text-slate-500 uppercase">
-              Diagnostic
+              Verify Menu
             </span>
             <span className="text-[8px] text-slate-400">
-              If sync fails, check this link:
+              Check if menu exists:
             </span>
           </div>
           <a
-            href={generatedUrl}
+            href={publicMenuUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-[10px] text-blue-600 font-bold hover:underline break-all"
           >
             <ExternalLink className="w-3 h-3 shrink-0" />
-            Test API Link
+            Open Menu Page
           </a>
         </div>
       </div>

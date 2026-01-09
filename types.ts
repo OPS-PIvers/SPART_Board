@@ -197,6 +197,7 @@ export interface LunchCountConfig {
   assignments: Record<string, string>;
   recipient: string;
   schoolId?: string; // School slug for Nutrislice
+  menuSlug?: string; // NEW: To store 'lunch', 'breakfast', etc.
   menuText?: string; // Persisted daily menu items
   testDate?: string; // Debug date override (YYYY-MM-DD)
 }
