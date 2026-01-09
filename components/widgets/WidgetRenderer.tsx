@@ -64,6 +64,7 @@ export const WidgetRenderer: React.FC<{
       }, 500); // Debounce updates
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [widget.config, isThisWidgetLive, updateSessionConfig]);
 
   const getWidgetContent = () => {
