@@ -35,7 +35,7 @@ const ORONO = {
   grayLightest: '#f3f3f3',
 };
 
-// Internal interfaces for type safety
+// --- Strict Interfaces for Nutrislice Weeks API ---
 interface SyncLog {
   source: string;
   status: 'pending' | 'success' | 'error';
@@ -43,17 +43,23 @@ interface SyncLog {
   timestamp: number;
 }
 
+interface NutrisliceFood {
+  name: string;
+}
+
 interface NutrisliceItem {
   text?: string;
-  food?: {
-    name: string;
-  };
+  food?: NutrisliceFood;
   is_section_title?: boolean;
 }
 
-interface NutrisliceResponse {
-  menu_items?: NutrisliceItem[];
-  contents?: string | NutrisliceResponse;
+interface NutrisliceDay {
+  date: string;
+  menu_items: NutrisliceItem[];
+}
+
+interface NutrisliceWeeksResponse {
+  days: NutrisliceDay[];
 }
 
 type LunchType = 'hot' | 'bento' | 'home' | 'none';
@@ -76,10 +82,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Local state for debug logs (not persisted to Firestore to save space)
+  // Local debug logs
   const [debugLogs, setDebugLogs] = useState<SyncLog[]>([]);
 
-  // Ref to store current config to prevent dependency loops
+  // Ref to prevent dependency loops
   const configRef = useRef(config);
   useEffect(() => {
     configRef.current = config;
@@ -92,7 +98,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           0,
           10
         )
-      ); // Keep last 10 logs
+      );
     },
     []
   );
@@ -102,21 +108,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
     setIsFetching(true);
     setFetchError(null);
-    setDebugLogs([]); // Clear old logs on new attempt
+    setDebugLogs([]);
 
-    const targetDate = testDate ? new Date(testDate + 'T12:00:00') : new Date();
-    const year = targetDate.getFullYear();
-    const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
-    const day = targetDate.getDate().toString().padStart(2, '0');
+    const targetDateObj = testDate
+      ? new Date(testDate + 'T12:00:00')
+      : new Date();
+    const year = targetDateObj.getFullYear();
+    const month = (targetDateObj.getMonth() + 1).toString().padStart(2, '0');
+    const day = targetDateObj.getDate().toString().padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
 
-    // UPDATED URL: Removed .api subdomain
-    const apiUrl = `https://orono.nutrislice.com/menu/api/digest/school/${schoolId}/menu-type/lunch/date/${year}/${month}/${day}/?format=json`;
+    // NEW ENDPOINT: "Weeks" API (Standard for Web View)
+    // This returns the whole week containing the date
+    const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/lunch/${year}/${month}/${day}/?format=json`;
 
-    addLog(
-      'Init',
-      'pending',
-      `Fetching for ${schoolId} on ${year}-${month}-${day}`
-    );
+    addLog('Init', 'pending', `Fetching week for ${dateString}`);
 
     const proxies = [
       {
@@ -134,7 +140,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
     for (const proxy of proxies) {
       try {
-        addLog(proxy.name, 'pending', 'Attempting fetch...');
+        addLog(proxy.name, 'pending', 'Fetching...');
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
@@ -149,32 +155,54 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           continue;
         }
 
-        const rawData = (await res.json()) as NutrisliceResponse & {
-          contents?: string | NutrisliceResponse;
+        const rawData = (await res.json()) as NutrisliceWeeksResponse & {
+          contents?: string | NutrisliceWeeksResponse;
         };
 
-        // Handle AllOrigins wrapper if present
-        let content: NutrisliceResponse = rawData;
+        // Parse AllOrigins wrapper if needed
+        let responseData: NutrisliceWeeksResponse | null = null;
 
         if (rawData.contents) {
           if (typeof rawData.contents === 'string') {
             try {
-              content = JSON.parse(rawData.contents) as NutrisliceResponse;
+              responseData = JSON.parse(
+                rawData.contents
+              ) as NutrisliceWeeksResponse;
             } catch {
-              addLog(
-                proxy.name,
-                'error',
-                'Failed to parse AllOrigins JSON string'
-              );
+              addLog(proxy.name, 'error', 'JSON Parse Error');
               continue;
             }
           } else {
-            content = rawData.contents;
+            // Sometimes AllOrigins returns JSON directly
+            responseData = rawData.contents;
           }
+        } else {
+          // Direct JSON (CORSProxy)
+          responseData = rawData;
         }
 
-        if (content && Array.isArray(content.menu_items)) {
-          const entrees = content.menu_items
+        // Validate structure
+        if (!responseData || !Array.isArray(responseData.days)) {
+          addLog(proxy.name, 'error', 'Invalid API format (no days array)');
+          continue;
+        }
+
+        // Find specific day
+        const dayData = responseData.days.find((d) => d.date === dateString);
+
+        if (!dayData) {
+          addLog(
+            proxy.name,
+            'error',
+            `Date ${dateString} not found in week data`
+          );
+          // Fallback: Check if it's a weekend or holiday?
+          // For now, just fail gracefully
+          continue;
+        }
+
+        if (dayData.menu_items) {
+          const entrees = dayData.menu_items
             .filter(
               (item) => !item.is_section_title && (item.food?.name || item.text)
             )
@@ -196,10 +224,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             success = true;
             break;
           } else {
-            addLog(proxy.name, 'error', 'API returned 0 menu items');
+            addLog(proxy.name, 'error', 'Day found, but 0 items');
           }
         } else {
-          addLog(proxy.name, 'error', 'Invalid data structure (no menu_items)');
+          addLog(proxy.name, 'error', 'No menu_items in day');
         }
       } catch (err) {
         const error = err as Error;
@@ -208,9 +236,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     if (!success) {
-      const msg = 'Sync failed. See Settings for logs.';
-      setFetchError(msg);
-      addLog('Final', 'error', 'All proxies failed');
+      setFetchError('Sync failed. See Logs.');
     }
     setIsFetching(false);
   }, [schoolId, testDate, widget.id, updateWidget, addToast, addLog]);
@@ -392,9 +418,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           {SCHOOL_OPTIONS.find((s) => s.id === schoolId)?.label} Menu • Today
         </span>
         {fetchError && (
-          <span title={fetchError}>
+          <div title={fetchError}>
             <AlertTriangle className="w-3 h-3 text-red-500" />
-          </span>
+          </div>
         )}
       </div>
 
