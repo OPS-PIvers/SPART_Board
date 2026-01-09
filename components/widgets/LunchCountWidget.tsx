@@ -12,12 +12,13 @@ import {
   Send,
   RefreshCw,
   UtensilsCrossed,
-  AlertTriangle,
   Coffee,
   Box,
   Home,
   Activity,
   ExternalLink,
+  DownloadCloud,
+  Loader2,
 } from 'lucide-react';
 
 const SCHOOL_OPTIONS = [
@@ -76,7 +77,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     assignments = {},
     recipient = 'paul.ivers@orono.k12.mn.us',
     schoolId = 'schumann-elementary',
-    menuSlug = 'lunch', // Default to lunch
+    menuSlug = 'lunch',
     menuText = '',
     testDate = '',
   } = config;
@@ -120,17 +121,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const day = targetDateObj.getDate().toString().padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
 
-    // API URL: https://orono.nutrislice.com/menu/api/weeks/school/[school]/menu-type/[menu]/[year]/[month]/[day]/
+    // API URL Construction (Weeks API)
     const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolId}/menu-type/${menuSlug}/${year}/${month}/${day}/?format=json`;
 
-    addLog('Init', 'pending', `Target: ${dateString} via ${menuSlug}`);
+    addLog('Init', 'pending', `Target: ${dateString}`);
 
+    // Expanded Proxy List with fallback strategy
     const proxies = [
-      { name: 'Direct', url: (u: string) => u }, // Try direct first (sometimes works if same-origin or loose CORS)
-      {
-        name: 'ThingProxy',
-        url: (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
-      },
+      { name: 'Direct', url: (u: string) => u },
       {
         name: 'CORSProxy',
         url: (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
@@ -144,13 +142,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
     let success = false;
 
-    // FIX: Corrected loop variable from "constKP" to "const proxy"
+    // RACE LOGIC: Try proxies sequentially
     for (const proxy of proxies) {
       try {
         addLog(proxy.name, 'pending', 'Fetching...');
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
+        const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout per proxy
 
         const res = await fetch(proxy.url(apiUrl), {
           signal: controller.signal,
@@ -164,7 +162,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
         const rawText = await res.text();
 
-        // Check for HTML error pages masquerading as 200 OK
+        // Validation: Ensure we didn't get an HTML error page
         if (rawText.trim().startsWith('<')) {
           addLog(proxy.name, 'error', 'Received HTML (likely 404/Block)');
           continue;
@@ -178,14 +176,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           continue;
         }
 
-        // Parse AllOrigins wrapper if needed
         let responseData: NutrisliceWeeksResponse | null = null;
 
-        // Using Type Guards/Casting safely
+        // Handle "AllOrigins" wrapper if present
         const anyData = rawData as {
           contents?: string | NutrisliceWeeksResponse;
         } & NutrisliceWeeksResponse;
-
         if (anyData.contents) {
           if (typeof anyData.contents === 'string') {
             try {
@@ -209,11 +205,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           continue;
         }
 
-        // Find specific day
         const dayData = responseData.days.find((d) => d.date === dateString);
 
         if (!dayData) {
-          addLog(proxy.name, 'error', `Date ${dateString} not found`);
+          addLog(proxy.name, 'error', `Date ${dateString} not found in week`);
           continue;
         }
 
@@ -256,12 +251,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
     setIsFetching(false);
   }, [schoolId, menuSlug, testDate, widget.id, updateWidget, addToast, addLog]);
-
-  // Initial Sync
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchMenu();
-  }, [schoolId, menuSlug, testDate, fetchMenu]);
 
   const parsedMenu = useMemo(() => {
     if (!menuText) return { hot: '---', bento: '---' };
@@ -369,22 +358,38 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       )}
 
+      {/* Header Actions */}
       <div className="flex gap-2 shrink-0">
         <button
           onClick={() =>
             updateWidget(widget.id, { config: { ...config, assignments: {} } })
           }
           style={{ color: ORONO.grayDark, backgroundColor: ORONO.grayLightest }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase border border-slate-200 hover:bg-slate-200"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase border border-slate-200 hover:bg-slate-200 transition-all"
         >
           <RefreshCw className="w-3 h-3" /> Reset
         </button>
+
+        {/* Manual Sync Button */}
+        <button
+          onClick={() => void fetchMenu()}
+          disabled={isFetching}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase border transition-all ${isFetching ? 'bg-slate-100 text-slate-400' : 'bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50'}`}
+        >
+          {isFetching ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <DownloadCloud className="w-3 h-3" />
+          )}
+          {isFetching ? 'Syncing...' : 'Sync Menu'}
+        </button>
+
         <button
           onClick={handleSend}
           style={{ backgroundColor: ORONO.redPrimary }}
           className="flex-1 flex items-center justify-center gap-2 py-1.5 text-white rounded-xl text-[9px] font-black uppercase shadow-lg hover:brightness-110 active:scale-95 transition-all"
         >
-          <Send className="w-3 h-3" /> Send Lunch Report
+          <Send className="w-3 h-3" /> Report
         </button>
       </div>
 
@@ -394,7 +399,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Hot Lunch
           </span>
           <div className="text-[11px] font-bold text-orange-900 leading-tight">
-            {isFetching ? 'Syncing...' : parsedMenu.hot}
+            {parsedMenu.hot}
           </div>
         </div>
         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 flex flex-col justify-center min-h-[5rem]">
@@ -402,7 +407,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Bento Box
           </span>
           <div className="text-[11px] font-bold text-emerald-900 leading-tight">
-            {isFetching ? 'Syncing...' : parsedMenu.bento}
+            {parsedMenu.bento}
           </div>
         </div>
       </div>
@@ -416,7 +421,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       >
         <UtensilsCrossed
           style={{ color: ORONO.bluePrimary }}
-          className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`}
+          className="w-3.5 h-3.5"
         />
         <span
           style={{ color: ORONO.bluePrimary }}
@@ -424,11 +429,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         >
           {SCHOOL_OPTIONS.find((s) => s.id === schoolId)?.label} Menu • Today
         </span>
-        {fetchError && (
-          <div title={fetchError}>
-            <AlertTriangle className="w-3 h-3 text-red-500" />
-          </div>
-        )}
       </div>
 
       {/* Mini log viewer when fetching or error */}
@@ -559,7 +559,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             style={{ color: ORONO.bluePrimary }}
             className="text-[10px] font-black uppercase tracking-widest mb-2 block"
           >
-            Orono School
+            Orono School Sync
           </label>
           <select
             value={schoolId}
@@ -597,7 +597,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             className="w-full p-2 text-xs font-bold border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
           />
           <p className="text-[8px] text-slate-500 mt-1">
-            Changing this updates the sync URL.
+            Example: lunch, breakfast, elementary-lunch
           </p>
         </div>
 
@@ -606,7 +606,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             style={{ color: ORONO.bluePrimary }}
             className="text-[10px] font-black uppercase tracking-widest mb-2 block text-center"
           >
-            Date Override
+            Sync Date Override
           </label>
           <input
             type="date"
@@ -620,14 +620,14 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           />
         </div>
 
-        {/* Diagnostic Link - Now points to Web View */}
+        {/* Diagnostic Link */}
         <div className="bg-white p-3 rounded-xl border border-slate-200">
           <div className="flex justify-between items-center mb-1">
             <span className="text-[9px] font-bold text-slate-500 uppercase">
               Verify Menu
             </span>
             <span className="text-[8px] text-slate-400">
-              Check if menu exists:
+              Click to see actual menu:
             </span>
           </div>
           <a
