@@ -28,20 +28,20 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
           </p>
         </div>
         <div className="flex gap-2">
-            <button
+          <button
             onClick={reloadApp}
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
-            >
+          >
             <RefreshCw className="w-4 h-4" />
             Refresh
-            </button>
-            <button
+          </button>
+          <button
             onClick={() => setDismissed(true)}
             className="p-2 hover:bg-slate-700 rounded-md transition-colors text-slate-400 hover:text-white"
             aria-label="Dismiss"
-            >
+          >
             <X className="w-4 h-4" />
-            </button>
+          </button>
         </div>
       </div>
     </div>
