@@ -192,8 +192,6 @@ export const useLiveSession = (
 
     const docRef = await addDoc(studentsRef, newStudent);
     setStudentId(docRef.id);
-    // Save to sessionStorage so reload doesn't kill session (optional for V1)
-    sessionStorage.setItem('spart_student_id', docRef.id);
     return teacherId;
   };
 
