@@ -58,13 +58,37 @@ export const StudentApp = () => {
 
   // 4. Active Widget State
   // We mock a Widget object here based on session data.
+  // Widget dimensions are set based on the widget type for optimal display
+  const getWidgetDimensions = (
+    widgetType: string
+  ): { w: number; h: number } => {
+    // Map widget types to appropriate dimensions for full-screen student view
+    switch (widgetType) {
+      case 'timer':
+      case 'stopwatch':
+      case 'clock':
+        return { w: 8, h: 8 }; // Square for time displays
+      case 'text':
+      case 'poll':
+        return { w: 16, h: 12 }; // Wide for text content
+      case 'drawing':
+      case 'embed':
+        return { w: 16, h: 16 }; // Large square for interactive content
+      case 'qr':
+        return { w: 8, h: 10 }; // Compact for QR codes
+      default:
+        return { w: 12, h: 12 }; // Default balanced dimensions
+    }
+  };
+
+  const dimensions = getWidgetDimensions(session.activeWidgetType ?? 'clock');
   const activeWidgetStub: WidgetData = {
     id: session.activeWidgetId,
     type: session.activeWidgetType ?? 'clock',
     x: 0,
     y: 0,
-    w: 12,
-    h: 12,
+    w: dimensions.w,
+    h: dimensions.h,
     z: 1,
     flipped: false,
     config: session.activeWidgetConfig ?? ({} as WidgetConfig),
