@@ -67,11 +67,12 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Ensure inputs have dark text */
+/* Ensure inputs follow theme colors by default, but allow Tailwind overrides */
 input,
 select,
 textarea {
-  color: #1e293b !important;
+  color: inherit;
+  background-color: transparent;
 }
 
 /* Base body styles are handled by Tailwind's preflight and classes, 
