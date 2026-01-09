@@ -23,16 +23,24 @@ export const useAppVersion = (checkIntervalMs = 60000) => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     // Function to fetch the version
-    const fetchVersion = async () => {
+    const fetchVersion = async (signal?: AbortSignal) => {
       try {
-        const response = await fetch(`/version.json?t=${Date.now()}`);
+        const response = await fetch(`/version.json?t=${Date.now()}`, {
+          signal,
+        });
         if (!response.ok) return null;
         const data = (await response.json()) as VersionInfo;
         return data.version;
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return null;
+        }
         console.error('Failed to check version', error);
         return null;
       }
@@ -43,16 +51,20 @@ export const useAppVersion = (checkIntervalMs = 60000) => {
         clearTimeout(timeoutRef.current);
       }
       timeoutRef.current = setTimeout(async () => {
+        if (!isMountedRef.current) return;
+
         const latestVersion = await fetchVersion();
+        if (!isMountedRef.current) return;
+
         if (
           latestVersion &&
           currentVersion &&
           latestVersion !== currentVersion
         ) {
           setUpdateAvailable(true);
+          // Stop polling once an update is detected to avoid redundant network
+          // requests. The user should refresh to get the latest version.
         } else {
-          // Schedule next poll only if no update found yet (or keep polling? usually stop after update found)
-          // If update found, we stop polling? Usually yes.
           if (!latestVersion || latestVersion === currentVersion) {
             schedulePoll();
           }
@@ -62,18 +74,25 @@ export const useAppVersion = (checkIntervalMs = 60000) => {
 
     if (!currentVersion) {
       // Initial check to set current version
-      void fetchVersion().then((version) => {
-        if (version) {
+      const abortController = new AbortController();
+
+      void fetchVersion(abortController.signal).then((version) => {
+        if (isMountedRef.current && version) {
           setCurrentVersion(version);
         }
       });
-      return;
+
+      return () => {
+        isMountedRef.current = false;
+        abortController.abort();
+      };
     }
 
     // Start polling loop
     schedulePoll();
 
     return () => {
+      isMountedRef.current = false;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }

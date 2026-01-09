@@ -5,9 +5,17 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Use stable version in development to avoid false positive update notifications
+const isDev =
+  process.env.NODE_ENV === 'development' ||
+  process.env.npm_lifecycle_event === 'dev';
+
+const version = isDev ? 'dev' : new Date().getTime().toString();
+const buildDate = isDev ? 'dev' : new Date().toISOString();
+
 const versionInfo = {
-  version: new Date().getTime().toString(),
-  buildDate: new Date().toISOString(),
+  version,
+  buildDate,
 };
 
 const publicDir = path.resolve(__dirname, '../public');
