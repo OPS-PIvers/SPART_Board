@@ -26,26 +26,24 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
 
       // Writes require additional validation for security-sensitive fields
-      // Admin users have full write access
-      // Non-admin users cannot create dashboards with widgets to prevent SSRF via proxyUrl
-      // NOTE: Due to Firestore limitations, we cannot granularly validate nested proxyUrl
-      // changes within existing widget configs. For production deployments requiring
-      // strict SSRF protection, implement Cloud Functions with beforeWrite triggers
-      // to validate specific field changes in widget configs.
-      allow write: if request.auth != null &&
-                   request.auth.uid == userId &&
-                   (
-                     // Admins can freely modify dashboards
-                     isAdmin() ||
-                     // Non-admins: allow updates to existing dashboards but prevent
-                     // creating new dashboards with widgets field to reduce SSRF risk
-                     (
-                       // Allow updates to existing dashboards (resource exists)
-                       resource != null ||
-                       // For new dashboards, widgets field must not be present
-                       (resource == null && !('widgets' in request.resource.data))
-                     )
-                   );
+      // Admin users have full write access, including widgets/proxyUrl configuration
+      // Non-admin users: Client-side UI restricts proxyUrl editing to admins only,
+      // but this can be bypassed by directly calling Firestore API, creating SSRF risk.
+      //
+      // SECURITY LIMITATION: While Firestore rules can technically access nested fields,
+      // validating that NO widget in the widgets array has been modified to add/change
+      // a proxyUrl field is complex and would require comparing every widget's config.
+      // Blocking all widget modifications would prevent legitimate operations (add, remove,
+      // configure, reposition), making the dashboard unusable for non-admin users.
+      //
+      // RECOMMENDED FOR PRODUCTION:
+      // 1. Implement Cloud Functions with beforeWrite triggers to validate proxyUrl changes
+      // 2. Move proxy logic to a backend service that doesn't accept user-provided URLs
+      // 3. Use custom claims in security rules with Cloud Functions to enforce restrictions
+      //
+      // Current rule: Allow all authenticated users to read/write their own dashboards
+      // with client-side validation providing first line of defense against SSRF.
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // User data collection

@@ -153,7 +153,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       // Note: These are public CORS proxy services. For production, consider:
       // 1. Setting up a dedicated backend proxy
       // 2. Moving this list to admin-controlled Firestore configuration
-      // 3. Documenting proxy URL format requirements (trailing slash required for concatenation)
+      // Trailing slashes are automatically normalized by normalizeProxyUrl() function
       const trustedDomains = [
         'cors-anywhere.herokuapp.com',
         'api.allorigins.win',
