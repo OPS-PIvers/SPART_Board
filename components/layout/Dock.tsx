@@ -29,6 +29,7 @@ import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { TOOLS, ToolMetadata, WidgetType, WidgetData } from '../../types';
 import { getTitle } from '../../utils/widgetHelpers';
+import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 
 // Dock Item with Popover Logic
@@ -245,6 +246,25 @@ export const Dock: React.FC = () => {
     left: number;
     bottom: number;
   } | null>(null);
+  const livePopoverRef = useRef<HTMLDivElement>(null);
+
+  // Close live popover when clicking outside
+  useEffect(() => {
+    if (!showLiveInfo) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        livePopoverRef.current &&
+        !livePopoverRef.current.contains(event.target as Node) &&
+        liveButtonRef.current &&
+        !liveButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowLiveInfo(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLiveInfo]);
 
   const openClassEditor = () => {
     addWidget('classes');
@@ -442,6 +462,7 @@ export const Dock: React.FC = () => {
                         livePopoverPos &&
                         createPortal(
                           <div
+                            ref={livePopoverRef}
                             style={{
                               position: 'fixed',
                               left: livePopoverPos.left,
@@ -459,7 +480,7 @@ export const Dock: React.FC = () => {
                                 {session.code}
                               </div>
                               <div className="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                                {window.location.origin}/join
+                                {getJoinUrl()}
                               </div>
                               <div className="text-[10px] text-slate-400 mt-2">
                                 Provide this code to your students.

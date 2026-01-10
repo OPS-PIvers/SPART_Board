@@ -74,9 +74,10 @@ export interface LiveSession {
 export interface LiveStudent {
   id: string; // Unique ID for this session
   name: string;
-  status: 'active' | 'frozen';
+  status: 'active' | 'frozen' | 'disconnected';
   joinedAt: number;
   lastActive: number;
+  authUid?: string; // Firebase auth UID for the student (for security rules)
 }
 
 // Supporting types for widget configs

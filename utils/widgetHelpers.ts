@@ -1,4 +1,4 @@
-import { WidgetData } from '../types';
+import { WidgetData, WidgetType, WidgetConfig } from '../types';
 
 export const getTitle = (widget: WidgetData): string => {
   if (widget.customTitle) return widget.customTitle;
@@ -10,4 +10,51 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'lunchCount') return 'Lunch Orders';
   if (widget.type === 'classes') return 'Class Roster';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
+};
+
+/**
+ * Get the default configuration for a widget type.
+ * Returns an empty object for widgets that don't require configuration.
+ */
+export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
+  const defaults: Record<WidgetType, WidgetConfig> = {
+    clock: { format24: true, showSeconds: true },
+    timer: { duration: 300, sound: true },
+    stopwatch: {},
+    traffic: {},
+    text: {
+      content: 'Double click to edit...',
+      bgColor: '#fef9c3',
+      fontSize: 18,
+    },
+    checklist: { items: [] },
+    random: { firstNames: '', lastNames: '', mode: 'single' },
+    dice: { count: 1 },
+    sound: { sensitivity: 5 },
+    drawing: { mode: 'window', paths: [] },
+    qr: { url: 'https://google.com' },
+    embed: { url: '' },
+    poll: {
+      question: 'Vote now!',
+      options: [
+        { label: 'Option A', votes: 0 },
+        { label: 'Option B', votes: 0 },
+      ],
+    },
+    webcam: {},
+    scoreboard: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
+    workSymbols: { voice: 'none', routine: 'none' },
+    weather: { temp: 72, condition: 'sunny' },
+    schedule: { items: [] },
+    calendar: { events: [] },
+    lunchCount: {
+      firstNames: '',
+      lastNames: '',
+      assignments: {},
+      recipient: '',
+    },
+    classes: {},
+  };
+
+  return defaults[type] || {};
 };

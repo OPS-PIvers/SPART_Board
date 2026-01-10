@@ -10,7 +10,10 @@ interface LiveControlProps {
   code?: string;
   joinUrl?: string;
   onToggleLive: () => void;
-  onFreezeStudent: (id: string, status: 'active' | 'frozen') => void;
+  onFreezeStudent: (
+    id: string,
+    status: 'active' | 'frozen' | 'disconnected'
+  ) => void;
   onFreezeAll: () => void;
 }
 
@@ -38,9 +41,23 @@ export const LiveControl: React.FC<LiveControlProps> = ({
   const handleToggleMenu = () => {
     if (!showMenu && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const horizontalMargin = 8; // pixels
+
+      // Initial position aligns the menu's right edge with the button's right edge
+      let left = rect.right - MENU_WIDTH;
+
+      // Clamp to keep menu within viewport bounds
+      const maxLeft = viewportWidth - MENU_WIDTH - horizontalMargin;
+      if (left < horizontalMargin) {
+        left = horizontalMargin;
+      } else if (left > maxLeft) {
+        left = maxLeft;
+      }
+
       const newPosition = {
         top: rect.bottom + 8,
-        left: rect.right - MENU_WIDTH,
+        left,
       };
       setMenuPosition(newPosition);
       setShowMenu(true);
@@ -72,6 +89,53 @@ export const LiveControl: React.FC<LiveControlProps> = ({
     return undefined;
   }, [showMenu]);
 
+  // Trap focus within the menu when open
+  useEffect(() => {
+    if (!showMenu || !menuRef.current) return undefined;
+
+    const focusableElements = menuRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    // If no focusable elements, the menu will have no interactive content
+    // and focus should remain on the button. We don't need to trap focus.
+    if (focusableElements.length === 0) {
+      return undefined;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMenu(false);
+        buttonRef.current?.focus();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      if (event.shiftKey) {
+        if (document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    firstElement?.focus();
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showMenu]);
+
   return (
     <div className="flex items-center gap-2 relative z-50">
       {/* GO LIVE BUTTON */}
@@ -95,7 +159,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
         <button
           ref={buttonRef}
           onClick={handleToggleMenu}
-          aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''}`}
+          aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
           className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
         >
           <span className="text-[10px] font-bold">{studentCount}</span>
