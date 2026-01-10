@@ -77,6 +77,7 @@ export interface LiveStudent {
   status: 'active' | 'frozen' | 'disconnected';
   joinedAt: number;
   lastActive: number;
+  authUid?: string; // Firebase auth UID for the student (for security rules)
 }
 
 // Supporting types for widget configs

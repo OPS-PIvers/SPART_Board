@@ -10,7 +10,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 
 // Constants for Firestore Paths
@@ -188,6 +188,7 @@ export const useLiveSession = (
       status: 'active',
       joinedAt: Date.now(),
       lastActive: Date.now(),
+      authUid: auth.currentUser?.uid, // Store the student's auth UID for security
     };
 
     const docRef = await addDoc(studentsRef, newStudent);

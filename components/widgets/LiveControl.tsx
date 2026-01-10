@@ -48,10 +48,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
       let left = rect.right - MENU_WIDTH;
 
       // Clamp to keep menu within viewport bounds
-      const maxLeft = Math.max(
-        horizontalMargin,
-        viewportWidth - MENU_WIDTH - horizontalMargin
-      );
+      const maxLeft = viewportWidth - MENU_WIDTH - horizontalMargin;
       if (left < horizontalMargin) {
         left = horizontalMargin;
       } else if (left > maxLeft) {
@@ -99,6 +96,13 @@ export const LiveControl: React.FC<LiveControlProps> = ({
     const focusableElements = menuRef.current.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
+
+    // If no focusable elements, the menu will have no interactive content
+    // and focus should remain on the button. We don't need to trap focus.
+    if (focusableElements.length === 0) {
+      return undefined;
+    }
+
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
