@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { Sidebar } from './Sidebar';
+import { Menu } from './Menu';
+import { Header } from './Header';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
@@ -37,6 +38,7 @@ const ToastContainer: React.FC = () => {
 
 export const DashboardView: React.FC = () => {
   const { activeDashboard } = useDashboard();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const backgroundStyles = useMemo(() => {
     if (!activeDashboard) return {};
@@ -90,7 +92,8 @@ export const DashboardView: React.FC = () => {
         ))}
       </div>
 
-      <Sidebar />
+      <Header onMenuOpen={() => setIsMenuOpen(true)} />
+      <Menu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <Dock />
       <ToastContainer />
     </div>
