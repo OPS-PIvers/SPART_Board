@@ -255,6 +255,7 @@ export type ClassesConfig = Record<string, never>;
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
   customSteps?: string[];
+  favorites?: string[]; // Array of routine IDs that are starred
 }
 
 // Union of all widget configs

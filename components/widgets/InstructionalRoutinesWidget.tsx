@@ -1,22 +1,45 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, InstructionalRoutinesConfig } from '@/types';
 import { ROUTINES, InstructionalRoutine } from '@/config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import { ChevronLeft, Info } from 'lucide-react';
+import { ChevronLeft, Info, Star } from 'lucide-react';
 
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, gradeFilter } = useDashboard();
   const config = widget.config as InstructionalRoutinesConfig;
-  const { selectedRoutineId, customSteps } = config;
+  const { selectedRoutineId, customSteps, favorites = [] } = config;
 
   const selectedRoutine = ROUTINES.find((r) => r.id === selectedRoutineId);
 
-  const filteredRoutines = ROUTINES.filter(
-    (r) => gradeFilter === 'all' || r.gradeLevels.includes(gradeFilter)
-  );
+  // Memoize the sorted and filtered list to prioritize favorites
+  const displayedRoutines = useMemo(() => {
+    const filtered = ROUTINES.filter(
+      (r) => gradeFilter === 'all' || r.gradeLevels.includes(gradeFilter)
+    );
+
+    return filtered.sort((a, b) => {
+      const aFav = favorites.includes(a.id);
+      const bFav = favorites.includes(b.id);
+
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return a.name.localeCompare(b.name); // Secondary sort: Alphabetical
+    });
+  }, [gradeFilter, favorites]);
+
+  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevent selecting the routine when clicking the star
+    const nextFavorites = favorites.includes(id)
+      ? favorites.filter((favId) => favId !== id)
+      : [...favorites, id];
+
+    updateWidget(widget.id, {
+      config: { ...config, favorites: nextFavorites },
+    });
+  };
 
   const selectRoutine = (routine: InstructionalRoutine) => {
     updateWidget(widget.id, {
@@ -41,17 +64,28 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           Select a Routine ({gradeFilter.toUpperCase()})
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1">
-          {filteredRoutines.map((r) => {
+          {displayedRoutines.map((r) => {
             const IconComp = (Icons[r.icon as keyof typeof Icons] ??
               Icons.HelpCircle) as React.ComponentType<{ className?: string }>;
+            const isFav = favorites.includes(r.id);
             return (
               <button
                 key={r.id}
                 onClick={() => selectRoutine(r)}
-                className="p-3 border-2 border-slate-50 rounded-xl hover:border-indigo-500 hover:bg-indigo-50/30 transition-all text-left group"
+                className="relative p-3 border-2 border-slate-50 rounded-xl hover:border-indigo-500 hover:bg-indigo-50/30 transition-all text-left group"
               >
+                {/* Star Toggle */}
+                <div
+                  onClick={(e) => toggleFavorite(e, r.id)}
+                  className="absolute top-2 right-2 p-1 rounded-md hover:bg-slate-100 transition-colors z-10"
+                >
+                  <Star
+                    className={`w-3 h-3 ${isFav ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                  />
+                </div>
+
                 <IconComp className="w-5 h-5 text-red-500 mb-2 group-hover:scale-110 transition-transform" />
-                <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                <div className="text-[11px] font-bold text-slate-800 leading-tight pr-4">
                   {r.name}
                 </div>
                 <div className="text-[8px] font-black text-slate-400 mt-1 uppercase">
