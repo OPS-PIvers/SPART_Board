@@ -308,7 +308,10 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]">
+      <div
+        data-screenshot="exclude"
+        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]"
+      >
         <button
           onClick={() => setIsOpen(true)}
           className="p-2 bg-brand-blue-primary text-white rounded-full hover:bg-brand-blue-dark transition-colors shadow-md shadow-brand-blue-lighter"

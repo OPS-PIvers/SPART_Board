@@ -77,6 +77,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div
+      id="dashboard-root"
       className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses}`}
       style={backgroundStyles}
     >
