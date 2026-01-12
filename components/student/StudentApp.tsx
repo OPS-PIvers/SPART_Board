@@ -157,7 +157,10 @@ export const StudentApp = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-slate-100 overflow-hidden relative">
+    <div
+      id="dashboard-root"
+      className="h-screen w-screen bg-slate-100 overflow-hidden relative"
+    >
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500 z-50" />
       <div className="h-full w-full p-4">
         {/* Pass isStudentView to render content without window chrome */}
