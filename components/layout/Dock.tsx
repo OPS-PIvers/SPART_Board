@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   LayoutGrid,
@@ -27,6 +27,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
+import { useClickOutside } from '../../hooks/useClickOutside';
 import { TOOLS, ToolMetadata, WidgetType, WidgetData } from '../../types';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
@@ -66,20 +67,7 @@ const DockItem = ({
   } | null>(null);
 
   // Close popover when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setShowPopover(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
   const handleClick = () => {
     if (minimizedWidgets.length > 0) {
@@ -249,22 +237,9 @@ export const Dock: React.FC = () => {
   const livePopoverRef = useRef<HTMLDivElement>(null);
 
   // Close live popover when clicking outside
-  useEffect(() => {
-    if (!showLiveInfo) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        livePopoverRef.current &&
-        !livePopoverRef.current.contains(event.target as Node) &&
-        liveButtonRef.current &&
-        !liveButtonRef.current.contains(event.target as Node)
-      ) {
-        setShowLiveInfo(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLiveInfo]);
+  useClickOutside(livePopoverRef, () => {
+    if (showLiveInfo) setShowLiveInfo(false);
+  }, [liveButtonRef]);
 
   const openClassEditor = () => {
     addWidget('classes');

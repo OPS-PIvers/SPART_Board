@@ -11,6 +11,7 @@ import { getDefaultWidgetConfig } from '../../utils/widgetHelpers';
 export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Sign in anonymously when component mounts
   useEffect(() => {
@@ -32,6 +33,7 @@ export const StudentApp = () => {
     useLiveSession(undefined, 'student', joinedCode ?? undefined);
 
   const handleJoin = async (code: string, name: string) => {
+    setError(null);
     try {
       const sessionId = await joinSession(name, code);
       setJoinedCode(sessionId);
@@ -45,12 +47,13 @@ export const StudentApp = () => {
       } else {
         message = 'Failed to join session due to an unexpected error.';
       }
+
       if (message.includes('Session not found')) {
-        alert('Session not found. Please check your join code and try again.');
+        setError('Session not found. Please check your join code.');
       } else if (message.includes('network') || message.includes('fetch')) {
-        alert('Connection error. Please check your internet and try again.');
+        setError('Connection error. Please check your internet.');
       } else {
-        alert('Could not join session. Please check the code and try again.');
+        setError(message);
       }
     }
   };
@@ -66,7 +69,9 @@ export const StudentApp = () => {
 
   // 1. Lobby State
   if (!joinedCode || !studentId) {
-    return <StudentLobby onJoin={handleJoin} isLoading={loading} />;
+    return (
+      <StudentLobby onJoin={handleJoin} isLoading={loading} error={error} />
+    );
   }
 
   // 2. Waiting State (Joined but no active widget)

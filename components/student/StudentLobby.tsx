@@ -4,11 +4,13 @@ import { Wifi } from 'lucide-react';
 interface StudentLobbyProps {
   onJoin: (code: string, name: string) => void;
   isLoading: boolean;
+  error?: string | null;
 }
 
 export const StudentLobby: React.FC<StudentLobbyProps> = ({
   onJoin,
   isLoading,
+  error,
 }) => {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -29,6 +31,12 @@ export const StudentLobby: React.FC<StudentLobbyProps> = ({
       <p className="text-slate-400 text-sm mb-8">
         Join your teacher&apos;s session
       </p>
+
+      {error && (
+        <div className="w-full max-w-sm mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-sm font-medium animate-in fade-in slide-in-from-top-1">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div>

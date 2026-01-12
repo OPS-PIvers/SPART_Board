@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Wifi, Snowflake, X } from 'lucide-react';
 import { LiveStudent } from '../../types';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface LiveControlProps {
   isLive: boolean;
@@ -67,27 +68,9 @@ export const LiveControl: React.FC<LiveControlProps> = ({
   };
 
   // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setShowMenu(false);
-      }
-    };
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-
-    return undefined;
-  }, [showMenu]);
+  useClickOutside(menuRef, () => {
+    if (showMenu) setShowMenu(false);
+  }, [buttonRef]);
 
   // Trap focus within the menu when open
   useEffect(() => {

@@ -62,6 +62,7 @@ export const WidgetRenderer: React.FC<{
   };
 
   // Sync config changes to session when live
+  const configJson = JSON.stringify(widget.config);
   React.useEffect(() => {
     if (!isThisWidgetLive) {
       return undefined;
@@ -83,7 +84,8 @@ export const WidgetRenderer: React.FC<{
     return () => {
       clearTimeout(timer);
     };
-  }, [widget.config, isThisWidgetLive, updateSessionConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configJson, isThisWidgetLive, updateSessionConfig]);
 
   const getWidgetContent = () => {
     switch (widget.type) {
@@ -210,10 +212,14 @@ export const WidgetRenderer: React.FC<{
           joinUrl={getJoinUrl()}
           onToggleLive={handleToggleLive}
           onFreezeStudent={(id, status) => {
-            void toggleFreezeStudent(id, status);
+            toggleFreezeStudent(id, status).catch((err) =>
+              console.error('Failed to freeze student:', err)
+            );
           }}
           onFreezeAll={() => {
-            void toggleGlobalFreeze(!session?.frozen);
+            toggleGlobalFreeze(!session?.frozen).catch((err) =>
+              console.error('Failed to toggle global freeze:', err)
+            );
           }}
         />
       }

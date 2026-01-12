@@ -126,9 +126,7 @@ export const useLiveSession = (
     });
 
     // 2. Subscribe to My Student Status (Am I individually frozen?)
-    let unsubscribeStudent = () => {
-      // Cleanup
-    };
+    let unsubscribeStudent: (() => void) | undefined;
     if (studentId) {
       const myStudentRef = doc(
         db,
@@ -147,7 +145,7 @@ export const useLiveSession = (
 
     return () => {
       unsubscribeSession();
-      unsubscribeStudent();
+      unsubscribeStudent?.();
     };
   }, [joinCode, role, studentId]);
 
