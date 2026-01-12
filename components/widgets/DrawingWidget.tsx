@@ -309,12 +309,17 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
         </label>
         <div className="flex gap-2 px-2">
           {customColors.map((c, i) => (
-            <div key={i} className="relative group">
+            <div
+              key={i}
+              className="w-8 h-8 rounded-lg border-2 border-white shadow-sm ring-1 ring-slate-200 relative overflow-hidden transition-transform hover:scale-110"
+              style={{ backgroundColor: c }}
+            >
               <input
                 type="color"
                 value={c}
                 onChange={(e) => handleColorChange(i, e.target.value)}
-                className="w-8 h-8 rounded-lg cursor-pointer border-2 border-slate-200 bg-white"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                title="Change preset color"
               />
             </div>
           ))}
