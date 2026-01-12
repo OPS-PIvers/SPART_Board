@@ -198,30 +198,22 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         ) : (
           <Maximize className="w-3 h-3" />
         )}
-        {mode === 'overlay' ? 'Exit Overlay' : 'Screen Overlay'}
+        {widget.w > 250 && <span>ANNOTATE</span>}
       </button>
     </div>
   );
 
   if (mode === 'overlay') {
     return (
-      <div className="h-full flex flex-col bg-white rounded-lg">
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-3">
-          <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center animate-bounce">
-            <Pencil className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-800">
-              Annotation Active
-            </p>
-            <p className="text-[10px] text-slate-500 mt-1">
-              Drawing on the entire screen.
-              <br />
-              Use the controls below.
-            </p>
-          </div>
+      <>
+        {/* Return null or a minimal indicator for the widget window when in overlay mode */}
+        <div className="h-full flex flex-col items-center justify-center bg-slate-50 rounded-lg p-4 text-center opacity-50">
+          <Pencil className="w-8 h-8 text-slate-300 mb-2" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            Annotation Active
+          </p>
         </div>
-        <div className="border-t border-slate-100">{PaletteUI}</div>
+
         {createPortal(
           <div className="fixed inset-0 z-[9990] pointer-events-none overflow-hidden">
             {/* Darken background slightly to indicate annotation mode */}
@@ -237,15 +229,20 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               onTouchEnd={handleEnd}
               className="absolute inset-0 pointer-events-auto cursor-crosshair"
             />
-            {/* Floating Hint */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-2xl flex items-center gap-2 border border-white/20">
-              <MousePointer2 className="w-4 h-4 animate-pulse" />
-              Annotation Mode Active
+            {/* Floating Toolbar at the Top */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300">
+              <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
+                <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                  Annotating
+                </span>
+              </div>
+              {PaletteUI}
             </div>
           </div>,
           document.body
         )}
-      </div>
+      </>
     );
   }
 
