@@ -58,6 +58,8 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     },
     classes: {},
     instructionalRoutines: { selectedRoutineId: null },
+    file: { fileId: '', fileName: '', fileType: '' },
+    imports: {},
   };
 
   return defaults[type] || {};

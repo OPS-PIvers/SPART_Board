@@ -56,6 +56,8 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   lunchCount: ['k-2', '3-5'],
   classes: ALL_GRADE_LEVELS,
   instructionalRoutines: ALL_GRADE_LEVELS,
+  file: ALL_GRADE_LEVELS,
+  imports: ALL_GRADE_LEVELS,
 };
 
 /**

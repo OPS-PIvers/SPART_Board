@@ -24,7 +24,7 @@ export interface DashboardContextType {
   deleteDashboard: (id: string) => void;
   renameDashboard: (id: string, name: string) => void;
   loadDashboard: (id: string) => void;
-  addWidget: (type: WidgetType) => void;
+  addWidget: (type: WidgetType, overrides?: Partial<WidgetData>) => void;
   removeWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;

@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useDashboard } from '../../context/useDashboard';
 import { Sidebar } from './Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { fileStorage } from '../../utils/fileStorage';
 
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
@@ -36,7 +38,65 @@ const ToastContainer: React.FC = () => {
 };
 
 export const DashboardView: React.FC = () => {
-  const { activeDashboard } = useDashboard();
+  const { activeDashboard, addWidget, addToast } = useDashboard();
+
+  const handleFile = useCallback(
+    async (file: File) => {
+      try {
+        const id = uuidv4();
+        await fileStorage.saveFile(id, file);
+
+        // Add file widget
+        // We cast to any because addWidget doesn't strictly type the overrides based on the type string yet in calling code logic
+        // but our implementation supports it.
+        addWidget('file', {
+          config: {
+            fileId: id,
+            fileName: file.name,
+            fileType: file.type,
+          },
+        });
+
+        addToast(`Imported ${file.name}`, 'success');
+      } catch (err) {
+        console.error('Failed to import file', err);
+        addToast(`Failed to import ${file.name}`, 'error');
+      }
+    },
+    [addWidget, addToast]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        files.forEach((file) => void handleFile(file));
+      }
+    },
+    [handleFile]
+  );
+
+  const handlePaste = useCallback(
+    (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items ?? []);
+      items.forEach((item) => {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) void handleFile(file);
+        }
+      });
+    },
+    [handleFile]
+  );
+
+  React.useEffect(() => {
+    const pasteListener = (e: ClipboardEvent) => handlePaste(e);
+    window.addEventListener('paste', pasteListener);
+    return () => window.removeEventListener('paste', pasteListener);
+  }, [handlePaste]);
 
   const backgroundStyles = useMemo(() => {
     if (!activeDashboard) return {};
@@ -80,6 +140,11 @@ export const DashboardView: React.FC = () => {
       id="dashboard-root"
       className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses}`}
       style={backgroundStyles}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={handleDrop}
     >
       {/* Background Overlay for Depth (especially for images) */}
       <div className="absolute inset-0 bg-black/10 pointer-events-none" />

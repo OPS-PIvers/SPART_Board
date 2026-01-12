@@ -19,6 +19,7 @@ import {
   TimerReset,
   Utensils,
   BookOpen,
+  FolderOpen,
 } from 'lucide-react';
 
 export type WidgetType =
@@ -43,7 +44,9 @@ export type WidgetType =
   | 'calendar'
   | 'lunchCount'
   | 'classes'
-  | 'instructionalRoutines';
+  | 'instructionalRoutines'
+  | 'file'
+  | 'imports';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -260,6 +263,14 @@ export interface InstructionalRoutinesConfig {
   favorites?: string[]; // Array of routine IDs that are starred
 }
 
+export interface FileConfig {
+  fileId: string;
+  fileName: string;
+  fileType: string;
+}
+
+export type ImportsConfig = Record<string, never>;
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -283,7 +294,9 @@ export type WidgetConfig =
   | CalendarConfig
   | LunchCountConfig
   | ClassesConfig
-  | InstructionalRoutinesConfig;
+  | InstructionalRoutinesConfig
+  | FileConfig
+  | ImportsConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -330,7 +343,11 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                           ? ClassesConfig
                                           : T extends 'instructionalRoutines'
                                             ? InstructionalRoutinesConfig
-                                            : never;
+                                            : T extends 'file'
+                                              ? FileConfig
+                                              : T extends 'imports'
+                                                ? ImportsConfig
+                                                : never;
 
 export interface WidgetData {
   id: string;
@@ -425,6 +442,12 @@ export const TOOLS: ToolMetadata[] = [
     icon: BookOpen,
     label: 'Routines',
     color: 'bg-indigo-600',
+  },
+  {
+    type: 'imports',
+    icon: FolderOpen,
+    label: 'Imports',
+    color: 'bg-stone-500',
   },
 ];
 

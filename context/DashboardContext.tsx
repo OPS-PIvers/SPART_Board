@@ -475,7 +475,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
-  const addWidget = (type: WidgetType) => {
+  const addWidget = (type: WidgetType, overrides?: Partial<WidgetData>) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
 
@@ -577,12 +577,28 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         h: 450,
         config: { selectedRoutineId: null },
       },
+      file: {
+        w: 400,
+        h: 400,
+        config: { fileId: '', fileName: '', fileType: '' },
+      },
+      imports: {
+        w: 600,
+        h: 400,
+        config: {},
+      },
     };
 
     setDashboards((prev) =>
       prev.map((d) => {
         if (d.id !== activeId) return d;
         const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+
+        // Merge defaults with overrides
+        const baseConfig = defaults[type].config ?? {};
+        const overrideConfig = overrides?.config ?? {};
+        const mergedConfig = { ...baseConfig, ...overrideConfig };
+
         const newWidget: WidgetData = {
           id: uuidv4(),
           type,
@@ -591,7 +607,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           flipped: false,
           z: maxZ + 1,
           ...defaults[type],
-          config: { ...(defaults[type].config ?? {}) },
+          ...overrides,
+          config: mergedConfig,
         } as WidgetData;
         return { ...d, widgets: [...d.widgets, newWidget] };
       })
