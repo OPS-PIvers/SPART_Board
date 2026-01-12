@@ -28,6 +28,8 @@ import ClassesWidget from './ClassesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 
+const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
+
 export const WidgetRenderer: React.FC<{
   widget: WidgetData;
   isStudentView?: boolean;
@@ -79,7 +81,7 @@ export const WidgetRenderer: React.FC<{
           console.error('Failed to update live session config', error);
         }
       })();
-    }, 800); // Debounce updates to reduce write frequency under rapid changes
+    }, LIVE_SESSION_UPDATE_DEBOUNCE_MS); // Debounce updates to reduce write frequency under rapid changes
 
     return () => {
       clearTimeout(timer);

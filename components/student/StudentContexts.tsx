@@ -88,7 +88,11 @@ const mockDashboard: DashboardContextType = {
   // Roster mocks
   rosters: [],
   activeRosterId: null,
-  addRoster: async () => Promise.resolve(''),
+  addRoster: () => {
+    return Promise.reject(
+      new Error('addRoster is not implemented in student view')
+    );
+  },
   updateRoster: async () => {
     // No-op
   },

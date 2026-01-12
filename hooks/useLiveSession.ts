@@ -17,6 +17,8 @@ import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 const SESSIONS_COLLECTION = 'sessions';
 const STUDENTS_COLLECTION = 'students';
 
+const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
+
 /**
  * Custom hook for managing live classroom sessions.
  * Supports both teacher and student roles with different behaviors:
@@ -123,7 +125,8 @@ export const useLiveSession = (
     }
 
     // 1. Subscribe to the Session (Global State: Active Widget, Freeze)
-    // joinCode is the session's code field used to look up the teacher's session document
+    // NOTE: At this point, `joinCode` contains the teacher's session document ID
+    // (returned from joinSession), not the original join code entered by the student.
     const sessionRef = doc(db, SESSIONS_COLLECTION, joinCode);
     const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -160,10 +163,10 @@ export const useLiveSession = (
 
   // --- ACTIONS ---
 
-  const joinSession = async (name: string, rawCode: string) => {
+  const joinSession = async (name: string, unsanitizedCode: string) => {
     // 1. Find session by Code with robust sanitization
     // Remove all non-alphanumeric characters and normalize to uppercase
-    const normalizedCode = rawCode
+    const normalizedCode = unsanitizedCode
       .trim()
       .replace(/[^a-zA-Z0-9]/g, '')
       .toUpperCase();
@@ -183,8 +186,12 @@ export const useLiveSession = (
     const sessionDoc = querySnapshot.docs[0];
     const teacherId = sessionDoc.id;
 
-    // Sanitize name (max 20 chars, simple trim)
-    const sanitizedName = name.trim().substring(0, 20);
+    // Sanitize name (max length limit, simple trim)
+    const sanitizedName = name.trim().substring(0, MAX_STUDENT_NAME_LENGTH);
+
+    if (!sanitizedName) {
+      throw new Error('Name is required');
+    }
 
     // 2. Add student to subcollection
     const studentsRef = collection(
@@ -216,7 +223,11 @@ export const useLiveSession = (
         activeWidgetId: widgetId,
         activeWidgetType: widgetType,
         activeWidgetConfig: config,
-        code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        code: Math.random()
+          .toString(36)
+          .substring(2, 8)
+          .toUpperCase()
+          .padEnd(6, '0'),
         frozen: false,
         createdAt: Date.now(),
       };
