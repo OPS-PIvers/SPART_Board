@@ -343,13 +343,8 @@ export interface ToolMetadata {
 }
 
 export const TOOLS: ToolMetadata[] = [
-  {
-    type: 'clock',
-    icon: Clock,
-    label: 'Clock',
-    color: 'bg-brand-blue-primary',
-  },
-  { type: 'timer', icon: Timer, label: 'Timer', color: 'bg-brand-red-primary' },
+  { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
+  { type: 'timer', icon: Timer, label: 'Timer', color: 'bg-red-500' },
   {
     type: 'stopwatch',
     icon: TimerReset,
@@ -369,22 +364,12 @@ export const TOOLS: ToolMetadata[] = [
     label: 'Tasks',
     color: 'bg-green-500',
   },
-  {
-    type: 'random',
-    icon: Users,
-    label: 'Random',
-    color: 'bg-brand-blue-primary',
-  },
+  { type: 'random', icon: Users, label: 'Random', color: 'bg-indigo-500' },
   { type: 'dice', icon: Dices, label: 'Dice', color: 'bg-purple-500' },
   { type: 'sound', icon: Mic, label: 'Noise', color: 'bg-pink-500' },
   { type: 'drawing', icon: Pencil, label: 'Draw', color: 'bg-cyan-500' },
   { type: 'qr', icon: QrCode, label: 'QR', color: 'bg-slate-700' },
-  {
-    type: 'embed',
-    icon: Globe,
-    label: 'Embed',
-    color: 'bg-brand-blue-primary',
-  },
+  { type: 'embed', icon: Globe, label: 'Embed', color: 'bg-sky-600' },
   { type: 'poll', icon: BarChart2, label: 'Poll', color: 'bg-orange-500' },
   { type: 'webcam', icon: Video, label: 'Camera', color: 'bg-gray-800' },
   { type: 'scoreboard', icon: Trophy, label: 'Scores', color: 'bg-yellow-600' },
@@ -407,7 +392,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'classes',
     icon: Users,
     label: 'Class',
-    color: 'bg-brand-blue-primary',
+    color: 'bg-indigo-600',
   },
 ];
 
