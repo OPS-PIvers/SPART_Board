@@ -13,11 +13,34 @@ import {
   MousePointer2,
   CornerUpLeft,
   Camera,
+  Wifi,
 } from 'lucide-react';
 import { useScreenshot } from '../../hooks/useScreenshot';
+import { useAuth } from '../../context/useAuth';
+import { useLiveSession } from '../../hooks/useLiveSession';
 
 export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
+  const { user } = useAuth();
+  const { session, startSession, endSession } = useLiveSession(
+    user?.uid,
+    'teacher'
+  );
+
+  const isLive = session?.isActive && session?.activeWidgetId === widget.id;
+
+  const handleToggleLive = async () => {
+    try {
+      if (isLive) {
+        await endSession();
+      } else {
+        await startSession(widget.id, widget.type, widget.config);
+      }
+    } catch (error) {
+      console.error('Failed to toggle live session:', error);
+    }
+  };
+
   const config = widget.config as DrawingConfig;
   const {
     mode = 'window',
@@ -198,6 +221,17 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {mode === 'overlay' && (
         <>
+          <button
+            onClick={() => void handleToggleLive()}
+            className={`p-2 rounded-lg transition-colors ${
+              isLive
+                ? 'bg-red-50 text-red-600 animate-pulse'
+                : 'hover:bg-slate-100 text-slate-600'
+            }`}
+            title={isLive ? 'End Live Session' : 'Go Live'}
+          >
+            <Wifi className="w-4 h-4" />
+          </button>
           <button
             onClick={() => void takeScreenshot()}
             disabled={isCapturing}
