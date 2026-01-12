@@ -98,9 +98,12 @@ export const UserRolesManager: React.FC = () => {
 
   const filteredUsers = users.filter(
     (user) =>
-      user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.department?.toLowerCase().includes(searchQuery.toLowerCase())
+      (user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ??
+        false) ||
+      (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ??
+        false) ||
+      (user.department?.toLowerCase().includes(searchQuery.toLowerCase()) ??
+        false)
   );
 
   const formatLastActive = (timestamp: number) => {
@@ -214,13 +217,13 @@ export const UserRolesManager: React.FC = () => {
                         {user.photoURL ? (
                           <img
                             src={user.photoURL}
-                            alt={user.displayName || 'User'}
+                            alt={user.displayName ?? 'User'}
                             className="w-10 h-10 rounded-full border border-slate-700"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
                             <span className="text-lg font-bold text-slate-400">
-                              {(user.displayName || user.email || '?')
+                              {(user.displayName ?? user.email ?? '?')
                                 .charAt(0)
                                 .toUpperCase()}
                             </span>
@@ -228,11 +231,11 @@ export const UserRolesManager: React.FC = () => {
                         )}
                         <div>
                           <div className="font-medium text-white">
-                            {user.displayName || 'Unknown User'}
+                            {user.displayName ?? 'Unknown User'}
                           </div>
                           <div className="text-sm text-slate-500 flex items-center gap-1">
                             <Mail className="w-3 h-3" />
-                            {user.email}
+                            {user.email ?? 'No email'}
                           </div>
                         </div>
                       </div>
@@ -276,7 +279,7 @@ export const UserRolesManager: React.FC = () => {
                       {editingDept === user.uid ? (
                         <input
                           type="text"
-                          defaultValue={user.department || ''}
+                          defaultValue={user.department ?? ''}
                           autoFocus
                           onBlur={(e) =>
                             handleDepartmentUpdate(user.uid, e.target.value)
@@ -299,7 +302,7 @@ export const UserRolesManager: React.FC = () => {
                           className="cursor-pointer hover:text-white transition-colors inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-sm text-slate-400 hover:bg-slate-800 group/badge"
                         >
                           <Building2 className="w-3 h-3" />
-                          {user.department || 'No Dept'}
+                          {user.department ?? 'No Dept'}
                         </div>
                       )}
                     </td>
