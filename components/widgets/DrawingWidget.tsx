@@ -19,7 +19,10 @@ import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 
-export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const DrawingWidget: React.FC<{
+  widget: WidgetData;
+  isStudentView?: boolean;
+}> = ({ widget, isStudentView = false }) => {
   const { updateWidget } = useDashboard();
   const { user } = useAuth();
   const { session, startSession, endSession } = useLiveSession(
@@ -98,8 +101,15 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     // Set internal resolution
     if (mode === 'window') {
-      canvas.width = widget.w;
-      canvas.height = widget.h - 40; // Subtract header
+      if (isStudentView) {
+        // Fill the student container
+        const container = canvas.parentElement;
+        canvas.width = container?.clientWidth ?? 800;
+        canvas.height = container?.clientHeight ?? 600;
+      } else {
+        canvas.width = widget.w;
+        canvas.height = widget.h - 40; // Subtract header
+      }
     } else {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -109,13 +119,14 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [paths, currentPath, mode, widget.w, widget.h, draw]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isStudentView) return;
     setIsDrawing(true);
     const pos = getPos(e);
     setCurrentPath([pos]);
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
+    if (isStudentView || !isDrawing) return;
     const pos = getPos(e);
     setCurrentPath((prev) => [...prev, pos]);
   };
@@ -294,18 +305,20 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 className="absolute inset-0 pointer-events-auto cursor-crosshair"
               />
               {/* Floating Toolbar at the Top */}
-              <div
-                data-screenshot="exclude"
-                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
-              >
-                <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
-                  <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
-                    Annotating
-                  </span>
+              {!isStudentView && (
+                <div
+                  data-screenshot="exclude"
+                  className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
+                >
+                  <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
+                    <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                      Annotating
+                    </span>
+                  </div>
+                  {PaletteUI}
                 </div>
-                {PaletteUI}
-              </div>
+              )}
             </div>,
             portalTarget
           )}
@@ -333,9 +346,11 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         )}
       </div>
-      <div className="shrink-0 border-t border-slate-100 bg-white">
-        {PaletteUI}
-      </div>
+      {!isStudentView && (
+        <div className="shrink-0 border-t border-slate-100 bg-white">
+          {PaletteUI}
+        </div>
+      )}
     </div>
   );
 };

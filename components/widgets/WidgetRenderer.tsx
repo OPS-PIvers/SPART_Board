@@ -114,7 +114,7 @@ export const WidgetRenderer: React.FC<{
       case 'embed':
         return <EmbedWidget widget={widget} />;
       case 'drawing':
-        return <DrawingWidget widget={widget} />;
+        return <DrawingWidget widget={widget} isStudentView={isStudentView} />;
       case 'qr':
         return <QRWidget widget={widget} />;
       case 'scoreboard':
