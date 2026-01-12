@@ -206,14 +206,6 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   if (mode === 'overlay') {
     return (
       <>
-        {/* Return null or a minimal indicator for the widget window when in overlay mode */}
-        <div className="h-full flex flex-col items-center justify-center bg-slate-50 rounded-lg p-4 text-center opacity-50">
-          <Pencil className="w-8 h-8 text-slate-300 mb-2" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Annotation Active
-          </p>
-        </div>
-
         {createPortal(
           <div className="fixed inset-0 z-[9990] pointer-events-none overflow-hidden">
             {/* Darken background slightly to indicate annotation mode */}
