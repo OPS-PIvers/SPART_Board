@@ -36,6 +36,10 @@ const mockDashboard: DashboardContextType = {
   toasts: [],
   visibleTools: [],
   loading: false,
+  gradeFilter: 'all',
+  setGradeFilter: () => {
+    // No-op
+  },
   addToast: () => {
     // No-op
   },

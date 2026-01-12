@@ -66,7 +66,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Gallery Walk',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Observing and exploring posted work.',
+    description: 'Exploring posted student work.',
     icon: 'Image',
     steps: [
       'Walk quietly around the room.',
@@ -76,7 +76,7 @@ export const ROUTINES: InstructionalRoutine[] = [
   },
   {
     id: 'give-one-get-one',
-    name: 'Give One-Get One',
+    name: 'Give One-Get One-Move One',
     grades: '3-5',
     gradeLevels: ['3-5'],
     description: 'Trading ideas with partners.',
@@ -105,7 +105,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Jot-Pair-Share',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Write, share with partner, share with class.',
+    description: 'Write, share with partner, then class.',
     icon: 'PencilLine',
     steps: [
       'Quickly write your answer.',
@@ -209,7 +209,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Vocabulary Exploration',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Hearing, saying, and defining new words.',
+    description: 'Hearing, saying, and defining words.',
     icon: 'BookOpenCheck',
     steps: [
       'Listen to the word.',

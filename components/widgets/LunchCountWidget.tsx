@@ -38,7 +38,9 @@ const SCHOOL_OPTIONS = [
   { id: 'orono-intermediate-school', label: 'Orono Intermediate' },
 ];
 
-export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {

@@ -16,7 +16,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const displayedRoutines = useMemo(() => {
     const filtered = ROUTINES.filter(
-      (r) => gradeFilter === 'all' || r.gradeLevels.includes(gradeFilter as any)
+      (r) => gradeFilter === 'all' || r.gradeLevels.includes(gradeFilter)
     );
     return filtered.sort((a, b) => {
       const aFav = favorites.includes(a.id);
@@ -42,7 +42,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const updateStep = (idx: number, val: string) => {
-    const nextSteps = [...(customSteps || [])];
+    const nextSteps = [...(customSteps ?? [])];
     nextSteps[idx] = val;
     updateWidget(widget.id, { config: { ...config, customSteps: nextSteps } });
   };
@@ -55,7 +55,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
         <div className="grid grid-cols-2 gap-2 overflow-y-auto custom-scrollbar pr-1">
           {displayedRoutines.map((r) => {
-            const Icon = (Icons as any)[r.icon] || Icons.HelpCircle;
+            const Icon =
+              (Icons[r.icon as keyof typeof Icons] as React.ElementType) ??
+              Icons.HelpCircle;
             const isFav = favorites.includes(r.id);
             return (
               <button
@@ -86,7 +88,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const RoutineIcon = (Icons as any)[selectedRoutine.icon] || Icons.HelpCircle;
+  const RoutineIcon =
+    (Icons[selectedRoutine.icon as keyof typeof Icons] as React.ElementType) ??
+    Icons.HelpCircle;
 
   return (
     <div className="flex flex-col h-full bg-white p-5 animate-in fade-in zoom-in-95 duration-200">
@@ -118,7 +122,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           Steps for Students
         </h3>
         <ul className="space-y-4">
-          {(customSteps || []).map((step, i) => (
+          {(customSteps ?? []).map((step, i) => (
             <li key={i} className="flex gap-3 group">
               <span className="w-6 h-6 bg-indigo-600 text-white rounded flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
                 {i + 1}

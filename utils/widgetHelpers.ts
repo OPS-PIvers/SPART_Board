@@ -48,12 +48,16 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     schedule: { items: [] },
     calendar: { events: [] },
     lunchCount: {
-      firstNames: '',
-      lastNames: '',
+      schoolSite: 'schumann-elementary',
+      isManualMode: false,
+      manualHotLunch: '',
+      manualBentoBox: '',
+      roster: [],
       assignments: {},
-      recipient: '',
+      recipient: 'paul.ivers@orono.k12.mn.us',
     },
     classes: {},
+    instructionalRoutines: { selectedRoutineId: null },
   };
 
   return defaults[type] || {};
