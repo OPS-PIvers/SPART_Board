@@ -79,7 +79,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       counts[type]++;
     });
 
-    const summary = `Lunch Count Summary:\n\nHot Lunch: ${counts.hot}\nBento Box: ${counts.bento}\nHome Lunch: ${counts.home}\nNot Reported: ${counts.none}\n\nSent from Classroom Dashboard Pro.`;
+    const summary = `Lunch Count Summary:\n\nHot Lunch: ${counts.hot}\nBento Box: ${counts.bento}\nHome Lunch: ${counts.home}\nNot Reported: ${counts.none}\n\nSent from School Boards.`;
     const mailto = `mailto:${recipient}?subject=Lunch Count - ${new Date().toLocaleDateString()}&body=${encodeURIComponent(summary)}`;
 
     window.open(mailto);
@@ -194,7 +194,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         ))}
       </div>
-
       {/* Waiting Area (Unassigned) */}
       <div
         onDragOver={(e) => e.preventDefault()}
@@ -228,7 +227,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         )}
       </div>
-
       {/* Footer Actions */}
       <div className="flex gap-2 shrink-0">
         <button
@@ -243,7 +241,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
-      </div>
+      </div>{' '}
     </div>
   );
 };
@@ -310,7 +308,6 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
         />
       </div>
-
       <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
         <h4 className="text-[10px] font-black text-blue-700 uppercase mb-2">
           Instructions

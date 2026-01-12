@@ -1,10 +1,10 @@
-# Classroom Dashboard Pro
+# School Boards
 
-**A professional-grade interactive classroom management dashboard.**
+**A professional-grade interactive management board for classrooms.**
 
 ## 📋 Overview
 
-Classroom Dashboard Pro is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 20 specialized classroom tools—from timers and noise meters to polling and lunch counts. All data is synchronized in real-time using **Firebase**.
+School Boards is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 20 specialized classroom tools—from timers and noise meters to polling and lunch counts. All data is synchronized in real-time using **Firebase**.
 
 ## ✨ Key Features
 

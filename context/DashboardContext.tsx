@@ -156,7 +156,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (updatedDashboards.length === 0 && !migrated) {
         const defaultDb: Dashboard = {
           id: uuidv4(),
-          name: 'My First Dashboard',
+          name: 'My First Board',
           background: 'bg-slate-900',
           widgets: [],
           createdAt: Date.now(),
@@ -166,7 +166,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             ...prev,
             {
               id: uuidv4(),
-              message: 'Welcome! Dashboard created',
+              message: 'Welcome! Board created',
               type: 'info' as const,
             },
           ]);

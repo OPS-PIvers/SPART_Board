@@ -1,6 +1,9 @@
 import React from 'react';
-import { WidgetData, DrawingConfig } from '../../types';
+import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
+import { useAuth } from '../../context/useAuth';
+import { useLiveSession } from '../../hooks/useLiveSession';
+import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimerWidget, TimerSettings } from './TimerWidget';
 import { StopwatchWidget, StopwatchSettings } from './StopwatchWidget';
@@ -23,10 +26,68 @@ import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
+import { getJoinUrl } from '../../utils/urlHelpers';
 
-export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
-  widget,
-}) => {
+const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
+
+export const WidgetRenderer: React.FC<{
+  widget: WidgetData;
+  isStudentView?: boolean;
+}> = ({ widget, isStudentView = false }) => {
+  const { user } = useAuth();
+
+  // Initialize the hook (only active if user exists)
+  const {
+    session,
+    students,
+    startSession,
+    endSession,
+    toggleFreezeStudent,
+    toggleGlobalFreeze,
+    updateSessionConfig,
+  } = useLiveSession(user?.uid, 'teacher');
+
+  // Logic to determine if THIS widget is the live one
+  const isThisWidgetLive =
+    session?.isActive && session?.activeWidgetId === widget.id;
+
+  const handleToggleLive = async () => {
+    try {
+      if (isThisWidgetLive) {
+        await endSession();
+      } else {
+        await startSession(widget.id, widget.type, widget.config);
+      }
+    } catch (error) {
+      console.error('Failed to toggle live session:', error);
+    }
+  };
+
+  // Sync config changes to session when live
+  const configJson = JSON.stringify(widget.config);
+  React.useEffect(() => {
+    if (!isThisWidgetLive) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          await updateSessionConfig(JSON.parse(configJson) as WidgetConfig);
+        } catch (error) {
+          // Log the error so failures are visible during development and debugging
+          // while avoiding disruption to the UI.
+
+          console.error('Failed to update live session config', error);
+        }
+      })();
+    }, LIVE_SESSION_UPDATE_DEBOUNCE_MS); // Debounce updates to reduce write frequency under rapid changes
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [configJson, isThisWidgetLive, updateSessionConfig]);
+
   const getWidgetContent = () => {
     switch (widget.type) {
       case 'clock':
@@ -126,6 +187,16 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
     ? { zIndex: 9995 }
     : {};
 
+  const content = getWidgetContent();
+
+  if (isStudentView) {
+    return (
+      <div className="h-full w-full bg-white rounded-xl shadow-sm overflow-hidden relative">
+        {content}
+      </div>
+    );
+  }
+
   return (
     <DraggableWindow
       widget={widget}
@@ -133,8 +204,28 @@ export const WidgetRenderer: React.FC<{ widget: WidgetData }> = ({
       settings={getWidgetSettings()}
       style={customStyle}
       skipCloseConfirmation={widget.type === 'classes'}
+      headerActions={
+        <LiveControl
+          isLive={isThisWidgetLive ?? false}
+          studentCount={students.length}
+          students={students}
+          code={session?.code}
+          joinUrl={getJoinUrl()}
+          onToggleLive={handleToggleLive}
+          onFreezeStudent={(id, status) => {
+            toggleFreezeStudent(id, status).catch((err) =>
+              console.error('Failed to freeze student:', err)
+            );
+          }}
+          onFreezeAll={() => {
+            toggleGlobalFreeze(!session?.frozen).catch((err) =>
+              console.error('Failed to toggle global freeze:', err)
+            );
+          }}
+        />
+      }
     >
-      {getWidgetContent()}
+      {content}
     </DraggableWindow>
   );
 };

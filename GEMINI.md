@@ -1,8 +1,8 @@
-# Gemini Context: Classroom Dashboard Pro
+# Gemini Context: School Boards
 
 ## Project Overview
 
-**Classroom Dashboard Pro** is an interactive, widget-based classroom management application built with **React 19**, **TypeScript**, and **Vite**. It leverages **Firebase** for backend services (Authentication, Firestore, Storage) and features a drag-and-drop interface for various classroom tools (timers, polls, noise meters, etc.).
+**School Boards** is an interactive, widget-based classroom management application built with **React 19**, **TypeScript**, and **Vite**. It leverages **Firebase** for backend services (Authentication, Firestore, Storage) and features a drag-and-drop interface for various classroom tools (timers, polls, noise meters, etc.).
 
 **Key Technologies:**
 

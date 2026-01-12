@@ -28,9 +28,11 @@ export const LoginScreen: React.FC = () => {
     <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-brand-blue-primary to-brand-blue-dark">
       <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full text-center">
         <h1 className="text-4xl font-black text-slate-800 mb-4">
-          Classroom Dashboard
+          School Boards
         </h1>
-        <p className="text-slate-600 mb-8">Sign in to access your dashboards</p>
+        <p className="text-slate-500 mb-8 font-medium">
+          Sign in to access your boards
+        </p>
         <button
           onClick={handleSignIn}
           disabled={signingIn}

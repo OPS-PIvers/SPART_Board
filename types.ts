@@ -58,6 +58,28 @@ export interface ClassRoster {
   createdAt: number;
 }
 
+// --- LIVE SESSION TYPES ---
+
+export interface LiveSession {
+  id: string; // Usually the Teacher's User ID
+  isActive: boolean;
+  activeWidgetId: string | null;
+  activeWidgetType: WidgetType | null;
+  activeWidgetConfig?: WidgetConfig; // Config for the active widget
+  code: string; // A short 4-6 digit join code
+  frozen: boolean; // Global freeze state
+  createdAt: number;
+}
+
+export interface LiveStudent {
+  id: string; // Unique ID for this session
+  name: string;
+  status: 'active' | 'frozen' | 'disconnected';
+  joinedAt: number;
+  lastActive: number;
+  authUid?: string; // Firebase auth UID for the student (for security rules)
+}
+
 // Supporting types for widget configs
 export interface Point {
   x: number;
@@ -295,6 +317,7 @@ export interface WidgetData {
   flipped: boolean;
   minimized?: boolean;
   customTitle?: string;
+  isLive?: boolean;
   config: WidgetConfig;
 }
 

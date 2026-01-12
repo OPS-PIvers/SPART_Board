@@ -209,6 +209,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 key={r.id}
                 className={`p-3 border rounded-lg bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
               >
+                {' '}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <button
                     onClick={() =>

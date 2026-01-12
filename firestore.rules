@@ -62,6 +62,35 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Sessions - Teacher owns it, Students can join
+    match /sessions/{userId} {
+      // Only authenticated users (including anonymous) can read sessions
+      // This allows students to find sessions by code and listen to updates
+      // TODO: For Phase 2/Production, implement Cloud Functions to validate
+      // join codes server-side and remove this broad read permission.
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId; // Teacher controls it
+      
+      match /students/{studentId} {
+        // Student session records access:
+        // - Teacher (session owner) can read/write all student records
+        // - Students can create their own record (with authUid matching their auth.uid)
+        // - Students can read their own record (where authUid matches their auth.uid)
+        // - Admins have full access
+        allow read: if request.auth != null &&
+          (request.auth.uid == userId ||
+           resource.data.authUid == request.auth.uid ||
+           isAdmin());
+        allow create: if request.auth != null &&
+          (request.auth.uid == userId ||
+           request.resource.data.authUid == request.auth.uid ||
+           isAdmin());
+        allow update, delete: if request.auth != null &&
+          (request.auth.uid == userId ||
+           isAdmin());
+      }
+    }
+
     // Default deny all other collections
     match /{document=**} {
       allow read, write: if false;

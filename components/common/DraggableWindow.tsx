@@ -14,6 +14,7 @@ interface DraggableWindowProps {
   title: string;
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
+  headerActions?: React.ReactNode;
 }
 
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -23,6 +24,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   title,
   style,
   skipCloseConfirmation = false,
+  headerActions,
 }) => {
   const { updateWidget, removeWidget, bringToFront, addToast } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
@@ -226,6 +228,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                {/* NEW HEADER ACTIONS */}
+                {headerActions && <div className="mr-2">{headerActions}</div>}
                 {canScreenshot && (
                   <button
                     onClick={takeScreenshot}
