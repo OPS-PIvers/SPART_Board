@@ -215,8 +215,13 @@ export const WidgetRenderer: React.FC<{
   const content = getWidgetContent();
 
   if (isStudentView) {
+    const isDrawing = widget.type === 'drawing';
     return (
-      <div className="h-full w-full bg-white rounded-xl shadow-sm overflow-hidden relative">
+      <div
+        className={`h-full w-full rounded-xl overflow-hidden relative ${
+          isDrawing ? 'bg-transparent' : 'bg-white shadow-sm'
+        }`}
+      >
         {content}
       </div>
     );
