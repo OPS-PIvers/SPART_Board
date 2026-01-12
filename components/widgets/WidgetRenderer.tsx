@@ -189,7 +189,11 @@ export const WidgetRenderer: React.FC<{
     widget.type === 'drawing' &&
     (widget.config as DrawingConfig).mode === 'overlay';
   const customStyle: React.CSSProperties = isDrawingOverlay
-    ? { zIndex: 9995 }
+    ? {
+        zIndex: 9995,
+        opacity: 0,
+        pointerEvents: 'none',
+      }
     : {};
 
   const content = getWidgetContent();
