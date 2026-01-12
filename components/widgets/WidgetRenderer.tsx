@@ -41,14 +41,11 @@ export const WidgetRenderer: React.FC<{
 
   // Initialize the hook (only active if user exists)
   const {
-    session,
-    students,
-    startSession,
+    updateSessionBackground,
     endSession,
+    removeStudent,
     toggleFreezeStudent,
     toggleGlobalFreeze,
-    updateSessionConfig,
-    updateSessionBackground,
   } = useLiveSession(user?.uid, 'teacher');
 
   const dashboardBackground = activeDashboard?.background;
@@ -245,6 +242,11 @@ export const WidgetRenderer: React.FC<{
           onFreezeStudent={(id, status) => {
             void toggleFreezeStudent(id, status).catch((err) =>
               console.error('Failed to freeze student:', err)
+            );
+          }}
+          onRemoveStudent={(id) => {
+            void removeStudent(id).catch((err) =>
+              console.error('Failed to remove student:', err)
             );
           }}
           onFreezeAll={() => {
