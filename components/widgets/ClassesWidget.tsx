@@ -77,20 +77,20 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
       <div className="flex justify-between items-center mb-3">
         <button
           onClick={onBack}
-          className="text-xs text-slate-500 hover:text-blue-600 font-bold uppercase tracking-wider"
+          className="text-xs text-slate-500 hover:text-brand-blue-primary font-bold uppercase tracking-wider"
         >
           &larr; Back
         </button>
         <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
           <input
-            className="font-bold border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0"
+            className="font-bold border-b-2 border-slate-200 focus:border-brand-blue-primary bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0"
             placeholder="Class Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <button
             onClick={handleSave}
-            className="bg-green-600 text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs font-bold hover:bg-green-700 shadow-sm transition-colors"
+            className="bg-brand-blue-primary text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs font-bold hover:bg-brand-blue-dark shadow-sm transition-colors"
           >
             <Save size={14} /> Save
           </button>
@@ -102,7 +102,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
             First Name (Smart Paste)
           </label>
           <textarea
-            className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+            className="flex-1 border border-slate-200 focus:border-brand-blue-light p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-brand-blue-lighter outline-none transition-all"
             value={firsts}
             onChange={(e) => setFirsts(e.target.value)}
             onPaste={handleSmartPaste}
@@ -114,7 +114,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
             Last Name
           </label>
           <textarea
-            className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+            className="flex-1 border border-slate-200 focus:border-brand-blue-light p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-brand-blue-lighter outline-none transition-all"
             value={lasts}
             onChange={(e) => setLasts(e.target.value)}
           />
@@ -192,7 +192,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               setEditingId(null);
               setView('edit');
             }}
-            className="mb-2 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm font-bold shadow-sm"
+            className="mb-2 bg-brand-blue-primary text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-brand-blue-dark text-sm font-bold shadow-sm"
           >
             <Plus size={16} /> Create New Class
           </button>
@@ -207,7 +207,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             {rosters.map((r) => (
               <div
                 key={r.id}
-                className={`p-3 border rounded-lg bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
+                className={`p-3 border rounded-lg bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-brand-blue-light border-brand-blue-light shadow-sm' : 'border-slate-200'}`}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <button

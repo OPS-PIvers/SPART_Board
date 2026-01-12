@@ -428,10 +428,10 @@ export const Sidebar: React.FC = () => {
         <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
             <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
-              New Dashboard
+              New Board
             </h2>
             <p className="text-xs text-slate-500 mb-4">
-              Enter a name for your new dashboard.
+              Enter a name for your new board.
             </p>
             <input
               type="text"
@@ -448,7 +448,7 @@ export const Sidebar: React.FC = () => {
                 }
               }}
               autoFocus
-              placeholder="Dashboard name"
+              placeholder="Board name"
               className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary focus:border-brand-blue-primary mb-4"
             />
             <div className="flex justify-end gap-2">
@@ -487,7 +487,7 @@ export const Sidebar: React.FC = () => {
                 <div className="flex items-center gap-2 text-brand-blue-primary">
                   <Layout className="w-6 h-6" />
                   <span className="font-black text-xl tracking-tight">
-                    SPARTBOARD
+                    SCHOOL BOARDS
                   </span>
                 </div>
                 <button
@@ -801,7 +801,7 @@ export const Sidebar: React.FC = () => {
                 <div className="space-y-6">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
-                      My Dashboards
+                      My Boards
                     </h3>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                       {dashboards.map((db) => (
@@ -871,7 +871,7 @@ export const Sidebar: React.FC = () => {
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <h4 className="text-base font-semibold text-slate-900 mb-2">
-                                    Delete dashboard
+                                    Delete board
                                   </h4>
                                   <p className="text-sm text-slate-600 mb-4">
                                     Are you sure you want to delete “{db.name}”?

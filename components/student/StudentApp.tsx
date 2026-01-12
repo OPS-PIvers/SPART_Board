@@ -30,7 +30,9 @@ export const StudentApp = () => {
     // Cleanup anonymous session on unmount
     return () => {
       if (auth.currentUser?.isAnonymous) {
-        void signOut(auth);
+        void signOut(auth).catch((err) =>
+          console.error('Failed to sign out on unmount:', err)
+        );
       }
     };
   }, []);

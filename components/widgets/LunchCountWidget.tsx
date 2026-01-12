@@ -79,7 +79,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       counts[type]++;
     });
 
-    const summary = `Lunch Count Summary:\n\nHot Lunch: ${counts.hot}\nBento Box: ${counts.bento}\nHome Lunch: ${counts.home}\nNot Reported: ${counts.none}\n\nSent from Classroom Dashboard Pro.`;
+    const summary = `Lunch Count Summary:\n\nHot Lunch: ${counts.hot}\nBento Box: ${counts.bento}\nHome Lunch: ${counts.home}\nNot Reported: ${counts.none}\n\nSent from School Boards.`;
     const mailto = `mailto:${recipient}?subject=Lunch Count - ${new Date().toLocaleDateString()}&body=${encodeURIComponent(summary)}`;
 
     window.open(mailto);
@@ -194,7 +194,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         ))}
       </div>
-
       {/* Waiting Area (Unassigned) */}
       <div
         onDragOver={(e) => e.preventDefault()}
@@ -215,7 +214,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               onDragStart={(e) => {
                 handleDragStart(e, name);
               }}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold shadow-sm cursor-grab active:cursor-grabbing hover:scale-105 hover:border-indigo-400 transition-all"
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold shadow-sm cursor-grab active:cursor-grabbing hover:scale-105 hover:border-brand-blue-light transition-all"
             >
               {name}
             </div>
@@ -228,7 +227,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         )}
       </div>
-
       {/* Footer Actions */}
       <div className="flex gap-2 shrink-0">
         <button
@@ -239,11 +237,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </button>
         <button
           onClick={handleSend}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-blue-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-brand-blue-dark active:scale-95 transition-all"
         >
           <Send className="w-3 h-3" /> Send Lunch Report
         </button>
-      </div>
+      </div>{' '}
     </div>
   );
 };
@@ -274,7 +272,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
               })
             }
             placeholder="Alice&#10;Bob&#10;Charlie..."
-            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
+            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none text-slate-900 leading-relaxed"
           />
         </div>
         <div>
@@ -289,7 +287,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
               })
             }
             placeholder="Smith&#10;Jones&#10;Brown..."
-            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
+            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none text-slate-900 leading-relaxed"
           />
         </div>
       </div>
@@ -307,7 +305,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
             })
           }
           placeholder="email@example.com"
-          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none"
         />
       </div>
 

@@ -110,7 +110,14 @@ export const useLiveSession = (
         ...doc.data(),
         id: doc.id,
       })) as LiveStudent[];
-      setStudents(studentList);
+
+      // Only update state if the data has actually changed to prevent unnecessary re-renders
+      setStudents((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(studentList)) {
+          return prev;
+        }
+        return studentList;
+      });
     });
 
     return () => {
@@ -231,7 +238,10 @@ export const useLiveSession = (
         frozen: false,
         createdAt: Date.now(),
       };
-      await setDoc(sessionRef, newSession);
+      await setDoc(sessionRef, newSession).catch((err) => {
+        console.error('Failed to start session:', err);
+        throw err;
+      });
     },
     [userId]
   );
@@ -240,7 +250,11 @@ export const useLiveSession = (
     async (config: WidgetConfig) => {
       if (!userId) return;
       const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
-      await updateDoc(sessionRef, { activeWidgetConfig: config });
+      await updateDoc(sessionRef, { activeWidgetConfig: config }).catch(
+        (err) => {
+          console.error('Failed to update session config:', err);
+        }
+      );
     },
     [userId]
   );
@@ -252,6 +266,8 @@ export const useLiveSession = (
       isActive: false,
       activeWidgetId: null,
       frozen: false,
+    }).catch((err) => {
+      console.error('Failed to end session:', err);
     });
 
     // Mark students as disconnected when session ends
@@ -261,11 +277,19 @@ export const useLiveSession = (
       userId,
       STUDENTS_COLLECTION
     );
-    const studentsSnapshot = await getDocs(studentsRef);
-    const disconnectPromises = studentsSnapshot.docs.map((doc) =>
-      updateDoc(doc.ref, { status: 'disconnected' })
-    );
-    await Promise.all(disconnectPromises);
+    const studentsSnapshot = await getDocs(studentsRef).catch((err) => {
+      console.error('Failed to fetch students for disconnection:', err);
+      return null;
+    });
+
+    if (studentsSnapshot) {
+      const disconnectPromises = studentsSnapshot.docs.map((doc) =>
+        updateDoc(doc.ref, { status: 'disconnected' }).catch((err) => {
+          console.error(`Failed to disconnect student ${doc.id}:`, err);
+        })
+      );
+      await Promise.all(disconnectPromises);
+    }
   }, [userId]);
 
   const toggleFreezeStudent = useCallback(
@@ -283,6 +307,8 @@ export const useLiveSession = (
       );
       await updateDoc(studentRef, {
         status: currentStatus === 'active' ? 'frozen' : 'active',
+      }).catch((err) => {
+        console.error(`Failed to toggle freeze for student ${studentId}:`, err);
       });
     },
     [userId]
@@ -292,7 +318,9 @@ export const useLiveSession = (
     async (freeze: boolean) => {
       if (!userId) return;
       const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
-      await updateDoc(sessionRef, { frozen: freeze });
+      await updateDoc(sessionRef, { frozen: freeze }).catch((err) => {
+        console.error('Failed to toggle global freeze:', err);
+      });
     },
     [userId]
   );
