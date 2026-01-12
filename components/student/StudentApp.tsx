@@ -13,6 +13,26 @@ export const StudentApp = () => {
   const [authInitialized, setAuthInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    // Ensure we have correct size on mount
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Sign in anonymously when component mounts
   useEffect(() => {
     const initAuth = async () => {
@@ -145,39 +165,14 @@ export const StudentApp = () => {
   }
 
   // 4. Active Widget State
-  // We mock a Widget object here based on session data.
-  // Widget dimensions are set as grid units based on widget type for optimal display
-  const getWidgetDimensions = (
-    widgetType: string
-  ): { w: number; h: number } => {
-    // Map widget types to appropriate dimensions in grid units
-    // These are interpreted by the layout for full-screen student view
-    switch (widgetType) {
-      case 'timer':
-      case 'stopwatch':
-      case 'clock':
-        return { w: 8, h: 8 }; // Square for time displays
-      case 'text':
-      case 'poll':
-        return { w: 16, h: 12 }; // Wide for text content
-      case 'drawing':
-      case 'embed':
-        return { w: 16, h: 16 }; // Large for interactive content
-      case 'qr':
-        return { w: 8, h: 10 }; // Compact for QR codes
-      default:
-        return { w: 12, h: 12 }; // Default balanced dimensions
-    }
-  };
-
-  const dimensions = getWidgetDimensions(session.activeWidgetType ?? 'clock');
   const activeWidgetStub: WidgetData = {
     id: session.activeWidgetId,
     type: session.activeWidgetType ?? 'clock',
     x: 0,
     y: 0,
-    w: dimensions.w,
-    h: dimensions.h,
+    // Use full window dimensions (minus padding) instead of grid units
+    w: windowSize.width - 32, // 32px accounts for p-4 (1rem * 2)
+    h: windowSize.height - 32,
     z: 1,
     flipped: false,
     config:
