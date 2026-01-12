@@ -73,29 +73,46 @@ export const useLiveSession = (
   const [studentId, setStudentId] = useState<string | null>(null);
   const [individualFrozen, setIndividualFrozen] = useState(false);
 
-  // TEACHER: Subscribe to own session
+  // SESSION SUBSCRIPTION: Subscribe to session document (Teachers use userId, Students use joinCode)
   useEffect(() => {
-    if (role !== 'teacher' || !userId) return;
-
-    const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
-
-    const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setSession(docSnap.data() as LiveSession);
-      } else {
-        setSession(null);
+    const targetId = role === 'teacher' ? userId : joinCode;
+    if (!targetId) {
+      if (role === 'student' && !joinCode) {
+        setTimeout(() => {
+          setSession(null);
+          setLoading(false);
+        }, 0);
       }
-      setLoading(false);
-    });
+      return;
+    }
+
+    const sessionRef = doc(db, SESSIONS_COLLECTION, targetId);
+
+    const unsubscribeSession = onSnapshot(
+      sessionRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setSession(docSnap.data() as LiveSession);
+        } else {
+          setSession(null);
+        }
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Session subscription error:', err);
+        setLoading(false);
+      }
+    );
 
     return () => {
       unsubscribeSession();
     };
-  }, [userId, role]);
+  }, [userId, joinCode, role]);
 
   // TEACHER: Subscribe to students (only when live)
   useEffect(() => {
     if (role !== 'teacher' || !userId || !session?.isActive) {
+      setTimeout(() => setStudents([]), 0);
       return;
     }
 
@@ -125,46 +142,29 @@ export const useLiveSession = (
     };
   }, [userId, role, session?.isActive]);
 
-  // STUDENT: Subscribe to joined session
+  // STUDENT: Subscribe to My Student Status (Am I individually frozen?)
   useEffect(() => {
-    if (role !== 'student' || !joinCode) {
+    if (role !== 'student' || !joinCode || !studentId) {
+      setTimeout(() => setIndividualFrozen(false), 0);
       return;
     }
 
-    // 1. Subscribe to the Session (Global State: Active Widget, Freeze)
-    // NOTE: At this point, `joinCode` contains the teacher's session document ID
-    // (returned from joinSession), not the original join code entered by the student.
-    const sessionRef = doc(db, SESSIONS_COLLECTION, joinCode);
-    const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
+    const myStudentRef = doc(
+      db,
+      SESSIONS_COLLECTION,
+      joinCode,
+      STUDENTS_COLLECTION,
+      studentId
+    );
+    const unsubscribeStudent = onSnapshot(myStudentRef, (docSnap) => {
       if (docSnap.exists()) {
-        setSession(docSnap.data() as LiveSession);
-      } else {
-        setSession(null); // Session ended or invalid code
+        const studentData = docSnap.data() as LiveStudent;
+        setIndividualFrozen(studentData.status === 'frozen');
       }
-      setLoading(false);
     });
 
-    // 2. Subscribe to My Student Status (Am I individually frozen?)
-    let unsubscribeStudent: (() => void) | undefined;
-    if (studentId) {
-      const myStudentRef = doc(
-        db,
-        SESSIONS_COLLECTION,
-        joinCode,
-        STUDENTS_COLLECTION,
-        studentId
-      );
-      unsubscribeStudent = onSnapshot(myStudentRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const studentData = docSnap.data() as LiveStudent;
-          setIndividualFrozen(studentData.status === 'frozen');
-        }
-      });
-    }
-
     return () => {
-      unsubscribeSession();
-      unsubscribeStudent?.();
+      unsubscribeStudent();
     };
   }, [joinCode, role, studentId]);
 
