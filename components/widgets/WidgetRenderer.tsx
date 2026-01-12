@@ -46,6 +46,10 @@ export const WidgetRenderer: React.FC<{
     removeStudent,
     toggleFreezeStudent,
     toggleGlobalFreeze,
+    session,
+    startSession,
+    updateSessionConfig,
+    students,
   } = useLiveSession(user?.uid, 'teacher');
 
   const dashboardBackground = activeDashboard?.background;
