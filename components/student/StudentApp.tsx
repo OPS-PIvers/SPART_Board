@@ -183,6 +183,8 @@ export const StudentApp = () => {
   }
 
   // 4. Active Widget State
+  // We provide the widget with the current window dimensions.
+  // In student view, widgets are rendered full-screen without the draggable container.
   const activeWidgetStub: WidgetData = {
     id: session.activeWidgetId,
     type: session.activeWidgetType ?? 'clock',

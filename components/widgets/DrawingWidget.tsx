@@ -56,11 +56,33 @@ export const DrawingWidget: React.FC<{
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Try to find the target immediately, but also use a MutationObserver or a small delay
+    // if it's not found, to handle cases where DashboardView hasn't mounted yet.
+    const findTarget = () => {
+      const target = document.getElementById('dashboard-root');
+      if (target) {
+        setPortalTarget(target);
+        return true;
+      }
+      return false;
+    };
+
+    if (!findTarget()) {
+      const observer = new MutationObserver(() => {
+        if (findTarget()) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    }
+  }, []);
 
   const { takeScreenshot, isCapturing } = useScreenshot(
     {
       get current() {
-        return document.getElementById('dashboard-root');
+        return portalTarget;
       },
     } as React.RefObject<HTMLElement | null>,
     `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`
@@ -285,7 +307,6 @@ export const DrawingWidget: React.FC<{
   );
 
   if (mode === 'overlay') {
-    const portalTarget = document.getElementById('dashboard-root');
     return (
       <>
         {portalTarget &&
