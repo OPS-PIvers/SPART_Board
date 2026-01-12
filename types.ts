@@ -433,3 +433,16 @@ export interface BackgroundPreset {
   betaUsers: string[]; // Specific users if beta
   createdAt: number;
 }
+
+// User Role Management
+export type UserRole = 'admin' | 'teacher' | 'student';
+
+export interface UserProfile {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  role: UserRole;
+  department?: string;
+  lastActive: number;
+}

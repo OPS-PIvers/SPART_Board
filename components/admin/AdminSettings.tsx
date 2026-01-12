@@ -5,10 +5,12 @@ import {
   ArrowLeft,
   Shield,
   Image as ImageIcon,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
+import { UserRolesManager } from './UserRolesManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -42,9 +44,9 @@ const TabButton: React.FC<{
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState<'features' | 'backgrounds'>(
-    'features'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'features' | 'backgrounds' | 'users'
+  >('features');
 
   // Close modal on Escape key press
   React.useEffect(() => {
@@ -115,6 +117,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<ImageIcon className="w-4 h-4" />}
               label="Background Manager"
             />
+            <TabButton
+              id="tab-users"
+              controls="panel-users"
+              isActive={activeTab === 'users'}
+              onClick={() => setActiveTab('users')}
+              icon={<Users className="w-4 h-4" />}
+              label="User Roles"
+            />
           </div>
         </div>
 
@@ -158,6 +168,17 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
                 </p>
               </div>
               <BackgroundManager />
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div
+              id="panel-users"
+              role="tabpanel"
+              aria-labelledby="tab-users"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              <UserRolesManager />
             </div>
           )}
         </div>

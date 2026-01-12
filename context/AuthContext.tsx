@@ -5,9 +5,15 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  collection,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
-import { FeaturePermission, WidgetType } from '../types';
+import { FeaturePermission, WidgetType, UserProfile } from '../types';
 import { AuthContext } from './AuthContextValue';
 
 /**
@@ -120,6 +126,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     void checkAdminStatus();
+  }, [user]);
+
+  // Sync user profile to Firestore
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (!user) return;
+
+    const syncUserProfile = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        const userData: Partial<UserProfile> = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          lastActive: Date.now(),
+        };
+
+        if (!userSnap.exists()) {
+          // New user, set default role
+          const newProfile: UserProfile = {
+            ...(userData as UserProfile),
+            role: 'student', // Default role
+          };
+          await setDoc(userRef, newProfile);
+        } else {
+          // Existing user, update lastActive and profile info, preserve role/dept
+          await setDoc(userRef, userData, { merge: true });
+        }
+      } catch (error) {
+        console.error('Error syncing user profile:', error);
+      }
+    };
+
+    void syncUserProfile();
   }, [user]);
 
   // Listen to feature permissions (only when authenticated)
