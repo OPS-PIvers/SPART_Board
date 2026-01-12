@@ -20,8 +20,14 @@ export const StudentApp = () => {
         await signInAnonymously(auth);
         setAuthInitialized(true);
       } catch (error) {
-        console.error('Failed to initialize anonymous auth:', error);
-        setAuthInitialized(true); // Continue anyway to show error
+        // Log more detail to help debug restricted operation errors
+        console.warn(
+          'Anonymous auth failed. If this is a restricted operation error, please ensure "Anonymous" provider is enabled in Firebase Console -> Authentication -> Sign-in method.',
+          error
+        );
+        // We set initialized to true even on failure so the student can still try to join.
+        // The joinSession logic in useLiveSession will generate a client-side ID if auth fails.
+        setAuthInitialized(true);
       }
     };
 
