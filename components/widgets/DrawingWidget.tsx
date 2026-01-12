@@ -11,6 +11,7 @@ import {
   Palette,
   Undo2,
   MousePointer2,
+  CornerUpLeft,
 } from 'lucide-react';
 
 export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
@@ -200,11 +201,15 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }`}
       >
         {mode === 'overlay' ? (
-          <Minimize className="w-3 h-3" />
+          <CornerUpLeft className="w-3 h-3" />
         ) : (
           <Maximize className="w-3 h-3" />
         )}
-        {widget.w > 250 && <span>ANNOTATE</span>}
+        {mode === 'overlay' ? (
+          <span>EXIT</span>
+        ) : (
+          widget.w > 250 && <span>ANNOTATE</span>
+        )}
       </button>
     </div>
   );
