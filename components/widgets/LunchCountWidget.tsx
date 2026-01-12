@@ -57,6 +57,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // NOTE: Using third-party CORS proxy services introduces security and reliability concerns.
+  // These proxies can inspect all data passing through them, and their availability is not guaranteed.
+  // TODO: Implement a backend proxy endpoint under our control or work with Nutrislice API
+  // to get proper CORS headers configured for a production-ready solution.
   const fetchWithFallback = async (url: string) => {
     const proxies = [
       (u: string) =>

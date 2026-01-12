@@ -343,9 +343,6 @@ export interface WidgetData {
   customTitle?: string;
   isLive?: boolean;
   config: WidgetConfig;
-  deviceId?: string;
-  isMirrored?: boolean;
-  zoom?: number;
 }
 
 export interface Dashboard {

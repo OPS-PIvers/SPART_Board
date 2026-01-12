@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '@/context/useDashboard';
+import { useDashboard } from '../../context/useDashboard';
 import { Sidebar } from './Sidebar';
 import { Dock } from './Dock';
-import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
+import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 const ToastContainer: React.FC = () => {

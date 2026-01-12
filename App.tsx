@@ -1,13 +1,13 @@
 import React from 'react';
-import { AuthProvider } from '@/context/AuthContext';
-import { useAuth } from '@/context/useAuth';
-import { DashboardProvider } from '@/context/DashboardContext';
-import { LoginScreen } from '@/components/auth/LoginScreen';
-import { DashboardView } from '@/components/layout/DashboardView';
-import { UpdateNotification } from '@/components/layout/UpdateNotification';
-import { isConfigured } from '@/config/firebase';
-import { StudentApp } from '@/components/student/StudentApp';
-import { StudentProvider } from '@/components/student/StudentContexts';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
+import { DashboardProvider } from './context/DashboardContext';
+import { LoginScreen } from './components/auth/LoginScreen';
+import { DashboardView } from './components/layout/DashboardView';
+import { UpdateNotification } from './components/layout/UpdateNotification';
+import { isConfigured } from './config/firebase';
+import { StudentApp } from './components/student/StudentApp';
+import { StudentProvider } from './components/student/StudentContexts';
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();

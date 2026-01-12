@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, InstructionalRoutinesConfig } from '@/types';
-import { ROUTINES, InstructionalRoutine } from '@/config/instructionalRoutines';
+import { useDashboard } from '../../context/useDashboard';
+import { WidgetData, InstructionalRoutinesConfig } from '../../types';
+import {
+  ROUTINES,
+  InstructionalRoutine,
+} from '../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
 import { ChevronLeft, Info, Star } from 'lucide-react';
 

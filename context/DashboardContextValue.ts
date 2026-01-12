@@ -7,7 +7,7 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
-} from '@/types';
+} from '../types';
 
 export interface DashboardContextType {
   dashboards: Dashboard[];
