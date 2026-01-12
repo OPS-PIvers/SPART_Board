@@ -116,7 +116,7 @@ export const DrawingWidget: React.FC<{
     }
 
     draw(ctx, paths, currentPath);
-  }, [paths, currentPath, mode, widget.w, widget.h, draw]);
+  }, [paths, currentPath, mode, widget.w, widget.h, draw, isStudentView]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (isStudentView) return;
