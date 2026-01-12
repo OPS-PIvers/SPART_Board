@@ -1,8 +1,8 @@
 import React from 'react';
-import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
-import { DraggableWindow } from '../common/DraggableWindow';
-import { useAuth } from '../../context/useAuth';
-import { useLiveSession } from '../../hooks/useLiveSession';
+import { WidgetData, DrawingConfig, WidgetConfig } from '@/types';
+import { DraggableWindow } from '@/components/common/DraggableWindow';
+import { useAuth } from '@/context/useAuth';
+import { useLiveSession } from '@/hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimerWidget, TimerSettings } from './TimerWidget';
@@ -26,8 +26,8 @@ import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
 import { InstructionalRoutinesWidget } from './InstructionalRoutinesWidget';
-import { getTitle } from '../../utils/widgetHelpers';
-import { getJoinUrl } from '../../utils/urlHelpers';
+import { getTitle } from '@/utils/widgetHelpers';
+import { getJoinUrl } from '@/utils/urlHelpers';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 

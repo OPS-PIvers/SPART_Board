@@ -1,10 +1,7 @@
 import React from 'react';
-import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, InstructionalRoutinesConfig } from '../../types';
-import {
-  ROUTINES,
-  InstructionalRoutine,
-} from '../../config/instructionalRoutines';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, InstructionalRoutinesConfig } from '@/types';
+import { ROUTINES, InstructionalRoutine } from '@/config/instructionalRoutines';
 import * as Icons from 'lucide-react';
 import { ChevronLeft, Info } from 'lucide-react';
 
@@ -18,9 +15,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   const selectedRoutine = ROUTINES.find((r) => r.id === selectedRoutineId);
 
   const filteredRoutines = ROUTINES.filter(
-    (r) =>
-      gradeFilter === 'all' ||
-      (gradeFilter !== 'all' && r.gradeLevels.includes(gradeFilter))
+    (r) => gradeFilter === 'all' || r.gradeLevels.includes(gradeFilter)
   );
 
   const selectRoutine = (routine: InstructionalRoutine) => {

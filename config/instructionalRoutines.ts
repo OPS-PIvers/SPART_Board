@@ -1,4 +1,4 @@
-import { GradeLevel } from '../types';
+import { GradeLevel } from '@/types';
 
 export interface InstructionalRoutine {
   id: string;

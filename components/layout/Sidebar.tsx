@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '@/config/firebase';
 import {
   Layout,
   Save,
@@ -22,12 +22,12 @@ import {
   FolderOpen,
   Pencil,
 } from 'lucide-react';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, TOOLS, GradeLevel, BackgroundPreset } from '../../types';
-import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
-import { AdminSettings } from '../admin/AdminSettings';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useStorage } from '@/hooks/useStorage';
+import { Dashboard, TOOLS, GradeLevel, BackgroundPreset } from '@/types';
+import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
+import { AdminSettings } from '@/components/admin/AdminSettings';
 
 interface DashboardData {
   name: string;

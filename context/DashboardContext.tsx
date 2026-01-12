@@ -19,11 +19,11 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
-} from '../types';
+} from '@/types';
 import { useAuth } from './useAuth';
-import { useFirestore } from '../hooks/useFirestore';
-import { db } from '../config/firebase';
-import { migrateLocalStorageToFirestore } from '../utils/migration';
+import { useFirestore } from '@/hooks/useFirestore';
+import { db } from '@/config/firebase';
+import { migrateLocalStorageToFirestore } from '@/utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 
 // Helper to validate roster data from Firestore
