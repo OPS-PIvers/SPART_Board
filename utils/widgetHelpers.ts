@@ -54,7 +54,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       manualBentoBox: '',
       roster: [],
       assignments: {},
-      recipient: 'paul.ivers@orono.k12.mn.us',
+      recipient: '',
     },
     classes: {},
     instructionalRoutines: { selectedRoutineId: null },
