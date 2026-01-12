@@ -3,18 +3,19 @@ import {
   CameraOff,
   Loader2,
   Camera,
-  RefreshCw,
   FileText,
   X,
   Copy,
   Check,
   Trash2,
   List,
-  Download,
-  CheckCircle,
+  ZoomIn,
+  ZoomOut,
+  FlipHorizontal,
+  Video,
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { WidgetData } from '../../types';
+import { WidgetData, WebcamConfig } from '../../types';
 import { GoogleGenAI } from '@google/genai';
 import { useDashboard } from '../../context/useDashboard';
 
@@ -26,20 +27,24 @@ interface CapturedItem {
   imageUrl?: string;
 }
 
-export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
-  widget: _widget,
-}) => {
-  const { addToast } = useDashboard();
+export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { updateWidget, addToast } = useDashboard();
+  // Safe cast with fallback
+  const config = (widget.config || {}) as WebcamConfig;
+
+  // Default values
+  const deviceId = config.deviceId;
+  const zoomLevel = config.zoomLevel ?? 1;
+  const isMirrored = config.isMirrored ?? true;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const [capturedItems, setCapturedItems] = useState<CapturedItem[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
-
   const [showFlash, setShowFlash] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -50,25 +55,29 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
       setLoading(true);
       setError(null);
       try {
-        if (stream) {
-          stream.getTracks().forEach((t) => {
-            t.stop();
-          });
+        // Stop any existing tracks
+        if (videoRef.current && videoRef.current.srcObject) {
+          const oldStream = videoRef.current.srcObject as MediaStream;
+          oldStream.getTracks().forEach((t) => t.stop());
         }
-        stream = await navigator.mediaDevices.getUserMedia({
+
+        const constraints: MediaStreamConstraints = {
           video: {
+            deviceId: deviceId ? { exact: deviceId } : undefined,
             width: { ideal: 1920 },
             height: { ideal: 1080 },
-            facingMode: facingMode,
           },
-        });
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
         setLoading(false);
       } catch (err) {
         console.error('Error accessing camera:', err);
-        setError('Could not access camera. Please check permissions.');
+        setError('Could not access camera. Check permissions or settings.');
         setLoading(false);
       }
     };
@@ -77,12 +86,10 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
     return () => {
       if (stream) {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [facingMode]);
+  }, [deviceId]);
 
   const captureFrame = () => {
     if (!videoRef.current || !canvasRef.current) return null;
@@ -93,8 +100,8 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // Apply mirror if user facing
-    if (facingMode === 'user') {
+    // Apply mirror if enabled
+    if (isMirrored) {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
@@ -107,7 +114,6 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     const dataUrl = captureFrame();
     if (!dataUrl) return;
 
-    // Visual feedback
     setShowFlash(true);
     setTimeout(() => setShowFlash(false), 150);
 
@@ -123,14 +129,11 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     const dataUrl = captureFrame();
     if (!dataUrl) return;
 
-    // 1. Immediate Visual Feedback
     setShowFlash(true);
     setTimeout(() => setShowFlash(false), 150);
-
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 1500);
 
-    // 2. Create and Queue Item
     const newItem: CapturedItem = {
       id: uuidv4(),
       timestamp: Date.now(),
@@ -140,7 +143,6 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
     setCapturedItems((prev) => [newItem, ...prev]);
 
-    // 3. Process asynchronously
     try {
       const ai = new GoogleGenAI({
         apiKey: (import.meta.env.VITE_GEMINI_API_KEY as string) || '',
@@ -159,6 +161,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         },
       });
 
+      // FIXED: Access text directly from the response object for @google/genai
       const text = response.text ?? 'No text detected.';
 
       setCapturedItems((prev) =>
@@ -185,26 +188,17 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
     addToast('Text copied to clipboard', 'success');
   };
 
-  const deleteItem = (id: string) => {
-    setCapturedItems((prev) => prev.filter((item) => item.id !== id));
+  const changeZoom = (delta: number) => {
+    const newZoom = Math.min(3, Math.max(1, zoomLevel + delta));
+    updateWidget(widget.id, {
+      config: { ...config, zoomLevel: newZoom },
+    });
   };
 
-  const clearAll = () => {
-    if (confirm('Are you sure you want to clear all items?')) {
-      setCapturedItems([]);
-    }
-  };
-
-  const downloadText = (text: string, timestamp: number) => {
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `extracted-text-${timestamp}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const toggleMirror = () => {
+    updateWidget(widget.id, {
+      config: { ...config, isMirrored: !isMirrored },
+    });
   };
 
   return (
@@ -215,17 +209,15 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50 z-10 bg-slate-900">
           <Loader2 className="w-8 h-8 animate-spin" />
           <span className="text-[10px] font-bold uppercase tracking-widest">
-            Waking up lens...
+            Starting Camera...
           </span>
         </div>
       )}
 
-      {/* Camera Flash Effect */}
       {showFlash && (
         <div className="absolute inset-0 bg-white z-[30] animate-out fade-out duration-150 pointer-events-none" />
       )}
 
-      {/* Immediate Success Feedback (Green Check) */}
       {showSuccess && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="bg-green-500/90 p-8 rounded-full shadow-2xl animate-in zoom-in duration-300">
@@ -241,53 +233,70 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       ) : (
         <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-          />
+          <div className="w-full h-full overflow-hidden flex items-center justify-center">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover transition-transform duration-200"
+              style={{
+                transform: `scale(${zoomLevel}) scaleX(${isMirrored ? -1 : 1})`,
+              }}
+            />
+          </div>
 
           {/* Controls Overlay */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-2xl p-3 rounded-3xl border border-white/20 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-30">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-2xl p-2 rounded-3xl border border-white/20 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-30">
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-1 pr-2 border-r border-white/10">
+              <button
+                onClick={() => changeZoom(-0.5)}
+                disabled={zoomLevel <= 1}
+                className="p-3 hover:bg-white/20 rounded-2xl text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ZoomOut className="w-5 h-5" />
+              </button>
+              <span className="text-[10px] font-mono font-bold text-white w-6 text-center">
+                {zoomLevel}x
+              </span>
+              <button
+                onClick={() => changeZoom(0.5)}
+                disabled={zoomLevel >= 3}
+                className="p-3 hover:bg-white/20 rounded-2xl text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ZoomIn className="w-5 h-5" />
+              </button>
+            </div>
+
             <button
-              onClick={() =>
-                setFacingMode((prev) =>
-                  prev === 'user' ? 'environment' : 'user'
-                )
-              }
-              className="p-3 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-90"
-              title="Flip Camera"
-              aria-label="Flip Camera"
+              onClick={toggleMirror}
+              className={`p-3 rounded-2xl text-white transition-all ${isMirrored ? 'bg-blue-500/20 text-blue-400' : 'hover:bg-white/20'}`}
+              title="Mirror Flip"
             >
-              <RefreshCw className="w-5 h-5" />
+              <FlipHorizontal className="w-5 h-5" />
             </button>
+
             <button
               onClick={handleScreenshot}
-              className="p-4 bg-white text-slate-900 rounded-2xl hover:scale-110 hover:shadow-white/20 transition-all active:scale-95 shadow-xl flex items-center gap-2 group/btn"
+              className="p-4 bg-white text-slate-900 rounded-2xl hover:scale-110 shadow-xl flex items-center gap-2 mx-1"
               title="Take Screenshot"
-              aria-label="Take Screenshot"
             >
-              <Camera className="w-6 h-6 group-active/btn:scale-75 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-widest pr-1">
-                Snap
-              </span>
+              <Camera className="w-6 h-6" />
             </button>
+
             <button
               onClick={() => void handleOCR()}
-              className="p-3 bg-blue-600 hover:bg-blue-500 text-white shadow-lg rounded-2xl transition-all active:scale-90"
-              title="Extract Text (OCR)"
-              aria-label="Extract Text (OCR)"
+              className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg rounded-2xl"
+              title="Extract Text (AI)"
             >
               <FileText className="w-5 h-5" />
             </button>
+
             <button
               onClick={() => setShowGallery(true)}
-              className="relative p-3 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-90"
-              title="View Captured Text"
-              aria-label="View Captured Text"
+              className="relative p-3 hover:bg-white/20 rounded-2xl text-white"
+              title="History"
             >
               <List className="w-5 h-5" />
               {capturedItems.length > 0 && (
@@ -301,7 +310,6 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Gallery/Results Overlay */}
       {showGallery && (
         <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col animate-in slide-in-from-bottom duration-300">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
             <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
               <List className="w-4 h-4 text-blue-400" />
@@ -310,100 +318,61 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="flex gap-2">
               {capturedItems.length > 0 && (
                 <button
-                  onClick={clearAll}
-                  className="p-2 hover:bg-white/10 rounded-lg text-red-400 hover:text-red-300 transition-colors"
-                  title="Clear All"
-                  aria-label="Clear All"
+                  onClick={() => {
+                    if (confirm('Clear history?')) setCapturedItems([]);
+                  }}
+                  className="p-2 hover:bg-white/10 rounded-lg text-red-400"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
               <button
                 onClick={() => setShowGallery(false)}
-                className="p-2 hover:bg-white/10 rounded-lg text-white transition-colors"
-                aria-label="Close Gallery"
+                className="p-2 hover:bg-white/10 rounded-lg text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {capturedItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-white/30 gap-2">
                 <FileText className="w-12 h-12 opacity-20" />
-                <p className="text-sm">No text captured yet.</p>
+                <p className="text-sm">No items yet.</p>
               </div>
             ) : (
               capturedItems.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-colors"
+                  className="bg-white/5 rounded-xl p-4 border border-white/10"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {item.status === 'processing' && (
-                        <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-                      )}
-                      {item.status === 'success' && (
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      )}
-                      {item.status === 'error' && (
-                        <X className="w-4 h-4 text-red-400" />
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
                       )}
                       <span className="text-[10px] text-white/40 font-mono">
                         {new Date(item.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {item.status === 'success' && item.text && (
-                        <>
-                          <button
-                            onClick={() =>
-                              copyToClipboard(item.text ?? '', item.id)
-                            }
-                            className={`p-1.5 rounded-lg transition-colors ${copiedId === item.id ? 'bg-green-500/20 text-green-400' : 'hover:bg-white/10 text-slate-400 hover:text-white'}`}
-                            title="Copy"
-                            aria-label="Copy Text"
-                          >
-                            {copiedId === item.id ? (
-                              <Check className="w-3.5 h-3.5" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() =>
-                              downloadText(item.text ?? '', item.timestamp)
-                            }
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                            title="Download"
-                            aria-label="Download Text"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      )}
+                    {item.status === 'success' && item.text && (
                       <button
-                        onClick={() => deleteItem(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
-                        title="Delete"
-                        aria-label="Delete Item"
+                        onClick={() =>
+                          copyToClipboard(item.text ?? '', item.id)
+                        }
+                        className="text-slate-400 hover:text-white"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {copiedId === item.id ? (
+                          <Check className="w-3 h-3" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
                       </button>
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-slate-300 font-mono bg-black/30 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar">
-                    {item.status === 'processing' ? (
-                      <span className="text-amber-400/70 italic">
-                        Processing image...
-                      </span>
-                    ) : (
-                      item.text
                     )}
+                  </div>
+                  <div className="text-xs text-slate-300 font-mono bg-black/30 p-3 rounded-lg whitespace-pre-wrap">
+                    {item.text ?? 'Processing...'}
                   </div>
                 </div>
               ))
@@ -411,9 +380,73 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
 
-      <div className="absolute top-4 right-4 px-2 py-1 bg-black/30 backdrop-blur-md rounded text-[9px] font-black text-white/50 uppercase tracking-widest pointer-events-none border border-white/5">
-        {facingMode === 'user' ? 'Front' : 'Back'} Camera
+export const WebcamSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
+  const { updateWidget } = useDashboard();
+  const config = (widget.config || {}) as WebcamConfig;
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+
+  useEffect(() => {
+    const getDevices = async () => {
+      try {
+        // Request permission first to get labels
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
+        setDevices(allDevices.filter((d) => d.kind === 'videoinput'));
+      } catch (e) {
+        console.error('Error listing devices', e);
+      }
+    };
+    void getDevices();
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <Video className="w-3 h-3" /> Camera Source
+        </label>
+        <div className="space-y-2">
+          {devices.map((device) => (
+            <button
+              key={device.deviceId}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, deviceId: device.deviceId },
+                })
+              }
+              className={`w-full p-3 rounded-xl text-left border-2 transition-all flex items-center justify-between ${
+                config.deviceId === device.deviceId
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                  : 'border-slate-100 hover:border-slate-200 text-slate-600'
+              }`}
+            >
+              <span className="text-xs font-bold truncate">
+                {device.label || `Camera ${device.deviceId.slice(0, 5)}...`}
+              </span>
+              {config.deviceId === device.deviceId && (
+                <Check className="w-4 h-4 text-indigo-600" />
+              )}
+            </button>
+          ))}
+          {devices.length === 0 && (
+            <div className="text-xs text-slate-400 italic">
+              No cameras found or permission denied.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          <strong>Tip:</strong> Use the buttons on the front of the widget to
+          flip (mirror) the image or zoom in digitally.
+        </p>
       </div>
     </div>
   );

@@ -1,17 +1,44 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, LunchCountConfig } from '../../types';
+import { WidgetData, LunchCountConfig, LunchMenuDay } from '../../types';
 import {
   Users,
-  Send,
-  Coffee,
-  Home,
-  Box,
   RefreshCw,
-  UserPlus,
+  School,
+  Loader2,
+  Settings,
+  CheckCircle2,
+  Box,
 } from 'lucide-react';
 
-type LunchType = 'hot' | 'bento' | 'home' | 'none';
+type LunchType = 'hot' | 'bento' | 'home';
+
+interface NutrisliceFood {
+  name?: string;
+}
+
+interface NutrisliceMenuItem {
+  is_section_title?: boolean;
+  section_name?: string;
+  food?: NutrisliceFood;
+  text?: string;
+}
+
+interface NutrisliceDay {
+  date: string;
+  menu_items?: NutrisliceMenuItem[];
+}
+
+interface NutrisliceWeek {
+  days?: NutrisliceDay[];
+}
+
+const SCHOOL_OPTIONS = [
+  { id: 'schumann-elementary', label: 'Schumann Elementary' },
+  { id: 'orono-intermediate-school', label: 'Orono Intermediate' },
+];
+
+const DEFAULT_RECIPIENT_EMAIL = 'paul.ivers@orono.k12.mn.us';
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -19,129 +46,221 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {
-    firstNames = '',
-    lastNames = '',
+    schoolSite = 'schumann-elementary',
+    cachedMenu,
+    isManualMode = false,
+    manualHotLunch = '',
+    manualBentoBox = '',
+    roster = [],
     assignments = {},
-    recipient = 'paul.ivers@orono.k12.mn.us',
+    recipient = DEFAULT_RECIPIENT_EMAIL,
+    syncError,
   } = config;
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // NOTE: Using third-party CORS proxy services introduces security and reliability concerns.
+  // These proxies can inspect all data passing through them, and their availability is not guaranteed.
+  // TODO: Implement a backend proxy endpoint under our control or work with Nutrislice API
+  // to get proper CORS headers configured for a production-ready solution.
+  const fetchWithFallback = async (url: string) => {
+    const proxies = [
+      (u: string) =>
+        `https://api.allorigins.win/get?url=${encodeURIComponent(
+          u
+        )}&timestamp=${Date.now()}`,
+      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    ];
+
+    for (const getProxyUrl of proxies) {
+      try {
+        const response = await fetch(getProxyUrl(url));
+        if (!response.ok) continue;
+
+        const data = (await response.json()) as { contents?: string };
+        // AllOrigins wraps the result in a .contents string
+        const jsonContent =
+          typeof data.contents === 'string'
+            ? (JSON.parse(data.contents) as NutrisliceWeek)
+            : (data as NutrisliceWeek);
+
+        if (jsonContent && jsonContent.days) return jsonContent;
+      } catch (e) {
+        console.warn('Proxy attempt failed, trying next...', e);
+      }
+    }
+    throw new Error('All proxies failed');
+  };
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
     [rosters, activeRosterId]
   );
 
-  const students = useMemo(() => {
+  const currentRoster = useMemo(() => {
     if (activeRoster) {
       return activeRoster.students.map((s) =>
         `${s.firstName} ${s.lastName}`.trim()
       );
     }
+    return roster;
+  }, [activeRoster, roster]);
 
-    const firsts = firstNames
-      .split('\n')
-      .map((n: string) => n.trim())
-      .filter((n: string) => n);
-
-    const lasts = lastNames
-      .split('\n')
-      .map((n: string) => n.trim())
-      .filter((n: string) => n);
-
-    const count = Math.max(firsts.length, lasts.length);
-    const combined = [];
-    for (let i = 0; i < count; i++) {
-      const f = firsts[i] || '';
-      const l = lasts[i] || '';
-      const name = `${f} ${l}`.trim();
-      if (name) combined.push(name);
-    }
-    return combined;
-  }, [firstNames, lastNames, activeRoster]);
-
-  const handleDragStart = (e: React.DragEvent, name: string) => {
-    e.dataTransfer.setData('studentName', name);
-  };
-
-  const handleDrop = (e: React.DragEvent, type: LunchType) => {
-    const name = e.dataTransfer.getData('studentName');
-    if (name) {
-      const newAssignments = { ...assignments, [name]: type };
-      updateWidget(widget.id, {
-        config: { ...config, assignments: newAssignments },
-      });
-    }
-  };
-
-  const handleSend = () => {
-    const counts = { hot: 0, bento: 0, home: 0, none: 0 };
-    students.forEach((s: string) => {
-      const type = (assignments[s] as LunchType) || 'none';
-      counts[type]++;
+  const fetchNutrislice = useCallback(async () => {
+    if (isManualMode) return;
+    setIsSyncing(true);
+    updateWidget(widget.id, {
+      config: { ...config, syncError: undefined },
     });
 
-    const summary = `Lunch Count Summary:\n\nHot Lunch: ${counts.hot}\nBento Box: ${counts.bento}\nHome Lunch: ${counts.home}\nNot Reported: ${counts.none}\n\nSent from School Boards.`;
-    const mailto = `mailto:${recipient}?subject=Lunch Count - ${new Date().toLocaleDateString()}&body=${encodeURIComponent(summary)}`;
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
 
-    window.open(mailto);
-    addToast('Lunch report summary generated!', 'success');
-  };
+      const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
+      const data = await fetchWithFallback(apiUrl);
 
-  const resetCount = () => {
-    if (confirm('Reset all lunch choices for today?')) {
+      let hotLunch = 'No Hot Lunch Listed';
+      let bentoBox = 'No Bento Box Listed';
+
+      if (data && data.days) {
+        const todayStr = now.toISOString().split('T')[0];
+        const dayData = data.days.find((d) => d.date === todayStr);
+
+        if (dayData && dayData.menu_items) {
+          const items = dayData.menu_items;
+
+          // Hot Lunch: Map to the first item in the "Entrees" section
+          const entree = items.find(
+            (i) =>
+              !i.is_section_title &&
+              (i.section_name?.toLowerCase().includes('entree') ??
+                i.section_name?.toLowerCase().includes('main'))
+          );
+          if (entree) hotLunch = entree.food?.name ?? entree.text ?? hotLunch;
+
+          // Bento Box: Map to any item in Entrees or Sides that contains "Bento"
+          const bento = items.find(
+            (i) =>
+              (i.food?.name?.toLowerCase().includes('bento') ??
+                i.text?.toLowerCase().includes('bento')) &&
+              !i.is_section_title
+          );
+          if (bento) bentoBox = bento.food?.name ?? bento.text ?? bentoBox;
+
+          // Fallback for Hot Lunch if no section matched
+          if (hotLunch === 'No Hot Lunch Listed' && items.length > 0) {
+            const firstFood = items.find(
+              (i) => !i.is_section_title && (i.food?.name ?? i.text)
+            );
+            if (firstFood)
+              hotLunch = firstFood.food?.name ?? firstFood.text ?? hotLunch;
+          }
+        }
+      }
+
+      const newMenu: LunchMenuDay = {
+        hotLunch,
+        bentoBox,
+        date: now.toISOString(),
+      };
+
       updateWidget(widget.id, {
-        config: { ...config, assignments: {} },
+        config: {
+          ...config,
+          cachedMenu: newMenu,
+          lastSyncDate: now.toISOString(),
+          syncError: undefined,
+        },
+      });
+      addToast('Menu synced from Nutrislice', 'success');
+    } catch (err) {
+      console.error('Nutrislice Sync Error:', err);
+      updateWidget(widget.id, {
+        config: { ...config, syncError: 'E-SYNC-404' },
+      });
+      addToast('Failed to sync menu', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [schoolSite, isManualMode, config, widget.id, updateWidget, addToast]);
+
+  useEffect(() => {
+    if (
+      !cachedMenu ||
+      (config.lastSyncDate &&
+        new Date(config.lastSyncDate).toDateString() !==
+          new Date().toDateString())
+    ) {
+      void fetchNutrislice();
+    }
+  }, [fetchNutrislice, cachedMenu, config.lastSyncDate]);
+
+  const handleDrop = (e: React.DragEvent, type: LunchType | null) => {
+    const name = e.dataTransfer.getData('studentName');
+    if (name) {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          assignments: {
+            ...assignments,
+            [name]: type as LunchCountConfig['assignments'][string],
+          },
+        },
       });
     }
   };
 
-  const categories: {
-    type: LunchType;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    color: string;
-    border: string;
-  }[] = [
-    {
-      type: 'hot',
-      label: 'Hot Lunch',
-      icon: Coffee,
-      color: 'bg-orange-50',
-      border: 'border-orange-200',
-    },
-    {
-      type: 'bento',
-      label: 'Bento Box',
-      icon: Box,
-      color: 'bg-emerald-50',
-      border: 'border-emerald-200',
-    },
-    {
-      type: 'home',
-      label: 'Home Lunch',
-      icon: Home,
-      color: 'bg-blue-50',
-      border: 'border-blue-200',
-    },
-  ];
+  const resetBoard = () => {
+    updateWidget(widget.id, {
+      config: { ...config, assignments: {} },
+    });
+    addToast('Board reset', 'info');
+  };
 
-  if (students.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
-        <Users className="w-12 h-12 opacity-20" />
-        <div>
-          <p className="text-sm font-bold uppercase tracking-widest mb-1">
-            Class Roster Empty
-          </p>
-          <p className="text-xs">
-            Flip this widget to enter your student names.
-          </p>
-        </div>
-      </div>
+  const submitReport = () => {
+    const counts = { hot: 0, bento: 0, home: 0 };
+    Object.values(assignments).forEach((type) => {
+      if (type && counts[type as LunchType] !== undefined) {
+        counts[type as LunchType]++;
+      }
+    });
+
+    const menu = isManualMode
+      ? { hot: manualHotLunch, bento: manualBentoBox }
+      : {
+          hot: cachedMenu?.hotLunch ?? 'None',
+          bento: cachedMenu?.bentoBox ?? 'None',
+        };
+
+    const summary =
+      `Lunch Count Report - ${new Date().toLocaleDateString()}\n\n` +
+      `Hot Lunch (${menu.hot}): ${counts.hot}\n` +
+      `Bento Box (${menu.bento}): ${counts.bento}\n` +
+      `Home Lunch: ${counts.home}\n\n` +
+      `Sent from Dashboard.`;
+
+    window.open(
+      `mailto:${recipient}?subject=Lunch Count Report&body=${encodeURIComponent(
+        summary
+      )}`
     );
-  }
+    addToast('Report generated', 'success');
+  };
+
+  const unassigned = currentRoster.filter((name) => !assignments[name]);
+
+  const menuDisplay = {
+    hot: isManualMode ? manualHotLunch : (cachedMenu?.hotLunch ?? 'Loading...'),
+    bento: isManualMode
+      ? manualBentoBox
+      : (cachedMenu?.bentoBox ?? 'Loading...'),
+  };
 
   return (
-    <div className="h-full flex flex-col p-3 bg-white gap-3 select-none relative">
+    <div className="h-full flex flex-col bg-white select-none relative">
       {activeRoster && (
         <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 z-10 animate-in fade-in slide-in-from-top-1">
           <Box className="w-2 h-2 text-orange-500" />
@@ -150,98 +269,193 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </span>
         </div>
       )}
-      {/* Category Buckets */}
-      <div className="grid grid-cols-3 gap-3 shrink-0">
-        {categories.map((cat) => (
-          <div
-            key={cat.type}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              handleDrop(e, cat.type);
-            }}
-            className={`flex flex-col h-40 rounded-2xl border-2 border-dashed ${cat.color} ${cat.border} transition-all relative overflow-hidden`}
+
+      {/* Header Actions */}
+      <div className="p-3 bg-slate-50 border-b flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={submitReport}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2"
           >
-            <div className="p-2 flex items-center justify-between border-b border-dashed border-inherit bg-white/40">
-              <div className="flex items-center gap-1.5">
-                <cat.icon className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">
-                  {cat.label}
-                </span>
+            <CheckCircle2 className="w-3.5 h-3.5" /> Submit Report
+          </button>
+          <button
+            onClick={resetBoard}
+            className="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-300 transition-all flex items-center gap-2"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Reset
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => void fetchNutrislice()}
+            disabled={isSyncing || isManualMode}
+            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all relative"
+            title="Sync from Nutrislice"
+          >
+            {isSyncing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            {syncError && (
+              <div
+                className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
+                title={syncError}
+              >
+                !
               </div>
-              <span className="text-xs font-black text-slate-900 bg-white px-2 py-0.5 rounded-full shadow-sm">
-                {
-                  students.filter((s: string) => assignments[s] === cat.type)
-                    .length
-                }
+            )}
+          </button>
+          <button
+            onClick={() => updateWidget(widget.id, { flipped: true })}
+            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 p-3 flex flex-col gap-3 min-h-0">
+        {/* Choice Buckets */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Hot Lunch */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, 'hot')}
+            className="bg-orange-50 border-2 border-dashed border-orange-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-[9px] font-black uppercase text-orange-400 tracking-tighter">
+                Hot Lunch
+              </span>
+              <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                {Object.values(assignments).filter((v) => v === 'hot').length}
               </span>
             </div>
-            <div className="flex-1 p-2 overflow-y-auto custom-scrollbar flex flex-wrap gap-1 content-start">
-              {students
-                .filter((s: string) => assignments[s] === cat.type)
-                .map((name: string) => (
+            <div className="text-[10px] font-bold text-orange-800 leading-tight mb-3 line-clamp-2 italic">
+              {menuDisplay.hot}
+            </div>
+            <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
+              {Object.entries(assignments)
+                .filter(([_, type]) => type === 'hot')
+                .map(([name]) => (
                   <div
                     key={name}
                     draggable
-                    onDragStart={(e) => {
-                      handleDragStart(e, name);
-                    }}
-                    className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold shadow-sm cursor-grab active:cursor-grabbing hover:border-slate-400"
+                    onDragStart={(e) =>
+                      e.dataTransfer.setData('studentName', name)
+                    }
+                    className="px-2 py-1 bg-white border border-orange-100 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing"
                   >
                     {name}
                   </div>
                 ))}
             </div>
           </div>
-        ))}
-      </div>
-      {/* Waiting Area (Unassigned) */}
-      <div
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          handleDrop(e, 'none');
-        }}
-        className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 overflow-y-auto custom-scrollbar flex flex-wrap gap-2 content-start min-h-0"
-      >
-        <div className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
-          Waiting to Choose...
-        </div>
-        {students
-          .filter((s: string) => !assignments[s] || assignments[s] === 'none')
-          .map((name: string) => (
-            <div
-              key={name}
-              draggable
-              onDragStart={(e) => {
-                handleDragStart(e, name);
-              }}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold shadow-sm cursor-grab active:cursor-grabbing hover:scale-105 hover:border-indigo-400 transition-all"
-            >
-              {name}
+
+          {/* Bento Box */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, 'bento')}
+            className="bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-[9px] font-black uppercase text-emerald-400 tracking-tighter">
+                Bento Box
+              </span>
+              <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                {Object.values(assignments).filter((v) => v === 'bento').length}
+              </span>
             </div>
-          ))}
-        {students.every(
-          (s: string) => assignments[s] && assignments[s] !== 'none'
-        ) && (
-          <div className="w-full h-full flex items-center justify-center text-slate-300 italic text-[10px]">
-            All students accounted for!
+            <div className="text-[10px] font-bold text-emerald-800 leading-tight mb-3 line-clamp-2 italic">
+              {menuDisplay.bento}
+            </div>
+            <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
+              {Object.entries(assignments)
+                .filter(([_, type]) => type === 'bento')
+                .map(([name]) => (
+                  <div
+                    key={name}
+                    draggable
+                    onDragStart={(e) =>
+                      e.dataTransfer.setData('studentName', name)
+                    }
+                    className="px-2 py-1 bg-white border border-emerald-100 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing"
+                  >
+                    {name}
+                  </div>
+                ))}
+            </div>
           </div>
-        )}
+
+          {/* Home Lunch */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, 'home')}
+            className="bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-[9px] font-black uppercase text-blue-400 tracking-tighter">
+                Home Lunch
+              </span>
+              <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                {Object.values(assignments).filter((v) => v === 'home').length}
+              </span>
+            </div>
+            <div className="text-[10px] font-bold text-blue-800 leading-tight mb-3 italic">
+              Packing from home
+            </div>
+            <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
+              {Object.entries(assignments)
+                .filter(([_, type]) => type === 'home')
+                .map(([name]) => (
+                  <div
+                    key={name}
+                    draggable
+                    onDragStart={(e) =>
+                      e.dataTransfer.setData('studentName', name)
+                    }
+                    className="px-2 py-1 bg-white border border-blue-100 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing"
+                  >
+                    {name}
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Waiting Area (Bottom) */}
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleDrop(e, null)}
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
+        >
+          <div className="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest text-center">
+            Drag Your Name to Your Choice
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {unassigned.length > 0 ? (
+              unassigned.map((name) => (
+                <div
+                  key={name}
+                  draggable
+                  onDragStart={(e) =>
+                    e.dataTransfer.setData('studentName', name)
+                  }
+                  className="px-4 py-2 bg-white border-b-2 border-slate-200 rounded-xl text-xs font-black shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
+                >
+                  {name}
+                </div>
+              ))
+            ) : (
+              <div className="text-xs text-slate-300 italic py-4">
+                All students checked in!
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      {/* Footer Actions */}
-      <div className="flex gap-2 shrink-0">
-        <button
-          onClick={resetCount}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
-        >
-          <RefreshCw className="w-3 h-3" /> Reset
-        </button>
-        <button
-          onClick={handleSend}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
-        >
-          <Send className="w-3 h-3" /> Send Lunch Report
-        </button>
-      </div>{' '}
     </div>
   );
 };
@@ -252,71 +466,126 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {
-    firstNames = '',
-    lastNames = '',
-    recipient = 'paul.ivers@orono.k12.mn.us',
+    schoolSite = 'schumann-elementary',
+    isManualMode = false,
+    manualHotLunch = '',
+    manualBentoBox = '',
+    roster = [],
+    recipient = DEFAULT_RECIPIENT_EMAIL,
   } = config;
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-            <UserPlus className="w-3 h-3" /> First Names
-          </label>
-          <textarea
-            value={firstNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, firstNames: e.target.value },
-              })
-            }
-            placeholder="Alice&#10;Bob&#10;Charlie..."
-            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-            <UserPlus className="w-3 h-3" /> Last Names
-          </label>
-          <textarea
-            value={lastNames}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: { ...config, lastNames: e.target.value },
-              })
-            }
-            placeholder="Smith&#10;Jones&#10;Brown..."
-            className="w-full h-48 p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-900 leading-relaxed"
-          />
-        </div>
-      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+              <School className="w-3 h-3" /> School Site
+            </label>
+            <select
+              value={schoolSite}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    schoolSite: e.target
+                      .value as LunchCountConfig['schoolSite'],
+                    cachedMenu: undefined,
+                  },
+                })
+              }
+              className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl outline-none bg-white"
+            >
+              {SCHOOL_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
-          Recipient Email
-        </label>
-        <input
-          type="email"
-          value={recipient}
-          onChange={(e) =>
-            updateWidget(widget.id, {
-              config: { ...config, recipient: e.target.value },
-            })
-          }
-          placeholder="email@example.com"
-          className="w-full px-3 py-2.5 text-xs font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-        />
-      </div>
-      <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-        <h4 className="text-[10px] font-black text-blue-700 uppercase mb-2">
-          Instructions
-        </h4>
-        <p className="text-[9px] text-blue-600 leading-normal font-medium">
-          Once students choose their lunch, click{' '}
-          <b>&quot;Send Lunch Report&quot;</b>. This opens a mail composer with
-          the final counts pre-formatted for your cafeteria staff.
-        </p>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Recipient Email
+            </label>
+            <input
+              type="email"
+              value={recipient}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: { ...config, recipient: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 text-xs font-bold border border-slate-200 rounded-xl outline-none"
+            />
+          </div>
+
+          <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-indigo-700 uppercase tracking-wider">
+                Manual Mode
+              </span>
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, isManualMode: !isManualMode },
+                  })
+                }
+                className={`w-10 h-5 rounded-full transition-colors relative ${isManualMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
+              >
+                <div
+                  className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isManualMode ? 'right-1' : 'left-1'}`}
+                />
+              </button>
+            </div>
+            {isManualMode && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                <input
+                  placeholder="Hot Lunch Name"
+                  value={manualHotLunch}
+                  onChange={(e) =>
+                    updateWidget(widget.id, {
+                      config: { ...config, manualHotLunch: e.target.value },
+                    })
+                  }
+                  className="w-full p-2 text-[10px] font-bold border border-indigo-200 rounded-lg outline-none"
+                />
+                <input
+                  placeholder="Bento Box Name"
+                  value={manualBentoBox}
+                  onChange={(e) =>
+                    updateWidget(widget.id, {
+                      config: { ...config, manualBentoBox: e.target.value },
+                    })
+                  }
+                  className="w-full p-2 text-[10px] font-bold border border-indigo-200 rounded-lg outline-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+            <Users className="w-3 h-3" /> Class Roster
+          </label>
+          <textarea
+            value={roster.join('\n')}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  roster: e.target.value
+                    .split('\n')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                },
+              })
+            }
+            placeholder="Enter one student per line..."
+            className="w-full h-[240px] p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
+          />
+        </div>
       </div>
     </div>
   );

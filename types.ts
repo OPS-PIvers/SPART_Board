@@ -18,6 +18,7 @@ import {
   Calendar,
   TimerReset,
   Utensils,
+  BookOpen,
 } from 'lucide-react';
 
 export type WidgetType =
@@ -41,7 +42,8 @@ export type WidgetType =
   | 'schedule'
   | 'calendar'
   | 'lunchCount'
-  | 'classes';
+  | 'classes'
+  | 'instructionalRoutines';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -195,8 +197,9 @@ export interface PollConfig {
 }
 
 export interface WebcamConfig {
-  // Record<string, never> ensures an empty object
-  _dummy?: never;
+  deviceId?: string;
+  zoomLevel?: number;
+  isMirrored?: boolean;
 }
 
 export interface ScoreboardConfig {
@@ -228,14 +231,32 @@ export interface CalendarConfig {
   events: CalendarEvent[];
 }
 
+export interface LunchMenuDay {
+  hotLunch: string;
+  bentoBox: string;
+  date: string; // ISO String
+}
+
 export interface LunchCountConfig {
-  firstNames: string;
-  lastNames: string;
-  assignments: Record<string, string>;
-  recipient: string;
+  schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
+  cachedMenu?: LunchMenuDay;
+  lastSyncDate?: string;
+  isManualMode: boolean;
+  manualHotLunch: string;
+  manualBentoBox: string;
+  roster: string[]; // List of student names
+  assignments: Record<string, 'hot' | 'bento' | 'home' | null>;
+  recipient?: string;
+  syncError?: string; // To display E-SYNC-404 etc.
 }
 
 export type ClassesConfig = Record<string, never>;
+
+export interface InstructionalRoutinesConfig {
+  selectedRoutineId: string | null;
+  customSteps?: string[];
+  favorites?: string[]; // Array of routine IDs that are starred
+}
 
 // Union of all widget configs
 export type WidgetConfig =
@@ -259,7 +280,8 @@ export type WidgetConfig =
   | ScheduleConfig
   | CalendarConfig
   | LunchCountConfig
-  | ClassesConfig;
+  | ClassesConfig
+  | InstructionalRoutinesConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -304,7 +326,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                         ? LunchCountConfig
                                         : T extends 'classes'
                                           ? ClassesConfig
-                                          : never;
+                                          : T extends 'instructionalRoutines'
+                                            ? InstructionalRoutinesConfig
+                                            : never;
 
 export interface WidgetData {
   id: string;
@@ -392,6 +416,12 @@ export const TOOLS: ToolMetadata[] = [
     type: 'classes',
     icon: Users,
     label: 'Class',
+    color: 'bg-indigo-600',
+  },
+  {
+    type: 'instructionalRoutines',
+    icon: BookOpen,
+    label: 'Routines',
     color: 'bg-indigo-600',
   },
 ];

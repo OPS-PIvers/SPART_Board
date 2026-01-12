@@ -18,6 +18,7 @@ import {
   TOOLS,
   ClassRoster,
   Student,
+  GradeFilter,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -103,6 +104,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
+
+  const [gradeFilter, setGradeFilter] = useState<GradeFilter>(() => {
+    const saved = localStorage.getItem('spartboard_gradeFilter');
+    const validFilters: GradeFilter[] = ['all', 'k-2', '3-5', '6-8', '9-12'];
+    return saved && validFilters.includes(saved as GradeFilter)
+      ? (saved as GradeFilter)
+      : 'all';
+  });
+
+  const handleSetGradeFilter = (filter: GradeFilter) => {
+    setGradeFilter(filter);
+    localStorage.setItem('spartboard_gradeFilter', filter);
+  };
 
   // --- ROSTER STATE ---
   const [rosters, setRosters] = useState<ClassRoster[]>([]);
@@ -501,7 +515,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           ],
         },
       },
-      webcam: { w: 350, h: 300, config: {} },
+      webcam: {
+        w: 400,
+        h: 300,
+        config: {
+          zoomLevel: 1,
+          isMirrored: true,
+        },
+      },
       scoreboard: {
         w: 320,
         h: 200,
@@ -537,16 +558,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         w: 500,
         h: 400,
         config: {
-          firstNames: '',
-          lastNames: '',
+          schoolSite: 'schumann-elementary',
+          isManualMode: false,
+          manualHotLunch: '',
+          manualBentoBox: '',
+          roster: [],
           assignments: {},
-          recipient: 'paul.ivers@orono.k12.mn.us',
+          recipient: '',
         },
       },
       classes: {
         w: 600,
         h: 500,
         config: {},
+      },
+      instructionalRoutines: {
+        w: 350,
+        h: 450,
+        config: { selectedRoutineId: null },
       },
     };
 
@@ -654,6 +683,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         toasts,
         visibleTools,
         loading,
+        gradeFilter,
+        setGradeFilter: handleSetGradeFilter,
         addToast,
         removeToast,
         createNewDashboard,

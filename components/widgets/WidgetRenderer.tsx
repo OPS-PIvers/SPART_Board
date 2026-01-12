@@ -10,7 +10,7 @@ import { StopwatchWidget, StopwatchSettings } from './StopwatchWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
 import { TextWidget, TextSettings } from './TextWidget';
 import { SoundWidget, SoundSettings } from './SoundWidget';
-import { WebcamWidget } from './WebcamWidget';
+import { WebcamWidget, WebcamSettings } from './WebcamWidget';
 import { EmbedWidget, EmbedSettings } from './EmbedWidget';
 import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
 import { RandomWidget, RandomSettings } from './RandomWidget';
@@ -25,6 +25,7 @@ import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
+import { InstructionalRoutinesWidget } from './InstructionalRoutinesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 
@@ -132,6 +133,8 @@ export const WidgetRenderer: React.FC<{
         return <LunchCountWidget widget={widget} />;
       case 'classes':
         return <ClassesWidget widget={widget} />;
+      case 'instructionalRoutines':
+        return <InstructionalRoutinesWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -165,6 +168,8 @@ export const WidgetRenderer: React.FC<{
         return <DrawingSettings widget={widget} />;
       case 'qr':
         return <QRSettings widget={widget} />;
+      case 'webcam':
+        return <WebcamSettings widget={widget} />;
       case 'calendar':
         return <CalendarSettings widget={widget} />;
       case 'weather':

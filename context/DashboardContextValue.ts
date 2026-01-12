@@ -6,6 +6,7 @@ import {
   Toast,
   ClassRoster,
   Student,
+  GradeFilter,
 } from '../types';
 
 export interface DashboardContextType {
@@ -14,6 +15,8 @@ export interface DashboardContextType {
   toasts: Toast[];
   visibleTools: WidgetType[];
   loading: boolean;
+  gradeFilter: GradeFilter;
+  setGradeFilter: (filter: GradeFilter) => void;
   addToast: (message: string, type?: Toast['type']) => void;
   removeToast: (id: string) => void;
   createNewDashboard: (name: string, data?: Dashboard) => void;
