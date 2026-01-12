@@ -25,13 +25,7 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import {
-  Dashboard,
-  TOOLS,
-  GradeLevel,
-  GradeFilter,
-  BackgroundPreset,
-} from '../../types';
+import { Dashboard, TOOLS, GradeLevel, BackgroundPreset } from '../../types';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 
@@ -64,8 +58,26 @@ export const Sidebar: React.FC = () => {
     'presets' | 'colors' | 'gradients'
   >('presets');
 
+  const { user, signOut, isAdmin, featurePermissions } = useAuth();
+  const { uploadBackgroundImage } = useStorage();
+  const {
+    dashboards,
+    activeDashboard,
+    visibleTools,
+    gradeFilter,
+    setGradeFilter,
+    toggleToolVisibility,
+    setAllToolsVisibility,
+    createNewDashboard,
+    loadDashboard,
+    deleteDashboard,
+    renameDashboard,
+    saveCurrentDashboard,
+    setBackground,
+    addToast,
+  } = useDashboard();
+
   const [uploading, setUploading] = useState(false);
-  const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
@@ -79,18 +91,6 @@ export const Sidebar: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const publicBgsRef = useRef<BackgroundPreset[]>([]);
   const betaBgsRef = useRef<BackgroundPreset[]>([]);
-
-  const { user, signOut, isAdmin, featurePermissions } = useAuth();
-  const { uploadBackgroundImage } = useStorage();
-
-  // Load grade filter preference from localStorage
-  useEffect(() => {
-    const savedFilter = localStorage.getItem('spartboard_gradeFilter');
-    const validValues = GRADE_FILTER_OPTIONS.map((opt) => opt.value);
-    if (savedFilter && validValues.includes(savedFilter as GradeFilter)) {
-      setGradeFilter(savedFilter as GradeFilter);
-    }
-  }, []);
 
   // Fetch managed backgrounds from Firestore
 
@@ -190,27 +190,6 @@ export const Sidebar: React.FC = () => {
 
     return () => unsubscribes.forEach((unsub) => unsub());
   }, [user, isAdmin]);
-
-  // Save grade filter preference to localStorage
-  const handleGradeFilterChange = (newFilter: GradeFilter) => {
-    setGradeFilter(newFilter);
-    localStorage.setItem('spartboard_gradeFilter', newFilter);
-  };
-
-  const {
-    dashboards,
-    activeDashboard,
-    visibleTools,
-    toggleToolVisibility,
-    setAllToolsVisibility,
-    createNewDashboard,
-    loadDashboard,
-    deleteDashboard,
-    renameDashboard,
-    saveCurrentDashboard,
-    setBackground,
-    addToast,
-  } = useDashboard();
 
   // Combine static and managed presets
   const presets = useMemo(() => {
@@ -551,7 +530,7 @@ export const Sidebar: React.FC = () => {
                       {GRADE_FILTER_OPTIONS.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => handleGradeFilterChange(option.value)}
+                          onClick={() => setGradeFilter(option.value)}
                           className={`py-2 px-1 rounded-lg text-xs sm:text-sm font-bold uppercase transition-all ${
                             gradeFilter === option.value
                               ? 'bg-brand-blue-primary text-white shadow-sm'

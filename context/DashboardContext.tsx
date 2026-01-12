@@ -569,6 +569,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         h: 500,
         config: {},
       },
+      instructionalRoutines: {
+        w: 350,
+        h: 450,
+        config: { selectedRoutineId: null },
+      },
     };
 
     setDashboards((prev) =>
