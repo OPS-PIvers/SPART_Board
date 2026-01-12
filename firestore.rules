@@ -18,7 +18,9 @@ service cloud.firestore {
                   request.auth.token.email != null && 
                   request.auth.token.email.lower() == email.lower();
       // Allow admins to create/delete admin records (for promoting/demoting users)
-      allow write: if isAdmin();
+      // but prevent users from modifying their own admin record to avoid self-promotion/demotion.
+      allow write: if isAdmin() &&
+                   request.auth.token.email.lower() != email.lower();
     }
 
     // Dashboards - users can only access their own dashboards in their subcollection

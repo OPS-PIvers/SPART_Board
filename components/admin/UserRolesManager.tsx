@@ -3,9 +3,6 @@ import {
   Search,
   MoreVertical,
   Plus,
-  Shield,
-  GraduationCap,
-  BookOpen,
   Mail,
   Calendar,
   Building2,
@@ -15,14 +12,14 @@ import {
   onSnapshot,
   doc,
   updateDoc,
-  setDoc,
-  deleteDoc,
-  getDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { UserProfile, UserRole } from '../../types';
+import { useAuth } from '../../context/useAuth';
 
 export const UserRolesManager: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -56,34 +53,45 @@ export const UserRolesManager: React.FC = () => {
 
       if (!email) {
         console.error('User has no email, cannot manage admin status');
+        alert('User has no email, cannot manage admin status.');
         return;
       }
 
+      const batch = writeBatch(db);
+
       // Update user role in users collection
-      await updateDoc(userRef, { role: newRole });
+      batch.update(userRef, { role: newRole });
 
       // If promoting to admin, add to admins collection
       if (newRole === 'admin') {
         const timestamp = new Date().getTime();
-        await setDoc(doc(db, 'admins', email), {
+        batch.set(doc(db, 'admins', email), {
           addedAt: timestamp,
-          addedBy: 'admin_ui',
+          addedBy: currentUser?.email ?? 'admin_ui',
         });
       }
       // If demoting from admin, remove from admins collection
+      // Explicit casting needed because TS knows user.role can't be 'admin' here if we checked types strictly elsewhere?
+      // Actually, user.role IS 'admin' | 'teacher' | 'student'. TS thinks if it's not 'admin' it can't be 'admin'.
+      // But here we are checking IF it is admin.
+      // Wait, TS error says "This comparison appears to be unintentional because the types '"teacher" | "student"' and '"admin"' have no overlap."
+      // This suggests TS has inferred user.role is NOT admin at this point?
+      // Ah, because I previously might have narrowed it? No.
+      // Let's just cast it to satisfy the compiler if it thinks it's impossible.
       else if (
         (user?.role as string) === 'admin' &&
         newRole !== ('admin' as UserRole)
       ) {
         const adminRef = doc(db, 'admins', email);
-        const adminDoc = await getDoc(adminRef);
-        if (adminDoc.exists()) {
-          await deleteDoc(adminRef);
-        }
+        batch.delete(adminRef);
       }
+
+      await batch.commit();
     } catch (error) {
       console.error('Error updating role:', error);
-      alert('Failed to update role. Please try again.');
+      alert(
+        'Failed to update role. Please try again. Ensure you have permission to perform this action.'
+      );
     }
   };
 
@@ -93,6 +101,7 @@ export const UserRolesManager: React.FC = () => {
       setEditingDept(null);
     } catch (error) {
       console.error('Error updating department:', error);
+      alert('Failed to update department. Please try again.');
     }
   };
 
@@ -115,34 +124,6 @@ export const UserRolesManager: React.FC = () => {
     if (diff < 3600) return `${Math.floor(diff / 60)} mins ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
     return `${Math.floor(diff / 86400)} days ago`;
-  };
-
-  // Used in UI
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'teacher':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'student':
-        return 'bg-slate-100 text-slate-700 border-slate-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
-
-  // Used in UI
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const getRoleIcon = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return <Shield className="w-3 h-3 mr-1" />;
-      case 'teacher':
-        return <BookOpen className="w-3 h-3 mr-1" />;
-      case 'student':
-        return <GraduationCap className="w-3 h-3 mr-1" />;
-    }
   };
 
   return (

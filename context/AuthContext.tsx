@@ -149,8 +149,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!userSnap.exists()) {
           // New user, set default role
           const newProfile: UserProfile = {
-            ...(userData as UserProfile),
-            role: 'student', // Default role
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastActive: Date.now(),
+            role: 'student',
           };
           await setDoc(userRef, newProfile);
         } else {
@@ -163,7 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     void syncUserProfile();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAuthBypass]);
 
   // Listen to feature permissions (only when authenticated)
   useEffect(() => {
