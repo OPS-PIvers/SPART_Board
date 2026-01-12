@@ -16,7 +16,13 @@ import {
 export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as DrawingConfig;
-  const { mode = 'window', color = '#1e293b', width = 4, paths = [] } = config;
+  const {
+    mode = 'window',
+    color = '#1e293b',
+    width = 4,
+    paths = [],
+    customColors = ['#1e293b', '#ef4444', '#3b82f6', '#22c55e', '#eab308'],
+  } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -129,7 +135,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const PaletteUI = (
     <div className="flex flex-wrap items-center gap-2 p-2">
       <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-        {['#1e293b', '#ef4444', '#3b82f6', '#22c55e', '#eab308'].map((c) => (
+        {customColors.map((c) => (
           <button
             key={c}
             onClick={() =>
@@ -271,12 +277,48 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as DrawingConfig;
   const width = config.width ?? 4;
+  const customColors = config.customColors ?? [
+    '#1e293b',
+    '#ef4444',
+    '#3b82f6',
+    '#22c55e',
+    '#eab308',
+  ];
+
+  const handleColorChange = (index: number, newColor: string) => {
+    const nextColors = [...customColors];
+    nextColors[index] = newColor;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        customColors: nextColors,
+      } as DrawingConfig,
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
-          <Palette className="w-3 h-3" /> Brush Thickness
+          <Palette className="w-3 h-3" /> Color Presets
+        </label>
+        <div className="flex gap-2 px-2">
+          {customColors.map((c, i) => (
+            <div key={i} className="relative group">
+              <input
+                type="color"
+                value={c}
+                onChange={(e) => handleColorChange(i, e.target.value)}
+                className="w-8 h-8 rounded-lg cursor-pointer border-2 border-slate-200 bg-white"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+          <Pencil className="w-3 h-3" /> Brush Thickness
         </label>
         <div className="flex items-center gap-4 px-2">
           <input
@@ -312,7 +354,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             </div>
             <p className="text-[9px] text-indigo-600 font-medium">
               <b>Window:</b> Standard canvas inside the widget box. Best for
-              quick sketches.
+              quick sketches and notes.
             </p>
           </div>
           <div className="flex gap-3">
@@ -320,8 +362,8 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
               <Maximize className="w-3 h-3 text-white" />
             </div>
             <p className="text-[9px] text-indigo-600 font-medium">
-              <b>Overlay:</b> Annotate on top of all other widgets. Perfect for
-              highlighting specific dashboard content.
+              <b>Annotate:</b> Hides the window and moves the toolbar to the top
+              of your screen. Perfect for drawing over other content!
             </p>
           </div>
         </div>
