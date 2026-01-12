@@ -77,6 +77,7 @@ export const DrawingWidget: React.FC<{
       observer.observe(document.body, { childList: true, subtree: true });
       return () => observer.disconnect();
     }
+    return undefined;
   }, []);
 
   const { takeScreenshot, isCapturing } = useScreenshot(
