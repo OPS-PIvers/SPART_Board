@@ -38,6 +38,8 @@ const SCHOOL_OPTIONS = [
   { id: 'orono-intermediate-school', label: 'Orono Intermediate' },
 ];
 
+const DEFAULT_RECIPIENT_EMAIL = 'paul.ivers@orono.k12.mn.us';
+
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -51,7 +53,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     manualBentoBox = '',
     roster = [],
     assignments = {},
-    recipient = 'paul.ivers@orono.k12.mn.us',
+    recipient = DEFAULT_RECIPIENT_EMAIL,
     syncError,
   } = config;
 
@@ -469,7 +471,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     manualHotLunch = '',
     manualBentoBox = '',
     roster = [],
-    recipient = 'paul.ivers@orono.k12.mn.us',
+    recipient = DEFAULT_RECIPIENT_EMAIL,
   } = config;
 
   return (
