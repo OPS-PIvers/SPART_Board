@@ -254,8 +254,9 @@ export type ClassesConfig = Record<string, never>;
 
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
-  customSteps?: string[];
-  favorites?: string[]; // Array of routine IDs that are starred
+  customSteps: string[];
+  favorites: string[];
+  scaleMultiplier: number;
 }
 
 // Union of all widget configs
@@ -422,7 +423,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'instructionalRoutines',
     icon: BookOpen,
     label: 'Routines',
-    color: 'bg-indigo-600',
+    color: 'bg-[#2d3f89]',
   },
 ];
 

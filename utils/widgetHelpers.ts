@@ -57,7 +57,12 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       recipient: '',
     },
     classes: {},
-    instructionalRoutines: { selectedRoutineId: null },
+    instructionalRoutines: {
+      selectedRoutineId: null,
+      customSteps: [],
+      favorites: [],
+      scaleMultiplier: 1,
+    },
   };
 
   return defaults[type] || {};

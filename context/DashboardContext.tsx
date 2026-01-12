@@ -573,9 +573,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: {},
       },
       instructionalRoutines: {
-        w: 350,
-        h: 450,
-        config: { selectedRoutineId: null },
+        w: 400,
+        h: 480,
+        config: {
+          selectedRoutineId: null,
+          customSteps: [],
+          favorites: [],
+          scaleMultiplier: 1,
+        },
       },
     };
 
