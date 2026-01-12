@@ -19,7 +19,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const filteredRoutines = ROUTINES.filter(
     (r) =>
-      gradeFilter === 'all' || r.gradeLevels.includes(gradeFilter as GradeLevel)
+      gradeFilter === 'all' ||
+      (gradeFilter !== 'all' && r.gradeLevels.includes(gradeFilter))
   );
 
   const selectRoutine = (routine: InstructionalRoutine) => {
@@ -46,8 +47,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1">
           {filteredRoutines.map((r) => {
-            const IconComp =
-              Icons[r.icon as keyof typeof Icons] ?? Icons.HelpCircle;
+            const IconComp = (Icons[r.icon as keyof typeof Icons] ??
+              Icons.HelpCircle) as React.ComponentType<{ className?: string }>;
             return (
               <button
                 key={r.id}
@@ -69,8 +70,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const RoutineIcon =
-    Icons[selectedRoutine.icon as keyof typeof Icons] ?? Icons.HelpCircle;
+  const RoutineIcon = (Icons[selectedRoutine.icon as keyof typeof Icons] ??
+    Icons.HelpCircle) as React.ComponentType<{ className?: string }>;
 
   return (
     <div className="flex flex-col h-full bg-white p-5">
