@@ -117,10 +117,18 @@ export const StudentApp = () => {
   // 2. Waiting State (Joined but no active widget)
   if (!session?.isActive || !session?.activeWidgetId) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-slate-400 animate-in fade-in">
-        <Radio className="w-12 h-12 mb-4 animate-pulse text-indigo-500" />
-        <h2 className="text-xl font-bold text-white">Connected</h2>
-        <p>Waiting for teacher to start an activity...</p>
+      <div
+        id="dashboard-root"
+        className={`h-screen w-screen overflow-hidden relative transition-all duration-1000 ${backgroundClasses}`}
+        style={backgroundStyles}
+      >
+        <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-black/20 backdrop-blur-sm animate-in fade-in">
+          <Radio className="w-12 h-12 mb-4 animate-pulse text-white" />
+          <h2 className="text-xl font-bold text-white">Connected</h2>
+          <p className="text-white/70 font-medium">
+            Waiting for teacher to start an activity...
+          </p>
+        </div>
       </div>
     );
   }
@@ -185,7 +193,7 @@ export const StudentApp = () => {
       style={backgroundStyles}
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500 z-50" />
-      <div className="h-full w-full p-4">
+      <div className="h-full w-full">
         {/* Pass isStudentView to render content without window chrome */}
         <WidgetRenderer widget={activeWidgetStub} isStudentView={true} />
       </div>
