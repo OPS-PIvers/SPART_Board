@@ -18,6 +18,7 @@ import {
   TOOLS,
   ClassRoster,
   Student,
+  GradeFilter,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -103,6 +104,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
+
+  const [gradeFilter, setGradeFilter] = useState<GradeFilter>(() => {
+    const saved = localStorage.getItem('spartboard_gradeFilter');
+    return (saved as GradeFilter) || 'all';
+  });
+
+  const handleSetGradeFilter = (filter: GradeFilter) => {
+    setGradeFilter(filter);
+    localStorage.setItem('spartboard_gradeFilter', filter);
+  };
 
   // --- ROSTER STATE ---
   const [rosters, setRosters] = useState<ClassRoster[]>([]);
@@ -664,6 +675,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         toasts,
         visibleTools,
         loading,
+        gradeFilter,
+        setGradeFilter: handleSetGradeFilter,
         addToast,
         removeToast,
         createNewDashboard,
