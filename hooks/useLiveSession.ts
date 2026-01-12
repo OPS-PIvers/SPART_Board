@@ -6,6 +6,7 @@ import {
   setDoc,
   collection,
   addDoc,
+  deleteDoc,
   query,
   where,
   getDocs,
@@ -73,6 +74,8 @@ export interface UseLiveSessionResult {
   updateSessionConfig: (config: WidgetConfig) => Promise<void>;
   updateSessionBackground: (background: string) => Promise<void>;
   endSession: () => Promise<void>;
+  leaveSession: () => Promise<void>;
+  removeStudent: (studentId: string) => Promise<void>;
   toggleFreezeStudent: (
     studentId: string,
     currentStatus: 'active' | 'frozen' | 'disconnected'
@@ -243,6 +246,39 @@ export const useLiveSession = (
     return teacherId;
   };
 
+  const leaveSession = useCallback(async () => {
+    if (role !== 'student' || !joinCode || !studentId) return;
+    const studentRef = doc(
+      db,
+      SESSIONS_COLLECTION,
+      joinCode,
+      STUDENTS_COLLECTION,
+      studentId
+    );
+    await updateDoc(studentRef, { status: 'disconnected' }).catch((err) => {
+      console.error('Failed to leave session:', err);
+    });
+    setStudentId(null);
+    setSession(null);
+  }, [role, joinCode, studentId]);
+
+  const removeStudent = useCallback(
+    async (targetStudentId: string) => {
+      if (role !== 'teacher' || !userId) return;
+      const studentRef = doc(
+        db,
+        SESSIONS_COLLECTION,
+        userId,
+        STUDENTS_COLLECTION,
+        targetStudentId
+      );
+      await deleteDoc(studentRef).catch((err) => {
+        console.error(`Failed to remove student ${targetStudentId}:`, err);
+      });
+    },
+    [role, userId]
+  );
+
   const startSession = useCallback(
     async (
       widgetId: string,
@@ -251,6 +287,20 @@ export const useLiveSession = (
       background?: string
     ) => {
       if (!userId) return;
+
+      // Clear existing students for a fresh start
+      const studentsRef = collection(
+        db,
+        SESSIONS_COLLECTION,
+        userId,
+        STUDENTS_COLLECTION
+      );
+      const studentsSnapshot = await getDocs(studentsRef);
+      const deletePromises = studentsSnapshot.docs.map((d) => deleteDoc(d.ref));
+      await Promise.all(deletePromises).catch((err) => {
+        console.error('Failed to clear old students:', err);
+      });
+
       const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
       const newSession: LiveSession = {
         id: userId,
@@ -373,6 +423,8 @@ export const useLiveSession = (
     updateSessionConfig,
     updateSessionBackground,
     endSession,
+    leaveSession,
+    removeStudent,
     toggleFreezeStudent,
     toggleGlobalFreeze,
     joinSession,

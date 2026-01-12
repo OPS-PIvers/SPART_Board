@@ -64,8 +64,14 @@ export const StudentApp = () => {
   }, []);
 
   // Hook usage for 'student' role
-  const { session, loading, joinSession, studentId, individualFrozen } =
-    useLiveSession(undefined, 'student', joinedCode ?? undefined);
+  const {
+    session,
+    loading,
+    joinSession,
+    leaveSession,
+    studentId,
+    individualFrozen,
+  } = useLiveSession(undefined, 'student', joinedCode ?? undefined);
 
   const backgroundStyles = React.useMemo(() => {
     if (!session?.background) return {};
@@ -145,9 +151,15 @@ export const StudentApp = () => {
         <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-black/20 backdrop-blur-sm animate-in fade-in">
           <Radio className="w-12 h-12 mb-4 animate-pulse text-white" />
           <h2 className="text-xl font-bold text-white">Connected</h2>
-          <p className="text-white/70 font-medium">
+          <p className="text-white/70 font-medium mb-6">
             Waiting for teacher to start an activity...
           </p>
+          <button
+            onClick={() => void leaveSession()}
+            className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-bold transition-all"
+          >
+            Leave Session
+          </button>
         </div>
       </div>
     );
@@ -159,7 +171,13 @@ export const StudentApp = () => {
       <div className="fixed inset-0 z-50 bg-indigo-900 flex flex-col items-center justify-center p-8 text-center text-white">
         <Snowflake className="w-20 h-20 mb-6 animate-spin-slow opacity-80" />
         <h1 className="text-4xl font-black mb-4">Eyes on Teacher</h1>
-        <p className="text-indigo-200 text-lg">Your screen is paused.</p>
+        <p className="text-indigo-200 text-lg mb-8">Your screen is paused.</p>
+        <button
+          onClick={() => void leaveSession()}
+          className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-bold transition-all"
+        >
+          Leave Session
+        </button>
       </div>
     );
   }
@@ -188,6 +206,12 @@ export const StudentApp = () => {
       style={backgroundStyles}
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500 z-50" />
+      <button
+        onClick={() => void leaveSession()}
+        className="absolute top-4 right-4 z-50 px-3 py-1.5 bg-black/20 hover:bg-red-500/40 text-white/70 hover:text-white border border-white/10 hover:border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all"
+      >
+        Leave
+      </button>
       <div className="h-full w-full">
         {/* Pass isStudentView to render content without window chrome */}
         <WidgetRenderer widget={activeWidgetStub} isStudentView={true} />
