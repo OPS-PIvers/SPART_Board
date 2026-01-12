@@ -197,13 +197,13 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       <div className="h-6 w-px bg-slate-200 mx-1" />
 
-      {mode === 'window' && (
+      {mode === 'overlay' && (
         <>
           <button
             onClick={() => void takeScreenshot()}
             disabled={isCapturing}
-            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors disabled:opacity-50"
-            title="Capture Canvas"
+            className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600 transition-colors disabled:opacity-50"
+            title="Capture Full Screen"
           >
             <Camera className="w-4 h-4" />
           </button>
@@ -270,15 +270,6 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 </span>
               </div>
               {PaletteUI}
-              <div className="h-6 w-px bg-slate-200 mx-1" />
-              <button
-                onClick={() => void takeScreenshot()}
-                disabled={isCapturing}
-                className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600 transition-colors disabled:opacity-50"
-                title="Capture Full Screen"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
             </div>
           </div>,
           document.body
