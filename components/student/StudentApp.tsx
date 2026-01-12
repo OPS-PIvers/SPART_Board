@@ -47,6 +47,28 @@ export const StudentApp = () => {
   const { session, loading, joinSession, studentId, individualFrozen } =
     useLiveSession(undefined, 'student', joinedCode ?? undefined);
 
+  const backgroundStyles = React.useMemo(() => {
+    if (!session?.background) return {};
+    const bg = session.background;
+
+    if (bg.startsWith('http') || bg.startsWith('data:')) {
+      return {
+        backgroundImage: `url("${bg}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      };
+    }
+    return {};
+  }, [session]);
+
+  const backgroundClasses = React.useMemo(() => {
+    if (!session?.background) return '';
+    const bg = session.background;
+    if (bg.startsWith('http') || bg.startsWith('data:')) return '';
+    return bg;
+  }, [session]);
+
   const handleJoin = async (code: string, name: string) => {
     setError(null);
     try {
@@ -159,7 +181,8 @@ export const StudentApp = () => {
   return (
     <div
       id="dashboard-root"
-      className="h-screen w-screen bg-slate-100 overflow-hidden relative"
+      className={`h-screen w-screen overflow-hidden relative transition-all duration-1000 ${backgroundClasses}`}
+      style={backgroundStyles}
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500 z-50" />
       <div className="h-full w-full p-4">

@@ -2,6 +2,7 @@ import React from 'react';
 import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
 import { useAuth } from '../../context/useAuth';
+import { useDashboard } from '../../context/useDashboard';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
@@ -36,6 +37,7 @@ export const WidgetRenderer: React.FC<{
   isStudentView?: boolean;
 }> = ({ widget, isStudentView = false }) => {
   const { user } = useAuth();
+  const { activeDashboard } = useDashboard();
 
   // Initialize the hook (only active if user exists)
   const {
@@ -46,7 +48,10 @@ export const WidgetRenderer: React.FC<{
     toggleFreezeStudent,
     toggleGlobalFreeze,
     updateSessionConfig,
+    updateSessionBackground,
   } = useLiveSession(user?.uid, 'teacher');
+
+  const dashboardBackground = activeDashboard?.background;
 
   // Logic to determine if THIS widget is the live one
   const isThisWidgetLive =
@@ -57,7 +62,12 @@ export const WidgetRenderer: React.FC<{
       if (isThisWidgetLive) {
         await endSession();
       } else {
-        await startSession(widget.id, widget.type, widget.config);
+        await startSession(
+          widget.id,
+          widget.type,
+          widget.config,
+          dashboardBackground ?? undefined
+        );
       }
     } catch (error) {
       console.error('Failed to toggle live session:', error);
@@ -88,6 +98,14 @@ export const WidgetRenderer: React.FC<{
       clearTimeout(timer);
     };
   }, [configJson, isThisWidgetLive, updateSessionConfig]);
+
+  // Sync background changes to session when live
+  React.useEffect(() => {
+    if (!isThisWidgetLive || !dashboardBackground) {
+      return;
+    }
+    void updateSessionBackground(dashboardBackground);
+  }, [dashboardBackground, isThisWidgetLive, updateSessionBackground]);
 
   const getWidgetContent = () => {
     switch (widget.type) {
@@ -220,12 +238,12 @@ export const WidgetRenderer: React.FC<{
           joinUrl={getJoinUrl()}
           onToggleLive={handleToggleLive}
           onFreezeStudent={(id, status) => {
-            toggleFreezeStudent(id, status).catch((err) =>
+            void toggleFreezeStudent(id, status).catch((err) =>
               console.error('Failed to freeze student:', err)
             );
           }}
           onFreezeAll={() => {
-            toggleGlobalFreeze(!session?.frozen).catch((err) =>
+            void toggleGlobalFreeze(!session?.frozen).catch((err) =>
               console.error('Failed to toggle global freeze:', err)
             );
           }}

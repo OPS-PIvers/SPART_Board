@@ -68,6 +68,7 @@ export interface LiveSession {
   activeWidgetId: string | null;
   activeWidgetType: WidgetType | null;
   activeWidgetConfig?: WidgetConfig; // Config for the active widget
+  background?: string; // Teacher's current dashboard background
   code: string; // A short 4-6 digit join code
   frozen: boolean; // Global freeze state
   createdAt: number;

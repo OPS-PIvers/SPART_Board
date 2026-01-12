@@ -146,16 +146,29 @@ export const Sidebar: React.FC = () => {
       );
 
       // Query 2: Beta backgrounds where the user is authorized
+      if (user.email) {
+        const qBeta = query(
+          baseRef,
+          where('active', '==', true),
+          where('accessLevel', '==', 'beta'),
+          where('betaUsers', 'array-contains', user.email.toLowerCase())
+        );
 
-      const qBeta = query(
-        baseRef,
-
-        where('active', '==', true),
-
-        where('accessLevel', '==', 'beta'),
-
-        where('betaUsers', 'array-contains', (user.email ?? '').toLowerCase())
-      );
+        unsubscribes.push(
+          onSnapshot(
+            qBeta,
+            (snapshot) => {
+              betaBgsRef.current = snapshot.docs.map(
+                (d) => d.data() as BackgroundPreset
+              );
+              updateCombinedBackgrounds();
+            },
+            (error) => {
+              console.error('Error fetching beta backgrounds:', error);
+            }
+          )
+        );
+      }
 
       unsubscribes.push(
         onSnapshot(
@@ -168,21 +181,6 @@ export const Sidebar: React.FC = () => {
           },
           (error) => {
             console.error('Error fetching public backgrounds:', error);
-          }
-        )
-      );
-
-      unsubscribes.push(
-        onSnapshot(
-          qBeta,
-          (snapshot) => {
-            betaBgsRef.current = snapshot.docs.map(
-              (d) => d.data() as BackgroundPreset
-            );
-            updateCombinedBackgrounds();
-          },
-          (error) => {
-            console.error('Error fetching beta backgrounds:', error);
           }
         )
       );
