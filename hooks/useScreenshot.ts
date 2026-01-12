@@ -44,16 +44,14 @@ export const useScreenshot = (
             return true;
           }
 
-          // Exclude the flash overlay from the screenshot itself.
-          // This targets elements explicitly marked for exclusion via:
-          // - data-screenshot="flash"
-          // - the "isFlashing" CSS class used by the flash overlay
+          // Exclude the flash overlay and anything marked for exclusion
           const dataset = node.dataset;
-          const shouldExcludeFlash =
+          const shouldExclude =
             dataset.screenshot === 'flash' ||
+            dataset.screenshot === 'exclude' ||
             node.classList.contains('isFlashing');
 
-          return !shouldExcludeFlash;
+          return !shouldExclude;
         },
       });
 

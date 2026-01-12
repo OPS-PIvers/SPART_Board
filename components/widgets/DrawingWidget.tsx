@@ -12,7 +12,9 @@ import {
   Undo2,
   MousePointer2,
   CornerUpLeft,
+  Camera,
 } from 'lucide-react';
+import { useScreenshot } from '../../hooks/useScreenshot';
 
 export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
@@ -28,6 +30,16 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
+  const dashboardRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    dashboardRef.current = document.getElementById('dashboard-root');
+  }, []);
+
+  const { takeScreenshot, isCapturing } = useScreenshot(
+    dashboardRef,
+    `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`
+  );
 
   // Draw paths on the canvas whenever they change
   const draw = useCallback(
@@ -185,6 +197,20 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       <div className="h-6 w-px bg-slate-200 mx-1" />
 
+      {mode === 'window' && (
+        <>
+          <button
+            onClick={() => void takeScreenshot()}
+            disabled={isCapturing}
+            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors disabled:opacity-50"
+            title="Capture Canvas"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+          <div className="h-6 w-px bg-slate-200 mx-1" />
+        </>
+      )}
+
       <button
         onClick={() =>
           updateWidget(widget.id, {
@@ -233,7 +259,10 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="absolute inset-0 pointer-events-auto cursor-crosshair"
             />
             {/* Floating Toolbar at the Top */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300">
+            <div
+              data-screenshot="exclude"
+              className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
+            >
               <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
                 <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
@@ -241,6 +270,15 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 </span>
               </div>
               {PaletteUI}
+              <div className="h-6 w-px bg-slate-200 mx-1" />
+              <button
+                onClick={() => void takeScreenshot()}
+                disabled={isCapturing}
+                className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600 transition-colors disabled:opacity-50"
+                title="Capture Full Screen"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
             </div>
           </div>,
           document.body
