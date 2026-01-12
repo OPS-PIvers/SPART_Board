@@ -60,11 +60,34 @@ const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
  * // Student joining a session
  * const { session, loading, joinSession, individualFrozen } = useLiveSession(undefined, 'student', code);
  */
+export interface UseLiveSessionResult {
+  session: LiveSession | null;
+  students: LiveStudent[];
+  loading: boolean;
+  startSession: (
+    widgetId: string,
+    widgetType: WidgetType,
+    config?: WidgetConfig,
+    background?: string
+  ) => Promise<void>;
+  updateSessionConfig: (config: WidgetConfig) => Promise<void>;
+  updateSessionBackground: (background: string) => Promise<void>;
+  endSession: () => Promise<void>;
+  toggleFreezeStudent: (
+    studentId: string,
+    currentStatus: 'active' | 'frozen' | 'disconnected'
+  ) => Promise<void>;
+  toggleGlobalFreeze: (freeze: boolean) => Promise<void>;
+  joinSession: (name: string, unsanitizedCode: string) => Promise<string>;
+  studentId: string | null;
+  individualFrozen: boolean;
+}
+
 export const useLiveSession = (
   userId: string | undefined,
   role: 'teacher' | 'student',
   joinCode?: string
-) => {
+): UseLiveSessionResult => {
   const [session, setSession] = useState<LiveSession | null>(null);
   const [students, setStudents] = useState<LiveStudent[]>([]);
   const [loading, setLoading] = useState(
@@ -221,7 +244,12 @@ export const useLiveSession = (
   };
 
   const startSession = useCallback(
-    async (widgetId: string, widgetType: WidgetType, config?: WidgetConfig) => {
+    async (
+      widgetId: string,
+      widgetType: WidgetType,
+      config?: WidgetConfig,
+      background?: string
+    ) => {
       if (!userId) return;
       const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
       const newSession: LiveSession = {
@@ -230,6 +258,7 @@ export const useLiveSession = (
         activeWidgetId: widgetId,
         activeWidgetType: widgetType,
         activeWidgetConfig: config,
+        background: background,
         code: Math.random()
           .toString(36)
           .substring(2, 8)
@@ -255,6 +284,17 @@ export const useLiveSession = (
           console.error('Failed to update session config:', err);
         }
       );
+    },
+    [userId]
+  );
+
+  const updateSessionBackground = useCallback(
+    async (background: string) => {
+      if (!userId) return;
+      const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
+      await updateDoc(sessionRef, { background }).catch((err) => {
+        console.error('Failed to update session background:', err);
+      });
     },
     [userId]
   );
@@ -331,6 +371,7 @@ export const useLiveSession = (
     loading,
     startSession,
     updateSessionConfig,
+    updateSessionBackground,
     endSession,
     toggleFreezeStudent,
     toggleGlobalFreeze,
