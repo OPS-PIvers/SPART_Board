@@ -183,6 +183,7 @@ export interface DrawingConfig {
   paths: Path[];
   color?: string;
   width?: number;
+  customColors?: string[];
 }
 
 export interface QRConfig {
