@@ -41,6 +41,10 @@ export const WidgetRenderer: React.FC<{
 
   // Initialize the hook (only active if user exists)
   const {
+    session,
+    students,
+    startSession,
+    updateSessionConfig,
     updateSessionBackground,
     endSession,
     removeStudent,
