@@ -78,10 +78,7 @@ export const UserRolesManager: React.FC = () => {
       // This suggests TS has inferred user.role is NOT admin at this point?
       // Ah, because I previously might have narrowed it? No.
       // Let's just cast it to satisfy the compiler if it thinks it's impossible.
-      else if (
-        (user?.role as string) === 'admin' &&
-        newRole !== ('admin' as UserRole)
-      ) {
+      else if (user?.role === 'admin' && newRole !== 'admin') {
         const adminRef = doc(db, 'admins', email);
         batch.delete(adminRef);
       }
