@@ -86,7 +86,17 @@ export const useLiveSession = (
       setLoading(false);
     });
 
-    // Subscribe to students in this session
+    return () => {
+      unsubscribeSession();
+    };
+  }, [userId, role]);
+
+  // TEACHER: Subscribe to students (only when live)
+  useEffect(() => {
+    if (role !== 'teacher' || !userId || !session?.isActive) {
+      return;
+    }
+
     const studentsRef = collection(
       db,
       SESSIONS_COLLECTION,
@@ -102,10 +112,9 @@ export const useLiveSession = (
     });
 
     return () => {
-      unsubscribeSession();
       unsubscribeStudents();
     };
-  }, [userId, role]);
+  }, [userId, role, session?.isActive]);
 
   // STUDENT: Subscribe to joined session
   useEffect(() => {
@@ -114,7 +123,7 @@ export const useLiveSession = (
     }
 
     // 1. Subscribe to the Session (Global State: Active Widget, Freeze)
-    // In V1, joinCode is the teacher's userId which we use as the session document ID
+    // joinCode is the session's code field used to look up the teacher's session document
     const sessionRef = doc(db, SESSIONS_COLLECTION, joinCode);
     const unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -174,6 +183,9 @@ export const useLiveSession = (
     const sessionDoc = querySnapshot.docs[0];
     const teacherId = sessionDoc.id;
 
+    // Sanitize name (max 20 chars, simple trim)
+    const sanitizedName = name.trim().substring(0, 20);
+
     // 2. Add student to subcollection
     const studentsRef = collection(
       db,
@@ -182,7 +194,7 @@ export const useLiveSession = (
       STUDENTS_COLLECTION
     );
     const newStudent: Omit<LiveStudent, 'id'> = {
-      name,
+      name: sanitizedName,
       status: 'active',
       joinedAt: Date.now(),
       lastActive: Date.now(),
@@ -195,14 +207,14 @@ export const useLiveSession = (
   };
 
   const startSession = useCallback(
-    async (widgetId: string, widgetType: string, config?: WidgetConfig) => {
+    async (widgetId: string, widgetType: WidgetType, config?: WidgetConfig) => {
       if (!userId) return;
       const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
       const newSession: LiveSession = {
         id: userId,
         isActive: true,
         activeWidgetId: widgetId,
-        activeWidgetType: widgetType as WidgetType,
+        activeWidgetType: widgetType,
         activeWidgetConfig: config,
         code: Math.random().toString(36).substring(2, 8).toUpperCase(),
         frozen: false,

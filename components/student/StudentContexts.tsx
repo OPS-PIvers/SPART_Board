@@ -13,7 +13,7 @@ interface StudentProviderProps {
 const mockAuth: AuthContextType = {
   user: null,
   loading: false,
-  isAdmin: false,
+  isAdmin: null,
   featurePermissions: [],
   canAccessWidget: () => true, // Allow everything in student view
   signInWithGoogle: async () => {

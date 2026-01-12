@@ -1,5 +1,5 @@
 import React from 'react';
-import { WidgetData, DrawingConfig } from '../../types';
+import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
@@ -71,7 +71,7 @@ export const WidgetRenderer: React.FC<{
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          await updateSessionConfig(widget.config);
+          await updateSessionConfig(JSON.parse(configJson) as WidgetConfig);
         } catch (error) {
           // Log the error so failures are visible during development and debugging
           // while avoiding disruption to the UI.
@@ -84,7 +84,6 @@ export const WidgetRenderer: React.FC<{
     return () => {
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configJson, isThisWidgetLive, updateSessionConfig]);
 
   const getWidgetContent = () => {

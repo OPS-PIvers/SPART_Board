@@ -66,6 +66,8 @@ service cloud.firestore {
     match /sessions/{userId} {
       // Only authenticated users (including anonymous) can read sessions
       // This allows students to find sessions by code and listen to updates
+      // TODO: For Phase 2/Production, implement Cloud Functions to validate
+      // join codes server-side and remove this broad read permission.
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId; // Teacher controls it
       

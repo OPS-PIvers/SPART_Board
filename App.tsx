@@ -26,7 +26,10 @@ const AuthenticatedApp: React.FC = () => {
 
 const App: React.FC = () => {
   // Simple routing for Student View
-  if (window.location.pathname === '/join') {
+  const pathname = window.location.pathname;
+  const isStudentRoute = pathname === '/join' || pathname.startsWith('/join/');
+
+  if (isStudentRoute) {
     return (
       <StudentProvider>
         <StudentApp />

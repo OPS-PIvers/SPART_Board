@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
@@ -26,6 +26,13 @@ export const StudentApp = () => {
     };
 
     void initAuth();
+
+    // Cleanup anonymous session on unmount
+    return () => {
+      if (auth.currentUser?.isAnonymous) {
+        void signOut(auth);
+      }
+    };
   }, []);
 
   // Hook usage for 'student' role
@@ -48,9 +55,12 @@ export const StudentApp = () => {
         message = 'Failed to join session due to an unexpected error.';
       }
 
-      if (message.includes('Session not found')) {
+      if (message.toLowerCase().includes('session not found')) {
         setError('Session not found. Please check your join code.');
-      } else if (message.includes('network') || message.includes('fetch')) {
+      } else if (
+        message.toLowerCase().includes('network') ||
+        message.toLowerCase().includes('fetch')
+      ) {
         setError('Connection error. Please check your internet.');
       } else {
         setError(message);
