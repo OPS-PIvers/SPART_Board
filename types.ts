@@ -117,6 +117,11 @@ export interface CalendarEvent {
   title: string;
 }
 
+export interface RoutineStep {
+  id: string;
+  text: string;
+}
+
 // Widget-specific config types
 export interface ClockConfig {
   format24: boolean;
@@ -216,8 +221,8 @@ export interface ScoreboardConfig {
 }
 
 export interface WorkSymbolsConfig {
-  voice: string;
-  routine: string;
+  voiceLevel: number | null; // 0, 1, 2, 3, or 4
+  workMode: 'individual' | 'partner' | 'group' | null;
 }
 
 export interface WeatherConfig {
@@ -260,8 +265,9 @@ export type ClassesConfig = Record<string, never>;
 
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
-  customSteps?: string[];
-  favorites?: string[]; // Array of routine IDs that are starred
+  customSteps: RoutineStep[];
+  favorites: string[];
+  scaleMultiplier: number;
 }
 
 // Union of all widget configs
@@ -430,7 +436,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'instructionalRoutines',
     icon: BookOpen,
     label: 'Routines',
-    color: 'bg-indigo-600',
+    color: 'bg-[#2d3f89]',
   },
 ];
 

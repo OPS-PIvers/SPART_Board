@@ -5,9 +5,8 @@ export interface InstructionalRoutine {
   name: string;
   grades: string;
   gradeLevels: GradeLevel[];
-  description: string;
   icon: string;
-  steps: string[];
+  defaultSteps: string[];
 }
 
 export const ROUTINES: InstructionalRoutine[] = [
@@ -16,9 +15,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Chalk Talk',
     grades: '3-5',
     gradeLevels: ['3-5'],
-    description: 'Silent, written discussion to share ideas.',
     icon: 'MessagesSquare',
-    steps: [
+    defaultSteps: [
       'Read the question on the board.',
       'Write your answer quietly.',
       'Read and answer what your friends wrote.',
@@ -29,9 +27,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Choral Reading',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Whole group oral reading for fluency.',
     icon: 'Users',
-    steps: [
+    defaultSteps: [
       'Read the text together in one voice.',
       'Listen to stay at the same speed.',
     ],
@@ -41,9 +38,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Echo Reading',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Teacher models reading and students repeat.',
     icon: 'Volume2',
-    steps: [
+    defaultSteps: [
       'Listen to the teacher read.',
       'Read the same part back exactly the same way.',
     ],
@@ -53,9 +49,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Fishbowl',
     grades: '3-5',
     gradeLevels: ['3-5'],
-    description: 'Inner circle practices while outer circle observes.',
     icon: 'Eye',
-    steps: [
+    defaultSteps: [
       'Inside group: Practice the skill.',
       'Outside group: Watch and learn.',
       'Class: Talk about what we saw.',
@@ -66,9 +61,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Gallery Walk',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Exploring posted student work.',
     icon: 'Image',
-    steps: [
+    defaultSteps: [
       'Walk quietly around the room.',
       'Look closely at the work on the walls.',
       'Think about what you learned.',
@@ -79,9 +73,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Give One-Get One-Move One',
     grades: '3-5',
     gradeLevels: ['3-5'],
-    description: 'Trading ideas with partners.',
     icon: 'ArrowRightLeft',
-    steps: [
+    defaultSteps: [
       'Write your idea on a card.',
       'Trade ideas with a partner.',
       'Find a new partner and share the new idea.',
@@ -92,9 +85,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Jigsaw',
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Becoming an expert to teach others.',
     icon: 'Puzzle',
-    steps: [
+    defaultSteps: [
       'Learn your part with your expert group.',
       'Teach your part to your home group.',
       'Listen to learn all the other parts.',
@@ -105,9 +97,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Jot-Pair-Share',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Write, share with partner, then class.',
     icon: 'PencilLine',
-    steps: [
+    defaultSteps: [
       'Quickly write your answer.',
       'Share your writing with a partner.',
       'Share your ideas with the class.',
@@ -118,9 +109,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Mix and Mingle',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Moving around to discuss text aspects.',
     icon: 'Users2',
-    steps: [
+    defaultSteps: [
       'Think about the question.',
       'Find a partner and share your answer.',
       'When told, move to find a new partner.',
@@ -131,9 +121,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Question Corners',
     grades: 'K-2',
     gradeLevels: ['k-2'],
-    description: 'Moving to corners to answer tasks.',
     icon: 'Signpost',
-    steps: [
+    defaultSteps: [
       'Pick the corner you want to answer.',
       'Walk to that corner.',
       'Talk with the friends in your corner.',
@@ -144,9 +133,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: "Readers' Theater",
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Performing text in groups.',
     icon: 'Smile',
-    steps: [
+    defaultSteps: [
       'Get your group and your parts.',
       'Practice reading your lines.',
       'Perform the story for the class!',
@@ -157,9 +145,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Repeated Reading',
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Reading multiple times for fluency.',
     icon: 'Repeat2',
-    steps: [
+    defaultSteps: [
       'Read with the teacher.',
       'Read with a partner.',
       'Read it quietly by yourself.',
@@ -170,9 +157,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Tableau',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Creating a silent frozen scene.',
     icon: 'Pause',
-    steps: [
+    defaultSteps: [
       'Work with your group.',
       'Make a statue scene from the story.',
       'Stay very still and quiet.',
@@ -183,9 +169,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Take a Stand',
     grades: '3-5',
     gradeLevels: ['3-5'],
-    description: 'Voicing opinions by moving.',
     icon: 'Vote',
-    steps: [
+    defaultSteps: [
       'Listen to the question.',
       'Move to the area that matches your choice.',
       'Explain why you chose that spot.',
@@ -196,9 +181,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Think-Pair-Share',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Think, reflect with partner, then group.',
     icon: 'Brain',
-    steps: [
+    defaultSteps: [
       'Think silently about the question.',
       'Share your thoughts with a partner.',
       'Join the class discussion.',
@@ -209,9 +193,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Vocabulary Exploration',
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
-    description: 'Hearing, saying, and defining words.',
     icon: 'BookOpenCheck',
-    steps: [
+    defaultSteps: [
       'Listen to the word.',
       'Say the word and clap the beats.',
       'Learn what the word means.',
@@ -222,9 +205,8 @@ export const ROUTINES: InstructionalRoutine[] = [
     name: 'Whip Around',
     grades: '3-5',
     gradeLevels: ['3-5'],
-    description: 'Quickly sharing key ideas.',
     icon: 'Zap',
-    steps: [
+    defaultSteps: [
       'Listen to the prompt.',
       'Quickly share your answer one by one.',
       "Listen to everyone's ideas.",

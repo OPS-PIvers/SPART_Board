@@ -26,7 +26,10 @@ import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
-import { InstructionalRoutinesWidget } from './InstructionalRoutinesWidget';
+import {
+  InstructionalRoutinesWidget,
+  InstructionalRoutinesSettings,
+} from './InstructionalRoutinesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 
@@ -195,6 +198,8 @@ export const WidgetRenderer: React.FC<{
         return <WeatherSettings widget={widget} />;
       case 'lunchCount':
         return <LunchCountSettings widget={widget} />;
+      case 'instructionalRoutines':
+        return <InstructionalRoutinesSettings widget={widget} />;
       default:
         return (
           <div className="text-slate-500 italic text-sm">

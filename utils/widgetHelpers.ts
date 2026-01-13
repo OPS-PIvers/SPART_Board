@@ -43,7 +43,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     },
     webcam: {},
     scoreboard: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
-    workSymbols: { voice: 'none', routine: 'none' },
+    workSymbols: { voiceLevel: null, workMode: null },
     weather: { temp: 72, condition: 'sunny' },
     schedule: { items: [] },
     calendar: { events: [] },
@@ -57,7 +57,12 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       recipient: '',
     },
     classes: {},
-    instructionalRoutines: { selectedRoutineId: null },
+    instructionalRoutines: {
+      selectedRoutineId: null,
+      customSteps: [],
+      favorites: [],
+      scaleMultiplier: 1,
+    },
   };
 
   return defaults[type] || {};

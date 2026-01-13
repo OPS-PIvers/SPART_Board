@@ -529,9 +529,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
       },
       workSymbols: {
-        w: 300,
-        h: 250,
-        config: { voice: 'none', routine: 'none' },
+        w: 320,
+        h: 350,
+        config: { voiceLevel: null, workMode: null },
       },
       weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
       schedule: {
@@ -573,9 +573,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: {},
       },
       instructionalRoutines: {
-        w: 350,
-        h: 450,
-        config: { selectedRoutineId: null },
+        w: 400,
+        h: 480,
+        config: {
+          selectedRoutineId: null,
+          customSteps: [],
+          favorites: [],
+          scaleMultiplier: 1,
+        },
       },
     };
 
