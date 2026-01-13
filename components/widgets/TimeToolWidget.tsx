@@ -23,9 +23,11 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const [showSoundPicker, setShowSoundPicker] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const musicRef = useRef<{ oscs: OscillatorNode[]; gain: GainNode } | null>(
-    null
-  );
+  const musicRef = useRef<{
+    oscs?: OscillatorNode[];
+    gain?: GainNode;
+    audio?: HTMLAudioElement | null;
+  } | null>(null);
 
   // --- AUDIO SYNTHESIS ---
   const playAlert = React.useCallback(() => {
@@ -100,13 +102,18 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   const stopMusic = React.useCallback(() => {
     if (musicRef.current) {
-      musicRef.current.oscs.forEach((o) => {
-        try {
-          o.stop();
-        } catch (_e) {
-          // Ignore
-        }
-      });
+      if (musicRef.current.audio) {
+        musicRef.current.audio.pause();
+        musicRef.current.audio = null;
+      } else if (musicRef.current.oscs) {
+        musicRef.current.oscs.forEach((o) => {
+          try {
+            o.stop();
+          } catch (_e) {
+            // Ignore
+          }
+        });
+      }
       musicRef.current = null;
     }
   }, []);
@@ -114,20 +121,28 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const startMusic = React.useCallback(() => {
     if (config.selectedMusic === 'None') return;
     stopMusic();
-    const gain = AUDIO_CONTEXT.createGain();
-    gain.gain.setValueAtTime(0.2, AUDIO_CONTEXT.currentTime);
-    gain.connect(AUDIO_CONTEXT.destination);
 
-    // Simplified synthesized loops
-    const osc = AUDIO_CONTEXT.createOscillator();
-    osc.type = config.selectedMusic === 'Lo-fi Focus' ? 'triangle' : 'sine';
-    osc.frequency.setValueAtTime(
-      config.selectedMusic === 'Lo-fi Focus' ? 110 : 220,
-      AUDIO_CONTEXT.currentTime
-    );
-    osc.connect(gain);
-    osc.start();
-    musicRef.current = { oscs: [osc], gain };
+    // High-quality royalty-free instrumental URLs for study
+    const musicUrls: Record<string, string> = {
+      'Quiet Acoustic':
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      'Instrumental Study':
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+      'Piano Focus':
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
+    };
+
+    const url = musicUrls[config.selectedMusic];
+    if (!url) return;
+
+    // Use Audio element for external streams
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.volume = 0.2;
+    audio.play().catch((err) => console.error('Music playback failed', err));
+
+    // Store in ref
+    musicRef.current = { audio };
   }, [config.selectedMusic, stopMusic]);
 
   const updateMusicVolume = React.useCallback(
@@ -135,11 +150,16 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       if (!musicRef.current || config.mode !== 'timer') return;
       const percent = secondsLeft / config.duration;
       const targetVol = Math.max(0, 0.2 * percent);
-      musicRef.current.gain.gain.setTargetAtTime(
-        targetVol,
-        AUDIO_CONTEXT.currentTime,
-        0.5
-      );
+
+      if (musicRef.current.audio) {
+        musicRef.current.audio.volume = targetVol;
+      } else if (musicRef.current.gain) {
+        musicRef.current.gain.gain.setTargetAtTime(
+          targetVol,
+          AUDIO_CONTEXT.currentTime,
+          0.5
+        );
+      }
     },
     [config.mode, config.duration]
   );
@@ -284,7 +304,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
               onClick={() =>
                 updateWidget(widget.id, { config: { ...config, theme: t } })
               }
-              className={`w-4 h-4 rounded-full border border-white/20 ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-800' : 'bg-white/30'}`}
+              className={`w-4 h-4 rounded-full border border-black shadow-sm transition-transform hover:scale-110 active:scale-95 ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-800' : 'bg-white/30'}`}
             />
           ))}
         </div>
@@ -430,9 +450,14 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             </span>
           </button>
           {showMusicPicker && (
-            <div className="absolute bottom-full left-0 mb-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50">
+            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50">
               {(
-                ['None', 'Lo-fi Focus', 'Ambient Zen', 'Study Beats'] as const
+                [
+                  'None',
+                  'Quiet Acoustic',
+                  'Instrumental Study',
+                  'Piano Focus',
+                ] as const
               ).map((m) => (
                 <button
                   key={m}

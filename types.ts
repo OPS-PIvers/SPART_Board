@@ -256,7 +256,11 @@ export interface TimeToolConfig {
   elapsedTime: number; // in seconds
   isRunning: boolean;
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
-  selectedMusic: 'None' | 'Lo-fi Focus' | 'Ambient Zen' | 'Study Beats';
+  selectedMusic:
+    | 'None'
+    | 'Quiet Acoustic'
+    | 'Instrumental Study'
+    | 'Piano Focus';
 }
 
 // Union of all widget configs
