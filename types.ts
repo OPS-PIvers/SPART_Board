@@ -22,6 +22,7 @@ import {
 
 export type WidgetType =
   | 'clock'
+  | 'timer'
   | 'traffic'
   | 'text'
   | 'checklist'
@@ -122,6 +123,14 @@ export interface ClockConfig {
   fontFamily?: string;
   clockStyle?: string;
   glow?: boolean;
+}
+
+export interface TimerConfig {
+  duration: number;
+  sound: boolean; // This is the completion sound toggle
+  musicType: 'none' | 'lofi' | 'nature' | 'classical' | 'focus' | 'cleanup';
+  volumeMode: 'manual' | 'dynamic';
+  musicVolume: number; // 0 to 1
 }
 
 export interface TrafficConfig {
@@ -262,6 +271,7 @@ export interface TimeToolConfig {
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
+  | TimerConfig
   | TrafficConfig
   | TextConfig
   | ChecklistConfig
@@ -286,47 +296,49 @@ export type WidgetConfig =
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
   ? ClockConfig
-  : T extends 'traffic'
-    ? TrafficConfig
-    : T extends 'text'
-      ? TextConfig
-      : T extends 'checklist'
-        ? ChecklistConfig
-        : T extends 'random'
-          ? RandomConfig
-          : T extends 'dice'
-            ? DiceConfig
-            : T extends 'sound'
-              ? SoundConfig
-              : T extends 'drawing'
-                ? DrawingConfig
-                : T extends 'qr'
-                  ? QRConfig
-                  : T extends 'embed'
-                    ? EmbedConfig
-                    : T extends 'poll'
-                      ? PollConfig
-                      : T extends 'webcam'
-                        ? WebcamConfig
-                        : T extends 'scoreboard'
-                          ? ScoreboardConfig
-                          : T extends 'workSymbols'
-                            ? WorkSymbolsConfig
-                            : T extends 'weather'
-                              ? WeatherConfig
-                              : T extends 'schedule'
-                                ? ScheduleConfig
-                                : T extends 'calendar'
-                                  ? CalendarConfig
-                                  : T extends 'lunchCount'
-                                    ? LunchCountConfig
-                                    : T extends 'classes'
-                                      ? ClassesConfig
-                                      : T extends 'instructionalRoutines'
-                                        ? InstructionalRoutinesConfig
-                                        : T extends 'time-tool'
-                                          ? TimeToolConfig
-                                          : never;
+  : T extends 'timer'
+    ? TimerConfig
+    : T extends 'traffic'
+      ? TrafficConfig
+      : T extends 'text'
+        ? TextConfig
+        : T extends 'checklist'
+          ? ChecklistConfig
+          : T extends 'random'
+            ? RandomConfig
+            : T extends 'dice'
+              ? DiceConfig
+              : T extends 'sound'
+                ? SoundConfig
+                : T extends 'drawing'
+                  ? DrawingConfig
+                  : T extends 'qr'
+                    ? QRConfig
+                    : T extends 'embed'
+                      ? EmbedConfig
+                      : T extends 'poll'
+                        ? PollConfig
+                        : T extends 'webcam'
+                          ? WebcamConfig
+                          : T extends 'scoreboard'
+                            ? ScoreboardConfig
+                            : T extends 'workSymbols'
+                              ? WorkSymbolsConfig
+                              : T extends 'weather'
+                                ? WeatherConfig
+                                : T extends 'schedule'
+                                  ? ScheduleConfig
+                                  : T extends 'calendar'
+                                    ? CalendarConfig
+                                    : T extends 'lunchCount'
+                                      ? LunchCountConfig
+                                      : T extends 'classes'
+                                        ? ClassesConfig
+                                        : T extends 'instructionalRoutines'
+                                          ? InstructionalRoutinesConfig
+                                          : T extends 'time-tool'
+                                            ? TimeToolConfig
+                                            : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;
