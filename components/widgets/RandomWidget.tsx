@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, RandomConfig } from '../../types';
+import { WidgetData, RandomConfig, WidgetConfig } from '../../types';
 import {
   Users,
   UserPlus,
@@ -298,7 +298,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }
 
         updateWidget(widget.id, {
-          config: updates as unknown as RandomConfig,
+          config: updates as unknown as WidgetConfig,
         });
       } catch (err) {
         console.error('Randomizer Sync Error:', err);
