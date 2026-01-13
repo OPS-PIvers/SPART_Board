@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, RandomConfig, WidgetConfig } from '../../types';
+import { RosterModeControl } from '../common/RosterModeControl';
 import {
   Users,
   UserPlus,
@@ -117,6 +118,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     groupSize = 3,
     soundEnabled = true,
     remainingStudents = [],
+    rosterMode = 'class',
   } = config;
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -156,7 +158,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Clear session data when active roster changes to avoid cross-contamination
   useEffect(() => {
-    if (activeRosterId) {
+    if (activeRosterId && rosterMode === 'class') {
       updateWidget(widget.id, {
         config: {
           ...config,
@@ -165,7 +167,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         },
       });
     }
-  }, [activeRosterId, widget.id, updateWidget, config]);
+  }, [activeRosterId, widget.id, updateWidget, config, rosterMode]);
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
@@ -173,7 +175,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   );
 
   const students = useMemo(() => {
-    if (activeRoster) {
+    if (rosterMode === 'class' && activeRoster) {
       return activeRoster.students.map((s) =>
         `${s.firstName} ${s.lastName}`.trim()
       );
@@ -198,7 +200,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       if (name) combined.push(name);
     }
     return combined;
-  }, [firstNames, lastNames, activeRoster]);
+  }, [firstNames, lastNames, activeRoster, rosterMode]);
 
   // Dynamic sizing calculations for all animations
   const layoutSizing = useMemo(() => {
@@ -583,7 +585,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="h-full flex flex-col p-4 font-handwritten bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden relative">
-      {activeRoster && (
+      {activeRoster && rosterMode === 'class' && (
         <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
           <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
           <span className="text-[9px] font-black uppercase text-brand-blue-primary tracking-wider">
@@ -707,6 +709,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     visualStyle = 'flash',
     groupSize = 3,
     soundEnabled = true,
+    rosterMode = 'class',
   } = config;
 
   const [localFirstNames, setLocalFirstNames] = useState(firstNames);
@@ -778,6 +781,15 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
+      <RosterModeControl
+        rosterMode={rosterMode}
+        onModeChange={(mode) =>
+          updateWidget(widget.id, {
+            config: { ...config, rosterMode: mode },
+          })
+        }
+      />
+
       <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
         <div className="flex items-center gap-3">
           <div
@@ -868,63 +880,8 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
-            First Names
-          </label>
-          <textarea
-            value={localFirstNames}
-            onChange={(e) => setLocalFirstNames(e.target.value)}
-            onBlur={() => {
-              // Cancel debounce timer to prevent duplicate updates
-              if (firstNamesTimerRef.current) {
-                clearTimeout(firstNamesTimerRef.current);
-                firstNamesTimerRef.current = null;
-              }
-              if (localFirstNames !== firstNames) {
-                updateWidgetRef.current(widget.id, {
-                  config: {
-                    ...configRef.current,
-                    firstNames: localFirstNames,
-                  },
-                });
-              }
-            }}
-            placeholder="John&#10;Jane..."
-            className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
-            Last Names
-          </label>
-          <textarea
-            value={localLastNames}
-            onChange={(e) => setLocalLastNames(e.target.value)}
-            onBlur={() => {
-              // Cancel debounce timer to prevent duplicate updates
-              if (lastNamesTimerRef.current) {
-                clearTimeout(lastNamesTimerRef.current);
-                lastNamesTimerRef.current = null;
-              }
-              if (localLastNames !== lastNames) {
-                updateWidgetRef.current(widget.id, {
-                  config: {
-                    ...configRef.current,
-                    lastNames: localLastNames,
-                  },
-                });
-              }
-            }}
-            placeholder="Smith&#10;Doe..."
-            className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
-          />
-        </div>
-      </div>
-
       {mode === 'groups' && (
-        <div className="p-4 bg-white border border-slate-100 rounded-2xl">
+        <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <Hash className="w-3 h-3" /> Group Size
           </label>
@@ -952,24 +909,83 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       )}
 
-      <button
-        onClick={() => {
-          if (confirm('Clear all student data?')) {
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                firstNames: '',
-                lastNames: '',
-                lastResult: null,
-                remainingStudents: [],
-              },
-            });
-          }
-        }}
-        className="w-full py-3 flex items-center justify-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-2 border-dashed border-red-100"
-      >
-        <Trash2 className="w-4 h-4" /> Clear All Data
-      </button>
+      {rosterMode === 'custom' && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                First Names
+              </label>
+              <textarea
+                value={localFirstNames}
+                onChange={(e) => setLocalFirstNames(e.target.value)}
+                onBlur={() => {
+                  // Cancel debounce timer to prevent duplicate updates
+                  if (firstNamesTimerRef.current) {
+                    clearTimeout(firstNamesTimerRef.current);
+                    firstNamesTimerRef.current = null;
+                  }
+                  if (localFirstNames !== firstNames) {
+                    updateWidgetRef.current(widget.id, {
+                      config: {
+                        ...configRef.current,
+                        firstNames: localFirstNames,
+                      },
+                    });
+                  }
+                }}
+                placeholder="John&#10;Jane..."
+                className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                Last Names
+              </label>
+              <textarea
+                value={localLastNames}
+                onChange={(e) => setLocalLastNames(e.target.value)}
+                onBlur={() => {
+                  // Cancel debounce timer to prevent duplicate updates
+                  if (lastNamesTimerRef.current) {
+                    clearTimeout(lastNamesTimerRef.current);
+                    lastNamesTimerRef.current = null;
+                  }
+                  if (localLastNames !== lastNames) {
+                    updateWidgetRef.current(widget.id, {
+                      config: {
+                        ...configRef.current,
+                        lastNames: localLastNames,
+                      },
+                    });
+                  }
+                }}
+                placeholder="Smith&#10;Doe..."
+                className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              if (confirm('Clear all custom student data?')) {
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    firstNames: '',
+                    lastNames: '',
+                    lastResult: null,
+                    remainingStudents: [],
+                  },
+                });
+              }
+            }}
+            className="w-full py-3 flex items-center justify-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-2 border-dashed border-red-100"
+          >
+            <Trash2 className="w-4 h-4" /> Clear Custom Names
+          </button>
+        </>
+      )}
     </div>
   );
 };
