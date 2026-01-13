@@ -6,28 +6,9 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
-import { auth, googleProvider, db } from '../config/firebase';
+import { auth, googleProvider, db, isAuthBypass } from '../config/firebase';
 import { FeaturePermission, WidgetType } from '../types';
 import { AuthContext } from './AuthContextValue';
-
-/**
- * Authentication bypass flag.
- *
- * Controlled via the Vite environment variable `VITE_AUTH_BYPASS`.
- *
- * IMPORTANT SECURITY WARNING:
- * - This must only ever be used in development or automated testing.
- * - It must NEVER be enabled in production, as it bypasses normal auth.
- * - Ideally, Firestore security rules should also be configured to allow access
- *   from this mock user in the testing environment, as client-side bypass
- *   does not override server-side rules.
- *
- * The check below enforces that even if VITE_AUTH_BYPASS is set to "true",
- * the bypass will only be honored when the build is not running in
- * production mode (checked via import.meta.env.DEV).
- */
-const isAuthBypass =
-  import.meta.env.DEV && import.meta.env.VITE_AUTH_BYPASS === 'true';
 
 // Constants for mock data consistency
 const MOCK_TOKEN = 'mock-token';
