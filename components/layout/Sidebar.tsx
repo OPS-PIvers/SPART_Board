@@ -146,6 +146,7 @@ export const Sidebar: React.FC = () => {
       );
 
       // Query 2: Beta backgrounds where the user is authorized
+      // Note: Beta backgrounds require user email for authorization
       if (user.email) {
         const qBeta = query(
           baseRef,
@@ -170,6 +171,7 @@ export const Sidebar: React.FC = () => {
         );
       }
 
+      // Public backgrounds are always available regardless of user email
       unsubscribes.push(
         onSnapshot(
           qPublic,

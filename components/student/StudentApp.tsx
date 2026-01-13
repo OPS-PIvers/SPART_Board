@@ -40,13 +40,16 @@ export const StudentApp = () => {
         await signInAnonymously(auth);
         setAuthInitialized(true);
       } catch (error) {
-        // Log more detail to help debug restricted operation errors
+        // Anonymous auth is OPTIONAL for student clients:
+        // - Students can still join sessions without a Firebase user record.
+        // - useLiveSession.joinSession() falls back to a client-side ID when auth fails.
+        // Because this failure is non-fatal for core functionality, we log a warning
+        // instead of an error, but include guidance for common misconfiguration issues.
         console.warn(
           'Anonymous auth failed. If this is a restricted operation error, please ensure "Anonymous" provider is enabled in Firebase Console -> Authentication -> Sign-in method.',
           error
         );
-        // We set initialized to true even on failure so the student can still try to join.
-        // The joinSession logic in useLiveSession will generate a client-side ID if auth fails.
+        // We still mark auth as initialized so the UI can proceed and the fallback ID logic runs.
         setAuthInitialized(true);
       }
     };
@@ -190,9 +193,9 @@ export const StudentApp = () => {
     type: session.activeWidgetType ?? 'clock',
     x: 0,
     y: 0,
-    // Use full window dimensions (minus padding) instead of grid units
-    w: windowSize.width - 32, // 32px accounts for p-4 (1rem * 2)
-    h: windowSize.height - 32,
+    // Use full window dimensions instead of grid units
+    w: windowSize.width,
+    h: windowSize.height,
     z: 1,
     flipped: false,
     config:
