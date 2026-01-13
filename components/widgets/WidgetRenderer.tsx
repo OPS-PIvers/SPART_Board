@@ -29,6 +29,7 @@ import {
   InstructionalRoutinesWidget,
   InstructionalRoutinesSettings,
 } from './InstructionalRoutinesWidget';
+import { MiniAppWidget } from './MiniAppWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
@@ -168,6 +169,8 @@ export const WidgetRenderer: React.FC<{
         return <ClassesWidget widget={widget} />;
       case 'instructionalRoutines':
         return <InstructionalRoutinesWidget widget={widget} />;
+      case 'miniApp':
+        return <MiniAppWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -207,6 +210,12 @@ export const WidgetRenderer: React.FC<{
         return <LunchCountSettings widget={widget} />;
       case 'instructionalRoutines':
         return <InstructionalRoutinesSettings widget={widget} />;
+      case 'miniApp':
+        return (
+          <div className="text-slate-500 italic text-sm">
+            Manage apps in the main view.
+          </div>
+        );
       default:
         return (
           <div className="text-slate-500 italic text-sm">
