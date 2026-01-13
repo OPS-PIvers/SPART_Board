@@ -170,7 +170,7 @@ export const Sidebar: React.FC = () => {
           )
         );
       } else {
-        console.debug('Skipping beta background query: User has no email.');
+        console.warn('Skipping beta background query: User has no email.');
       }
 
       // Public backgrounds are always available regardless of user email
