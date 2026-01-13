@@ -13,7 +13,7 @@ import {
   MousePointer2,
   Minimize2,
   Camera,
-  Wifi,
+  Cast,
 } from 'lucide-react';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
@@ -265,7 +265,7 @@ export const DrawingWidget: React.FC<{
             }`}
             title={isLive ? 'End Live Session' : 'Go Live'}
           >
-            <Wifi className="w-4 h-4" />
+            <Cast className="w-4 h-4" />
           </button>
           <button
             onClick={() => void takeScreenshot()}

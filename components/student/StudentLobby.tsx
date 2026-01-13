@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wifi } from 'lucide-react';
+import { Cast } from 'lucide-react';
 
 interface StudentLobbyProps {
   onJoin: (code: string, name: string) => void;
@@ -23,7 +23,7 @@ export const StudentLobby: React.FC<StudentLobbyProps> = ({
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-slate-200">
       <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-xl ring-1 ring-slate-700">
-        <Wifi className="text-indigo-500 w-8 h-8" />
+        <Cast className="text-indigo-500 w-8 h-8" />
       </div>
       <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
         Classroom Live
