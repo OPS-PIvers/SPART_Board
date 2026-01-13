@@ -19,6 +19,7 @@ import {
   TimerReset,
   Utensils,
   BookOpen,
+  AppWindow,
 } from 'lucide-react';
 
 export type WidgetType =
@@ -43,7 +44,8 @@ export type WidgetType =
   | 'calendar'
   | 'lunchCount'
   | 'classes'
-  | 'instructionalRoutines';
+  | 'instructionalRoutines'
+  | 'miniApp';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -273,6 +275,19 @@ export interface InstructionalRoutinesConfig {
   scaleMultiplier: number;
 }
 
+// 1. Define the Data Model for a Mini App
+export interface MiniAppItem {
+  id: string;
+  title: string;
+  html: string;
+  createdAt: number;
+}
+
+// 2. Define the Widget Configuration
+export interface MiniAppConfig {
+  activeApp: MiniAppItem | null;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -296,7 +311,8 @@ export type WidgetConfig =
   | CalendarConfig
   | LunchCountConfig
   | ClassesConfig
-  | InstructionalRoutinesConfig;
+  | InstructionalRoutinesConfig
+  | MiniAppConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -343,7 +359,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                           ? ClassesConfig
                                           : T extends 'instructionalRoutines'
                                             ? InstructionalRoutinesConfig
-                                            : never;
+                                            : T extends 'miniApp'
+                                              ? MiniAppConfig
+                                              : never;
 
 export interface WidgetData {
   id: string;
@@ -440,6 +458,12 @@ export const TOOLS: ToolMetadata[] = [
     icon: BookOpen,
     label: 'Routines',
     color: 'bg-[#2d3f89]',
+  },
+  {
+    type: 'miniApp',
+    icon: AppWindow,
+    label: 'Mini Apps',
+    color: 'bg-indigo-600',
   },
 ];
 

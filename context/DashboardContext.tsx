@@ -603,6 +603,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           scaleMultiplier: 1,
         },
       },
+      miniApp: {
+        w: 500,
+        h: 600,
+        config: { activeApp: null },
+      },
     };
 
     setDashboards((prev) =>

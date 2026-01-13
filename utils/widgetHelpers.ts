@@ -9,6 +9,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'calendar') return 'Class Events';
   if (widget.type === 'lunchCount') return 'Lunch Orders';
   if (widget.type === 'classes') return 'Class Roster';
+  if (widget.type === 'miniApp') return 'App Manager';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
@@ -62,6 +63,9 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       customSteps: [],
       favorites: [],
       scaleMultiplier: 1,
+    },
+    miniApp: {
+      activeApp: null,
     },
   };
 
