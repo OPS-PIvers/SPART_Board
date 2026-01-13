@@ -116,6 +116,11 @@ export interface CalendarEvent {
   title: string;
 }
 
+export interface RoutineStep {
+  id: string;
+  text: string;
+}
+
 // Widget-specific config types
 export interface ClockConfig {
   format24: boolean;
@@ -254,7 +259,7 @@ export type ClassesConfig = Record<string, never>;
 
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
-  customSteps: string[];
+  customSteps: RoutineStep[];
   favorites: string[];
   scaleMultiplier: number;
 }

@@ -1,28 +1,12 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, InstructionalRoutinesConfig } from '@/types';
-import { ROUTINES } from '@/config/instructionalRoutines';
+import { WidgetData, InstructionalRoutinesConfig, RoutineStep } from '@/types';
+import { ROUTINES, InstructionalRoutine } from '@/config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import { Star, Trash2, Plus, GripVertical } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { Star, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
-// --- FRONT VIEW ---
+// --- FRONT VIEW (STUDENT FOCUS) ---
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -37,6 +21,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const selectedRoutine = ROUTINES.find((r) => r.id === selectedRoutineId);
 
+  // Mathematical Scaling
   const dynamicFontSize = useMemo(() => {
     const baseSize = Math.min(widget.w / 18, widget.h / 12);
     return Math.max(12, baseSize * scaleMultiplier);
@@ -55,9 +40,22 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     });
   }, [gradeFilter, favorites]);
 
+  const selectRoutine = (r: InstructionalRoutine) => {
+    const initialSteps: RoutineStep[] = r.defaultSteps.map((text) => ({
+      id: uuidv4(),
+      text,
+    }));
+    updateWidget(widget.id, {
+      config: { ...config, selectedRoutineId: r.id, customSteps: initialSteps },
+    });
+  };
+
   if (!selectedRoutineId || !selectedRoutine) {
     return (
       <div className="flex flex-col h-full bg-[#f3f3f3] p-4">
+        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">
+          Library ({gradeFilter.toUpperCase()})
+        </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
           {displayedRoutines.map((r) => {
             const Icon =
@@ -67,16 +65,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             return (
               <button
                 key={r.id}
-                onClick={() =>
-                  updateWidget(widget.id, {
-                    config: {
-                      ...config,
-                      selectedRoutineId: r.id,
-                      customSteps: [...r.defaultSteps],
-                    },
-                  })
-                }
-                className="relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-[#2d3f89] transition-all text-left group"
+                onClick={() => selectRoutine(r)}
+                className="relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-[#2d3f89] transition-all text-left"
               >
                 <Star
                   onClick={(e) => {
@@ -129,9 +119,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         <ul className="space-y-6">
           {customSteps.map((step, i) => (
             <li
-              key={i}
+              key={step.id}
               className="flex gap-4 items-start animate-in slide-in-from-left duration-300"
-              style={{ transitionDelay: `${i * 50}ms` }}
             >
               <span
                 className="w-10 h-10 bg-[#2d3f89] text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
@@ -143,7 +132,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 className="font-bold text-[#1a1a1a] leading-relaxed pt-1"
                 style={{ fontSize: `${dynamicFontSize}px` }}
               >
-                {step}
+                {step.text}
               </p>
             </li>
           ))}
@@ -153,7 +142,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   );
 };
 
-// --- SETTINGS VIEW (The Editor) ---
+// --- SETTINGS VIEW (TEACHER EDITOR) ---
 export const InstructionalRoutinesSettings: React.FC<{
   widget: WidgetData;
 }> = ({ widget }) => {
@@ -161,30 +150,21 @@ export const InstructionalRoutinesSettings: React.FC<{
   const config = widget.config as InstructionalRoutinesConfig;
   const { customSteps = [], scaleMultiplier = 1 } = config;
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = customSteps.indexOf(active.id as string);
-      const newIndex = customSteps.indexOf(over.id as string);
-      updateWidget(widget.id, {
-        config: {
-          ...config,
-          customSteps: arrayMove(customSteps, oldIndex, newIndex),
-        },
-      });
-    }
+  const moveStep = (idx: number, dir: 'up' | 'down') => {
+    const next = [...customSteps];
+    const target = dir === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= next.length) return;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    updateWidget(widget.id, { config: { ...config, customSteps: next } });
   };
 
   return (
     <div className="space-y-6">
+      {/* Switch Routine Fix: Resets selection and flips back to grid */}
       <button
         onClick={() =>
           updateWidget(widget.id, {
+            flipped: false,
             config: { ...config, selectedRoutineId: null },
           })
         }
@@ -197,48 +177,60 @@ export const InstructionalRoutinesSettings: React.FC<{
         <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-2">
           Step Editor
         </label>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={customSteps}
-            strategy={verticalListSortingStrategy}
+        {customSteps.map((step, i) => (
+          <div
+            key={step.id}
+            className="flex gap-2 items-center bg-white p-3 rounded-2xl border border-slate-100 group shadow-sm"
           >
-            {customSteps.map((step, i) => (
-              <SortableStepItem
-                key={step}
-                id={step}
-                step={step}
-                onUpdate={(val: string) => {
-                  const next = [...customSteps];
-                  next[i] = val;
-                  updateWidget(widget.id, {
-                    config: { ...config, customSteps: next },
-                  });
-                }}
-                onDelete={() => {
-                  updateWidget(widget.id, {
-                    config: {
-                      ...config,
-                      customSteps: customSteps.filter((_, idx) => idx !== i),
-                    },
-                  });
-                }}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+            <div className="flex flex-col gap-1 shrink-0">
+              <button
+                onClick={() => moveStep(i, 'up')}
+                className="text-slate-300 hover:text-[#2d3f89]"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                onClick={() => moveStep(i, 'down')}
+                className="text-slate-300 hover:text-[#2d3f89]"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+            {/* Stable Key Fix: Using step.id prevents focus loss */}
+            <textarea
+              value={step.text}
+              onChange={(e) => {
+                const next = [...customSteps];
+                next[i] = { ...next[i], text: e.target.value };
+                updateWidget(widget.id, {
+                  config: { ...config, customSteps: next },
+                });
+              }}
+              rows={2}
+              placeholder="Enter student direction..."
+              className="flex-1 text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
+            />
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    customSteps: customSteps.filter((_, idx) => idx !== i),
+                  },
+                })
+              }
+              className="p-2 text-red-400 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
         <button
           onClick={() =>
             updateWidget(widget.id, {
               config: {
                 ...config,
-                customSteps: [
-                  ...customSteps,
-                  `New Step ${customSteps.length + 1}`,
-                ],
+                customSteps: [...customSteps, { id: uuidv4(), text: '' }],
               },
             })
           }
@@ -269,50 +261,6 @@ export const InstructionalRoutinesSettings: React.FC<{
           className="w-full accent-[#2d3f89]"
         />
       </div>
-    </div>
-  );
-};
-
-interface SortableStepItemProps {
-  id: string;
-  step: string;
-  onUpdate: (val: string) => void;
-  onDelete: () => void;
-}
-
-const SortableStepItem = ({
-  id,
-  step,
-  onUpdate,
-  onDelete,
-}: SortableStepItemProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="flex gap-2 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100 group shadow-sm"
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-[#2d3f89]"
-      >
-        <GripVertical className="w-4 h-4" />
-      </div>
-      <textarea
-        value={step}
-        onChange={(e) => onUpdate(e.target.value)}
-        rows={2}
-        className="flex-1 text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
-      />
-      <button
-        onClick={onDelete}
-        className="p-2 text-red-400 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
     </div>
   );
 };
