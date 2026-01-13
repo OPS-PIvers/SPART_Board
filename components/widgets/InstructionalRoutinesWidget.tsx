@@ -1,7 +1,14 @@
 import React, { useMemo } from 'react';
-import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, InstructionalRoutinesConfig, RoutineStep } from '@/types';
-import { ROUTINES, InstructionalRoutine } from '@/config/instructionalRoutines';
+import { useDashboard } from '../../context/useDashboard';
+import {
+  WidgetData,
+  InstructionalRoutinesConfig,
+  RoutineStep,
+} from '../../types';
+import {
+  ROUTINES,
+  InstructionalRoutine,
+} from '../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
 import { Star, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
