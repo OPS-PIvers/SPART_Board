@@ -16,7 +16,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, rosters, activeRosterId } = useDashboard();
   const config = widget.config as ChecklistConfig;
-  const { items = [], scaleMultiplier = 1, rosterMode = 'custom' } = config;
+  const { items = [], scaleMultiplier = 1, rosterMode = 'class' } = config;
 
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
