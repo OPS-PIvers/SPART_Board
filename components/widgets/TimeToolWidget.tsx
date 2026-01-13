@@ -124,12 +124,12 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
     // High-quality royalty-free instrumental URLs for study
     const musicUrls: Record<string, string> = {
-      'Quiet Acoustic':
-        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-      'Instrumental Study':
-        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
-      'Piano Focus':
-        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
+      'Zen Garden':
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      'Minimalist Piano':
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
+      'Gentle Acoustic':
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
     };
 
     const url = musicUrls[config.selectedMusic];
@@ -454,9 +454,9 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
               {(
                 [
                   'None',
-                  'Quiet Acoustic',
-                  'Instrumental Study',
-                  'Piano Focus',
+                  'Zen Garden',
+                  'Minimalist Piano',
+                  'Gentle Acoustic',
                 ] as const
               ).map((m) => (
                 <button
