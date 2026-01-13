@@ -159,7 +159,7 @@ export interface RandomConfig {
   mode: string;
   visualStyle?: string;
   groupSize?: number;
-  lastResult?: string | string[] | string[][] | null;
+  lastResult?: string | string[] | string[][] | { groups: string[][] } | null;
   soundEnabled?: boolean;
   remainingStudents?: string[];
 }
