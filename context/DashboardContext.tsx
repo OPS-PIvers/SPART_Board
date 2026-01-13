@@ -632,7 +632,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           return {
             ...d,
             widgets: d.widgets.map((w) =>
-              w.id === id ? { ...w, ...updates } : w
+              w.id === id
+                ? {
+                    ...w,
+                    ...updates,
+                    config: updates.config
+                      ? { ...w.config, ...updates.config }
+                      : w.config,
+                  }
+                : w
             ),
           };
         })

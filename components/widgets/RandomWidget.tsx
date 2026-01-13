@@ -224,10 +224,35 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     // CRITICAL: Resume AudioContext within the click handler to unlock sound
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') {
-      await ctx.resume();
+      try {
+        await ctx.resume();
+      } catch (e) {
+        console.error('Audio resume failed', e);
+      }
     }
 
+    if (isSpinning) return;
     setIsSpinning(true);
+
+    const performUpdate = (
+      result: string | string[] | string[][],
+      remaining?: string[]
+    ) => {
+      try {
+        // Optimized update: only send what changed.
+        // DashboardContext now handles deep merging of config.
+        const updates: Partial<RandomConfig> = { lastResult: result };
+        if (remaining) {
+          updates.remainingStudents = remaining;
+        }
+
+        updateWidget(widget.id, {
+          config: updates as any, // Cast to satisfy generic constraint if needed
+        });
+      } catch (err) {
+        console.error('Randomizer Sync Error:', err);
+      }
+    };
 
     if (mode === 'single') {
       // Logic for "bag" selection:
@@ -262,13 +287,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                lastResult: winnerName,
-                remainingStudents: nextRemaining,
-              },
-            });
+            performUpdate(winnerName, nextRemaining);
           }
         }, 80);
       } else if (visualStyle === 'wheel') {
@@ -295,13 +314,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                lastResult: winnerName,
-                remainingStudents: nextRemaining,
-              },
-            });
+            performUpdate(winnerName, nextRemaining);
             return;
           }
           if (soundEnabled) playTick(150);
@@ -326,13 +339,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                lastResult: winnerName,
-                remainingStudents: nextRemaining,
-              },
-            });
+            performUpdate(winnerName, nextRemaining);
           }
         }, 100);
       }
@@ -351,9 +358,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         setDisplayResult(result);
         if (soundEnabled) playWinner();
         setIsSpinning(false);
-        updateWidget(widget.id, {
-          config: { ...config, lastResult: result },
-        });
+        performUpdate(result);
       }, 500);
     }
   };
