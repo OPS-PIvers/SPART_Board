@@ -219,8 +219,8 @@ export interface ScoreboardConfig {
 }
 
 export interface WorkSymbolsConfig {
-  voice: string;
-  routine: string;
+  voiceLevel: number | null; // 0, 1, 2, 3, or 4
+  workMode: 'individual' | 'partner' | 'group' | null;
 }
 
 export interface WeatherConfig {

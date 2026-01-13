@@ -1,95 +1,128 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, WorkSymbolsConfig } from '../../types';
-import {
-  VolumeX,
-  Volume1,
-  Volume2,
-  Users,
-  Briefcase,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+import { User, Users, UsersRound } from 'lucide-react';
 
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as WorkSymbolsConfig;
-  const { voice = 'none', routine = 'none' } = config;
+  const { voiceLevel = null, workMode = null } = config;
 
   const voices = [
-    { id: 'silence', label: 'Silence', icon: VolumeX, color: 'bg-red-500' },
-    { id: 'whisper', label: 'Whisper', icon: Volume1, color: 'bg-blue-400' },
-    { id: 'group', label: 'Group Talk', icon: Volume2, color: 'bg-green-500' },
-    { id: 'class', label: 'Class Talk', icon: Users, color: 'bg-indigo-500' },
+    {
+      id: 4,
+      label: 'Outside',
+      sub: '(Recess)',
+      color: 'bg-red-500',
+      text: 'text-white',
+    },
+    {
+      id: 3,
+      label: 'Presenter',
+      sub: '(Speaking)',
+      color: 'bg-orange-500',
+      text: 'text-white',
+    },
+    {
+      id: 2,
+      label: 'Conversation',
+      sub: '(Table Talk)',
+      color: 'bg-yellow-400',
+      text: 'text-slate-900',
+    },
+    {
+      id: 1,
+      label: 'Whisper',
+      sub: '(Partner Talk)',
+      color: 'bg-green-500',
+      text: 'text-white',
+    },
+    {
+      id: 0,
+      label: 'Silence',
+      sub: '(Independent)',
+      color: 'bg-blue-500',
+      text: 'text-white',
+    },
   ];
 
-  const routines = [
-    {
-      id: 'ready',
-      label: 'Get Ready',
-      icon: Briefcase,
-      color: 'bg-orange-500',
-    },
-    { id: 'clean', label: 'Clean Up', icon: Trash2, color: 'bg-slate-500' },
-    { id: 'task', label: 'On Task', icon: Sparkles, color: 'bg-amber-400' },
+  const modes: {
+    id: 'individual' | 'partner' | 'group';
+    label: string;
+    icon: React.ElementType;
+  }[] = [
+    { id: 'individual', label: 'On Your Own', icon: User },
+    { id: 'partner', label: 'With a Partner', icon: Users },
+    { id: 'group', label: 'With a Group', icon: UsersRound },
   ];
 
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
-      <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+    <div className="flex h-full w-full p-2 gap-3 bg-white overflow-hidden select-none">
+      {/* Voice Level Thermometer */}
+      <div className="flex-1 flex flex-col gap-1.5 h-full">
+        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1 mb-1">
           Voice Level
         </label>
-        <div className="grid grid-cols-4 gap-2">
-          {voices.map((v) => (
-            <button
-              key={v.id}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    voice: voice === v.id ? 'none' : v.id,
-                  },
-                })
-              }
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${voice === v.id ? `${v.color} border-white shadow-lg scale-105 text-white` : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
-            >
-              <v.icon className="w-5 h-5" />
-              <span className="text-[8px] font-black uppercase whitespace-nowrap">
+        {voices.map((v) => (
+          <button
+            key={v.id}
+            onClick={() =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  voiceLevel: voiceLevel === v.id ? null : v.id,
+                },
+              })
+            }
+            className={`flex items-center gap-3 px-3 flex-1 rounded-xl border-2 transition-all duration-300 ${
+              voiceLevel === v.id
+                ? `${v.color} border-white shadow-lg scale-[1.02] ${v.text}`
+                : 'border-slate-50 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:border-slate-100'
+            }`}
+          >
+            <span className="text-2xl font-black opacity-40">{v.id}</span>
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-[11px] font-black uppercase tracking-tight">
                 {v.label}
               </span>
-            </button>
-          ))}
-        </div>
+              <span className="text-[8px] font-bold opacity-60 uppercase">
+                {v.sub}
+              </span>
+            </div>
+          </button>
+        ))}
       </div>
 
-      <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-          Instructional Routine
+      {/* Working Mode Section */}
+      <div className="w-28 flex flex-col gap-2 h-full border-l border-slate-100 pl-3">
+        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">
+          Working...
         </label>
-        <div className="grid grid-cols-3 gap-2">
-          {routines.map((r) => (
-            <button
-              key={r.id}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    routine: routine === r.id ? 'none' : r.id,
-                  },
-                })
-              }
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${routine === r.id ? `${r.color} border-white shadow-lg scale-105 text-white` : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
-            >
-              <r.icon className="w-5 h-5" />
-              <span className="text-[8px] font-black uppercase whitespace-nowrap">
-                {r.label}
-              </span>
-            </button>
-          ))}
-        </div>
+        {modes.map((m) => (
+          <button
+            key={m.id}
+            onClick={() =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  workMode: workMode === m.id ? null : m.id,
+                },
+              })
+            }
+            className={`flex flex-col items-center justify-center flex-1 gap-1 rounded-2xl border-2 transition-all duration-300 ${
+              workMode === m.id
+                ? 'bg-indigo-600 border-white shadow-lg scale-105 text-white'
+                : 'border-slate-50 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:border-slate-100'
+            }`}
+          >
+            <m.icon className="w-6 h-6" strokeWidth={2.5} />
+            <span className="text-[8px] font-black uppercase text-center leading-tight px-1">
+              {m.label}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );
