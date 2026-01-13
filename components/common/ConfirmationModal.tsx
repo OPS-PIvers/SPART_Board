@@ -52,10 +52,16 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 m-4 animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="confirmation-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-slate-800">{title}</h3>
+          <h3
+            id="confirmation-modal-title"
+            className="text-xl font-bold text-slate-800"
+          >
+            {title}
+          </h3>
           <button
             onClick={onCancel}
             className="p-1 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"

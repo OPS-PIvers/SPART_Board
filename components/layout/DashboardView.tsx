@@ -37,6 +37,24 @@ const ToastContainer: React.FC = () => {
   );
 };
 
+// File validation constants
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'text/plain',
+  'text/csv',
+];
+
 export const DashboardView: React.FC = () => {
   const { activeDashboard, addWidget, addToast } = useDashboard();
 
@@ -44,29 +62,12 @@ export const DashboardView: React.FC = () => {
     async (file: File) => {
       try {
         // Validation
-        const MAX_SIZE = 50 * 1024 * 1024; // 50MB
-        if (file.size > MAX_SIZE) {
+        if (file.size > MAX_FILE_SIZE) {
           addToast(`File too large (max 50MB): ${file.name}`, 'error');
           return;
         }
 
-        const ALLOWED_TYPES = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-          'application/vnd.ms-powerpoint',
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
-          'text/plain',
-          'text/csv',
-        ];
-
-        if (!ALLOWED_TYPES.includes(file.type)) {
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
           addToast(`Unsupported file type: ${file.name}`, 'error');
           return;
         }
