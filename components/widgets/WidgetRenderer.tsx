@@ -32,8 +32,20 @@ import {
 } from './InstructionalRoutinesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
+import { ScalableWidget } from '../common/ScalableWidget';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
+
+const SCALABLE_WIDGETS = [
+  'weather',
+  'timer',
+  'traffic',
+  'scoreboard',
+  'poll',
+  'calendar',
+  'qr',
+  'dice',
+];
 
 export const WidgetRenderer: React.FC<{
   widget: WidgetData;
@@ -220,6 +232,15 @@ export const WidgetRenderer: React.FC<{
 
   const content = getWidgetContent();
 
+  const isScalable = SCALABLE_WIDGETS.includes(widget.type);
+  const finalContent = isScalable ? (
+    <ScalableWidget width={widget.w} height={widget.h}>
+      {content}
+    </ScalableWidget>
+  ) : (
+    content
+  );
+
   if (isStudentView) {
     const isDrawing = widget.type === 'drawing';
     return (
@@ -228,7 +249,7 @@ export const WidgetRenderer: React.FC<{
           isDrawing ? 'bg-transparent' : 'bg-white shadow-sm'
         }`}
       >
-        {content}
+        {finalContent}
       </div>
     );
   }
@@ -266,7 +287,7 @@ export const WidgetRenderer: React.FC<{
         />
       }
     >
-      {content}
+      {finalContent}
     </DraggableWindow>
   );
 };
