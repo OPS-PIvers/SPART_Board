@@ -146,17 +146,34 @@ export const Sidebar: React.FC = () => {
       );
 
       // Query 2: Beta backgrounds where the user is authorized
+      // Note: Beta backgrounds require user email for authorization
+      if (user.email) {
+        const qBeta = query(
+          baseRef,
+          where('active', '==', true),
+          where('accessLevel', '==', 'beta'),
+          where('betaUsers', 'array-contains', user.email.toLowerCase())
+        );
 
-      const qBeta = query(
-        baseRef,
+        unsubscribes.push(
+          onSnapshot(
+            qBeta,
+            (snapshot) => {
+              betaBgsRef.current = snapshot.docs.map(
+                (d) => d.data() as BackgroundPreset
+              );
+              updateCombinedBackgrounds();
+            },
+            (error) => {
+              console.error('Error fetching beta backgrounds:', error);
+            }
+          )
+        );
+      } else {
+        console.warn('Skipping beta background query: User has no email.');
+      }
 
-        where('active', '==', true),
-
-        where('accessLevel', '==', 'beta'),
-
-        where('betaUsers', 'array-contains', (user.email ?? '').toLowerCase())
-      );
-
+      // Public backgrounds are always available regardless of user email
       unsubscribes.push(
         onSnapshot(
           qPublic,
@@ -168,21 +185,6 @@ export const Sidebar: React.FC = () => {
           },
           (error) => {
             console.error('Error fetching public backgrounds:', error);
-          }
-        )
-      );
-
-      unsubscribes.push(
-        onSnapshot(
-          qBeta,
-          (snapshot) => {
-            betaBgsRef.current = snapshot.docs.map(
-              (d) => d.data() as BackgroundPreset
-            );
-            updateCombinedBackgrounds();
-          },
-          (error) => {
-            console.error('Error fetching beta backgrounds:', error);
           }
         )
       );
@@ -287,7 +289,10 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]">
+      <div
+        data-screenshot="exclude"
+        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]"
+      >
         <button
           onClick={() => setIsOpen(true)}
           className="p-2 bg-brand-blue-primary text-white rounded-full hover:bg-brand-blue-dark transition-colors shadow-md shadow-brand-blue-lighter"

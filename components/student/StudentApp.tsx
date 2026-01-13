@@ -13,6 +13,26 @@ export const StudentApp = () => {
   const [authInitialized, setAuthInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    // Ensure we have correct size on mount
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Sign in anonymously when component mounts
   useEffect(() => {
     const initAuth = async () => {
@@ -20,8 +40,16 @@ export const StudentApp = () => {
         await signInAnonymously(auth);
         setAuthInitialized(true);
       } catch (error) {
-        console.error('Failed to initialize anonymous auth:', error);
-        setAuthInitialized(true); // Continue anyway to show error
+        // - This component treats anonymous-auth failures as non-fatal so the UI can still proceed.
+        // - Session join behavior (including any ID fallback) is handled within the useLiveSession hook.
+        // Because this failure is non-fatal for core functionality, we log a warning
+        // instead of an error, but include guidance for common misconfiguration issues.
+        console.warn(
+          'Anonymous auth failed. If this is a restricted operation error, please ensure "Anonymous" provider is enabled in Firebase Console -> Authentication -> Sign-in method.',
+          error
+        );
+        // We still mark auth as initialized so that downstream hooks can run their own fallback logic.
+        setAuthInitialized(true);
       }
     };
 
@@ -38,8 +66,36 @@ export const StudentApp = () => {
   }, []);
 
   // Hook usage for 'student' role
-  const { session, loading, joinSession, studentId, individualFrozen } =
-    useLiveSession(undefined, 'student', joinedCode ?? undefined);
+  const {
+    session,
+    loading,
+    joinSession,
+    leaveSession,
+    studentId,
+    individualFrozen,
+  } = useLiveSession(undefined, 'student', joinedCode ?? undefined);
+
+  const backgroundStyles = React.useMemo(() => {
+    if (!session?.background) return {};
+    const bg = session.background;
+
+    if (bg.startsWith('http') || bg.startsWith('data:')) {
+      return {
+        backgroundImage: `url("${bg}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      };
+    }
+    return {};
+  }, [session]);
+
+  const backgroundClasses = React.useMemo(() => {
+    if (!session?.background) return '';
+    const bg = session.background;
+    if (bg.startsWith('http') || bg.startsWith('data:')) return '';
+    return bg;
+  }, [session]);
 
   const handleJoin = async (code: string, name: string) => {
     setError(null);
@@ -89,10 +145,24 @@ export const StudentApp = () => {
   // 2. Waiting State (Joined but no active widget)
   if (!session?.isActive || !session?.activeWidgetId) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-slate-400 animate-in fade-in">
-        <Radio className="w-12 h-12 mb-4 animate-pulse text-indigo-500" />
-        <h2 className="text-xl font-bold text-white">Connected</h2>
-        <p>Waiting for teacher to start an activity...</p>
+      <div
+        id="dashboard-root"
+        className={`h-screen w-screen overflow-hidden relative transition-all duration-1000 ${backgroundClasses}`}
+        style={backgroundStyles}
+      >
+        <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-black/20 backdrop-blur-sm animate-in fade-in">
+          <Radio className="w-12 h-12 mb-4 animate-pulse text-white" />
+          <h2 className="text-xl font-bold text-white">Connected</h2>
+          <p className="text-white/70 font-medium mb-6">
+            Waiting for teacher to start an activity...
+          </p>
+          <button
+            onClick={() => void leaveSession()}
+            className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-bold transition-all"
+          >
+            Leave Session
+          </button>
+        </div>
       </div>
     );
   }
@@ -103,45 +173,28 @@ export const StudentApp = () => {
       <div className="fixed inset-0 z-50 bg-indigo-900 flex flex-col items-center justify-center p-8 text-center text-white">
         <Snowflake className="w-20 h-20 mb-6 animate-spin-slow opacity-80" />
         <h1 className="text-4xl font-black mb-4">Eyes on Teacher</h1>
-        <p className="text-indigo-200 text-lg">Your screen is paused.</p>
+        <p className="text-indigo-200 text-lg mb-8">Your screen is paused.</p>
+        <button
+          onClick={() => void leaveSession()}
+          className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-bold transition-all"
+        >
+          Leave Session
+        </button>
       </div>
     );
   }
 
   // 4. Active Widget State
-  // We mock a Widget object here based on session data.
-  // Widget dimensions are set as grid units based on widget type for optimal display
-  const getWidgetDimensions = (
-    widgetType: string
-  ): { w: number; h: number } => {
-    // Map widget types to appropriate dimensions in grid units
-    // These are interpreted by the layout for full-screen student view
-    switch (widgetType) {
-      case 'timer':
-      case 'stopwatch':
-      case 'clock':
-        return { w: 8, h: 8 }; // Square for time displays
-      case 'text':
-      case 'poll':
-        return { w: 16, h: 12 }; // Wide for text content
-      case 'drawing':
-      case 'embed':
-        return { w: 16, h: 16 }; // Large for interactive content
-      case 'qr':
-        return { w: 8, h: 10 }; // Compact for QR codes
-      default:
-        return { w: 12, h: 12 }; // Default balanced dimensions
-    }
-  };
-
-  const dimensions = getWidgetDimensions(session.activeWidgetType ?? 'clock');
+  // We provide the widget with the current window dimensions.
+  // In student view, widgets are rendered full-screen without the draggable container.
   const activeWidgetStub: WidgetData = {
     id: session.activeWidgetId,
     type: session.activeWidgetType ?? 'clock',
     x: 0,
     y: 0,
-    w: dimensions.w,
-    h: dimensions.h,
+    // Use full window dimensions instead of grid units
+    w: windowSize.width,
+    h: windowSize.height,
     z: 1,
     flipped: false,
     config:
@@ -151,9 +204,19 @@ export const StudentApp = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-slate-100 overflow-hidden relative">
+    <div
+      id="dashboard-root"
+      className={`h-screen w-screen overflow-hidden relative transition-all duration-1000 ${backgroundClasses}`}
+      style={backgroundStyles}
+    >
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500 z-50" />
-      <div className="h-full w-full p-4">
+      <button
+        onClick={() => void leaveSession()}
+        className="absolute top-4 right-4 z-50 px-3 py-1.5 bg-black/20 hover:bg-red-500/40 text-white/70 hover:text-white border border-white/10 hover:border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all"
+      >
+        Leave
+      </button>
+      <div className="h-full w-full">
         {/* Pass isStudentView to render content without window chrome */}
         <WidgetRenderer widget={activeWidgetStub} isStudentView={true} />
       </div>

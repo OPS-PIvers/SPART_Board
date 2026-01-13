@@ -6,6 +6,7 @@ import {
   setDoc,
   collection,
   addDoc,
+  deleteDoc,
   query,
   where,
   getDocs,
@@ -48,7 +49,10 @@ const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
  * - `joinSession`: Function to join a session with name and code (student mode)
  * - `startSession`: Function to start a new live session (teacher mode)
  * - `updateSessionConfig`: Function to update active widget config (teacher mode)
+ * - `updateSessionBackground`: Function to update session background in real-time (teacher mode)
  * - `endSession`: Function to end the current session (teacher mode)
+ * - `leaveSession`: Function for students to disconnect from a session (student mode)
+ * - `removeStudent`: Function to manually remove a student from session (teacher mode)
  * - `toggleFreezeStudent`: Function to freeze/unfreeze a student (teacher mode)
  * - `toggleGlobalFreeze`: Function to freeze/unfreeze all students (teacher mode)
  *
@@ -60,11 +64,36 @@ const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
  * // Student joining a session
  * const { session, loading, joinSession, individualFrozen } = useLiveSession(undefined, 'student', code);
  */
+export interface UseLiveSessionResult {
+  session: LiveSession | null;
+  students: LiveStudent[];
+  loading: boolean;
+  startSession: (
+    widgetId: string,
+    widgetType: WidgetType,
+    config?: WidgetConfig,
+    background?: string
+  ) => Promise<void>;
+  updateSessionConfig: (config: WidgetConfig) => Promise<void>;
+  updateSessionBackground: (background: string) => Promise<void>;
+  endSession: () => Promise<void>;
+  leaveSession: () => Promise<void>;
+  removeStudent: (studentId: string) => Promise<void>;
+  toggleFreezeStudent: (
+    studentId: string,
+    currentStatus: 'active' | 'frozen' | 'disconnected'
+  ) => Promise<void>;
+  toggleGlobalFreeze: (freeze: boolean) => Promise<void>;
+  joinSession: (name: string, unsanitizedCode: string) => Promise<string>;
+  studentId: string | null;
+  individualFrozen: boolean;
+}
+
 export const useLiveSession = (
   userId: string | undefined,
   role: 'teacher' | 'student',
   joinCode?: string
-) => {
+): UseLiveSessionResult => {
   const [session, setSession] = useState<LiveSession | null>(null);
   const [students, setStudents] = useState<LiveStudent[]>([]);
   const [loading, setLoading] = useState(
@@ -220,9 +249,63 @@ export const useLiveSession = (
     return teacherId;
   };
 
+  const leaveSession = useCallback(async () => {
+    if (role !== 'student' || !joinCode || !studentId) return;
+    const studentRef = doc(
+      db,
+      SESSIONS_COLLECTION,
+      joinCode,
+      STUDENTS_COLLECTION,
+      studentId
+    );
+    try {
+      await updateDoc(studentRef, { status: 'disconnected' });
+      setStudentId(null);
+      setSession(null);
+    } catch (err) {
+      console.error('Failed to leave session:', err);
+    }
+  }, [role, joinCode, studentId, setStudentId, setSession]);
+
+  const removeStudent = useCallback(
+    async (targetStudentId: string) => {
+      if (role !== 'teacher' || !userId) return;
+      const studentRef = doc(
+        db,
+        SESSIONS_COLLECTION,
+        userId,
+        STUDENTS_COLLECTION,
+        targetStudentId
+      );
+      await deleteDoc(studentRef).catch((err) => {
+        console.error(`Failed to remove student ${targetStudentId}:`, err);
+      });
+    },
+    [role, userId]
+  );
+
   const startSession = useCallback(
-    async (widgetId: string, widgetType: WidgetType, config?: WidgetConfig) => {
+    async (
+      widgetId: string,
+      widgetType: WidgetType,
+      config?: WidgetConfig,
+      background?: string
+    ) => {
       if (!userId) return;
+
+      // Clear existing students for a fresh start
+      const studentsRef = collection(
+        db,
+        SESSIONS_COLLECTION,
+        userId,
+        STUDENTS_COLLECTION
+      );
+      const studentsSnapshot = await getDocs(studentsRef);
+      const deletePromises = studentsSnapshot.docs.map((d) => deleteDoc(d.ref));
+      await Promise.all(deletePromises).catch((err) => {
+        console.error('Failed to clear old students:', err);
+      });
+
       const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
       const newSession: LiveSession = {
         id: userId,
@@ -230,6 +313,7 @@ export const useLiveSession = (
         activeWidgetId: widgetId,
         activeWidgetType: widgetType,
         activeWidgetConfig: config,
+        background: background,
         code: Math.random()
           .toString(36)
           .substring(2, 8)
@@ -255,6 +339,17 @@ export const useLiveSession = (
           console.error('Failed to update session config:', err);
         }
       );
+    },
+    [userId]
+  );
+
+  const updateSessionBackground = useCallback(
+    async (background: string) => {
+      if (!userId) return;
+      const sessionRef = doc(db, SESSIONS_COLLECTION, userId);
+      await updateDoc(sessionRef, { background }).catch((err) => {
+        console.error('Failed to update session background:', err);
+      });
     },
     [userId]
   );
@@ -331,7 +426,10 @@ export const useLiveSession = (
     loading,
     startSession,
     updateSessionConfig,
+    updateSessionBackground,
     endSession,
+    leaveSession,
+    removeStudent,
     toggleFreezeStudent,
     toggleGlobalFreeze,
     joinSession,

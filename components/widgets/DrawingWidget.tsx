@@ -11,16 +11,84 @@ import {
   Palette,
   Undo2,
   MousePointer2,
+  Minimize2,
+  Camera,
+  Wifi,
 } from 'lucide-react';
+import { useScreenshot } from '../../hooks/useScreenshot';
+import { useAuth } from '../../context/useAuth';
+import { useLiveSession } from '../../hooks/useLiveSession';
 
-export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+export const DrawingWidget: React.FC<{
+  widget: WidgetData;
+  isStudentView?: boolean;
+}> = ({ widget, isStudentView = false }) => {
+  const { updateWidget, activeDashboard } = useDashboard();
+  const { user } = useAuth();
+  const { session, startSession, endSession } = useLiveSession(
+    user?.uid,
+    'teacher'
+  );
+
+  const isLive = session?.isActive && session?.activeWidgetId === widget.id;
+
+  const handleToggleLive = async () => {
+    try {
+      if (isLive) {
+        await endSession();
+      } else {
+        await startSession(
+          widget.id,
+          widget.type,
+          widget.config,
+          activeDashboard?.background
+        );
+      }
+    } catch (error) {
+      console.error('Failed to toggle live session:', error);
+    }
+  };
+
   const config = widget.config as DrawingConfig;
-  const { mode = 'window', color = '#1e293b', width = 4, paths = [] } = config;
+  const {
+    mode = 'window',
+    color = '#1e293b',
+    width = 4,
+    paths = [],
+    customColors = ['#1e293b', '#ef4444', '#3b82f6', '#22c55e', '#eab308'],
+  } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Try to find the target immediately, but also use a MutationObserver or a small delay
+    // if it's not found, to handle cases where DashboardView hasn't mounted yet.
+    const findTarget = () => {
+      const target = document.getElementById('dashboard-root');
+      if (target) {
+        setPortalTarget(target);
+        return true;
+      }
+      return false;
+    };
+
+    if (!findTarget()) {
+      const observer = new MutationObserver(() => {
+        if (findTarget()) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    }
+    return undefined;
+  }, []);
+
+  const { takeScreenshot, isCapturing } = useScreenshot(
+    portalTarget,
+    `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`
+  );
 
   // Draw paths on the canvas whenever they change
   const draw = useCallback(
@@ -57,24 +125,32 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     // Set internal resolution
     if (mode === 'window') {
-      canvas.width = widget.w;
-      canvas.height = widget.h - 40; // Subtract header
+      if (isStudentView) {
+        // Fill the student container
+        const container = canvas.parentElement;
+        canvas.width = container?.clientWidth ?? 800;
+        canvas.height = container?.clientHeight ?? 600;
+      } else {
+        canvas.width = widget.w;
+        canvas.height = widget.h - 40; // Subtract header
+      }
     } else {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
 
     draw(ctx, paths, currentPath);
-  }, [paths, currentPath, mode, widget.w, widget.h, draw]);
+  }, [paths, currentPath, mode, widget.w, widget.h, draw, isStudentView]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isStudentView) return;
     setIsDrawing(true);
     const pos = getPos(e);
     setCurrentPath([pos]);
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
+    if (isStudentView || !isDrawing) return;
     const pos = getPos(e);
     setCurrentPath((prev) => [...prev, pos]);
   };
@@ -129,7 +205,7 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const PaletteUI = (
     <div className="flex flex-wrap items-center gap-2 p-2">
       <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-        {['#1e293b', '#ef4444', '#3b82f6', '#22c55e', '#eab308'].map((c) => (
+        {customColors.map((c) => (
           <button
             key={c}
             onClick={() =>
@@ -178,6 +254,31 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       <div className="h-6 w-px bg-slate-200 mx-1" />
 
+      {mode === 'overlay' && (
+        <>
+          <button
+            onClick={() => void handleToggleLive()}
+            className={`p-2 rounded-lg transition-colors ${
+              isLive
+                ? 'bg-red-50 text-red-600 animate-pulse'
+                : 'hover:bg-slate-100 text-slate-600'
+            }`}
+            title={isLive ? 'End Live Session' : 'Go Live'}
+          >
+            <Wifi className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => void takeScreenshot()}
+            disabled={isCapturing}
+            className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600 transition-colors disabled:opacity-50"
+            title="Capture Full Screen"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+          <div className="h-6 w-px bg-slate-200 mx-1" />
+        </>
+      )}
+
       <button
         onClick={() =>
           updateWidget(widget.id, {
@@ -194,34 +295,36 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }`}
       >
         {mode === 'overlay' ? (
-          <Minimize className="w-3 h-3" />
+          <Minimize2 className="w-3 h-3" />
         ) : (
           <Maximize className="w-3 h-3" />
         )}
-        {mode === 'overlay' ? 'Exit Overlay' : 'Screen Overlay'}
+        {mode === 'overlay' ? (
+          <span>EXIT</span>
+        ) : (
+          widget.w > 250 && <span>ANNOTATE</span>
+        )}
       </button>
     </div>
   );
 
   if (mode === 'overlay') {
-    return (
-      <div className="h-full flex flex-col bg-white rounded-lg">
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-3">
-          <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center animate-bounce">
-            <Pencil className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-800">
-              Annotation Active
-            </p>
-            <p className="text-[10px] text-slate-500 mt-1">
-              Drawing on the entire screen.
-              <br />
-              Use the controls below.
+    // Show loading state while waiting for portal target
+    if (!portalTarget) {
+      return (
+        <div className="h-full flex items-center justify-center bg-slate-50">
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-slate-500 font-medium">
+              Preparing overlay mode...
             </p>
           </div>
         </div>
-        <div className="border-t border-slate-100">{PaletteUI}</div>
+      );
+    }
+
+    return (
+      <>
         {createPortal(
           <div className="fixed inset-0 z-[9990] pointer-events-none overflow-hidden">
             {/* Darken background slightly to indicate annotation mode */}
@@ -237,21 +340,39 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               onTouchEnd={handleEnd}
               className="absolute inset-0 pointer-events-auto cursor-crosshair"
             />
-            {/* Floating Hint */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-2xl flex items-center gap-2 border border-white/20">
-              <MousePointer2 className="w-4 h-4 animate-pulse" />
-              Annotation Mode Active
-            </div>
+            {/* Floating Toolbar at the Top */}
+            {!isStudentView && (
+              <div
+                data-screenshot="exclude"
+                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
+              >
+                <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
+                  <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                    Annotating
+                  </span>
+                </div>
+                {PaletteUI}
+              </div>
+            )}
           </div>,
-          document.body
+          portalTarget
         )}
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="flex-1 relative bg-slate-50 overflow-hidden cursor-crosshair">
+    <div
+      className={`h-full flex flex-col ${
+        isStudentView ? 'bg-transparent' : 'bg-white'
+      } rounded-lg overflow-hidden`}
+    >
+      <div
+        className={`flex-1 relative ${
+          isStudentView ? 'bg-transparent' : 'bg-slate-50'
+        } overflow-hidden ${!isStudentView && 'cursor-crosshair'}`}
+      >
         <canvas
           ref={canvasRef}
           onMouseDown={handleStart}
@@ -269,9 +390,11 @@ export const DrawingWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         )}
       </div>
-      <div className="shrink-0 border-t border-slate-100 bg-white">
-        {PaletteUI}
-      </div>
+      {!isStudentView && (
+        <div className="shrink-0 border-t border-slate-100 bg-white">
+          {PaletteUI}
+        </div>
+      )}
     </div>
   );
 };
@@ -282,12 +405,53 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as DrawingConfig;
   const width = config.width ?? 4;
+  const customColors = config.customColors ?? [
+    '#1e293b',
+    '#ef4444',
+    '#3b82f6',
+    '#22c55e',
+    '#eab308',
+  ];
+
+  const handleColorChange = (index: number, newColor: string) => {
+    const nextColors = [...customColors];
+    nextColors[index] = newColor;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        customColors: nextColors,
+      } as DrawingConfig,
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
-          <Palette className="w-3 h-3" /> Brush Thickness
+          <Palette className="w-3 h-3" /> Color Presets
+        </label>
+        <div className="flex gap-2 px-2">
+          {customColors.map((c, i) => (
+            <div
+              key={i}
+              className="w-8 h-8 rounded-lg border-2 border-white shadow-sm ring-1 ring-slate-200 relative overflow-hidden transition-transform hover:scale-110"
+              style={{ backgroundColor: c }}
+            >
+              <input
+                type="color"
+                value={c}
+                onChange={(e) => handleColorChange(i, e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                title="Change preset color"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+          <Pencil className="w-3 h-3" /> Brush Thickness
         </label>
         <div className="flex items-center gap-4 px-2">
           <input
@@ -323,7 +487,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             </div>
             <p className="text-[9px] text-indigo-600 font-medium">
               <b>Window:</b> Standard canvas inside the widget box. Best for
-              quick sketches.
+              quick sketches and notes.
             </p>
           </div>
           <div className="flex gap-3">
@@ -331,8 +495,8 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
               <Maximize className="w-3 h-3 text-white" />
             </div>
             <p className="text-[9px] text-indigo-600 font-medium">
-              <b>Overlay:</b> Annotate on top of all other widgets. Perfect for
-              highlighting specific dashboard content.
+              <b>Overlay:</b> Hides the window and moves the toolbar to the top
+              of your screen. Perfect for drawing over other content!
             </p>
           </div>
         </div>

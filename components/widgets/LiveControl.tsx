@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Wifi, Snowflake, X } from 'lucide-react';
+import { Wifi, Snowflake, X, Trash2 } from 'lucide-react';
 import { LiveStudent } from '../../types';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
@@ -15,6 +15,7 @@ interface LiveControlProps {
     id: string,
     status: 'active' | 'frozen' | 'disconnected'
   ) => void;
+  onRemoveStudent: (id: string) => void;
   onFreezeAll: () => void;
 }
 
@@ -28,6 +29,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
   joinUrl,
   onToggleLive,
   onFreezeStudent,
+  onRemoveStudent,
   onFreezeAll,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -259,6 +261,13 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                     }
                   >
                     <Snowflake size={14} />
+                  </button>
+                  <button
+                    onClick={() => onRemoveStudent(s.id)}
+                    className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Remove ${s.name}`}
+                  >
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

@@ -68,6 +68,7 @@ export interface LiveSession {
   activeWidgetId: string | null;
   activeWidgetType: WidgetType | null;
   activeWidgetConfig?: WidgetConfig; // Config for the active widget
+  background?: string; // Teacher's current dashboard background
   code: string; // A short 4-6 digit join code
   frozen: boolean; // Global freeze state
   createdAt: number;
@@ -183,6 +184,7 @@ export interface DrawingConfig {
   paths: Path[];
   color?: string;
   width?: number;
+  customColors?: string[];
 }
 
 export interface QRConfig {
@@ -339,7 +341,9 @@ export interface WidgetData {
   type: WidgetType;
   x: number;
   y: number;
+  /** Width in grid units (dashboard) or pixels (student view) */
   w: number;
+  /** Height in grid units (dashboard) or pixels (student view) */
   h: number;
   z: number;
   flipped: boolean;
