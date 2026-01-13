@@ -153,13 +153,17 @@ export interface ChecklistConfig {
   scaleMultiplier?: number;
 }
 
+export interface RandomGroup {
+  names: string[];
+}
+
 export interface RandomConfig {
   firstNames: string;
   lastNames: string;
   mode: string;
   visualStyle?: string;
   groupSize?: number;
-  lastResult?: string | string[] | string[][] | { groups: string[][] } | null;
+  lastResult?: string | string[] | RandomGroup[] | null;
   soundEnabled?: boolean;
   remainingStudents?: string[];
 }

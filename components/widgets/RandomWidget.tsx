@@ -114,12 +114,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   >(() => {
     const raw = config.lastResult;
     if (
-      raw &&
-      typeof raw === 'object' &&
-      !Array.isArray(raw) &&
-      'groups' in raw
+      Array.isArray(raw) &&
+      raw.length > 0 &&
+      typeof raw[0] === 'object' &&
+      raw[0] !== null &&
+      'names' in raw[0]
     ) {
-      return raw.groups;
+      return (raw as { names: string[] }[]).map((g) => g.names);
     }
     return (raw as string | string[] | string[][]) ?? '';
   });
@@ -128,14 +129,16 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   useEffect(() => {
     const rawResult = config.lastResult;
-    // Handle Firestore-friendly object-wrapped groups
     if (
-      rawResult &&
-      typeof rawResult === 'object' &&
-      !Array.isArray(rawResult) &&
-      'groups' in rawResult
+      Array.isArray(rawResult) &&
+      rawResult.length > 0 &&
+      typeof rawResult[0] === 'object' &&
+      rawResult[0] !== null &&
+      'names' in rawResult[0]
     ) {
-      setDisplayResult(rawResult.groups);
+      setDisplayResult(
+        (rawResult as { names: string[] }[]).map((g) => g.names)
+      );
     } else {
       setDisplayResult((rawResult as string | string[] | string[][]) ?? '');
     }
@@ -256,26 +259,29 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsSpinning(true);
 
     const performUpdate = (
-      result: string | string[] | string[][] | { groups: string[][] },
+      result: string | string[] | string[][],
       remaining?: string[]
     ) => {
       try {
         // Firestore doesn't support nested arrays (e.g., string[][]).
-        // If we have groups, we wrap them in an object to satisfy Firestore.
-        let syncResult = result;
+        // If we have groups, we transform them into an array of objects.
+        let syncResult: string | string[] | { names: string[] }[] = result as
+          | string
+          | string[];
+
         if (
           mode === 'groups' &&
           Array.isArray(result) &&
           result.length > 0 &&
           Array.isArray(result[0])
         ) {
-          syncResult = { groups: result as string[][] };
+          syncResult = (result as string[][]).map((names) => ({ names }));
         }
 
         // Optimized update: only send what changed.
         // DashboardContext now handles deep merging of config.
         const updates: Partial<RandomConfig> = {
-          lastResult: syncResult,
+          lastResult: syncResult as string | string[] | { names: string[] }[],
         };
         if (remaining) {
           updates.remainingStudents = remaining;
