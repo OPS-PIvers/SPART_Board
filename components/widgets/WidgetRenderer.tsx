@@ -36,16 +36,15 @@ import { ScalableWidget } from '../common/ScalableWidget';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
-const SCALABLE_WIDGETS = [
-  'weather',
-  'timer',
-  'traffic',
-  'scoreboard',
-  'poll',
-  'calendar',
-  'qr',
-  'dice',
-];
+// Define base dimensions for scalable widgets
+const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
+  weather: { w: 250, h: 280 },
+  timer: { w: 280, h: 180 },
+  traffic: { w: 120, h: 320 },
+  scoreboard: { w: 320, h: 200 },
+  qr: { w: 200, h: 250 },
+  dice: { w: 240, h: 240 },
+};
 
 export const WidgetRenderer: React.FC<{
   widget: WidgetData;
@@ -232,9 +231,14 @@ export const WidgetRenderer: React.FC<{
 
   const content = getWidgetContent();
 
-  const isScalable = SCALABLE_WIDGETS.includes(widget.type);
-  const finalContent = isScalable ? (
-    <ScalableWidget width={widget.w} height={widget.h}>
+  const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
+  const finalContent = baseDim ? (
+    <ScalableWidget
+      width={widget.w}
+      height={widget.h}
+      baseWidth={baseDim.w}
+      baseHeight={baseDim.h}
+    >
       {content}
     </ScalableWidget>
   ) : (

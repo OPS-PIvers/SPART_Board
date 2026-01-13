@@ -3,16 +3,16 @@ import React, { useMemo } from 'react';
 interface ScalableWidgetProps {
   width: number;
   height: number;
-  baseWidth?: number;
-  baseHeight?: number;
+  baseWidth: number;
+  baseHeight: number;
   children: React.ReactNode;
 }
 
 export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
   width,
   height,
-  baseWidth = 400,
-  baseHeight = 400,
+  baseWidth,
+  baseHeight,
   children,
 }) => {
   const scale = useMemo(() => {
@@ -44,7 +44,7 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
           flexDirection: 'column',
         }}
       >
-        <div style={{ width: '100%', height: '100%' }}>{children}</div>
+        {children}
       </div>
     </div>
   );
