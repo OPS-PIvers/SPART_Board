@@ -139,6 +139,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   });
   const [rotation, setRotation] = useState(0);
 
+  // Track active roster to only clear when it actually changes
+  const lastRosterRef = useRef<{ id: string | null; mode: string }>({
+    id: activeRosterId,
+    mode: rosterMode,
+  });
+
   useEffect(() => {
     const rawResult = config.lastResult;
     if (
@@ -158,7 +164,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Clear session data when active roster changes to avoid cross-contamination
   useEffect(() => {
-    if (activeRosterId && rosterMode === 'class') {
+    const changed =
+      activeRosterId !== lastRosterRef.current.id ||
+      rosterMode !== lastRosterRef.current.mode;
+
+    if (changed) {
+      lastRosterRef.current = { id: activeRosterId, mode: rosterMode };
       updateWidget(widget.id, {
         config: {
           ...config,
