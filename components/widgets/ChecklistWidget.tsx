@@ -157,7 +157,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as ChecklistConfig;
   const items = config.items ?? [];
   const scaleMultiplier = config.scaleMultiplier ?? 1;
-  const rosterMode = config.rosterMode ?? 'custom';
+  const rosterMode = config.rosterMode ?? 'class';
 
   // Use local state for the text to prevent the "space-eating" bug during typing
   const [localText, setLocalText] = React.useState(
