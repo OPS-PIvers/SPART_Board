@@ -49,7 +49,10 @@ const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
  * - `joinSession`: Function to join a session with name and code (student mode)
  * - `startSession`: Function to start a new live session (teacher mode)
  * - `updateSessionConfig`: Function to update active widget config (teacher mode)
+ * - `updateSessionBackground`: Function to update session background in real-time (teacher mode)
  * - `endSession`: Function to end the current session (teacher mode)
+ * - `leaveSession`: Function for students to disconnect from a session (student mode)
+ * - `removeStudent`: Function to manually remove a student from session (teacher mode)
  * - `toggleFreezeStudent`: Function to freeze/unfreeze a student (teacher mode)
  * - `toggleGlobalFreeze`: Function to freeze/unfreeze all students (teacher mode)
  *
@@ -255,11 +258,13 @@ export const useLiveSession = (
       STUDENTS_COLLECTION,
       studentId
     );
-    await updateDoc(studentRef, { status: 'disconnected' }).catch((err) => {
+    try {
+      await updateDoc(studentRef, { status: 'disconnected' });
+      setStudentId(null);
+      setSession(null);
+    } catch (err) {
       console.error('Failed to leave session:', err);
-    });
-    setStudentId(null);
-    setSession(null);
+    }
   }, [role, joinCode, studentId]);
 
   const removeStudent = useCallback(

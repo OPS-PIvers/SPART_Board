@@ -102,11 +102,11 @@ export const WidgetRenderer: React.FC<{
 
   // Sync background changes to session when live
   React.useEffect(() => {
-    if (!isThisWidgetLive || !dashboardBackground) {
+    if (!isThisWidgetLive || !activeDashboard?.background) {
       return;
     }
-    void updateSessionBackground(dashboardBackground);
-  }, [dashboardBackground, isThisWidgetLive, updateSessionBackground]);
+    void updateSessionBackground(activeDashboard.background);
+  }, [activeDashboard?.background, isThisWidgetLive, updateSessionBackground]);
 
   const getWidgetContent = () => {
     switch (widget.type) {
