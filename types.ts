@@ -365,7 +365,7 @@ export interface ToolMetadata {
 
 export const TOOLS: ToolMetadata[] = [
   { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
-  { type: 'time-tool', icon: Timer, label: 'Time Tool', color: 'bg-red-500' },
+  { type: 'time-tool', icon: Timer, label: 'Timer', color: 'bg-red-500' },
   {
     type: 'traffic',
     icon: TrafficCone,
