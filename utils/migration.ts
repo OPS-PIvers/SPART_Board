@@ -21,7 +21,6 @@ export const migrateWidget = (widget: WidgetData): WidgetData => {
         elapsedTime: isTimer ? (oldConfig.duration ?? 600) : 0,
         isRunning: false,
         selectedSound: 'Gong',
-        selectedMusic: 'None',
       } as TimeToolConfig,
     };
   }

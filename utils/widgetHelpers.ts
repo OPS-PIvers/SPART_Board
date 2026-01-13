@@ -32,7 +32,6 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       elapsedTime: 600,
       isRunning: false,
       selectedSound: 'Gong',
-      selectedMusic: 'None',
     },
     traffic: {},
     text: {

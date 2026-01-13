@@ -508,7 +508,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           elapsedTime: 600,
           isRunning: false,
           selectedSound: 'Gong',
-          selectedMusic: 'None',
         },
       },
       traffic: { w: 120, h: 320, config: {} },

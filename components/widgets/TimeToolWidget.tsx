@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TimeToolConfig, WidgetData } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
-import { Play, Pause, RotateCcw, Music, Bell } from 'lucide-react';
+import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
 
 interface Props {
   widget: WidgetData;
@@ -19,15 +19,9 @@ const AUDIO_CONTEXT = new (
 export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TimeToolConfig;
-  const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [showSoundPicker, setShowSoundPicker] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const musicRef = useRef<{
-    oscs?: OscillatorNode[];
-    gain?: GainNode;
-    audio?: HTMLAudioElement | null;
-  } | null>(null);
 
   // --- AUDIO SYNTHESIS ---
   const playAlert = React.useCallback(() => {
@@ -100,70 +94,6 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     }
   }, [config.selectedSound]);
 
-  const stopMusic = React.useCallback(() => {
-    if (musicRef.current) {
-      if (musicRef.current.audio) {
-        musicRef.current.audio.pause();
-        musicRef.current.audio = null;
-      } else if (musicRef.current.oscs) {
-        musicRef.current.oscs.forEach((o) => {
-          try {
-            o.stop();
-          } catch (_e) {
-            // Ignore
-          }
-        });
-      }
-      musicRef.current = null;
-    }
-  }, []);
-
-  const startMusic = React.useCallback(() => {
-    if (config.selectedMusic === 'None') return;
-    stopMusic();
-
-    // High-quality royalty-free instrumental URLs for study
-    const musicUrls: Record<string, string> = {
-      'Zen Garden':
-        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-      'Minimalist Piano':
-        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
-      'Gentle Acoustic':
-        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
-    };
-
-    const url = musicUrls[config.selectedMusic];
-    if (!url) return;
-
-    // Use Audio element for external streams
-    const audio = new Audio(url);
-    audio.loop = true;
-    audio.volume = 0.2;
-    audio.play().catch((err) => console.error('Music playback failed', err));
-
-    // Store in ref
-    musicRef.current = { audio };
-  }, [config.selectedMusic, stopMusic]);
-
-  const updateMusicVolume = React.useCallback(
-    (secondsLeft: number) => {
-      if (!musicRef.current || config.mode !== 'timer') return;
-      const percent = secondsLeft / config.duration;
-      const targetVol = Math.max(0, 0.2 * percent);
-
-      if (musicRef.current.audio) {
-        musicRef.current.audio.volume = targetVol;
-      } else if (musicRef.current.gain) {
-        musicRef.current.gain.gain.setTargetAtTime(
-          targetVol,
-          AUDIO_CONTEXT.currentTime,
-          0.5
-        );
-      }
-    },
-    [config.mode, config.duration]
-  );
-
   const resumeAudio = async () => {
     if (AUDIO_CONTEXT.state === 'suspended') {
       await AUDIO_CONTEXT.resume();
@@ -191,9 +121,6 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   // --- LOGIC ---
   useEffect(() => {
     if (config.isRunning) {
-      if (AUDIO_CONTEXT.state === 'running') {
-        startMusic();
-      }
       timerRef.current = setInterval(
         () => {
           if (config.mode === 'timer') {
@@ -201,7 +128,6 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             updateWidget(widget.id, {
               config: { ...config, elapsedTime: nextTime },
             });
-            updateMusicVolume(nextTime);
             if (nextTime === 0) {
               handleStop();
               playAlert();
@@ -215,23 +141,12 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         config.mode === 'timer' ? 1000 : 100
       );
     } else {
-      stopMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => {
-      stopMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [
-    config,
-    handleStop,
-    updateWidget,
-    widget.id,
-    startMusic,
-    playAlert,
-    stopMusic,
-    updateMusicVolume,
-  ]);
+  }, [config, handleStop, updateWidget, widget.id, playAlert]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -435,52 +350,11 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Footer: Audio Selection */}
-      <div className="px-8 py-4 bg-black/5 border-t border-white/5 flex justify-between items-center relative shrink-0">
-        <div className="relative">
-          <button
-            onClick={() => {
-              setShowMusicPicker(!showMusicPicker);
-              setShowSoundPicker(false);
-            }}
-            className="flex items-center gap-2 text-slate-400 hover:text-blue-500 transition-colors"
-          >
-            <Music size={14} />
-            <span className="text-[9px] font-bold uppercase tracking-widest">
-              {config.selectedMusic}
-            </span>
-          </button>
-          {showMusicPicker && (
-            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50">
-              {(
-                [
-                  'None',
-                  'Zen Garden',
-                  'Minimalist Piano',
-                  'Gentle Acoustic',
-                ] as const
-              ).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => {
-                    updateWidget(widget.id, {
-                      config: { ...config, selectedMusic: m },
-                    });
-                    setShowMusicPicker(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-colors ${config.selectedMusic === m ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
+      <div className="px-8 py-4 bg-black/5 border-t border-white/5 flex justify-end items-center relative shrink-0">
         <div className="relative">
           <button
             onClick={() => {
               setShowSoundPicker(!showSoundPicker);
-              setShowMusicPicker(false);
             }}
             className="flex items-center gap-2 text-slate-400 hover:text-blue-500 transition-colors"
           >
