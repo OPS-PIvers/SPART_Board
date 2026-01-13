@@ -247,7 +247,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }
 
         updateWidget(widget.id, {
-          config: updates as any, // Cast to satisfy generic constraint if needed
+          config: updates as unknown as RandomConfig,
         });
       } catch (err) {
         console.error('Randomizer Sync Error:', err);
