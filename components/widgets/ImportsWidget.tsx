@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { fileStorage, FileMetadata } from '../../utils/fileStorage';
 import { useDashboard } from '../../context/useDashboard';
-import { FileText, Trash2, Image as ImageIcon, HardDrive } from 'lucide-react';
+import {
+  FileText,
+  Trash2,
+  Image as ImageIcon,
+  HardDrive,
+  X,
+  Check,
+} from 'lucide-react';
 
 export const ImportsWidget: React.FC = () => {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const { addWidget } = useDashboard();
 
   const loadFiles = async () => {
@@ -71,12 +79,21 @@ export const ImportsWidget: React.FC = () => {
     });
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const initiateDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('Delete this file from local storage?')) {
-      await fileStorage.deleteFile(id);
-      void loadFiles();
-    }
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setConfirmDeleteId(null);
+    await fileStorage.deleteFile(id);
+    void loadFiles();
+  };
+
+  const cancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmDeleteId(null);
   };
 
   const formatSize = (bytes: number) => {
@@ -118,7 +135,7 @@ export const ImportsWidget: React.FC = () => {
           <div
             key={file.id}
             onClick={() => handleOpen(file)}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer group border border-transparent hover:border-slate-100 transition-colors"
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer group border border-transparent hover:border-slate-100 transition-colors relative"
           >
             <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
               {getIcon(file.type)}
@@ -132,15 +149,34 @@ export const ImportsWidget: React.FC = () => {
                 {new Date(file.createdAt).toLocaleDateString()}
               </p>
             </div>
-            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-              <button
-                onClick={(e) => handleDelete(e, file.id)}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            {confirmDeleteId === file.id ? (
+              <div className="flex items-center gap-1 animate-in fade-in duration-200">
+                <button
+                  onClick={(e) => confirmDelete(e, file.id)}
+                  className="p-2 text-white bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-sm"
+                  title="Confirm Delete"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={cancelDelete}
+                  className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                  title="Cancel"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                <button
+                  onClick={(e) => initiateDelete(e, file.id)}
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
