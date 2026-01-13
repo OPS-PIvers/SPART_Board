@@ -117,7 +117,18 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const wheelRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    setDisplayResult(config.lastResult ?? '');
+    const rawResult = config.lastResult;
+    // Handle Firestore-friendly object-wrapped groups
+    if (
+      rawResult &&
+      typeof rawResult === 'object' &&
+      !Array.isArray(rawResult) &&
+      'groups' in rawResult
+    ) {
+      setDisplayResult(rawResult.groups);
+    } else {
+      setDisplayResult((rawResult as string | string[] | string[][]) ?? '');
+    }
   }, [config.lastResult]);
 
   // Clear session data when active roster changes to avoid cross-contamination
@@ -235,13 +246,27 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsSpinning(true);
 
     const performUpdate = (
-      result: string | string[] | string[][],
+      result: string | string[] | string[][] | { groups: string[][] },
       remaining?: string[]
     ) => {
       try {
+        // Firestore doesn't support nested arrays (e.g., string[][]).
+        // If we have groups, we wrap them in an object to satisfy Firestore.
+        let syncResult = result;
+        if (
+          mode === 'groups' &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0])
+        ) {
+          syncResult = { groups: result as string[][] };
+        }
+
         // Optimized update: only send what changed.
         // DashboardContext now handles deep merging of config.
-        const updates: Partial<RandomConfig> = { lastResult: result };
+        const updates: Partial<RandomConfig> = {
+          lastResult: syncResult,
+        };
         if (remaining) {
           updates.remainingStudents = remaining;
         }
