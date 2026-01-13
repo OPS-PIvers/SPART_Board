@@ -128,9 +128,6 @@ export interface ClockConfig {
 export interface TimerConfig {
   duration: number;
   sound: boolean; // This is the completion sound toggle
-  musicType: 'none' | 'lofi' | 'nature' | 'classical' | 'focus' | 'cleanup';
-  volumeMode: 'manual' | 'dynamic';
-  musicVolume: number; // 0 to 1
 }
 
 export interface TrafficConfig {

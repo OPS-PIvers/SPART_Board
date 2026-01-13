@@ -495,9 +495,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: {
           duration: 300,
           sound: true,
-          musicType: 'none',
-          volumeMode: 'manual',
-          musicVolume: 0.5,
         },
       },
       'time-tool': {

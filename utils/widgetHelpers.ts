@@ -23,9 +23,6 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     timer: {
       duration: 300,
       sound: true,
-      musicType: 'none',
-      volumeMode: 'manual',
-      musicVolume: 0.5,
     },
     'time-tool': {
       mode: 'timer',
