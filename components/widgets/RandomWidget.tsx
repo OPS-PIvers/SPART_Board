@@ -104,7 +104,6 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'single',
     visualStyle = 'flash',
     groupSize = 3,
-    lastResult = null,
     soundEnabled = true,
     remainingStudents = [],
   } = config;
@@ -112,7 +111,18 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
     string | string[] | string[][]
-  >(lastResult ?? '');
+  >(() => {
+    const raw = config.lastResult;
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      !Array.isArray(raw) &&
+      'groups' in raw
+    ) {
+      return raw.groups;
+    }
+    return (raw as string | string[] | string[][]) ?? '';
+  });
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<SVGSVGElement>(null);
 
