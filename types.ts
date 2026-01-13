@@ -341,7 +341,9 @@ export interface WidgetData {
   type: WidgetType;
   x: number;
   y: number;
+  /** Width in grid units (dashboard) or pixels (student view) */
   w: number;
+  /** Height in grid units (dashboard) or pixels (student view) */
   h: number;
   z: number;
   flipped: boolean;

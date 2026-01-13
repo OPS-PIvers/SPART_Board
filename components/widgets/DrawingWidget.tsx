@@ -11,7 +11,7 @@ import {
   Palette,
   Undo2,
   MousePointer2,
-  CornerUpLeft,
+  Minimize2,
   Camera,
   Wifi,
 } from 'lucide-react';
@@ -86,11 +86,7 @@ export const DrawingWidget: React.FC<{
   }, []);
 
   const { takeScreenshot, isCapturing } = useScreenshot(
-    {
-      get current() {
-        return portalTarget;
-      },
-    } as React.RefObject<HTMLElement | null>,
+    portalTarget,
     `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`
   );
 
@@ -299,7 +295,7 @@ export const DrawingWidget: React.FC<{
         }`}
       >
         {mode === 'overlay' ? (
-          <CornerUpLeft className="w-3 h-3" />
+          <Minimize2 className="w-3 h-3" />
         ) : (
           <Maximize className="w-3 h-3" />
         )}
@@ -367,8 +363,16 @@ export const DrawingWidget: React.FC<{
   }
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="flex-1 relative bg-slate-50 overflow-hidden cursor-crosshair">
+    <div
+      className={`h-full flex flex-col ${
+        isStudentView ? 'bg-transparent' : 'bg-white'
+      } rounded-lg overflow-hidden`}
+    >
+      <div
+        className={`flex-1 relative ${
+          isStudentView ? 'bg-transparent' : 'bg-slate-50'
+        } overflow-hidden ${!isStudentView && 'cursor-crosshair'}`}
+      >
         <canvas
           ref={canvasRef}
           onMouseDown={handleStart}

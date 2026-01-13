@@ -265,7 +265,7 @@ export const useLiveSession = (
     } catch (err) {
       console.error('Failed to leave session:', err);
     }
-  }, [role, joinCode, studentId]);
+  }, [role, joinCode, studentId, setStudentId, setSession]);
 
   const removeStudent = useCallback(
     async (targetStudentId: string) => {

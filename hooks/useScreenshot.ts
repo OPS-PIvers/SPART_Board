@@ -13,7 +13,7 @@ interface ScreenshotOptions {
 }
 
 export const useScreenshot = (
-  nodeRef: React.RefObject<HTMLElement | null>,
+  nodeOrRef: React.RefObject<HTMLElement | null> | HTMLElement | null,
   fileName: string,
   options: ScreenshotOptions = {}
 ): UseScreenshotResult => {
@@ -22,7 +22,10 @@ export const useScreenshot = (
   const { onSuccess, onError } = options;
 
   const takeScreenshot = useCallback(async () => {
-    if (!nodeRef.current) return;
+    const node =
+      nodeOrRef && 'current' in nodeOrRef ? nodeOrRef.current : nodeOrRef;
+
+    if (!node) return;
 
     try {
       setIsCapturing(true);
@@ -36,7 +39,7 @@ export const useScreenshot = (
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Generate Image
-      const dataUrl = await toPng(nodeRef.current, {
+      const dataUrl = await toPng(node, {
         cacheBust: true,
         pixelRatio: 2, // Higher quality
         filter: (node: Element) => {
@@ -68,7 +71,7 @@ export const useScreenshot = (
     } finally {
       setIsCapturing(false);
     }
-  }, [nodeRef, fileName, onSuccess, onError]);
+  }, [nodeOrRef, fileName, onSuccess, onError]);
 
   return { takeScreenshot, isFlashing, isCapturing };
 };
