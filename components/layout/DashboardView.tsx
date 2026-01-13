@@ -50,6 +50,27 @@ export const DashboardView: React.FC = () => {
           return;
         }
 
+        const ALLOWED_TYPES = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+          'text/plain',
+          'text/csv',
+        ];
+
+        if (!ALLOWED_TYPES.includes(file.type)) {
+          addToast(`Unsupported file type: ${file.name}`, 'error');
+          return;
+        }
+
         const id = uuidv4();
         await fileStorage.saveFile(id, file);
 
@@ -84,9 +105,18 @@ export const DashboardView: React.FC = () => {
       e.preventDefault();
       e.stopPropagation();
 
+      // Check if the drop event contains files
+      if (!e.dataTransfer.types.includes('Files')) {
+        return;
+      }
+
       const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
-        files.forEach((file) => void handleFile(file));
+        files.forEach((file) => {
+          if (file instanceof File) {
+            void handleFile(file);
+          }
+        });
       }
     },
     [handleFile]

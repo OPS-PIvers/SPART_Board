@@ -4,6 +4,7 @@
 const DB_NAME = 'classroom_files';
 const DB_VERSION = 1;
 const STORE_NAME = 'files';
+const CHANNEL_NAME = 'classroom_files_channel';
 
 interface StoredFile {
   id: string;
@@ -22,6 +23,32 @@ export interface FileMetadata {
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+const broadcastChannel =
+  typeof BroadcastChannel !== 'undefined'
+    ? new BroadcastChannel(CHANNEL_NAME)
+    : null;
+
+// Event subscribers
+type ChangeListener = () => void;
+const listeners: Set<ChangeListener> = new Set();
+
+// Notify all listeners (local and via broadcast)
+const notifyChange = (localOnly = false) => {
+  listeners.forEach((listener) => listener());
+  if (!localOnly && broadcastChannel) {
+    broadcastChannel.postMessage({ type: 'change' });
+  }
+};
+
+// Listen for broadcast messages
+if (broadcastChannel) {
+  broadcastChannel.onmessage = (event) => {
+    const data = event.data as { type?: string };
+    if (data?.type === 'change') {
+      notifyChange(true); // Notify local listeners without rebroadcasting
+    }
+  };
+}
 
 const getDB = (): Promise<IDBDatabase> => {
   if (dbPromise) return dbPromise;
@@ -75,7 +102,10 @@ export const fileStorage = {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.put(storedFile);
 
-      request.onsuccess = () => resolve(id);
+      request.onsuccess = () => {
+        notifyChange();
+        resolve(id);
+      };
       request.onerror = () => reject(new Error('Failed to save file'));
     });
   },
@@ -151,8 +181,16 @@ export const fileStorage = {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.delete(id);
 
-      request.onsuccess = () => resolve();
+      request.onsuccess = () => {
+        notifyChange();
+        resolve();
+      };
       request.onerror = () => reject(new Error('Failed to delete file'));
     });
+  },
+
+  subscribe(listener: ChangeListener): () => void {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
 };

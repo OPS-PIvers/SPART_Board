@@ -8,7 +8,7 @@ export const ImportsWidget: React.FC = () => {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const { addWidget } = useDashboard();
+  const { addWidget, addToast } = useDashboard();
 
   const loadFiles = async () => {
     try {
@@ -24,43 +24,8 @@ export const ImportsWidget: React.FC = () => {
 
   useEffect(() => {
     void loadFiles();
-
-    // Poll for changes only when visible (simple way to keep in sync if files are dropped elsewhere)
-    if (typeof document === 'undefined') return;
-
-    let intervalId: number | undefined;
-
-    const startPolling = () => {
-      intervalId ??= window.setInterval(() => {
-        void loadFiles();
-      }, 5000);
-    };
-
-    const stopPolling = () => {
-      if (intervalId != null) {
-        window.clearInterval(intervalId);
-        intervalId = undefined;
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void loadFiles(); // Immediate reload on visible
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    };
-
-    if (document.visibilityState === 'visible') {
-      startPolling();
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      stopPolling();
-    };
+    // Subscribe to storage changes
+    return fileStorage.subscribe(() => void loadFiles());
   }, []);
 
   const handleOpen = (file: FileMetadata) => {
@@ -82,8 +47,13 @@ export const ImportsWidget: React.FC = () => {
     if (!confirmDeleteId) return;
     const id = confirmDeleteId;
     setConfirmDeleteId(null);
-    await fileStorage.deleteFile(id);
-    void loadFiles();
+    try {
+      await fileStorage.deleteFile(id);
+      // No need to manually call loadFiles as subscription handles it, but harmless.
+    } catch (err) {
+      console.error('Failed to delete file', err);
+      addToast('Failed to delete file', 'error');
+    }
   };
 
   const cancelDelete = () => {

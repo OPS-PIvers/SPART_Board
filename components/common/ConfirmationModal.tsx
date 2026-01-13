@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -22,6 +22,28 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   cancelLabel = 'Cancel',
   isDestructive = false,
 }) => {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onCancel();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Auto-focus the cancel button for safety
+      setTimeout(() => {
+        cancelRef.current?.focus();
+      }, 50);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
   return (
@@ -46,8 +68,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         <div className="flex justify-end gap-3">
           <button
+            ref={cancelRef}
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-slate-600 font-medium hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 rounded-xl text-slate-600 font-medium hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
           >
             {cancelLabel}
           </button>
