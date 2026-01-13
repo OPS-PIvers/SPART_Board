@@ -50,8 +50,14 @@ export const FileWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-slate-100">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-500"></div>
+      <div
+        className="flex items-center justify-center h-full w-full bg-slate-100"
+        role="status"
+        aria-label={`Loading file ${config.fileName}`}
+      >
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-500">
+          <span className="sr-only">{`Loading file ${config.fileName}`}</span>
+        </div>
       </div>
     );
   }
@@ -80,11 +86,11 @@ export const FileWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           className="max-w-full max-h-full object-contain"
         />
         {/* Hover overlay with download option */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center">
           <a
             href={blobUrl}
             download={config.fileName}
-            className="flex items-center gap-2 px-4 py-2 bg-white rounded-full text-slate-900 font-medium hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white rounded-full text-slate-900 font-medium hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             <Download className="w-4 h-4" />
             Download

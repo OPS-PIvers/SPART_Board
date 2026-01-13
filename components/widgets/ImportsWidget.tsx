@@ -104,8 +104,16 @@ export const ImportsWidget: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full w-full">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-500"></div>
+      <div
+        className="flex items-center justify-center h-full w-full"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading files"
+      >
+        <div
+          className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-500"
+          aria-hidden="true"
+        ></div>
       </div>
     );
   }
@@ -129,13 +137,17 @@ export const ImportsWidget: React.FC = () => {
           {files.map((file) => (
             <div
               key={file.id}
-              onClick={() => handleOpen(file)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer group border border-transparent hover:border-slate-100 transition-colors relative"
+              className="relative flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 group border border-transparent hover:border-slate-100 transition-colors"
             >
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <button
+                onClick={() => handleOpen(file)}
+                className="absolute inset-0 w-full h-full z-0 focus:outline-none focus:ring-2 focus:ring-slate-200 rounded-lg"
+                aria-label={`Open ${file.name}`}
+              />
+              <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center pointer-events-none">
                 {getIcon(file.type)}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="relative z-10 flex-1 min-w-0 pointer-events-none">
                 <h4 className="font-medium text-slate-700 truncate text-sm">
                   {file.name}
                 </h4>
@@ -144,11 +156,12 @@ export const ImportsWidget: React.FC = () => {
                   {new Date(file.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+              <div className="relative z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex items-center gap-1 transition-opacity">
                 <button
                   onClick={(e) => initiateDelete(e, file.id)}
-                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                   title="Delete"
+                  aria-label={`Delete ${file.name}`}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

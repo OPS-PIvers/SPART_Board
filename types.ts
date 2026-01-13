@@ -264,12 +264,37 @@ export interface InstructionalRoutinesConfig {
   favorites?: string[]; // Array of routine IDs that are starred
 }
 
+/**
+ * Configuration for the file widget.
+ *
+ * The actual file contents are stored locally in the browser using IndexedDB
+ * and never leave the user's device. This config only keeps lightweight
+ * metadata and a reference to the IndexedDB entry.
+ */
 export interface FileConfig {
+  /**
+   * Key used to look up the file in IndexedDB. This is an internal identifier
+   * for the locally stored file and is not a remote or server-side ID.
+   */
   fileId: string;
+  /**
+   * Original filename shown in the UI (e.g., "worksheet.pdf").
+   */
   fileName: string;
+  /**
+   * MIME type of the stored file (e.g., "application/pdf").
+   */
   fileType: string;
 }
 
+/**
+ * Configuration for the imports widget.
+ *
+ * This widget currently does not require any persistent settings, so the
+ * config is represented as an empty object. Like the file widget, any files
+ * or resources it references are stored only in the local browser
+ * (IndexedDB) and are not synced to any backend.
+ */
 export type ImportsConfig = Record<string, never>;
 
 // Union of all widget configs

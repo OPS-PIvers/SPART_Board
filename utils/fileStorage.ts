@@ -31,11 +31,20 @@ const getDB = (): Promise<IDBDatabase> => {
 
     request.onerror = () => {
       console.error('Failed to open IndexedDB', request.error);
+      dbPromise = null;
       reject(new Error('Failed to open IndexedDB'));
     };
 
     request.onsuccess = () => {
-      resolve(request.result);
+      const db = request.result;
+      db.onclose = () => {
+        dbPromise = null;
+      };
+      db.onversionchange = () => {
+        db.close();
+        dbPromise = null;
+      };
+      resolve(db);
     };
 
     request.onupgradeneeded = (event) => {
