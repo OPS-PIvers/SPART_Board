@@ -18,6 +18,7 @@ export const FileWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         setLoading(true);
         if (!config.fileId) {
           setError('No file linked');
+          setLoading(false);
           return;
         }
 

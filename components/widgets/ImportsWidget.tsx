@@ -22,9 +22,43 @@ export const ImportsWidget: React.FC = () => {
 
   useEffect(() => {
     void loadFiles();
-    // Poll for changes (simple way to keep in sync if files are dropped elsewhere)
-    const interval = setInterval(() => void loadFiles(), 5000);
-    return () => clearInterval(interval);
+
+    // Poll for changes only when visible (simple way to keep in sync if files are dropped elsewhere)
+    if (typeof document === 'undefined') return;
+
+    let intervalId: number | undefined;
+
+    const startPolling = () => {
+      intervalId ??= window.setInterval(() => {
+        void loadFiles();
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId != null) {
+        window.clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadFiles(); // Immediate reload on visible
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startPolling();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopPolling();
+    };
   }, []);
 
   const handleOpen = (file: FileMetadata) => {

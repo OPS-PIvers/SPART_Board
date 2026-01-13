@@ -20,6 +20,7 @@ import {
   Utensils,
   BookOpen,
   FolderOpen,
+  FileText,
 } from 'lucide-react';
 
 export type WidgetType =
@@ -448,6 +449,12 @@ export const TOOLS: ToolMetadata[] = [
     icon: FolderOpen,
     label: 'Imports',
     color: 'bg-stone-500',
+  },
+  {
+    type: 'file',
+    icon: FileText,
+    label: 'File',
+    color: 'bg-slate-500',
   },
 ];
 

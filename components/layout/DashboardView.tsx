@@ -43,12 +43,30 @@ export const DashboardView: React.FC = () => {
   const handleFile = useCallback(
     async (file: File) => {
       try {
+        // Validation
+        const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+        if (file.size > MAX_SIZE) {
+          addToast(`File too large (max 50MB): ${file.name}`, 'error');
+          return;
+        }
+
+        // const ALLOWED_TYPES = [
+        //   'image/jpeg',
+        //   'image/png',
+        //   'image/gif',
+        //   'image/webp',
+        //   'application/pdf',
+        // ];
+        // Allow other types but warn? Or strictly block?
+        // The requirement said "png, jpg, pdf, doc, ppt, etc." so we shouldn't strictly block others,
+        // but maybe just limit size.
+        // Re-reading comment: "Consider adding validation to check file types against an allowlist... and impose a reasonable size limit."
+        // I will implement size limit. For types, I will allow common docs too.
+
         const id = uuidv4();
         await fileStorage.saveFile(id, file);
 
         // Add file widget
-        // We cast to any because addWidget doesn't strictly type the overrides based on the type string yet in calling code logic
-        // but our implementation supports it.
         addWidget('file', {
           config: {
             fileId: id,
