@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, RandomConfig } from '../../types';
+import { WidgetData, RandomConfig, WidgetConfig } from '../../types';
 import {
   Users,
   UserPlus,
@@ -23,6 +23,17 @@ interface CustomWindow extends Window {
   webkitAudioContext: typeof AudioContext;
 }
 
+const WHEEL_COLORS = [
+  '#f87171',
+  '#fbbf24',
+  '#34d399',
+  '#60a5fa',
+  '#818cf8',
+  '#a78bfa',
+  '#f472b6',
+  '#2DD4BF',
+];
+
 const getAudioCtx = () => {
   if (!audioCtx) {
     const AudioContextClass =
@@ -33,19 +44,22 @@ const getAudioCtx = () => {
   return audioCtx;
 };
 
-const playTick = (freq = 800, volume = 0.15) => {
+const playTick = (freq = 150, volume = 0.1) => {
   try {
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') return; // Don't try to play if suspended
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
     gain.gain.setValueAtTime(volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
   } catch (_e) {
@@ -57,18 +71,36 @@ const playWinner = () => {
   try {
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') return;
+    const now = ctx.currentTime;
 
-    const osc = ctx.createOscillator();
+    // Subtle "Soft Chime" using two sine waves
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
+    const filter = ctx.createBiquadFilter();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(523.25, now); // C5
+
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(783.99, now); // G5 (Harmonic)
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, now); // Remove high-frequency "sharpness"
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.2, now + 0.02); // Soft attack
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6); // Gentle decay
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
     gain.connect(ctx.destination);
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.4);
+
+    osc1.start();
+    osc2.start();
+    osc1.stop(now + 0.7);
+    osc2.stop(now + 0.7);
   } catch (_e) {
     // Audio failed - silently ignore
   }
@@ -83,7 +115,6 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     mode = 'single',
     visualStyle = 'flash',
     groupSize = 3,
-    lastResult = null,
     soundEnabled = true,
     remainingStudents = [],
   } = config;
@@ -91,12 +122,36 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
     string | string[] | string[][]
-  >(lastResult ?? '');
+  >(() => {
+    const raw = config.lastResult;
+    if (
+      Array.isArray(raw) &&
+      raw.length > 0 &&
+      typeof raw[0] === 'object' &&
+      raw[0] !== null &&
+      'names' in raw[0]
+    ) {
+      return (raw as { names: string[] }[]).map((g) => g.names);
+    }
+    return (raw as string | string[] | string[][]) ?? '';
+  });
   const [rotation, setRotation] = useState(0);
-  const wheelRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    setDisplayResult(config.lastResult ?? '');
+    const rawResult = config.lastResult;
+    if (
+      Array.isArray(rawResult) &&
+      rawResult.length > 0 &&
+      typeof rawResult[0] === 'object' &&
+      rawResult[0] !== null &&
+      'names' in rawResult[0]
+    ) {
+      setDisplayResult(
+        (rawResult as { names: string[] }[]).map((g) => g.names)
+      );
+    } else {
+      setDisplayResult((rawResult as string | string[] | string[][]) ?? '');
+    }
   }, [config.lastResult]);
 
   // Clear session data when active roster changes to avoid cross-contamination
@@ -203,10 +258,52 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     // CRITICAL: Resume AudioContext within the click handler to unlock sound
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') {
-      await ctx.resume();
+      try {
+        await ctx.resume();
+      } catch (e) {
+        console.error('Audio resume failed', e);
+      }
     }
 
+    if (isSpinning) return;
     setIsSpinning(true);
+
+    const performUpdate = (
+      result: string | string[] | string[][],
+      remaining?: string[]
+    ) => {
+      try {
+        // Firestore doesn't support nested arrays (e.g., string[][]).
+        // If we have groups, we transform them into an array of objects.
+        let syncResult: string | string[] | { names: string[] }[] = result as
+          | string
+          | string[];
+
+        if (
+          mode === 'groups' &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0])
+        ) {
+          syncResult = (result as string[][]).map((names) => ({ names }));
+        }
+
+        // Optimized update: only send what changed.
+        // DashboardContext now handles deep merging of config.
+        const updates: Partial<RandomConfig> = {
+          lastResult: syncResult as string | string[] | { names: string[] }[],
+        };
+        if (remaining) {
+          updates.remainingStudents = remaining;
+        }
+
+        updateWidget(widget.id, {
+          config: updates as unknown as WidgetConfig,
+        });
+      } catch (err) {
+        console.error('Randomizer Sync Error:', err);
+      }
+    };
 
     if (mode === 'single') {
       // Logic for "bag" selection:
@@ -234,20 +331,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const randomName =
             students[Math.floor(Math.random() * students.length)];
           setDisplayResult(randomName);
-          if (soundEnabled) playTick(700 + Math.random() * 200);
+          if (soundEnabled) playTick(150 + Math.random() * 50);
           count++;
           if (count > 20) {
             clearInterval(interval);
             setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                lastResult: winnerName,
-                remainingStudents: nextRemaining,
-              },
-            });
+            performUpdate(winnerName, nextRemaining);
           }
         }, 80);
       } else if (visualStyle === 'wheel') {
@@ -257,10 +348,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         if (winnerIndex === -1) winnerIndex = 0; // Fallback
 
         const segmentAngle = 360 / students.length;
+        // Target the top center (90 degrees offset in SVG math).
+        // We rotate the wheel so that the middle of the winning segment
+        // (winnerIndex * segmentAngle + segmentAngle / 2) lands at the top.
         const targetRotation =
           rotation +
           360 * extraSpins +
-          (360 - winnerIndex * segmentAngle) -
+          (360 - (winnerIndex * segmentAngle + segmentAngle / 2)) -
           (rotation % 360);
 
         setRotation(targetRotation);
@@ -274,16 +368,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                lastResult: winnerName,
-                remainingStudents: nextRemaining,
-              },
-            });
+            performUpdate(winnerName, nextRemaining);
             return;
           }
-          if (soundEnabled) playTick(600);
+          if (soundEnabled) playTick(150);
           const progress = elapsed / duration;
           const nextInterval = 50 + Math.pow(progress, 2) * 400;
           setTimeout(() => {
@@ -298,20 +386,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const randomName =
             students[Math.floor(Math.random() * students.length)];
           setDisplayResult(randomName);
-          if (soundEnabled) playTick(1200, 0.05);
+          if (soundEnabled) playTick(150, 0.05);
           count++;
           if (count > max) {
             clearInterval(interval);
             setDisplayResult(winnerName);
             if (soundEnabled) playWinner();
             setIsSpinning(false);
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                lastResult: winnerName,
-                remainingStudents: nextRemaining,
-              },
-            });
+            performUpdate(winnerName, nextRemaining);
           }
         }, 100);
       }
@@ -330,21 +412,23 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         setDisplayResult(result);
         if (soundEnabled) playWinner();
         setIsSpinning(false);
-        updateWidget(widget.id, {
-          config: { ...config, lastResult: result },
-        });
+        performUpdate(result);
       }, 500);
     }
   };
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
-      const radius = 45;
-      const center = 50;
+      const radius = 120;
+      const centerX = 150;
+      const centerY = 150;
+      const totalNames = students.length;
+      const sliceAngle = 360 / totalNames;
+
       return (
         <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
-          {/* Refined triangular pointer */}
-          <div className="absolute top-0 z-20 flex flex-col items-center">
+          {/* Static Pointer Arrow (Top Center) */}
+          <div className="absolute top-2 z-20 flex flex-col items-center">
             <div
               className="w-10 h-8 bg-red-600 shadow-lg"
               style={{ clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)' }}
@@ -352,8 +436,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
 
           <svg
-            ref={wheelRef}
-            viewBox="0 0 100 100"
+            viewBox="0 0 300 300"
             className="w-full h-full drop-shadow-2xl transition-transform duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)"
             style={{
               transform: `rotate(${rotation}deg)`,
@@ -362,88 +445,84 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             }}
           >
             {students.map((name, i) => {
-              const startAngle = (i * 360) / students.length;
-              const endAngle = ((i + 1) * 360) / students.length;
+              const startAngle = i * sliceAngle;
+              const endAngle = (i + 1) * sliceAngle;
+
+              // Path calculation
               const x1 =
-                center + radius * Math.cos((Math.PI * (startAngle - 90)) / 180);
+                centerX +
+                radius * Math.cos((Math.PI * (startAngle - 90)) / 180);
               const y1 =
-                center + radius * Math.sin((Math.PI * (startAngle - 90)) / 180);
+                centerY +
+                radius * Math.sin((Math.PI * (startAngle - 90)) / 180);
               const x2 =
-                center + radius * Math.cos((Math.PI * (endAngle - 90)) / 180);
+                centerX + radius * Math.cos((Math.PI * (endAngle - 90)) / 180);
               const y2 =
-                center + radius * Math.sin((Math.PI * (endAngle - 90)) / 180);
-              const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-              const colors = [
-                '#f87171',
-                '#fbbf24',
-                '#34d399',
-                '#60a5fa',
-                '#818cf8',
-                '#a78bfa',
-                '#f472b6',
-              ];
-              const color = colors[i % colors.length];
+                centerY + radius * Math.sin((Math.PI * (endAngle - 90)) / 180);
+
+              const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+              const pathData = [
+                `M ${centerX} ${centerY}`,
+                `L ${x1} ${y1}`,
+                `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                'Z',
+              ].join(' ');
+
+              // Radial Text Position: Mid-angle of the slice
+              const midAngle = startAngle + sliceAngle / 2;
+
+              // Dynamic Font Scaling
+              const nameFactor = Math.max(1, name.length / 10);
+              const classFactor = Math.max(1, totalNames / 15);
+              const fontSize = Math.max(
+                5,
+                14 / (nameFactor * 0.4 + classFactor * 0.6)
+              );
 
               return (
                 <g key={i}>
                   <path
-                    d={`M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                    fill={color}
+                    d={pathData}
+                    fill={WHEEL_COLORS[i % WHEEL_COLORS.length]}
                     stroke="white"
-                    strokeWidth="0.5"
+                    strokeWidth="1"
                   />
-                  <text
-                    x={
-                      center +
-                      radius *
-                        0.7 *
-                        Math.cos(
-                          (Math.PI *
-                            (startAngle + (endAngle - startAngle) / 2 - 90)) /
-                            180
-                        )
-                    }
-                    y={
-                      center +
-                      radius *
-                        0.7 *
-                        Math.sin(
-                          (Math.PI *
-                            (startAngle + (endAngle - startAngle) / 2 - 90)) /
-                            180
-                        )
-                    }
-                    fill="white"
-                    fontSize="3"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    style={{
-                      transform: `rotate(${(startAngle + endAngle) / 2}deg)`,
-                      transformOrigin: 'center',
-                    }}
-                    className="pointer-events-none uppercase tracking-tighter"
-                  >
-                    {name.substring(0, 8)}
-                  </text>
+                  {/* Radial Label Group */}
+                  <g transform={`rotate(${midAngle}, ${centerX}, ${centerY})`}>
+                    <text
+                      x={centerX + radius * 0.85}
+                      y={centerY}
+                      fill="white"
+                      fontSize={fontSize}
+                      fontWeight="700"
+                      textAnchor="end"
+                      alignmentBaseline="middle"
+                      className="select-none pointer-events-none drop-shadow-sm uppercase tracking-tighter"
+                      transform={`rotate(90, ${centerX + radius * 0.85}, ${centerY})`}
+                    >
+                      {name}
+                    </text>
+                  </g>
                 </g>
               );
             })}
+            {/* Center Cap */}
             <circle
-              cx={center}
-              cy={center}
-              r="4"
+              cx={centerX}
+              cy={centerY}
+              r="8"
               fill="white"
-              stroke="#e2e8f0"
-              strokeWidth="0.5"
+              className="shadow-md"
             />
           </svg>
+
+          {/* Winner Result Overlay (Only when not spinning) */}
           {!isSpinning && displayResult && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-30">
               <div
-                className="bg-white/95 backdrop-blur px-10 py-5 rounded-[2rem] shadow-2xl border-4 border-brand-blue-primary font-bold text-brand-blue-dark animate-bounce text-center max-w-full break-words"
+                className="bg-white/95 backdrop-blur px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500 font-bold text-indigo-900 animate-bounce text-center max-w-full break-words"
                 style={{
-                  fontSize: `${layoutSizing.fontSize ?? 32}px`,
+                  fontSize: `${layoutSizing.fontSize ?? 24}px`,
                   lineHeight: 1.1,
                 }}
               >
