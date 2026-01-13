@@ -22,7 +22,7 @@ import {
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
-import { db } from '../config/firebase';
+import { db, isAuthBypass } from '../config/firebase';
 import { migrateLocalStorageToFirestore } from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 
@@ -228,10 +228,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // --- NEW ROSTER EFFECT ---
   useEffect(() => {
-    if (!user) {
+    if (!user || isAuthBypass) {
       const timer = setTimeout(() => setRosters([]), 0);
       return () => clearTimeout(timer);
     }
+
     const rostersRef = collection(db, 'users', user.uid, 'rosters');
     const q = query(rostersRef, orderBy('name'));
 
@@ -268,6 +269,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const addRoster = useCallback(
     async (name: string, students: Student[] = []) => {
       if (!user) throw new Error('No user');
+
+      if (isAuthBypass) {
+        return 'mock-roster-id-' + Date.now();
+      }
+
       const newRoster = { name, students, createdAt: Date.now() };
       const ref = await addDoc(
         collection(db, 'users', user.uid, 'rosters'),
@@ -281,6 +287,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateRoster = useCallback(
     async (id: string, updates: Partial<ClassRoster>) => {
       if (!user) return;
+
+      if (isAuthBypass) return;
+
       await updateDoc(doc(db, 'users', user.uid, 'rosters', id), updates);
     },
     [user]
@@ -295,6 +304,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteRoster = useCallback(
     async (id: string) => {
       if (!user) return;
+
+      if (isAuthBypass) {
+        if (activeRosterId === id) setActiveRoster(null);
+        return;
+      }
+
       await deleteDoc(doc(db, 'users', user.uid, 'rosters', id));
       if (activeRosterId === id) setActiveRoster(null);
     },
