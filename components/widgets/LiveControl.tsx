@@ -134,7 +134,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           onClick={onToggleLive}
           aria-label={isLive ? 'End live session' : 'Start live session'}
           className={`
-            flex items-center gap-2 p-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
+            flex items-center gap-2 p-2 rounded-full transition-all
             ${
               isLive
                 ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
@@ -166,7 +166,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
         onClick={onToggleLive}
         aria-label={isLive ? 'End live session' : 'Start live session'}
         className={`
-          flex items-center gap-2 p-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
+          flex items-center gap-2 p-2 rounded-full transition-all
           ${
             isLive
               ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
