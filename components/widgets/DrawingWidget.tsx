@@ -23,7 +23,7 @@ export const DrawingWidget: React.FC<{
   widget: WidgetData;
   isStudentView?: boolean;
 }> = ({ widget, isStudentView = false }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
   const { user } = useAuth();
   const { session, startSession, endSession } = useLiveSession(
     user?.uid,
@@ -37,7 +37,12 @@ export const DrawingWidget: React.FC<{
       if (isLive) {
         await endSession();
       } else {
-        await startSession(widget.id, widget.type, widget.config);
+        await startSession(
+          widget.id,
+          widget.type,
+          widget.config,
+          activeDashboard?.background
+        );
       }
     } catch (error) {
       console.error('Failed to toggle live session:', error);
@@ -308,42 +313,55 @@ export const DrawingWidget: React.FC<{
   );
 
   if (mode === 'overlay') {
+    // Show loading state while waiting for portal target
+    if (!portalTarget) {
+      return (
+        <div className="h-full flex items-center justify-center bg-slate-50">
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-slate-500 font-medium">
+              Preparing overlay mode...
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
-        {portalTarget &&
-          createPortal(
-            <div className="fixed inset-0 z-[9990] pointer-events-none overflow-hidden">
-              {/* Darken background slightly to indicate annotation mode */}
-              <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
-              <canvas
-                ref={canvasRef}
-                onMouseDown={handleStart}
-                onMouseMove={handleMove}
-                onMouseUp={handleEnd}
-                onMouseLeave={handleEnd}
-                onTouchStart={handleStart}
-                onTouchMove={handleMove}
-                onTouchEnd={handleEnd}
-                className="absolute inset-0 pointer-events-auto cursor-crosshair"
-              />
-              {/* Floating Toolbar at the Top */}
-              {!isStudentView && (
-                <div
-                  data-screenshot="exclude"
-                  className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
-                >
-                  <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
-                    <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
-                      Annotating
-                    </span>
-                  </div>
-                  {PaletteUI}
+        {createPortal(
+          <div className="fixed inset-0 z-[9990] pointer-events-none overflow-hidden">
+            {/* Darken background slightly to indicate annotation mode */}
+            <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
+            <canvas
+              ref={canvasRef}
+              onMouseDown={handleStart}
+              onMouseMove={handleMove}
+              onMouseUp={handleEnd}
+              onMouseLeave={handleEnd}
+              onTouchStart={handleStart}
+              onTouchMove={handleMove}
+              onTouchEnd={handleEnd}
+              className="absolute inset-0 pointer-events-auto cursor-crosshair"
+            />
+            {/* Floating Toolbar at the Top */}
+            {!isStudentView && (
+              <div
+                data-screenshot="exclude"
+                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
+              >
+                <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
+                  <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                    Annotating
+                  </span>
                 </div>
-              )}
-            </div>,
-            portalTarget
-          )}
+                {PaletteUI}
+              </div>
+            )}
+          </div>,
+          portalTarget
+        )}
       </>
     );
   }
@@ -473,7 +491,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
               <Maximize className="w-3 h-3 text-white" />
             </div>
             <p className="text-[9px] text-indigo-600 font-medium">
-              <b>Annotate:</b> Hides the window and moves the toolbar to the top
+              <b>Overlay:</b> Hides the window and moves the toolbar to the top
               of your screen. Perfect for drawing over other content!
             </p>
           </div>
