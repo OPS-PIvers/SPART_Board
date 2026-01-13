@@ -21,6 +21,7 @@ export const RosterModeControl: React.FC<RosterModeControlProps> = ({
       </label>
       <div className="flex bg-slate-100 p-1 rounded-xl">
         <button
+          type="button"
           onClick={() => onModeChange('class')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
             rosterMode === 'class'
@@ -32,6 +33,7 @@ export const RosterModeControl: React.FC<RosterModeControlProps> = ({
           Class
         </button>
         <button
+          type="button"
           onClick={() => onModeChange('custom')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
             rosterMode === 'custom'
