@@ -288,7 +288,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }
 
         updateWidget(widget.id, {
-          config: updates as unknown as RandomConfig,
+          config: updates,
         });
       } catch (err) {
         console.error('Randomizer Sync Error:', err);
