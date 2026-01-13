@@ -157,6 +157,7 @@ export interface TextConfig {
 export interface ChecklistConfig {
   items: ChecklistItem[];
   scaleMultiplier?: number;
+  rosterMode?: 'class' | 'custom';
 }
 
 export interface RandomGroup {
@@ -172,6 +173,7 @@ export interface RandomConfig {
   lastResult?: string | string[] | RandomGroup[] | null;
   soundEnabled?: boolean;
   remainingStudents?: string[];
+  rosterMode?: 'class' | 'custom';
 }
 
 export interface DiceConfig {
@@ -259,6 +261,7 @@ export interface LunchCountConfig {
   assignments: Record<string, 'hot' | 'bento' | 'home' | null>;
   recipient?: string;
   syncError?: string; // To display E-SYNC-404 etc.
+  rosterMode?: 'class' | 'custom';
 }
 
 export type ClassesConfig = Record<string, never>;

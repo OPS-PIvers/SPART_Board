@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, LunchCountConfig, LunchMenuDay } from '../../types';
+import { RosterModeControl } from '../common/RosterModeControl';
 import {
   Users,
   RefreshCw,
@@ -55,6 +56,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     assignments = {},
     recipient = DEFAULT_RECIPIENT_EMAIL,
     syncError,
+    rosterMode = 'class',
   } = config;
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -98,13 +100,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const currentRoster = useMemo(() => {
-    if (activeRoster) {
+    if (rosterMode === 'class' && activeRoster) {
       return activeRoster.students.map((s) =>
         `${s.firstName} ${s.lastName}`.trim()
       );
     }
     return roster;
-  }, [activeRoster, roster]);
+  }, [activeRoster, roster, rosterMode]);
 
   const fetchNutrislice = useCallback(async () => {
     if (isManualMode) return;
@@ -261,7 +263,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col bg-white select-none relative">
-      {activeRoster && (
+      {activeRoster && rosterMode === 'class' && (
         <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 z-10 animate-in fade-in slide-in-from-top-1">
           <Box className="w-2 h-2 text-orange-500" />
           <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
@@ -472,10 +474,20 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     manualBentoBox = '',
     roster = [],
     recipient = DEFAULT_RECIPIENT_EMAIL,
+    rosterMode = 'class',
   } = config;
 
   return (
     <div className="space-y-6">
+      <RosterModeControl
+        rosterMode={rosterMode}
+        onModeChange={(mode) =>
+          updateWidget(widget.id, {
+            config: { ...config, rosterMode: mode },
+          })
+        }
+      />
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-4">
           <div>
@@ -566,25 +578,36 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
 
         <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-            <Users className="w-3 h-3" /> Class Roster
-          </label>
-          <textarea
-            value={roster.join('\n')}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  roster: e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                },
-              })
-            }
-            placeholder="Enter one student per line..."
-            className="w-full h-[240px] p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
-          />
+          {rosterMode === 'custom' ? (
+            <>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                <Users className="w-3 h-3" /> Custom Roster
+              </label>
+              <textarea
+                value={roster.join('\n')}
+                onChange={(e) =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      roster: e.target.value
+                        .split('\n')
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    },
+                  })
+                }
+                placeholder="Enter one student per line..."
+                className="w-full h-[240px] p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
+              />
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-center gap-3">
+              <Users className="w-8 h-8 text-slate-300" />
+              <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                Using Active Class Roster
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -493,11 +493,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           fontSize: 18,
         },
       },
-      checklist: { w: 280, h: 300, config: { items: [] } },
+      checklist: { w: 280, h: 300, config: { items: [], rosterMode: 'class' } },
       random: {
         w: 300,
         h: 320,
-        config: { firstNames: '', lastNames: '', mode: 'single' },
+        config: {
+          firstNames: '',
+          lastNames: '',
+          mode: 'single',
+          rosterMode: 'class',
+        },
       },
       dice: { w: 240, h: 240, config: { count: 1 } },
       sound: { w: 300, h: 180, config: { sensitivity: 5 } },
@@ -565,6 +570,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           roster: [],
           assignments: {},
           recipient: '',
+          rosterMode: 'class',
         },
       },
       classes: {
