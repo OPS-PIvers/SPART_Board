@@ -23,6 +23,16 @@ interface CustomWindow extends Window {
   webkitAudioContext: typeof AudioContext;
 }
 
+const COLORS = [
+  '#f87171',
+  '#fbbf24',
+  '#34d399',
+  '#60a5fa',
+  '#818cf8',
+  '#a78bfa',
+  '#f472b6',
+];
+
 const getAudioCtx = () => {
   if (!audioCtx) {
     const AudioContextClass =
@@ -338,10 +348,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         if (winnerIndex === -1) winnerIndex = 0; // Fallback
 
         const segmentAngle = 360 / students.length;
+        // Target the right side (0 degrees). We rotate the wheel so that
+        // the middle of the winning segment (winnerIndex * segmentAngle + segmentAngle / 2)
+        // lands at 0 degrees.
         const targetRotation =
           rotation +
           360 * extraSpins +
-          (360 - winnerIndex * segmentAngle) -
+          (360 - (winnerIndex * segmentAngle + segmentAngle / 2)) -
           (rotation % 360);
 
         setRotation(targetRotation);
@@ -406,21 +419,17 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
-      const radius = 45;
-      const center = 50;
+      const radius = 120;
+      const centerX = 150;
+      const centerY = 150;
+      const totalNames = students.length;
+      const sliceAngle = 360 / totalNames;
+
       return (
         <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
-          {/* Refined triangular pointer */}
-          <div className="absolute top-0 z-20 flex flex-col items-center">
-            <div
-              className="w-10 h-8 bg-red-600 shadow-lg"
-              style={{ clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)' }}
-            ></div>
-          </div>
-
           <svg
             ref={wheelRef}
-            viewBox="0 0 100 100"
+            viewBox="0 0 300 300"
             className="w-full h-full drop-shadow-2xl transition-transform duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)"
             style={{
               transform: `rotate(${rotation}deg)`,
@@ -429,82 +438,85 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             }}
           >
             {students.map((name, i) => {
-              const startAngle = (i * 360) / students.length;
-              const endAngle = ((i + 1) * 360) / students.length;
+              const startAngle = i * sliceAngle;
+              const endAngle = (i + 1) * sliceAngle;
+
+              // Convert angles to radians for path calculation
               const x1 =
-                center + radius * Math.cos((Math.PI * (startAngle - 90)) / 180);
+                centerX + radius * Math.cos((Math.PI * startAngle) / 180);
               const y1 =
-                center + radius * Math.sin((Math.PI * (startAngle - 90)) / 180);
+                centerY + radius * Math.sin((Math.PI * startAngle) / 180);
               const x2 =
-                center + radius * Math.cos((Math.PI * (endAngle - 90)) / 180);
+                centerX + radius * Math.cos((Math.PI * endAngle) / 180);
               const y2 =
-                center + radius * Math.sin((Math.PI * (endAngle - 90)) / 180);
-              const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-              const colors = [
-                '#f87171',
-                '#fbbf24',
-                '#34d399',
-                '#60a5fa',
-                '#818cf8',
-                '#a78bfa',
-                '#f472b6',
-              ];
-              const color = colors[i % colors.length];
+                centerY + radius * Math.sin((Math.PI * endAngle) / 180);
+
+              const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+              const pathData = [
+                `M ${centerX} ${centerY}`,
+                `L ${x1} ${y1}`,
+                `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                'Z',
+              ].join(' ');
+
+              // Dynamic Font Scaling
+              // Base size starts at 14px, shrinks as names get longer or class gets bigger
+              const nameFactor = Math.max(1, name.length / 8);
+              const classFactor = Math.max(1, totalNames / 12);
+              const fontSize = Math.max(
+                6,
+                14 / (nameFactor * 0.5 + classFactor * 0.5)
+              );
+
+              // Radial Text Position: Mid-angle of the slice
+              const midAngle = startAngle + sliceAngle / 2;
 
               return (
                 <g key={i}>
                   <path
-                    d={`M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                    fill={color}
+                    d={pathData}
+                    fill={COLORS[i % COLORS.length]}
                     stroke="white"
-                    strokeWidth="0.5"
+                    strokeWidth="1"
                   />
-                  <text
-                    x={
-                      center +
-                      radius *
-                        0.7 *
-                        Math.cos(
-                          (Math.PI *
-                            (startAngle + (endAngle - startAngle) / 2 - 90)) /
-                            180
-                        )
-                    }
-                    y={
-                      center +
-                      radius *
-                        0.7 *
-                        Math.sin(
-                          (Math.PI *
-                            (startAngle + (endAngle - startAngle) / 2 - 90)) /
-                            180
-                        )
-                    }
-                    fill="white"
-                    fontSize="3"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    style={{
-                      transform: `rotate(${(startAngle + endAngle) / 2}deg)`,
-                      transformOrigin: 'center',
-                    }}
-                    className="pointer-events-none uppercase tracking-tighter"
-                  >
-                    {name.substring(0, 8)}
-                  </text>
+                  <g transform={`rotate(${midAngle}, ${centerX}, ${centerY})`}>
+                    <text
+                      x={centerX + radius * 0.85} // Position near outer edge
+                      y={centerY}
+                      fill="white"
+                      fontSize={fontSize}
+                      fontWeight="600"
+                      textAnchor="end" // Align text to end at the edge
+                      alignmentBaseline="middle"
+                      className="select-none pointer-events-none drop-shadow-sm font-sans"
+                    >
+                      {name}
+                    </text>
+                  </g>
                 </g>
               );
             })}
             <circle
-              cx={center}
-              cy={center}
-              r="4"
+              cx={centerX}
+              cy={centerY}
+              r="8"
               fill="white"
-              stroke="#e2e8f0"
-              strokeWidth="0.5"
+              className="drop-shadow-md"
             />
           </svg>
+
+          {/* Static Indicator Arrow (Right Side) */}
+          <div
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
+            style={{
+              width: 0,
+              height: 0,
+              borderTop: '15px solid transparent',
+              borderBottom: '15px solid transparent',
+              borderRight: '25px solid #ef4444', // Red-500 indicator
+            }}
+          />
+
           {!isSpinning && displayResult && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-30">
               <div
