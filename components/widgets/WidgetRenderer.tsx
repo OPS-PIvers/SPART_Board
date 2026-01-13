@@ -5,8 +5,7 @@ import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimerWidget, TimerSettings } from './TimerWidget';
-import { StopwatchWidget, StopwatchSettings } from './StopwatchWidget';
+import { TimeToolWidget } from './TimeToolWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
 import { TextWidget, TextSettings } from './TextWidget';
 import { SoundWidget, SoundSettings } from './SoundWidget';
@@ -93,10 +92,8 @@ export const WidgetRenderer: React.FC<{
     switch (widget.type) {
       case 'clock':
         return <ClockWidget widget={widget} />;
-      case 'timer':
-        return <TimerWidget widget={widget} />;
-      case 'stopwatch':
-        return <StopwatchWidget widget={widget} />;
+      case 'time-tool':
+        return <TimeToolWidget widget={widget} />;
       case 'traffic':
         return <TrafficLightWidget widget={widget} />;
       case 'text':
@@ -148,10 +145,6 @@ export const WidgetRenderer: React.FC<{
     switch (widget.type) {
       case 'clock':
         return <ClockSettings widget={widget} />;
-      case 'timer':
-        return <TimerSettings widget={widget} />;
-      case 'stopwatch':
-        return <StopwatchSettings widget={widget} />;
       case 'text':
         return <TextSettings widget={widget} />;
       case 'checklist':

@@ -23,7 +23,10 @@ import {
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { db } from '../config/firebase';
-import { migrateLocalStorageToFirestore } from '../utils/migration';
+import {
+  migrateLocalStorageToFirestore,
+  migrateWidget,
+} from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 
 // Helper to validate roster data from Firestore
@@ -145,11 +148,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards((updatedDashboards) => {
+      const migratedDashboards = updatedDashboards.map((db) => ({
+        ...db,
+        widgets: db.widgets.map(migrateWidget),
+      }));
+
       setDashboards((prev) => {
         // If we have very recent local changes, keep our local version of the active dashboard
         const now = Date.now();
         if (now - lastLocalUpdateAt.current < 3000) {
-          return updatedDashboards.map((db) => {
+          return migratedDashboards.map((db) => {
             if (db.id === activeIdRef.current) {
               const currentActive = prev.find(
                 (p) => p.id === activeIdRef.current
@@ -159,11 +167,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             return db;
           });
         }
-        return updatedDashboards;
+        return migratedDashboards;
       });
 
-      if (updatedDashboards.length > 0 && !activeIdRef.current) {
-        setActiveId(updatedDashboards[0].id);
+      if (migratedDashboards.length > 0 && !activeIdRef.current) {
+        setActiveId(migratedDashboards[0].id);
       }
 
       // Create default dashboard if none exist
@@ -479,10 +487,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
 
-    const defaults: Record<WidgetType, Partial<WidgetData>> = {
+    const defaults: Record<string, Partial<WidgetData>> = {
       clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
-      timer: { w: 280, h: 180, config: { duration: 300, sound: true } },
-      stopwatch: { w: 280, h: 180, config: {} },
+      'time-tool': {
+        w: 420,
+        h: 400,
+        config: {
+          mode: 'timer',
+          visualType: 'digital',
+          theme: 'light',
+          duration: 600,
+          elapsedTime: 600,
+          isRunning: false,
+          selectedSound: 'Gong',
+          selectedMusic: 'None',
+        },
+      },
       traffic: { w: 120, h: 320, config: {} },
       text: {
         w: 300,

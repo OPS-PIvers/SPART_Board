@@ -9,6 +9,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'calendar') return 'Class Events';
   if (widget.type === 'lunchCount') return 'Lunch Orders';
   if (widget.type === 'classes') return 'Class Roster';
+  if (widget.type === 'time-tool') return 'Time Tool';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
@@ -19,8 +20,16 @@ export const getTitle = (widget: WidgetData): string => {
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
   const defaults: Record<WidgetType, WidgetConfig> = {
     clock: { format24: true, showSeconds: true },
-    timer: { duration: 300, sound: true },
-    stopwatch: {},
+    'time-tool': {
+      mode: 'timer',
+      visualType: 'digital',
+      theme: 'light',
+      duration: 600,
+      elapsedTime: 600,
+      isRunning: false,
+      selectedSound: 'Gong',
+      selectedMusic: 'None',
+    },
     traffic: {},
     text: {
       content: 'Double click to edit...',
@@ -60,5 +69,5 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     instructionalRoutines: { selectedRoutineId: null },
   };
 
-  return defaults[type] || {};
+  return defaults[type];
 };
