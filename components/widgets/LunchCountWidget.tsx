@@ -291,29 +291,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="p-3 bg-slate-50 border-b flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => void fetchNutrislice()}
-            disabled={isSyncing || isManualMode}
-            variant="ghost"
-            size="icon"
-            className="relative"
-            title="Sync from Nutrislice"
-          >
-            {isSyncing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            {syncError && (
-              <div
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
-                title={syncError}
-              >
-                !
-              </div>
-            )}
-          </Button>
-          <div className="w-px h-4 bg-slate-200 mx-1" />
-          <Button
             onClick={submitReport}
             variant="success"
             icon={<CheckCircle2 className="w-3.5 h-3.5" />}
@@ -472,19 +449,38 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
-        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-          Runs Locally
-        </span>
-        {config.lastSyncDate && (
-          <span className="text-[8px] text-slate-300 font-bold uppercase">
-            Synced:{' '}
-            {new Date(config.lastSyncDate).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
-          </span>
-        )}
+        <div className="text-[8px] font-bold text-slate-300 uppercase flex flex-col">
+          <span>Last Sync</span>
+          {config.lastSyncDate && (
+            <span className="text-slate-400">
+              {new Date(config.lastSyncDate).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => void fetchNutrislice()}
+          disabled={isSyncing || isManualMode}
+          className="p-2 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-all border border-slate-100 disabled:opacity-50 relative"
+          title="Sync from Nutrislice"
+        >
+          {isSyncing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
+          {syncError && (
+            <div
+              className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
+              title={syncError}
+            >
+              !
+            </div>
+          )}
+        </button>
       </div>
     </div>
   );

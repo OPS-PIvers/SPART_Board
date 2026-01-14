@@ -201,54 +201,60 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const clothing = getClothing();
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4 gap-2 relative group/widget">
+    <div className="flex flex-col items-center justify-between h-full p-4 gap-2 relative">
+      <div className="flex flex-col items-center justify-center gap-2">
+        <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
+          <MapPin className="w-2.5 h-2.5" /> {locationName}
+        </div>
+
+        <div className="flex items-center gap-4">
+          {getIcon()}
+          <div className="text-4xl font-black text-slate-800 tabular-nums">
+            {Math.round(temp)}°
+          </div>
+        </div>
+
+        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
+          Instruction
+        </div>
+
+        <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center gap-3">
+          <span className="text-2xl">{clothing.icon}</span>
+          <div className="text-xs font-bold text-slate-700 leading-tight">
+            Today is{' '}
+            <span className="text-indigo-600 uppercase">{condition}</span>.
+            <br />
+            Wear a <span className="text-indigo-600">{clothing.label}</span>!
+          </div>
+        </div>
+      </div>
+
       {isAuto && (
-        <button
-          onClick={handleRefresh}
-          disabled={isSyncing}
-          className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all opacity-0 group-hover/widget:opacity-100 disabled:opacity-50"
-          title="Refresh Weather"
-        >
-          {isSyncing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5" />
-          )}
-        </button>
-      )}
-
-      <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
-        <MapPin className="w-2.5 h-2.5" /> {locationName}
-      </div>
-
-      <div className="flex items-center gap-4">
-        {getIcon()}
-        <div className="text-4xl font-black text-slate-800 tabular-nums">
-          {Math.round(temp)}°
-        </div>
-      </div>
-
-      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
-        Instruction
-      </div>
-
-      <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center gap-3">
-        <span className="text-2xl">{clothing.icon}</span>
-        <div className="text-xs font-bold text-slate-700 leading-tight">
-          Today is{' '}
-          <span className="text-indigo-600 uppercase">{condition}</span>.<br />
-          Wear a <span className="text-indigo-600">{clothing.label}</span>!
-        </div>
-      </div>
-
-      {isAuto && lastSync && (
-        <div className="text-[8px] font-bold text-slate-300 uppercase mt-2">
-          Last Sync:{' '}
-          {new Date(lastSync).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          })}
+        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100 w-full justify-between">
+          <div className="text-[8px] font-bold text-slate-300 uppercase flex flex-col">
+            <span>Last Sync</span>
+            {lastSync && (
+              <span className="text-slate-400">
+                {new Date(lastSync).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isSyncing}
+            className="p-2 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-all border border-slate-100 disabled:opacity-50"
+            title="Refresh Weather"
+          >
+            {isSyncing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+          </button>
         </div>
       )}
     </div>

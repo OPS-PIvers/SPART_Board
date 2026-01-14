@@ -59,8 +59,8 @@ The following slash commands are available to streamline the development workflo
   - _Caution:_ Permanently deletes changes since the last `/preview`.
 - **/preview**: Saves your current work and updates your online preview.
   - _Action:_ Stages, commits, and pushes changes to the current branch.
-- **/submit**: Submits your finished work for review by the team.
-  - _Action:_ Creates or updates a Pull Request (PR) against `main`.
+- **/submit**: Integrates latest changes from `main`, resolves conflicts, verifies with tests, and submits your work for review.
+  - _Action:_ Fetches `main`, rebases, runs `npm test`, then creates or updates a Pull Request (PR).
 - **/sync**: Updates your workspace with the latest changes from the main project.
   - _Action:_ Fetches `origin/main`, rebases current branch, and handles stashing if necessary.
 - **/undo**: Reverses your last 'save' while keeping your work in the editor.
