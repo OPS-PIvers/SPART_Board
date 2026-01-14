@@ -357,6 +357,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
+  maximized?: boolean;
   customTitle?: string;
   isLive?: boolean;
   config: WidgetConfig;
