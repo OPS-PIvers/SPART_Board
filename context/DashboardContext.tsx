@@ -15,11 +15,11 @@ import {
   WidgetData,
   WidgetType,
   Toast,
-  TOOLS,
   ClassRoster,
   Student,
   GradeFilter,
 } from '../types';
+import { TOOLS } from '@/config/tools';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { db, isAuthBypass } from '../config/firebase';
