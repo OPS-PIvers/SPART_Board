@@ -1,26 +1,186 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, SoundConfig } from '../../types';
+import { Thermometer, Gauge, Activity, Citrus } from 'lucide-react';
+
+// Poster Colors Mapping
+const POSTER_LEVELS = [
+  { label: '0 - Silence', color: '#3b82f6', threshold: 0 }, // Blue
+  { label: '1 - Whisper', color: '#22c55e', threshold: 20 }, // Green
+  { label: '2 - Conversation', color: '#eab308', threshold: 40 }, // Yellow
+  { label: '3 - Presenter', color: '#f97316', threshold: 60 }, // Orange
+  { label: '4 - Outside', color: '#ef4444', threshold: 80 }, // Red
+];
+
+const getLevelData = (volume: number) => {
+  for (let i = POSTER_LEVELS.length - 1; i >= 0; i--) {
+    if (volume >= POSTER_LEVELS[i].threshold) return POSTER_LEVELS[i];
+  }
+  return POSTER_LEVELS[0];
+};
+
+// --- Sub-Components for Visuals ---
+
+const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
+  const { color } = getLevelData(volume);
+  return (
+    <div className="relative w-full h-full flex items-center justify-center py-4">
+      <svg viewBox="0 0 40 100" className="h-full">
+        {/* Tube Background */}
+        <rect
+          x="15"
+          y="5"
+          width="10"
+          height="75"
+          rx="5"
+          fill="#f1f5f9"
+          stroke="#e2e8f0"
+          strokeWidth="1"
+        />
+        {/* Liquid Fill */}
+        <rect
+          x="16"
+          y={80 - volume * 0.7}
+          width="8"
+          height={volume * 0.7}
+          fill={color}
+          className="transition-all duration-75"
+        />
+        {/* Bottom Bulb */}
+        <circle
+          cx="20"
+          cy="85"
+          r="10"
+          fill={color}
+          stroke="#e2e8f0"
+          strokeWidth="1"
+        />
+      </svg>
+    </div>
+  );
+};
+
+const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
+  const rotation = -90 + volume * 1.8; // -90 to +90 degrees
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+      <svg viewBox="0 0 100 60" className="w-full h-auto">
+        {/* Arcs */}
+        {POSTER_LEVELS.map((level, i) => (
+          <path
+            key={i}
+            d={`M ${20 + i * 12} 55 A 40 40 0 0 1 ${32 + i * 12} 55`}
+            fill="none"
+            stroke={level.color}
+            strokeWidth="8"
+            className="opacity-30"
+          />
+        ))}
+        {/* Main Background Arc */}
+        <path
+          d="M 10 55 A 40 40 0 0 1 90 55"
+          fill="none"
+          stroke="#f1f5f9"
+          strokeWidth="8"
+        />
+        {/* Needle */}
+        <line
+          x1="50"
+          y1="55"
+          x2={50 + 35 * Math.cos(((rotation - 90) * Math.PI) / 180)}
+          y2={55 + 35 * Math.sin(((rotation - 90) * Math.PI) / 180)}
+          stroke="#1e293b"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className="transition-all duration-150"
+        />
+        <circle cx="50" cy="55" r="3" fill="#1e293b" />
+      </svg>
+    </div>
+  );
+};
+
+const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const balls = useRef<{ x: number; y: number; vy: number; color: string }[]>(
+    []
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Initialize balls if empty
+    if (balls.current.length === 0) {
+      for (let i = 0; i < 20; i++) {
+        balls.current.push({
+          x: Math.random() * canvas.width,
+          y: canvas.height - 10,
+          vy: 0,
+          color:
+            POSTER_LEVELS[Math.floor(Math.random() * POSTER_LEVELS.length)]
+              .color,
+        });
+      }
+    }
+
+    let animId: number;
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const impulse = (volume / 100) * 15;
+
+      balls.current.forEach((b) => {
+        // Physics logic
+        if (b.y >= canvas.height - 10 && impulse > 2) {
+          b.vy = -impulse * (0.5 + Math.random());
+        }
+        b.vy += 0.5; // Gravity
+        b.y += b.vy;
+
+        if (b.y > canvas.height - 10) {
+          b.y = canvas.height - 10;
+          b.vy = 0;
+        }
+
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(render);
+    };
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [volume]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full"
+      width={300}
+      height={200}
+    />
+  );
+};
+
+// --- Main Widget ---
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [volume, setVolume] = useState(0);
-  // Pre-fill history with 50 zeros so the line is visible on start
+  const [history, setHistory] = useState<number[]>(new Array(50).fill(0));
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationRef = useRef<number>(null);
 
   // Add type definition for webkitAudioContext
   interface CustomWindow extends Window {
     webkitAudioContext: typeof AudioContext;
   }
 
-  const [history, setHistory] = useState<number[]>(new Array(50).fill(0));
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const animationRef = useRef<number>(null);
-
-  const {
-    sensitivity = 5,
-    orientation = 'horizontal',
-    style = 'bar',
-  } = widget.config as SoundConfig;
+  const { sensitivity = 1, visual = 'thermometer' } =
+    widget.config as SoundConfig;
 
   useEffect(() => {
     const startAudio = async () => {
@@ -47,132 +207,59 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           analyserRef.current.getByteFrequencyData(dataArray);
           const sum = dataArray.reduce((a, b) => a + b, 0);
           const average = sum / bufferLength;
-          // Cap at 100 to ensure calculations stay in range
-          const normalized = Math.min(100, average * (sensitivity / 2));
+          const normalized = Math.min(100, average * (sensitivity * 2));
 
           setVolume(normalized);
-          setHistory((prev) => {
-            const next = [...prev, normalized];
-            return next.slice(-50); // Keep last 50 points
-          });
-
+          setHistory((prev) => [...prev.slice(-49), normalized]);
           animationRef.current = requestAnimationFrame(update);
         };
         update();
       } catch (err) {
-        console.error('Error accessing microphone:', err);
+        console.error(err);
       }
     };
-
     void startAudio();
-
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, [sensitivity]);
 
-  const getBarColor = (val: number) => {
-    if (val > 80) return 'rgb(239, 68, 68)';
-    if (val > 50) return 'rgb(250, 204, 21)';
-    return 'rgb(34, 197, 94)';
-  };
-
-  const renderVisualization = () => {
-    if (style === 'line') {
-      const points = history
-        .map((val, i) => {
-          const x = (i / (history.length - 1)) * 100;
-          // Baseline at 95. Max height at 15 (95 - 80).
-          // This ensures a 15% margin at the top so it never goes off-screen.
-          const y = 95 - val * 0.8;
-          return `${x},${y}`;
-        })
-        .join(' ');
-
-      return (
-        <div className="w-full h-full bg-slate-900 rounded-xl overflow-hidden p-2 ring-1 ring-white/10 shadow-inner">
-          <svg
-            className="w-full h-full overflow-visible"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.2" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            {/* Background Grid Lines for Scale */}
-            <line
-              x1="0"
-              y1="95"
-              x2="100"
-              y2="95"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="0.5"
-            />
-            <line
-              x1="0"
-              y1="55"
-              x2="100"
-              y2="55"
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth="0.5"
-            />
-            <line
-              x1="0"
-              y1="15"
-              x2="100"
-              y2="15"
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth="0.5"
-            />
-
-            <polyline
-              fill="none"
-              stroke={getBarColor(volume)}
-              strokeWidth="2.5"
-              strokeLinejoin="round"
-              filter="url(#glow)"
-              points={points}
-              style={{ transition: 'stroke 0.2s' }}
-            />
-          </svg>
-        </div>
-      );
-    }
-
-    const isVertical = orientation === 'vertical';
-    return (
-      <div
-        className={`w-full h-full bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner p-1 flex ${isVertical ? 'flex-col-reverse' : 'flex-row'}`}
-      >
-        <div
-          className="rounded-lg transition-all duration-75 ease-out shadow-lg"
-          style={{
-            width: isVertical ? '100%' : `${volume}%`,
-            height: isVertical ? `${volume}%` : '100%',
-            backgroundColor: getBarColor(volume),
-            boxShadow: `0 0 20px ${getBarColor(volume)}44`,
-          }}
-        />
-      </div>
-    );
-  };
+  const level = getLevelData(volume);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-3 w-full overflow-hidden">
-      <div className="flex-1 w-full relative">{renderVisualization()}</div>
-      <div className="mt-2 w-full flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-        <span>Quiet</span>
-        <span className="text-slate-500">{Math.round(volume)}%</span>
-        <span>Loud</span>
+    <div className="flex flex-col h-full p-4 gap-3 bg-white">
+      <div className="flex-1 min-h-0 relative">
+        {visual === 'thermometer' && <ThermometerView volume={volume} />}
+        {visual === 'speedometer' && <SpeedometerView volume={volume} />}
+        {visual === 'balls' && <PopcornBallsView volume={volume} />}
+        {visual === 'line' && (
+          <div className="w-full h-full bg-slate-900 rounded-xl p-2">
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="w-full h-full overflow-visible"
+            >
+              <polyline
+                fill="none"
+                stroke={level.color}
+                strokeWidth="3"
+                points={history
+                  .map((v, i) => `${(i / 49) * 100},${100 - v}`)
+                  .join(' ')}
+                className="transition-colors duration-300"
+              />
+            </svg>
+          </div>
+        )}
+      </div>
+      <div className="text-center">
+        <span
+          className="text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm transition-colors duration-300"
+          style={{ backgroundColor: level.color }}
+        >
+          {level.label}
+        </span>
       </div>
     </div>
   );
@@ -181,77 +268,59 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as SoundConfig;
-  const { sensitivity = 5, orientation = 'horizontal', style = 'bar' } = config;
+  const { sensitivity = 1, visual = 'thermometer' } = config;
+
+  const modes = [
+    { id: 'thermometer', icon: Thermometer, label: 'Meter' },
+    { id: 'speedometer', icon: Gauge, label: 'Gauge' },
+    { id: 'line', icon: Activity, label: 'Graph' },
+    { id: 'balls', icon: Citrus, label: 'Popcorn' },
+  ];
 
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-bold text-slate-500 uppercase mb-3 block">
-          Microphone Sensitivity
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Sensitivity
         </label>
-        <div className="flex items-center gap-4 px-2">
-          <input
-            type="range"
-            min="1"
-            max="10"
-            step="0.5"
-            value={sensitivity}
-            onChange={(e) =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  sensitivity: parseFloat(e.target.value),
-                },
-              })
-            }
-            className="flex-1 accent-pink-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-          />
-          <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
-            {sensitivity}
-          </span>
-        </div>
+        <input
+          type="range"
+          min="0.5"
+          max="5"
+          step="0.1"
+          value={sensitivity}
+          onChange={(e) =>
+            updateWidget(widget.id, {
+              config: { ...config, sensitivity: parseFloat(e.target.value) },
+            })
+          }
+          className="w-full accent-indigo-600"
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">
-            Orientation
-          </label>
-          <div className="flex bg-slate-200 p-1 rounded-lg">
-            {(['horizontal', 'vertical'] as const).map((o) => (
-              <button
-                key={o}
-                onClick={() =>
-                  updateWidget(widget.id, {
-                    config: { ...config, orientation: o },
-                  })
-                }
-                className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${orientation === o ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                {o.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">
-            Style
-          </label>
-          <div className="flex bg-slate-200 p-1 rounded-lg">
-            {(['bar', 'line'] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() =>
-                  updateWidget(widget.id, {
-                    config: { ...config, style: s },
-                  })
-                }
-                className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${style === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                {s.toUpperCase()}
-              </button>
-            ))}
-          </div>
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Visual Mode
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {modes.map((m) => (
+            <button
+              key={m.id}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, visual: m.id as SoundConfig['visual'] },
+                })
+              }
+              className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                visual === m.id
+                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                  : 'border-slate-100 text-slate-400 hover:border-slate-200'
+              }`}
+            >
+              <m.icon className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase">{m.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

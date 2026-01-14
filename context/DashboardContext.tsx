@@ -633,7 +633,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       },
       dice: { w: 240, h: 240, config: { count: 1 } },
-      sound: { w: 300, h: 180, config: { sensitivity: 5 } },
+      sound: {
+        w: 300,
+        h: 300,
+        config: { sensitivity: 1, visual: 'thermometer' },
+      },
       drawing: { w: 400, h: 350, config: { mode: 'window', paths: [] } },
       qr: { w: 200, h: 250, config: { url: 'https://google.com' } },
       embed: { w: 480, h: 350, config: { url: '' } },

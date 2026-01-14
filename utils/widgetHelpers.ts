@@ -39,7 +39,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     checklist: { items: [] },
     random: { firstNames: '', lastNames: '', mode: 'single' },
     dice: { count: 1 },
-    sound: { sensitivity: 5 },
+    sound: { sensitivity: 1, visual: 'thermometer' },
     drawing: { mode: 'window', paths: [] },
     qr: { url: 'https://google.com' },
     embed: { url: '' },

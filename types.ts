@@ -152,8 +152,7 @@ export interface DiceConfig {
 
 export interface SoundConfig {
   sensitivity: number;
-  orientation?: 'horizontal' | 'vertical';
-  style?: 'bar' | 'line';
+  visual: 'thermometer' | 'speedometer' | 'line' | 'balls';
 }
 
 export interface DrawingConfig {
