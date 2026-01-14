@@ -11,7 +11,6 @@ import {
 } from '../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
 import { Star, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 
 // --- FRONT VIEW (STUDENT FOCUS) ---
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
@@ -49,7 +48,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const selectRoutine = (r: InstructionalRoutine) => {
     const initialSteps: RoutineStep[] = r.defaultSteps.map((text) => ({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       text,
     }));
     updateWidget(widget.id, {
@@ -237,7 +236,10 @@ export const InstructionalRoutinesSettings: React.FC<{
             updateWidget(widget.id, {
               config: {
                 ...config,
-                customSteps: [...customSteps, { id: uuidv4(), text: '' }],
+                customSteps: [
+                  ...customSteps,
+                  { id: crypto.randomUUID(), text: '' },
+                ],
               },
             })
           }

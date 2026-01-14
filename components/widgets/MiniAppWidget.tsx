@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, MiniAppConfig, MiniAppItem } from '../../types';
 import {
@@ -231,7 +230,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       );
     } else {
       const newApp: MiniAppItem = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         title: editTitle,
         html: editCode,
         createdAt: Date.now(),

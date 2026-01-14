@@ -10,7 +10,6 @@ import {
   orderBy,
   where,
 } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '../../config/firebase';
 import { ref, deleteObject } from 'firebase/storage';
 import { BackgroundPreset, AccessLevel } from '../../types';
@@ -139,7 +138,7 @@ export const BackgroundManager: React.FC = () => {
 
         if (existing.empty) {
           const newPreset: BackgroundPreset = {
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             url: item.url,
             label: item.label,
             active: true,
@@ -171,7 +170,7 @@ export const BackgroundManager: React.FC = () => {
 
     setUploading(true);
     let downloadURL = '';
-    const presetId = uuidv4();
+    const presetId = crypto.randomUUID();
     try {
       // Use shared admin path with the pre-generated ID for security rules
       downloadURL = await uploadAdminBackground(presetId, file);
