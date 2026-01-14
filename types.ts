@@ -151,7 +151,9 @@ export interface ChecklistConfig {
   rosterMode?: 'class' | 'custom';
   firstNames?: string;
   lastNames?: string;
-  completedNames?: string[]; // Tracks IDs or Names checked in roster mode
+  completedNames?: string[]; // IDs or Names checked in roster mode
+  bucketNameTodo?: string; // Default: "Todo"
+  bucketNameDone?: string; // Default: "Done"
 }
 
 export interface RandomGroup {
