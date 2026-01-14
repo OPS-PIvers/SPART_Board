@@ -30,6 +30,7 @@ import {
   InstructionalRoutinesSettings,
 } from './InstructionalRoutinesWidget';
 import { MiniAppWidget } from './MiniAppWidget';
+import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
@@ -46,6 +47,7 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   scoreboard: { w: 320, h: 200 },
   qr: { w: 200, h: 250 },
   dice: { w: 240, h: 240 },
+  materials: { w: 340, h: 340 },
 };
 
 export const WidgetRenderer: React.FC<{
@@ -171,6 +173,8 @@ export const WidgetRenderer: React.FC<{
         return <InstructionalRoutinesWidget widget={widget} />;
       case 'miniApp':
         return <MiniAppWidget widget={widget} />;
+      case 'materials':
+        return <MaterialsWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -210,6 +214,8 @@ export const WidgetRenderer: React.FC<{
         return <LunchCountSettings widget={widget} />;
       case 'instructionalRoutines':
         return <InstructionalRoutinesSettings widget={widget} />;
+      case 'materials':
+        return <MaterialsSettings widget={widget} />;
       case 'miniApp':
         return (
           <div className="text-slate-500 italic text-sm">

@@ -19,6 +19,7 @@ import {
   Utensils,
   BookOpen,
   AppWindow,
+  Backpack,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -79,5 +80,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: AppWindow,
     label: 'Mini Apps',
     color: 'bg-violet-600',
+  },
+  {
+    type: 'materials',
+    icon: Backpack,
+    label: 'Materials',
+    color: 'bg-rose-600',
   },
 ];
