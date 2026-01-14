@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, LunchCountConfig, LunchMenuDay } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
+import { Button } from '../common/Button';
 import {
   Users,
   RefreshCw,
@@ -275,24 +276,28 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Header Actions */}
       <div className="p-3 bg-slate-50 border-b flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={submitReport}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2"
+            variant="success"
+            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" /> Submit Report
-          </button>
-          <button
+            Submit Report
+          </Button>
+          <Button
             onClick={resetBoard}
-            className="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-300 transition-all flex items-center gap-2"
+            variant="secondary"
+            icon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Reset
-          </button>
+            Reset
+          </Button>
         </div>
         <div className="flex items-center gap-1">
-          <button
+          <Button
             onClick={() => void fetchNutrislice()}
             disabled={isSyncing || isManualMode}
-            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all relative"
+            variant="ghost"
+            size="icon"
+            className="relative"
             title="Sync from Nutrislice"
           >
             {isSyncing ? (
@@ -308,13 +313,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 !
               </div>
             )}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => updateWidget(widget.id, { flipped: true })}
-            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+            variant="ghost"
+            size="icon"
+            icon={<Settings className="w-4 h-4" />}
+          />
         </div>
       </div>
 
