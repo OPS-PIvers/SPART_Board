@@ -205,6 +205,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
           try {
             data = JSON.parse(text) as EarthNetworksResponse;
+            console.warn('[WeatherWidget] Fetched Earth Networks Data:', data);
           } catch (_) {
             throw new Error('Failed to parse response as JSON');
           }
