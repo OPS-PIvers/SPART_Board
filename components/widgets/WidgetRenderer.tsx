@@ -2,6 +2,7 @@ import React from 'react';
 import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
 import { useAuth } from '../../context/useAuth';
+import { useDashboard } from '../../context/useDashboard';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
@@ -25,28 +26,47 @@ import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
 import ClassesWidget from './ClassesWidget';
-import { InstructionalRoutinesWidget } from './InstructionalRoutinesWidget';
+import {
+  InstructionalRoutinesWidget,
+  InstructionalRoutinesSettings,
+} from './InstructionalRoutinesWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
+import { ScalableWidget } from '../common/ScalableWidget';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
+
+// Define base dimensions for scalable widgets
+const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
+  weather: { w: 250, h: 280 },
+  timer: { w: 280, h: 180 },
+  traffic: { w: 120, h: 320 },
+  scoreboard: { w: 320, h: 200 },
+  qr: { w: 200, h: 250 },
+  dice: { w: 240, h: 240 },
+};
 
 export const WidgetRenderer: React.FC<{
   widget: WidgetData;
   isStudentView?: boolean;
 }> = ({ widget, isStudentView = false }) => {
   const { user } = useAuth();
+  const { activeDashboard } = useDashboard();
 
   // Initialize the hook (only active if user exists)
   const {
     session,
     students,
     startSession,
+    updateSessionConfig,
+    updateSessionBackground,
     endSession,
+    removeStudent,
     toggleFreezeStudent,
     toggleGlobalFreeze,
-    updateSessionConfig,
   } = useLiveSession(user?.uid, 'teacher');
+
+  const dashboardBackground = activeDashboard?.background;
 
   // Logic to determine if THIS widget is the live one
   const isThisWidgetLive =
@@ -57,7 +77,12 @@ export const WidgetRenderer: React.FC<{
       if (isThisWidgetLive) {
         await endSession();
       } else {
-        await startSession(widget.id, widget.type, widget.config);
+        await startSession(
+          widget.id,
+          widget.type,
+          widget.config,
+          dashboardBackground ?? undefined
+        );
       }
     } catch (error) {
       console.error('Failed to toggle live session:', error);
@@ -89,6 +114,14 @@ export const WidgetRenderer: React.FC<{
     };
   }, [configJson, isThisWidgetLive, updateSessionConfig]);
 
+  // Sync background changes to session when live
+  React.useEffect(() => {
+    if (!isThisWidgetLive || !activeDashboard?.background) {
+      return;
+    }
+    void updateSessionBackground(activeDashboard.background);
+  }, [activeDashboard?.background, isThisWidgetLive, updateSessionBackground]);
+
   const getWidgetContent = () => {
     switch (widget.type) {
       case 'clock':
@@ -114,7 +147,7 @@ export const WidgetRenderer: React.FC<{
       case 'embed':
         return <EmbedWidget widget={widget} />;
       case 'drawing':
-        return <DrawingWidget widget={widget} />;
+        return <DrawingWidget widget={widget} isStudentView={isStudentView} />;
       case 'qr':
         return <QRWidget widget={widget} />;
       case 'scoreboard':
@@ -174,6 +207,8 @@ export const WidgetRenderer: React.FC<{
         return <WeatherSettings widget={widget} />;
       case 'lunchCount':
         return <LunchCountSettings widget={widget} />;
+      case 'instructionalRoutines':
+        return <InstructionalRoutinesSettings widget={widget} />;
       default:
         return (
           <div className="text-slate-500 italic text-sm">
@@ -187,15 +222,36 @@ export const WidgetRenderer: React.FC<{
     widget.type === 'drawing' &&
     (widget.config as DrawingConfig).mode === 'overlay';
   const customStyle: React.CSSProperties = isDrawingOverlay
-    ? { zIndex: 9995 }
+    ? {
+        display: 'none',
+      }
     : {};
 
   const content = getWidgetContent();
 
+  const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
+  const finalContent = baseDim ? (
+    <ScalableWidget
+      width={widget.w}
+      height={widget.h}
+      baseWidth={baseDim.w}
+      baseHeight={baseDim.h}
+    >
+      {content}
+    </ScalableWidget>
+  ) : (
+    content
+  );
+
   if (isStudentView) {
+    const isDrawing = widget.type === 'drawing';
     return (
-      <div className="h-full w-full bg-white rounded-xl shadow-sm overflow-hidden relative">
-        {content}
+      <div
+        className={`h-full w-full rounded-xl overflow-hidden relative ${
+          isDrawing ? 'bg-transparent' : 'bg-white shadow-sm'
+        }`}
+      >
+        {finalContent}
       </div>
     );
   }
@@ -216,19 +272,24 @@ export const WidgetRenderer: React.FC<{
           joinUrl={getJoinUrl()}
           onToggleLive={handleToggleLive}
           onFreezeStudent={(id, status) => {
-            toggleFreezeStudent(id, status).catch((err) =>
+            void toggleFreezeStudent(id, status).catch((err) =>
               console.error('Failed to freeze student:', err)
             );
           }}
+          onRemoveStudent={(id) => {
+            void removeStudent(id).catch((err) =>
+              console.error('Failed to remove student:', err)
+            );
+          }}
           onFreezeAll={() => {
-            toggleGlobalFreeze(!session?.frozen).catch((err) =>
+            void toggleGlobalFreeze(!session?.frozen).catch((err) =>
               console.error('Failed to toggle global freeze:', err)
             );
           }}
         />
       }
     >
-      {content}
+      {finalContent}
     </DraggableWindow>
   );
 };

@@ -22,12 +22,85 @@ import {
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
-import { db } from '../config/firebase';
-import {
-  migrateLocalStorageToFirestore,
-  migrateWidget,
-} from '../utils/migration';
+import { db, isAuthBypass } from '../config/firebase';
+import { migrateLocalStorageToFirestore } from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
+
+/**
+ * Singleton pattern for mock roster storage in bypass mode.
+ * This ensures rosters created in bypass mode are properly stored and
+ * accessible in the UI, following the same pattern as mockDashboards.
+ */
+class MockRosterStore {
+  private static instance: MockRosterStore;
+  private rosters: ClassRoster[] = [];
+  private listeners = new Set<(rosters: ClassRoster[]) => void>();
+
+  private constructor() {
+    // Private constructor for singleton
+  }
+
+  static getInstance(): MockRosterStore {
+    if (!MockRosterStore.instance) {
+      MockRosterStore.instance = new MockRosterStore();
+    }
+    return MockRosterStore.instance;
+  }
+
+  getRosters(): ClassRoster[] {
+    return [...this.rosters].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  addRoster(id: string, name: string, students: Student[]): void {
+    const newRoster: ClassRoster = {
+      id,
+      name,
+      students,
+      createdAt: Date.now(),
+    };
+    this.rosters.push(newRoster);
+    this.notifyListeners();
+  }
+
+  updateRoster(id: string, updates: Partial<ClassRoster>): void {
+    const index = this.rosters.findIndex((r) => r.id === id);
+    if (index >= 0) {
+      this.rosters[index] = { ...this.rosters[index], ...updates };
+      this.notifyListeners();
+    }
+  }
+
+  deleteRoster(id: string): void {
+    const index = this.rosters.findIndex((r) => r.id === id);
+    if (index >= 0) {
+      this.rosters.splice(index, 1);
+      this.notifyListeners();
+    }
+  }
+
+  addListener(callback: (rosters: ClassRoster[]) => void): void {
+    this.listeners.add(callback);
+  }
+
+  removeListener(callback: (rosters: ClassRoster[]) => void): void {
+    this.listeners.delete(callback);
+  }
+
+  private notifyListeners(): void {
+    const sorted = this.getRosters();
+    this.listeners.forEach((callback) => callback(sorted));
+  }
+
+  /**
+   * Reset the store - useful for testing and clearing state.
+   */
+  reset(): void {
+    this.rosters = [];
+    this.listeners.clear();
+  }
+}
+
+const mockRosterStore = MockRosterStore.getInstance();
 
 // Helper to validate roster data from Firestore
 
@@ -240,6 +313,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       const timer = setTimeout(() => setRosters([]), 0);
       return () => clearTimeout(timer);
     }
+
+    if (isAuthBypass) {
+      // Use mock roster store in bypass mode
+      const callback = (rosters: ClassRoster[]) => {
+        setRosters(rosters);
+      };
+      mockRosterStore.addListener(callback);
+      // Initial callback with current state
+      callback(mockRosterStore.getRosters());
+      return () => {
+        mockRosterStore.removeListener(callback);
+      };
+    }
+
     const rostersRef = collection(db, 'users', user.uid, 'rosters');
     const q = query(rostersRef, orderBy('name'));
 
@@ -276,6 +363,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const addRoster = useCallback(
     async (name: string, students: Student[] = []) => {
       if (!user) throw new Error('No user');
+
+      if (isAuthBypass) {
+        const id = 'mock-roster-id-' + Date.now();
+        mockRosterStore.addRoster(id, name, students);
+        return id;
+      }
+
       const newRoster = { name, students, createdAt: Date.now() };
       const ref = await addDoc(
         collection(db, 'users', user.uid, 'rosters'),
@@ -289,6 +383,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateRoster = useCallback(
     async (id: string, updates: Partial<ClassRoster>) => {
       if (!user) return;
+
+      if (isAuthBypass) {
+        mockRosterStore.updateRoster(id, updates);
+        return;
+      }
+
       await updateDoc(doc(db, 'users', user.uid, 'rosters', id), updates);
     },
     [user]
@@ -303,6 +403,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteRoster = useCallback(
     async (id: string) => {
       if (!user) return;
+
+      if (isAuthBypass) {
+        mockRosterStore.deleteRoster(id);
+        if (activeRosterId === id) setActiveRoster(null);
+        return;
+      }
+
       await deleteDoc(doc(db, 'users', user.uid, 'rosters', id));
       if (activeRosterId === id) setActiveRoster(null);
     },
@@ -520,11 +627,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           fontSize: 18,
         },
       },
-      checklist: { w: 280, h: 300, config: { items: [] } },
+      checklist: { w: 280, h: 300, config: { items: [], rosterMode: 'class' } },
       random: {
         w: 300,
         h: 320,
-        config: { firstNames: '', lastNames: '', mode: 'single' },
+        config: {
+          firstNames: '',
+          lastNames: '',
+          mode: 'single',
+          rosterMode: 'class',
+        },
       },
       dice: { w: 240, h: 240, config: { count: 1 } },
       sound: { w: 300, h: 180, config: { sensitivity: 5 } },
@@ -556,9 +668,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
       },
       workSymbols: {
-        w: 300,
-        h: 250,
-        config: { voice: 'none', routine: 'none' },
+        w: 320,
+        h: 350,
+        config: { voiceLevel: null, workMode: null },
       },
       weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
       schedule: {
@@ -592,6 +704,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           roster: [],
           assignments: {},
           recipient: '',
+          rosterMode: 'class',
         },
       },
       classes: {
@@ -600,9 +713,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         config: {},
       },
       instructionalRoutines: {
-        w: 350,
-        h: 450,
-        config: { selectedRoutineId: null },
+        w: 400,
+        h: 480,
+        config: {
+          selectedRoutineId: null,
+          customSteps: [],
+          favorites: [],
+          scaleMultiplier: 1,
+        },
       },
     };
 

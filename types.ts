@@ -67,6 +67,7 @@ export interface LiveSession {
   activeWidgetId: string | null;
   activeWidgetType: WidgetType | null;
   activeWidgetConfig?: WidgetConfig; // Config for the active widget
+  background?: string; // Teacher's current dashboard background
   code: string; // A short 4-6 digit join code
   frozen: boolean; // Global freeze state
   createdAt: number;
@@ -115,6 +116,11 @@ export interface CalendarEvent {
   title: string;
 }
 
+export interface RoutineStep {
+  id: string;
+  text: string;
+}
+
 // Widget-specific config types
 export interface ClockConfig {
   format24: boolean;
@@ -143,6 +149,7 @@ export interface TextConfig {
 export interface ChecklistConfig {
   items: ChecklistItem[];
   scaleMultiplier?: number;
+  rosterMode?: 'class' | 'custom';
 }
 
 export interface RandomGroup {
@@ -158,6 +165,7 @@ export interface RandomConfig {
   lastResult?: string | string[] | RandomGroup[] | null;
   soundEnabled?: boolean;
   remainingStudents?: string[];
+  rosterMode?: 'class' | 'custom';
 }
 
 export interface DiceConfig {
@@ -175,6 +183,7 @@ export interface DrawingConfig {
   paths: Path[];
   color?: string;
   width?: number;
+  customColors?: string[];
 }
 
 export interface QRConfig {
@@ -206,8 +215,8 @@ export interface ScoreboardConfig {
 }
 
 export interface WorkSymbolsConfig {
-  voice: string;
-  routine: string;
+  voiceLevel: number | null; // 0, 1, 2, 3, or 4
+  workMode: 'individual' | 'partner' | 'group' | null;
 }
 
 export interface WeatherConfig {
@@ -244,14 +253,16 @@ export interface LunchCountConfig {
   assignments: Record<string, 'hot' | 'bento' | 'home' | null>;
   recipient?: string;
   syncError?: string; // To display E-SYNC-404 etc.
+  rosterMode?: 'class' | 'custom';
 }
 
 export type ClassesConfig = Record<string, never>;
 
 export interface InstructionalRoutinesConfig {
   selectedRoutineId: string | null;
-  customSteps?: string[];
-  favorites?: string[]; // Array of routine IDs that are starred
+  customSteps: RoutineStep[];
+  favorites: string[];
+  scaleMultiplier: number;
 }
 
 export interface TimeToolConfig {
@@ -340,7 +351,9 @@ export interface WidgetData {
   type: WidgetType;
   x: number;
   y: number;
+  /** Width in grid units (dashboard) or pixels (student view) */
   w: number;
+  /** Height in grid units (dashboard) or pixels (student view) */
   h: number;
   z: number;
   flipped: boolean;
@@ -421,7 +434,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'instructionalRoutines',
     icon: BookOpen,
     label: 'Routines',
-    color: 'bg-indigo-600',
+    color: 'bg-[#2d3f89]',
   },
 ];
 

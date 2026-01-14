@@ -1,21 +1,38 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, InstructionalRoutinesConfig } from '../../types';
+import {
+  WidgetData,
+  InstructionalRoutinesConfig,
+  RoutineStep,
+} from '../../types';
 import {
   ROUTINES,
   InstructionalRoutine,
 } from '../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import { ChevronLeft, Info, Star } from 'lucide-react';
+import { Star, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
+// --- FRONT VIEW (STUDENT FOCUS) ---
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, gradeFilter } = useDashboard();
   const config = widget.config as InstructionalRoutinesConfig;
-  const { selectedRoutineId, customSteps, favorites = [] } = config;
+  const {
+    selectedRoutineId,
+    customSteps = [],
+    favorites = [],
+    scaleMultiplier = 1,
+  } = config;
 
   const selectedRoutine = ROUTINES.find((r) => r.id === selectedRoutineId);
+
+  // Mathematical Scaling
+  const dynamicFontSize = useMemo(() => {
+    const baseSize = Math.min(widget.w / 18, widget.h / 12);
+    return Math.max(12, baseSize * scaleMultiplier);
+  }, [widget.w, widget.h, scaleMultiplier]);
 
   const displayedRoutines = useMemo(() => {
     const filtered = ROUTINES.filter(
@@ -30,58 +47,49 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     });
   }, [gradeFilter, favorites]);
 
-  const toggleFavorite = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    const next = favorites.includes(id)
-      ? favorites.filter((f) => f !== id)
-      : [...favorites, id];
-    updateWidget(widget.id, { config: { ...config, favorites: next } });
-  };
-
   const selectRoutine = (r: InstructionalRoutine) => {
+    const initialSteps: RoutineStep[] = r.defaultSteps.map((text) => ({
+      id: uuidv4(),
+      text,
+    }));
     updateWidget(widget.id, {
-      config: { ...config, selectedRoutineId: r.id, customSteps: [...r.steps] },
+      config: { ...config, selectedRoutineId: r.id, customSteps: initialSteps },
     });
-  };
-
-  const updateStep = (idx: number, val: string) => {
-    const nextSteps = [...(customSteps ?? [])];
-    nextSteps[idx] = val;
-    updateWidget(widget.id, { config: { ...config, customSteps: nextSteps } });
   };
 
   if (!selectedRoutineId || !selectedRoutine) {
     return (
-      <div className="flex flex-col h-full bg-white p-4">
+      <div className="flex flex-col h-full bg-[#f3f3f3] p-4">
         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">
           Library ({gradeFilter.toUpperCase()})
         </div>
-        <div className="grid grid-cols-2 gap-2 overflow-y-auto custom-scrollbar pr-1">
+        <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
           {displayedRoutines.map((r) => {
             const Icon =
-              (Icons[r.icon as keyof typeof Icons] as React.ElementType) ??
+              (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
               Icons.HelpCircle;
             const isFav = favorites.includes(r.id);
             return (
               <button
                 key={r.id}
                 onClick={() => selectRoutine(r)}
-                className="relative p-3 border-2 border-slate-50 rounded-xl hover:border-indigo-500 text-left transition-all group bg-white shadow-sm hover:shadow-md"
+                className="relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-[#2d3f89] transition-all text-left"
               >
-                <div
-                  onClick={(e) => toggleFavorite(e, r.id)}
-                  className="absolute top-2 right-2 p-1 rounded-md hover:bg-slate-100 transition-colors z-10"
-                >
-                  <Star
-                    className={`w-3.5 h-3.5 ${isFav ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
-                  />
-                </div>
-                <Icon className="w-5 h-5 text-red-500 mb-1 group-hover:scale-110 transition-transform" />
-                <div className="text-[11px] font-bold text-slate-800 leading-tight pr-4">
+                <Star
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const next = isFav
+                      ? favorites.filter((f) => f !== r.id)
+                      : [...favorites, r.id];
+                    updateWidget(widget.id, {
+                      config: { ...config, favorites: next },
+                    });
+                  }}
+                  className={`absolute top-2 right-2 w-4 h-4 ${isFav ? 'fill-[#4356a0] text-[#4356a0]' : 'text-slate-200 hover:text-slate-400'}`}
+                />
+                <Icon className="w-8 h-8 text-[#ad2122] mb-2" />
+                <div className="text-[11px] font-black text-[#1a1a1a] uppercase leading-tight">
                   {r.name}
-                </div>
-                <div className="text-[8px] font-black text-slate-400 mt-1 uppercase">
-                  {r.grades}
                 </div>
               </button>
             );
@@ -92,59 +100,173 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   const RoutineIcon =
-    (Icons[selectedRoutine.icon as keyof typeof Icons] as React.ElementType) ??
-    Icons.HelpCircle;
+    (Icons as unknown as Record<string, React.ElementType>)[
+      selectedRoutine.icon
+    ] ?? Icons.HelpCircle;
 
   return (
-    <div className="flex flex-col h-full bg-white p-5 animate-in fade-in zoom-in-95 duration-200">
-      <button
-        onClick={() =>
-          updateWidget(widget.id, {
-            config: { ...config, selectedRoutineId: null },
-          })
-        }
-        className="flex items-center gap-1 text-[10px] font-black text-indigo-400 hover:text-indigo-600 uppercase mb-4 transition-colors"
-      >
-        <ChevronLeft className="w-3 h-3" /> Change Routine
-      </button>
-      <div className="flex items-start justify-between mb-6">
+    <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden">
+      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-[#eaecf5] pb-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 leading-tight">
+          <h2
+            className="font-black text-[#2d3f89] leading-tight"
+            style={{ fontSize: `${dynamicFontSize * 1.4}px` }}
+          >
             {selectedRoutine.name}
           </h2>
-          <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-            {selectedRoutine.grades} Routine
+          <span className="text-[10px] font-black text-[#4356a0] uppercase tracking-widest">
+            {selectedRoutine.grades} Protocol
           </span>
         </div>
-        <div className="p-3 bg-red-50 text-red-600 rounded-2xl shadow-sm">
-          <RoutineIcon className="w-8 h-8" />
+        <div className="p-4 bg-[#eaecf5] text-[#ad2122] rounded-3xl shadow-sm">
+          <RoutineIcon className="w-10 h-10" />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-          Steps for Students
-        </h3>
-        <ul className="space-y-4">
-          {(customSteps ?? []).map((step, i) => (
-            <li key={i} className="flex gap-3 group">
-              <span className="w-6 h-6 bg-indigo-600 text-white rounded flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
+        <ul className="space-y-6">
+          {customSteps.map((step, i) => (
+            <li
+              key={step.id}
+              className="flex gap-4 items-start animate-in slide-in-from-left duration-300"
+            >
+              <span
+                className="w-10 h-10 bg-[#2d3f89] text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
+                style={{ fontSize: `${dynamicFontSize}px` }}
+              >
                 {i + 1}
               </span>
-              <textarea
-                value={step}
-                onChange={(e) => updateStep(i, e.target.value)}
-                rows={2}
-                className="text-sm font-bold text-slate-700 w-full bg-transparent border-none focus:ring-0 p-0 leading-snug resize-none focus:bg-yellow-50 transition-colors rounded"
-              />
+              <p
+                className="font-bold text-[#1a1a1a] leading-relaxed pt-1"
+                style={{ fontSize: `${dynamicFontSize}px` }}
+              >
+                {step.text}
+              </p>
             </li>
           ))}
         </ul>
       </div>
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2 shrink-0">
-        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-[9px] text-blue-800 leading-relaxed font-bold uppercase tracking-tight">
-          Teacher: Click on steps to edit them for your class.
-        </p>
+    </div>
+  );
+};
+
+// --- SETTINGS VIEW (TEACHER EDITOR) ---
+export const InstructionalRoutinesSettings: React.FC<{
+  widget: WidgetData;
+}> = ({ widget }) => {
+  const { updateWidget } = useDashboard();
+  const config = widget.config as InstructionalRoutinesConfig;
+  const { customSteps = [], scaleMultiplier = 1 } = config;
+
+  const moveStep = (idx: number, dir: 'up' | 'down') => {
+    const next = [...customSteps];
+    const target = dir === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= next.length) return;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    updateWidget(widget.id, { config: { ...config, customSteps: next } });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Switch Routine Fix: Resets selection and flips back to grid */}
+      <button
+        onClick={() =>
+          updateWidget(widget.id, {
+            flipped: false,
+            config: { ...config, selectedRoutineId: null },
+          })
+        }
+        className="w-full py-2.5 bg-[#eaecf5] text-[#2d3f89] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#d5d9ec] transition-colors"
+      >
+        Switch Routine Template
+      </button>
+
+      <div className="space-y-3">
+        <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-2">
+          Step Editor
+        </label>
+        {customSteps.map((step, i) => (
+          <div
+            key={step.id}
+            className="flex gap-2 items-center bg-white p-3 rounded-2xl border border-slate-100 group shadow-sm"
+          >
+            <div className="flex flex-col gap-1 shrink-0">
+              <button
+                onClick={() => moveStep(i, 'up')}
+                className="text-slate-300 hover:text-[#2d3f89]"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                onClick={() => moveStep(i, 'down')}
+                className="text-slate-300 hover:text-[#2d3f89]"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+            {/* Stable Key Fix: Using step.id prevents focus loss */}
+            <textarea
+              value={step.text}
+              onChange={(e) => {
+                const next = [...customSteps];
+                next[i] = { ...next[i], text: e.target.value };
+                updateWidget(widget.id, {
+                  config: { ...config, customSteps: next },
+                });
+              }}
+              rows={2}
+              placeholder="Enter student direction..."
+              className="flex-1 text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
+            />
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    customSteps: customSteps.filter((_, idx) => idx !== i),
+                  },
+                })
+              }
+              className="p-2 text-red-400 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                customSteps: [...customSteps, { id: uuidv4(), text: '' }],
+              },
+            })
+          }
+          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-[#2d3f89] hover:text-[#2d3f89] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
+        >
+          <Plus className="w-4 h-4" /> Add Next Step
+        </button>
+      </div>
+
+      <div className="bg-slate-50 p-4 rounded-2xl">
+        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">
+          Text Zoom
+        </label>
+        <input
+          type="range"
+          min="0.5"
+          max="2.0"
+          step="0.1"
+          value={scaleMultiplier}
+          onChange={(e) =>
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                scaleMultiplier: parseFloat(e.target.value),
+              },
+            })
+          }
+          className="w-full accent-[#2d3f89]"
+        />
       </div>
     </div>
   );

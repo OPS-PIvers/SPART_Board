@@ -8,6 +8,18 @@ const apiKey = import.meta.env.VITE_FIREBASE_API_KEY as string | undefined;
 // Export a flag to check if firebase is configured
 export const isConfigured = !!apiKey;
 
+/**
+ * Authentication bypass flag.
+ *
+ * Controlled via the Vite environment variable `VITE_AUTH_BYPASS`.
+ *
+ * IMPORTANT SECURITY WARNING:
+ * - This must only ever be used in development or automated testing.
+ * - It must NEVER be enabled in production, as it bypasses normal auth.
+ */
+export const isAuthBypass =
+  import.meta.env.DEV && import.meta.env.VITE_AUTH_BYPASS === 'true';
+
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;

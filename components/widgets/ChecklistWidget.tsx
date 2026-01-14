@@ -1,24 +1,65 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ChecklistConfig, ChecklistItem } from '../../types';
-import { CheckSquare, Square, Trash2, ListPlus, Type } from 'lucide-react';
+import { RosterModeControl } from '../common/RosterModeControl';
+import {
+  CheckSquare,
+  Square,
+  Trash2,
+  ListPlus,
+  Type,
+  Users,
+} from 'lucide-react';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, rosters, activeRosterId } = useDashboard();
   const config = widget.config as ChecklistConfig;
-  const items = config.items ?? [];
-  const scaleMultiplier = config.scaleMultiplier ?? 1;
+  const { items = [], scaleMultiplier = 1, rosterMode = 'class' } = config;
 
-  const toggleItem = (itemId: string) => {
-    const newItems = items.map((item) =>
-      item.id === itemId ? { ...item, completed: !item.completed } : item
-    );
-    updateWidget(widget.id, {
-      config: { ...config, items: newItems } as ChecklistConfig,
-    });
-  };
+  const activeRoster = useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
+
+  const displayItems = useMemo(() => {
+    if (rosterMode === 'class' && activeRoster) {
+      return activeRoster.students.map((s) => {
+        const name = `${s.firstName} ${s.lastName}`.trim();
+        const existing = items.find((i) => i.text === name);
+        return {
+          id: existing?.id ?? `student-${s.id}`,
+          text: name,
+          completed: existing?.completed ?? false,
+        };
+      });
+    }
+    return items;
+  }, [rosterMode, activeRoster, items]);
+
+  const toggleItem = useCallback(
+    (text: string) => {
+      const existing = items.find((i) => i.text === text);
+      let newItems: ChecklistItem[];
+
+      if (existing) {
+        newItems = items.map((item) =>
+          item.text === text ? { ...item, completed: !item.completed } : item
+        );
+      } else {
+        newItems = [
+          ...items,
+          { id: `item-${Date.now()}`, text, completed: true },
+        ];
+      }
+
+      updateWidget(widget.id, {
+        config: { ...config, items: newItems } as ChecklistConfig,
+      });
+    },
+    [items, updateWidget, widget.id, config]
+  );
 
   // Dynamically calculate font size based on widget dimensions
   const dynamicFontSize = useMemo(() => {
@@ -26,7 +67,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     return Math.max(12, baseSize * scaleMultiplier);
   }, [widget.w, widget.h, scaleMultiplier]);
 
-  if (items.length === 0) {
+  if (displayItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
         <CheckSquare className="w-12 h-12 opacity-20" />
@@ -47,16 +88,25 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Notebook Margin Line */}
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 
+      {activeRoster && rosterMode === 'class' && (
+        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light z-10">
+          <Users className="w-2.5 h-2.5 text-brand-blue-primary" />
+          <span className="text-[9px] font-black uppercase text-brand-blue-primary tracking-wider">
+            {activeRoster.name}
+          </span>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto py-4 pl-12 pr-4 custom-scrollbar">
         <ul
           style={{ gap: `${dynamicFontSize / 2}px` }}
           className="flex flex-col"
         >
-          {items.map((item) => (
+          {displayItems.map((item) => (
             <li
               key={item.id}
               onClick={() => {
-                toggleItem(item.id);
+                toggleItem(item.text);
               }}
               className="group flex items-start gap-3 cursor-pointer select-none"
             >
@@ -107,6 +157,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as ChecklistConfig;
   const items = config.items ?? [];
   const scaleMultiplier = config.scaleMultiplier ?? 1;
+  const rosterMode = config.rosterMode ?? 'class';
 
   // Use local state for the text to prevent the "space-eating" bug during typing
   const [localText, setLocalText] = React.useState(
@@ -154,19 +205,30 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
-      <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <ListPlus className="w-3 h-3" /> Task List (One per line)
-        </label>
-        <textarea
-          value={localText}
-          onChange={(e) => {
-            handleBulkChange(e.target.value);
-          }}
-          placeholder="Enter tasks here...&#10;Math Homework&#10;Science Lab&#10;Reading Time"
-          className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none text-slate-900 leading-relaxed"
-        />
-      </div>
+      <RosterModeControl
+        rosterMode={rosterMode}
+        onModeChange={(mode) =>
+          updateWidget(widget.id, {
+            config: { ...config, rosterMode: mode },
+          })
+        }
+      />
+
+      {rosterMode === 'custom' && (
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <ListPlus className="w-3 h-3" /> Task List (One per line)
+          </label>
+          <textarea
+            value={localText}
+            onChange={(e) => {
+              handleBulkChange(e.target.value);
+            }}
+            placeholder="Enter tasks here...&#10;Math Homework&#10;Science Lab&#10;Reading Time"
+            className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none transition-all resize-none text-slate-900 leading-relaxed"
+          />
+        </div>
+      )}
 
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
