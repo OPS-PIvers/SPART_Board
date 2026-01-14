@@ -10,6 +10,46 @@ import { auth, googleProvider, db, isAuthBypass } from '../config/firebase';
 import { FeaturePermission, WidgetType } from '../types';
 import { AuthContext } from './AuthContextValue';
 
+/**
+ * IMPORTANT: Authentication bypass / mock user mode
+ *
+ * This file supports a special "auth bypass" mode controlled by `isAuthBypass`
+ * from `config/firebase.ts`. When that flag is enabled, the app skips the
+ * normal Firebase Authentication flow and instead uses a local mock `User`
+ * instance (`MOCK_USER`) as if a real Firebase user had signed in.
+ *
+ * SECURITY IMPLICATIONS
+ * ---------------------
+ * - This mechanism is intended ONLY for local development, automated tests,
+ *   or tightly controlled demo environments.
+ * - It MUST NOT be enabled in production, staging, or any environment exposed
+ *   to untrusted users. Treat it like a "god mode" that removes real auth.
+ * - The mock user is created entirely on the client. Any code that trusts
+ *   client-side state alone (without verifying Firebase ID tokens and claims)
+ *   would be insecure if auth bypass were accidentally enabled in production.
+ *
+ * FIRESTORE RULES AND SERVER-SIDE ENFORCEMENT
+ * -------------------------------------------
+ * - Firestore Security Rules remain the ultimate source of truth for data
+ *   access. They must NEVER assume that auth bypass is active.
+ * - Rules and any server-side logic (Cloud Functions, backend services) should
+ *   always authorize based on verified Firebase Auth tokens and claims, not
+ *   on any client-side flags or the presence of `MOCK_USER`.
+ * - Do not grant privileged access solely because this context reports an
+ *   authenticated user; backends must still validate the ID token issued by
+ *   Firebase Auth. In bypass mode, any such token is mock data and MUST NOT
+ *   be accepted by trusted backends.
+ *
+ * USAGE GUIDELINES
+ * ----------------
+ * - Ensure `isAuthBypass` is derived from a development-only configuration
+ *   (e.g., dev env var) and defaults to `false`.
+ * - Never commit or deploy configuration that enables auth bypass in
+ *   production builds.
+ * - Any future changes to auth or permissions logic should be reviewed with
+ *   this bypass mode in mind to avoid accidentally weakening security.
+ */
+
 // Constants for mock data consistency
 const MOCK_TOKEN = 'mock-token';
 const MOCK_TIME = new Date().toISOString(); // Fixed time at module load

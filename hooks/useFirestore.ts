@@ -12,20 +12,80 @@ import {
 import { db, isAuthBypass } from '../config/firebase';
 import { Dashboard } from '../types';
 
-// Mock in-memory storage for bypass mode
-// Using a module-level variable ensures persistence across re-renders
-const mockDashboards: Dashboard[] = [];
-const listeners = new Set<
-  (dashboards: Dashboard[], hasPendingWrites: boolean) => void
->();
+/**
+ * Singleton pattern for mock storage in bypass mode.
+ * This prevents HMR (Hot Module Replacement) issues and ensures proper
+ * lifecycle management during development and testing.
+ */
+class MockDashboardStore {
+  private static instance: MockDashboardStore;
+  private dashboards: Dashboard[] = [];
+  private listeners = new Set<
+    (dashboards: Dashboard[], hasPendingWrites: boolean) => void
+  >();
 
-const notifyListeners = () => {
-  // Sort by createdAt desc to match Firestore query
-  const sorted = [...mockDashboards].sort(
-    (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-  );
-  listeners.forEach((callback) => callback(sorted, false));
-};
+  private constructor() {
+    // Private constructor for singleton
+  }
+
+  static getInstance(): MockDashboardStore {
+    if (!MockDashboardStore.instance) {
+      MockDashboardStore.instance = new MockDashboardStore();
+    }
+    return MockDashboardStore.instance;
+  }
+
+  getDashboards(): Dashboard[] {
+    return [...this.dashboards].sort(
+      (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+    );
+  }
+
+  saveDashboard(dashboard: Dashboard): void {
+    const index = this.dashboards.findIndex((d) => d.id === dashboard.id);
+    if (index >= 0) {
+      this.dashboards[index] = { ...dashboard };
+    } else {
+      this.dashboards.push({ ...dashboard });
+    }
+    this.notifyListeners();
+  }
+
+  deleteDashboard(dashboardId: string): void {
+    const index = this.dashboards.findIndex((d) => d.id === dashboardId);
+    if (index >= 0) {
+      this.dashboards.splice(index, 1);
+      this.notifyListeners();
+    }
+  }
+
+  addListener(
+    callback: (dashboards: Dashboard[], hasPendingWrites: boolean) => void
+  ): void {
+    this.listeners.add(callback);
+  }
+
+  removeListener(
+    callback: (dashboards: Dashboard[], hasPendingWrites: boolean) => void
+  ): void {
+    this.listeners.delete(callback);
+  }
+
+  private notifyListeners(): void {
+    const sorted = this.getDashboards();
+    this.listeners.forEach((callback) => callback(sorted, false));
+  }
+
+  /**
+   * Reset the store - useful for testing and clearing state.
+   */
+  reset(): void {
+    this.dashboards = [];
+    this.listeners.clear();
+  }
+}
+
+const mockStore = MockDashboardStore.getInstance();
 
 export const useFirestore = (userId: string | null) => {
   const dashboardsRef = useMemo(
@@ -38,9 +98,7 @@ export const useFirestore = (userId: string | null) => {
 
   const loadDashboards = useCallback(async (): Promise<Dashboard[]> => {
     if (isAuthBypass) {
-      return [...mockDashboards].sort(
-        (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-      );
+      return mockStore.getDashboards();
     }
     if (!dashboardsRef) return [];
     const snapshot = await getDocs(
@@ -54,13 +112,7 @@ export const useFirestore = (userId: string | null) => {
   const saveDashboard = useCallback(
     async (dashboard: Dashboard): Promise<void> => {
       if (isAuthBypass) {
-        const index = mockDashboards.findIndex((d) => d.id === dashboard.id);
-        if (index >= 0) {
-          mockDashboards[index] = { ...dashboard };
-        } else {
-          mockDashboards.push({ ...dashboard });
-        }
-        notifyListeners();
+        mockStore.saveDashboard(dashboard);
         return Promise.resolve();
       }
 
@@ -77,11 +129,7 @@ export const useFirestore = (userId: string | null) => {
   const deleteDashboard = useCallback(
     async (dashboardId: string): Promise<void> => {
       if (isAuthBypass) {
-        const index = mockDashboards.findIndex((d) => d.id === dashboardId);
-        if (index >= 0) {
-          mockDashboards.splice(index, 1);
-          notifyListeners();
-        }
+        mockStore.deleteDashboard(dashboardId);
         return Promise.resolve();
       }
 
@@ -96,14 +144,11 @@ export const useFirestore = (userId: string | null) => {
       callback: (dashboards: Dashboard[], hasPendingWrites: boolean) => void
     ) => {
       if (isAuthBypass) {
-        listeners.add(callback);
-        // Initial callback
-        const sorted = [...mockDashboards].sort(
-          (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-        );
-        callback(sorted, false);
+        mockStore.addListener(callback);
+        // Initial callback with current state
+        callback(mockStore.getDashboards(), false);
         return () => {
-          listeners.delete(callback);
+          mockStore.removeListener(callback);
         };
       }
 
