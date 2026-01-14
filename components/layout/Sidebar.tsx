@@ -232,7 +232,6 @@ export const Sidebar: React.FC = () => {
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
-  const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -279,6 +278,29 @@ export const Sidebar: React.FC = () => {
     setBackground,
     addToast,
   } = useDashboard();
+
+  const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    if (isBoardSwitcherExpanded) {
+      // Small delay to allow transition to finish
+      const timer = setTimeout(checkScroll, 500);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+    return undefined;
+  }, [isBoardSwitcherExpanded, dashboards]);
 
   const [uploading, setUploading] = useState(false);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
@@ -498,7 +520,7 @@ export const Sidebar: React.FC = () => {
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-brand-blue-primary text-white rounded-full hover:bg-brand-blue-dark transition-colors shadow-md shadow-brand-blue-lighter"
+          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-lighter"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
@@ -531,7 +553,7 @@ export const Sidebar: React.FC = () => {
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-full transition-all"
+            className="p-2 text-slate-400 bg-transparent rounded-full transition-all"
             title="Admin Settings"
           >
             <Settings className="w-5 h-5" />
@@ -543,7 +565,7 @@ export const Sidebar: React.FC = () => {
           className={`p-2 rounded-full transition-all duration-300 ${
             isBoardSwitcherExpanded
               ? 'bg-brand-blue-primary text-white shadow-md'
-              : 'text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter'
+              : 'text-slate-400 bg-transparent'
           }`}
           title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
         >
@@ -558,36 +580,51 @@ export const Sidebar: React.FC = () => {
         <div
           className={`overflow-hidden transition-all duration-500 ease-in-out flex items-center gap-1 ${
             isBoardSwitcherExpanded
-              ? 'max-w-[500px] ml-2 opacity-100'
+              ? 'max-w-[80vw] ml-2 opacity-100'
               : 'max-w-0 ml-0 opacity-0'
           }`}
         >
-          <div className="h-6 w-px bg-slate-200 mx-1" />
-          <div className="flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 backdrop-blur-sm">
-            {dashboards.map((db) => (
-              <button
-                key={db.id}
-                onClick={() => {
-                  loadDashboard(db.id);
-                }}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${
-                  activeDashboard?.id === db.id
-                    ? 'bg-white text-brand-blue-primary shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {db.isDefault && (
-                  <Star
-                    className={`w-3 h-3 ${
+          <div className="h-6 w-px bg-slate-200 mx-1 flex-shrink-0" />
+          <div className="relative flex items-center min-w-0">
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 backdrop-blur-sm overflow-x-auto no-scrollbar scroll-smooth"
+            >
+              <div className="flex gap-1">
+                {dashboards.map((db) => (
+                  <button
+                    key={db.id}
+                    onClick={() => {
+                      loadDashboard(db.id);
+                    }}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${
                       activeDashboard?.id === db.id
-                        ? 'fill-brand-blue-primary'
-                        : 'fill-amber-400 text-amber-400'
+                        ? 'bg-white text-brand-blue-primary shadow-sm'
+                        : 'text-slate-500'
                     }`}
-                  />
-                )}
-                {db.name}
-              </button>
-            ))}
+                  >
+                    {db.isDefault && (
+                      <Star
+                        className={`w-3 h-3 ${
+                          activeDashboard?.id === db.id
+                            ? 'fill-brand-blue-primary'
+                            : 'fill-amber-400 text-amber-400'
+                        }`}
+                      />
+                    )}
+                    {db.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-0 flex items-center pr-1 pointer-events-none">
+                <div className="bg-gradient-to-l from-slate-100 to-transparent w-8 h-full rounded-r-full flex items-center justify-end">
+                  <ChevronRight className="w-3 h-3 text-slate-400 animate-pulse mr-1" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
