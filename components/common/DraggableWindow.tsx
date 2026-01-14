@@ -156,13 +156,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     <div
       ref={windowRef}
       onMouseDown={handleMouseDown}
-      className={`absolute select-none widget group rounded-xl bg-white/95 backdrop-blur-md border border-white/50 shadow-xl overflow-hidden transition-shadow ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
+      className={`absolute select-none widget group bg-white/95 backdrop-blur-md shadow-xl overflow-hidden transition-shadow ${isMaximized ? 'rounded-none border-none' : 'rounded-xl border border-white/50'} ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
       style={{
-        left: isMaximized ? '1.5rem' : widget.x,
-        top: isMaximized ? '4.5rem' : widget.y,
-        width: isMaximized ? 'calc(100vw - 3rem)' : widget.w,
-        height: isMaximized ? 'calc(100vh - 9rem)' : widget.h,
-        zIndex: widget.z,
+        left: isMaximized ? 0 : widget.x,
+        top: isMaximized ? 0 : widget.y,
+        width: isMaximized ? '100vw' : widget.w,
+        height: isMaximized ? '100vh' : widget.h,
+        zIndex: isMaximized ? 900 : widget.z,
         display: 'flex',
         opacity: widget.minimized ? 0 : 1,
         pointerEvents: widget.minimized ? 'none' : 'auto',
