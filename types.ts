@@ -463,7 +463,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'miniApp',
     icon: AppWindow,
     label: 'Mini Apps',
-    color: 'bg-indigo-600',
+    color: 'bg-violet-600',
   },
 ];
 
