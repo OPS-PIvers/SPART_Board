@@ -8,12 +8,12 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import {
-  TOOLS,
   FeaturePermission,
   AccessLevel,
   WidgetType,
   GradeLevel,
 } from '../../types';
+import { TOOLS } from '../../config/tools';
 import {
   getWidgetGradeLevels,
   ALL_GRADE_LEVELS,

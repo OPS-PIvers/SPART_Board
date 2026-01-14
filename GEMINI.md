@@ -25,15 +25,15 @@
   - `widgets/`: Individual widget implementations and `WidgetRenderer.tsx`.
 - `/context/`: React Context providers (`AuthContext`, `DashboardContext`).
 - `/hooks/`: Custom hooks (`useFirestore`, `useStorage`).
-- `/config/`: Configuration files (`firebase.ts`, `widgetGradeLevels.ts`).
-- `/types.ts`: Global TypeScript definitions and the `TOOLS` registry.
+- `/config/`: Configuration files (`firebase.ts`, `tools.ts`, `widgetGradeLevels.ts`).
+- `/types.ts`: Global TypeScript definitions.
 - `/App.tsx`: Root application component.
 - `/index.tsx`: Entry point.
 
 ### Architecture Patterns
 
 - **State Management:** Centralized via React Context (`DashboardContext`, `AuthContext`).
-- **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`, `TOOLS`), and mapped in `WidgetRenderer.tsx`.
+- **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`) and `config/tools.ts` (`TOOLS`), and mapped in `WidgetRenderer.tsx`.
 - **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12, Universal) in `config/widgetGradeLevels.ts`.
 - **Feature Permissions:** Access to widgets can be toggled and restricted to admins or beta users via the `FeaturePermission` system and managed in `AdminSettings`.
 - **Data Persistence:**
@@ -91,7 +91,7 @@ The following slash commands are available to streamline the development workflo
 To add a new widget:
 
 1.  **Define Type:** Add the new type string to `WidgetType` in `types.ts`.
-2.  **Register Metadata:** Add a new entry to the `TOOLS` array in `types.ts` (icon, label, color).
+2.  **Register Metadata:** Add a new entry to the `TOOLS` array in `config/tools.ts` (icon, label, color).
 3.  **Create Component:** Build the widget in `components/widgets/YourWidget.tsx`.
     - Must accept `widget: WidgetData` prop.
     - Use `useDashboard()` for state updates.

@@ -1,26 +1,3 @@
-import {
-  Clock,
-  Timer,
-  TrafficCone,
-  Type,
-  CheckSquare,
-  Users,
-  Dices,
-  Mic,
-  Pencil,
-  QrCode,
-  Globe,
-  BarChart2,
-  Video,
-  Trophy,
-  AlertCircle,
-  CloudSun,
-  Calendar,
-  Utensils,
-  BookOpen,
-  AppWindow,
-} from 'lucide-react';
-
 export type WidgetType =
   | 'clock'
   | 'timer'
@@ -403,66 +380,6 @@ export interface ToolMetadata {
   label: string;
   color: string;
 }
-
-export const TOOLS: ToolMetadata[] = [
-  { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
-  { type: 'time-tool', icon: Timer, label: 'Timer', color: 'bg-red-500' },
-  {
-    type: 'traffic',
-    icon: TrafficCone,
-    label: 'Traffic',
-    color: 'bg-amber-500',
-  },
-  { type: 'text', icon: Type, label: 'Note', color: 'bg-yellow-400' },
-  {
-    type: 'checklist',
-    icon: CheckSquare,
-    label: 'Tasks',
-    color: 'bg-green-500',
-  },
-  { type: 'random', icon: Users, label: 'Random', color: 'bg-indigo-500' },
-  { type: 'dice', icon: Dices, label: 'Dice', color: 'bg-purple-500' },
-  { type: 'sound', icon: Mic, label: 'Noise', color: 'bg-pink-500' },
-  { type: 'drawing', icon: Pencil, label: 'Draw', color: 'bg-cyan-500' },
-  { type: 'qr', icon: QrCode, label: 'QR', color: 'bg-slate-700' },
-  { type: 'embed', icon: Globe, label: 'Embed', color: 'bg-sky-600' },
-  { type: 'poll', icon: BarChart2, label: 'Poll', color: 'bg-orange-500' },
-  { type: 'webcam', icon: Video, label: 'Camera', color: 'bg-gray-800' },
-  { type: 'scoreboard', icon: Trophy, label: 'Scores', color: 'bg-yellow-600' },
-  {
-    type: 'workSymbols',
-    icon: AlertCircle,
-    label: 'Expects',
-    color: 'bg-emerald-600',
-  },
-  { type: 'weather', icon: CloudSun, label: 'Weather', color: 'bg-sky-400' },
-  { type: 'schedule', icon: Calendar, label: 'Schedule', color: 'bg-teal-600' },
-  { type: 'calendar', icon: Calendar, label: 'Events', color: 'bg-rose-500' },
-  {
-    type: 'lunchCount',
-    icon: Utensils,
-    label: 'Lunch',
-    color: 'bg-orange-600',
-  },
-  {
-    type: 'classes',
-    icon: Users,
-    label: 'Class',
-    color: 'bg-indigo-600',
-  },
-  {
-    type: 'instructionalRoutines',
-    icon: BookOpen,
-    label: 'Routines',
-    color: 'bg-[#2d3f89]',
-  },
-  {
-    type: 'miniApp',
-    icon: AppWindow,
-    label: 'Mini Apps',
-    color: 'bg-violet-600',
-  },
-];
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
 
