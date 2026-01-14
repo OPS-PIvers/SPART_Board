@@ -8,33 +8,38 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as MaterialsConfig;
-  const selectedItems = config.selectedItems || [];
+  const selectedItems = React.useMemo(
+    () => new Set(config.selectedItems || []),
+    [config.selectedItems]
+  );
 
   const toggleItem = (id: string) => {
-    let newSelected = [...selectedItems];
-    if (newSelected.includes(id)) {
-      newSelected = newSelected.filter((item) => item !== id);
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
     } else {
-      newSelected.push(id);
+      newSelected.add(id);
     }
 
     // Also filter out any active items that are no longer selected
     const currentActive = config.activeItems || [];
     const newActive = currentActive.filter((activeId: string) =>
-      newSelected.includes(activeId)
+      newSelected.has(activeId)
     );
 
     updateWidget(widget.id, {
       config: {
         ...config,
-        selectedItems: newSelected,
+        selectedItems: Array.from(newSelected),
         activeItems: newActive,
       },
     });
   };
 
+  const isAllSelected = selectedItems.size === MATERIAL_ITEMS.length;
+
   const toggleAll = () => {
-    if (selectedItems.length === MATERIAL_ITEMS.length) {
+    if (isAllSelected) {
       updateWidget(widget.id, {
         config: { ...config, selectedItems: [], activeItems: [] },
       });
@@ -58,15 +63,13 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
           onClick={toggleAll}
           className="text-xs text-blue-500 font-medium hover:underline"
         >
-          {selectedItems.length === MATERIAL_ITEMS.length
-            ? 'Deselect All'
-            : 'Select All'}
+          {isAllSelected ? 'Deselect All' : 'Select All'}
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
         {MATERIAL_ITEMS.map((item) => {
-          const isSelected = selectedItems.includes(item.id);
+          const isSelected = selectedItems.has(item.id);
           return (
             <button
               key={item.id}
