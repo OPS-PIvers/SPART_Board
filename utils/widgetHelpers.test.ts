@@ -36,8 +36,8 @@ describe('widgetHelpers', () => {
       expect(config).toEqual({ items: [] });
     });
 
-    it('returns empty object for stopwatch', () => {
-      const config = getDefaultWidgetConfig('stopwatch');
+    it('returns empty object for traffic', () => {
+      const config = getDefaultWidgetConfig('traffic');
       expect(config).toEqual({});
     });
   });
