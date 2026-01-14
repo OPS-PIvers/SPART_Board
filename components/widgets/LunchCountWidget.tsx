@@ -94,6 +94,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         }
 
         const jsonContent = JSON.parse(text) as NutrisliceWeek;
+        console.warn(
+          '[LunchCountWidget] Fetched Nutrislice Data:',
+          jsonContent
+        );
 
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
