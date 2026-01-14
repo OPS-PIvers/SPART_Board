@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db, isAuthBypass } from '../../config/firebase';
 import {
   Layout,
   Save,
@@ -89,6 +89,10 @@ export const Sidebar: React.FC = () => {
   const [managedBackgrounds, setManagedBackgrounds] = useState<
     BackgroundPreset[]
   >([]);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<
+    string | null
+  >(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const publicBgsRef = useRef<BackgroundPreset[]>([]);
   const betaBgsRef = useRef<BackgroundPreset[]>([]);
@@ -97,6 +101,33 @@ export const Sidebar: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
+
+    if (isAuthBypass) {
+        // Mock data for verification
+        setManagedBackgrounds([
+            {
+                id: 'mock-1',
+                url: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
+                label: 'Chalkboard',
+                categories: ['Texture', 'School'],
+                active: true,
+                accessLevel: 'public',
+                betaUsers: [],
+                createdAt: Date.now()
+            },
+            {
+                id: 'mock-2',
+                url: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
+                label: 'Corkboard',
+                categories: ['Texture', 'Office'],
+                active: true,
+                accessLevel: 'public',
+                betaUsers: [],
+                createdAt: Date.now()
+            }
+        ]);
+        return;
+    }
 
     const baseRef = collection(db, 'admin_backgrounds');
 
@@ -199,8 +230,22 @@ export const Sidebar: React.FC = () => {
     return managedBackgrounds.map((bg) => ({
       id: bg.url,
       label: bg.label,
+      categories: bg.categories,
     }));
   }, [managedBackgrounds]);
+
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>();
+    managedBackgrounds.forEach((bg) => bg.categories?.forEach((c) => cats.add(c)));
+    return Array.from(cats).sort();
+  }, [managedBackgrounds]);
+
+  const filteredPresets = useMemo(() => {
+    if (!activeCategoryFilter) return presets;
+    return presets.filter((p) =>
+      p.categories?.includes(activeCategoryFilter)
+    );
+  }, [presets, activeCategoryFilter]);
 
   const colors = [
     { id: 'bg-brand-gray-darkest' },
@@ -674,50 +719,81 @@ export const Sidebar: React.FC = () => {
                   </div>
 
                   {designTab === 'presets' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {presets.map((bg) => (
-                        <button
-                          key={bg.id}
-                          onClick={() => setBackground(bg.id)}
-                          className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
-                            activeDashboard?.background === bg.id
-                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
-                              : 'border-transparent hover:scale-[1.02]'
-                          }`}
-                        >
-                          <img
-                            src={bg.id}
-                            alt={bg.label}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-base font-bold uppercase tracking-wider">
-                              {bg.label}
-                            </span>
-                          </div>
-                          {activeDashboard?.background === bg.id && (
-                            <div className="absolute top-2 right-2 bg-brand-blue-primary text-white p-1 rounded-full">
-                              <CheckSquare className="w-3 h-3" />
+                    <div className="space-y-4">
+                      {/* Categories Filter */}
+                      {availableCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setActiveCategoryFilter(null)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition-all ${
+                              !activeCategoryFilter
+                                ? 'bg-brand-blue-primary text-white'
+                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }`}
+                          >
+                            All
+                          </button>
+                          {availableCategories.map((cat) => (
+                            <button
+                              key={cat}
+                              onClick={() => setActiveCategoryFilter(cat)}
+                              className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition-all ${
+                                activeCategoryFilter === cat
+                                  ? 'bg-brand-blue-primary text-white'
+                                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {filteredPresets.map((bg) => (
+                          <button
+                            key={bg.id}
+                            onClick={() => setBackground(bg.id)}
+                            className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
+                              activeDashboard?.background === bg.id
+                                ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
+                                : 'border-transparent hover:scale-[1.02]'
+                            }`}
+                          >
+                            <img
+                              src={bg.id}
+                              alt={bg.label}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-base font-bold uppercase tracking-wider">
+                                {bg.label}
+                              </span>
                             </div>
+                            {activeDashboard?.background === bg.id && (
+                              <div className="absolute top-2 right-2 bg-brand-blue-primary text-white p-1 rounded-full">
+                                <CheckSquare className="w-3 h-3" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          className="aspect-video rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-light hover:text-brand-blue-light hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
+                        >
+                          {uploading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="w-6 h-6 mb-2" />
+                              <span className="text-sm font-bold uppercase">
+                                Upload Image
+                              </span>
+                            </>
                           )}
                         </button>
-                      ))}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="aspect-video rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-light hover:text-brand-blue-light hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
-                      >
-                        {uploading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <>
-                            <Upload className="w-6 h-6 mb-2" />
-                            <span className="text-sm font-bold uppercase">
-                              Upload Image
-                            </span>
-                          </>
-                        )}
-                      </button>
+                      </div>
                     </div>
                   )}
 

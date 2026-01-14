@@ -453,4 +453,5 @@ export interface BackgroundPreset {
   accessLevel: AccessLevel; // Who can see it
   betaUsers: string[]; // Specific users if beta
   createdAt: number;
+  categories?: string[]; // Array of category tags
 }

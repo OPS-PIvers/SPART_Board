@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   collection,
   doc,
@@ -10,7 +10,7 @@ import {
   orderBy,
   where,
 } from 'firebase/firestore';
-import { db, storage } from '../../config/firebase';
+import { db, storage, isAuthBypass } from '../../config/firebase';
 import { ref, deleteObject } from 'firebase/storage';
 import { BackgroundPreset, AccessLevel } from '../../types';
 import { useStorage } from '../../hooks/useStorage';
@@ -28,32 +28,40 @@ import {
   Pencil,
   X,
   Check,
+  Tag,
+  ChevronDown,
 } from 'lucide-react';
 
 const DEFAULT_PRESETS = [
   {
     url: 'https://images.unsplash.com/photo-1566378246598-5b11a0d486cc?q=80&w=2000',
     label: 'Chalkboard',
+    categories: ['Texture', 'School'],
   },
   {
     url: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=2000',
     label: 'Corkboard',
+    categories: ['Texture', 'Office'],
   },
   {
     url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
     label: 'Geometric',
+    categories: ['Abstract', 'Modern'],
   },
   {
     url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
     label: 'Nature',
+    categories: ['Nature', 'Outdoors'],
   },
   {
     url: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
     label: 'Paper',
+    categories: ['Texture', 'Minimal'],
   },
   {
     url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
     label: 'Tech',
+    categories: ['Abstract', 'Future'],
   },
 ];
 
@@ -69,6 +77,9 @@ export const BackgroundManager: React.FC = () => {
   } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [activeCategoryMenu, setActiveCategoryMenu] = useState<string | null>(
+    null
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadAdminBackground } = useStorage();
@@ -92,6 +103,23 @@ export const BackgroundManager: React.FC = () => {
   const loadPresets = useCallback(async () => {
     try {
       setLoading(true);
+
+      if (isAuthBypass) {
+        setPresets(
+          DEFAULT_PRESETS.map((p) => ({
+            ...p,
+            id: crypto.randomUUID(),
+            active: true,
+            accessLevel: 'public',
+            betaUsers: [],
+            createdAt: Date.now(),
+            categories: p.categories || [],
+          }))
+        );
+        setLoading(false);
+        return;
+      }
+
       const q = query(
         collection(db, 'admin_backgrounds'),
         orderBy('createdAt', 'desc')
@@ -116,7 +144,25 @@ export const BackgroundManager: React.FC = () => {
     void loadPresets();
   }, [loadPresets]);
 
+  // Derived unique categories
+  const allCategories = useMemo(() => {
+    const cats = new Set<string>();
+    presets.forEach((p) => {
+      if (p.categories && Array.isArray(p.categories)) {
+        p.categories.forEach((c) => cats.add(c));
+      }
+    });
+    return Array.from(cats).sort();
+  }, [presets]);
+
   const restoreDefaults = async () => {
+    if (isAuthBypass) {
+        // In bypass mode, reloading basically restores defaults since we don't persist
+        void loadPresets();
+        showMessage('success', 'Default presets restored');
+        return;
+    }
+
     if (
       !confirm(
         'This will add the 6 stock images to your managed list. Continue?'
@@ -127,9 +173,6 @@ export const BackgroundManager: React.FC = () => {
     try {
       setLoading(true);
       for (const item of DEFAULT_PRESETS) {
-        // More robust check: use a query or check by ID if IDs were deterministic.
-        // For now, since they are random, we'll stick to URL check but against Firestore
-        // to avoid race conditions with local state.
         const q = query(
           collection(db, 'admin_backgrounds'),
           where('url', '==', item.url)
@@ -145,6 +188,7 @@ export const BackgroundManager: React.FC = () => {
             accessLevel: 'public',
             betaUsers: [],
             createdAt: Date.now(),
+            categories: item.categories,
           };
           await setDoc(doc(db, 'admin_backgrounds', newPreset.id), newPreset);
         }
@@ -169,6 +213,27 @@ export const BackgroundManager: React.FC = () => {
     }
 
     setUploading(true);
+
+    if (isAuthBypass) {
+        // Mock upload
+        await new Promise(r => setTimeout(r, 1000));
+        const newPreset: BackgroundPreset = {
+            id: crypto.randomUUID(),
+            url: URL.createObjectURL(file), // Local URL
+            label: file.name.split('.')[0],
+            active: true,
+            accessLevel: 'public',
+            betaUsers: [],
+            createdAt: Date.now(),
+            categories: [],
+        };
+        setPresets(prev => [newPreset, ...prev]);
+        setUploading(false);
+        showMessage('success', 'Background uploaded successfully');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+    }
+
     let downloadURL = '';
     const presetId = crypto.randomUUID();
     try {
@@ -188,6 +253,7 @@ export const BackgroundManager: React.FC = () => {
         accessLevel: 'public',
         betaUsers: [],
         createdAt: Date.now(),
+        categories: [],
       };
 
       await setDoc(doc(db, 'admin_backgrounds', newPreset.id), newPreset);
@@ -212,6 +278,13 @@ export const BackgroundManager: React.FC = () => {
   };
 
   const updatePreset = (id: string, updates: Partial<BackgroundPreset>) => {
+    if (isAuthBypass) {
+        setPresets((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+        );
+        return Promise.resolve();
+    }
+
     return updateDoc(doc(db, 'admin_backgrounds', id), updates)
       .then(() => {
         setPresets((prev) =>
@@ -227,7 +300,12 @@ export const BackgroundManager: React.FC = () => {
   const deletePreset = async (preset: BackgroundPreset) => {
     if (!confirm('Are you sure you want to delete this background?')) return;
 
-    // First, delete the Firestore document (source of truth)
+    if (isAuthBypass) {
+        setPresets((prev) => prev.filter((p) => p.id !== preset.id));
+        showMessage('success', 'Background deleted');
+        return;
+    }
+
     try {
       await deleteDoc(doc(db, 'admin_backgrounds', preset.id));
       setPresets((prev) => prev.filter((p) => p.id !== preset.id));
@@ -238,7 +316,6 @@ export const BackgroundManager: React.FC = () => {
       return;
     }
 
-    // Then, best-effort delete file from Storage if it's not a stock image (Unsplash)
     if (preset.url.includes('firebasestorage.googleapis.com')) {
       try {
         const fileRef = ref(storage, preset.url);
@@ -247,6 +324,29 @@ export const BackgroundManager: React.FC = () => {
         console.warn('Failed to delete background file from storage:', error);
       }
     }
+  };
+
+  const addCategory = async (presetId: string, category: string) => {
+    const trimmed = category.trim();
+    if (!trimmed) return;
+
+    const preset = presets.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    const current = preset.categories || [];
+    if (!current.includes(trimmed)) {
+      await updatePreset(presetId, { categories: [...current, trimmed] });
+    }
+  };
+
+  const removeCategory = async (presetId: string, category: string) => {
+    const preset = presets.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    const current = preset.categories || [];
+    await updatePreset(presetId, {
+      categories: current.filter((c) => c !== category),
+    });
   };
 
   const addBetaUser = async (presetId: string, email: string) => {
@@ -360,14 +460,14 @@ export const BackgroundManager: React.FC = () => {
       {/* Grid */}
       <div className="flex-1">
         {presets.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 items-start">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 items-start pb-20">
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-brand-blue-light transition-all flex flex-col h-auto"
+                className="bg-white border border-slate-200 rounded-xl overflow-visible hover:border-brand-blue-light transition-all flex flex-col h-auto relative"
               >
                 {/* Image Preview */}
-                <div className="relative h-[120px] bg-slate-100 group shrink-0">
+                <div className="relative h-[120px] bg-slate-100 group shrink-0 rounded-t-xl overflow-hidden">
                   <img
                     src={preset.url}
                     alt={preset.label}
@@ -486,10 +586,107 @@ export const BackgroundManager: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Categories */}
+                  <div className="mb-2 shrink-0 relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
+                        Categories
+                      </label>
+                      <button
+                        onClick={() =>
+                          setActiveCategoryMenu(
+                            activeCategoryMenu === preset.id ? null : preset.id
+                          )
+                        }
+                        className="text-slate-400 hover:text-brand-blue-primary transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 min-h-[20px]">
+                      {(preset.categories || []).length > 0 ? (
+                        (preset.categories || []).map((cat) => (
+                          <span
+                            key={cat}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-600 border border-slate-200"
+                          >
+                            {cat}
+                            <button
+                              onClick={() =>
+                                void removeCategory(preset.id, cat)
+                              }
+                              className="ml-1 text-slate-400 hover:text-red-500"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[9px] text-slate-300 italic">
+                          No categories
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Category Dropdown */}
+                    {activeCategoryMenu === preset.id && (
+                      <div className="absolute z-50 top-6 left-0 right-0 bg-white rounded-lg shadow-xl border border-slate-200 p-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="flex items-center justify-between mb-2 pb-1 border-b border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">
+                            Add Category
+                          </span>
+                          <button
+                            onClick={() => setActiveCategoryMenu(null)}
+                            className="text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <input
+                          type="text"
+                          placeholder="Type or select..."
+                          className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded mb-2 focus:outline-none focus:ring-1 focus:ring-brand-blue-primary"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              void addCategory(
+                                preset.id,
+                                (e.target as HTMLInputElement).value
+                              );
+                              (e.target as HTMLInputElement).value = '';
+                            }
+                          }}
+                        />
+
+                        <div className="max-h-24 overflow-y-auto space-y-1">
+                          {allCategories.map((cat) => (
+                            <button
+                              key={cat}
+                              onClick={() => void addCategory(preset.id, cat)}
+                              disabled={(preset.categories || []).includes(cat)}
+                              className="w-full text-left px-2 py-1 text-[10px] hover:bg-slate-50 rounded flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <span className="text-slate-600">{cat}</span>
+                              {(preset.categories || []).includes(cat) && (
+                                <Check className="w-3 h-3 text-brand-blue-primary" />
+                              )}
+                            </button>
+                          ))}
+                          {allCategories.length === 0 && (
+                            <div className="text-[10px] text-slate-400 text-center py-1">
+                              No existing categories
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Beta Users (only show if access level is beta) */}
                   <div className="flex-1 min-h-0 flex flex-col">
                     {preset.accessLevel === 'beta' && (
-                      <div className="flex flex-col h-full">
+                      <div className="flex flex-col h-full mt-2 pt-2 border-t border-slate-100">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block shrink-0">
                           Beta Users
                         </label>
