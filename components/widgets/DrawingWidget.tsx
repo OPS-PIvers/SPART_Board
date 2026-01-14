@@ -101,13 +101,22 @@ export const DrawingWidget: React.FC<{
       const renderPath = (p: Path) => {
         if (p.points.length < 2) return;
         ctx.beginPath();
-        ctx.strokeStyle = p.color;
+
+        if (p.color === 'eraser') {
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.strokeStyle = 'rgba(0,0,0,1)';
+        } else {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.strokeStyle = p.color;
+        }
+
         ctx.lineWidth = p.width;
         ctx.moveTo(p.points[0].x, p.points[0].y);
         for (let i = 1; i < p.points.length; i++) {
           ctx.lineTo(p.points[i].x, p.points[i].y);
         }
         ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
       };
 
       allPaths.forEach(renderPath);
@@ -226,11 +235,11 @@ export const DrawingWidget: React.FC<{
             updateWidget(widget.id, {
               config: {
                 ...config,
-                color: '#ffffff',
+                color: 'eraser',
               } as DrawingConfig,
             })
           }
-          className={`w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center transition-all ${color === '#ffffff' ? 'ring-2 ring-indigo-500' : ''}`}
+          className={`w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center transition-all ${color === 'eraser' ? 'ring-2 ring-indigo-500' : ''}`}
         >
           <Eraser className="w-3 h-3 text-slate-400" />
         </button>
