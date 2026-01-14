@@ -19,6 +19,7 @@ export const useBackgrounds = () => {
 
   useEffect(() => {
     if (!user) {
+      // Defer state update to avoid synchronous setState within effect
       const t = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(t);
     }

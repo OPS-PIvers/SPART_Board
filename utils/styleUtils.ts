@@ -1,6 +1,6 @@
-import React from 'react';
+import type { CSSProperties } from 'react';
 
-export const getBackgroundStyle = (bg?: string): React.CSSProperties => {
+export const getBackgroundStyle = (bg?: string): CSSProperties => {
   if (!bg) return {};
 
   // Check if it's a URL or Base64 image
