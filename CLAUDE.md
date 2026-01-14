@@ -440,7 +440,7 @@ const getAudioContext = (): AudioContext => {
 };
 ```
 
-See `components/widgets/TimerWidget.tsx` lines 6-17 for reference.
+See `components/widgets/TimeToolWidget.tsx` lines 20-35 for reference.
 
 ### Persistence
 

@@ -72,7 +72,7 @@ If this command reports _any_ issues, you must fix them.
 The app uses a plugin-based architecture for widgets.
 
 - **Definition:** Widgets are defined in the `WidgetType` union in `types.ts` and `TOOLS` array in `config/tools.ts`.
-- **Implementation:** Each widget lives in `components/widgets/` (e.g., `TimerWidget.tsx`).
+- **Implementation:** Each widget lives in `components/widgets/` (e.g., `TimeToolWidget.tsx`).
 - **Rendering:** `WidgetRenderer.tsx` maps types to components.
 - **Wrapper:** All widgets are wrapped in `DraggableWindow.tsx` for common functionality (drag, resize, flip).
 - **Grade Levels:** Every widget is assigned one or more grade levels in `config/widgetGradeLevels.ts` (K-2, 3-5, 6-8, 9-12, or Universal). This allows users to filter the sidebar by their relevant grade range.

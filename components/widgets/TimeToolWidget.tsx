@@ -114,16 +114,19 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     }
   };
 
-  const handleStop = React.useCallback(() => {
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        isRunning: false,
-        elapsedTime: displayTimeRef.current,
-        startTime: null,
-      },
-    });
-  }, [config, updateWidget, widget.id]);
+  const handleStop = React.useCallback(
+    (finalTime?: number) => {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          isRunning: false,
+          elapsedTime: finalTime ?? displayTimeRef.current,
+          startTime: null,
+        },
+      });
+    },
+    [config, updateWidget, widget.id]
+  );
 
   const handleStart = async () => {
     await resumeAudio();
@@ -164,7 +167,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         if (config.mode === 'timer') {
           next = Math.max(0, base - delta);
           if (next === 0) {
-            handleStop();
+            handleStop(0);
             playAlert();
           }
         } else {
@@ -377,7 +380,11 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       {/* Controls */}
       <div className="px-8 pb-6 flex gap-3 shrink-0">
         <button
-          onClick={config.isRunning ? handleStop : handleStart}
+          onClick={
+            config.isRunning
+              ? () => handleStop(runningDisplayTime)
+              : handleStart
+          }
           className={`flex-[3] py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${config.isRunning ? 'bg-slate-800 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'}`}
         >
           {config.isRunning ? (
