@@ -24,7 +24,7 @@ export const STUDENT_VIEW_WIDGET_COMPATIBILITY: StudentViewWidgetCompatibilityCo
     readOnlyCompatible: [
       'clock',
       'timer',
-      'stopwatch',
+      'time-tool',
       'text',
       'embed',
       'qr',

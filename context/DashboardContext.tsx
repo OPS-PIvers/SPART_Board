@@ -22,7 +22,7 @@ import {
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
-import { db } from '../config/firebase';
+import { db, isAuthBypass } from '../config/firebase';
 import {
   migrateLocalStorageToFirestore,
   migrateWidget,
