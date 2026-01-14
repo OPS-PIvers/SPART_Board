@@ -621,7 +621,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           fontSize: 18,
         },
       },
-      checklist: { w: 280, h: 300, config: { items: [], rosterMode: 'class' } },
+      checklist: {
+        w: 280,
+        h: 300,
+        config: {
+          items: [],
+          mode: 'manual',
+          firstNames: '',
+          lastNames: '',
+          completedNames: [],
+          scaleMultiplier: 1,
+        },
+      },
       random: {
         w: 300,
         h: 320,
