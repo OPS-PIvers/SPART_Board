@@ -21,52 +21,89 @@ const getTimerAudioCtx = () => {
   return timerAudioCtx;
 };
 
+const playSound = () => {
+  const ctx = getTimerAudioCtx();
+  if (ctx.state !== 'suspended') {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.5);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.5);
+  }
+};
+
 export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { updateWidget } = useDashboard();
   const config = widget.config as TimerConfig;
-  const [timeLeft, setTimeLeft] = useState(config.duration ?? 300);
-  const [isActive, setIsActive] = useState(false);
-  const [isDone, setIsDone] = useState(false);
   const soundEnabled = config.sound;
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
+  // Derive state from config
+  const isRunning = config.running ?? false;
+  const endsAt = config.endsAt ?? null;
+  const duration = config.duration ?? 300;
 
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev: number) => {
-          if (prev <= 1) {
-            // Timer finished
-            setIsActive(false);
-            setIsDone(true);
-            if (soundEnabled) {
-              const ctx = getTimerAudioCtx();
-              if (ctx.state !== 'suspended') {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, ctx.currentTime);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(
-                  0.0001,
-                  ctx.currentTime + 1.5
-                );
-                osc.start();
-                osc.stop(ctx.currentTime + 1.5);
-              }
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+  // Initialize state lazily to avoid impure calls in render body
+  const [displaySeconds, setDisplaySeconds] = useState(() => {
+    if (isRunning && endsAt) {
+      return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+    }
+    return config.timeLeft ?? duration;
+  });
+
+  const [playedSound, setPlayedSound] = useState(false);
+
+  // Pattern: Derived state from props
+  // If not running, the display MUST match the config snapshot/duration.
+  if (
+    (!isRunning || !endsAt) &&
+    displaySeconds !== (config.timeLeft ?? duration)
+  ) {
+    setDisplaySeconds(config.timeLeft ?? duration);
+  }
+
+  // Tick effect
+  useEffect(() => {
+    // If not running, just ensure we match the config (handled by render logic above)
+    if (!isRunning || !endsAt) {
+      return;
     }
 
-    return () => {
-      if (interval) clearInterval(interval);
+    let animationFrame: number;
+
+    const tick = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((endsAt - now) / 1000));
+      setDisplaySeconds(remaining);
+
+      if (remaining > 0) {
+        animationFrame = requestAnimationFrame(tick);
+      }
     };
-  }, [isActive, timeLeft, soundEnabled]);
+
+    tick();
+
+    return () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [isRunning, endsAt]);
+
+  // Sound effect logic
+  useEffect(() => {
+    if (displaySeconds === 0 && isRunning && !playedSound && soundEnabled) {
+      playSound();
+      // Use timeout to avoid "setState in effect" warning
+      setTimeout(() => setPlayedSound(true), 0);
+    }
+    // Reset sound flag if we add time or reset
+    if (displaySeconds > 0 && playedSound) {
+      setTimeout(() => setPlayedSound(false), 0);
+    }
+  }, [displaySeconds, isRunning, soundEnabled, playedSound]);
 
   const toggle = async () => {
     // Unlock audio context on interaction
@@ -75,18 +112,52 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       await ctx.resume();
     }
 
-    if (isDone) reset();
-    setIsActive(!isActive);
+    if (isRunning) {
+      // Pause: Calculate remaining time snapshot
+      const now = Date.now();
+      const remainingMs = (endsAt ?? now) - now;
+      const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          running: false,
+          endsAt: undefined,
+          timeLeft: remainingSeconds,
+        } as TimerConfig,
+      });
+    } else {
+      // Start: Set endsAt based on current displayed time
+      const currentSeconds = displaySeconds <= 0 ? duration : displaySeconds;
+      const newEndsAt = Date.now() + currentSeconds * 1000;
+
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          running: true,
+          endsAt: newEndsAt,
+          timeLeft: undefined,
+        } as TimerConfig,
+      });
+      setPlayedSound(false);
+    }
   };
 
   const reset = () => {
-    setIsActive(false);
-    setIsDone(false);
-    setTimeLeft(config.duration);
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        running: false,
+        endsAt: undefined,
+        timeLeft: undefined, // Reverts to duration
+      } as TimerConfig,
+    });
+    setPlayedSound(false);
   };
 
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
+  const isDone = displaySeconds === 0;
+  const minutes = Math.floor(displaySeconds / 60);
+  const seconds = displaySeconds % 60;
 
   return (
     <div
@@ -102,9 +173,9 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="flex gap-4 mt-4">
         <button
           onClick={toggle}
-          className={`p-3 rounded-full transition-all shadow-md ${isActive ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+          className={`p-3 rounded-full transition-all shadow-md ${isRunning ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
         >
-          {isActive ? (
+          {isRunning ? (
             <Pause className="w-6 h-6" />
           ) : (
             <Play className="w-6 h-6 ml-1" />
@@ -144,6 +215,10 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 config: {
                   ...config,
                   duration: parseInt(e.target.value) * 60,
+                  // Reset timer state on duration change to avoid confusion
+                  running: false,
+                  endsAt: undefined,
+                  timeLeft: undefined,
                 } as TimerConfig,
               })
             }

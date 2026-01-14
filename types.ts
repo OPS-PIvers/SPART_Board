@@ -135,6 +135,9 @@ export interface ClockConfig {
 export interface TimerConfig {
   duration: number;
   sound: boolean;
+  running?: boolean;
+  endsAt?: number;
+  timeLeft?: number;
 }
 
 export interface StopwatchConfig {
