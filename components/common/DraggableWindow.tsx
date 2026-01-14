@@ -79,6 +79,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     bringToFront(widget.id);
   };
 
+  const handleMaximizeToggle = () => {
+    const newMaximized = !isMaximized;
+    updateWidget(widget.id, { maximized: newMaximized });
+    if (newMaximized) {
+      bringToFront(widget.id);
+    }
+  };
+
   const saveTitle = () => {
     if (tempTitle.trim()) {
       updateWidget(widget.id, { customTitle: tempTitle.trim() });
@@ -150,11 +158,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       onMouseDown={handleMouseDown}
       className={`absolute select-none widget group rounded-xl bg-white/95 backdrop-blur-md border border-white/50 shadow-xl overflow-hidden transition-shadow ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
       style={{
-        left: isMaximized ? 0 : widget.x,
-        top: isMaximized ? 0 : widget.y,
-        width: isMaximized ? '100%' : widget.w,
-        height: isMaximized ? '100%' : widget.h,
-        zIndex: isMaximized ? 900 : widget.z,
+        left: isMaximized ? '1.5rem' : widget.x,
+        top: isMaximized ? '4.5rem' : widget.y,
+        width: isMaximized ? 'calc(100vw - 3rem)' : widget.w,
+        height: isMaximized ? 'calc(100vh - 9rem)' : widget.h,
+        zIndex: widget.z,
         display: 'flex',
         opacity: widget.minimized ? 0 : 1,
         pointerEvents: widget.minimized ? 'none' : 'auto',
@@ -199,7 +207,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 cursor-grab active:cursor-grabbing"
+              className={`flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                 <Move className="w-3 h-3 text-slate-400 flex-shrink-0" />
@@ -254,11 +262,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </button>
                 )}
                 <button
-                  onClick={() =>
-                    updateWidget(widget.id, { maximized: !isMaximized })
-                  }
+                  onClick={handleMaximizeToggle}
                   className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
                   title={isMaximized ? 'Restore' : 'Maximize'}
+                  aria-label={
+                    isMaximized ? 'Restore widget' : 'Maximize widget'
+                  }
                 >
                   {isMaximized ? (
                     <Minimize2 className="w-4 h-4" />
