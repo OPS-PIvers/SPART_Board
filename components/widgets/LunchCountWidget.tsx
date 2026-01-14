@@ -8,7 +8,7 @@ import {
   RefreshCw,
   School,
   Loader2,
-  Settings,
+  Undo2,
   CheckCircle2,
   Box,
 } from 'lucide-react';
@@ -291,22 +291,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="p-3 bg-slate-50 border-b flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button
-            onClick={submitReport}
-            variant="success"
-            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-          >
-            Submit Report
-          </Button>
-          <Button
-            onClick={resetBoard}
-            variant="secondary"
-            icon={<RefreshCw className="w-3.5 h-3.5" />}
-          >
-            Reset
-          </Button>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
             onClick={() => void fetchNutrislice()}
             disabled={isSyncing || isManualMode}
             variant="ghost"
@@ -328,12 +312,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
             )}
           </Button>
+          <div className="w-px h-4 bg-slate-200 mx-1" />
           <Button
-            onClick={() => updateWidget(widget.id, { flipped: true })}
-            variant="ghost"
-            size="icon"
-            icon={<Settings className="w-4 h-4" />}
-          />
+            onClick={submitReport}
+            variant="success"
+            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+          >
+            Submit Report
+          </Button>
+          <Button
+            onClick={resetBoard}
+            variant="secondary"
+            icon={<Undo2 className="w-3.5 h-3.5" />}
+          >
+            Reset
+          </Button>
         </div>
       </div>
 
@@ -476,6 +469,22 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             )}
           </div>
         </div>
+      </div>
+
+      <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+          Runs Locally
+        </span>
+        {config.lastSyncDate && (
+          <span className="text-[8px] text-slate-300 font-bold uppercase">
+            Synced:{' '}
+            {new Date(config.lastSyncDate).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })}
+          </span>
+        )}
       </div>
     </div>
   );
