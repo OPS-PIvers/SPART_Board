@@ -14,7 +14,6 @@ import {
   FlipHorizontal,
   Video,
 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 import { WidgetData, WebcamConfig } from '../../types';
 import { GoogleGenAI } from '@google/genai';
 import { useDashboard } from '../../context/useDashboard';
@@ -135,7 +134,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setTimeout(() => setShowSuccess(false), 1500);
 
     const newItem: CapturedItem = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       timestamp: Date.now(),
       text: null,
       status: 'processing',

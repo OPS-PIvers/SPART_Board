@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import {
   collection,
   onSnapshot,
@@ -245,7 +244,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       // Create default dashboard if none exist
       if (updatedDashboards.length === 0 && !migrated) {
         const defaultDb: Dashboard = {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           name: 'My First Board',
           background: 'bg-slate-900',
           widgets: [],
@@ -255,7 +254,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           setToasts((prev) => [
             ...prev,
             {
-              id: uuidv4(),
+              id: crypto.randomUUID(),
               message: 'Welcome! Board created',
               type: 'info' as const,
             },
@@ -275,7 +274,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             setToasts((prev) => [
               ...prev,
               {
-                id: uuidv4(),
+                id: crypto.randomUUID(),
                 message: `Migrated ${count} dashboard(s) to cloud`,
                 type: 'success' as const,
               },
@@ -288,7 +287,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           setToasts((prev) => [
             ...prev,
             {
-              id: uuidv4(),
+              id: crypto.randomUUID(),
               message: 'Failed to migrate local data',
               type: 'error' as const,
             },
@@ -436,7 +435,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setToasts((prev) => [
           ...prev,
           {
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             message: 'Failed to sync changes',
             type: 'error' as const,
           },
@@ -471,7 +470,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const addToast = (message: string, type: Toast['type'] = 'info') => {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       removeToast(id);
@@ -489,9 +488,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     const newDb: Dashboard = data
-      ? { ...data, id: uuidv4(), name }
+      ? { ...data, id: crypto.randomUUID(), name }
       : {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           name,
           background: 'bg-slate-800',
           widgets: [],
@@ -705,7 +704,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         if (d.id !== activeId) return d;
         const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
         const newWidget: WidgetData = {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           type,
           x: 150 + d.widgets.length * 20,
           y: 150 + d.widgets.length * 20,
