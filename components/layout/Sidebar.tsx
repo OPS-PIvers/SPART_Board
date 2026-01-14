@@ -25,7 +25,8 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, TOOLS, GradeLevel, BackgroundPreset } from '../../types';
+import { Dashboard, GradeLevel, BackgroundPreset } from '../../types';
+import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 

@@ -15,7 +15,6 @@ import {
   WidgetData,
   WidgetType,
   Toast,
-  TOOLS,
   ClassRoster,
   Student,
   GradeFilter,
@@ -23,6 +22,7 @@ import {
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { db, isAuthBypass } from '../config/firebase';
+import { TOOLS } from '../config/tools';
 import { migrateLocalStorageToFirestore } from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 

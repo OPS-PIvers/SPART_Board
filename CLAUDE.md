@@ -48,7 +48,7 @@ Classroom Dashboard Pro is an interactive classroom management dashboard built w
 │   └── firebase-dev-deploy.yml  # Dev branch previews
 ├── App.tsx              # Root component
 ├── index.tsx            # Application entry point
-├── types.ts             # Global TypeScript types and TOOLS registry
+├── types.ts             # Global TypeScript types
 ├── vite.config.ts       # Vite configuration
 ├── tsconfig.json        # TypeScript configuration
 ├── eslint.config.js     # ESLint configuration
@@ -166,7 +166,7 @@ App.tsx (root)
 
 - `App.tsx`: Root component with AuthProvider, DashboardProvider, and conditional rendering
 - `index.tsx`: Application entry point, mounts App to DOM
-- `types.ts`: All TypeScript type definitions and the TOOLS registry (21 widget types)
+- `types.ts`: All TypeScript type definitions
 
 **Context:**
 
@@ -293,7 +293,7 @@ export type WidgetType =
   | 'yourNewWidget'; // Add here
 ```
 
-**b) Add metadata to TOOLS array** (around line 80-126):
+**b) Add metadata to TOOLS array** in `config/tools.ts`:
 
 ```typescript
 export const TOOLS: ToolMetadata[] = [
