@@ -33,8 +33,40 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// --- STORAGE HELPERS ---
+// --- CONSTANTS ---
 const STORAGE_KEY = 'spartboard_miniapps_library';
+const DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
+<html>
+<style>
+  body { 
+    font-family: system-ui, -apple-system, sans-serif; 
+    padding: 24px; 
+    text-align: center; 
+    background: #f8fafc;
+    color: #1e293b;
+  }
+  .card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    display: inline-block;
+  }
+</style>
+<body>
+  <div class="card">
+    <h1>Hello Class! 👋</h1>
+    <p>This is your new mini-app.</p>
+    <button onclick="alert('It works!')" style="padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">
+      Click Me
+    </button>
+  </div>
+</body>
+</html>`;
+
+const MAX_HTML_SIZE = 512 * 1024; // 512KB limit per app
+
+// --- STORAGE HELPERS ---
 
 const getLocalLibrary = (): MiniAppItem[] => {
   try {
@@ -194,9 +226,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const handleCreate = () => {
     setEditingId(null);
     setEditTitle('');
-    setEditCode(
-      '<!DOCTYPE html>\n<html>\n<style>body { font-family: sans-serif; padding: 20px; text-align: center; }</style>\n<body>\n  <h1>Hello Class!</h1>\n  <p>Start creating...</p>\n</body>\n</html>'
-    );
+    setEditCode(DEFAULT_HTML_TEMPLATE);
     setView('editor');
   };
 
@@ -284,19 +314,28 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           .map((item: unknown) => {
             if (typeof item !== 'object' || item === null) return null;
             const i = item as Record<string, unknown>;
+
+            // Basic validation
+            if (typeof i.html !== 'string') return null;
+            if (i.html.length > MAX_HTML_SIZE) return null;
+
             return {
               id: `imported-${Date.now()}-${Math.random()
                 .toString(36)
                 .slice(2, 11)}`,
               title:
                 typeof i.title === 'string' && i.title
-                  ? i.title
+                  ? i.title.slice(0, 100)
                   : 'Untitled App',
-              html: typeof i.html === 'string' && i.html ? i.html : '',
+              html: i.html,
               createdAt: Date.now(),
             };
           })
           .filter((item): item is MiniAppItem => item !== null);
+
+        if (newItems.length === 0) {
+          throw new Error('No valid mini-apps found in file');
+        }
 
         const merged = [...newItems, ...library];
         setLibrary(merged);
@@ -329,7 +368,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <iframe
           srcDoc={activeApp.html}
           className="flex-1 w-full border-none"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+          sandbox="allow-scripts allow-forms allow-popups allow-modals"
           title={activeApp.title}
         />
       </div>

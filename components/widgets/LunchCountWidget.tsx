@@ -127,8 +127,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
+      const schoolSite = configRef.current.schoolSite || 'schumann-elementary';
 
-      const apiUrl = `https://orono.api.nutrislice.com/menu/api/weeks/school/${configRef.current.schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
+      const apiUrl = `https://orono.api.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
       const data = await fetchWithFallback(apiUrl);
 
       let hotLunch = 'No Hot Lunch Listed';
