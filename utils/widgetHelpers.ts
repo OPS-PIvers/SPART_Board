@@ -75,6 +75,10 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     miniApp: {
       activeApp: null,
     },
+    materials: {
+      selectedItems: [],
+      activeItems: [],
+    },
   };
 
   return defaults[type];

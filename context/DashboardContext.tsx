@@ -721,6 +721,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         h: 600,
         config: { activeApp: null },
       },
+      materials: {
+        w: 340,
+        h: 340,
+        config: { selectedItems: [], activeItems: [] },
+      },
     };
 
     setDashboards((prev) =>
