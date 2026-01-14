@@ -130,6 +130,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           {new Date(lastSync).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
+            second: '2-digit',
           })}
         </div>
       )}
