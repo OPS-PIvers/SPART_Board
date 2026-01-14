@@ -19,8 +19,8 @@ export const useBackgrounds = () => {
 
   useEffect(() => {
     if (!user) {
-      setLoading(false);
-      return;
+      const t = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(t);
     }
 
     const baseRef = collection(db, 'admin_backgrounds');

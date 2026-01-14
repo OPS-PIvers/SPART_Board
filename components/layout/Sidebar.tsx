@@ -1,6 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Layout,
   Save,

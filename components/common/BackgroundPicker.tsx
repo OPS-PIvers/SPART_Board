@@ -12,9 +12,9 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
   onSelect,
 }) => {
   const { presets, colors, gradients } = useBackgrounds();
-  const [activeTab, setActiveTab] = useState<'presets' | 'colors' | 'gradients'>(
-    'presets'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'presets' | 'colors' | 'gradients'
+  >('presets');
 
   return (
     <div className="space-y-4">
