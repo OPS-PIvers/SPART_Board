@@ -230,19 +230,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       {isAuto && (
-        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100 w-full justify-between">
-          <div className="text-[8px] font-bold text-slate-300 uppercase flex flex-col">
-            <span>Last Sync</span>
-            {lastSync && (
-              <span className="text-slate-400">
-                {new Date(lastSync).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100 w-full justify-start">
           <button
             onClick={handleRefresh}
             disabled={isSyncing}
@@ -255,6 +243,18 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <RefreshCw className="w-3.5 h-3.5" />
             )}
           </button>
+          <div className="text-[8px] font-bold text-slate-300 uppercase flex items-center gap-1.5">
+            <span>Last Sync</span>
+            {lastSync && (
+              <span className="text-slate-400">
+                {new Date(lastSync).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

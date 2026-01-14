@@ -448,19 +448,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
-        <div className="text-[8px] font-bold text-slate-300 uppercase flex flex-col">
-          <span>Last Sync</span>
-          {config.lastSyncDate && (
-            <span className="text-slate-400">
-              {new Date(config.lastSyncDate).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}
-            </span>
-          )}
-        </div>
+      <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-start items-center gap-2 shrink-0">
         <button
           onClick={() => void fetchNutrislice()}
           disabled={isSyncing || isManualMode}
@@ -481,6 +469,18 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           )}
         </button>
+        <div className="text-[8px] font-bold text-slate-300 uppercase flex items-center gap-1.5">
+          <span>Last Sync</span>
+          {config.lastSyncDate && (
+            <span className="text-slate-400">
+              {new Date(config.lastSyncDate).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

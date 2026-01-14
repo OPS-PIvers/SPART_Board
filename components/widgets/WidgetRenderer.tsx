@@ -40,6 +40,7 @@ const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time update
 // Define base dimensions for scalable widgets
 const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   weather: { w: 250, h: 280 },
+  lunchCount: { w: 500, h: 400 },
   timer: { w: 280, h: 180 },
   'time-tool': { w: 420, h: 400 },
   traffic: { w: 120, h: 320 },
