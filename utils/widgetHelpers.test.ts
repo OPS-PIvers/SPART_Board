@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { getTitle, getDefaultWidgetConfig } from './widgetHelpers';
-import { WidgetData } from '../types';
+import { WidgetData, TimeToolConfig } from '../types';
 
 describe('widgetHelpers', () => {
   describe('getTitle', () => {
     it('returns custom title if present', () => {
-      const widget = { customTitle: 'My Title', type: 'timer' } as WidgetData;
+      const widget = {
+        customTitle: 'My Title',
+        type: 'time-tool',
+      } as WidgetData;
       expect(getTitle(widget)).toBe('My Title');
     });
 
@@ -20,15 +23,15 @@ describe('widgetHelpers', () => {
     });
 
     it('returns capitalized type for other widgets', () => {
-      const widget = { type: 'timer' } as WidgetData;
-      expect(getTitle(widget)).toBe('Timer');
+      const widget = { type: 'clock' } as WidgetData;
+      expect(getTitle(widget)).toBe('Clock');
     });
   });
 
   describe('getDefaultWidgetConfig', () => {
-    it('returns correct defaults for timer', () => {
-      const config = getDefaultWidgetConfig('timer');
-      expect(config).toEqual({ duration: 300, sound: true });
+    it('returns correct defaults for time-tool', () => {
+      const config = getDefaultWidgetConfig('time-tool') as TimeToolConfig;
+      expect(config.mode).toBe('timer');
     });
 
     it('returns correct defaults for checklist', () => {

@@ -23,8 +23,8 @@ export const STUDENT_VIEW_WIDGET_COMPATIBILITY: StudentViewWidgetCompatibilityCo
     // Widgets that are fully compatible with read-only student view.
     readOnlyCompatible: [
       'clock',
-      'timer',
       'time-tool',
+      'traffic',
       'text',
       'embed',
       'qr',

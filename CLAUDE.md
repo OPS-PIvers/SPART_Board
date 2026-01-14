@@ -264,8 +264,8 @@ import { useAuth } from '@/context/useAuth';
 function MyComponent() {
   const { canAccessWidget } = useAuth();
 
-  if (canAccessWidget('timer')) {
-    // User can access timer widget
+  if (canAccessWidget('time-tool')) {
+    // User can access time-tool widget
   }
 }
 ```
@@ -288,7 +288,7 @@ In `types.ts`:
 ```typescript
 export type WidgetType =
   | 'clock'
-  | 'timer'
+  | 'time-tool'
   // ... existing types
   | 'yourNewWidget'; // Add here
 ```
