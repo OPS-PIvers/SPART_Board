@@ -229,9 +229,8 @@ export const WidgetRenderer: React.FC<{
 
   const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
   // Account for sidebar (top-6, left-6) and dock (bottom-6) spacing
-  // Sidebar: 1.5rem top + left margins
-  // Dock: 1.5rem bottom margin
-  // Total: 3rem horizontal (1.5rem * 2), 6rem vertical (1.5rem top + 4.5rem bottom for dock height)
+  // Horizontal: 1.5rem left + 1.5rem right = 3rem total (48px)
+  // Vertical: 4.5rem top (for sidebar and spacing) + 4.5rem bottom (for dock and spacing) = 9rem total (144px)
   const effectiveWidth = widget.maximized
     ? windowSize.width - 48 // 3rem = 48px
     : widget.w;
