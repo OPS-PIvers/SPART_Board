@@ -38,6 +38,16 @@ const STATION_CONFIG = {
   name: 'Orono IS',
 };
 
+const EARTH_NETWORKS_API = {
+  BASE_URL: 'https://owc.enterprise.earthnetworks.com/Data/GetData.ashx',
+  PARAMS: {
+    dt: 'o',
+    pi: '3',
+    units: 'english',
+    verbose: 'false',
+  },
+};
+
 const EARTH_NETWORKS_ICONS = {
   SNOW: [140, 186, 210, 102],
   CLOUDY: [1, 13, 24, 70, 71, 73, 79],
@@ -160,7 +170,13 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const fetchEarthNetworksWeather = async () => {
     setLoading(true);
     try {
-      const url = `https://owc.enterprise.earthnetworks.com/Data/GetData.ashx?dt=o&pi=3&si=${STATION_CONFIG.id}&locstr=${STATION_CONFIG.lat},${STATION_CONFIG.lon}&units=english&verbose=false`;
+      const queryParams = new URLSearchParams({
+        ...EARTH_NETWORKS_API.PARAMS,
+        si: STATION_CONFIG.id,
+        locstr: `${STATION_CONFIG.lat},${STATION_CONFIG.lon}`,
+      }).toString();
+
+      const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
 
       // Use a list of proxies to improve reliability, matching LunchCountWidget's approach
       const proxies = [
