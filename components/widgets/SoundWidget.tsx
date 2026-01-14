@@ -17,7 +17,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const animationRef = useRef<number>(null);
 
   const {
-    sensitivity = 5,
+    sensitivity = 1,
     orientation = 'horizontal',
     style = 'bar',
   } = widget.config as SoundConfig;
@@ -181,7 +181,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as SoundConfig;
-  const { sensitivity = 5, orientation = 'horizontal', style = 'bar' } = config;
+  const { sensitivity = 1, orientation = 'horizontal', style = 'bar' } = config;
 
   return (
     <div className="space-y-6">
