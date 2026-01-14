@@ -3,6 +3,7 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
+  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
@@ -41,6 +42,7 @@ export interface DashboardContextType {
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
+  clearAllStickers: () => void;
 
   // --- FOLDER ACTIONS ---
   addFolder: (name: string) => void;

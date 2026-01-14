@@ -974,11 +974,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((d) => {
         if (d.id !== activeId) return d;
         const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+
+        const defaultPosition = {
+          x: 150 + d.widgets.length * 20,
+          y: 150 + d.widgets.length * 20,
+        };
+
         const newWidget: WidgetData = {
           id: crypto.randomUUID(),
           type,
-          x: 150 + d.widgets.length * 20,
-          y: 150 + d.widgets.length * 20,
+          x: initialConfig?.x ?? defaultPosition.x,
+          y: initialConfig?.y ?? defaultPosition.y,
+          w: initialConfig?.w ?? WIDGET_DEFAULTS[type]?.w ?? 200,
+          h: initialConfig?.h ?? WIDGET_DEFAULTS[type]?.h ?? 200,
           flipped: false,
           z: maxZ + 1,
           transparency: 0.2,
@@ -1039,6 +1047,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           : d
       )
     );
+  };
+
+  const clearAllStickers = () => {
+    if (!activeDashboard) return;
+    const stickerWidgetIds = activeDashboard.widgets
+      .filter((w) => w.type === 'sticker')
+      .map((w) => w.id);
+    if (stickerWidgetIds.length > 0) {
+      removeWidgets(stickerWidgetIds);
+    }
   };
 
   const updateWidget = useCallback(
@@ -1181,6 +1199,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setAllToolsVisibility,
         reorderTools,
         reorderDockItems,
+        clearAllStickers,
         rosters,
         activeRosterId,
         addRoster,

@@ -1,9 +1,9 @@
 import React from 'react';
-import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
+import { WidgetData, DrawingConfig, WidgetConfig } from '@/types';
 import { DraggableWindow } from '../common/DraggableWindow';
-import { useAuth } from '../../context/useAuth';
-import { useDashboard } from '../../context/useDashboard';
-import { useLiveSession } from '../../hooks/useLiveSession';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useLiveSession } from '@/hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimeToolWidget } from './TimeToolWidget';
@@ -34,10 +34,10 @@ import { MiniAppWidget } from './MiniAppWidget';
 import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
 import { StickerBookWidget } from './stickers/StickerBookWidget';
 import { StickerItemWidget } from './stickers/StickerItemWidget';
-import { getTitle } from '../../utils/widgetHelpers';
-import { getJoinUrl } from '../../utils/urlHelpers';
+import { getTitle } from '@/utils/widgetHelpers';
+import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
-import { useWindowSize } from '../../hooks/useWindowSize';
+import { useWindowSize } from '@/hooks/useWindowSize';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 

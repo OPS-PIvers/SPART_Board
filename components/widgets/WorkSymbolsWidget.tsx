@@ -1,15 +1,144 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, WorkSymbolsConfig } from '../../types';
-import { User, Users, UsersRound } from 'lucide-react';
+import * as Icons from 'lucide-react';
+
+const ROUTINE_CATEGORIES = {
+  Collaboration: [
+    { id: 'think-pair-share', label: 'Think-Pair-Share', icon: 'Users' },
+    { id: 'turn-talk', label: 'Turn and Talk', icon: 'MessageSquare' },
+    { id: 'gallery-walk', label: 'Gallery Walk', icon: 'Footprints' },
+    {
+      id: 'socratic-seminar',
+      label: 'Socratic Seminar',
+      icon: 'GraduationCap',
+    },
+    { id: 'fishbowl', label: 'Fishbowl', icon: 'CircleDot' },
+    { id: 'jigsaw', label: 'Jigsaw', icon: 'Puzzle' },
+  ],
+  Literacy: [
+    { id: 'notice-wonder', label: 'Notice and Wonder', icon: 'Search' },
+    { id: 'chalk-talk', label: 'Chalk Talk', icon: 'Pencil' },
+    {
+      id: 'stronger-clearer',
+      label: 'Stronger and Clearer',
+      icon: 'RefreshCw',
+    },
+    { id: 'annotation', label: 'Active Annotation', icon: 'Highlighter' },
+    { id: 'reading-protocol', label: 'Reading Protocol', icon: 'BookOpen' },
+  ],
+  Thinking: [
+    { id: 'see-think-wonder', label: 'See-Think-Wonder', icon: 'Eye' },
+    { id: 'compass-points', label: 'Compass Points', icon: 'Compass' },
+    { id: 'bridge-321', label: '3-2-1 Bridge', icon: 'Bridge' },
+    {
+      id: 'claim-support-question',
+      label: 'Claim-Support-Question',
+      icon: 'HelpCircle',
+    },
+  ],
+  Catalyst: [
+    { id: 'do-now', label: 'Do Now / Bell Ringer', icon: 'Play' },
+    { id: 'exit-ticket', label: 'Exit Ticket', icon: 'LogOut' },
+    { id: 'cfu', label: 'Check for Understanding', icon: 'CheckCircle2' },
+    {
+      id: 'direct-instruction',
+      label: 'Direct Instruction',
+      icon: 'Presentation',
+    },
+  ],
+};
 
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
-  const config = widget.config as WorkSymbolsConfig;
+  const { updateWidget, gradeFilter } = useDashboard();
+  const config = (widget.config as WorkSymbolsConfig) ?? {};
+  const activeRoutines = config.activeRoutines ?? [];
   const { voiceLevel = null, workMode = null } = config;
+  const [activeCategory, setActiveCategory] =
+    useState<keyof typeof ROUTINE_CATEGORIES>('Collaboration');
 
+  const toggleRoutine = (id: string) => {
+    const newRoutines = activeRoutines.includes(id)
+      ? activeRoutines.filter((r: string) => r !== id)
+      : [...activeRoutines, id];
+
+    updateWidget(widget.id, {
+      config: { ...config, activeRoutines: newRoutines },
+    });
+  };
+
+  // 9-12 High School View
+  if (gradeFilter === '9-12') {
+    return (
+      <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden">
+        {/* Category Tabs */}
+        <div className="flex gap-1 p-2 bg-gray-50 border-b overflow-x-auto no-scrollbar">
+          {(
+            Object.keys(ROUTINE_CATEGORIES) as Array<
+              keyof typeof ROUTINE_CATEGORIES
+            >
+          ).map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+                activeCategory === cat
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid of Routine Cards */}
+        <div className="flex-1 p-3 overflow-y-auto no-scrollbar">
+          <div className="grid grid-cols-2 gap-3">
+            {ROUTINE_CATEGORIES[activeCategory].map((routine) => {
+              const isActive = activeRoutines.includes(routine.id);
+              const IconComponent =
+                (Icons as Record<string, React.ElementType>)[routine.icon] ??
+                Icons.HelpCircle;
+
+              return (
+                <button
+                  key={routine.id}
+                  onClick={() => toggleRoutine(routine.id)}
+                  className={`p-3 border-2 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group ${
+                    isActive
+                      ? 'border-blue-500 bg-blue-50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                      : 'border-gray-100 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`p-2 rounded-full transition-colors ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
+                    }`}
+                  >
+                    <IconComponent size={20} />
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold text-center leading-tight ${
+                      isActive ? 'text-blue-700' : 'text-gray-500'
+                    }`}
+                  >
+                    {routine.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original K-8 View
   const voices = [
     {
       id: 4,
@@ -53,9 +182,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     label: string;
     icon: React.ElementType;
   }[] = [
-    { id: 'individual', label: 'On Your Own', icon: User },
-    { id: 'partner', label: 'With a Partner', icon: Users },
-    { id: 'group', label: 'With a Group', icon: UsersRound },
+    { id: 'individual', label: 'On Your Own', icon: Icons.User },
+    { id: 'partner', label: 'With a Partner', icon: Icons.Users },
+    { id: 'group', label: 'With a Group', icon: Icons.UsersRound },
   ];
 
   return (
