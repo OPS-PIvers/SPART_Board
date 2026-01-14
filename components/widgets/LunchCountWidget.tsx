@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 import { WidgetData, LunchCountConfig, LunchMenuDay } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import { Button } from '../common/Button';
@@ -11,6 +12,9 @@ import {
   Undo2,
   CheckCircle2,
   Box,
+  X,
+  FileSpreadsheet,
+  Send,
 } from 'lucide-react';
 
 type LunchType = 'hot' | 'bento' | 'home';
@@ -42,10 +46,150 @@ const SCHOOL_OPTIONS = [
 
 const DEFAULT_RECIPIENT_EMAIL = 'paul.ivers@orono.k12.mn.us';
 
+interface SubmitReportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (notes: string) => Promise<void>;
+  data: {
+    date: string;
+    staffName: string;
+    hotLunch: number;
+    bentoBox: number;
+    hotLunchName: string;
+    bentoBoxName: string;
+  };
+  isSubmitting: boolean;
+}
+
+const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  data,
+  isSubmitting,
+}) => {
+  const [notes, setNotes] = useState('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
+        <div className="p-6 bg-brand-blue-primary text-white flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-lg uppercase tracking-tight">
+                Submit Lunch Report
+              </h3>
+              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">
+                Review and add notes
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Date
+              </span>
+              <p className="text-sm font-bold text-slate-700">{data.date}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Staff Name
+              </span>
+              <p className="text-sm font-bold text-slate-700">
+                {data.staffName}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-2xl border border-orange-100">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-orange-600 uppercase">
+                  Hot Lunch
+                </span>
+                <span className="text-[11px] font-bold text-orange-800 line-clamp-1">
+                  {data.hotLunchName}
+                </span>
+              </div>
+              <span className="text-2xl font-black text-orange-600">
+                {data.hotLunch}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-emerald-600 uppercase">
+                  Bento Box
+                </span>
+                <span className="text-[11px] font-bold text-emerald-800 line-clamp-1">
+                  {data.bentoBoxName}
+                </span>
+              </div>
+              <span className="text-2xl font-black text-emerald-600">
+                {data.bentoBox}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Additional Notes
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Gluten Free, Field Trips, etc..."
+              className="w-full h-24 p-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-brand-blue-primary/20 focus:border-brand-blue-primary transition-all resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={onClose}
+              variant="secondary"
+              className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void onSubmit(notes)}
+              variant="success"
+              className="flex-[2] py-4 rounded-2xl font-black uppercase tracking-widest"
+              isLoading={isSubmitting}
+              icon={<Send className="w-4 h-4" />}
+            >
+              {isSubmitting ? 'Sending...' : 'Confirm & Submit'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
+  const { user, featurePermissions } = useAuth();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+
   const config = widget.config as LunchCountConfig;
   const {
     cachedMenu,
@@ -237,7 +381,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     addToast('Board reset', 'info');
   };
 
-  const submitReport = () => {
+  const menuDisplay = {
+    hot: isManualMode ? manualHotLunch : (cachedMenu?.hotLunch ?? 'Loading...'),
+    bento: isManualMode
+      ? manualBentoBox
+      : (cachedMenu?.bentoBox ?? 'Loading...'),
+  };
+
+  const getReportData = () => {
     const counts = { hot: 0, bento: 0, home: 0 };
     Object.values(assignments).forEach((type) => {
       if (type && counts[type as LunchType] !== undefined) {
@@ -245,36 +396,85 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       }
     });
 
-    const menu = isManualMode
-      ? { hot: manualHotLunch, bento: manualBentoBox }
-      : {
-          hot: cachedMenu?.hotLunch ?? 'None',
-          bento: cachedMenu?.bentoBox ?? 'None',
-        };
+    return {
+      date: new Date().toLocaleDateString(),
+      staffName: user?.displayName ?? 'Unknown Staff',
+      hotLunch: counts.hot,
+      bentoBox: counts.bento,
+      hotLunchName: menuDisplay.hot,
+      bentoBoxName: menuDisplay.bento,
+    };
+  };
 
-    const summary =
-      `Lunch Count Report - ${new Date().toLocaleDateString()}\n\n` +
-      `Hot Lunch (${menu.hot}): ${counts.hot}\n` +
-      `Bento Box (${menu.bento}): ${counts.bento}\n` +
-      `Home Lunch: ${counts.home}\n\n` +
-      `Sent from Dashboard.`;
+  const submitReport = () => {
+    setIsReportModalOpen(true);
+  };
 
-    window.open(
-      `mailto:${recipient}?subject=Lunch Count Report&body=${encodeURIComponent(
-        summary
-      )}`
+  const handleConfirmReport = async (notes: string) => {
+    const reportData = getReportData();
+    const permission = featurePermissions.find(
+      (p) => p.widgetType === 'lunchCount'
     );
-    addToast('Report generated', 'success');
+    const submissionUrl = permission?.config?.submissionUrl as
+      | string
+      | undefined;
+    const spreadsheetId = permission?.config?.googleSheetId as
+      | string
+      | undefined;
+
+    if (!submissionUrl) {
+      // Fallback to email if no URL configured
+      const summary =
+        `Lunch Count Report - ${reportData.date}\n\n` +
+        `Staff: ${reportData.staffName}\n` +
+        `Hot Lunch (${reportData.hotLunchName}): ${reportData.hotLunch}\n` +
+        `Bento Box (${reportData.bentoBoxName}): ${reportData.bentoBox}\n` +
+        `Notes: ${notes}\n\n` +
+        `Sent from Dashboard.`;
+
+      window.open(
+        `mailto:${recipient}?subject=Lunch Count Report&body=${encodeURIComponent(
+          summary
+        )}`
+      );
+      addToast('Report generated (Email Fallback)', 'info');
+      setIsReportModalOpen(false);
+      return;
+    }
+
+    setIsReporting(true);
+    try {
+      const payload = {
+        spreadsheetId,
+        date: reportData.date,
+        staffName: reportData.staffName,
+        hotLunch: reportData.hotLunch,
+        bentoBox: reportData.bentoBox,
+        notes: notes,
+      };
+
+      await fetch(submissionUrl, {
+        method: 'POST',
+        mode: 'no-cors', // Apps Script often requires no-cors for simple POST
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // Since we use no-cors, we can't actually read the response status
+      // but if it doesn't throw, it likely succeeded.
+      addToast('Report submitted to Google Sheet', 'success');
+      setIsReportModalOpen(false);
+    } catch (error) {
+      console.error('Report submission error:', error);
+      addToast('Failed to submit report', 'error');
+    } finally {
+      setIsReporting(false);
+    }
   };
 
   const unassigned = currentRoster.filter((name) => !assignments[name]);
-
-  const menuDisplay = {
-    hot: isManualMode ? manualHotLunch : (cachedMenu?.hotLunch ?? 'Loading...'),
-    bento: isManualMode
-      ? manualBentoBox
-      : (cachedMenu?.bentoBox ?? 'Loading...'),
-  };
 
   return (
     <div className="h-full flex flex-col bg-white select-none relative">
@@ -482,6 +682,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           )}
         </div>
       </div>
+
+      <SubmitReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onSubmit={handleConfirmReport}
+        data={getReportData()}
+        isSubmitting={isReporting}
+      />
     </div>
   );
 };

@@ -26,6 +26,7 @@ import {
   Trash2,
   Save,
   AlertCircle,
+  Settings,
 } from 'lucide-react';
 
 export const FeaturePermissionsManager: React.FC = () => {
@@ -41,6 +42,7 @@ export const FeaturePermissionsManager: React.FC = () => {
   const [unsavedChanges, setUnsavedChanges] = useState<Set<WidgetType>>(
     new Set()
   );
+  const [editingConfig, setEditingConfig] = useState<WidgetType | null>(null);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -315,16 +317,99 @@ export const FeaturePermissionsManager: React.FC = () => {
                 </div>
 
                 {hasCustomPermission && (
-                  <button
-                    onClick={() => deletePermission(tool.type)}
-                    disabled={isSaving}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                    title="Remove custom permissions"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        setEditingConfig(
+                          editingConfig === tool.type ? null : tool.type
+                        )
+                      }
+                      className={`p-2 rounded-lg transition-colors ${
+                        editingConfig === tool.type
+                          ? 'bg-brand-blue-primary text-white'
+                          : 'text-slate-400 hover:bg-slate-100'
+                      }`}
+                      title="Edit widget configuration"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deletePermission(tool.type)}
+                      disabled={isSaving}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      title="Remove custom permissions"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
+
+              {/* Configuration Panel */}
+              {editingConfig === tool.type && (
+                <div className="mb-4 p-3 bg-brand-blue-lighter/20 border border-brand-blue-lighter rounded-lg animate-in slide-in-from-top-2">
+                  <h4 className="text-xs font-black text-brand-blue-dark uppercase mb-3 flex items-center gap-2">
+                    <Settings className="w-3 h-3" /> {tool.label} Configuration
+                  </h4>
+
+                  {tool.type === 'lunchCount' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                          Google Sheet ID
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            (permission.config?.googleSheetId as string) ?? ''
+                          }
+                          onChange={(e) =>
+                            updatePermission(tool.type, {
+                              config: {
+                                ...permission.config,
+                                googleSheetId: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full px-2 py-1.5 text-xs font-mono border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                          placeholder="Spreadsheet ID from URL"
+                        />
+                        <p className="text-[9px] text-slate-400 mt-1">
+                          Found in the URL: docs.google.com/spreadsheets/d/
+                          <b>[ID]</b>/edit
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                          Submission URL (Apps Script)
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            (permission.config?.submissionUrl as string) ?? ''
+                          }
+                          onChange={(e) =>
+                            updatePermission(tool.type, {
+                              config: {
+                                ...permission.config,
+                                submissionUrl: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full px-2 py-1.5 text-xs font-mono border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                          placeholder="https://script.google.com/macros/s/.../exec"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {!['lunchCount'].includes(tool.type) && (
+                    <p className="text-xs text-slate-500 italic">
+                      No additional configuration available for this widget.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Enabled Toggle */}
               <div className="flex items-center justify-between mb-3 p-3 bg-slate-50 rounded-lg">

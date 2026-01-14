@@ -428,6 +428,8 @@ export interface FeaturePermission {
   gradeLevels?: GradeLevel[];
   /** Optional override for the widget's display name. */
   displayName?: string;
+  /** Optional global configuration for the widget (e.g., API keys, target IDs). */
+  config?: Record<string, unknown>;
 }
 
 export interface BackgroundPreset {
