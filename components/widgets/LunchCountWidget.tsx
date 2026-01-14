@@ -69,30 +69,26 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const fetchWithFallback = async (url: string) => {
     const proxies = [
       (u: string) =>
-        `https://api.allorigins.win/get?url=${encodeURIComponent(
-          u
-        )}&timestamp=${Date.now()}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
       (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
     ];
+
+    let lastError: Error | null = null;
 
     for (const getProxyUrl of proxies) {
       try {
         const response = await fetch(getProxyUrl(url));
-        if (!response.ok) continue;
+        if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
 
-        const data = (await response.json()) as { contents?: string };
-        // AllOrigins wraps the result in a .contents string
-        const jsonContent =
-          typeof data.contents === 'string'
-            ? (JSON.parse(data.contents) as NutrisliceWeek)
-            : (data as NutrisliceWeek);
+        const jsonContent = (await response.json()) as NutrisliceWeek;
 
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
         console.warn('Proxy attempt failed, trying next...', e);
       }
     }
-    throw new Error('All proxies failed');
+    throw lastError ?? new Error('All proxies failed');
   };
 
   const activeRoster = useMemo(
