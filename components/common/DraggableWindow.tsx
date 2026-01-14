@@ -1,5 +1,14 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Settings, Move, Minus, Pencil, Camera } from 'lucide-react';
+import {
+  X,
+  Settings,
+  Move,
+  Minus,
+  Pencil,
+  Camera,
+  Maximize,
+  Minimize2,
+} from 'lucide-react';
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { useScreenshot } from '../../hooks/useScreenshot';
@@ -64,9 +73,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
+  const isMaximized = widget.maximized ?? false;
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
+  };
+
+  const handleMaximizeToggle = () => {
+    const newMaximized = !isMaximized;
+    updateWidget(widget.id, { maximized: newMaximized });
+    if (newMaximized) {
+      bringToFront(widget.id);
+    }
   };
 
   const saveTitle = () => {
@@ -81,6 +99,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleDragStart = (e: React.MouseEvent) => {
+    if (isMaximized) return;
     if ((e.target as HTMLElement).closest('.resize-handle')) return;
     setIsDragging(true);
     document.body.classList.add('is-dragging-widget');
@@ -106,6 +125,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const handleResizeStart = (e: React.MouseEvent) => {
+    if (isMaximized) return;
     e.stopPropagation();
     setIsResizing(true);
     document.body.classList.add('is-dragging-widget');
@@ -138,10 +158,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       onMouseDown={handleMouseDown}
       className={`absolute select-none widget group rounded-xl bg-white/95 backdrop-blur-md border border-white/50 shadow-xl overflow-hidden transition-shadow ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
       style={{
-        left: widget.x,
-        top: widget.y,
-        width: widget.w,
-        height: widget.h,
+        left: isMaximized ? '1.5rem' : widget.x,
+        top: isMaximized ? '4.5rem' : widget.y,
+        width: isMaximized ? 'calc(100vw - 3rem)' : widget.w,
+        height: isMaximized ? 'calc(100vh - 9rem)' : widget.h,
         zIndex: widget.z,
         display: 'flex',
         opacity: widget.minimized ? 0 : 1,
@@ -187,7 +207,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 cursor-grab active:cursor-grabbing"
+              className={`flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                 <Move className="w-3 h-3 text-slate-400 flex-shrink-0" />
@@ -241,6 +261,20 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     <Camera className="w-4 h-4" />
                   </button>
                 )}
+                <button
+                  onClick={handleMaximizeToggle}
+                  className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
+                  title={isMaximized ? 'Restore' : 'Maximize'}
+                  aria-label={
+                    isMaximized ? 'Restore widget' : 'Maximize widget'
+                  }
+                >
+                  {isMaximized ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize className="w-4 h-4" />
+                  )}
+                </button>
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
                   className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
