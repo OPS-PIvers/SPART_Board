@@ -697,14 +697,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       },
       checklist: {
-        w: 280,
-        h: 300,
+        w: 350, // Slightly wider to accommodate buckets
+        h: 400,
         config: {
           items: [],
           mode: 'manual',
           firstNames: '',
           lastNames: '',
           completedNames: [],
+          bucketNameTodo: 'Todo',
+          bucketNameDone: 'Done',
           scaleMultiplier: 1,
         },
       },
