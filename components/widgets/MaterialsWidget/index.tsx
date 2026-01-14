@@ -57,7 +57,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
               className={`flex-grow min-w-[90px] max-w-[140px] aspect-square flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all duration-300 ${
                 isActive
                   ? `${item.color} ${
-                      item.textColor || 'text-white'
+                      item.textColor ?? 'text-white'
                     } border-transparent shadow-lg scale-105 z-10`
                   : 'bg-slate-50 border-slate-100 text-slate-300 hover:bg-slate-100 hover:border-slate-200'
               }`}
