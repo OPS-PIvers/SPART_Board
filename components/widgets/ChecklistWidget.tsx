@@ -1,82 +1,100 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ChecklistConfig, ChecklistItem } from '../../types';
-import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
   Square,
-  Trash2,
   ListPlus,
   Type,
   Users,
+  RefreshCw,
 } from 'lucide-react';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, rosters, activeRosterId } = useDashboard();
+  const { updateWidget } = useDashboard();
   const config = widget.config as ChecklistConfig;
-  const { items = [], scaleMultiplier = 1, rosterMode = 'class' } = config;
+  const {
+    items = [],
+    mode = 'manual',
+    firstNames = '',
+    lastNames = '',
+    completedNames = [],
+    scaleMultiplier = 1,
+  } = config;
 
-  const activeRoster = useMemo(
-    () => rosters.find((r) => r.id === activeRosterId),
-    [rosters, activeRosterId]
-  );
-
-  const displayItems = useMemo(() => {
-    if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) => {
-        const name = `${s.firstName} ${s.lastName}`.trim();
-        const existing = items.find((i) => i.text === name);
-        return {
-          id: existing?.id ?? `student-${s.id}`,
-          text: name,
-          completed: existing?.completed ?? false,
-        };
-      });
+  // Process Roster Names
+  const students = useMemo(() => {
+    if (mode !== 'roster') return [];
+    const firsts = firstNames
+      .split('\n')
+      .map((n) => n.trim())
+      .filter((n) => n);
+    const lasts = lastNames
+      .split('\n')
+      .map((n) => n.trim())
+      .filter((n) => n);
+    const count = Math.max(firsts.length, lasts.length);
+    const combined = [];
+    for (let i = 0; i < count; i++) {
+      const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
+      if (name) combined.push(name);
     }
-    return items;
-  }, [rosterMode, activeRoster, items]);
+    return combined;
+  }, [firstNames, lastNames, mode]);
 
-  const toggleItem = useCallback(
-    (text: string) => {
-      const existing = items.find((i) => i.text === text);
-      let newItems: ChecklistItem[];
-
-      if (existing) {
-        newItems = items.map((item) =>
-          item.text === text ? { ...item, completed: !item.completed } : item
-        );
-      } else {
-        newItems = [
-          ...items,
-          { id: `item-${Date.now()}`, text, completed: true },
-        ];
-      }
-
+  const toggleItem = (idOrName: string) => {
+    if (mode === 'manual') {
+      const newItems = items.map((item) =>
+        item.id === idOrName ? { ...item, completed: !item.completed } : item
+      );
       updateWidget(widget.id, {
         config: { ...config, items: newItems } as ChecklistConfig,
       });
-    },
-    [items, updateWidget, widget.id, config]
-  );
+    } else {
+      const isCompleted = completedNames.includes(idOrName);
+      const nextCompleted = isCompleted
+        ? completedNames.filter((n) => n !== idOrName)
+        : [...completedNames, idOrName];
+      updateWidget(widget.id, {
+        config: { ...config, completedNames: nextCompleted } as ChecklistConfig,
+      });
+    }
+  };
 
-  // Dynamically calculate font size based on widget dimensions
+  const resetToday = () => {
+    if (mode === 'manual') {
+      const reset = items.map((i) => ({ ...i, completed: false }));
+      updateWidget(widget.id, { config: { ...config, items: reset } });
+    } else {
+      updateWidget(widget.id, { config: { ...config, completedNames: [] } });
+    }
+  };
+
   const dynamicFontSize = useMemo(() => {
     const baseSize = Math.min(widget.w / 18, widget.h / 12);
     return Math.max(12, baseSize * scaleMultiplier);
   }, [widget.w, widget.h, scaleMultiplier]);
 
-  if (displayItems.length === 0) {
+  const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
+
+  if (!hasContent) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
-        <CheckSquare className="w-12 h-12 opacity-20" />
+      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3 bg-white">
+        {mode === 'manual' ? (
+          <ListPlus className="w-12 h-12 opacity-20" />
+        ) : (
+          <Users className="w-12 h-12 opacity-20" />
+        )}
         <div>
           <p className="text-sm font-bold uppercase tracking-widest mb-1">
-            No Tasks
+            {mode === 'manual' ? 'No Tasks' : 'Roster Empty'}
           </p>
           <p className="text-xs">
-            Flip this widget to add your class tasks or a student list.
+            {mode === 'manual'
+              ? 'Flip to add your class tasks.'
+              : 'Flip to enter your student names.'}
           </p>
         </div>
       </div>
@@ -84,67 +102,71 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col">
+    <div className="h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group">
       {/* Notebook Margin Line */}
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
-
-      {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light z-10">
-          <Users className="w-2.5 h-2.5 text-brand-blue-primary" />
-          <span className="text-[9px] font-black uppercase text-brand-blue-primary tracking-wider">
-            {activeRoster.name}
-          </span>
-        </div>
-      )}
 
       <div className="flex-1 overflow-y-auto py-4 pl-12 pr-4 custom-scrollbar">
         <ul
           style={{ gap: `${dynamicFontSize / 2}px` }}
           className="flex flex-col"
         >
-          {displayItems.map((item) => (
-            <li
-              key={item.id}
-              onClick={() => {
-                toggleItem(item.text);
-              }}
-              className="group flex items-start gap-3 cursor-pointer select-none"
-            >
-              <div
-                className="shrink-0 transition-transform group-active:scale-90 flex items-center justify-center"
-                style={{ height: `${dynamicFontSize * 1.2}px` }}
+          {(mode === 'manual' ? items : students).map((item) => {
+            const isManual = typeof item !== 'string';
+            const label = isManual ? item.text : item;
+            const isCompleted = isManual
+              ? item.completed
+              : completedNames.includes(item);
+            const id = isManual ? item.id : item;
+
+            return (
+              <li
+                key={id}
+                onClick={() => toggleItem(id)}
+                className="group/item flex items-start gap-3 cursor-pointer select-none"
               >
-                {item.completed ? (
-                  <CheckSquare
-                    className="text-green-500 fill-green-50"
-                    style={{
-                      width: `${dynamicFontSize}px`,
-                      height: `${dynamicFontSize}px`,
-                    }}
-                  />
-                ) : (
-                  <Square
-                    className="text-slate-300"
-                    style={{
-                      width: `${dynamicFontSize}px`,
-                      height: `${dynamicFontSize}px`,
-                    }}
-                  />
-                )}
-              </div>
-              <span
-                className={`font-medium leading-tight transition-all ${
-                  item.completed
-                    ? 'text-slate-400 line-through decoration-slate-300'
-                    : 'text-slate-700'
-                }`}
-                style={{ fontSize: `${dynamicFontSize}px` }}
-              >
-                {item.text}
-              </span>
-            </li>
-          ))}
+                <div
+                  className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
+                  style={{ height: `${dynamicFontSize * 1.2}px` }}
+                >
+                  {isCompleted ? (
+                    <CheckSquare
+                      className="text-green-500 fill-green-50"
+                      style={{
+                        width: `${dynamicFontSize}px`,
+                        height: `${dynamicFontSize}px`,
+                      }}
+                    />
+                  ) : (
+                    <Square
+                      className="text-slate-300"
+                      style={{
+                        width: `${dynamicFontSize}px`,
+                        height: `${dynamicFontSize}px`,
+                      }}
+                    />
+                  )}
+                </div>
+                <span
+                  className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
+                  style={{ fontSize: `${dynamicFontSize}px` }}
+                >
+                  {label}
+                </span>
+              </li>
+            );
+          })}
         </ul>
+      </div>
+
+      {/* Prominent Reset Button - Visible on Hover or Mobile */}
+      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={resetToday}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-[10px] font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
+        >
+          <RefreshCw className="w-3 h-3" /> Reset Checks
+        </button>
       </div>
     </div>
   );
@@ -155,11 +177,14 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as ChecklistConfig;
-  const items = config.items ?? [];
-  const scaleMultiplier = config.scaleMultiplier ?? 1;
-  const rosterMode = config.rosterMode ?? 'class';
+  const {
+    items = [],
+    mode = 'manual',
+    firstNames = '',
+    lastNames = '',
+    scaleMultiplier = 1,
+  } = config;
 
-  // Use local state for the text to prevent the "space-eating" bug during typing
   const [localText, setLocalText] = React.useState(
     items.map((i) => i.text).join('\n')
   );
@@ -167,9 +192,6 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   const handleBulkChange = (text: string) => {
     setLocalText(text);
     const lines = text.split('\n');
-
-    // Process the lines into items, only trimming for the final storage
-    // but not during the split to allow users to finish typing words
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
       .map((line, idx) => {
@@ -182,51 +204,80 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         };
       });
 
-    updateWidget(widget.id, {
-      config: { ...config, items: newItems } as ChecklistConfig,
-    });
-  };
-
-  const clearAll = () => {
-    if (confirm('Clear all tasks?')) {
-      setLocalText('');
-      updateWidget(widget.id, {
-        config: { ...config, items: [] } as ChecklistConfig,
-      });
-    }
-  };
-
-  const resetProgress = () => {
-    const reset = items.map((i) => ({ ...i, completed: false }));
-    updateWidget(widget.id, {
-      config: { ...config, items: reset } as ChecklistConfig,
-    });
+    updateWidget(widget.id, { config: { ...config, items: newItems } });
   };
 
   return (
     <div className="space-y-6">
-      <RosterModeControl
-        rosterMode={rosterMode}
-        onModeChange={(mode) =>
-          updateWidget(widget.id, {
-            config: { ...config, rosterMode: mode },
-          })
-        }
-      />
+      {/* Mode Toggle */}
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          List Source
+        </label>
+        <div className="flex bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() =>
+              updateWidget(widget.id, { config: { ...config, mode: 'manual' } })
+            }
+            className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+          >
+            CUSTOM TASKS
+          </button>
+          <button
+            onClick={() =>
+              updateWidget(widget.id, { config: { ...config, mode: 'roster' } })
+            }
+            className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+          >
+            CLASS ROSTER
+          </button>
+        </div>
+      </div>
 
-      {rosterMode === 'custom' && (
-        <div>
+      {mode === 'manual' ? (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <ListPlus className="w-3 h-3" /> Task List (One per line)
           </label>
           <textarea
             value={localText}
-            onChange={(e) => {
-              handleBulkChange(e.target.value);
-            }}
-            placeholder="Enter tasks here...&#10;Math Homework&#10;Science Lab&#10;Reading Time"
-            className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue-primary outline-none transition-all resize-none text-slate-900 leading-relaxed"
+            onChange={(e) => handleBulkChange(e.target.value)}
+            placeholder="Enter tasks here..."
+            className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
           />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              First Names
+            </label>
+            <textarea
+              value={firstNames}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: { ...config, firstNames: e.target.value },
+                })
+              }
+              className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
+              placeholder="First names..."
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Last Names
+            </label>
+            <textarea
+              value={lastNames}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: { ...config, lastNames: e.target.value },
+                })
+              }
+              className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
+              placeholder="Last names..."
+            />
+          </div>
         </div>
       )}
 
@@ -234,7 +285,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Text Scale
         </label>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 px-2">
           <input
             type="range"
             min="0.5"
@@ -246,35 +297,15 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
                 config: {
                   ...config,
                   scaleMultiplier: parseFloat(e.target.value),
-                } as ChecklistConfig,
+                },
               })
             }
-            className="flex-1 accent-blue-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
           />
           <span className="w-10 text-center font-mono font-bold text-slate-700 text-xs">
             {scaleMultiplier}x
           </span>
         </div>
-        <p className="mt-2 text-[8px] text-slate-400 uppercase font-bold tracking-wider">
-          Text also scales automatically as you resize the window.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={resetProgress}
-          disabled={items.length === 0}
-          className="flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors disabled:opacity-50"
-        >
-          Reset Progress
-        </button>
-        <button
-          onClick={clearAll}
-          disabled={items.length === 0}
-          className="flex items-center justify-center gap-2 py-2.5 px-4 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors disabled:opacity-50"
-        >
-          <Trash2 className="w-3 h-3" /> Clear List
-        </button>
       </div>
     </div>
   );

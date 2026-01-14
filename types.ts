@@ -127,7 +127,11 @@ export interface TextConfig {
 export interface ChecklistConfig {
   items: ChecklistItem[];
   scaleMultiplier?: number;
-  rosterMode?: 'class' | 'custom';
+  // NEW FIELDS
+  mode: 'manual' | 'roster';
+  firstNames?: string;
+  lastNames?: string;
+  completedNames?: string[]; // Tracks IDs or Names checked in roster mode
 }
 
 export interface RandomGroup {
