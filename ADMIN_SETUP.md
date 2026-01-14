@@ -10,6 +10,7 @@ The following emails have been configured as admins:
 - bailey.nett@orono.k12.mn.us
 - jennifer.ivers@orono.k12.mn.us
 - sean.beaverson@orono.k12.mn.us
+- joel.mellor@orono.k12.mn.us
 
 ## Setup Steps
 
@@ -105,8 +106,7 @@ function MyComponent() {
 - Users cannot grant themselves admin access
 - The `service-account-key.json` file contains sensitive credentials and must never be committed
 - Admin documents can only be created via Firebase Console or the Admin SDK
-- To add/remove admins in the future, update the `ADMIN_EMAILS` array in both:
-  - `src/context/AuthContext.tsx`
+- To add/remove admins in the future, update the `ADMIN_EMAILS` array in:
   - `scripts/setup-admins.js`
 
   Then re-run the setup script.

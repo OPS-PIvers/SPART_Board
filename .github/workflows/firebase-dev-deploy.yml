@@ -6,6 +6,7 @@ on:
       - dev-paul        # Your branch
       - dev-jen  # Developer 1's branch
       - dev-bailey  # Developer 2's branch
+      - dev-joel  # Joel's branch
 
 jobs:
   build-and-deploy-preview:

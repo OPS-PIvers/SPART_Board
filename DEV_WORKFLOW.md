@@ -9,13 +9,14 @@ Each developer has their own persistent test environment on Firebase Hosting.
 - `dev-paul` - Lead developer test environment
 - `dev-jen` - Developer 1 test environment
 - `dev-bailey` - Developer 2 test environment
+- `dev-joel` - Joel's test environment
 
 ### How It Works
 
 1. **Create your branch** (if it doesn't exist):
 
    ```bash
-   git checkout -b dev-paul  # or dev-jen, dev-bailey
+   git checkout -b dev-paul  # or dev-jen, dev-bailey, dev-joel
    ```
 
 2. **Make your changes and commit**:
@@ -34,11 +35,11 @@ Each developer has their own persistent test environment on Firebase Hosting.
 4. **Automatic deployment**: GitHub Actions will automatically:
    - Build your code
    - Deploy to a Firebase preview channel
-   - Give you a unique URL like: `https://spartboard--dev-lead-XXXXXXXX.web.app`
+     - Give you a unique URL like: `https://spartboard--dev-lead-XXXXXXXX.web.app`
      - dev-paul: spartboard--dev-paul-g42pu859.web.app
      - dev-jen: spartboard--dev-jen-w38uta3f.web.app
      - dev-bailey: spartboard--dev-bailey-2w0bszdm.web.app
-
+     - dev-joel: spartboard--dev-joel-w38uta3f.web.app (example)
 5. **Find your URL**:
    - Go to your repo's "Actions" tab on GitHub
    - Click on the latest workflow run
