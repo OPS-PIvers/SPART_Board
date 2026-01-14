@@ -11,27 +11,34 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as MaterialsConfig;
-  const selectedItems = config.selectedItems || [];
-  const activeItems = config.activeItems || [];
+  const selectedItems = React.useMemo(
+    () => new Set(config.selectedItems || []),
+    [config.selectedItems]
+  );
+  const activeItems = React.useMemo(
+    () => new Set(config.activeItems || []),
+    [config.activeItems]
+  );
 
   const toggleActive = (id: string) => {
-    let newActive = [...activeItems];
-    if (newActive.includes(id)) {
-      newActive = newActive.filter((item) => item !== id);
+    const newActive = new Set(activeItems);
+    if (newActive.has(id)) {
+      newActive.delete(id);
     } else {
-      newActive.push(id);
+      newActive.add(id);
     }
     updateWidget(widget.id, {
       config: {
         ...config,
-        activeItems: newActive,
+        activeItems: Array.from(newActive),
       },
     });
   };
 
   // Filter available items to only those selected in settings
-  const displayItems = MATERIAL_ITEMS.filter((item) =>
-    selectedItems.includes(item.id)
+  const displayItems = React.useMemo(
+    () => MATERIAL_ITEMS.filter((item) => selectedItems.has(item.id)),
+    [selectedItems]
   );
 
   if (displayItems.length === 0) {
@@ -49,7 +56,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
     <div className="h-full w-full bg-white p-3 overflow-y-auto custom-scrollbar select-none">
       <div className="flex flex-wrap gap-2 h-full content-start justify-center">
         {displayItems.map((item) => {
-          const isActive = activeItems.includes(item.id);
+          const isActive = activeItems.has(item.id);
           return (
             <button
               key={item.id}

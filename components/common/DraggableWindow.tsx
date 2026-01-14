@@ -15,6 +15,7 @@ import { useScreenshot } from '../../hooks/useScreenshot';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
+const MAXIMIZED_Z_INDEX = 900;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -162,7 +163,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         top: isMaximized ? 0 : widget.y,
         width: isMaximized ? '100vw' : widget.w,
         height: isMaximized ? '100vh' : widget.h,
-        zIndex: isMaximized ? 900 : widget.z,
+        zIndex: isMaximized ? MAXIMIZED_Z_INDEX : widget.z,
         display: 'flex',
         opacity: widget.minimized ? 0 : 1,
         pointerEvents: widget.minimized ? 'none' : 'auto',
