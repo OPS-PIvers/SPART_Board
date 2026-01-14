@@ -178,11 +178,13 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
 
-      // Use a list of proxies to improve reliability, matching LunchCountWidget's approach
+      // Use a list of proxies to improve reliability.
+      // corsproxy.io is often more stable for Earth Networks.
       const proxies = [
+        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
         (u: string) =>
           `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+        (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
       ];
 
       let lastError: Error | null = null;
@@ -190,24 +192,30 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       for (const getProxyUrl of proxies) {
         try {
-          const res = await fetch(getProxyUrl(url));
+          const proxyUrl = getProxyUrl(url);
+          const res = await fetch(proxyUrl);
           if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
 
-          const contentType = res.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            const text = await res.text();
-            if (text.trim().startsWith('<!doctype')) {
-              throw new Error('Proxy returned HTML instead of JSON');
-            }
-            data = JSON.parse(text) as EarthNetworksResponse;
-          } else {
-            data = (await res.json()) as EarthNetworksResponse;
+          const text = await res.text();
+          if (!text || text.trim().startsWith('<!doctype')) {
+            throw new Error(
+              'Proxy returned HTML or empty response instead of JSON'
+            );
           }
 
-          if (data) break;
+          try {
+            data = JSON.parse(text) as EarthNetworksResponse;
+          } catch (_) {
+            throw new Error('Failed to parse response as JSON');
+          }
+
+          if (data && data.o) break;
         } catch (e) {
           lastError = e instanceof Error ? e : new Error(String(e));
-          console.warn('Proxy attempt failed, trying next...', e);
+          console.warn(
+            `Proxy ${getProxyUrl.name || 'attempt'} failed, trying next...`,
+            e
+          );
         }
       }
 

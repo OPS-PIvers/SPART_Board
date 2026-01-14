@@ -73,9 +73,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   // to get proper CORS headers configured for a production-ready solution.
   const fetchWithFallback = async (url: string) => {
     const proxies = [
+      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       (u: string) =>
         `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
     ];
 
     let lastError: Error | null = null;
@@ -86,8 +87,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
 
         const text = await response.text();
-        if (text.trim().startsWith('<!doctype')) {
-          throw new Error('Proxy returned HTML instead of JSON');
+        if (!text || text.trim().startsWith('<!doctype')) {
+          throw new Error(
+            'Proxy returned HTML or empty response instead of JSON'
+          );
         }
 
         const jsonContent = JSON.parse(text) as NutrisliceWeek;
