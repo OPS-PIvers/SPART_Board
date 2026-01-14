@@ -1,7 +1,14 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ChecklistConfig, ChecklistItem } from '../../types';
-import { CheckSquare, Square, Trash2, ListPlus, Type, Users, RefreshCw } from 'lucide-react';
+import {
+  CheckSquare,
+  Square,
+  ListPlus,
+  Type,
+  Users,
+  RefreshCw,
+} from 'lucide-react';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -14,14 +21,20 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     firstNames = '',
     lastNames = '',
     completedNames = [],
-    scaleMultiplier = 1
+    scaleMultiplier = 1,
   } = config;
 
   // Process Roster Names
   const students = useMemo(() => {
     if (mode !== 'roster') return [];
-    const firsts = firstNames.split('\n').map(n => n.trim()).filter(n => n);
-    const lasts = lastNames.split('\n').map(n => n.trim()).filter(n => n);
+    const firsts = firstNames
+      .split('\n')
+      .map((n) => n.trim())
+      .filter((n) => n);
+    const lasts = lastNames
+      .split('\n')
+      .map((n) => n.trim())
+      .filter((n) => n);
     const count = Math.max(firsts.length, lasts.length);
     const combined = [];
     for (let i = 0; i < count; i++) {
@@ -42,7 +55,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     } else {
       const isCompleted = completedNames.includes(idOrName);
       const nextCompleted = isCompleted
-        ? completedNames.filter(n => n !== idOrName)
+        ? completedNames.filter((n) => n !== idOrName)
         : [...completedNames, idOrName];
       updateWidget(widget.id, {
         config: { ...config, completedNames: nextCompleted } as ChecklistConfig,
@@ -69,13 +82,19 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   if (!hasContent) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3 bg-white">
-        {mode === 'manual' ? <ListPlus className="w-12 h-12 opacity-20" /> : <Users className="w-12 h-12 opacity-20" />}
+        {mode === 'manual' ? (
+          <ListPlus className="w-12 h-12 opacity-20" />
+        ) : (
+          <Users className="w-12 h-12 opacity-20" />
+        )}
         <div>
           <p className="text-sm font-bold uppercase tracking-widest mb-1">
             {mode === 'manual' ? 'No Tasks' : 'Roster Empty'}
           </p>
           <p className="text-xs">
-            {mode === 'manual' ? 'Flip to add your class tasks.' : 'Flip to enter your student names.'}
+            {mode === 'manual'
+              ? 'Flip to add your class tasks.'
+              : 'Flip to enter your student names.'}
           </p>
         </div>
       </div>
@@ -88,12 +107,17 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 
       <div className="flex-1 overflow-y-auto py-4 pl-12 pr-4 custom-scrollbar">
-        <ul style={{ gap: `${dynamicFontSize / 2}px` }} className="flex flex-col">
-          {(mode === 'manual' ? items : students).map((item, idx) => {
+        <ul
+          style={{ gap: `${dynamicFontSize / 2}px` }}
+          className="flex flex-col"
+        >
+          {(mode === 'manual' ? items : students).map((item) => {
             const isManual = typeof item !== 'string';
-            const label = isManual ? (item as ChecklistItem).text : (item as string);
-            const isCompleted = isManual ? (item as ChecklistItem).completed : completedNames.includes(item as string);
-            const id = isManual ? (item as ChecklistItem).id : (item as string);
+            const label = isManual ? item.text : item;
+            const isCompleted = isManual
+              ? item.completed
+              : completedNames.includes(item);
+            const id = isManual ? item.id : item;
 
             return (
               <li
@@ -106,9 +130,21 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                   style={{ height: `${dynamicFontSize * 1.2}px` }}
                 >
                   {isCompleted ? (
-                    <CheckSquare className="text-green-500 fill-green-50" style={{ width: `${dynamicFontSize}px`, height: `${dynamicFontSize}px` }} />
+                    <CheckSquare
+                      className="text-green-500 fill-green-50"
+                      style={{
+                        width: `${dynamicFontSize}px`,
+                        height: `${dynamicFontSize}px`,
+                      }}
+                    />
                   ) : (
-                    <Square className="text-slate-300" style={{ width: `${dynamicFontSize}px`, height: `${dynamicFontSize}px` }} />
+                    <Square
+                      className="text-slate-300"
+                      style={{
+                        width: `${dynamicFontSize}px`,
+                        height: `${dynamicFontSize}px`,
+                      }}
+                    />
                   )}
                 </div>
                 <span
@@ -141,9 +177,17 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as ChecklistConfig;
-  const { items = [], mode = 'manual', firstNames = '', lastNames = '', scaleMultiplier = 1 } = config;
+  const {
+    items = [],
+    mode = 'manual',
+    firstNames = '',
+    lastNames = '',
+    scaleMultiplier = 1,
+  } = config;
 
-  const [localText, setLocalText] = React.useState(items.map((i) => i.text).join('\n'));
+  const [localText, setLocalText] = React.useState(
+    items.map((i) => i.text).join('\n')
+  );
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);
@@ -167,16 +211,26 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-6">
       {/* Mode Toggle */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">List Source</label>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          List Source
+        </label>
         <div className="flex bg-slate-100 p-1 rounded-xl">
           <button
-            onClick={() => updateWidget(widget.id, { config: { ...config, mode: 'manual' }})}
+            onClick={() =>
+              updateWidget(widget.id, { config: { ...config, mode: 'manual' } })
+            }
             className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-          >CUSTOM TASKS</button>
+          >
+            CUSTOM TASKS
+          </button>
           <button
-            onClick={() => updateWidget(widget.id, { config: { ...config, mode: 'roster' }})}
+            onClick={() =>
+              updateWidget(widget.id, { config: { ...config, mode: 'roster' } })
+            }
             className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-          >CLASS ROSTER</button>
+          >
+            CLASS ROSTER
+          </button>
         </div>
       </div>
 
@@ -195,19 +249,31 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       ) : (
         <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">First Names</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              First Names
+            </label>
             <textarea
               value={firstNames}
-              onChange={(e) => updateWidget(widget.id, { config: { ...config, firstNames: e.target.value }})}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: { ...config, firstNames: e.target.value },
+                })
+              }
               className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
               placeholder="First names..."
             />
           </div>
           <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Last Names</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              Last Names
+            </label>
             <textarea
               value={lastNames}
-              onChange={(e) => updateWidget(widget.id, { config: { ...config, lastNames: e.target.value }})}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: { ...config, lastNames: e.target.value },
+                })
+              }
               className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
               placeholder="Last names..."
             />
@@ -221,12 +287,24 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         </label>
         <div className="flex items-center gap-4 px-2">
           <input
-            type="range" min="0.5" max="2.0" step="0.1"
+            type="range"
+            min="0.5"
+            max="2.0"
+            step="0.1"
             value={scaleMultiplier}
-            onChange={(e) => updateWidget(widget.id, { config: { ...config, scaleMultiplier: parseFloat(e.target.value) }})}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  scaleMultiplier: parseFloat(e.target.value),
+                },
+              })
+            }
             className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
           />
-          <span className="w-10 text-center font-mono font-bold text-slate-700 text-xs">{scaleMultiplier}x</span>
+          <span className="w-10 text-center font-mono font-bold text-slate-700 text-xs">
+            {scaleMultiplier}x
+          </span>
         </div>
       </div>
     </div>
