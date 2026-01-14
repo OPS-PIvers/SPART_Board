@@ -318,9 +318,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             onClick={() => updateWidget(widget.id, { flipped: true })}
             variant="ghost"
             size="icon"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
+            icon={<Settings className="w-4 h-4" />}
+          />
         </div>
       </div>
 
