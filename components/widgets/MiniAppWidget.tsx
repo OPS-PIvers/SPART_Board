@@ -46,12 +46,16 @@ const getLocalLibrary = (): MiniAppItem[] => {
   }
 };
 
-const saveLocalLibrary = (apps: MiniAppItem[]) => {
+const saveLocalLibrary = (
+  apps: MiniAppItem[],
+  onError?: (msg: string) => void
+) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
   } catch (e) {
     console.error('Failed to save mini-apps', e);
-    alert('Storage full! Please delete some apps or export your library.');
+    if (onError)
+      onError('Storage full! Please delete some apps or export your library.');
   }
 };
 
@@ -207,7 +211,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (confirm('Delete this app from your local library?')) {
       const updated = library.filter((a) => a.id !== id);
       setLibrary(updated);
-      saveLocalLibrary(updated);
+      saveLocalLibrary(updated, (msg) => addToast(msg, 'error'));
     }
   };
 
@@ -226,7 +230,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       );
     } else {
       const newApp: MiniAppItem = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         title: editTitle,
         html: editCode,
         createdAt: Date.now(),
@@ -283,7 +287,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             return {
               id: `imported-${Date.now()}-${Math.random()
                 .toString(36)
-                .substr(2, 9)}`,
+                .slice(2, 11)}`,
               title:
                 typeof i.title === 'string' && i.title
                   ? i.title
@@ -296,12 +300,15 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         const merged = [...newItems, ...library];
         setLibrary(merged);
-        saveLocalLibrary(merged);
+        saveLocalLibrary(merged, (msg) => addToast(msg, 'error'));
         addToast(`Imported ${newItems.length} apps`, 'success');
       } catch (err) {
         console.error(err);
         addToast('Failed to import: Invalid JSON file', 'error');
       }
+    };
+    reader.onerror = () => {
+      addToast('Failed to read file', 'error');
     };
     reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -322,7 +329,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <iframe
           srcDoc={activeApp.html}
           className="flex-1 w-full border-none"
-          sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-modals"
+          sandbox="allow-scripts allow-forms allow-popups allow-modals"
           title={activeApp.title}
         />
       </div>
