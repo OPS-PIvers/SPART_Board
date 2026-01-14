@@ -85,15 +85,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         const response = await fetch(getProxyUrl(url));
         if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
 
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          if (text.trim().startsWith('<!doctype')) {
-            throw new Error('Proxy returned HTML instead of JSON');
-          }
+        const text = await response.text();
+        if (text.trim().startsWith('<!doctype')) {
+          throw new Error('Proxy returned HTML instead of JSON');
         }
 
-        const jsonContent = (await response.json()) as NutrisliceWeek;
+        const jsonContent = JSON.parse(text) as NutrisliceWeek;
 
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {

@@ -176,7 +176,18 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         try {
           const res = await fetch(getProxyUrl(url));
           if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
-          data = (await res.json()) as EarthNetworksResponse;
+
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text();
+            if (text.trim().startsWith('<!doctype')) {
+              throw new Error('Proxy returned HTML instead of JSON');
+            }
+            data = JSON.parse(text) as EarthNetworksResponse;
+          } else {
+            data = (await res.json()) as EarthNetworksResponse;
+          }
+
           if (data) break;
         } catch (e) {
           lastError = e instanceof Error ? e : new Error(String(e));
