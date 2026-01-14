@@ -49,7 +49,7 @@ const DEFAULT_RECIPIENT_EMAIL = 'paul.ivers@orono.k12.mn.us';
 interface SubmitReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (notes: string) => Promise<void>;
+  onSubmit: (notes: string, extraPizza?: number) => Promise<void>;
   data: {
     date: string;
     staffName: string;
@@ -57,6 +57,7 @@ interface SubmitReportModalProps {
     bentoBox: number;
     hotLunchName: string;
     bentoBoxName: string;
+    schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
   };
   isSubmitting: boolean;
 }
@@ -69,13 +70,16 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
   isSubmitting,
 }) => {
   const [notes, setNotes] = useState('');
+  const [extraPizza, setExtraPizza] = useState<number | ''>('');
 
   if (!isOpen) return null;
+
+  const isIntermediate = data.schoolSite === 'orono-intermediate-school';
 
   return (
     <div className="absolute inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 rounded-3xl overflow-hidden">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-slate-100 animate-in zoom-in-95 duration-200 custom-scrollbar">
-        <div className="p-6 bg-brand-blue-primary text-white flex justify-between items-center">
+        <div className="p-6 bg-brand-blue-primary text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <FileSpreadsheet className="w-6 h-6" />
@@ -143,6 +147,31 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
                 {data.bentoBox}
               </span>
             </div>
+
+            {isIntermediate && (
+              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black text-purple-600 uppercase block mb-1">
+                    Extra Pizza Slices
+                  </span>
+                  <p className="text-[9px] text-purple-400 font-bold uppercase">
+                    Optional
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  value={extraPizza}
+                  onChange={(e) =>
+                    setExtraPizza(
+                      e.target.value === '' ? '' : parseInt(e.target.value)
+                    )
+                  }
+                  placeholder="0"
+                  className="w-20 p-2 text-center text-lg font-black bg-white border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400/20"
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -157,7 +186,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
             <Button
               onClick={onClose}
               variant="secondary"
@@ -167,7 +196,9 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
               Cancel
             </Button>
             <Button
-              onClick={() => void onSubmit(notes)}
+              onClick={() =>
+                void onSubmit(notes, extraPizza === '' ? 0 : extraPizza)
+              }
               variant="success"
               className="flex-[2] py-4 rounded-2xl font-black uppercase tracking-widest"
               isLoading={isSubmitting}
@@ -403,6 +434,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       bentoBox: counts.bento,
       hotLunchName: menuDisplay.hot,
       bentoBoxName: menuDisplay.bento,
+      schoolSite: config.schoolSite || 'schumann-elementary',
     };
   };
 
@@ -410,7 +442,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     setIsReportModalOpen(true);
   };
 
-  const handleConfirmReport = async (notes: string) => {
+  const handleConfirmReport = async (notes: string, extraPizza?: number) => {
     const reportData = getReportData();
     const permission = featurePermissions.find(
       (p) => p.widgetType === 'lunchCount'
@@ -422,13 +454,18 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       | string
       | undefined;
 
+    const siteCode =
+      reportData.schoolSite === 'schumann-elementary' ? 'SE' : 'IS';
+
     if (!submissionUrl) {
       // Fallback to email if no URL configured
       const summary =
         `Lunch Count Report - ${reportData.date}\n\n` +
+        `Site: ${siteCode}\n` +
         `Staff: ${reportData.staffName}\n` +
         `Hot Lunch (${reportData.hotLunchName}): ${reportData.hotLunch}\n` +
         `Bento Box (${reportData.bentoBoxName}): ${reportData.bentoBox}\n` +
+        (extraPizza ? `Extra Pizza Slices: ${extraPizza}\n` : '') +
         `Notes: ${notes}\n\n` +
         `Sent from Dashboard.`;
 
@@ -447,9 +484,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       const payload = {
         spreadsheetId,
         date: reportData.date,
+        site: siteCode,
         staffName: reportData.staffName,
         hotLunch: reportData.hotLunch,
         bentoBox: reportData.bentoBox,
+        extraPizza: extraPizza || 0,
         notes: notes,
       };
 
