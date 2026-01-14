@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
-import { WidgetData, LunchCountConfig, LunchMenuDay } from '../../types';
+import {
+  WidgetData,
+  LunchCountConfig,
+  LunchMenuDay,
+  LunchCountGlobalConfig,
+} from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import { Button } from '../common/Button';
 import {
@@ -46,10 +51,17 @@ const SCHOOL_OPTIONS = [
 
 const DEFAULT_RECIPIENT_EMAIL = 'paul.ivers@orono.k12.mn.us';
 
+/**
+ * Props for the SubmitReportModal component.
+ */
 interface SubmitReportModalProps {
+  /** Whether the modal is currently open */
   isOpen: boolean;
+  /** Callback to close the modal */
   onClose: () => void;
+  /** Callback to submit the report data */
   onSubmit: (notes: string, extraPizza?: number) => Promise<void>;
+  /** The report data to display and submit */
   data: {
     date: string;
     staffName: string;
@@ -59,9 +71,14 @@ interface SubmitReportModalProps {
     bentoBoxName: string;
     schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
   };
+  /** Whether the report is currently being submitted */
   isSubmitting: boolean;
 }
 
+/**
+ * A modal dialog for reviewing and submitting a lunch count report.
+ * Provides fields for additional notes and site-specific data.
+ */
 const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
   isOpen,
   onClose,
@@ -72,20 +89,42 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
   const [notes, setNotes] = useState('');
   const [extraPizza, setExtraPizza] = useState<number | ''>('');
 
+  // Handle keyboard events (Escape to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, isSubmitting]);
+
   if (!isOpen) return null;
 
   const isIntermediate = data.schoolSite === 'orono-intermediate-school';
 
   return (
-    <div className="absolute inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 rounded-3xl overflow-hidden">
+    <div
+      className="absolute inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 rounded-3xl overflow-hidden"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isSubmitting) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+    >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-slate-100 animate-in zoom-in-95 duration-200 custom-scrollbar">
         <div className="p-6 bg-brand-blue-primary text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
-              <FileSpreadsheet className="w-6 h-6" />
+              <FileSpreadsheet className="w-6 h-6" aria-hidden="true" />
             </div>
             <div>
-              <h3 className="font-black text-lg uppercase tracking-tight">
+              <h3
+                id="report-modal-title"
+                className="font-black text-lg uppercase tracking-tight"
+              >
                 Submit Lunch Report
               </h3>
               <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">
@@ -95,7 +134,9 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            disabled={isSubmitting}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -151,14 +192,18 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             {isIntermediate && (
               <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-black text-purple-600 uppercase block mb-1">
+                  <label
+                    htmlFor="extra-pizza-input"
+                    className="text-[10px] font-black text-purple-600 uppercase block mb-1"
+                  >
                     Extra Pizza Slices
-                  </span>
+                  </label>
                   <p className="text-[9px] text-purple-400 font-bold uppercase">
                     Optional
                   </p>
                 </div>
                 <input
+                  id="extra-pizza-input"
                   type="number"
                   min="0"
                   value={extraPizza}
@@ -175,10 +220,14 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <label
+              htmlFor="report-notes"
+              className="text-[10px] font-black text-slate-400 uppercase tracking-widest"
+            >
               Additional Notes
             </label>
             <textarea
+              id="report-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Gluten Free, Field Trips, etc..."
@@ -219,7 +268,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const { user, featurePermissions } = useAuth();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [isReporting, setIsReporting] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const config = widget.config as LunchCountConfig;
   const {
@@ -412,14 +461,19 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     addToast('Board reset', 'info');
   };
 
-  const menuDisplay = {
-    hot: isManualMode ? manualHotLunch : (cachedMenu?.hotLunch ?? 'Loading...'),
-    bento: isManualMode
-      ? manualBentoBox
-      : (cachedMenu?.bentoBox ?? 'Loading...'),
-  };
+  const menuDisplay = useMemo(
+    () => ({
+      hot: isManualMode
+        ? manualHotLunch
+        : (cachedMenu?.hotLunch ?? 'Loading...'),
+      bento: isManualMode
+        ? manualBentoBox
+        : (cachedMenu?.bentoBox ?? 'Loading...'),
+    }),
+    [cachedMenu, isManualMode, manualBentoBox, manualHotLunch]
+  );
 
-  const getReportData = () => {
+  const getReportData = useCallback(() => {
     const counts = { hot: 0, bento: 0, home: 0 };
     Object.values(assignments).forEach((type) => {
       if (type && counts[type as LunchType] !== undefined) {
@@ -427,44 +481,49 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       }
     });
 
+    const staffName =
+      user?.displayName?.trim() ?? user?.email?.trim() ?? 'Unattributed Staff';
+
     return {
       date: new Date().toLocaleDateString(),
-      staffName: user?.displayName ?? 'Unknown Staff',
+      staffName,
       hotLunch: counts.hot,
       bentoBox: counts.bento,
       hotLunchName: menuDisplay.hot,
       bentoBoxName: menuDisplay.bento,
-      schoolSite: config.schoolSite || 'schumann-elementary',
+      schoolSite: config.schoolSite ?? 'schumann-elementary',
     };
-  };
+  }, [assignments, config.schoolSite, menuDisplay, user]);
+
+  // Capture a snapshot of report data when modal opens
+  const reportDataSnapshot = useMemo(() => {
+    if (!isReportModalOpen) return null;
+    return getReportData();
+  }, [isReportModalOpen, getReportData]);
 
   const submitReport = () => {
     setIsReportModalOpen(true);
   };
 
   const handleConfirmReport = async (notes: string, extraPizza?: number) => {
-    const reportData = getReportData();
+    const data = getReportData();
     const permission = featurePermissions.find(
       (p) => p.widgetType === 'lunchCount'
     );
-    const submissionUrl = permission?.config?.submissionUrl as
-      | string
-      | undefined;
-    const spreadsheetId = permission?.config?.googleSheetId as
-      | string
-      | undefined;
+    const gConfig = (permission?.config ?? {}) as LunchCountGlobalConfig;
+    const submissionUrl = gConfig.submissionUrl;
+    const spreadsheetId = gConfig.googleSheetId;
 
-    const siteCode =
-      reportData.schoolSite === 'schumann-elementary' ? 'SE' : 'IS';
+    const siteCode = data.schoolSite === 'schumann-elementary' ? 'SE' : 'IS';
 
     if (!submissionUrl) {
       // Fallback to email if no URL configured
       const summary =
-        `Lunch Count Report - ${reportData.date}\n\n` +
+        `Lunch Count Report - ${data.date}\n\n` +
         `Site: ${siteCode}\n` +
-        `Staff: ${reportData.staffName}\n` +
-        `Hot Lunch (${reportData.hotLunchName}): ${reportData.hotLunch}\n` +
-        `Bento Box (${reportData.bentoBoxName}): ${reportData.bentoBox}\n` +
+        `Staff: ${data.staffName}\n` +
+        `Hot Lunch (${data.hotLunchName}): ${data.hotLunch}\n` +
+        `Bento Box (${data.bentoBoxName}): ${data.bentoBox}\n` +
         (extraPizza ? `Extra Pizza Slices: ${extraPizza}\n` : '') +
         `Notes: ${notes}\n\n` +
         `Sent from Dashboard.`;
@@ -474,42 +533,51 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           summary
         )}`
       );
-      addToast('Report generated (Email Fallback)', 'info');
-      setIsReportModalOpen(false);
+
+      addToast(
+        'Email draft opened. Please review and send it from your email app to complete the report.',
+        'info'
+      );
+      // Keep modal open so user can see it didn't "auto-submit" if they missed the popup
       return;
     }
 
-    setIsReporting(true);
+    setIsSubmittingReport(true);
     try {
       const payload = {
-        spreadsheetId,
-        date: reportData.date,
+        // Only include spreadsheetId if explicitly configured
+        ...(spreadsheetId && { spreadsheetId }),
+        date: data.date,
         site: siteCode,
-        staffName: reportData.staffName,
-        hotLunch: reportData.hotLunch,
-        bentoBox: reportData.bentoBox,
+        staffName: data.staffName,
+        hotLunch: data.hotLunch,
+        bentoBox: data.bentoBox,
         extraPizza: extraPizza ?? 0,
         notes: notes,
       };
 
-      await fetch(submissionUrl, {
+      const response = await fetch(submissionUrl, {
         method: 'POST',
-        mode: 'no-cors', // Apps Script often requires no-cors for simple POST
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
 
-      // Since we use no-cors, we can't actually read the response status
-      // but if it doesn't throw, it likely succeeded.
+      if (!response.ok) {
+        throw new Error(`Submission failed with status ${response.status}`);
+      }
+
       addToast('Report submitted to Google Sheet', 'success');
       setIsReportModalOpen(false);
     } catch (error) {
       console.error('Report submission error:', error);
-      addToast('Failed to submit report', 'error');
+      addToast(
+        'Failed to submit report. Please check your connection or use email fallback.',
+        'error'
+      );
     } finally {
-      setIsReporting(false);
+      setIsSubmittingReport(false);
     }
   };
 
@@ -722,13 +790,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <SubmitReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        onSubmit={handleConfirmReport}
-        data={getReportData()}
-        isSubmitting={isReporting}
-      />
+      {isReportModalOpen && (
+        <SubmitReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          onSubmit={handleConfirmReport}
+          data={reportDataSnapshot ?? getReportData()}
+          isSubmitting={isSubmittingReport}
+        />
+      )}
     </div>
   );
 };

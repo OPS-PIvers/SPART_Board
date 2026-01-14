@@ -12,6 +12,7 @@ import {
   AccessLevel,
   WidgetType,
   GradeLevel,
+  LunchCountGlobalConfig,
 } from '../../types';
 import { TOOLS } from '../../config/tools';
 import {
@@ -316,23 +317,23 @@ export const FeaturePermissionsManager: React.FC = () => {
                   </div>
                 </div>
 
-                {hasCustomPermission && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() =>
-                        setEditingConfig(
-                          editingConfig === tool.type ? null : tool.type
-                        )
-                      }
-                      className={`p-2 rounded-lg transition-colors ${
-                        editingConfig === tool.type
-                          ? 'bg-brand-blue-primary text-white'
-                          : 'text-slate-400 hover:bg-slate-100'
-                      }`}
-                      title="Edit widget configuration"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() =>
+                      setEditingConfig(
+                        editingConfig === tool.type ? null : tool.type
+                      )
+                    }
+                    className={`p-2 rounded-lg transition-colors ${
+                      editingConfig === tool.type
+                        ? 'bg-brand-blue-primary text-white'
+                        : 'text-slate-400 hover:bg-slate-100'
+                    }`}
+                    title="Edit widget configuration"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                  {hasCustomPermission && (
                     <button
                       onClick={() => deletePermission(tool.type)}
                       disabled={isSaving}
@@ -341,8 +342,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Configuration Panel */}
@@ -354,52 +355,86 @@ export const FeaturePermissionsManager: React.FC = () => {
 
                   {tool.type === 'lunchCount' && (
                     <div className="space-y-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
-                          Google Sheet ID
-                        </label>
-                        <input
-                          type="text"
-                          value={
-                            (permission.config?.googleSheetId as string) ?? ''
-                          }
-                          onChange={(e) =>
-                            updatePermission(tool.type, {
-                              config: {
-                                ...permission.config,
-                                googleSheetId: e.target.value,
-                              },
-                            })
-                          }
-                          className="w-full px-2 py-1.5 text-xs font-mono border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
-                          placeholder="Spreadsheet ID from URL"
-                        />
-                        <p className="text-[9px] text-slate-400 mt-1">
-                          Found in the URL: docs.google.com/spreadsheets/d/
-                          <b>[ID]</b>/edit
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
-                          Submission URL (Apps Script)
-                        </label>
-                        <input
-                          type="text"
-                          value={
-                            (permission.config?.submissionUrl as string) ?? ''
-                          }
-                          onChange={(e) =>
-                            updatePermission(tool.type, {
-                              config: {
-                                ...permission.config,
-                                submissionUrl: e.target.value,
-                              },
-                            })
-                          }
-                          className="w-full px-2 py-1.5 text-xs font-mono border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
-                          placeholder="https://script.google.com/macros/s/.../exec"
-                        />
-                      </div>
+                      {(() => {
+                        const config = (permission.config ??
+                          {}) as LunchCountGlobalConfig;
+                        const isIdMalformed =
+                          config.googleSheetId &&
+                          config.googleSheetId.includes('/');
+                        const isUrlMalformed =
+                          config.submissionUrl &&
+                          !config.submissionUrl.startsWith('https://');
+
+                        return (
+                          <>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                Google Sheet ID
+                              </label>
+                              <input
+                                type="text"
+                                value={config.googleSheetId ?? ''}
+                                onChange={(e) =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...config,
+                                      googleSheetId: e.target.value.trim(),
+                                    },
+                                  })
+                                }
+                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
+                                  isIdMalformed
+                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                                    : 'border-slate-300 focus:ring-brand-blue-primary'
+                                }`}
+                                placeholder="Spreadsheet ID from URL"
+                              />
+                              {isIdMalformed && (
+                                <p className="text-[9px] text-red-600 font-bold mt-1">
+                                  Warning: Enter only the ID, not the full URL.
+                                </p>
+                              )}
+                              <p className="text-[9px] text-slate-400 mt-1">
+                                Found in the URL:
+                                docs.google.com/spreadsheets/d/<b>[ID]</b>/edit
+                                <br />
+                                <span className="text-orange-600 font-bold">
+                                  Tip: For better security, hardcode this ID in
+                                  your Apps Script instead.
+                                </span>
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                Submission URL (Apps Script)
+                              </label>
+                              <input
+                                type="text"
+                                value={config.submissionUrl ?? ''}
+                                onChange={(e) =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...config,
+                                      submissionUrl: e.target.value.trim(),
+                                    },
+                                  })
+                                }
+                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
+                                  isUrlMalformed
+                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                                    : 'border-slate-300 focus:ring-brand-blue-primary'
+                                }`}
+                                placeholder="https://script.google.com/macros/s/.../exec"
+                              />
+                              {isUrlMalformed && (
+                                <p className="text-[9px] text-red-600 font-bold mt-1">
+                                  Warning: URL must start with https://
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 

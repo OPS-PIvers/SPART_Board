@@ -432,6 +432,11 @@ export interface FeaturePermission {
   config?: Record<string, unknown>;
 }
 
+export interface LunchCountGlobalConfig {
+  googleSheetId?: string;
+  submissionUrl?: string;
+}
+
 export interface BackgroundPreset {
   id: string;
   url: string;
