@@ -59,7 +59,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (!selectedRoutineId || !selectedRoutine) {
     return (
-      <div className="flex flex-col h-full bg-[#f3f3f3] p-4">
+      <div className="flex flex-col h-full bg-brand-gray-lightest p-4">
         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">
           Library ({gradeFilter.toUpperCase()})
         </div>
@@ -73,7 +73,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               <button
                 key={r.id}
                 onClick={() => selectRoutine(r)}
-                className="relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-[#2d3f89] transition-all text-left"
+                className="relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-brand-blue-primary transition-all text-left"
               >
                 <Star
                   onClick={(e) => {
@@ -85,10 +85,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       config: { ...config, favorites: next },
                     });
                   }}
-                  className={`absolute top-2 right-2 w-4 h-4 ${isFav ? 'fill-[#4356a0] text-[#4356a0]' : 'text-slate-200 hover:text-slate-400'}`}
+                  className={`absolute top-2 right-2 w-4 h-4 ${isFav ? 'fill-brand-blue-light text-brand-blue-light' : 'text-slate-200 hover:text-slate-400'}`}
                 />
-                <Icon className="w-8 h-8 text-[#ad2122] mb-2" />
-                <div className="text-[11px] font-black text-[#1a1a1a] uppercase leading-tight">
+                <Icon className="w-8 h-8 text-brand-red-primary mb-2" />
+                <div className="text-[11px] font-black text-brand-gray-darkest uppercase leading-tight">
                   {r.name}
                 </div>
               </button>
@@ -106,19 +106,19 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden">
-      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-[#eaecf5] pb-4">
+      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
         <div>
           <h2
-            className="font-black text-[#2d3f89] leading-tight"
+            className="font-black text-brand-blue-primary leading-tight"
             style={{ fontSize: `${dynamicFontSize * 1.4}px` }}
           >
             {selectedRoutine.name}
           </h2>
-          <span className="text-[10px] font-black text-[#4356a0] uppercase tracking-widest">
+          <span className="text-[10px] font-black text-brand-blue-light uppercase tracking-widest">
             {selectedRoutine.grades} Protocol
           </span>
         </div>
-        <div className="p-4 bg-[#eaecf5] text-[#ad2122] rounded-3xl shadow-sm">
+        <div className="p-4 bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm">
           <RoutineIcon className="w-10 h-10" />
         </div>
       </div>
@@ -130,13 +130,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               className="flex gap-4 items-start animate-in slide-in-from-left duration-300"
             >
               <span
-                className="w-10 h-10 bg-[#2d3f89] text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
+                className="w-10 h-10 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
                 style={{ fontSize: `${dynamicFontSize}px` }}
               >
                 {i + 1}
               </span>
               <p
-                className="font-bold text-[#1a1a1a] leading-relaxed pt-1"
+                className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
                 style={{ fontSize: `${dynamicFontSize}px` }}
               >
                 {step.text}
@@ -175,7 +175,7 @@ export const InstructionalRoutinesSettings: React.FC<{
             config: { ...config, selectedRoutineId: null },
           })
         }
-        className="w-full py-2.5 bg-[#eaecf5] text-[#2d3f89] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#d5d9ec] transition-colors"
+        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#d5d9ec] transition-colors"
       >
         Switch Routine Template
       </button>
@@ -192,13 +192,13 @@ export const InstructionalRoutinesSettings: React.FC<{
             <div className="flex flex-col gap-1 shrink-0">
               <button
                 onClick={() => moveStep(i, 'up')}
-                className="text-slate-300 hover:text-[#2d3f89]"
+                className="text-slate-300 hover:text-brand-blue-primary"
               >
                 <ChevronUp size={14} />
               </button>
               <button
                 onClick={() => moveStep(i, 'down')}
-                className="text-slate-300 hover:text-[#2d3f89]"
+                className="text-slate-300 hover:text-brand-blue-primary"
               >
                 <ChevronDown size={14} />
               </button>
@@ -241,7 +241,7 @@ export const InstructionalRoutinesSettings: React.FC<{
               },
             })
           }
-          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-[#2d3f89] hover:text-[#2d3f89] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
+          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
         >
           <Plus className="w-4 h-4" /> Add Next Step
         </button>
@@ -265,7 +265,7 @@ export const InstructionalRoutinesSettings: React.FC<{
               },
             })
           }
-          className="w-full accent-[#2d3f89]"
+          className="w-full accent-brand-blue-primary"
         />
       </div>
     </div>
