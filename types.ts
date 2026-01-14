@@ -236,6 +236,7 @@ export interface WeatherConfig {
   locationName?: string;
   lastSync?: number | null;
   city?: string;
+  source?: 'openweather' | 'earth_networks';
 }
 
 export interface ScheduleConfig {
