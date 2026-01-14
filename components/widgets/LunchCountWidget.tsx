@@ -744,7 +744,6 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
     manualHotLunch = '',
     manualBentoBox = '',
     roster = [],
-    recipient = DEFAULT_RECIPIENT_EMAIL,
     rosterMode = 'class',
   } = config;
 
@@ -785,22 +784,6 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
-              Recipient Email
-            </label>
-            <input
-              type="email"
-              value={recipient}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, recipient: e.target.value },
-                })
-              }
-              className="w-full px-3 py-2 text-xs font-bold border border-slate-200 rounded-xl outline-none"
-            />
           </div>
 
           <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3">
