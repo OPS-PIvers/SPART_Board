@@ -21,7 +21,7 @@ import {
   Paintbrush,
   FolderOpen,
   Pencil,
-  ChevronDown,
+  ChevronRight,
   Star,
   GripVertical,
 } from 'lucide-react';
@@ -542,49 +542,53 @@ export const Sidebar: React.FC = () => {
           onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
           className={`p-2 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-full transition-all ${
             isBoardSwitcherExpanded
-              ? 'rotate-180 bg-brand-blue-lighter text-brand-blue-primary'
+              ? 'rotate-90 bg-brand-blue-lighter text-brand-blue-primary'
               : ''
           }`}
           title="Switch Boards"
         >
-          <ChevronDown className="w-5 h-5" />
+          <ChevronRight
+            className={`w-5 h-5 transition-transform duration-300 ${isBoardSwitcherExpanded ? 'rotate-180' : ''}`}
+          />
         </button>
-      </div>
 
-      {/* Board Switcher Sliding Toggle */}
-      {isBoardSwitcherExpanded && (
+        {/* Board Switcher Sliding Toggle Bar */}
         <div
-          data-screenshot="exclude"
-          className="fixed top-20 left-6 z-[999] bg-white/90 backdrop-blur shadow-xl rounded-2xl border border-slate-100/50 p-1.5 flex gap-1 animate-in slide-in-from-top-4 duration-300"
+          className={`overflow-hidden transition-all duration-500 ease-in-out flex items-center gap-1 ${
+            isBoardSwitcherExpanded
+              ? 'max-w-[500px] ml-2 opacity-100'
+              : 'max-w-0 ml-0 opacity-0'
+          }`}
         >
-          {dashboards.map((db) => (
-            <button
-              key={db.id}
-              onClick={() => {
-                loadDashboard(db.id);
-                setIsBoardSwitcherExpanded(false);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                activeDashboard?.id === db.id
-                  ? 'bg-brand-blue-primary text-white shadow-md'
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              {db.isDefault && (
-                <Star
-                  className={`w-3 h-3 ${activeDashboard?.id === db.id ? 'fill-white' : 'fill-amber-400 text-amber-400'}`}
-                />
-              )}
-              {db.name}
-            </button>
-          ))}
-          {dashboards.length === 0 && (
-            <span className="px-4 py-2 text-xs font-bold text-slate-400 uppercase">
-              No boards found
-            </span>
-          )}
+          <div className="h-6 w-px bg-slate-200 mx-1" />
+          <div className="flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 backdrop-blur-sm">
+            {dashboards.map((db) => (
+              <button
+                key={db.id}
+                onClick={() => {
+                  loadDashboard(db.id);
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${
+                  activeDashboard?.id === db.id
+                    ? 'bg-white text-brand-blue-primary shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {db.isDefault && (
+                  <Star
+                    className={`w-3 h-3 ${
+                      activeDashboard?.id === db.id
+                        ? 'fill-brand-blue-primary'
+                        : 'fill-amber-400 text-amber-400'
+                    }`}
+                  />
+                )}
+                {db.name}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
 
       {showAdminSettings && (
         <AdminSettings onClose={() => setShowAdminSettings(false)} />
