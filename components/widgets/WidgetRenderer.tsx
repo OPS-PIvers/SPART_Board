@@ -33,6 +33,7 @@ import {
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
+import { useWindowSize } from '../../hooks/useWindowSize';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
@@ -52,6 +53,7 @@ export const WidgetRenderer: React.FC<{
 }> = ({ widget, isStudentView = false }) => {
   const { user } = useAuth();
   const { activeDashboard } = useDashboard();
+  const windowSize = useWindowSize();
 
   // Initialize the hook (only active if user exists)
   const {
@@ -232,10 +234,13 @@ export const WidgetRenderer: React.FC<{
   const content = getWidgetContent();
 
   const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
+  const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
+  const effectiveHeight = widget.maximized ? windowSize.height : widget.h;
+
   const finalContent = baseDim ? (
     <ScalableWidget
-      width={widget.w}
-      height={widget.h}
+      width={effectiveWidth}
+      height={effectiveHeight}
       baseWidth={baseDim.w}
       baseHeight={baseDim.h}
     >
