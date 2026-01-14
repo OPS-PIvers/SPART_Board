@@ -56,10 +56,10 @@ If this command reports _any_ issues, you must fix them.
 
 - `components/widgets/`: Individual widget components.
 - `context/`: Global state providers (`DashboardContext.tsx`, `AuthContext.tsx`).
-- `types.ts`: Central type definitions and the `TOOLS` registry.
+- `types.ts`: Central type definitions.
 - `components/common/`: Shared UI components (e.g., `DraggableWindow`).
 - `components/admin/`: Administrative tools (`AdminSettings.tsx`, `FeaturePermissionsManager.tsx`).
-- `config/`: Firebase and application configuration (`widgetGradeLevels.ts`).
+- `config/`: Firebase and application configuration (`tools.ts`, `widgetGradeLevels.ts`).
 
 ### State Management
 
@@ -71,7 +71,7 @@ If this command reports _any_ issues, you must fix them.
 
 The app uses a plugin-based architecture for widgets.
 
-- **Definition:** Widgets are defined in the `WidgetType` union and `TOOLS` array in `types.ts`.
+- **Definition:** Widgets are defined in the `WidgetType` union in `types.ts` and `TOOLS` array in `config/tools.ts`.
 - **Implementation:** Each widget lives in `components/widgets/` (e.g., `TimerWidget.tsx`).
 - **Rendering:** `WidgetRenderer.tsx` maps types to components.
 - **Wrapper:** All widgets are wrapped in `DraggableWindow.tsx` for common functionality (drag, resize, flip).
@@ -98,12 +98,12 @@ Access to specific widgets can be dynamically controlled:
 
 To add a new widget, you must follow these exact steps to maintain strict type safety:
 
-1.  **Define Types (`types.ts`):**
-    - Add the new type string to the `WidgetType` union.
+1.  **Define Types (`types.ts`) & Configuration (`config/tools.ts`):**
+    - Add the new type string to the `WidgetType` union in `types.ts`.
     - Create a specific configuration interface (e.g., `export interface YourWidgetConfig { ... }`).
     - Add your new interface to the `WidgetConfig` union.
     - Update the `ConfigForWidget` helper type to map your `WidgetType` to your `YourWidgetConfig`.
-    - Add metadata to the `TOOLS` array (icon, label, color).
+    - Add metadata to the `TOOLS` array in `config/tools.ts` (icon, label, color).
 
 2.  **Create Component (`components/widgets/<Name>Widget.tsx`):**
     - Implement the main view and optional settings view.

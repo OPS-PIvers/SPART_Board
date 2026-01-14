@@ -1,21 +1,40 @@
-description = "Submits your finished work for review by the team."
+description = "Updates from main, fixes conflicts, verifies, and submits your work for review."
 prompt = """
 
-1. Run `git branch --show-current` to identify the branch.
+You are a technical assistant. Execute the following steps to ensure a clean, verified submission:
 
-2. Run `gh pr list --head $BRANCH --json url --status open` to check for an existing submission.
+### PHASE 1: Sync & Integrate
+1. Run `git status --short`. 
+    - If not empty, run `git stash` and notify: "Unsaved changes stashed for the update."
 
-3. Run `git diff main... --stat` to summarize changes.
+2. Run `git fetch origin main`.
 
-4. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
+3. Run `git rebase origin/main`.
+    - **If rebase fails**: 
+        - Analyze the conflicts. 
+        - If the conflicts are straightforward (e.g., imports, simple logic), attempt to resolve them, `git add` the files, and `git rebase --continue`.
+        - If too complex, run `git rebase --abort`. If you stashed, run `git stash pop`. Report: "Submission paused. Complex conflicts with Main detected. Please type: **'Help me fix the sync conflicts'**" and STOP.
 
-5. Logic:
+4. If rebase success: 
+    - If you stashed, run `git stash pop`. Resolve any minor conflicts from the stash pop immediately.
+    - Run `git push --force-with-lease origin $(git branch --show-current)`.
 
-    5A) If no existing PR: Run `gh pr create --title "Review Request: $BRANCH" --body "$AI_SUMMARY" --base main`.
+### PHASE 2: Verify
+5. Run `npm test`.
+    - If tests fail: Attempt to fix the tests if caused by integration issues. If fixed, commit and push. If they cannot be easily fixed, STOP and ask the user for guidance.
 
-    5B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
+### PHASE 3: Submit
+6. Run `git branch --show-current` to identify the branch.
 
-6) Extract the URL from the command output.
+7. Run `gh pr list --head $BRANCH --json url --state open` to check for an existing submission.
 
-7) Report: "Your work has been submitted for review. View the submission here: [URL]. After review, it will be added to the main branch."
+8. Run `git diff main... --stat` to summarize changes.
+
+9. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
+
+10. Logic:
+    - 10A) If no existing PR: Run `gh pr create --title "Review Request: $BRANCH" --body "$AI_SUMMARY" --base main`.
+    - 10B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
+
+11. Report: "Changes integrated from Main, verified, and submitted. View the submission here: [URL]"
 """

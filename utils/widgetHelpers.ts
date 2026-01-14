@@ -10,6 +10,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'lunchCount') return 'Lunch Orders';
   if (widget.type === 'classes') return 'Class Roster';
   if (widget.type === 'time-tool') return 'Timer';
+  if (widget.type === 'miniApp') return 'App Manager';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
@@ -20,10 +21,6 @@ export const getTitle = (widget: WidgetData): string => {
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
   const defaults: Record<WidgetType, WidgetConfig> = {
     clock: { format24: true, showSeconds: true },
-    timer: {
-      duration: 300,
-      sound: true,
-    },
     'time-tool': {
       mode: 'timer',
       visualType: 'digital',
@@ -74,6 +71,9 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       customSteps: [],
       favorites: [],
       scaleMultiplier: 1,
+    },
+    miniApp: {
+      activeApp: null,
     },
   };
 

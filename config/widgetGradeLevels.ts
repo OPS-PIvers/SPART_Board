@@ -23,7 +23,6 @@ export const ALL_GRADE_LEVELS: GradeLevel[] = ['k-2', '3-5', '6-8', '9-12'];
 export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   // Clock & Time Tools
   clock: ALL_GRADE_LEVELS,
-  timer: ALL_GRADE_LEVELS,
   'time-tool': ALL_GRADE_LEVELS,
 
   // Classroom Management
@@ -56,6 +55,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   lunchCount: ['k-2', '3-5'],
   classes: ALL_GRADE_LEVELS,
   instructionalRoutines: ALL_GRADE_LEVELS,
+  miniApp: ALL_GRADE_LEVELS,
 };
 
 /**

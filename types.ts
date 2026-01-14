@@ -1,28 +1,5 @@
-import {
-  Clock,
-  Timer,
-  TrafficCone,
-  Type,
-  CheckSquare,
-  Users,
-  Dices,
-  Mic,
-  Pencil,
-  QrCode,
-  Globe,
-  BarChart2,
-  Video,
-  Trophy,
-  AlertCircle,
-  CloudSun,
-  Calendar,
-  Utensils,
-  BookOpen,
-} from 'lucide-react';
-
 export type WidgetType =
   | 'clock'
-  | 'timer'
   | 'traffic'
   | 'text'
   | 'checklist'
@@ -42,7 +19,8 @@ export type WidgetType =
   | 'lunchCount'
   | 'classes'
   | 'instructionalRoutines'
-  | 'time-tool';
+  | 'time-tool'
+  | 'miniApp';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -226,6 +204,7 @@ export interface WeatherConfig {
   locationName?: string;
   lastSync?: number | null;
   city?: string;
+  source?: 'openweather' | 'earth_networks';
 }
 
 export interface ScheduleConfig {
@@ -276,6 +255,19 @@ export interface TimeToolConfig {
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
 }
 
+// 1. Define the Data Model for a Mini App
+export interface MiniAppItem {
+  id: string;
+  title: string;
+  html: string;
+  createdAt: number;
+}
+
+// 2. Define the Widget Configuration
+export interface MiniAppConfig {
+  activeApp: MiniAppItem | null;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -299,53 +291,54 @@ export type WidgetConfig =
   | LunchCountConfig
   | ClassesConfig
   | InstructionalRoutinesConfig
-  | TimeToolConfig;
+  | TimeToolConfig
+  | MiniAppConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
   ? ClockConfig
-  : T extends 'timer'
-    ? TimerConfig
-    : T extends 'traffic'
-      ? TrafficConfig
-      : T extends 'text'
-        ? TextConfig
-        : T extends 'checklist'
-          ? ChecklistConfig
-          : T extends 'random'
-            ? RandomConfig
-            : T extends 'dice'
-              ? DiceConfig
-              : T extends 'sound'
-                ? SoundConfig
-                : T extends 'drawing'
-                  ? DrawingConfig
-                  : T extends 'qr'
-                    ? QRConfig
-                    : T extends 'embed'
-                      ? EmbedConfig
-                      : T extends 'poll'
-                        ? PollConfig
-                        : T extends 'webcam'
-                          ? WebcamConfig
-                          : T extends 'scoreboard'
-                            ? ScoreboardConfig
-                            : T extends 'workSymbols'
-                              ? WorkSymbolsConfig
-                              : T extends 'weather'
-                                ? WeatherConfig
-                                : T extends 'schedule'
-                                  ? ScheduleConfig
-                                  : T extends 'calendar'
-                                    ? CalendarConfig
-                                    : T extends 'lunchCount'
-                                      ? LunchCountConfig
-                                      : T extends 'classes'
-                                        ? ClassesConfig
-                                        : T extends 'instructionalRoutines'
-                                          ? InstructionalRoutinesConfig
-                                          : T extends 'time-tool'
-                                            ? TimeToolConfig
+  : T extends 'traffic'
+    ? TrafficConfig
+    : T extends 'text'
+      ? TextConfig
+      : T extends 'checklist'
+        ? ChecklistConfig
+        : T extends 'random'
+          ? RandomConfig
+          : T extends 'dice'
+            ? DiceConfig
+            : T extends 'sound'
+              ? SoundConfig
+              : T extends 'drawing'
+                ? DrawingConfig
+                : T extends 'qr'
+                  ? QRConfig
+                  : T extends 'embed'
+                    ? EmbedConfig
+                    : T extends 'poll'
+                      ? PollConfig
+                      : T extends 'webcam'
+                        ? WebcamConfig
+                        : T extends 'scoreboard'
+                          ? ScoreboardConfig
+                          : T extends 'workSymbols'
+                            ? WorkSymbolsConfig
+                            : T extends 'weather'
+                              ? WeatherConfig
+                              : T extends 'schedule'
+                                ? ScheduleConfig
+                                : T extends 'calendar'
+                                  ? CalendarConfig
+                                  : T extends 'lunchCount'
+                                    ? LunchCountConfig
+                                    : T extends 'classes'
+                                      ? ClassesConfig
+                                      : T extends 'instructionalRoutines'
+                                        ? InstructionalRoutinesConfig
+                                        : T extends 'time-tool'
+                                          ? TimeToolConfig
+                                          : T extends 'miniApp'
+                                            ? MiniAppConfig
                                             : never;
 export interface WidgetData {
   id: string;
@@ -359,6 +352,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
+  maximized?: boolean;
   customTitle?: string | null;
   isLive?: boolean;
   config: WidgetConfig;
@@ -384,60 +378,6 @@ export interface ToolMetadata {
   label: string;
   color: string;
 }
-
-export const TOOLS: ToolMetadata[] = [
-  { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
-  { type: 'time-tool', icon: Timer, label: 'Timer', color: 'bg-red-500' },
-  {
-    type: 'traffic',
-    icon: TrafficCone,
-    label: 'Traffic',
-    color: 'bg-amber-500',
-  },
-  { type: 'text', icon: Type, label: 'Note', color: 'bg-yellow-400' },
-  {
-    type: 'checklist',
-    icon: CheckSquare,
-    label: 'Tasks',
-    color: 'bg-green-500',
-  },
-  { type: 'random', icon: Users, label: 'Random', color: 'bg-indigo-500' },
-  { type: 'dice', icon: Dices, label: 'Dice', color: 'bg-purple-500' },
-  { type: 'sound', icon: Mic, label: 'Noise', color: 'bg-pink-500' },
-  { type: 'drawing', icon: Pencil, label: 'Draw', color: 'bg-cyan-500' },
-  { type: 'qr', icon: QrCode, label: 'QR', color: 'bg-slate-700' },
-  { type: 'embed', icon: Globe, label: 'Embed', color: 'bg-sky-600' },
-  { type: 'poll', icon: BarChart2, label: 'Poll', color: 'bg-orange-500' },
-  { type: 'webcam', icon: Video, label: 'Camera', color: 'bg-gray-800' },
-  { type: 'scoreboard', icon: Trophy, label: 'Scores', color: 'bg-yellow-600' },
-  {
-    type: 'workSymbols',
-    icon: AlertCircle,
-    label: 'Expects',
-    color: 'bg-emerald-600',
-  },
-  { type: 'weather', icon: CloudSun, label: 'Weather', color: 'bg-sky-400' },
-  { type: 'schedule', icon: Calendar, label: 'Schedule', color: 'bg-teal-600' },
-  { type: 'calendar', icon: Calendar, label: 'Events', color: 'bg-rose-500' },
-  {
-    type: 'lunchCount',
-    icon: Utensils,
-    label: 'Lunch',
-    color: 'bg-orange-600',
-  },
-  {
-    type: 'classes',
-    icon: Users,
-    label: 'Class',
-    color: 'bg-indigo-600',
-  },
-  {
-    type: 'instructionalRoutines',
-    icon: BookOpen,
-    label: 'Routines',
-    color: 'bg-[#2d3f89]',
-  },
-];
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { WidgetData, Student, ClassRoster } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Plus, Trash2, Save, Star, Edit2 } from 'lucide-react';
@@ -63,7 +62,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
         // For more complex reordering, we'd need a more advanced diffing logic,
         // but this already significantly improves upon regenerating everything.
         const existing = existingStudents[i];
-        const id = existing ? existing.id : uuidv4();
+        const id = existing ? existing.id : crypto.randomUUID();
 
         return { id, firstName: first, lastName: last };
       })

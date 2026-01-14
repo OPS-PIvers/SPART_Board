@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, LunchCountConfig, LunchMenuDay } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
+import { Button } from '../common/Button';
 import {
   Users,
   RefreshCw,
   School,
   Loader2,
-  Settings,
+  Undo2,
   CheckCircle2,
   Box,
 } from 'lucide-react';
@@ -47,7 +48,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {
-    schoolSite = 'schumann-elementary',
     cachedMenu,
     isManualMode = false,
     manualHotLunch = '',
@@ -60,6 +60,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   } = config;
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const configRef = React.useRef(config);
+
+  // Keep ref in sync
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   // NOTE: Using third-party CORS proxy services introduces security and reliability concerns.
   // These proxies can inspect all data passing through them, and their availability is not guaranteed.
@@ -67,31 +73,39 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   // to get proper CORS headers configured for a production-ready solution.
   const fetchWithFallback = async (url: string) => {
     const proxies = [
-      (u: string) =>
-        `https://api.allorigins.win/get?url=${encodeURIComponent(
-          u
-        )}&timestamp=${Date.now()}`,
       (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      (u: string) =>
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+      (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
     ];
+
+    let lastError: Error | null = null;
 
     for (const getProxyUrl of proxies) {
       try {
         const response = await fetch(getProxyUrl(url));
-        if (!response.ok) continue;
+        if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
 
-        const data = (await response.json()) as { contents?: string };
-        // AllOrigins wraps the result in a .contents string
-        const jsonContent =
-          typeof data.contents === 'string'
-            ? (JSON.parse(data.contents) as NutrisliceWeek)
-            : (data as NutrisliceWeek);
+        const text = await response.text();
+        if (!text || text.trim().startsWith('<!doctype')) {
+          throw new Error(
+            'Proxy returned HTML or empty response instead of JSON'
+          );
+        }
+
+        const jsonContent = JSON.parse(text) as NutrisliceWeek;
+        console.warn(
+          '[LunchCountWidget] Fetched Nutrislice Data:',
+          jsonContent
+        );
 
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
         console.warn('Proxy attempt failed, trying next...', e);
       }
     }
-    throw new Error('All proxies failed');
+    throw lastError ?? new Error('All proxies failed');
   };
 
   const activeRoster = useMemo(
@@ -109,19 +123,20 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [activeRoster, roster, rosterMode]);
 
   const fetchNutrislice = useCallback(async () => {
-    if (isManualMode) return;
+    if (configRef.current.isManualMode) return;
     setIsSyncing(true);
     updateWidget(widget.id, {
-      config: { ...config, syncError: null },
+      config: { ...configRef.current, syncError: null },
     });
 
     try {
       const now = new Date();
       const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const day = now.getDate();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const schoolSite = configRef.current.schoolSite || 'schumann-elementary';
 
-      const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
+      const apiUrl = `https://orono.api.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
       const data = await fetchWithFallback(apiUrl);
 
       let hotLunch = 'No Hot Lunch Listed';
@@ -171,7 +186,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
       updateWidget(widget.id, {
         config: {
-          ...config,
+          ...configRef.current,
           cachedMenu: newMenu,
           lastSyncDate: now.toISOString(),
           syncError: null,
@@ -181,13 +196,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     } catch (err) {
       console.error('Nutrislice Sync Error:', err);
       updateWidget(widget.id, {
-        config: { ...config, syncError: 'E-SYNC-404' },
+        config: { ...configRef.current, syncError: 'E-SYNC-404' },
       });
       addToast('Failed to sync menu', 'error');
     } finally {
       setIsSyncing(false);
     }
-  }, [schoolSite, isManualMode, config, widget.id, updateWidget, addToast]);
+  }, [widget.id, updateWidget, addToast]);
 
   useEffect(() => {
     if (
@@ -275,46 +290,20 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Header Actions */}
       <div className="p-3 bg-slate-50 border-b flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={submitReport}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2"
+            variant="success"
+            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" /> Submit Report
-          </button>
-          <button
+            Submit Report
+          </Button>
+          <Button
             onClick={resetBoard}
-            className="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-300 transition-all flex items-center gap-2"
+            variant="secondary"
+            icon={<Undo2 className="w-3.5 h-3.5" />}
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Reset
-          </button>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => void fetchNutrislice()}
-            disabled={isSyncing || isManualMode}
-            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all relative"
-            title="Sync from Nutrislice"
-          >
-            {isSyncing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            {syncError && (
-              <div
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
-                title={syncError}
-              >
-                !
-              </div>
-            )}
-          </button>
-          <button
-            onClick={() => updateWidget(widget.id, { flipped: true })}
-            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+            Reset
+          </Button>
         </div>
       </div>
 
@@ -456,6 +445,41 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-start items-center gap-2 shrink-0">
+        <button
+          onClick={() => void fetchNutrislice()}
+          disabled={isSyncing || isManualMode}
+          className="p-2 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-all border border-slate-100 disabled:opacity-50 relative"
+          title="Sync from Nutrislice"
+        >
+          {isSyncing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
+          {syncError && (
+            <div
+              className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
+              title={syncError}
+            >
+              !
+            </div>
+          )}
+        </button>
+        <div className="text-[8px] font-bold text-slate-300 uppercase flex items-center gap-1.5">
+          <span>Last Sync</span>
+          {config.lastSyncDate && (
+            <span className="text-slate-400">
+              {new Date(config.lastSyncDate).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </span>
+          )}
         </div>
       </div>
     </div>

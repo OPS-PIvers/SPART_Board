@@ -25,17 +25,18 @@
   - `widgets/`: Individual widget implementations and `WidgetRenderer.tsx`.
 - `/context/`: React Context providers (`AuthContext`, `DashboardContext`).
 - `/hooks/`: Custom hooks (`useFirestore`, `useStorage`).
-- `/config/`: Configuration files (`firebase.ts`, `widgetGradeLevels.ts`).
-- `/types.ts`: Global TypeScript definitions and the `TOOLS` registry.
+- `/config/`: Configuration files (`firebase.ts`, `tools.ts`, `widgetGradeLevels.ts`).
+- `/types.ts`: Global TypeScript definitions.
 - `/App.tsx`: Root application component.
 - `/index.tsx`: Entry point.
 
 ### Architecture Patterns
 
 - **State Management:** Centralized via React Context (`DashboardContext`, `AuthContext`).
-- **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`, `TOOLS`), and mapped in `WidgetRenderer.tsx`.
-- **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12, Universal) in `config/widgetGradeLevels.ts`.
+- **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`) and `config/tools.ts` (`TOOLS`), and mapped in `WidgetRenderer.tsx`.
+- **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12) in `config/widgetGradeLevels.ts`.
 - **Feature Permissions:** Access to widgets can be toggled and restricted to admins or beta users via the `FeaturePermission` system and managed in `AdminSettings`.
+- **CORS Proxy Logic:** Certain widgets (e.g., `WeatherWidget`, `LunchCountWidget`) use a multi-proxy fallback mechanism to bypass cross-origin restrictions for third-party APIs.
 - **Data Persistence:**
   - **Primary:** Firestore (real-time sync).
   - **Fallback:** `localStorage` (migrated to Firestore on sign-in).
@@ -58,8 +59,8 @@ The following slash commands are available to streamline the development workflo
   - _Caution:_ Permanently deletes changes since the last `/preview`.
 - **/preview**: Saves your current work and updates your online preview.
   - _Action:_ Stages, commits, and pushes changes to the current branch.
-- **/submit**: Submits your finished work for review by the team.
-  - _Action:_ Creates or updates a Pull Request (PR) against `main`.
+- **/submit**: Integrates latest changes from `main`, resolves conflicts, verifies with tests, and submits your work for review.
+  - _Action:_ Fetches `main`, rebases, runs `npm test`, then creates or updates a Pull Request (PR).
 - **/sync**: Updates your workspace with the latest changes from the main project.
   - _Action:_ Fetches `origin/main`, rebases current branch, and handles stashing if necessary.
 - **/undo**: Reverses your last 'save' while keeping your work in the editor.
@@ -91,7 +92,7 @@ The following slash commands are available to streamline the development workflo
 To add a new widget:
 
 1.  **Define Type:** Add the new type string to `WidgetType` in `types.ts`.
-2.  **Register Metadata:** Add a new entry to the `TOOLS` array in `types.ts` (icon, label, color).
+2.  **Register Metadata:** Add a new entry to the `TOOLS` array in `config/tools.ts` (icon, label, color).
 3.  **Create Component:** Build the widget in `components/widgets/YourWidget.tsx`.
     - Must accept `widget: WidgetData` prop.
     - Use `useDashboard()` for state updates.

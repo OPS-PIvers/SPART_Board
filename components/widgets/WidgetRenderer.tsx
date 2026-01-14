@@ -29,15 +29,18 @@ import {
   InstructionalRoutinesWidget,
   InstructionalRoutinesSettings,
 } from './InstructionalRoutinesWidget';
+import { MiniAppWidget } from './MiniAppWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
+import { useWindowSize } from '../../hooks/useWindowSize';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
 // Define base dimensions for scalable widgets
 const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   weather: { w: 250, h: 280 },
+  lunchCount: { w: 500, h: 400 },
   timer: { w: 280, h: 180 },
   'time-tool': { w: 420, h: 400 },
   traffic: { w: 120, h: 320 },
@@ -52,6 +55,7 @@ export const WidgetRenderer: React.FC<{
 }> = ({ widget, isStudentView = false }) => {
   const { user } = useAuth();
   const { activeDashboard } = useDashboard();
+  const windowSize = useWindowSize();
 
   // Initialize the hook (only active if user exists)
   const {
@@ -166,6 +170,8 @@ export const WidgetRenderer: React.FC<{
         return <ClassesWidget widget={widget} />;
       case 'instructionalRoutines':
         return <InstructionalRoutinesWidget widget={widget} />;
+      case 'miniApp':
+        return <MiniAppWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -205,6 +211,12 @@ export const WidgetRenderer: React.FC<{
         return <LunchCountSettings widget={widget} />;
       case 'instructionalRoutines':
         return <InstructionalRoutinesSettings widget={widget} />;
+      case 'miniApp':
+        return (
+          <div className="text-slate-500 italic text-sm">
+            Manage apps in the main view.
+          </div>
+        );
       default:
         return (
           <div className="text-slate-500 italic text-sm">
@@ -226,10 +238,20 @@ export const WidgetRenderer: React.FC<{
   const content = getWidgetContent();
 
   const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
+  // Account for sidebar (top-6, left-6) and dock (bottom-6) spacing
+  // Horizontal: 1.5rem left + 1.5rem right = 3rem total (48px)
+  // Vertical: 4.5rem top (for sidebar and spacing) + 4.5rem bottom (for dock and spacing) = 9rem total (144px)
+  const effectiveWidth = widget.maximized
+    ? windowSize.width - 48 // 3rem = 48px
+    : widget.w;
+  const effectiveHeight = widget.maximized
+    ? windowSize.height - 144 // 9rem = 144px (4.5rem top + 4.5rem bottom)
+    : widget.h;
+
   const finalContent = baseDim ? (
     <ScalableWidget
-      width={widget.w}
-      height={widget.h}
+      width={effectiveWidth}
+      height={effectiveHeight}
       baseWidth={baseDim.w}
       baseHeight={baseDim.h}
     >

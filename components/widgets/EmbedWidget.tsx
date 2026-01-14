@@ -86,7 +86,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         src={mode === 'url' ? embedUrl : undefined}
         srcDoc={mode === 'code' ? html : undefined}
         className="flex-1 w-full border-none"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        sandbox="allow-scripts allow-forms allow-popups"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
       />
