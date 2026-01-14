@@ -540,15 +540,17 @@ export const Sidebar: React.FC = () => {
 
         <button
           onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
-          className={`p-2 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-full transition-all ${
+          className={`p-2 rounded-full transition-all duration-300 ${
             isBoardSwitcherExpanded
-              ? 'rotate-90 bg-brand-blue-lighter text-brand-blue-primary'
-              : ''
+              ? 'bg-brand-blue-primary text-white shadow-md'
+              : 'text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter'
           }`}
-          title="Switch Boards"
+          title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
         >
           <ChevronRight
-            className={`w-5 h-5 transition-transform duration-300 ${isBoardSwitcherExpanded ? 'rotate-180' : ''}`}
+            className={`w-5 h-5 transition-transform duration-500 ${
+              isBoardSwitcherExpanded ? 'rotate-180' : 'rotate-0'
+            }`}
           />
         </button>
 
