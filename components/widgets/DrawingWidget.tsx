@@ -18,6 +18,7 @@ import {
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
+import { Button } from '../common/Button';
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -237,49 +238,46 @@ export const DrawingWidget: React.FC<{
 
       <div className="h-6 w-px bg-slate-200 mx-1" />
 
-      <button
+      <Button
         onClick={undo}
         title="Undo"
-        className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
-      >
-        <Undo2 className="w-4 h-4" />
-      </button>
-      <button
+        variant="ghost"
+        size="icon"
+        icon={<Undo2 className="w-4 h-4" />}
+      />
+      <Button
         onClick={clear}
         title="Clear All"
-        className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+        variant="ghost-danger"
+        size="icon"
+        icon={<Trash2 className="w-4 h-4" />}
+      />
 
       <div className="h-6 w-px bg-slate-200 mx-1" />
 
       {mode === 'overlay' && (
         <>
-          <button
+          <Button
             onClick={() => void handleToggleLive()}
-            className={`p-2 rounded-lg transition-colors ${
-              isLive
-                ? 'bg-red-50 text-red-600 animate-pulse'
-                : 'hover:bg-slate-100 text-slate-600'
-            }`}
+            variant={isLive ? 'danger' : 'ghost'}
+            size="icon"
+            className={isLive ? 'animate-pulse' : ''}
             title={isLive ? 'End Live Session' : 'Go Live'}
-          >
-            <Cast className="w-4 h-4" />
-          </button>
-          <button
+            icon={<Cast className="w-4 h-4" />}
+          />
+          <Button
             onClick={() => void takeScreenshot()}
             disabled={isCapturing}
-            className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600 transition-colors disabled:opacity-50"
+            variant="ghost"
+            size="icon"
             title="Capture Full Screen"
-          >
-            <Camera className="w-4 h-4" />
-          </button>
+            icon={<Camera className="w-4 h-4" />}
+          />
           <div className="h-6 w-px bg-slate-200 mx-1" />
         </>
       )}
 
-      <button
+      <Button
         onClick={() =>
           updateWidget(widget.id, {
             config: {
@@ -288,23 +286,23 @@ export const DrawingWidget: React.FC<{
             } as DrawingConfig,
           })
         }
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-          mode === 'overlay'
-            ? 'bg-indigo-600 text-white shadow-lg'
-            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-        }`}
+        variant={mode === 'overlay' ? 'primary' : 'secondary'}
+        size="sm"
+        className={mode === 'overlay' ? 'shadow-lg' : ''}
+        icon={
+          mode === 'overlay' ? (
+            <Minimize2 className="w-3 h-3" />
+          ) : (
+            <Maximize className="w-3 h-3" />
+          )
+        }
       >
-        {mode === 'overlay' ? (
-          <Minimize2 className="w-3 h-3" />
-        ) : (
-          <Maximize className="w-3 h-3" />
-        )}
         {mode === 'overlay' ? (
           <span>EXIT</span>
         ) : (
           widget.w > 250 && <span>ANNOTATE</span>
         )}
-      </button>
+      </Button>
     </div>
   );
 
