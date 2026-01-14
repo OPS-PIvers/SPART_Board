@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, MiniAppConfig, MiniAppItem } from '../../types';
 import {
@@ -230,7 +231,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       );
     } else {
       const newApp: MiniAppItem = {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         title: editTitle,
         html: editCode,
         createdAt: Date.now(),
@@ -329,7 +330,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <iframe
           srcDoc={activeApp.html}
           className="flex-1 w-full border-none"
-          sandbox="allow-scripts allow-forms allow-popups allow-modals"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
           title={activeApp.title}
         />
       </div>
