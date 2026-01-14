@@ -25,10 +25,11 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, GradeLevel, BackgroundPreset } from '../../types';
+import { Dashboard, GradeLevel } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
+import { useBackgrounds } from '../../hooks/useBackgrounds';
 
 interface DashboardData {
   name: string;
@@ -61,6 +62,7 @@ export const Sidebar: React.FC = () => {
 
   const { user, signOut, isAdmin, featurePermissions } = useAuth();
   const { uploadBackgroundImage } = useStorage();
+  const { presets, colors, gradients } = useBackgrounds();
   const {
     dashboards,
     activeDashboard,
@@ -86,147 +88,8 @@ export const Sidebar: React.FC = () => {
     id: string;
     name: string;
   } | null>(null);
-  const [managedBackgrounds, setManagedBackgrounds] = useState<
-    BackgroundPreset[]
-  >([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const publicBgsRef = useRef<BackgroundPreset[]>([]);
-  const betaBgsRef = useRef<BackgroundPreset[]>([]);
-
-  // Fetch managed backgrounds from Firestore
-
-  useEffect(() => {
-    if (!user) return;
-
-    const baseRef = collection(db, 'admin_backgrounds');
-
-    const unsubscribes: (() => void)[] = [];
-
-    if (isAdmin) {
-      // Admins can query everything active without permission errors
-
-      const q = query(baseRef, where('active', '==', true));
-
-      unsubscribes.push(
-        onSnapshot(
-          q,
-          (snapshot) => {
-            const backgrounds: BackgroundPreset[] = [];
-
-            snapshot.forEach((doc) => {
-              backgrounds.push(doc.data() as BackgroundPreset);
-            });
-
-            setManagedBackgrounds(
-              backgrounds.sort((a, b) => b.createdAt - a.createdAt)
-            );
-          },
-          (error) => {
-            console.error('Error fetching admin backgrounds:', error);
-          }
-        )
-      );
-    } else {
-      // Non-admins need separate queries to avoid reading restricted documents (admin-only)
-      // Use refs to prevent race conditions when both queries update simultaneously
-
-      const updateCombinedBackgrounds = () => {
-        const all = [...publicBgsRef.current, ...betaBgsRef.current];
-        const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
-        setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
-      };
-
-      // Query 1: Public backgrounds
-
-      const qPublic = query(
-        baseRef,
-
-        where('active', '==', true),
-
-        where('accessLevel', '==', 'public')
-      );
-
-      // Query 2: Beta backgrounds where the user is authorized
-      // Note: Beta backgrounds require user email for authorization
-      if (user.email) {
-        const qBeta = query(
-          baseRef,
-          where('active', '==', true),
-          where('accessLevel', '==', 'beta'),
-          where('betaUsers', 'array-contains', user.email.toLowerCase())
-        );
-
-        unsubscribes.push(
-          onSnapshot(
-            qBeta,
-            (snapshot) => {
-              betaBgsRef.current = snapshot.docs.map(
-                (d) => d.data() as BackgroundPreset
-              );
-              updateCombinedBackgrounds();
-            },
-            (error) => {
-              console.error('Error fetching beta backgrounds:', error);
-            }
-          )
-        );
-      } else {
-        console.warn('Skipping beta background query: User has no email.');
-      }
-
-      // Public backgrounds are always available regardless of user email
-      unsubscribes.push(
-        onSnapshot(
-          qPublic,
-          (snapshot) => {
-            publicBgsRef.current = snapshot.docs.map(
-              (d) => d.data() as BackgroundPreset
-            );
-            updateCombinedBackgrounds();
-          },
-          (error) => {
-            console.error('Error fetching public backgrounds:', error);
-          }
-        )
-      );
-    }
-
-    return () => unsubscribes.forEach((unsub) => unsub());
-  }, [user, isAdmin]);
-
-  // Combine static and managed presets
-  const presets = useMemo(() => {
-    return managedBackgrounds.map((bg) => ({
-      id: bg.url,
-      label: bg.label,
-    }));
-  }, [managedBackgrounds]);
-
-  const colors = [
-    { id: 'bg-brand-gray-darkest' },
-    { id: 'bg-brand-blue-dark' },
-    { id: 'bg-emerald-950' },
-    { id: 'bg-brand-red-dark' },
-    { id: 'bg-brand-gray-lightest' },
-    { id: 'bg-white' },
-    {
-      id: 'bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-slate-100',
-      label: 'Dot Grid',
-    },
-  ];
-
-  const gradients = [
-    { id: 'bg-gradient-to-br from-slate-900 to-slate-700', label: 'Slate' },
-    {
-      id: 'bg-gradient-to-br from-brand-blue-primary to-brand-blue-dark',
-      label: 'Brand',
-    },
-    {
-      id: 'bg-gradient-to-br from-emerald-400 to-cyan-500',
-      label: 'Tropical',
-    },
-    { id: 'bg-gradient-to-br from-rose-400 to-orange-400', label: 'Sunset' },
-  ];
 
   const handleShare = () => {
     if (!activeDashboard) return;

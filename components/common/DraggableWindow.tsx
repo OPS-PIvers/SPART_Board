@@ -12,6 +12,8 @@ import {
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { useScreenshot } from '../../hooks/useScreenshot';
+import { getBackgroundClass, getBackgroundStyle } from '../../utils/styleUtils';
+import { BackgroundPicker } from './BackgroundPicker';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -74,6 +76,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
   const isMaximized = widget.maximized ?? false;
+
+  // Background logic
+  const backgroundStyle = getBackgroundStyle(widget.background);
+  const backgroundClass = getBackgroundClass(widget.background);
+  // Default to white/slate-50 if no background set, effectively transparent over the glass effect
+  const hasBackground = !!widget.background;
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
@@ -173,8 +181,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         <div className={`flipper ${widget.flipped ? 'flip-active' : ''}`}>
           {/* Front Face */}
           <div
-            className="front relative"
-            style={{ pointerEvents: widget.flipped ? 'none' : 'auto' }}
+            className={`front absolute inset-0 w-full h-full flex flex-col ${
+              hasBackground ? backgroundClass : 'bg-white/50'
+            }`}
+            style={{
+              pointerEvents: widget.flipped ? 'none' : 'auto',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              ...backgroundStyle,
+            }}
           >
             {showConfirm && (
               <div
@@ -207,7 +222,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className={`flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
+              className={`flex items-center justify-between px-3 py-2 border-b border-slate-100 ${
+                hasBackground ? 'bg-white/40 backdrop-blur-sm' : 'bg-slate-50'
+              } ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                 <Move className="w-3 h-3 text-slate-400 flex-shrink-0" />
@@ -322,8 +339,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
           {/* Back Face (Settings) */}
           <div
-            className="back rounded-xl overflow-hidden relative"
-            style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
+            className="back absolute inset-0 w-full h-full rounded-xl overflow-hidden flex flex-col bg-white"
+            style={{
+              pointerEvents: widget.flipped ? 'auto' : 'none',
+              transform: 'rotateY(180deg)',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
           >
             <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border-b border-slate-200">
               <span className="text-xs font-bold text-slate-700 uppercase">
@@ -336,7 +358,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 DONE
               </button>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto">{settings}</div>
+            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+              <div className="mb-6">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Background
+                </h4>
+                <BackgroundPicker
+                  selectedBackground={widget.background}
+                  onSelect={(bg) => updateWidget(widget.id, { background: bg })}
+                />
+              </div>
+
+              {settings && (
+                <div className="border-t border-slate-100 pt-6">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    Widget Options
+                  </h4>
+                  {settings}
+                </div>
+              )}
+            </div>
             <div
               onMouseDown={handleResizeStart}
               className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
