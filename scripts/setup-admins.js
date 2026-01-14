@@ -29,6 +29,7 @@ const ADMIN_EMAILS = [
   'jennifer.ivers@orono.k12.mn.us',
   'sean.beaverson@orono.k12.mn.us',
   'joel.mellor@orono.k12.mn.us',
+  'jason.woyak@orono.k12.mn.us',
 ];
 
 async function setupAdmins() {

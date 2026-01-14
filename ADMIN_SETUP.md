@@ -11,6 +11,7 @@ The following emails have been configured as admins:
 - jennifer.ivers@orono.k12.mn.us
 - sean.beaverson@orono.k12.mn.us
 - joel.mellor@orono.k12.mn.us
+- jason.woyak@orono.k12.mn.us
 
 ## Setup Steps
 
