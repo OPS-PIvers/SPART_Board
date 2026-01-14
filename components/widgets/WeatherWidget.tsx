@@ -24,6 +24,27 @@ interface OpenWeatherData {
   weather: [{ main: string }, ...{ main: string }[]];
 }
 
+interface EarthNetworksResponse {
+  o?: {
+    t: number;
+    ic: number;
+  };
+}
+
+const STATION_CONFIG = {
+  id: 'BLLST',
+  lat: 44.99082,
+  lon: -93.59635,
+  name: 'Orono IS',
+};
+
+const EARTH_NETWORKS_ICONS = {
+  SNOW: [140, 186, 210, 102],
+  CLOUDY: [1, 13, 24, 70, 71, 73, 79],
+  SUNNY: [2, 3, 4],
+  RAIN: [10, 11, 12, 14, 15, 16, 17, 18, 19],
+};
+
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as WeatherConfig;
   const {
@@ -129,26 +150,23 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const hasApiKey = !!systemKey && systemKey.trim() !== '';
 
   const mapEarthNetworksIcon = (ic: number): string => {
-    // Basic mapping based on Earth Networks codes
-    if ([140, 186, 210, 102].includes(ic)) return 'snowy'; // Snow/Flurries
-    if ([1, 13, 24, 70, 71, 73, 79].includes(ic)) return 'cloudy'; // Cloudy/Overcast
-    if ([2, 3, 4].includes(ic)) return 'sunny'; // Partly Sunny/Cloudy treated as sunny-ish
-    // Rain fallback (heuristic)
-    if (ic >= 10 && ic < 20) return 'rainy';
-    return 'cloudy'; // Default
+    if (EARTH_NETWORKS_ICONS.SNOW.includes(ic)) return 'snowy';
+    if (EARTH_NETWORKS_ICONS.CLOUDY.includes(ic)) return 'cloudy';
+    if (EARTH_NETWORKS_ICONS.SUNNY.includes(ic)) return 'sunny';
+    if (EARTH_NETWORKS_ICONS.RAIN.includes(ic)) return 'rainy';
+    return 'cloudy'; // Default fallback
   };
 
   const fetchEarthNetworksWeather = async () => {
     setLoading(true);
     try {
-      // Station BLLST (Orono IS)
       const res = await fetch(
-        'https://owc.enterprise.earthnetworks.com/Data/GetData.ashx?dt=o&pi=3&si=BLLST&locstr=44.99082,-93.59635&units=english&verbose=false'
+        `https://owc.enterprise.earthnetworks.com/Data/GetData.ashx?dt=o&pi=3&si=${STATION_CONFIG.id}&locstr=${STATION_CONFIG.lat},${STATION_CONFIG.lon}&units=english&verbose=false`
       );
 
       if (!res.ok) throw new Error('Failed to connect to station');
 
-      const data = (await res.json()) as { o?: { t: number; ic: number } };
+      const data = (await res.json()) as EarthNetworksResponse;
       const obs = data.o; // Current observations
 
       if (!obs) throw new Error('No observation data available');
@@ -160,15 +178,20 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           ...config,
           temp: obs.t,
           condition: newCondition,
-          locationName: 'Orono IS', // Fixed station name
+          locationName: STATION_CONFIG.name,
           lastSync: Date.now(),
+          isAuto: true,
         },
       });
 
-      addToast('Connected to Orono IS Station', 'success');
+      addToast(`Connected to ${STATION_CONFIG.name}`, 'success');
     } catch (err) {
       console.error(err);
-      addToast('Station connection failed', 'error');
+      let message = 'Station connection failed';
+      if (err instanceof Error) {
+        message += `: ${err.message}`;
+      }
+      addToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -342,7 +365,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   config: { ...config, source: 'openweather' },
                 })
               }
-              className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source !== 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source === 'openweather' || !source ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
             >
               OpenWeather
             </button>
@@ -364,13 +387,15 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   <span className="text-[10px] font-bold text-indigo-900 uppercase">
-                    Live Feed Active
+                    Station Feed Ready
                   </span>
                 </div>
                 <p className="text-xs text-indigo-800 font-medium leading-tight">
                   Connected to{' '}
-                  <span className="font-bold">Orono IS (BLLST)</span> weather
-                  station.
+                  <span className="font-bold">
+                    {STATION_CONFIG.name} ({STATION_CONFIG.id})
+                  </span>{' '}
+                  weather station.
                 </p>
               </div>
               <button
