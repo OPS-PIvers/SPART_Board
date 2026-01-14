@@ -16,7 +16,6 @@ import {
   AlertCircle,
   CloudSun,
   Calendar,
-  TimerReset,
   Utensils,
   BookOpen,
   AppWindow,
@@ -25,13 +24,7 @@ import { ToolMetadata } from '../types';
 
 export const TOOLS: ToolMetadata[] = [
   { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
-  { type: 'timer', icon: Timer, label: 'Timer', color: 'bg-red-500' },
-  {
-    type: 'stopwatch',
-    icon: TimerReset,
-    label: 'Stop',
-    color: 'bg-orange-600',
-  },
+  { type: 'time-tool', icon: Timer, label: 'Timer', color: 'bg-red-500' },
   {
     type: 'traffic',
     icon: TrafficCone,
