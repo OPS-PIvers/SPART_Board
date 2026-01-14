@@ -117,6 +117,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     isAuto = false,
     city = '',
     locationName: _locationName = 'Classroom',
+    source = 'openweather',
   } = config;
 
   const [loading, setLoading] = useState(false);
@@ -126,6 +127,52 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     | undefined;
 
   const hasApiKey = !!systemKey && systemKey.trim() !== '';
+
+  const mapEarthNetworksIcon = (ic: number): string => {
+    // Basic mapping based on Earth Networks codes
+    if ([140, 186, 210, 102].includes(ic)) return 'snowy'; // Snow/Flurries
+    if ([1, 13, 24, 70, 71, 73, 79].includes(ic)) return 'cloudy'; // Cloudy/Overcast
+    if ([2, 3, 4].includes(ic)) return 'sunny'; // Partly Sunny/Cloudy treated as sunny-ish
+    // Rain fallback (heuristic)
+    if (ic >= 10 && ic < 20) return 'rainy';
+    return 'cloudy'; // Default
+  };
+
+  const fetchEarthNetworksWeather = async () => {
+    setLoading(true);
+    try {
+      // Station BLLST (Orono IS)
+      const res = await fetch(
+        'https://owc.enterprise.earthnetworks.com/Data/GetData.ashx?dt=o&pi=3&si=BLLST&locstr=44.99082,-93.59635&units=english&verbose=false'
+      );
+
+      if (!res.ok) throw new Error('Failed to connect to station');
+
+      const data = (await res.json()) as { o?: { t: number; ic: number } };
+      const obs = data.o; // Current observations
+
+      if (!obs) throw new Error('No observation data available');
+
+      const newCondition = mapEarthNetworksIcon(obs.ic);
+
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          temp: obs.t,
+          condition: newCondition,
+          locationName: 'Orono IS', // Fixed station name
+          lastSync: Date.now(),
+        },
+      });
+
+      addToast('Connected to Orono IS Station', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Station connection failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchWeather = async (params: string) => {
     if (!hasApiKey) {
@@ -287,61 +334,115 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       ) : (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {!hasApiKey && (
-            <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl items-start">
-              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-[10px] font-bold text-amber-800 leading-tight">
-                Weather service is not configured. Please contact your
-                administrator to set up the API key.
-              </p>
-            </div>
-          )}
+          {/* Source Toggle */}
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, source: 'openweather' },
+                })
+              }
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source !== 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            >
+              OpenWeather
+            </button>
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, source: 'earth_networks' },
+                })
+              }
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source === 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            >
+              School Station
+            </button>
+          </div>
 
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-              <MapPin className="w-3 h-3" /> City / Zip
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="e.g. London, US"
-                value={city}
-                onChange={(e) =>
-                  updateWidget(widget.id, {
-                    config: { ...config, city: e.target.value },
-                  })
-                }
-                disabled={!hasApiKey}
-                className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 disabled:opacity-50 disabled:bg-slate-50"
-              />
+          {source === 'earth_networks' ? (
+            <div className="space-y-3">
+              <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-indigo-900 uppercase">
+                    Live Feed Active
+                  </span>
+                </div>
+                <p className="text-xs text-indigo-800 font-medium leading-tight">
+                  Connected to{' '}
+                  <span className="font-bold">Orono IS (BLLST)</span> weather
+                  station.
+                </p>
+              </div>
               <button
-                onClick={syncByCity}
-                disabled={loading || !hasApiKey}
-                className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                onClick={fetchEarthNetworksWeather}
+                disabled={loading}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-md shadow-indigo-200"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
                 />
+                Refresh Station Data
               </button>
             </div>
-          </div>
+          ) : (
+            <>
+              {!hasApiKey && (
+                <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl items-start">
+                  <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-amber-800 leading-tight">
+                    Weather service is not configured. Please contact your
+                    administrator to set up the API key.
+                  </p>
+                </div>
+              )}
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100" />
-            </div>
-            <div className="relative flex justify-center text-[8px] font-black text-slate-300 uppercase">
-              <span className="bg-white px-2">OR</span>
-            </div>
-          </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                  <MapPin className="w-3 h-3" /> City / Zip
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. London, US"
+                    value={city}
+                    onChange={(e) =>
+                      updateWidget(widget.id, {
+                        config: { ...config, city: e.target.value },
+                      })
+                    }
+                    disabled={!hasApiKey}
+                    className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 disabled:opacity-50 disabled:bg-slate-50"
+                  />
+                  <button
+                    onClick={syncByCity}
+                    disabled={loading || !hasApiKey}
+                    className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+                    />
+                  </button>
+                </div>
+              </div>
 
-          <button
-            onClick={syncByLocation}
-            disabled={loading || !hasApiKey}
-            className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
-          >
-            <MapPin className="w-4 h-4" /> Use Current Location
-          </button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-100" />
+                </div>
+                <div className="relative flex justify-center text-[8px] font-black text-slate-300 uppercase">
+                  <span className="bg-white px-2">OR</span>
+                </div>
+              </div>
+
+              <button
+                onClick={syncByLocation}
+                disabled={loading || !hasApiKey}
+                className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+              >
+                <MapPin className="w-4 h-4" /> Use Current Location
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
