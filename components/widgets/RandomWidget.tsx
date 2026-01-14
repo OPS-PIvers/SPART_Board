@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, RandomConfig, WidgetConfig } from '../../types';
+import { Button } from '../common/Button';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   Users,
@@ -692,18 +693,21 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <button
+      <Button
+        variant="hero"
+        size="lg"
+        shape="pill"
         onClick={handlePick}
         disabled={isSpinning}
-        className={`mt-4 w-full py-4 rounded-[2rem] flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all shrink-0 ${
-          isSpinning
-            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-            : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark active:scale-95 hover:-translate-y-1'
-        }`}
+        className="mt-4 w-full shrink-0"
+        icon={
+          <RefreshCw
+            className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`}
+          />
+        }
       >
-        <RefreshCw className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
         {isSpinning ? 'Picking...' : 'Randomize'}
-      </button>
+      </Button>
     </div>
   );
 };
