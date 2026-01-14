@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, WeatherConfig } from '../../types';
 import {
@@ -12,6 +12,7 @@ import {
   MapPin,
   RefreshCw,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 interface OpenWeatherData {
@@ -56,6 +57,7 @@ const EARTH_NETWORKS_ICONS = {
 };
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { updateWidget, addToast } = useDashboard();
   const config = widget.config as WeatherConfig;
   const {
     temp = 72,
@@ -63,7 +65,107 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     isAuto = false,
     locationName = 'Classroom',
     lastSync = null,
+    source = 'openweather',
+    city = '',
   } = config;
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
+    | string
+    | undefined;
+
+  const handleRefresh = useCallback(async () => {
+    if (!isAuto) return;
+    setIsSyncing(true);
+
+    try {
+      if (source === 'earth_networks') {
+        const queryParams = new URLSearchParams({
+          ...EARTH_NETWORKS_API.PARAMS,
+          si: STATION_CONFIG.id,
+          locstr: `${STATION_CONFIG.lat},${STATION_CONFIG.lon}`,
+        }).toString();
+
+        const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
+        const proxies = [
+          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+          (u: string) =>
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+          (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+        ];
+
+        let data: EarthNetworksResponse | null = null;
+        for (const getProxyUrl of proxies) {
+          try {
+            const res = await fetch(getProxyUrl(url));
+            if (!res.ok) continue;
+            const text = await res.text();
+            data = JSON.parse(text) as EarthNetworksResponse;
+            if (data && data.o) break;
+          } catch (_) {
+            /* try next */
+          }
+        }
+
+        if (!data?.o) throw new Error('Station data unavailable');
+
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            temp: data.o.t,
+            condition: EARTH_NETWORKS_ICONS.SNOW.includes(data.o.ic)
+              ? 'snowy'
+              : EARTH_NETWORKS_ICONS.CLOUDY.includes(data.o.ic)
+                ? 'cloudy'
+                : EARTH_NETWORKS_ICONS.SUNNY.includes(data.o.ic)
+                  ? 'sunny'
+                  : EARTH_NETWORKS_ICONS.RAIN.includes(data.o.ic)
+                    ? 'rainy'
+                    : 'cloudy',
+            locationName: STATION_CONFIG.name,
+            lastSync: Date.now(),
+          },
+        });
+      } else {
+        // OpenWeather sync
+        if (!systemKey) throw new Error('API Key missing');
+        const params = city.trim()
+          ? `q=${encodeURIComponent(city.trim())}`
+          : `lat=${STATION_CONFIG.lat}&lon=${STATION_CONFIG.lon}`;
+
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
+        );
+        const data = (await res.json()) as OpenWeatherData;
+        if (data.cod !== 200) throw new Error(String(data.message));
+
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            temp: data.main.temp,
+            condition: data.weather[0].main.toLowerCase(),
+            locationName: data.name,
+            lastSync: Date.now(),
+          },
+        });
+      }
+      addToast('Weather updated', 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Update failed', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [
+    isAuto,
+    source,
+    city,
+    systemKey,
+    widget.id,
+    config,
+    updateWidget,
+    addToast,
+  ]);
 
   const getIcon = () => {
     switch (condition.toLowerCase()) {
@@ -99,7 +201,22 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const clothing = getClothing();
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4 gap-2">
+    <div className="flex flex-col items-center justify-center h-full p-4 gap-2 relative group/widget">
+      {isAuto && (
+        <button
+          onClick={handleRefresh}
+          disabled={isSyncing}
+          className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all opacity-0 group-hover/widget:opacity-100 disabled:opacity-50"
+          title="Refresh Weather"
+        >
+          {isSyncing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
+        </button>
+      )}
+
       <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
         <MapPin className="w-2.5 h-2.5" /> {locationName}
       </div>
