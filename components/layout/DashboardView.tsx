@@ -85,7 +85,10 @@ export const DashboardView: React.FC = () => {
       <div className="absolute inset-0 bg-black/10 pointer-events-none" />
 
       {/* Dynamic Widget Surface */}
-      <div className="relative w-full h-full">
+      <div
+        key={activeDashboard.id}
+        className="relative w-full h-full animate-in fade-in zoom-in-95 duration-700 ease-out"
+      >
         {activeDashboard.widgets.map((widget) => (
           <WidgetRenderer key={widget.id} widget={widget} />
         ))}

@@ -372,6 +372,8 @@ export interface Dashboard {
   background: string;
   widgets: WidgetData[];
   createdAt: number;
+  isDefault?: boolean;
+  order?: number;
 }
 
 export interface Toast {
