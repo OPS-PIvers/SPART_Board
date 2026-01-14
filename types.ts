@@ -244,15 +244,15 @@ export interface LunchMenuDay {
 
 export interface LunchCountConfig {
   schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
-  cachedMenu?: LunchMenuDay;
-  lastSyncDate?: string;
+  cachedMenu?: LunchMenuDay | null;
+  lastSyncDate?: string | null;
   isManualMode: boolean;
   manualHotLunch: string;
   manualBentoBox: string;
   roster: string[]; // List of student names
   assignments: Record<string, 'hot' | 'bento' | 'home' | null>;
   recipient?: string;
-  syncError?: string; // To display E-SYNC-404 etc.
+  syncError?: string | null; // To display E-SYNC-404 etc.
   rosterMode?: 'class' | 'custom';
 }
 
@@ -272,7 +272,7 @@ export interface TimeToolConfig {
   duration: number; // in seconds
   elapsedTime: number; // in seconds
   isRunning: boolean;
-  startTime?: number; // timestamp when last started (Date.now())
+  startTime?: number | null; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
 }
 
@@ -359,7 +359,7 @@ export interface WidgetData {
   z: number;
   flipped: boolean;
   minimized?: boolean;
-  customTitle?: string;
+  customTitle?: string | null;
   isLive?: boolean;
   config: WidgetConfig;
 }

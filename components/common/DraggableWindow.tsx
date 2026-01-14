@@ -74,7 +74,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       updateWidget(widget.id, { customTitle: tempTitle.trim() });
     } else {
       // If empty, revert to default (remove custom title)
-      updateWidget(widget.id, { customTitle: undefined });
+      updateWidget(widget.id, { customTitle: null });
       setTempTitle(title);
     }
     setIsEditingTitle(false);

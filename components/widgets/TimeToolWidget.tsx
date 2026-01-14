@@ -120,7 +120,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         ...config,
         isRunning: false,
         elapsedTime: displayTimeRef.current,
-        startTime: undefined,
+        startTime: null,
       },
     });
   }, [config, updateWidget, widget.id]);
@@ -145,7 +145,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         ...config,
         isRunning: false,
         elapsedTime: resetTime,
-        startTime: undefined,
+        startTime: null,
       },
     });
     setRunningDisplayTime(resetTime);
@@ -202,7 +202,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         elapsedTime: s,
         duration: s,
         isRunning: false,
-        startTime: undefined,
+        startTime: null,
       },
     });
     setRunningDisplayTime(s);
@@ -280,7 +280,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 elapsedTime: 600,
                 duration: 600,
                 isRunning: false,
-                startTime: undefined,
+                startTime: null,
               },
             });
             setRunningDisplayTime(600);
@@ -297,7 +297,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 mode: 'stopwatch',
                 elapsedTime: 0,
                 isRunning: false,
-                startTime: undefined,
+                startTime: null,
               },
             });
             setRunningDisplayTime(0);

@@ -112,7 +112,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     if (isManualMode) return;
     setIsSyncing(true);
     updateWidget(widget.id, {
-      config: { ...config, syncError: undefined },
+      config: { ...config, syncError: null },
     });
 
     try {
@@ -174,7 +174,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           ...config,
           cachedMenu: newMenu,
           lastSyncDate: now.toISOString(),
-          syncError: undefined,
+          syncError: null,
         },
       });
       addToast('Menu synced from Nutrislice', 'success');
@@ -502,7 +502,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                     ...config,
                     schoolSite: e.target
                       .value as LunchCountConfig['schoolSite'],
-                    cachedMenu: undefined,
+                    cachedMenu: null,
                   },
                 })
               }
