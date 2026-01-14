@@ -48,7 +48,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = widget.config as LunchCountConfig;
   const {
-    schoolSite = 'schumann-elementary',
     cachedMenu,
     isManualMode = false,
     manualHotLunch = '',
@@ -61,6 +60,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   } = config;
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const configRef = React.useRef(config);
+
+  // Keep ref in sync
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   // NOTE: Using third-party CORS proxy services introduces security and reliability concerns.
   // These proxies can inspect all data passing through them, and their availability is not guaranteed.
@@ -79,6 +84,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       try {
         const response = await fetch(getProxyUrl(url));
         if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          if (text.trim().startsWith('<!doctype')) {
+            throw new Error('Proxy returned HTML instead of JSON');
+          }
+        }
 
         const jsonContent = (await response.json()) as NutrisliceWeek;
 
@@ -106,10 +119,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [activeRoster, roster, rosterMode]);
 
   const fetchNutrislice = useCallback(async () => {
-    if (isManualMode) return;
+    if (configRef.current.isManualMode) return;
     setIsSyncing(true);
     updateWidget(widget.id, {
-      config: { ...config, syncError: null },
+      config: { ...configRef.current, syncError: null },
     });
 
     try {
@@ -118,7 +131,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       const month = now.getMonth() + 1;
       const day = now.getDate();
 
-      const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
+      const apiUrl = `https://orono.nutrislice.com/menu/api/weeks/school/${configRef.current.schoolSite}/menu-type/lunch/${year}/${month}/${day}/`;
       const data = await fetchWithFallback(apiUrl);
 
       let hotLunch = 'No Hot Lunch Listed';
@@ -168,7 +181,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
       updateWidget(widget.id, {
         config: {
-          ...config,
+          ...configRef.current,
           cachedMenu: newMenu,
           lastSyncDate: now.toISOString(),
           syncError: null,
@@ -178,13 +191,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     } catch (err) {
       console.error('Nutrislice Sync Error:', err);
       updateWidget(widget.id, {
-        config: { ...config, syncError: 'E-SYNC-404' },
+        config: { ...configRef.current, syncError: 'E-SYNC-404' },
       });
       addToast('Failed to sync menu', 'error');
     } finally {
       setIsSyncing(false);
     }
-  }, [schoolSite, isManualMode, config, widget.id, updateWidget, addToast]);
+  }, [widget.id, updateWidget, addToast]);
 
   useEffect(() => {
     if (
