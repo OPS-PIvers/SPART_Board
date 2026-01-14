@@ -160,13 +160,34 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const fetchEarthNetworksWeather = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://owc.enterprise.earthnetworks.com/Data/GetData.ashx?dt=o&pi=3&si=${STATION_CONFIG.id}&locstr=${STATION_CONFIG.lat},${STATION_CONFIG.lon}&units=english&verbose=false`
-      );
+      const url = `https://owc.enterprise.earthnetworks.com/Data/GetData.ashx?dt=o&pi=3&si=${STATION_CONFIG.id}&locstr=${STATION_CONFIG.lat},${STATION_CONFIG.lon}&units=english&verbose=false`;
 
-      if (!res.ok) throw new Error('Failed to connect to station');
+      // Use a list of proxies to improve reliability, matching LunchCountWidget's approach
+      const proxies = [
+        (u: string) =>
+          `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      ];
 
-      const data = (await res.json()) as EarthNetworksResponse;
+      let lastError: Error | null = null;
+      let data: EarthNetworksResponse | null = null;
+
+      for (const getProxyUrl of proxies) {
+        try {
+          const res = await fetch(getProxyUrl(url));
+          if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+          data = (await res.json()) as EarthNetworksResponse;
+          if (data) break;
+        } catch (e) {
+          lastError = e instanceof Error ? e : new Error(String(e));
+          console.warn('Proxy attempt failed, trying next...', e);
+        }
+      }
+
+      if (!data) {
+        throw lastError ?? new Error('All proxy attempts failed');
+      }
+
       const obs = data.o; // Current observations
 
       if (!obs) throw new Error('No observation data available');

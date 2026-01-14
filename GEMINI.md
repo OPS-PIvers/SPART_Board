@@ -34,8 +34,9 @@
 
 - **State Management:** Centralized via React Context (`DashboardContext`, `AuthContext`).
 - **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`) and `config/tools.ts` (`TOOLS`), and mapped in `WidgetRenderer.tsx`.
-- **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12, Universal) in `config/widgetGradeLevels.ts`.
+- **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12) in `config/widgetGradeLevels.ts`.
 - **Feature Permissions:** Access to widgets can be toggled and restricted to admins or beta users via the `FeaturePermission` system and managed in `AdminSettings`.
+- **CORS Proxy Logic:** Certain widgets (e.g., `WeatherWidget`, `LunchCountWidget`) use a multi-proxy fallback mechanism to bypass cross-origin restrictions for third-party APIs.
 - **Data Persistence:**
   - **Primary:** Firestore (real-time sync).
   - **Fallback:** `localStorage` (migrated to Firestore on sign-in).

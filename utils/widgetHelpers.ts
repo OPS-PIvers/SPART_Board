@@ -21,10 +21,6 @@ export const getTitle = (widget: WidgetData): string => {
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
   const defaults: Record<WidgetType, WidgetConfig> = {
     clock: { format24: true, showSeconds: true },
-    timer: {
-      duration: 300,
-      sound: true,
-    },
     'time-tool': {
       mode: 'timer',
       visualType: 'digital',

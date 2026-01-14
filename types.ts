@@ -1,6 +1,5 @@
 export type WidgetType =
   | 'clock'
-  | 'timer'
   | 'traffic'
   | 'text'
   | 'checklist'
@@ -298,51 +297,49 @@ export type WidgetConfig =
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
   ? ClockConfig
-  : T extends 'timer'
-    ? TimerConfig
-    : T extends 'traffic'
-      ? TrafficConfig
-      : T extends 'text'
-        ? TextConfig
-        : T extends 'checklist'
-          ? ChecklistConfig
-          : T extends 'random'
-            ? RandomConfig
-            : T extends 'dice'
-              ? DiceConfig
-              : T extends 'sound'
-                ? SoundConfig
-                : T extends 'drawing'
-                  ? DrawingConfig
-                  : T extends 'qr'
-                    ? QRConfig
-                    : T extends 'embed'
-                      ? EmbedConfig
-                      : T extends 'poll'
-                        ? PollConfig
-                        : T extends 'webcam'
-                          ? WebcamConfig
-                          : T extends 'scoreboard'
-                            ? ScoreboardConfig
-                            : T extends 'workSymbols'
-                              ? WorkSymbolsConfig
-                              : T extends 'weather'
-                                ? WeatherConfig
-                                : T extends 'schedule'
-                                  ? ScheduleConfig
-                                  : T extends 'calendar'
-                                    ? CalendarConfig
-                                    : T extends 'lunchCount'
-                                      ? LunchCountConfig
-                                      : T extends 'classes'
-                                        ? ClassesConfig
-                                        : T extends 'instructionalRoutines'
-                                          ? InstructionalRoutinesConfig
-                                          : T extends 'time-tool'
-                                            ? TimeToolConfig
-                                            : T extends 'miniApp'
-                                              ? MiniAppConfig
-                                              : never;
+  : T extends 'traffic'
+    ? TrafficConfig
+    : T extends 'text'
+      ? TextConfig
+      : T extends 'checklist'
+        ? ChecklistConfig
+        : T extends 'random'
+          ? RandomConfig
+          : T extends 'dice'
+            ? DiceConfig
+            : T extends 'sound'
+              ? SoundConfig
+              : T extends 'drawing'
+                ? DrawingConfig
+                : T extends 'qr'
+                  ? QRConfig
+                  : T extends 'embed'
+                    ? EmbedConfig
+                    : T extends 'poll'
+                      ? PollConfig
+                      : T extends 'webcam'
+                        ? WebcamConfig
+                        : T extends 'scoreboard'
+                          ? ScoreboardConfig
+                          : T extends 'workSymbols'
+                            ? WorkSymbolsConfig
+                            : T extends 'weather'
+                              ? WeatherConfig
+                              : T extends 'schedule'
+                                ? ScheduleConfig
+                                : T extends 'calendar'
+                                  ? CalendarConfig
+                                  : T extends 'lunchCount'
+                                    ? LunchCountConfig
+                                    : T extends 'classes'
+                                      ? ClassesConfig
+                                      : T extends 'instructionalRoutines'
+                                        ? InstructionalRoutinesConfig
+                                        : T extends 'time-tool'
+                                          ? TimeToolConfig
+                                          : T extends 'miniApp'
+                                            ? MiniAppConfig
+                                            : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;
