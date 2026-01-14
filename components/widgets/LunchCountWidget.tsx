@@ -488,7 +488,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         staffName: reportData.staffName,
         hotLunch: reportData.hotLunch,
         bentoBox: reportData.bentoBox,
-        extraPizza: extraPizza || 0,
+        extraPizza: extraPizza ?? 0,
         notes: notes,
       };
 
