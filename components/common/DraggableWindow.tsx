@@ -182,7 +182,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           {/* Front Face */}
           <div
             className={`front absolute inset-0 w-full h-full flex flex-col ${
-              hasBackground ? backgroundClass : 'bg-white/50'
+              hasBackground ? backgroundClass : 'bg-white/95'
             }`}
             style={{
               pointerEvents: widget.flipped ? 'none' : 'auto',
@@ -359,6 +359,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </button>
             </div>
             <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+              {/* Background picker is available for all widgets. This is intentional
+                  as the background system is generic and works for all widget types,
+                  allowing consistent customization across the dashboard. */}
               <div className="mb-6">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                   Background

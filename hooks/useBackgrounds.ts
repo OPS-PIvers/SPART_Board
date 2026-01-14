@@ -19,8 +19,9 @@ export const useBackgrounds = () => {
 
   useEffect(() => {
     if (!user) {
-      const t = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(t);
+      // Defer state update to avoid synchronous setState within effect
+      setTimeout(() => setLoading(false), 0);
+      return;
     }
 
     const baseRef = collection(db, 'admin_backgrounds');

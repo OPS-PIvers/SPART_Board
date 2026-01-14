@@ -11,7 +11,7 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
   selectedBackground,
   onSelect,
 }) => {
-  const { presets, colors, gradients } = useBackgrounds();
+  const { presets, colors, gradients, loading } = useBackgrounds();
   const [activeTab, setActiveTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
@@ -56,37 +56,46 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
       <div className="h-[300px] overflow-y-auto custom-scrollbar pr-1">
         {activeTab === 'presets' && (
           <div className="grid grid-cols-2 gap-2">
-            {presets.map((bg) => (
-              <button
-                key={bg.id}
-                onClick={() => onSelect(bg.id)}
-                className={`group relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                  selectedBackground === bg.id
-                    ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'
-                    : 'border-transparent hover:scale-[1.02]'
-                }`}
-              >
-                <img
-                  src={bg.id}
-                  alt={bg.label}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white text-xs font-bold uppercase tracking-wider">
-                    {bg.label}
-                  </span>
-                </div>
-                {selectedBackground === bg.id && (
-                  <div className="absolute top-1 right-1 bg-brand-blue-primary text-white p-0.5 rounded-full">
-                    <CheckSquare className="w-3 h-3" />
+            {loading ? (
+              <div className="col-span-2 text-center text-slate-400 text-xs py-8">
+                <div className="animate-spin mx-auto mb-2 h-6 w-6 border-2 border-slate-300 border-t-brand-blue-primary rounded-full" />
+                Loading presets...
+              </div>
+            ) : (
+              <>
+                {presets.map((bg) => (
+                  <button
+                    key={bg.id}
+                    onClick={() => onSelect(bg.id)}
+                    className={`group relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedBackground === bg.id
+                        ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'
+                        : 'border-transparent hover:scale-[1.02]'
+                    }`}
+                  >
+                    <img
+                      src={bg.id}
+                      alt={bg.label}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold uppercase tracking-wider">
+                        {bg.label}
+                      </span>
+                    </div>
+                    {selectedBackground === bg.id && (
+                      <div className="absolute top-1 right-1 bg-brand-blue-primary text-white p-0.5 rounded-full">
+                        <CheckSquare className="w-3 h-3" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+                {presets.length === 0 && (
+                  <div className="col-span-2 text-center text-slate-400 text-xs py-4">
+                    No presets available.
                   </div>
                 )}
-              </button>
-            ))}
-            {presets.length === 0 && (
-              <div className="col-span-2 text-center text-slate-400 text-xs py-4">
-                No presets available.
-              </div>
+              </>
             )}
           </div>
         )}
