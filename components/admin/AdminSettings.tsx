@@ -62,22 +62,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
     return null;
   }
 
-  // Handle backdrop click
-  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
     <div
-      className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={handleBackdropClick}
+      className="fixed inset-0 z-[10000] bg-slate-50 flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-settings-title"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-white w-full h-full overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-brand-blue-primary to-brand-blue-dark text-white p-6 pb-0 flex flex-col gap-4">
           <div className="flex items-center justify-between">
