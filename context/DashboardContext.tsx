@@ -599,14 +599,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const defaults: Record<string, Partial<WidgetData>> = {
       clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
-      timer: {
-        w: 280,
-        h: 180,
-        config: {
-          duration: 300,
-          sound: true,
-        },
-      },
       'time-tool': {
         w: 420,
         h: 400,

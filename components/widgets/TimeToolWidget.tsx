@@ -21,7 +21,21 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const config = widget.config as TimeToolConfig;
   const [showSoundPicker, setShowSoundPicker] = useState(false);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Local state for the smooth display time while running
+  const [runningDisplayTime, setRunningDisplayTime] = useState(
+    config.elapsedTime
+  );
+  const displayTimeRef = useRef(runningDisplayTime);
+
+  // The actual time to show: derived from config if stopped, from state if running
+  const displayTime = config.isRunning
+    ? runningDisplayTime
+    : config.elapsedTime;
+
+  // Keep ref in sync for callbacks
+  useEffect(() => {
+    displayTimeRef.current = displayTime;
+  }, [displayTime]);
 
   // --- AUDIO SYNTHESIS ---
   const playAlert = React.useCallback(() => {
@@ -100,53 +114,76 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     }
   };
 
-  const handleStart = async () => {
-    await resumeAudio();
-    updateWidget(widget.id, { config: { ...config, isRunning: true } });
-  };
-
   const handleStop = React.useCallback(() => {
-    updateWidget(widget.id, { config: { ...config, isRunning: false } });
-  }, [config, updateWidget, widget.id]);
-
-  const handleReset = () =>
     updateWidget(widget.id, {
       config: {
         ...config,
         isRunning: false,
-        elapsedTime: config.mode === 'timer' ? config.duration : 0,
+        elapsedTime: displayTimeRef.current,
+        startTime: undefined,
       },
     });
+  }, [config, updateWidget, widget.id]);
 
-  // --- LOGIC ---
+  const handleStart = async () => {
+    await resumeAudio();
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        isRunning: true,
+        startTime: Date.now(),
+        elapsedTime: displayTime, // Sync the current display time as base
+      },
+    });
+    setRunningDisplayTime(displayTime);
+  };
+
+  const handleReset = () => {
+    const resetTime = config.mode === 'timer' ? config.duration : 0;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        isRunning: false,
+        elapsedTime: resetTime,
+        startTime: undefined,
+      },
+    });
+    setRunningDisplayTime(resetTime);
+  };
+
+  // --- TICKING LOGIC ---
   useEffect(() => {
-    if (config.isRunning) {
-      timerRef.current = setInterval(
-        () => {
-          if (config.mode === 'timer') {
-            const nextTime = Math.max(0, config.elapsedTime - 1);
-            updateWidget(widget.id, {
-              config: { ...config, elapsedTime: nextTime },
-            });
-            if (nextTime === 0) {
-              handleStop();
-              playAlert();
-            }
-          } else {
-            updateWidget(widget.id, {
-              config: { ...config, elapsedTime: config.elapsedTime + 0.1 },
-            });
+    let interval: ReturnType<typeof setInterval>;
+    if (config.isRunning && config.startTime) {
+      const start = config.startTime;
+      const base = config.elapsedTime;
+
+      interval = setInterval(() => {
+        const delta = (Date.now() - start) / 1000;
+        let next: number;
+        if (config.mode === 'timer') {
+          next = Math.max(0, base - delta);
+          if (next === 0) {
+            handleStop();
+            playAlert();
           }
-        },
-        config.mode === 'timer' ? 1000 : 100
-      );
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+        } else {
+          next = base + delta;
+        }
+        setRunningDisplayTime(next);
+      }, 50); // High frequency for smooth UI, but NO updateWidget here
     }
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (interval) clearInterval(interval);
     };
-  }, [config, handleStop, updateWidget, widget.id, playAlert]);
+  }, [
+    config.isRunning,
+    config.startTime,
+    config.elapsedTime,
+    config.mode,
+    playAlert,
+    handleStop,
+  ]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -160,8 +197,15 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   const setTime = (s: number) => {
     updateWidget(widget.id, {
-      config: { ...config, elapsedTime: s, duration: s, isRunning: false },
+      config: {
+        ...config,
+        elapsedTime: s,
+        duration: s,
+        isRunning: false,
+        startTime: undefined,
+      },
     });
+    setRunningDisplayTime(s);
   };
 
   // --- STYLING ---
@@ -175,15 +219,15 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   const getStatusColor = () => {
     if (config.mode !== 'timer') return 'text-blue-500';
-    const percent = config.elapsedTime / config.duration;
-    if (config.elapsedTime <= 60) return 'text-red-500';
+    const percent = displayTime / config.duration;
+    if (displayTime <= 60) return 'text-red-500';
     if (percent <= 0.25) return 'text-amber-500';
     return config.theme === 'light' ? 'text-slate-900' : 'text-white';
   };
 
   return (
     <div
-      className={`flex flex-col h-full rounded-[2.5rem] shadow-xl border border-white/10 transition-all duration-500 ${themeClass} ${isVisual ? 'w-full' : 'w-full'}`}
+      className={`flex flex-col h-full rounded-[2.5rem] shadow-xl border border-white/10 transition-all duration-500 ${themeClass} w-full`}
     >
       {/* Header: Digital/Visual Toggle & Themes */}
       <div className="px-8 pt-6 flex justify-between items-center shrink-0">
@@ -236,8 +280,10 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 elapsedTime: 600,
                 duration: 600,
                 isRunning: false,
+                startTime: undefined,
               },
             });
+            setRunningDisplayTime(600);
           }}
           className={`pb-2 text-[10px] font-bold uppercase tracking-widest transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
         >
@@ -251,8 +297,10 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 mode: 'stopwatch',
                 elapsedTime: 0,
                 isRunning: false,
+                startTime: undefined,
               },
             });
+            setRunningDisplayTime(0);
           }}
           className={`pb-2 text-[10px] font-bold uppercase tracking-widest transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
         >
@@ -296,9 +344,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
               strokeDasharray="597"
               strokeDashoffset={
                 597 -
-                (config.mode === 'timer'
-                  ? config.elapsedTime / config.duration
-                  : 1) *
+                (config.mode === 'timer' ? displayTime / config.duration : 1) *
                   597
               }
               style={{
@@ -311,7 +357,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         <div
           className={`font-black transition-all duration-500 tabular-nums select-none ${getStatusColor()} ${isVisual ? 'text-5xl' : 'text-7xl'}`}
         >
-          {formatTime(config.elapsedTime)}
+          {formatTime(displayTime)}
         </div>
         {!isVisual && config.mode === 'timer' && (
           <div className="flex gap-2 mt-4">

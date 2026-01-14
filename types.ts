@@ -272,6 +272,7 @@ export interface TimeToolConfig {
   duration: number; // in seconds
   elapsedTime: number; // in seconds
   isRunning: boolean;
+  startTime?: number; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
 }
 

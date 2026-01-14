@@ -6,7 +6,6 @@ import { useDashboard } from '../../context/useDashboard';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimerWidget, TimerSettings } from './TimerWidget';
 import { TimeToolWidget } from './TimeToolWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
 import { TextWidget, TextSettings } from './TextWidget';
@@ -40,6 +39,7 @@ const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time update
 const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   weather: { w: 250, h: 280 },
   timer: { w: 280, h: 180 },
+  'time-tool': { w: 420, h: 400 },
   traffic: { w: 120, h: 320 },
   scoreboard: { w: 320, h: 200 },
   qr: { w: 200, h: 250 },
@@ -126,8 +126,6 @@ export const WidgetRenderer: React.FC<{
     switch (widget.type) {
       case 'clock':
         return <ClockWidget widget={widget} />;
-      case 'timer':
-        return <TimerWidget widget={widget} />;
       case 'time-tool':
         return <TimeToolWidget widget={widget} />;
       case 'traffic':
@@ -181,8 +179,6 @@ export const WidgetRenderer: React.FC<{
     switch (widget.type) {
       case 'clock':
         return <ClockSettings widget={widget} />;
-      case 'timer':
-        return <TimerSettings widget={widget} />;
       case 'text':
         return <TextSettings widget={widget} />;
       case 'checklist':
