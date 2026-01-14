@@ -22,8 +22,11 @@ import {
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
-import { db, isAuthBypass } from '../config/firebase';
-import { migrateLocalStorageToFirestore } from '../utils/migration';
+import { db } from '../config/firebase';
+import {
+  migrateLocalStorageToFirestore,
+  migrateWidget,
+} from '../utils/migration';
 import { DashboardContext } from './DashboardContextValue';
 
 /**
