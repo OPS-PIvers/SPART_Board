@@ -23,6 +23,7 @@ export type WidgetType =
   | 'miniApp'
   | 'materials'
   | 'stickers'
+  | 'sticker-library'
   | 'sticker';
 
 // --- ROSTER SYSTEM TYPES ---
@@ -220,6 +221,8 @@ export interface ScoreboardConfig {
 export interface WorkSymbolsConfig {
   voiceLevel: number | null; // 0, 1, 2, 3, or 4
   workMode: 'individual' | 'partner' | 'group' | null;
+  instructionalRoutine?: string; // Legacy/K-8
+  activeRoutines?: string[]; // New: 9-12 Multi-select
 }
 
 export interface WeatherConfig {
@@ -280,6 +283,10 @@ export interface TimeToolConfig {
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
 }
 
+export interface StickerLibraryConfig {
+  uploadedUrls: string[];
+}
+
 // 1. Define the Data Model for a Mini App
 export interface MiniAppItem {
   id: string;
@@ -301,6 +308,7 @@ export interface MaterialsConfig {
 export interface StickerConfig {
   url: string;
   rotation?: number;
+  size?: number;
 }
 
 export type StickerBookConfig = Record<string, never>;
@@ -332,6 +340,7 @@ export type WidgetConfig =
   | MiniAppConfig
   | MaterialsConfig
   | StickerBookConfig
+  | StickerLibraryConfig
   | StickerConfig;
 
 // Helper type to get config type for a specific widget
@@ -383,9 +392,11 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                               ? MaterialsConfig
                                               : T extends 'stickers'
                                                 ? StickerBookConfig
-                                                : T extends 'sticker'
-                                                  ? StickerConfig
-                                                  : never;
+                                                : T extends 'sticker-library'
+                                                  ? StickerLibraryConfig
+                                                  : T extends 'sticker'
+                                                    ? StickerConfig
+                                                    : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;

@@ -11,11 +11,11 @@ import {
   ChevronRight,
   Copy,
 } from 'lucide-react';
-import { WidgetData, WidgetType } from '../../types';
-import { useDashboard } from '../../context/useDashboard';
-import { useScreenshot } from '../../hooks/useScreenshot';
+import { WidgetData, WidgetType } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
-import { useClickOutside } from '../../hooks/useClickOutside';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];

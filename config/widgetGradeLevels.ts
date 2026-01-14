@@ -27,7 +27,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
 
   // Classroom Management
   traffic: ['k-2', '3-5'],
-  workSymbols: ['k-2', '3-5'],
+  workSymbols: ALL_GRADE_LEVELS,
   sound: ALL_GRADE_LEVELS,
 
   // Content & Communication
@@ -58,7 +58,8 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   miniApp: ALL_GRADE_LEVELS,
   materials: ALL_GRADE_LEVELS,
   stickers: ALL_GRADE_LEVELS,
-  sticker: ALL_GRADE_LEVELS,
+  'sticker-library': ALL_GRADE_LEVELS,
+  sticker: [],
 };
 
 /**

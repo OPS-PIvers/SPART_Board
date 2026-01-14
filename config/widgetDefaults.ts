@@ -150,9 +150,14 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 500,
     config: {},
   },
+  'sticker-library': {
+    w: 300,
+    h: 400,
+    config: { uploadedUrls: [] },
+  },
   sticker: {
     w: 200,
     h: 200,
-    config: { url: '', rotation: 0 },
+    config: { url: '', rotation: 0, size: 150 },
   },
 };

@@ -3,6 +3,7 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
+  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
@@ -10,7 +11,7 @@ import {
   DockItem,
 } from '../types';
 
-export interface DashboardContextType {
+export interface DashboardContextValue {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
   toasts: Toast[];
@@ -29,7 +30,11 @@ export interface DashboardContextType {
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
-  addWidget: (type: WidgetType, initialConfig?: Partial<WidgetData>) => void;
+  addWidget: (
+    type: WidgetType,
+    config?: Partial<WidgetConfig>,
+    dimensions?: { x: number; y: number; w: number; h: number }
+  ) => void;
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
@@ -41,8 +46,15 @@ export interface DashboardContextType {
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
-
-  // --- FOLDER ACTIONS ---
+  clearAllStickers: () => void;
+  // Roster system
+  rosters: ClassRoster[];
+  activeRosterId: string | null;
+  addRoster: (name: string, students: Student[]) => Promise<string>;
+  updateRoster: (id: string, updates: Partial<ClassRoster>) => Promise<void>;
+  deleteRoster: (id: string) => Promise<void>;
+  setActiveRoster: (id: string | null) => void;
+  // Folder system
   addFolder: (name: string) => void;
   createFolderWithItems: (name: string, items: WidgetType[]) => void;
   renameFolder: (id: string, name: string) => void;
@@ -55,19 +67,8 @@ export interface DashboardContextType {
     index: number
   ) => void;
   reorderFolderItems: (folderId: string, newItems: WidgetType[]) => void;
-
-  // --- ROSTER SYSTEM ---
-  rosters: ClassRoster[];
-  activeRosterId: string | null;
-  addRoster: (name: string, students: Student[]) => Promise<string>;
-  updateRoster: (
-    rosterId: string,
-    updates: Partial<ClassRoster>
-  ) => Promise<void>;
-  deleteRoster: (rosterId: string) => Promise<void>;
-  setActiveRoster: (rosterId: string | null) => void;
 }
 
-export const DashboardContext = createContext<DashboardContextType | undefined>(
+export const DashboardContext = createContext<DashboardContextValue | undefined>(
   undefined
 );

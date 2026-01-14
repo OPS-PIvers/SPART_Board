@@ -132,6 +132,9 @@ const mockDashboard: DashboardContextType = {
     // No-op
   },
 
+  clearAllStickers: () => {
+    // No-op
+  },
   // Roster mocks
   rosters: [],
   activeRosterId: null,
