@@ -516,7 +516,7 @@ export const Sidebar: React.FC = () => {
     <>
       <div
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]"
+        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all"
       >
         <button
           onClick={() => setIsOpen(true)}
