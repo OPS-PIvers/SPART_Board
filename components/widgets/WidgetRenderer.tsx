@@ -241,12 +241,8 @@ export const WidgetRenderer: React.FC<{
   // Account for sidebar (top-6, left-6) and dock (bottom-6) spacing
   // Horizontal: 1.5rem left + 1.5rem right = 3rem total (48px)
   // Vertical: 4.5rem top (for sidebar and spacing) + 4.5rem bottom (for dock and spacing) = 9rem total (144px)
-  const effectiveWidth = widget.maximized
-    ? windowSize.width - 48 // 3rem = 48px
-    : widget.w;
-  const effectiveHeight = widget.maximized
-    ? windowSize.height - 144 // 9rem = 144px (4.5rem top + 4.5rem bottom)
-    : widget.h;
+  const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
+  const effectiveHeight = widget.maximized ? windowSize.height : widget.h;
 
   const finalContent = baseDim ? (
     <ScalableWidget
