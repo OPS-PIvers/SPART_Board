@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Upload, Trash2 } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Upload, Trash2, Loader2 } from 'lucide-react';
 import { WidgetData } from '../../../types';
 import {
   trimImageWhitespace,
@@ -35,6 +35,36 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const processFile = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) return;
+
+    setIsProcessing(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const result = ev.target?.result as string;
+        try {
+          // Remove background first (simple corner flood fill), then trim
+          const noBg = await removeBackground(result);
+          const trimmed = await trimImageWhitespace(noBg);
+          setCustomStickers((prev) => {
+            const next = [...prev, trimmed];
+            localStorage.setItem('custom_stickers', JSON.stringify(next));
+            return next;
+          });
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      setIsProcessing(false);
+    }
+  }, []);
+
   const handleDragStart = (e: React.DragEvent, url: string) => {
     const img = e.currentTarget.querySelector('img');
     const ratio = img ? img.naturalWidth / img.naturalHeight : 1;
@@ -47,30 +77,24 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsProcessing(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const result = ev.target?.result as string;
-        try {
-          // Remove background first (simple corner flood fill), then trim
-          const noBg = await removeBackground(result);
-          const trimmed = await trimImageWhitespace(noBg);
-          const newStickers = [...customStickers, trimmed];
-          setCustomStickers(newStickers);
-          localStorage.setItem('custom_stickers', JSON.stringify(newStickers));
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setIsProcessing(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (_err) {
-      setIsProcessing(false);
+    if (file) {
+      void processFile(file);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      void processFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
   };
 
   const removeCustomSticker = (index: number) => {
@@ -155,11 +179,29 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         )}
 
         {customStickers.length === 0 && (
-          <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-            <p className="text-slate-400 text-sm">
-              Upload your own images to create custom stickers!
+          <label
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            className={`text-center p-8 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleUpload}
+              disabled={isProcessing}
+            />
+            {isProcessing ? (
+              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+            ) : (
+              <Upload className="w-8 h-8 text-slate-300" />
+            )}
+            <p className="text-slate-400 text-sm font-bold uppercase tracking-tight">
+              {isProcessing
+                ? 'Processing...'
+                : 'Upload or drag images to create custom stickers!'}
             </p>
-          </div>
+          </label>
         )}
       </div>
     </div>
