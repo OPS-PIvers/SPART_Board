@@ -350,11 +350,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
               <div className="flex-1 p-4 overflow-y-auto">
-                <div className="mb-6">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                    Widget Transparency
-                  </h4>
-                  <div className="flex items-center gap-4 bg-white/40 p-3 rounded-2xl border border-white/20">
+                <div className="mb-4 flex items-center gap-3 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    Transparency
+                  </span>
+                  <div className="flex-1 flex items-center gap-2">
                     <input
                       type="range"
                       min="0"
@@ -366,9 +366,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           transparency: parseFloat(e.target.value),
                         })
                       }
-                      className="flex-1 accent-indigo-600"
+                      className="flex-1 accent-indigo-600 h-1.5"
                     />
-                    <span className="text-[10px] font-mono font-bold text-slate-600 w-10">
+                    <span className="text-[10px] font-mono font-bold text-slate-600 w-8 text-right">
                       {Math.round(transparency * 100)}%
                     </span>
                   </div>
