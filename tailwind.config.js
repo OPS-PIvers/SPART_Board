@@ -81,14 +81,19 @@ export default {
           },
         },
       },
-      animation: {
-        'spin-slow': 'spin-slow 12s linear infinite',
-      },
       keyframes: {
         'spin-slow': {
           from: { transform: 'rotate(0deg)' },
           to: { transform: 'rotate(360deg)' },
         },
+        jiggle: {
+          '0%, 100%': { transform: 'rotate(-1deg)' },
+          '50%': { transform: 'rotate(1deg)' },
+        },
+      },
+      animation: {
+        'spin-slow': 'spin-slow 12s linear infinite',
+        jiggle: 'jiggle 0.2s ease-in-out infinite',
       },
     },
   },
