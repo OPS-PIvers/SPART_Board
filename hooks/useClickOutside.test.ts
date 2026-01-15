@@ -30,6 +30,21 @@ describe('useClickOutside', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
+  it('should call handler when touching outside', () => {
+    const handler = vi.fn();
+    const div = document.createElement('div');
+    const ref = { current: div };
+    document.body.appendChild(div);
+    elementsToCleanup.push(div);
+
+    renderHook(() => useClickOutside(ref, handler));
+
+    const event = new TouchEvent('touchstart', { bubbles: true });
+    document.body.dispatchEvent(event);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
   it('should not call handler when clicking inside', () => {
     const handler = vi.fn();
     const div = document.createElement('div');

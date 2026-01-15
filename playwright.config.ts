@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const WEBSERVER_TIMEOUT = 120 * 1000;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -18,9 +20,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'VITE_FIREBASE_API_KEY=dummy VITE_AUTH_BYPASS=true npm run dev',
+    command: 'cross-env VITE_FIREBASE_API_KEY=dummy VITE_AUTH_BYPASS=true npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: WEBSERVER_TIMEOUT,
   },
 });
