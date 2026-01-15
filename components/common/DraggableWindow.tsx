@@ -198,7 +198,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           >
             {showConfirm && (
               <div
-                className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm"
+                className="absolute inset-0 z-[60] bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
                 role="alertdialog"
                 aria-labelledby={`dialog-title-${widget.id}`}
                 aria-describedby={`dialog-desc-${widget.id}`}

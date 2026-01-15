@@ -121,6 +121,37 @@ export const LiveControl: React.FC<LiveControlProps> = ({
     };
   }, [showMenu]);
 
+  // BUTTON UI (extracted for consistency)
+  const ActionButtons = (
+    <div className="flex items-center gap-1.5 relative">
+      <button
+        onClick={onToggleLive}
+        aria-label={isLive ? 'End live session' : 'Start live session'}
+        className={`
+          flex items-center justify-center p-1.5 rounded-full transition-all
+          ${
+            isLive
+              ? 'bg-red-500/80 text-white shadow-lg animate-pulse'
+              : 'bg-white/20 text-slate-600 hover:bg-white/40'
+          }
+        `}
+      >
+        <Cast size={14} />
+      </button>
+
+      {isLive && (
+        <button
+          ref={buttonRef}
+          onClick={handleToggleMenu}
+          aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
+          className="w-7 h-7 bg-white/20 hover:bg-white/40 text-slate-700 rounded-full flex items-center justify-center transition-all"
+        >
+          <span className="text-[10px] font-bold">{studentCount}</span>
+        </button>
+      )}
+    </div>
+  );
+
   // POPOUT MENU - Rendered as Portal
   if (
     !showMenu ||
@@ -128,66 +159,12 @@ export const LiveControl: React.FC<LiveControlProps> = ({
     !menuPosition ||
     typeof document === 'undefined'
   ) {
-    return (
-      <div className="flex items-center gap-2 relative z-50">
-        <button
-          onClick={onToggleLive}
-          aria-label={isLive ? 'End live session' : 'Start live session'}
-          className={`
-            flex items-center gap-2 p-2 rounded-full transition-all
-            ${
-              isLive
-                ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
-                : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-            }
-          `}
-        >
-          <Cast size={16} />
-        </button>
-
-        {isLive && (
-          <button
-            ref={buttonRef}
-            onClick={handleToggleMenu}
-            aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
-            className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
-          >
-            <span className="text-[10px] font-bold">{studentCount}</span>
-          </button>
-        )}
-      </div>
-    );
+    return ActionButtons;
   }
 
   return (
-    <div className="flex items-center gap-2 relative z-50">
-      {/* GO LIVE BUTTON */}
-      <button
-        onClick={onToggleLive}
-        aria-label={isLive ? 'End live session' : 'Start live session'}
-        className={`
-          flex items-center gap-2 p-2 rounded-full transition-all
-          ${
-            isLive
-              ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
-              : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-          }
-        `}
-      >
-        <Cast size={16} />
-      </button>
-
-      {/* STUDENT COUNT BADGE */}
-      {isLive && (
-        <button
-          ref={buttonRef}
-          onClick={handleToggleMenu}
-          aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
-          className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
-        >
-          <span className="text-[10px] font-bold">{studentCount}</span>
-        </button>
-      )}
+    <>
+      {ActionButtons}
 
       {/* POPOUT MENU - Rendered as Portal */}
       {createPortal(
@@ -295,6 +272,6 @@ export const LiveControl: React.FC<LiveControlProps> = ({
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 };
