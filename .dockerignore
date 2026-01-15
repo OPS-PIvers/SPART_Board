@@ -6,4 +6,6 @@ dist
 .vscode
 coverage
 .env
+# Intentionally ignore all .env.* files (including .env.local).
+# Docker builds must receive environment values via --build-arg as configured in the Dockerfile.
 .env.*
