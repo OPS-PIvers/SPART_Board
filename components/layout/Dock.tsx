@@ -285,6 +285,64 @@ const DockItem = ({
   );
 };
 
+// Widget Library Component for Edit Mode
+const WidgetLibrary = ({
+  onAdd,
+  canAccess,
+  onClose,
+}: {
+  onAdd: (type: WidgetType) => void;
+  canAccess: (type: WidgetType) => boolean;
+  onClose: () => void;
+}) => {
+  return (
+    <GlassCard className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-[10002]">
+      <div className="bg-white/50 px-6 py-4 border-b border-white/30 flex justify-between items-center shrink-0 backdrop-blur-xl">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="w-5 h-5 text-brand-blue-primary" />
+          <h3 className="font-black text-sm uppercase tracking-wider text-slate-800">
+            Widget Library
+          </h3>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-slate-200/50 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5 text-slate-500" />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {TOOLS.map((tool) => {
+            if (!canAccess(tool.type)) return null;
+            return (
+              <button
+                key={tool.type}
+                onClick={() => onAdd(tool.type)}
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/40 hover:bg-white/80 border border-white/30 hover:border-brand-blue-light transition-all group active:scale-95"
+              >
+                <div
+                  className={`${tool.color} p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform`}
+                >
+                  <tool.icon className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
+                  {tool.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="bg-slate-50/50 px-6 py-3 border-t border-white/30 text-center backdrop-blur-xl">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Tap a widget to add it to your board
+        </p>
+      </div>
+    </GlassCard>
+  );
+};
+
 export const Dock: React.FC = () => {
   const {
     addWidget,
@@ -454,16 +512,28 @@ export const Dock: React.FC = () => {
         />
       )}
       <div className="relative group/dock">
-        {/* Edit Mode Overlay - clicking background exits edit mode */}
+        {/* Edit Mode Backdrop */}
         {isEditMode && (
           <div
-            className="fixed inset-0 z-[9998] cursor-default"
+            className="fixed inset-0 z-[10000] bg-slate-900/20 backdrop-blur-[2px] animate-in fade-in duration-300"
             onClick={exitEditMode}
           />
         )}
 
         {isExpanded ? (
           <>
+            {/* Widget Library Modal (Only in Edit Mode) */}
+            {isEditMode && (
+              <WidgetLibrary
+                onAdd={(type) => {
+                  addWidget(type);
+                  addToast('Widget added', 'success');
+                }}
+                canAccess={canAccessWidget}
+                onClose={exitEditMode}
+              />
+            )}
+
             {/* Expanded Toolbar with integrated minimize button */}
             <GlassCard className="relative px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {/* Done Button for Edit Mode */}
