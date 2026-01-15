@@ -220,7 +220,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       return () => window.removeEventListener('resize', updatePosition);
     }
     return undefined;
-  }, [showTools, widget.x, widget.y, widget.w, widget.h, widget.maximized]);
+  }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized]);
 
   return (
     <>
