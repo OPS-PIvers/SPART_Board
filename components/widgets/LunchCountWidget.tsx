@@ -656,6 +656,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={name}
                     draggable
+                    data-no-drag="true"
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
@@ -691,6 +692,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={name}
                     draggable
+                    data-no-drag="true"
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
@@ -726,6 +728,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={name}
                     draggable
+                    data-no-drag="true"
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
@@ -753,6 +756,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={name}
                   draggable
+                  data-no-drag="true"
                   onDragStart={(e) =>
                     e.dataTransfer.setData('studentName', name)
                   }
