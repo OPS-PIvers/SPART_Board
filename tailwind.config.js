@@ -29,7 +29,6 @@ export default {
     'bg-rose-500',
     'bg-orange-600',
     'bg-indigo-600',
-    'bg-[#2d3f89]',
     'bg-violet-600',
   ],
   theme: {

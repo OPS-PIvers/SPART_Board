@@ -72,7 +72,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'instructionalRoutines',
     icon: BookOpen,
     label: 'Routines',
-    color: 'bg-[#2d3f89]',
+    color: 'bg-brand-blue-primary',
   },
   {
     type: 'miniApp',
