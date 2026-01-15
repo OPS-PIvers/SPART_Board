@@ -554,7 +554,7 @@ export const Sidebar: React.FC = () => {
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-slate-400 bg-transparent rounded-full transition-all"
+            className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
             title="Admin Settings"
           >
             <Settings className="w-5 h-5" />
@@ -566,7 +566,7 @@ export const Sidebar: React.FC = () => {
           className={`p-2 rounded-full transition-all duration-300 ${
             isBoardSwitcherExpanded
               ? 'bg-brand-blue-primary text-white shadow-md'
-              : 'text-slate-400 bg-transparent'
+              : 'text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-lighter'
           }`}
           title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
         >
@@ -601,15 +601,15 @@ export const Sidebar: React.FC = () => {
                     }}
                     className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${
                       activeDashboard?.id === db.id
-                        ? 'bg-white text-brand-blue-primary shadow-sm'
-                        : 'text-slate-500'
+                        ? 'bg-brand-blue-primary text-white shadow-md'
+                        : 'text-slate-500 hover:bg-slate-200/50'
                     }`}
                   >
                     {db.isDefault && (
                       <Star
                         className={`w-3 h-3 ${
                           activeDashboard?.id === db.id
-                            ? 'fill-brand-blue-primary'
+                            ? 'fill-white text-white'
                             : 'fill-amber-400 text-amber-400'
                         }`}
                       />
