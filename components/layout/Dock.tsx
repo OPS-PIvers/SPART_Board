@@ -94,12 +94,11 @@ const DockItem = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent click if it was a long press
+    // Prevent click if it was a long press or if we are in "remove mode"
     if (isLongPress) {
       e.preventDefault();
       e.stopPropagation();
-      // Don't clear isLongPress here immediately so the X stays visible
-      // It will be cleared when clicking X or clicking elsewhere (handled by parent/outside click logic if we added it, but for now specific action clears it)
+      // We do NOT clear isLongPress here. It is cleared by the backdrop or the X button.
       return;
     }
 
@@ -265,10 +264,14 @@ const DockItem = ({
           onTouchEnd={handlePointerUp}
           onMouseLeave={handlePointerUp}
           onClick={handleClick}
-          className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${isLongPress ? 'animate-pulse z-50' : ''}`}
+          className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
+            isLongPress ? 'animate-bounce z-50 cursor-default' : ''
+          }`}
         >
           <div
-            className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+            className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg ${
+              isLongPress ? '' : 'group-hover:scale-110'
+            } transition-all duration-200 relative`}
           >
             <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
             {minimizedWidgets.length > 0 && (
