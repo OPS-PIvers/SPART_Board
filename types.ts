@@ -363,6 +363,7 @@ export interface WidgetData {
   maximized?: boolean;
   customTitle?: string | null;
   isLive?: boolean;
+  background?: string;
   config: WidgetConfig;
 }
 
