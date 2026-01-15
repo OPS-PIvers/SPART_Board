@@ -196,6 +196,16 @@ export interface WorkSymbolsConfig {
   workMode: 'individual' | 'partner' | 'group' | null;
 }
 
+export interface WeatherForecastPeriod {
+  startTime: string; // ISO string
+  isDaytime: boolean;
+  temp: number;
+  condition: string;
+  description: string;
+  shortDescription: string;
+  precipChance: number;
+}
+
 export interface WeatherConfig {
   temp: number;
   condition: string;
@@ -204,6 +214,7 @@ export interface WeatherConfig {
   lastSync?: number | null;
   city?: string;
   source?: 'openweather' | 'earth_networks';
+  forecast?: WeatherForecastPeriod[];
 }
 
 export interface ScheduleConfig {
