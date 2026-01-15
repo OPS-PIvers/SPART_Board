@@ -598,21 +598,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col bg-transparent select-none relative">
-      {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 z-10 animate-in fade-in slide-in-from-top-1">
-          <Box className="w-2 h-2 text-orange-500" />
-          <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
-            {activeRoster.name}
-          </span>
-        </div>
-      )}
-
       {/* Header Actions */}
       <div className="p-3 bg-white/30 border-b border-white/20 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button
             onClick={submitReport}
             variant="success"
+            className="rounded-xl"
             icon={<CheckCircle2 className="w-3.5 h-3.5" />}
           >
             Submit Report
@@ -620,11 +612,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           <Button
             onClick={resetBoard}
             variant="secondary"
+            className="rounded-xl"
             icon={<Undo2 className="w-3.5 h-3.5" />}
           >
             Reset
           </Button>
         </div>
+
+        {activeRoster && rosterMode === 'class' && (
+          <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 animate-in fade-in slide-in-from-top-1 ml-auto">
+            <Box className="w-2 h-2 text-orange-500" />
+            <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
+              {activeRoster.name}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 p-3 flex flex-col gap-3 min-h-0">
@@ -772,7 +774,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         <button
           onClick={() => void fetchNutrislice()}
           disabled={isSyncing || isManualMode}
-          className="p-2 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-all border border-slate-100 disabled:opacity-50 relative"
+          className="p-2 bg-white hover:bg-white/80 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 disabled:opacity-50 relative"
           title="Sync from Nutrislice"
         >
           {isSyncing ? (
@@ -789,10 +791,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           )}
         </button>
-        <div className="text-[8px] font-bold text-slate-300 uppercase flex items-center gap-1.5">
+        <div className="text-[8px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
           <span>Last Sync</span>
           {config.lastSyncDate && (
-            <span className="text-slate-400">
+            <span className="text-slate-500">
               {new Date(config.lastSyncDate).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
