@@ -65,7 +65,7 @@ function getOAuthHeaders(
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
-// Version: 1.0.5 - Forcing IAM update
+// Version: 1.0.6 - Refreshing IAM with Editor permissions
 export const getClassLinkRoster = onCall(
   {
     secrets: [
