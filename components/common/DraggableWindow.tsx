@@ -12,6 +12,12 @@ import {
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { useScreenshot } from '../../hooks/useScreenshot';
+import { GlassCard } from './GlassCard';
+import {
+  getBackgroundClass,
+  getBackgroundImageStyle,
+} from '../../utils/styleUtils';
+import { BackgroundPicker } from './BackgroundPicker';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -75,6 +81,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
   const isMaximized = widget.maximized ?? false;
+
+  // Background logic
+  const backgroundStyle = getBackgroundImageStyle(widget.background);
+  const backgroundClass = getBackgroundClass(widget.background);
+  const hasBackground = !!widget.background;
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
@@ -154,10 +165,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   return (
-    <div
+    <GlassCard
       ref={windowRef}
       onMouseDown={handleMouseDown}
-      className={`absolute select-none widget group bg-white/95 backdrop-blur-md shadow-xl overflow-hidden transition-shadow ${isMaximized ? 'rounded-none border-none' : 'rounded-xl border border-white/50'} ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
+      className={`absolute select-none widget group overflow-hidden transition-all ${
+        isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
+      } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50 scale-[1.01]' : ''}`}
       style={{
         left: isMaximized ? 0 : widget.x,
         top: isMaximized ? 0 : widget.y,
@@ -170,16 +183,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         ...style, // Merge custom styles
       }}
     >
-      <div className="flip-container">
-        <div className={`flipper ${widget.flipped ? 'flip-active' : ''}`}>
+      <div className="flip-container h-full">
+        <div
+          className={`flipper h-full ${widget.flipped ? 'flip-active' : ''}`}
+        >
           {/* Front Face */}
           <div
-            className="front relative"
-            style={{ pointerEvents: widget.flipped ? 'none' : 'auto' }}
+            className={`front relative h-full flex flex-col ${
+              hasBackground ? backgroundClass : ''
+            }`}
+            style={{
+              pointerEvents: widget.flipped ? 'none' : 'auto',
+              ...backgroundStyle,
+            }}
           >
             {showConfirm && (
               <div
-                className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200"
+                className="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm"
                 role="alertdialog"
                 aria-labelledby={`dialog-title-${widget.id}`}
                 aria-describedby={`dialog-desc-${widget.id}`}
@@ -208,10 +228,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className={`flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100 ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
+              className={`flex items-center justify-between px-3 py-2 border-b border-white/10 backdrop-blur-md ${
+                hasBackground ? 'bg-white/40' : 'bg-white/20'
+              } ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
-                <Move className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                <Move className="w-3 h-3 text-slate-500 flex-shrink-0" />
                 {isEditingTitle ? (
                   <input
                     autoFocus
@@ -228,7 +250,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       e.stopPropagation(); // Prevent triggering other listeners
                     }}
                     onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
-                    className="text-xs font-semibold text-slate-600 bg-white border border-indigo-300 rounded px-1 py-0.5 outline-none w-full shadow-sm"
+                    className="text-xs font-semibold text-slate-700 bg-white/50 border border-indigo-300 rounded px-1 py-0.5 outline-none w-full shadow-sm"
                     aria-label="Edit widget title"
                   />
                 ) : (
@@ -241,10 +263,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     }}
                     onMouseDown={(e) => e.stopPropagation()} // Allow click without drag
                   >
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider truncate">
+                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider truncate">
                       {widget.customTitle ?? title}
                     </span>
-                    <Pencil className="w-3 h-3 text-slate-300 opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0" />
+                    <Pencil className="w-3 h-3 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0" />
                   </div>
                 )}
               </div>
@@ -255,7 +277,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   <button
                     onClick={takeScreenshot}
                     disabled={isCapturing}
-                    className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                    className="p-1 hover:bg-white/40 rounded-md text-slate-500 hover:text-indigo-600 transition-colors disabled:opacity-50"
                     title="Take Screenshot"
                     aria-label="Take screenshot"
                   >
@@ -264,7 +286,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
                 <button
                   onClick={handleMaximizeToggle}
-                  className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
+                  className="p-1 hover:bg-white/40 rounded-md text-slate-500 transition-colors"
                   title={isMaximized ? 'Restore' : 'Maximize'}
                   aria-label={
                     isMaximized ? 'Restore widget' : 'Maximize widget'
@@ -278,14 +300,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
-                  className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
+                  className="p-1 hover:bg-white/40 rounded-md text-slate-500 transition-colors"
                   aria-label="Minimize widget"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => updateWidget(widget.id, { flipped: true })}
-                  className="p-1 hover:bg-slate-200 rounded-md text-slate-500 transition-colors"
+                  className="p-1 hover:bg-white/40 rounded-md text-slate-500 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
                 </button>
@@ -323,10 +345,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
           {/* Back Face (Settings) */}
           <div
-            className="back rounded-xl overflow-hidden relative"
+            className="back rounded-3xl overflow-hidden relative h-full flex flex-col bg-white/50 backdrop-blur-xl"
             style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
           >
-            <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border-b border-slate-200">
+            <div className="flex items-center justify-between px-3 py-2 bg-white/40 border-b border-white/20">
               <span className="text-xs font-bold text-slate-700 uppercase">
                 Settings
               </span>
@@ -337,7 +359,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 DONE
               </button>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto">{settings}</div>
+            <div className="flex-1 p-4 overflow-y-auto">
+              <div className="mb-6">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Background
+                </h4>
+                <BackgroundPicker
+                  selectedBackground={widget.background}
+                  onSelect={(bg) => updateWidget(widget.id, { background: bg })}
+                />
+              </div>
+
+              {settings && (
+                <div className="border-t border-slate-200 pt-6">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    Widget Options
+                  </h4>
+                  {settings}
+                </div>
+              )}
+            </div>
             <div
               onMouseDown={handleResizeStart}
               className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
@@ -347,6 +388,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </GlassCard>
   );
 };

@@ -49,6 +49,7 @@ import { Dashboard, GradeLevel, BackgroundPreset } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
+import { GlassCard } from '../common/GlassCard';
 
 interface DashboardData {
   name: string;
@@ -514,9 +515,9 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <div
+      <GlassCard
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all"
+        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all"
       >
         <button
           onClick={() => setIsOpen(true)}
@@ -627,7 +628,7 @@ export const Sidebar: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {showAdminSettings && (
         <AdminSettings onClose={() => setShowAdminSettings(false)} />
