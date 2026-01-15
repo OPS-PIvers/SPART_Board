@@ -1158,57 +1158,63 @@ export const Sidebar: React.FC = () => {
                 onChange={(e) => void handleFileUpload(e)}
               />
 
-              <div className="flex flex-col gap-4">
-                {/* User Profile */}
-                <div className="flex items-center gap-3 px-1 mb-1">
-                  {user?.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={user?.displayName ?? 'User'}
-                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
-                    />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700"
-                      aria-label={user?.displayName ?? 'User'}
-                    >
-                      {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-slate-800 font-bold text-sm truncate">
-                      {user?.displayName}
-                    </span>
-                    <span className="text-slate-500 text-[10px] truncate">
-                      {user?.email}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
+              <div className="flex flex-col gap-5">
+                {/* Board Actions */}
+                <div className="flex gap-3">
                   <button
                     onClick={handleShare}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
                   >
-                    <Share2 className="w-4 h-4" /> Share
+                    <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
                   <button
                     onClick={() => {
                       saveCurrentDashboard();
                       setIsOpen(false);
                     }}
-                    className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-xs uppercase tracking-wider"
+                    className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-[10px] uppercase tracking-wider"
                   >
-                    <Save className="w-4 h-4" /> Save & Close
+                    <Save className="w-3.5 h-3.5" /> Save Board
                   </button>
                 </div>
 
-                <button
-                  onClick={signOut}
-                  className="w-full flex items-center justify-center gap-2 p-3 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
-                >
-                  <LogOut className="w-4 h-4" /> Sign Out
-                </button>
+                <div className="h-px bg-slate-200/60 w-full" />
+
+                {/* User Profile & Session Management */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {user?.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user?.displayName ?? 'User'}
+                        className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+                      />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700"
+                        aria-label={user?.displayName ?? 'User'}
+                      >
+                        {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-slate-800 font-bold text-sm truncate leading-tight">
+                        {user?.displayName}
+                      </span>
+                      <span className="text-slate-500 text-[10px] truncate">
+                        {user?.email}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={signOut}
+                    className="p-2.5 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl transition-all group"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
