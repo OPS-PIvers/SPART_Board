@@ -136,3 +136,22 @@ body.is-dragging-widget iframe {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-glass-bg border border-glass-border shadow-[0_8px_32px_0_rgba(0,0,0,0.1)];
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.glass-button-secondary {
+  @apply bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.2)] transition-all duration-200;
+}
+
+.glass-button-secondary:hover {
+  @apply bg-[rgba(255,255,255,0.25)];
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}

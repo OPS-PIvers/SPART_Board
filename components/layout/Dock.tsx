@@ -112,9 +112,9 @@ const DockItem = ({
               transform: 'translateX(-50%)',
               zIndex: 10000,
             }}
-            className="w-56 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+            className="glass-panel w-56 rounded-xl overflow-hidden animate-in slide-in-from-bottom-2 duration-200 !bg-white/90"
           >
-            <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+            <div className="bg-white/50 px-3 py-2 border-b border-white/20 flex justify-between items-center">
               <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
                 Restorable
               </span>
@@ -370,7 +370,7 @@ export const Dock: React.FC = () => {
         {isExpanded ? (
           <>
             {/* Expanded Toolbar with integrated minimize button */}
-            <div className="bg-white/80 backdrop-blur-2xl px-4 py-3 rounded-[2rem] shadow-2xl border border-white/50 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+            <div className="glass-panel px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {filteredTools.length > 0 ? (
                 <>
                   <DndContext
@@ -405,7 +405,7 @@ export const Dock: React.FC = () => {
                   </DndContext>
 
                   {/* Separator and Roster/Classes Button */}
-                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                  <div className="w-px h-8 bg-slate-200/50 mx-1 md:mx-2 flex-shrink-0" />
 
                   {/* LIVE INFO BUTTON (Visible when active) */}
                   {session?.isActive && (
@@ -449,7 +449,7 @@ export const Dock: React.FC = () => {
                               transform: 'translateX(-50%)',
                               zIndex: 10000,
                             }}
-                            className="w-64 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+                            className="glass-panel w-64 rounded-xl overflow-hidden animate-in slide-in-from-bottom-2 duration-200 !bg-white/90"
                           >
                             <div className="p-4 flex flex-col items-center gap-2 text-center">
                               <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">
@@ -477,7 +477,7 @@ export const Dock: React.FC = () => {
                           document.body
                         )}
 
-                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                      <div className="w-px h-8 bg-slate-200/50 mx-1 md:mx-2 flex-shrink-0" />
                     </>
                   )}
 
@@ -498,14 +498,14 @@ export const Dock: React.FC = () => {
                   </button>
 
                   {/* Separator and Minimize Button */}
-                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                  <div className="w-px h-8 bg-slate-200/50 mx-1 md:mx-2 flex-shrink-0" />
 
                   <button
                     onClick={() => setIsExpanded(false)}
                     className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
                     title="Minimize Toolbar"
                   >
-                    <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
+                    <div className="bg-white/10 border border-white/20 p-2 md:p-3 rounded-2xl text-slate-500 shadow-sm group-hover:scale-110 group-hover:bg-white/20 group-hover:text-slate-700 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">

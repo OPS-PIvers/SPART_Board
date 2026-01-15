@@ -516,44 +516,44 @@ export const Sidebar: React.FC = () => {
     <>
       <div
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all"
+        className="glass-panel fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all"
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-lighter"
+          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-lighter/20"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="h-6 w-px bg-slate-200 mx-1" />
+        <div className="h-6 w-px bg-slate-200/50 mx-1" />
 
         <div className="flex items-center gap-2 px-1">
           {user?.photoURL ? (
             <img
               src={user.photoURL}
               alt={user?.displayName ?? 'User'}
-              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+              className="w-8 h-8 rounded-full border-2 border-white/50 shadow-sm ring-1 ring-white/20"
             />
           ) : (
             <div
-              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-700"
+              className="w-8 h-8 rounded-full border-2 border-white/50 shadow-sm ring-1 ring-white/20 bg-white/20 flex items-center justify-center text-xs font-semibold text-slate-700"
               aria-label={user?.displayName ?? 'User'}
             >
               {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="text-slate-700 font-bold text-sm hidden sm:block">
+          <span className="text-slate-800 font-bold text-sm hidden sm:block shadow-black/5 drop-shadow-sm">
             {user?.displayName}
           </span>
         </div>
 
-        <div className="h-6 w-px bg-slate-200 mx-1" />
+        <div className="h-6 w-px bg-slate-200/50 mx-1" />
 
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-slate-400 bg-transparent rounded-full transition-all"
+            className="p-2 text-slate-500 hover:text-brand-blue-primary bg-transparent rounded-full transition-all"
             title="Admin Settings"
           >
             <Settings className="w-5 h-5" />
@@ -565,7 +565,7 @@ export const Sidebar: React.FC = () => {
           className={`p-2 rounded-full transition-all duration-300 ${
             isBoardSwitcherExpanded
               ? 'bg-brand-blue-primary text-white shadow-md'
-              : 'text-slate-400 bg-transparent'
+              : 'text-slate-500 hover:text-brand-blue-primary bg-transparent'
           }`}
           title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
         >
@@ -584,12 +584,12 @@ export const Sidebar: React.FC = () => {
               : 'max-w-0 ml-0 opacity-0'
           }`}
         >
-          <div className="h-6 w-px bg-slate-200 mx-1 flex-shrink-0" />
+          <div className="h-6 w-px bg-slate-200/50 mx-1 flex-shrink-0" />
           <div className="relative flex items-center min-w-0">
             <div
               ref={scrollContainerRef}
               onScroll={checkScroll}
-              className="flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 backdrop-blur-sm overflow-x-auto no-scrollbar scroll-smooth"
+              className="flex bg-white/40 p-1 rounded-full border border-white/20 backdrop-blur-sm overflow-x-auto no-scrollbar scroll-smooth"
             >
               <div className="flex gap-1">
                 {dashboards.map((db) => (
@@ -601,7 +601,7 @@ export const Sidebar: React.FC = () => {
                     className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${
                       activeDashboard?.id === db.id
                         ? 'bg-white text-brand-blue-primary shadow-sm'
-                        : 'text-slate-500'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                     }`}
                   >
                     {db.isDefault && (
@@ -749,9 +749,9 @@ export const Sidebar: React.FC = () => {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
+          <div className="glass-panel relative w-full max-w-md h-full flex flex-col p-0 animate-in slide-in-from-left duration-300 !bg-white/90 border-r border-white/20">
             {/* Header */}
-            <div className="p-6 pb-2 border-b border-slate-100">
+            <div className="p-6 pb-2 border-b border-slate-200/50">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-brand-blue-primary">
                   <Layout className="w-6 h-6" />

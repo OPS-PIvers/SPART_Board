@@ -364,6 +364,7 @@ export interface WidgetData {
   customTitle?: string | null;
   isLive?: boolean;
   config: WidgetConfig;
+  opacity?: number;
 }
 
 export interface Dashboard {

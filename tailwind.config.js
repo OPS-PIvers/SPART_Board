@@ -40,6 +40,13 @@ export default {
         mono: ['"Roboto Mono"', 'monospace'],
       },
       colors: {
+        glass: {
+          bg: 'rgba(255, 255, 255, 0.15)',
+          border: 'rgba(255, 255, 255, 0.2)',
+        },
+        primary: {
+          glow: 'rgba(59, 130, 246, 0.5)',
+        },
         brand: {
           blue: {
             primary: '#2d3f89',
@@ -62,6 +69,9 @@ export default {
             lightest: '#f3f3f3',
           },
         },
+      },
+      backdropBlur: {
+        xs: '2px',
       },
       animation: {
         'spin-slow': 'spin-slow 12s linear infinite',
