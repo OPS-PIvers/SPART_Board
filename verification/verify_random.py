@@ -12,13 +12,13 @@ def verify_random_widget():
 
         print("Looking for Open Tools button...")
         try:
-             open_tools_btn = page.get_by_title("Open Tools")
-             if open_tools_btn.is_visible():
-                 print("Clicking Open Tools...")
-                 open_tools_btn.click()
-                 page.wait_for_timeout(1000)
-             else:
-                 print("Open Tools button not visible.")
+            open_tools_btn = page.get_by_title("Open Tools")
+            if open_tools_btn.is_visible():
+                print("Clicking Open Tools...")
+                open_tools_btn.click()
+                page.wait_for_timeout(1000)
+            else:
+                print("Open Tools button not visible.")
         except Exception as e:
             print(f"Error clicking Open Tools: {e}")
 
@@ -28,9 +28,9 @@ def verify_random_widget():
             if random_btn.count() > 0:
                 random_btn.first.click()
             else:
-                 print("Random button not found in dock.")
+                print("Random button not found in dock.")
         except Exception as e:
-             print(f"Failed to click 'Random': {e}")
+            print(f"Failed to click 'Random': {e}")
 
         page.wait_for_timeout(1000)
 

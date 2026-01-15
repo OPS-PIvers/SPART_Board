@@ -37,8 +37,8 @@ export const playTick = (freq = 150, volume = 0.1) => {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
-  } catch (_e) {
-    console.warn('Audio play failed');
+  } catch (e) {
+    console.warn('Audio play failed', e);
   }
 };
 
