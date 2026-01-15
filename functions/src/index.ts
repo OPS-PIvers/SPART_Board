@@ -3,10 +3,17 @@ import {
   HttpsError,
   CallableRequest,
 } from 'firebase-functions/v2/https';
+import { setGlobalOptions } from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
+
+// Set global options for all v2 functions
+setGlobalOptions({
+  region: 'us-central1',
+  invoker: 'public', // Make the function publicly accessible (required for CORS preflight)
+});
 
 admin.initializeApp();
 
