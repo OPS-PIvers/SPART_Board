@@ -361,6 +361,7 @@ export const Dock: React.FC = () => {
   const [showRosterMenu, setShowRosterMenu] = useState(false);
   const [showLiveInfo, setShowLiveInfo] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); // Global Edit Mode State
+  const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -378,9 +379,11 @@ export const Dock: React.FC = () => {
     if (showLiveInfo) setShowLiveInfo(false);
   }, [liveButtonRef]);
 
-  // Handle exiting edit mode when clicking outside the dock area
-  // We'll use a backdrop for this to ensure it catches clicks
-  const exitEditMode = () => setIsEditMode(false);
+  // Handle exiting edit mode
+  const exitEditMode = () => {
+    setIsEditMode(false);
+    setShowLibrary(false);
+  };
 
   const openClassEditor = () => {
     addWidget('classes');
@@ -522,15 +525,32 @@ export const Dock: React.FC = () => {
 
         {isExpanded ? (
           <>
-            {/* Widget Library Modal (Only in Edit Mode) */}
-            {isEditMode && (
+            {/* Add Widget Button (Floating above dock in Edit Mode) */}
+            {isEditMode && !showLibrary && (
+              <div className="absolute -top-14 left-1/2 -translate-x-1/2 animate-in slide-in-from-bottom-2 duration-300">
+                <button
+                  onClick={() => setShowLibrary(true)}
+                  className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-brand-blue-light text-brand-blue-primary rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
+                >
+                  <div className="p-1 bg-brand-blue-primary text-white rounded-full group-hover:rotate-90 transition-transform duration-300">
+                    <Plus className="w-3 h-3" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    Add Widgets
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Widget Library Modal (Triggered by button) */}
+            {isEditMode && showLibrary && (
               <WidgetLibrary
                 onAdd={(type) => {
                   addWidget(type);
                   addToast('Widget added', 'success');
                 }}
                 canAccess={canAccessWidget}
-                onClose={exitEditMode}
+                onClose={() => setShowLibrary(false)}
               />
             )}
 
