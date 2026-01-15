@@ -24,6 +24,8 @@ import {
   ChevronRight,
   Star,
   GripVertical,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import {
   DndContext,
@@ -226,9 +228,37 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'widgets' | 'design' | 'boards'>(
     'widgets'
   );
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err: unknown) => {
+        if (err instanceof Error) {
+          console.error(
+            `Error attempting to enable fullscreen: ${err.message}`
+          );
+        }
+      });
+    } else {
+      if (document.exitFullscreen) {
+        void document.exitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
   // Sub-tab for design section
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
@@ -560,6 +590,18 @@ export const Sidebar: React.FC = () => {
             <Settings className="w-5 h-5" />
           </button>
         )}
+
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        >
+          {isFullscreen ? (
+            <Minimize className="w-5 h-5" />
+          ) : (
+            <Maximize className="w-5 h-5" />
+          )}
+        </button>
 
         <button
           onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
