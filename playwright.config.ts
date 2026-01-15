@@ -20,7 +20,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'cross-env VITE_FIREBASE_API_KEY=dummy VITE_AUTH_BYPASS=true npm run dev',
+    command:
+      'cross-env VITE_FIREBASE_API_KEY=dummy VITE_AUTH_BYPASS=true npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: WEBSERVER_TIMEOUT,
