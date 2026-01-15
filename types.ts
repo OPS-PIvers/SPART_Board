@@ -147,8 +147,8 @@ export interface TextConfig {
 export interface ChecklistConfig {
   items: ChecklistItem[];
   scaleMultiplier?: number;
-  // NEW FIELDS
   mode: 'manual' | 'roster';
+  rosterMode?: 'class' | 'custom';
   firstNames?: string;
   lastNames?: string;
   completedNames?: string[]; // Tracks IDs or Names checked in roster mode

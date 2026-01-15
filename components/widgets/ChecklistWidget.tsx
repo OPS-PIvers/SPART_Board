@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, ChecklistConfig, ChecklistItem } from '../../types';
+import { ChecklistConfig, ChecklistItem, WidgetData } from '../../types';
+import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
   Square,
@@ -13,20 +14,33 @@ import {
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, rosters, activeRosterId } = useDashboard();
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
     mode = 'manual',
+    rosterMode = 'class',
     firstNames = '',
     lastNames = '',
     completedNames = [],
     scaleMultiplier = 1,
   } = config;
 
+  const activeRoster = useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
+
   // Process Roster Names
   const students = useMemo(() => {
     if (mode !== 'roster') return [];
+
+    if (rosterMode === 'class' && activeRoster) {
+      return activeRoster.students.map((s) =>
+        `${s.firstName} ${s.lastName}`.trim()
+      );
+    }
+
     const firsts = firstNames
       .split('\n')
       .map((n) => n.trim())
@@ -42,7 +56,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       if (name) combined.push(name);
     }
     return combined;
-  }, [firstNames, lastNames, mode]);
+  }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
 
   const toggleItem = (idOrName: string) => {
     if (mode === 'manual') {
@@ -180,6 +194,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   const {
     items = [],
     mode = 'manual',
+    rosterMode = 'class',
     firstNames = '',
     lastNames = '',
     scaleMultiplier = 1,
@@ -234,7 +249,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      {mode === 'manual' ? (
+      {mode === 'manual' && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <ListPlus className="w-3 h-3" /> Task List (One per line)
@@ -246,38 +261,53 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
           />
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
-              First Names
-            </label>
-            <textarea
-              value={firstNames}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, firstNames: e.target.value },
-                })
-              }
-              className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
-              placeholder="First names..."
-            />
-          </div>
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
-              Last Names
-            </label>
-            <textarea
-              value={lastNames}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, lastNames: e.target.value },
-                })
-              }
-              className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
-              placeholder="Last names..."
-            />
-          </div>
+      )}
+
+      {mode === 'roster' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <RosterModeControl
+            rosterMode={rosterMode}
+            onModeChange={(newMode: 'class' | 'custom') =>
+              updateWidget(widget.id, {
+                config: { ...config, rosterMode: newMode },
+              })
+            }
+          />
+
+          {rosterMode === 'custom' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                  First Names
+                </label>
+                <textarea
+                  value={firstNames}
+                  onChange={(e) =>
+                    updateWidget(widget.id, {
+                      config: { ...config, firstNames: e.target.value },
+                    })
+                  }
+                  className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
+                  placeholder="First names..."
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                  Last Names
+                </label>
+                <textarea
+                  value={lastNames}
+                  onChange={(e) =>
+                    updateWidget(widget.id, {
+                      config: { ...config, lastNames: e.target.value },
+                    })
+                  }
+                  className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl outline-none"
+                  placeholder="Last names..."
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
