@@ -62,7 +62,7 @@ export const getClassLinkRoster = functions.https.onCall(
       'CLASSLINK_TENANT_URL',
     ],
   },
-  async (request) => {
+  async (request: functions.https.CallableRequest) => {
     // 1. Ensure user is authenticated
     if (!request.auth) {
       throw new functions.https.HttpsError(
@@ -134,7 +134,7 @@ export const getClassLinkRoster = functions.https.onCall(
       const studentsByClass: Record<string, ClassLinkStudent[]> = {};
 
       await Promise.all(
-        classes.map(async (cls) => {
+        classes.map(async (cls: ClassLinkClass) => {
           const studentsUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/classes/${cls.sourcedId}/students`;
           const studentsHeaders = getOAuthHeaders(
             studentsUrl,
