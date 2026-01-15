@@ -394,6 +394,7 @@ export interface Dashboard {
   id: string;
   name: string;
   background: string;
+  thumbnailUrl?: string;
   widgets: WidgetData[];
   createdAt: number;
   isDefault?: boolean;

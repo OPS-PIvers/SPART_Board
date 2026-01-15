@@ -55,6 +55,9 @@ const mockDashboard: DashboardContextType = {
   deleteDashboard: () => {
     /* mock */
   },
+  duplicateDashboard: () => {
+    /* mock */
+  },
   renameDashboard: () => {
     /* mock */
   },

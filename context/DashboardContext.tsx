@@ -574,6 +574,39 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       });
   };
 
+  const duplicateDashboard = (id: string) => {
+    if (!user) {
+      addToast('Must be signed in to duplicate', 'error');
+      return;
+    }
+
+    const dashboard = dashboards.find((d) => d.id === id);
+    if (!dashboard) return;
+
+    const maxOrder = dashboards.reduce(
+      (max, db) => Math.max(max, db.order ?? 0),
+      0
+    );
+
+    const duplicated: Dashboard = {
+      ...dashboard,
+      id: crypto.randomUUID(),
+      name: `${dashboard.name} (Copy)`,
+      isDefault: false,
+      createdAt: Date.now(),
+      order: maxOrder + 1,
+    };
+
+    saveDashboard(duplicated)
+      .then(() => {
+        addToast(`Board "${dashboard.name}" duplicated`);
+      })
+      .catch((err) => {
+        console.error('Duplicate failed:', err);
+        addToast('Duplicate failed', 'error');
+      });
+  };
+
   const renameDashboard = (id: string, name: string) => {
     if (!user) {
       addToast('Must be signed in to rename', 'error');
@@ -944,6 +977,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         createNewDashboard,
         saveCurrentDashboard,
         deleteDashboard,
+        duplicateDashboard,
         renameDashboard,
         loadDashboard,
         reorderDashboards,
