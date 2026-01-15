@@ -11,12 +11,12 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     return (
       <div
         ref={ref}
-        className={`backdrop-blur-md bg-white/10 border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] rounded-3xl ${className}`}
+        className={`backdrop-blur-md bg-white/20 border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] rounded-3xl ${className}`}
         {...props}
       >
         {/* Glossy gradient overlay */}
         {gradientOverlay && (
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none rounded-[inherit] -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none rounded-[inherit] -z-10" />
         )}
         {children}
       </div>

@@ -189,7 +189,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           {/* Front Face */}
           <div
             className={`front absolute inset-0 w-full h-full flex flex-col ${
-              hasBackground ? backgroundClass : 'bg-white/20'
+              hasBackground ? backgroundClass : 'bg-white/30'
             }`}
             style={{
               pointerEvents: widget.flipped ? 'none' : 'auto',
@@ -227,7 +227,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className={`flex items-center justify-between px-4 pt-4 pb-2 border-b border-white/10 ${
+              className={`flex items-center justify-between px-4 pt-4 pb-2 border-b border-white/20 ${
                 isMaximized ? '' : 'cursor-grab active:cursor-grabbing'
               }`}
             >
@@ -248,12 +248,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       e.stopPropagation(); // Prevent triggering other listeners
                     }}
                     onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
-                    className="text-[10px] font-bold text-white bg-slate-950/40 border border-white/20 rounded-full px-3 py-1 outline-none w-full shadow-sm"
+                    className="text-[10px] font-bold text-white bg-slate-950/40 border border-white/30 rounded-full px-3 py-1 outline-none w-full shadow-sm"
                     aria-label="Edit widget title"
                   />
                 ) : (
                   <div
-                    className="flex items-center justify-center gap-2 group/title cursor-text min-w-0 overflow-hidden bg-slate-950/40 px-3 py-1 rounded-full border border-white/10"
+                    className="flex items-center justify-center gap-2 group/title cursor-text min-w-0 overflow-hidden bg-slate-950/40 px-3 py-1 rounded-full border border-white/20"
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent drag start
                       setTempTitle(widget.customTitle ?? title);
@@ -343,10 +343,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
           {/* Back Face (Settings) */}
           <div
-            className="back absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col bg-white/50 backdrop-blur-xl"
+            className="back absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col bg-white/60 backdrop-blur-xl"
             style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
           >
-            <div className="flex items-center justify-between px-3 py-2 bg-white/40 border-b border-white/20">
+            <div className="flex items-center justify-between px-3 py-2 bg-white/50 border-b border-white/30">
               <span className="text-xs font-bold text-slate-700 uppercase">
                 Settings
               </span>

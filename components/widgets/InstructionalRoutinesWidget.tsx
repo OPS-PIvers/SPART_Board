@@ -72,7 +72,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               <button
                 key={r.id}
                 onClick={() => selectRoutine(r)}
-                className="relative p-4 border border-white/20 rounded-2xl bg-white/40 shadow-sm hover:border-[#2d3f89] transition-all text-left"
+                className="relative p-4 border border-white/30 rounded-2xl bg-white/50 shadow-sm hover:border-[#2d3f89] transition-all text-left"
               >
                 <Star
                   onClick={(e) => {
@@ -105,7 +105,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="flex flex-col h-full bg-transparent p-6 animate-in fade-in duration-200 overflow-hidden">
-      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-white/10 pb-4">
+      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-white/20 pb-4">
         <div>
           <h2
             className="font-black text-[#2d3f89] leading-tight"

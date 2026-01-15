@@ -360,7 +360,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/20"
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
           >
             <LayoutGrid className="w-3 h-3" /> Library
           </button>
@@ -439,7 +439,8 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
-      <div className="p-5 border-b border-white/10 flex items-center justify-between bg-white/20 shrink-0">
+      <div className="p-5 border-b border-white/20 flex items-center justify-between bg-white/30 shrink-0">
+        {' '}
         <div>
           <h2 className="font-black text-lg text-slate-800 tracking-tight">
             App Library
@@ -469,7 +470,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
         <button
           onClick={handleCreate}
-          className="p-2 bg-white/40 text-indigo-600 hover:bg-white/60 rounded-xl transition-colors shadow-sm"
+          className="p-2 bg-white/50 text-indigo-600 hover:bg-white/70 rounded-xl transition-colors shadow-sm"
           title="Create New App"
         >
           <Plus className="w-5 h-5" />
@@ -479,7 +480,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
         {library.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[200px]">
-            <div className="p-4 bg-white/40 rounded-full backdrop-blur-sm">
+            <div className="p-4 bg-white/50 rounded-full backdrop-blur-sm">
               <Box className="w-8 h-8 opacity-50" />
             </div>
             <p className="text-sm font-bold">No apps saved yet</p>
@@ -511,7 +512,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-white/20 border-t border-white/10 text-[9px] text-slate-500 text-center font-bold uppercase tracking-widest shrink-0">
+      <div className="p-3 bg-white/30 border-t border-white/20 text-[9px] text-slate-500 text-center font-bold uppercase tracking-widest shrink-0">
         Drag to reorder • Runs Locally
       </div>
     </div>

@@ -115,11 +115,11 @@ const DockItem = ({
             }}
             className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
-            <div className="bg-white/40 px-3 py-2 border-b border-white/20 flex justify-between items-center">
+            <div className="bg-white/50 px-3 py-2 border-b border-white/30 flex justify-between items-center">
               <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">
                 Restorable
               </span>
-              <span className="bg-white/50 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              <span className="bg-white/60 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                 {minimizedWidgets.length}
               </span>
             </div>
@@ -127,7 +127,7 @@ const DockItem = ({
               {minimizedWidgets.map((widget) => (
                 <div
                   key={widget.id}
-                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-white/40 rounded-lg group transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-white/50 rounded-lg group transition-colors"
                 >
                   <button
                     onClick={() => {
@@ -154,7 +154,7 @@ const DockItem = ({
                 </div>
               ))}
             </div>
-            <div className="p-1 border-t border-white/20 grid grid-cols-2 gap-1">
+            <div className="p-1 border-t border-white/30 grid grid-cols-2 gap-1">
               <button
                 onClick={() => {
                   onAdd();
@@ -170,7 +170,7 @@ const DockItem = ({
                   onDeleteAll();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-white/40 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-xs font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-xs font-bold rounded-lg transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Clear All</span>
@@ -459,17 +459,17 @@ export const Dock: React.FC = () => {
                               <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
                                 {session.code}
                               </div>
-                              <div className="text-[10px] text-slate-600 bg-white/40 px-2 py-1 rounded border border-white/20">
+                              <div className="text-[10px] text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
                                 {getJoinUrl()}
                               </div>
                               <div className="text-[10px] text-slate-500 mt-2">
                                 Provide this code to your students.
                               </div>
                             </div>
-                            <div className="p-2 border-t border-white/20">
+                            <div className="p-2 border-t border-white/30">
                               <button
                                 onClick={() => setShowLiveInfo(false)}
-                                className="w-full py-2 bg-white/40 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
+                                className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
                               >
                                 Close
                               </button>

@@ -117,7 +117,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-slate-100 animate-in zoom-in-95 duration-200 custom-scrollbar">
         <div className="p-6 bg-brand-blue-primary text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-2 bg-white/30 rounded-xl">
               <FileSpreadsheet className="w-6 h-6" aria-hidden="true" />
             </div>
             <div>
@@ -135,7 +135,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            className="p-2 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -586,7 +586,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="h-full flex flex-col bg-transparent select-none relative">
       {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-white/40 px-2 py-0.5 rounded-full border border-white/20 z-10 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 z-10 animate-in fade-in slide-in-from-top-1">
           <Box className="w-2 h-2 text-orange-500" />
           <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
             {activeRoster.name}
@@ -595,7 +595,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       )}
 
       {/* Header Actions */}
-      <div className="p-3 bg-white/20 border-b border-white/10 flex items-center justify-between gap-2">
+      <div className="p-3 bg-white/30 border-b border-white/20 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button
             onClick={submitReport}
@@ -727,7 +727,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => handleDrop(e, null)}
-          className="flex-1 bg-white/40 border border-white/20 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
+          className="flex-1 bg-white/50 border border-white/30 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
         >
           <div className="text-[10px] font-black uppercase text-slate-600 mb-4 tracking-widest text-center">
             Drag Your Name to Your Choice
@@ -755,7 +755,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <div className="p-3 bg-white/20 border-t border-white/10 flex justify-start items-center gap-2 shrink-0">
+      <div className="p-3 bg-white/30 border-t border-white/20 flex justify-start items-center gap-2 shrink-0">
         <button
           onClick={() => void fetchNutrislice()}
           disabled={isSyncing || isManualMode}

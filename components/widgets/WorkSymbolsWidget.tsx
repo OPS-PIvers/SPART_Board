@@ -79,7 +79,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex items-center gap-3 px-3 flex-1 rounded-xl border-2 transition-all duration-300 ${
               voiceLevel === v.id
                 ? `${v.color} border-white shadow-lg scale-[1.02] ${v.text}`
-                : 'border-white/10 bg-white/20 text-slate-600 hover:bg-white/40'
+                : 'border-white/20 bg-white/30 text-slate-600 hover:bg-white/50'
             }`}
           >
             <span className="text-2xl font-black opacity-40">{v.id}</span>
@@ -96,7 +96,8 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       {/* Working Mode Section */}
-      <div className="w-28 flex flex-col gap-2 h-full border-l border-white/10 pl-3">
+      <div className="w-28 flex flex-col gap-2 h-full border-l border-white/20 pl-3">
+        {' '}
         <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-1">
           Working...
         </label>
@@ -114,7 +115,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex flex-col items-center justify-center flex-1 gap-1 rounded-2xl border-2 transition-all duration-300 ${
               workMode === m.id
                 ? 'bg-indigo-600 border-white shadow-lg scale-105 text-white'
-                : 'border-white/10 bg-white/20 text-slate-600 hover:bg-white/40'
+                : 'border-white/20 bg-white/30 text-slate-600 hover:bg-white/50'
             }`}
           >
             <m.icon className="w-6 h-6" strokeWidth={2.5} />
