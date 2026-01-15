@@ -65,6 +65,7 @@ function getOAuthHeaders(
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
+// Version: 1.0.5 - Forcing IAM update
 export const getClassLinkRoster = onCall(
   {
     secrets: [
@@ -72,7 +73,8 @@ export const getClassLinkRoster = onCall(
       'CLASSLINK_CLIENT_SECRET',
       'CLASSLINK_TENANT_URL',
     ],
-    cors: true, // Explicitly enable CORS
+    invoker: 'public',
+    cors: true,
     region: 'us-central1',
   },
   async (request: CallableRequest) => {
