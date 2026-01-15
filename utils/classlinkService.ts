@@ -22,8 +22,10 @@ class ClassLinkService {
     try {
       const getClassLinkRoster = httpsCallable<void, ClassLinkData>(
         functions,
-        'getClassLinkRoster'
+
+        'getClassLinkRosterV1'
       );
+
       const result = await getClassLinkRoster();
 
       this.cache = result.data;

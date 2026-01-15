@@ -1,19 +1,8 @@
-import {
-  onCall,
-  HttpsError,
-  CallableRequest,
-} from 'firebase-functions/v2/https';
-import { setGlobalOptions } from 'firebase-functions/v2';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
-
-// Set global options for all v2 functions
-setGlobalOptions({
-  region: 'us-central1',
-  invoker: 'public', // Make the function publicly accessible (required for CORS preflight)
-});
 
 admin.initializeApp();
 
@@ -65,30 +54,27 @@ function getOAuthHeaders(
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
-// Version: 1.0.6 - Refreshing IAM with Editor permissions
-export const getClassLinkRoster = onCall(
-  {
+// Version: 1.1.0 - Explicitly using v1 import to avoid TS build errors
+export const getClassLinkRosterV1 = functions
+  .runWith({
     secrets: [
       'CLASSLINK_CLIENT_ID',
       'CLASSLINK_CLIENT_SECRET',
       'CLASSLINK_TENANT_URL',
     ],
-    invoker: 'public',
-    cors: true,
-    region: 'us-central1',
-  },
-  async (request: CallableRequest) => {
-    // 1. Ensure user is authenticated
-    if (!request.auth) {
-      throw new HttpsError(
+    memory: '256MB',
+  })
+  .https.onCall(async (data: any, context: functions.https.CallableContext) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
         'unauthenticated',
         'The function must be called while authenticated.'
       );
     }
 
-    const userEmail = request.auth.token.email;
+    const userEmail = context.auth.token.email;
     if (!userEmail) {
-      throw new HttpsError(
+      throw new functions.https.HttpsError(
         'invalid-argument',
         'User must have an email associated with their account.'
       );
@@ -99,7 +85,7 @@ export const getClassLinkRoster = onCall(
     const tenantUrl = process.env.CLASSLINK_TENANT_URL;
 
     if (!clientId || !clientSecret || !tenantUrl) {
-      throw new HttpsError(
+      throw new functions.https.HttpsError(
         'internal',
         'ClassLink configuration is missing on the server.'
       );
@@ -108,7 +94,6 @@ export const getClassLinkRoster = onCall(
     const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
 
     try {
-      // Step 1: Find the user by email to get their sourcedId
       const usersUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users?filter=email='${userEmail}'`;
       const userHeaders = getOAuthHeaders(
         usersUrl,
@@ -130,7 +115,6 @@ export const getClassLinkRoster = onCall(
 
       const teacherSourcedId = users[0].sourcedId;
 
-      // Step 2: Get classes for this teacher
       const classesUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users/${teacherSourcedId}/classes`;
       const classesHeaders = getOAuthHeaders(
         classesUrl,
@@ -145,7 +129,6 @@ export const getClassLinkRoster = onCall(
       );
       const classes = classesResponse.data.classes;
 
-      // Step 3: Get students for each class
       const studentsByClass: Record<string, ClassLinkStudent[]> = {};
 
       await Promise.all(
@@ -183,17 +166,16 @@ export const getClassLinkRoster = onCall(
           'ClassLink API Error:',
           axiosError.response?.data ?? axiosError.message
         );
-        throw new HttpsError(
+        throw new functions.https.HttpsError(
           'internal',
           `Failed to fetch data from ClassLink: ${axiosError.message}`
         );
       }
       const genericError = error as Error;
       console.error('ClassLink API Error:', genericError.message);
-      throw new HttpsError(
+      throw new functions.https.HttpsError(
         'internal',
         `Failed to fetch data from ClassLink: ${genericError.message}`
       );
     }
-  }
-);
+  });
