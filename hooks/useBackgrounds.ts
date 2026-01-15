@@ -19,9 +19,12 @@ export const useBackgrounds = () => {
 
   useEffect(() => {
     if (!user) {
-      // Defer state update to avoid synchronous setState within effect
-      const t = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(t);
+      // Use timeout to defer state updates and avoid synchronous setState in effect
+      const timer = setTimeout(() => {
+        setManagedBackgrounds([]);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     const baseRef = collection(db, 'admin_backgrounds');
@@ -86,6 +89,7 @@ export const useBackgrounds = () => {
             },
             (error) => {
               console.error('Error fetching beta backgrounds:', error);
+              // Don't update loading here; let the public query completion handle it
             }
           )
         );

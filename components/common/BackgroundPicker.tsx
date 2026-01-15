@@ -19,9 +19,12 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
   return (
     <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 mb-4">
+      <div className="flex border-b border-slate-200 mb-4" role="tablist">
         <button
           onClick={() => setActiveTab('presets')}
+          role="tab"
+          aria-selected={activeTab === 'presets'}
+          aria-controls="presets-panel"
           className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
             activeTab === 'presets'
               ? 'border-brand-blue-primary text-brand-blue-primary'
@@ -32,6 +35,9 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('colors')}
+          role="tab"
+          aria-selected={activeTab === 'colors'}
+          aria-controls="colors-panel"
           className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
             activeTab === 'colors'
               ? 'border-brand-blue-primary text-brand-blue-primary'
@@ -42,6 +48,9 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('gradients')}
+          role="tab"
+          aria-selected={activeTab === 'gradients'}
+          aria-controls="gradients-panel"
           className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
             activeTab === 'gradients'
               ? 'border-brand-blue-primary text-brand-blue-primary'
@@ -53,9 +62,32 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
       </div>
 
       {/* Content */}
-      <div className="h-[300px] overflow-y-auto custom-scrollbar pr-1">
+      <div className="h-[300px] overflow-y-auto pr-1">
         {activeTab === 'presets' && (
-          <div className="grid grid-cols-2 gap-2">
+          <div
+            id="presets-panel"
+            role="tabpanel"
+            className="grid grid-cols-2 gap-2"
+          >
+            {/* Clear/None button */}
+            <button
+              onClick={() => onSelect('')}
+              aria-label="Clear background"
+              className={`group relative aspect-video rounded-lg overflow-hidden border-2 transition-all flex items-center justify-center bg-white ${
+                !selectedBackground || selectedBackground === ''
+                  ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'
+                  : 'border-slate-200 hover:scale-[1.02] hover:border-slate-300'
+              }`}
+            >
+              <div className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                None
+              </div>
+              {(!selectedBackground || selectedBackground === '') && (
+                <div className="absolute top-1 right-1 bg-brand-blue-primary text-white p-0.5 rounded-full">
+                  <CheckSquare className="w-3 h-3" />
+                </div>
+              )}
+            </button>
             {loading ? (
               <div className="col-span-2 text-center text-slate-400 text-xs py-8">
                 <div className="animate-spin mx-auto mb-2 h-6 w-6 border-2 border-slate-300 border-t-brand-blue-primary rounded-full" />
@@ -67,6 +99,7 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
                   <button
                     key={bg.id}
                     onClick={() => onSelect(bg.id)}
+                    aria-label={`Select ${bg.label} background`}
                     className={`group relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
                       selectedBackground === bg.id
                         ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'
@@ -101,43 +134,64 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
         )}
 
         {activeTab === 'colors' && (
-          <div className="grid grid-cols-3 gap-2">
-            {colors.map((bg) => (
-              <button
-                key={bg.id}
-                onClick={() => onSelect(bg.id)}
-                className={`aspect-square rounded-lg border-2 transition-all relative ${
-                  bg.id
-                } ${
-                  selectedBackground === bg.id
-                    ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'
-                    : 'border-slate-100 hover:border-slate-300'
-                }`}
-              >
-                {bg.id.includes('radial') && (
-                  <div className={`w-full h-full ${bg.id}`} />
-                )}
-                {bg.label === 'Dot Grid' && (
-                  <Grid className="w-4 h-4 absolute inset-0 m-auto text-slate-300" />
-                )}
-                {selectedBackground === bg.id && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white/20 backdrop-blur-sm p-1 rounded-full">
-                      <CheckSquare className="w-3 h-3 text-white drop-shadow-md" />
+          <div
+            id="colors-panel"
+            role="tabpanel"
+            className="grid grid-cols-3 gap-2"
+          >
+            {colors.map((bg) => {
+              // Generate descriptive label from class name
+              const colorLabel =
+                bg.label ??
+                bg.id
+                  .replace(/^bg-/, '')
+                  .replace(/-/g, ' ')
+                  .replace(/\[.*\]/, 'pattern')
+                  .trim();
+
+              return (
+                <button
+                  key={bg.id}
+                  onClick={() => onSelect(bg.id)}
+                  aria-label={`Select ${colorLabel} background`}
+                  className={`aspect-square rounded-lg border-2 transition-all relative ${
+                    bg.id
+                  } ${
+                    selectedBackground === bg.id
+                      ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'
+                      : 'border-slate-100 hover:border-slate-300'
+                  }`}
+                >
+                  {bg.id.includes('radial') && (
+                    <div className={`w-full h-full ${bg.id}`} />
+                  )}
+                  {bg.label === 'Dot Grid' && (
+                    <Grid className="w-4 h-4 absolute inset-0 m-auto text-slate-300" />
+                  )}
+                  {selectedBackground === bg.id && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-white/20 backdrop-blur-sm p-1 rounded-full">
+                        <CheckSquare className="w-3 h-3 text-white drop-shadow-md" />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </button>
-            ))}
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
 
         {activeTab === 'gradients' && (
-          <div className="grid grid-cols-2 gap-2">
+          <div
+            id="gradients-panel"
+            role="tabpanel"
+            className="grid grid-cols-2 gap-2"
+          >
             {gradients.map((bg) => (
               <button
                 key={bg.id}
                 onClick={() => onSelect(bg.id)}
+                aria-label={`Select ${bg.label} gradient background`}
                 className={`aspect-video rounded-lg border-2 transition-all relative ${
                   selectedBackground === bg.id
                     ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-1'

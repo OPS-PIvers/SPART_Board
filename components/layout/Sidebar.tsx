@@ -442,10 +442,7 @@ export const Sidebar: React.FC = () => {
                       const isActive = visibleTools.includes(tool.type);
                       const trimmedDisplayName =
                         permission?.displayName?.trim();
-                      const displayLabel =
-                        trimmedDisplayName && trimmedDisplayName !== ''
-                          ? trimmedDisplayName
-                          : tool.label;
+                      const displayLabel = trimmedDisplayName ?? tool.label;
 
                       return (
                         <button
