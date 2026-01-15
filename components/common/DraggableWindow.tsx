@@ -191,6 +191,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         const rect = windowRef.current?.getBoundingClientRect();
         if (!rect) return;
 
+        if (isMaximized) {
+          setMenuStyle({
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            zIndex: TOOL_MENU_Z_INDEX,
+          });
+          return;
+        }
+
         const spaceAbove = rect.top;
         const menuHeight = 56; // approximate height including spacing
         const shouldShowBelow = spaceAbove < menuHeight + 20;
