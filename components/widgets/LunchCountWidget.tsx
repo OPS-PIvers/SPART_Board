@@ -297,10 +297,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   // to get proper CORS headers configured for a production-ready solution.
   const fetchWithFallback = async (url: string) => {
     const proxies = [
-      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       (u: string) =>
         `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
     ];
 
     let lastError: Error | null = null;
@@ -311,22 +310,33 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
 
         const text = await response.text();
-        if (!text || text.trim().startsWith('<!doctype')) {
+        const trimmedText = text.trim();
+
+        // Improved HTML/Empty detection (case-insensitive and more robust)
+        if (
+          !trimmedText ||
+          trimmedText.startsWith('<') ||
+          trimmedText.toLowerCase().startsWith('<!doctype') ||
+          trimmedText.toLowerCase().startsWith('<html')
+        ) {
           throw new Error(
             'Proxy returned HTML or empty response instead of JSON'
           );
         }
 
-        const jsonContent = JSON.parse(text) as NutrisliceWeek;
-        console.warn(
-          '[LunchCountWidget] Fetched Nutrislice Data:',
-          jsonContent
-        );
+        const jsonContent = JSON.parse(trimmedText) as NutrisliceWeek;
+
+        console.warn('[LunchCountWidget] Fetched Nutrislice Data successfully');
 
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
         lastError = e instanceof Error ? e : new Error(String(e));
-        console.warn('Proxy attempt failed, trying next...', e);
+
+        // Use console.warn as required by lint rules
+
+        console.warn(
+          `[LunchCountWidget] Proxy attempt failed: ${lastError.message}`
+        );
       }
     }
     throw lastError ?? new Error('All proxies failed');
@@ -347,7 +357,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [activeRoster, roster, rosterMode]);
 
   const fetchNutrislice = useCallback(async () => {
-    if (configRef.current.isManualMode) return;
+    if (configRef.current.isManualMode || isSyncing) return;
     setIsSyncing(true);
     updateWidget(widget.id, {
       config: { ...configRef.current, syncError: null },
@@ -426,18 +436,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     } finally {
       setIsSyncing(false);
     }
-  }, [widget.id, updateWidget, addToast]);
+  }, [widget.id, updateWidget, addToast, isSyncing]);
 
   useEffect(() => {
-    if (
+    if (isSyncing) return;
+
+    const needsSync =
       !cachedMenu ||
       (config.lastSyncDate &&
         new Date(config.lastSyncDate).toDateString() !==
-          new Date().toDateString())
-    ) {
+          new Date().toDateString());
+
+    if (needsSync) {
       void fetchNutrislice();
     }
-  }, [fetchNutrislice, cachedMenu, config.lastSyncDate]);
+  }, [fetchNutrislice, cachedMenu, config.lastSyncDate, isSyncing]);
 
   const handleDrop = (e: React.DragEvent, type: LunchType | null) => {
     const name = e.dataTransfer.getData('studentName');
