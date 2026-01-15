@@ -13,7 +13,7 @@ import { SoundWidget, SoundSettings } from './SoundWidget';
 import { WebcamWidget, WebcamSettings } from './WebcamWidget';
 import { EmbedWidget, EmbedSettings } from './EmbedWidget';
 import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
-import { RandomWidget, RandomSettings } from './RandomWidget';
+import { RandomWidget, RandomSettings } from './random/RandomWidget';
 import { DiceWidget, DiceSettings } from './DiceWidget';
 import { DrawingWidget, DrawingSettings } from './DrawingWidget';
 import { QRWidget, QRSettings } from './QRWidget';
