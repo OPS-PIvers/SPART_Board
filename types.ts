@@ -474,6 +474,7 @@ export interface LunchCountGlobalConfig {
 export interface BackgroundPreset {
   id: string;
   url: string;
+  thumbnailUrl?: string;
   label: string;
   active: boolean; // Whether it shows up for users
   accessLevel: AccessLevel; // Who can see it
