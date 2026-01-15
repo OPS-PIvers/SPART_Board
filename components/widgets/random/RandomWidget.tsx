@@ -381,7 +381,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 font-handwritten bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden relative">
+    <div className="h-full flex flex-col p-4 font-sans bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden relative">
       {activeRoster && rosterMode === 'class' && (
         <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
           <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
