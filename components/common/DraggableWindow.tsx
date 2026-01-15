@@ -12,7 +12,10 @@ import {
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { useScreenshot } from '../../hooks/useScreenshot';
-import { getBackgroundClass, getBackgroundStyle } from '../../utils/styleUtils';
+import {
+  getBackgroundClass,
+  getBackgroundImageStyle,
+} from '../../utils/styleUtils';
 import { BackgroundPicker } from './BackgroundPicker';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
@@ -78,9 +81,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const isMaximized = widget.maximized ?? false;
 
   // Background logic
-  const backgroundStyle = getBackgroundStyle(widget.background);
+  const backgroundStyle = getBackgroundImageStyle(widget.background);
   const backgroundClass = getBackgroundClass(widget.background);
-  // Default to white/slate-50 if no background set, effectively transparent over the glass effect
+  // Default to semi-transparent white (bg-white/95) if no background set, effectively transparent over the glass effect
   const hasBackground = !!widget.background;
 
   const handleMouseDown = (_e: React.MouseEvent) => {
@@ -186,8 +189,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             }`}
             style={{
               pointerEvents: widget.flipped ? 'none' : 'auto',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
               ...backgroundStyle,
             }}
           >
@@ -342,9 +343,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             className="back absolute inset-0 w-full h-full rounded-xl overflow-hidden flex flex-col bg-white"
             style={{
               pointerEvents: widget.flipped ? 'auto' : 'none',
-              transform: 'rotateY(180deg)',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
             }}
           >
             <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border-b border-slate-200">
@@ -358,7 +356,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 DONE
               </button>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 p-4 overflow-y-auto">
               {/* Background picker is available for all widgets. This is intentional
                   as the background system is generic and works for all widget types,
                   allowing consistent customization across the dashboard. */}
