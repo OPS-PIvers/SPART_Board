@@ -518,7 +518,7 @@ export const Dock: React.FC = () => {
         {/* Edit Mode Backdrop - Transparent click catcher */}
         {isEditMode && (
           <div
-            className="fixed inset-0 z-[1000]" // Lower Z-index, well below the Dock's parent z-[10001]
+            className="fixed inset-0 z-0" // Base level
             onClick={exitEditMode}
           />
         )}
@@ -527,7 +527,7 @@ export const Dock: React.FC = () => {
           <>
             {/* Add Widget Button (Floating above dock in Edit Mode) */}
             {isEditMode && !showLibrary && (
-              <div className="absolute -top-14 left-1/2 -translate-x-1/2 animate-in slide-in-from-bottom-2 duration-300">
+              <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-[20] animate-in slide-in-from-bottom-2 duration-300">
                 <button
                   onClick={() => setShowLibrary(true)}
                   className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-brand-blue-light text-brand-blue-primary rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
@@ -555,12 +555,12 @@ export const Dock: React.FC = () => {
             )}
 
             {/* Expanded Toolbar with integrated minimize button */}
-            <GlassCard className="relative px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+            <GlassCard className="relative z-10 px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {/* Done Button for Edit Mode */}
               {isEditMode && (
                 <button
                   onClick={exitEditMode}
-                  className="absolute -top-3 -right-3 z-[10001] px-3 py-1 bg-brand-blue-primary text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-lg hover:bg-brand-blue-dark transition-transform hover:scale-105 active:scale-95"
+                  className="absolute -top-3 -right-3 z-[20] px-3 py-1 bg-brand-blue-primary text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-lg hover:bg-brand-blue-dark transition-transform hover:scale-105 active:scale-95"
                 >
                   Done
                 </button>
