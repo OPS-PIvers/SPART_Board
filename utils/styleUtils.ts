@@ -33,7 +33,7 @@ export const getBackgroundClass = (bg?: string): string => {
   // Only allow expected Tailwind background utility classes
   // Pattern matches: bg-*, from-*, to-*, [background-size:*], etc.
   const isValidTailwindBgClass =
-    /^(bg-|from-|to-|[background-size:)[a-z0-9\-/:()#[\]_,%]+(\s+(bg-|from-|to-|[background-size:)[a-z0-9\-/:()#[\]_,%]+)*$/i.test(
+    /^(bg-|from-|to-|\[background-size:)[a-z0-9\-/:()#[\]_,%]+(\s+(bg-|from-|to-|\[background-size:)[a-z0-9\-/:()#[\]_,%]+)*$/i.test(
       trimmed
     );
 
