@@ -18,6 +18,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -126,10 +128,14 @@ const DockItem = ({
   };
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform), // Use Translate instead of Transform for better Sortable behavior
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1, // Ghost effect for the item left behind
+    scale: isDragging ? 1.1 : 1, // Pop effect
     zIndex: isDragging ? 1000 : 'auto',
+    boxShadow: isDragging
+      ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+      : 'none',
   };
 
   return (
@@ -287,11 +293,13 @@ const DockItem = ({
 
 // Widget Library Component for Edit Mode
 const WidgetLibrary = ({
-  onAdd,
+  onToggle,
+  visibleTools,
   canAccess,
   onClose,
 }: {
-  onAdd: (type: WidgetType) => void;
+  onToggle: (type: WidgetType) => void;
+  visibleTools: WidgetType[];
   canAccess: (type: WidgetType) => boolean;
   onClose: () => void;
 }) => {
@@ -315,16 +323,26 @@ const WidgetLibrary = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {TOOLS.map((tool) => {
             if (!canAccess(tool.type)) return null;
+            const isActive = visibleTools.includes(tool.type);
             return (
               <button
                 key={tool.type}
-                onClick={() => onAdd(tool.type)}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/40 hover:bg-white/80 border border-white/30 hover:border-brand-blue-light transition-all group active:scale-95"
+                onClick={() => onToggle(tool.type)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all group active:scale-95 border-2 ${
+                  isActive
+                    ? 'bg-white/80 border-brand-blue-primary shadow-md'
+                    : 'bg-white/20 border-transparent opacity-40 grayscale hover:opacity-60 hover:grayscale-0'
+                }`}
               >
                 <div
-                  className={`${tool.color} p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform`}
+                  className={`${tool.color} p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform relative`}
                 >
                   <tool.icon className="w-6 h-6" />
+                  {isActive && (
+                    <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
+                      <Plus className="w-2.5 h-2.5 rotate-45" />
+                    </div>
+                  )}
                 </div>
                 <span className="text-[10px] font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
                   {tool.label}
@@ -336,7 +354,7 @@ const WidgetLibrary = ({
       </div>
       <div className="bg-slate-50/50 px-6 py-3 border-t border-white/30 text-center backdrop-blur-xl">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Tap a widget to add it to your board
+          Tap a widget to add or remove it from your dock
         </p>
       </div>
     </GlassCard>
@@ -423,6 +441,8 @@ export const Dock: React.FC = () => {
     };
   }, [featurePermissions]);
 
+  const [activeToolId, setActiveToolId] = useState<WidgetType | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -456,48 +476,40 @@ export const Dock: React.FC = () => {
     );
   }, [visibleTools, canAccessWidget, featurePermissions]);
 
-  // Memoize minimized widgets by type to avoid O(N*M) filtering in render loop
-  const minimizedWidgetsByType = useMemo(() => {
-    if (!activeDashboard) return {} as Record<WidgetType, WidgetData[]>;
-    return activeDashboard.widgets.reduce<Record<WidgetType, WidgetData[]>>(
-      (acc, widget) => {
-        if (widget.minimized) {
-          const existing = acc[widget.type] ?? [];
-          existing.push(widget);
-          acc[widget.type] = existing;
-        }
-        return acc;
-      },
-      {} as Record<WidgetType, WidgetData[]>
-    );
-  }, [activeDashboard]);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveToolId(event.active.id as WidgetType);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveToolId(null);
 
     if (over && active.id !== over.id) {
-      const filteredToolTypes = filteredTools.map((tool) => tool.type);
+      const filteredToolTypes: WidgetType[] = filteredTools.map(
+        (tool) => tool.type
+      );
       const oldIndex = filteredToolTypes.indexOf(active.id as WidgetType);
       const newIndex = filteredToolTypes.indexOf(over.id as WidgetType);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedFilteredTypes = arrayMove(
+        const reorderedFilteredTypes = arrayMove<WidgetType>(
           filteredToolTypes,
           oldIndex,
           newIndex
         );
 
         // Reconstruct the full list, preserving the position of inaccessible items
-        // This is tricky: we want to replace the accessible items in visibleTools
-        // with the new order, while skipping over items we can't see/move.
         const newVisibleTools: WidgetType[] = [];
         let filteredIndex = 0;
 
         for (const tool of visibleTools) {
           if (canAccessWidget(tool)) {
             if (filteredIndex < reorderedFilteredTypes.length) {
-              newVisibleTools.push(reorderedFilteredTypes[filteredIndex]);
-              filteredIndex++;
+              const nextType = reorderedFilteredTypes[filteredIndex];
+              if (nextType) {
+                newVisibleTools.push(nextType);
+                filteredIndex++;
+              }
             }
           } else {
             newVisibleTools.push(tool);
@@ -508,6 +520,24 @@ export const Dock: React.FC = () => {
       }
     }
   };
+
+  // Memoize minimized widgets by type to avoid O(N*M) filtering in render loop
+  const minimizedWidgetsByType = useMemo(() => {
+    const acc = {} as Record<WidgetType, WidgetData[]>;
+    if (!activeDashboard) return acc;
+
+    return activeDashboard.widgets.reduce<Record<WidgetType, WidgetData[]>>(
+      (prev, widget) => {
+        if (widget.minimized) {
+          const existing = prev[widget.type] ?? [];
+          existing.push(widget);
+          prev[widget.type] = existing;
+        }
+        return prev;
+      },
+      acc
+    );
+  }, [activeDashboard]);
 
   return (
     <div
@@ -523,6 +553,16 @@ export const Dock: React.FC = () => {
         />
       )}
       <div className="relative group/dock">
+        {/* Done Button for Edit Mode - Positioned above the dock container */}
+        {isEditMode && (
+          <button
+            onClick={exitEditMode}
+            className="absolute -top-12 -right-4 z-[10005] px-5 py-2 bg-brand-blue-primary text-white text-xs font-black uppercase tracking-wider rounded-full shadow-2xl hover:bg-brand-blue-dark transition-all hover:scale-105 active:scale-95 ring-4 ring-white/20"
+          >
+            Done
+          </button>
+        )}
+
         {isExpanded ? (
           <>
             {/* Add Widget Button (Floating above dock in Edit Mode) */}
@@ -545,9 +585,9 @@ export const Dock: React.FC = () => {
             {/* Widget Library Modal (Triggered by button) */}
             {isEditMode && showLibrary && (
               <WidgetLibrary
-                onAdd={(type) => {
-                  addWidget(type);
-                  addToast('Widget added', 'success');
+                visibleTools={visibleTools}
+                onToggle={(type) => {
+                  toggleToolVisibility(type);
                 }}
                 canAccess={canAccessWidget}
                 onClose={() => setShowLibrary(false)}
@@ -556,21 +596,12 @@ export const Dock: React.FC = () => {
 
             {/* Expanded Toolbar with integrated minimize button */}
             <GlassCard className="relative z-10 px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
-              {/* Done Button for Edit Mode */}
-              {isEditMode && (
-                <button
-                  onClick={exitEditMode}
-                  className="absolute -top-3 -right-3 z-[20] px-3 py-1 bg-brand-blue-primary text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-lg hover:bg-brand-blue-dark transition-transform hover:scale-105 active:scale-95"
-                >
-                  Done
-                </button>
-              )}
-
               {filteredTools.length > 0 ? (
                 <>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
@@ -605,6 +636,26 @@ export const Dock: React.FC = () => {
                         );
                       })}
                     </SortableContext>
+
+                    {/* Drag Preview Overlay */}
+                    <DragOverlay zIndex={10005}>
+                      {activeToolId ? (
+                        <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 transition-transform">
+                          <div
+                            className={`${
+                              TOOLS.find((t) => t.type === activeToolId)
+                                ?.color ?? 'bg-slate-500'
+                            } p-3 rounded-2xl text-white shadow-2xl ring-2 ring-white/50`}
+                          >
+                            {React.createElement(
+                              TOOLS.find((t) => t.type === activeToolId)
+                                ?.icon ?? Users,
+                              { className: 'w-6 h-6' }
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
+                    </DragOverlay>
                   </DndContext>
 
                   {/* Separator and Roster/Classes Button */}
@@ -634,7 +685,7 @@ export const Dock: React.FC = () => {
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
                           Live
                         </span>
                       </button>
@@ -695,7 +746,7 @@ export const Dock: React.FC = () => {
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                    <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
                       {classToolMetadata.label}
                     </span>
                   </button>
@@ -711,7 +762,7 @@ export const Dock: React.FC = () => {
                     <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                    <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
                       Hide
                     </span>
                   </button>
