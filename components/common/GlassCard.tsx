@@ -4,14 +4,29 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   gradientOverlay?: boolean;
+  transparency?: number;
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
-  ({ children, className = '', gradientOverlay = true, ...props }, ref) => {
+  (
+    {
+      children,
+      className = '',
+      gradientOverlay = true,
+      transparency = 0.2,
+      style,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <div
         ref={ref}
-        className={`backdrop-blur-md bg-white/20 border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] rounded-3xl ${className}`}
+        className={`backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] rounded-3xl ${className}`}
+        style={{
+          backgroundColor: `rgba(255, 255, 255, ${transparency})`,
+          ...style,
+        }}
         {...props}
       >
         {/* Glossy gradient overlay */}
