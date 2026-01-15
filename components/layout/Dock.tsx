@@ -373,13 +373,20 @@ export const Dock: React.FC = () => {
     bottom: number;
   } | null>(null);
   const livePopoverRef = useRef<HTMLDivElement>(null);
+  const dockContainerRef = useRef<HTMLDivElement>(null); // Ref for click-outside detection
 
   // Close live popover when clicking outside
   useClickOutside(livePopoverRef, () => {
     if (showLiveInfo) setShowLiveInfo(false);
   }, [liveButtonRef]);
 
-  // Handle exiting edit mode
+  // Handle exiting edit mode when clicking outside the dock area
+  useClickOutside(dockContainerRef, () => {
+    if (isEditMode && !showLibrary) {
+      setIsEditMode(false);
+    }
+  });
+
   const exitEditMode = () => {
     setIsEditMode(false);
     setShowLibrary(false);
@@ -504,6 +511,7 @@ export const Dock: React.FC = () => {
 
   return (
     <div
+      ref={dockContainerRef}
       data-screenshot="exclude"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] flex flex-col items-center"
     >
@@ -515,14 +523,6 @@ export const Dock: React.FC = () => {
         />
       )}
       <div className="relative group/dock">
-        {/* Edit Mode Backdrop - Transparent click catcher */}
-        {isEditMode && (
-          <div
-            className="fixed inset-0 z-0" // Base level
-            onClick={exitEditMode}
-          />
-        )}
-
         {isExpanded ? (
           <>
             {/* Add Widget Button (Floating above dock in Edit Mode) */}
