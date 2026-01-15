@@ -193,17 +193,27 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
   };
 
   const importClassLinkClass = async (cls: ClassLinkClass) => {
-    const students: Student[] = (classLinkStudents[cls.sourcedId] || []).map(
-      (s) => ({
-        id: crypto.randomUUID(),
-        firstName: s.givenName,
-        lastName: s.familyName,
-      })
-    );
+    try {
+      const students: Student[] = (classLinkStudents[cls.sourcedId] || []).map(
+        (s) => ({
+          id: crypto.randomUUID(),
+          firstName: s.givenName,
+          lastName: s.familyName,
+        })
+      );
 
-    await addRoster(cls.title, students);
-    addToast(`Imported ${cls.title}`);
-    setView('list');
+      // Add a nice Subject / Class Code prefix if available
+      const subjectPrefix = cls.subject ? `${cls.subject} - ` : '';
+      const codeSuffix = cls.classCode ? ` (${cls.classCode})` : '';
+      const displayName = `${subjectPrefix}${cls.title}${codeSuffix}`;
+
+      await addRoster(displayName, students);
+      addToast(`Imported ${cls.title}`, 'success');
+      setView('list');
+    } catch (err) {
+      console.error(err);
+      addToast(`Failed to import ${cls.title}`, 'error');
+    }
   };
 
   const editingRoster = rosters.find((r) => r.id === editingId) ?? null;
