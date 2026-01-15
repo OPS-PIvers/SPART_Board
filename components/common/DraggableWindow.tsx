@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   X,
   Settings,
-  Move,
   Minus,
   Pencil,
   Camera,
@@ -229,11 +228,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             <div
               onMouseDown={handleDragStart}
               className={`flex items-center justify-between px-3 py-2 border-b border-white/10 ${
-                hasBackground ? 'bg-white/40 backdrop-blur-md' : 'bg-white/20'
-              } ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
+                isMaximized ? '' : 'cursor-grab active:cursor-grabbing'
+              }`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
-                <Move className="w-3 h-3 text-slate-500 flex-shrink-0" />
                 {isEditingTitle ? (
                   <input
                     autoFocus
@@ -270,46 +268,46 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 {/* NEW HEADER ACTIONS */}
                 {headerActions && <div className="mr-2">{headerActions}</div>}
                 {canScreenshot && (
                   <button
                     onClick={takeScreenshot}
                     disabled={isCapturing}
-                    className="p-1 hover:bg-white/40 rounded-md text-slate-500 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                    className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 hover:text-indigo-600 transition-all disabled:opacity-50"
                     title="Take Screenshot"
                     aria-label="Take screenshot"
                   >
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
                   onClick={handleMaximizeToggle}
-                  className="p-1 hover:bg-white/40 rounded-md text-slate-500 transition-colors"
+                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 transition-all"
                   title={isMaximized ? 'Restore' : 'Maximize'}
                   aria-label={
                     isMaximized ? 'Restore widget' : 'Maximize widget'
                   }
                 >
                   {isMaximized ? (
-                    <Minimize2 className="w-4 h-4" />
+                    <Minimize2 className="w-3.5 h-3.5" />
                   ) : (
-                    <Maximize className="w-4 h-4" />
+                    <Maximize className="w-3.5 h-3.5" />
                   )}
                 </button>
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
-                  className="p-1 hover:bg-white/40 rounded-md text-slate-500 transition-colors"
+                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 transition-all"
                   aria-label="Minimize widget"
                 >
-                  <Minus className="w-4 h-4" />
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => updateWidget(widget.id, { flipped: true })}
-                  className="p-1 hover:bg-white/40 rounded-md text-slate-500 transition-colors"
+                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 transition-all"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => {
@@ -319,9 +317,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       setShowConfirm(true);
                     }
                   }}
-                  className="p-1 hover:bg-red-100 hover:text-red-600 rounded-md text-slate-500 transition-colors"
+                  className="p-1.5 bg-white/20 hover:bg-red-500/20 hover:text-red-600 rounded-full text-slate-600 transition-all"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
