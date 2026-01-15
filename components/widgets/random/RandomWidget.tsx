@@ -8,8 +8,6 @@ import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
-export { RandomSettings } from './RandomSettings';
-
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, rosters, activeRosterId } = useDashboard();
   const config = widget.config as RandomConfig;
