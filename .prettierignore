@@ -8,3 +8,4 @@ pnpm-lock.yaml
 yarn.lock
 public/version.json
 functions/lib
+functions/node_modules

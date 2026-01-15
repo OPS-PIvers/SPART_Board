@@ -100,8 +100,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             {ROUTINE_CATEGORIES[activeCategory].map((routine) => {
               const isActive = activeRoutines.includes(routine.id);
               const IconComponent =
-                (Icons as Record<string, React.ElementType>)[routine.icon] ??
-                Icons.HelpCircle;
+                (Icons as unknown as Record<string, React.ElementType>)[
+                  routine.icon
+                ] ?? Icons.HelpCircle;
 
               return (
                 <button
