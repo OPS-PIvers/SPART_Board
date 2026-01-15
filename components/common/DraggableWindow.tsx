@@ -48,6 +48,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const windowRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const dragDistanceRef = useRef(0);
 
   useClickOutside(menuRef, () => setShowTools(false), [windowRef]);
 
@@ -120,8 +121,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     document.body.classList.add('is-dragging-widget');
     const startX = e.clientX - widget.x;
     const startY = e.clientY - widget.y;
+    const initialMouseX = e.clientX;
+    const initialMouseY = e.clientY;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
+      dragDistanceRef.current = Math.sqrt(
+        Math.pow(moveEvent.clientX - initialMouseX, 2) +
+          Math.pow(moveEvent.clientY - initialMouseY, 2)
+      );
+
       updateWidget(widget.id, {
         x: moveEvent.clientX - startX,
         y: moveEvent.clientY - startY,
@@ -177,9 +185,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     );
     if (isInteractive) return;
 
-    if (!isEditingTitle) {
+    // Only toggle tools if it wasn't a drag (less than 5px movement)
+    if (!isEditingTitle && dragDistanceRef.current < 5) {
       setShowTools(!showTools);
     }
+    dragDistanceRef.current = 0;
   };
 
   // TOOL MENU POSITIONING

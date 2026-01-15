@@ -161,6 +161,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const {
     loadDashboards: _loadDashboards,
     saveDashboard,
+    saveDashboards,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
   } = useFirestore(user?.uid ?? null);
@@ -629,10 +630,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     // Save to Firestore
-    updatedDashboards.forEach((db) => {
-      void saveDashboard(db).catch((err) => {
-        console.error('Failed to save reordered dashboard:', err);
-      });
+    void saveDashboards(updatedDashboards).catch((err) => {
+      console.error('Failed to save reordered dashboards:', err);
     });
   };
 
@@ -654,10 +653,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     // Save to Firestore
-    updatedDashboards.forEach((db) => {
-      saveDashboard(db).catch((err) => {
-        console.error('Failed to save default dashboard status:', err);
-      });
+    void saveDashboards(updatedDashboards).catch((err) => {
+      console.error('Failed to save default dashboard status:', err);
     });
 
     addToast('Default board updated');

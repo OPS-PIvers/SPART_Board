@@ -260,7 +260,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       );
     } else {
       const newApp: MiniAppItem = {
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID() as string,
         title: editTitle,
         html: editCode,
         createdAt: Date.now(),
@@ -320,9 +320,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             if (i.html.length > MAX_HTML_SIZE) return null;
 
             return {
-              id: `imported-${Date.now()}-${Math.random()
-                .toString(36)
-                .slice(2, 11)}`,
+              id: crypto.randomUUID() as string,
               title:
                 typeof i.title === 'string' && i.title
                   ? i.title.slice(0, 100)
