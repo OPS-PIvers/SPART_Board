@@ -76,6 +76,9 @@ const mockDashboard: DashboardContextType = {
   removeWidget: () => {
     // No-op
   },
+  duplicateWidget: () => {
+    // No-op
+  },
   removeWidgets: () => {
     // No-op
   },

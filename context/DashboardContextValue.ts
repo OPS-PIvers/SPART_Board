@@ -29,6 +29,7 @@ export interface DashboardContextType {
   setDefaultDashboard: (id: string) => void;
   addWidget: (type: WidgetType) => void;
   removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;

@@ -8,6 +8,8 @@ import {
   Camera,
   Maximize,
   Minimize2,
+  ChevronRight,
+  Copy,
 } from 'lucide-react';
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
@@ -39,11 +41,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   skipCloseConfirmation = false,
   headerActions,
 }) => {
-  const { updateWidget, removeWidget, bringToFront, addToast } = useDashboard();
+  const {
+    updateWidget,
+    removeWidget,
+    duplicateWidget,
+    bringToFront,
+    addToast,
+  } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const windowRef = useRef<HTMLDivElement>(null);
@@ -415,81 +424,106 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   className="text-[10px] font-bold text-slate-800 bg-white/50 border border-white/50 rounded-full px-3 py-1 outline-none w-32 shadow-sm"
                 />
               ) : (
-                <div
-                  className="flex items-center gap-2 group/title cursor-text px-2"
-                  onClick={() => {
-                    setTempTitle(widget.customTitle ?? title);
-                    setIsEditingTitle(true);
-                  }}
-                >
-                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate max-w-[100px]">
-                    {widget.customTitle ?? title}
-                  </span>
-                  <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                <div className="flex items-center gap-1">
+                  <div
+                    className="flex items-center gap-2 group/title cursor-text px-2"
+                    onClick={() => {
+                      setTempTitle(widget.customTitle ?? title);
+                      setIsEditingTitle(true);
+                    }}
+                  >
+                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate max-w-[100px]">
+                      {widget.customTitle ?? title}
+                    </span>
+                    <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                  </div>
+                  <button
+                    onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
+                    className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-400 transition-all ${
+                      isToolbarExpanded ? 'rotate-180' : ''
+                    }`}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </div>
 
-            <div className="h-4 w-px bg-slate-300/50 mx-0.5" />
+            <div
+              className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
+                isToolbarExpanded
+                  ? 'max-w-[500px] opacity-100 ml-1'
+                  : 'max-w-0 opacity-0 ml-0'
+              }`}
+            >
+              <div className="h-4 w-px bg-slate-300/50 mx-0.5" />
 
-            <div className="flex items-center gap-1">
-              {headerActions && (
-                <div className="flex items-center text-slate-700">
-                  {headerActions}
-                </div>
-              )}
-              {canScreenshot && (
-                <button
-                  onClick={takeScreenshot}
-                  disabled={isCapturing}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
-                  title="Take Screenshot"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button
-                onClick={handleMaximizeToggle}
-                className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                title={isMaximized ? 'Restore' : 'Maximize'}
-              >
-                {isMaximized ? (
-                  <Minimize2 className="w-3.5 h-3.5" />
-                ) : (
-                  <Maximize className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1">
+                {headerActions && (
+                  <div className="flex items-center text-slate-700">
+                    {headerActions}
+                  </div>
                 )}
-              </button>
-              <button
-                onClick={() => updateWidget(widget.id, { minimized: true })}
-                className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                title="Minimize"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  updateWidget(widget.id, { flipped: true });
-                  setShowTools(false);
-                }}
-                className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                title="Settings"
-              >
-                <Settings className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  if (skipCloseConfirmation) {
-                    removeWidget(widget.id);
-                  } else {
-                    setShowConfirm(true);
+                {canScreenshot && (
+                  <button
+                    onClick={takeScreenshot}
+                    disabled={isCapturing}
+                    className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
+                    title="Take Screenshot"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => duplicateWidget(widget.id)}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title="Duplicate"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleMaximizeToggle}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title={isMaximized ? 'Restore' : 'Maximize'}
+                >
+                  {isMaximized ? (
+                    <Minimize2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <Maximize className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => updateWidget(widget.id, { minimized: true })}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title="Minimize"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    updateWidget(widget.id, { flipped: true });
                     setShowTools(false);
-                  }
-                }}
-                className="p-1.5 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
-                title="Close"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+                  }}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title="Settings"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (skipCloseConfirmation) {
+                      removeWidget(widget.id);
+                    } else {
+                      setShowConfirm(true);
+                      setShowTools(false);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
+                  title="Close"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>,
           document.body
