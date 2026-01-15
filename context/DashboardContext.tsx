@@ -17,6 +17,7 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
+  DockItem,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -170,11 +171,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = React.useRef(activeId);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(() => {
+  const [visibleTools, setVisibleTools] = useState<DockItem[]>(() => {
     const saved = localStorage.getItem('classroom_visible_tools');
     if (saved) {
       try {
-        return JSON.parse(saved) as WidgetType[];
+        return JSON.parse(saved) as DockItem[];
       } catch (e) {
         console.error('Failed to parse saved tools', e);
       }
@@ -471,9 +472,33 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const toggleToolVisibility = (type: WidgetType) => {
     setVisibleTools((prev) => {
-      const next = prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type];
+      // Check if tool exists anywhere (root or folder)
+      const exists = prev.some((item) => {
+        if (typeof item === 'string') return item === type;
+        return item.items.includes(type);
+      });
+
+      let next: DockItem[];
+
+      if (exists) {
+        // Remove from wherever it is
+        next = prev
+          .map((item) => {
+            if (typeof item === 'string') {
+              return item === type ? null : item;
+            }
+            // It's a folder
+            return {
+              ...item,
+              items: item.items.filter((t) => t !== type),
+            };
+          })
+          .filter((item): item is DockItem => item !== null);
+      } else {
+        // Add to root
+        next = [...prev, type];
+      }
+
       localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
       return next;
     });
@@ -485,7 +510,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
   };
 
-  const reorderTools = (tools: WidgetType[]) => {
+  const reorderTools = (tools: DockItem[]) => {
     setVisibleTools(tools);
     localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
   };

@@ -7,13 +7,14 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
+  DockItem,
 } from '../types';
 
 export interface DashboardContextType {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
   toasts: Toast[];
-  visibleTools: WidgetType[];
+  visibleTools: DockItem[];
   loading: boolean;
   gradeFilter: GradeFilter;
   setGradeFilter: (filter: GradeFilter) => void;
@@ -34,7 +35,7 @@ export interface DashboardContextType {
   setBackground: (bg: string) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
-  reorderTools: (tools: WidgetType[]) => void;
+  reorderTools: (tools: DockItem[]) => void;
 
   // --- ROSTER SYSTEM ---
   rosters: ClassRoster[];

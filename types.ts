@@ -476,3 +476,11 @@ export interface BackgroundPreset {
   betaUsers: string[]; // Specific users if beta
   createdAt: number;
 }
+
+export interface DockFolder {
+  id: string;
+  name: string;
+  items: WidgetType[];
+}
+
+export type DockItem = WidgetType | DockFolder;

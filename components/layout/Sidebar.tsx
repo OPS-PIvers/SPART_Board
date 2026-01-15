@@ -863,7 +863,10 @@ export const Sidebar: React.FC = () => {
                       const gradeLevels =
                         permission?.gradeLevels ??
                         getWidgetGradeLevels(tool.type);
-                      const isActive = visibleTools.includes(tool.type);
+                      const isActive = visibleTools.some((item) => {
+                        if (typeof item === 'string') return item === tool.type;
+                        return item.items.includes(tool.type);
+                      });
                       const trimmedDisplayName =
                         permission?.displayName?.trim();
                       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing

@@ -8,6 +8,11 @@ import {
   Trash2,
   Users,
   Cast,
+  Folder,
+  ArrowLeft,
+  X,
+  Check,
+  FolderPlus,
 } from 'lucide-react';
 import {
   DndContext,
@@ -28,28 +33,31 @@ import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { useClickOutside } from '../../hooks/useClickOutside';
-import { ToolMetadata, WidgetType, WidgetData } from '../../types';
+import {
+  ToolMetadata,
+  WidgetType,
+  WidgetData,
+  DockFolder,
+  DockItem,
+} from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
 
-// Dock Item with Popover Logic
-const DockItem = ({
-  tool,
-  minimizedWidgets,
-  onAdd,
-  onRestore,
-  onDelete,
-  onDeleteAll,
+const DockFolderItem = ({
+  folder,
+  onClick,
+  isEditMode,
+  onRemove,
+  onLongPress,
 }: {
-  tool: ToolMetadata;
-  minimizedWidgets: WidgetData[];
-  onAdd: () => void;
-  onRestore: (id: string) => void;
-  onDelete: (id: string) => void;
-  onDeleteAll: () => void;
+  folder: DockFolder;
+  onClick: () => void;
+  isEditMode: boolean;
+  onRemove: () => void;
+  onLongPress: () => void;
 }) => {
   const {
     attributes,
@@ -58,11 +66,114 @@ const DockItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: tool.type });
+  } = useSortable({ id: folder.id, disabled: !isEditMode });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isEditMode) {
+      listeners?.onPointerDown?.(e);
+      return;
+    }
+    timerRef.current = setTimeout(() => {
+      onLongPress();
+    }, 500);
+  };
+
+  const handlePointerUp = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
+  return (
+    <div className="relative flex flex-col items-center">
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onClick={(_e) => {
+          if (!isEditMode) onClick();
+        }}
+        className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
+          isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+        }`}
+      >
+        <div
+          className={`bg-slate-200 p-2 md:p-3 rounded-2xl text-slate-600 shadow-lg transition-all duration-200 relative border-2 border-white/50 ${
+            isEditMode ? 'animate-wiggle' : 'group-hover:scale-110'
+          }`}
+        >
+          <Folder className="w-5 h-5 md:w-6 md:h-6 fill-slate-300" />
+          {folder.items.length > 0 && (
+            <div className="absolute -top-1 -right-1 bg-slate-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+              {folder.items.length}
+            </div>
+          )}
+          {isEditMode && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              className="absolute -top-2 -left-2 bg-slate-500 text-white p-1 rounded-full shadow-sm hover:bg-red-500 transition-colors z-20"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+          {folder.name}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// Dock Item with Popover Logic
+const DockToolItem = ({
+  tool,
+  minimizedWidgets,
+  onAdd,
+  onRestore,
+  onDelete,
+  onDeleteAll,
+  isEditMode,
+  onRemoveFromDock,
+  onLongPress,
+}: {
+  tool: ToolMetadata;
+  minimizedWidgets: WidgetData[];
+  onAdd: () => void;
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDeleteAll: () => void;
+  isEditMode: boolean;
+  onRemoveFromDock: () => void;
+  onLongPress: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tool.type, disabled: !isEditMode });
 
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
   const [popoverPos, setPopoverPos] = useState<{
     left: number;
     bottom: number;
@@ -72,6 +183,8 @@ const DockItem = ({
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
   const handleClick = () => {
+    if (isEditMode) return;
+
     if (minimizedWidgets.length > 0) {
       if (showPopover) {
         setShowPopover(false);
@@ -95,6 +208,22 @@ const DockItem = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isEditMode) {
+      listeners?.onPointerDown?.(e);
+      return;
+    }
+    timerRef.current = setTimeout(() => {
+      onLongPress();
+    }, 500);
+  };
+
+  const handlePointerUp = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
   };
 
   return (
@@ -181,7 +310,7 @@ const DockItem = ({
         )}
 
       {/* Dock Icon */}
-      <button
+      <div
         ref={(node) => {
           setNodeRef(node);
           if (node) {
@@ -191,11 +320,18 @@ const DockItem = ({
         style={style}
         {...attributes}
         {...listeners}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
         onClick={handleClick}
-        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative"
+        className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
+          isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+        }`}
       >
         <div
-          className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+          className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg transition-all duration-200 relative ${
+            isEditMode ? 'animate-wiggle' : 'group-hover:scale-110'
+          }`}
         >
           <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
           {minimizedWidgets.length > 0 && (
@@ -203,11 +339,23 @@ const DockItem = ({
               {minimizedWidgets.length}
             </div>
           )}
+          {isEditMode && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveFromDock();
+              }}
+              className="absolute -top-2 -left-2 bg-slate-500 text-white p-1 rounded-full shadow-sm hover:bg-red-500 transition-colors z-20"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
         <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
           {tool.label}
         </span>
-      </button>
+      </div>
     </div>
   );
 };
@@ -225,6 +373,9 @@ export const Dock: React.FC = () => {
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
   const [showRosterMenu, setShowRosterMenu] = useState(false);
   const [showLiveInfo, setShowLiveInfo] = useState(false);
   const classesButtonRef = useRef<HTMLButtonElement>(null);
@@ -277,30 +428,47 @@ export const Dock: React.FC = () => {
     })
   );
 
-  const filteredTools = useMemo(() => {
-    // Map visibleTools to actual tool objects to preserve order
-    const ordered = visibleTools
-      .map((type) => {
-        const tool = TOOLS.find((t) => t.type === type);
-        if (!tool) return undefined;
+  // Determine which items to display
+  const displayItems = useMemo(() => {
+    let sourceItems: DockItem[] = visibleTools;
+    const activeFolder = visibleTools.find(
+      (item) => typeof item !== 'string' && item.id === activeFolderId
+    ) as DockFolder | undefined;
 
-        // Apply permission overrides (e.g., custom display name)
-        const permission = featurePermissions.find(
-          (p) => p.widgetType === tool.type
-        );
-        const displayName = permission?.displayName?.trim();
-        if (displayName) {
-          return { ...tool, label: displayName };
+    if (activeFolderId && activeFolder) {
+      sourceItems = activeFolder.items;
+    }
+
+    return sourceItems
+      .map((item) => {
+        if (typeof item === 'string') {
+          // It's a widget type
+          const tool = TOOLS.find((t) => t.type === item);
+          if (!tool) return undefined;
+          if (!canAccessWidget(tool.type)) return undefined;
+
+          // Apply permission overrides
+          const permission = featurePermissions.find(
+            (p) => p.widgetType === tool.type
+          );
+          const displayName = permission?.displayName?.trim();
+          const finalTool = displayName
+            ? { ...tool, label: displayName }
+            : tool;
+
+          return { kind: 'widget' as const, id: tool.type, tool: finalTool };
+        } else {
+          // It's a folder
+          return {
+            kind: 'folder' as const,
+            id: item.id,
+            name: item.name,
+            folder: item,
+          };
         }
-        return tool;
       })
-      .filter((t): t is ToolMetadata => t !== undefined);
-
-    // Filter by access
-    return ordered.filter(
-      (tool) => canAccessWidget(tool.type) && tool.type !== 'classes'
-    );
-  }, [visibleTools, canAccessWidget, featurePermissions]);
+      .filter((item) => item !== undefined);
+  }, [visibleTools, activeFolderId, canAccessWidget, featurePermissions]);
 
   // Memoize minimized widgets by type to avoid O(N*M) filtering in render loop
   const minimizedWidgetsByType = useMemo(() => {
@@ -320,39 +488,95 @@ export const Dock: React.FC = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    if (over && active.id !== over.id) {
-      const filteredToolTypes = filteredTools.map((tool) => tool.type);
-      const oldIndex = filteredToolTypes.indexOf(active.id as WidgetType);
-      const newIndex = filteredToolTypes.indexOf(over.id as WidgetType);
+    if (activeFolderId) {
+      // Reordering inside a folder
+      const folder = visibleTools.find(
+        (item) => typeof item !== 'string' && item.id === activeFolderId
+      ) as DockFolder | undefined;
+
+      if (folder) {
+        const oldIndex = folder.items.indexOf(active.id as WidgetType);
+        const newIndex = folder.items.indexOf(over.id as WidgetType);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newItems = arrayMove(folder.items, oldIndex, newIndex);
+          const newVisibleTools = visibleTools.map((item) => {
+            if (typeof item !== 'string' && item.id === activeFolderId) {
+              return { ...item, items: newItems };
+            }
+            return item;
+          });
+          reorderTools(newVisibleTools);
+        }
+      }
+    } else {
+      // Root level operations
+      const activeItem = visibleTools.find((item) =>
+        typeof item === 'string' ? item === active.id : item.id === active.id
+      );
+      const overItem = visibleTools.find((item) =>
+        typeof item === 'string' ? item === over.id : item.id === over.id
+      );
+
+      if (!activeItem || !overItem) return;
+
+      // Check for Nesting: Dropping a Widget onto a Folder
+      if (typeof activeItem === 'string' && typeof overItem !== 'string') {
+        const newVisibleTools = visibleTools
+          .map((item) => {
+            if (item === activeItem) return null; // Remove widget
+            if (item === overItem) {
+              return { ...item, items: [...item.items, activeItem] }; // Add to folder
+            }
+            return item;
+          })
+          .filter((item): item is DockItem => item !== null);
+        reorderTools(newVisibleTools);
+        return;
+      }
+
+      // Normal Reordering
+      const oldIndex = visibleTools.indexOf(activeItem);
+      const newIndex = visibleTools.indexOf(overItem);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedFilteredTypes = arrayMove(
-          filteredToolTypes,
-          oldIndex,
-          newIndex
-        );
-
-        // Reconstruct the full list, preserving the position of inaccessible items
-        // This is tricky: we want to replace the accessible items in visibleTools
-        // with the new order, while skipping over items we can't see/move.
-        const newVisibleTools: WidgetType[] = [];
-        let filteredIndex = 0;
-
-        for (const tool of visibleTools) {
-          if (canAccessWidget(tool)) {
-            if (filteredIndex < reorderedFilteredTypes.length) {
-              newVisibleTools.push(reorderedFilteredTypes[filteredIndex]);
-              filteredIndex++;
-            }
-          } else {
-            newVisibleTools.push(tool);
-          }
-        }
-
+        const newVisibleTools = arrayMove(visibleTools, oldIndex, newIndex);
         reorderTools(newVisibleTools);
       }
     }
+  };
+
+  const handleCreateFolder = () => {
+    const newFolder: DockFolder = {
+      id: crypto.randomUUID(),
+      name: 'Folder',
+      items: [],
+    };
+    reorderTools([...visibleTools, newFolder]);
+  };
+
+  const handleRemoveItem = (id: string) => {
+    // Recursively find and remove item with id
+    const removeRecursive = (items: DockItem[]): DockItem[] => {
+      return items
+        .map((item) => {
+          if (typeof item === 'string') {
+            return item === id ? null : item;
+          } else {
+            if (item.id === id) return null; // Remove folder itself
+            return {
+              ...item,
+              items: removeRecursive(item.items) as WidgetType[],
+            };
+          }
+        })
+        .filter((i): i is DockItem => i !== null);
+    };
+
+    const newTools = removeRecursive(visibleTools);
+    reorderTools(newTools);
   };
 
   return (
@@ -372,38 +596,94 @@ export const Dock: React.FC = () => {
           <>
             {/* Expanded Toolbar with integrated minimize button */}
             <GlassCard className="relative px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
-              {filteredTools.length > 0 ? (
+              {displayItems.length > 0 || activeFolderId ? (
                 <>
+                  {activeFolderId && (
+                    <>
+                      <button
+                        onClick={() => setActiveFolderId(null)}
+                        className="flex flex-col items-center gap-1 min-w-[40px] transition-transform active:scale-90"
+                      >
+                        <div className="bg-slate-200 p-2 rounded-xl text-slate-600 shadow-sm hover:bg-slate-300">
+                          <ArrowLeft className="w-5 h-5" />
+                        </div>
+                        <span className="text-[9px] font-black text-slate-500 uppercase">
+                          Back
+                        </span>
+                      </button>
+                      <div className="w-px h-8 bg-slate-200 mx-1 flex-shrink-0" />
+                    </>
+                  )}
+
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={filteredTools.map((t) => t.type)}
+                      items={displayItems.map((item) => item.id)}
                       strategy={horizontalListSortingStrategy}
+                      disabled={!isEditMode}
                     >
-                      {filteredTools.map((tool) => {
-                        const minimizedWidgets =
-                          minimizedWidgetsByType[tool.type] ?? [];
-                        return (
-                          <DockItem
-                            key={tool.type}
-                            tool={tool}
-                            minimizedWidgets={minimizedWidgets}
-                            onAdd={() => addWidget(tool.type)}
-                            onRestore={(id) =>
-                              updateWidget(id, { minimized: false })
-                            }
-                            onDelete={(id) => removeWidget(id)}
-                            onDeleteAll={() => {
-                              removeWidgets(minimizedWidgets.map((w) => w.id));
-                            }}
-                          />
-                        );
+                      {displayItems.map((item) => {
+                        if (!item) return null;
+
+                        if (item.kind === 'widget') {
+                          const minimizedWidgets =
+                            minimizedWidgetsByType[item.id] ?? [];
+                          return (
+                            <DockToolItem
+                              key={item.id}
+                              tool={item.tool}
+                              minimizedWidgets={minimizedWidgets}
+                              onAdd={() => addWidget(item.id)}
+                              onRestore={(id) =>
+                                updateWidget(id, { minimized: false })
+                              }
+                              onDelete={(id) => removeWidget(id)}
+                              onDeleteAll={() => {
+                                removeWidgets(
+                                  minimizedWidgets.map((w) => w.id)
+                                );
+                              }}
+                              isEditMode={isEditMode}
+                              onRemoveFromDock={() => handleRemoveItem(item.id)}
+                              onLongPress={() => setIsEditMode(true)}
+                            />
+                          );
+                        } else {
+                          return (
+                            <DockFolderItem
+                              key={item.id}
+                              folder={item.folder}
+                              onClick={() => setActiveFolderId(item.id)}
+                              isEditMode={isEditMode}
+                              onRemove={() => handleRemoveItem(item.id)}
+                              onLongPress={() => setIsEditMode(true)}
+                            />
+                          );
+                        }
                       })}
                     </SortableContext>
                   </DndContext>
+
+                  {/* Edit Mode Controls */}
+                  {isEditMode && !activeFolderId && (
+                    <>
+                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                      <button
+                        onClick={handleCreateFolder}
+                        className="flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90"
+                      >
+                        <div className="bg-slate-100 p-2 rounded-xl text-slate-400 shadow-sm hover:bg-slate-200 hover:text-slate-600">
+                          <FolderPlus className="w-5 h-5" />
+                        </div>
+                        <span className="text-[9px] font-black text-slate-500 uppercase">
+                          Folder
+                        </span>
+                      </button>
+                    </>
+                  )}
 
                   {/* Separator and Roster/Classes Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
@@ -501,18 +781,33 @@ export const Dock: React.FC = () => {
                   {/* Separator and Minimize Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
 
-                  <button
-                    onClick={() => setIsExpanded(false)}
-                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
-                    title="Minimize Toolbar"
-                  >
-                    <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
-                      <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
-                    </div>
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                      Hide
-                    </span>
-                  </button>
+                  {isEditMode ? (
+                    <button
+                      onClick={() => setIsEditMode(false)}
+                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                      title="Done Editing"
+                    >
+                      <div className="bg-brand-blue-primary p-2 md:p-3 rounded-2xl text-white shadow-sm group-hover:bg-brand-blue-dark transition-all duration-200">
+                        <Check className="w-5 h-5 md:w-6 md:h-6" />
+                      </div>
+                      <span className="text-[9px] font-black text-brand-blue-primary uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        Done
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsExpanded(false)}
+                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                      title="Minimize Toolbar"
+                    >
+                      <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
+                        <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
+                      </div>
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        Hide
+                      </span>
+                    </button>
+                  )}
                 </>
               ) : (
                 <div className="px-6 py-2 text-[10px] font-black uppercase text-slate-400 italic">
