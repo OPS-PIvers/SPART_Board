@@ -79,6 +79,8 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       selectedItems: [],
       activeItems: [],
     },
+    stickers: {},
+    sticker: { url: '', rotation: 0 },
   };
 
   return defaults[type];

@@ -708,7 +708,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
-  const addWidget = (type: WidgetType) => {
+  const addWidget = (type: WidgetType, initialConfig?: Partial<WidgetData>) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
 
@@ -725,7 +725,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           z: maxZ + 1,
           transparency: 0.2,
           ...WIDGET_DEFAULTS[type],
-          config: { ...(WIDGET_DEFAULTS[type].config ?? {}) },
+          ...initialConfig,
+          config: {
+            ...(WIDGET_DEFAULTS[type]?.config ?? {}),
+            ...(initialConfig?.config ?? {}),
+          },
         } as WidgetData;
         return { ...d, widgets: [...d.widgets, newWidget] };
       })
@@ -832,6 +836,52 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const moveWidgetLayer = (id: string, direction: 'up' | 'down') => {
+    if (!activeId) return;
+
+    setDashboards((prev) => {
+      const active = prev.find((d) => d.id === activeId);
+      if (!active) return prev;
+
+      // Deep copy widgets to avoid mutation and prepare for sort/modify
+      const widgets = active.widgets.map((w) => ({ ...w }));
+
+      // Sort by Z
+      widgets.sort((a, b) => a.z - b.z);
+
+      // Normalize Zs to ensure contiguous 0..N-1
+      widgets.forEach((w, i) => {
+        w.z = i;
+      });
+
+      const idx = widgets.findIndex((w) => w.id === id);
+      if (idx === -1) return prev;
+
+      if (direction === 'up') {
+        if (idx < widgets.length - 1) {
+          // Swap with next
+          widgets[idx].z = idx + 1;
+          widgets[idx + 1].z = idx;
+          lastLocalUpdateAt.current = Date.now();
+        } else {
+          return prev;
+        }
+      } else {
+        // down
+        if (idx > 0) {
+          // Swap with prev
+          widgets[idx].z = idx - 1;
+          widgets[idx - 1].z = idx;
+          lastLocalUpdateAt.current = Date.now();
+        } else {
+          return prev;
+        }
+      }
+
+      return prev.map((d) => (d.id === activeId ? { ...d, widgets } : d));
+    });
+  };
+
   const setBackground = (bg: string) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
@@ -866,6 +916,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         removeWidgets,
         updateWidget,
         bringToFront,
+        moveWidgetLayer,
         setBackground,
         toggleToolVisibility,
         setAllToolsVisibility,

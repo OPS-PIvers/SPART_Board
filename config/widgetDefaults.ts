@@ -145,4 +145,14 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 340,
     config: { selectedItems: [], activeItems: [] },
   },
+  stickers: {
+    w: 600,
+    h: 500,
+    config: {},
+  },
+  sticker: {
+    w: 200,
+    h: 200,
+    config: { url: '', rotation: 0 },
+  },
 };

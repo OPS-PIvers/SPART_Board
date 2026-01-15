@@ -21,7 +21,9 @@ export type WidgetType =
   | 'instructionalRoutines'
   | 'time-tool'
   | 'miniApp'
-  | 'materials';
+  | 'materials'
+  | 'stickers'
+  | 'sticker';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -296,6 +298,13 @@ export interface MaterialsConfig {
   activeItems: string[];
 }
 
+export interface StickerConfig {
+  url: string;
+  rotation?: number;
+}
+
+export type StickerBookConfig = Record<string, never>;
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -321,7 +330,9 @@ export type WidgetConfig =
   | InstructionalRoutinesConfig
   | TimeToolConfig
   | MiniAppConfig
-  | MaterialsConfig;
+  | MaterialsConfig
+  | StickerBookConfig
+  | StickerConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -370,7 +381,11 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                             ? MiniAppConfig
                                             : T extends 'materials'
                                               ? MaterialsConfig
-                                              : never;
+                                              : T extends 'stickers'
+                                                ? StickerBookConfig
+                                                : T extends 'sticker'
+                                                  ? StickerConfig
+                                                  : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;

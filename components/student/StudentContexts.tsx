@@ -88,6 +88,9 @@ const mockDashboard: DashboardContextType = {
   bringToFront: () => {
     // No-op
   },
+  moveWidgetLayer: () => {
+    // No-op
+  },
   setBackground: () => {
     // No-op
   },
