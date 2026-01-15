@@ -404,6 +404,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 ).map((name: string, i: number) => (
                   <div
                     key={i}
+                    draggable
+                    data-no-drag="true"
                     className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
                   >
                     <span className="text-xs font-mono font-black text-slate-300">
@@ -454,6 +456,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                         {group.map((name, ni) => (
                           <div
                             key={ni}
+                            data-no-drag="true"
                             className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
                           >
                             {name}

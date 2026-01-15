@@ -133,6 +133,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
               <div
                 key={i}
                 draggable
+                data-no-drag="true"
                 onDragStart={(e) => handleDragStart(e, url)}
                 className="aspect-square flex items-center justify-center bg-slate-50 rounded-xl hover:bg-blue-50 hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200"
               >
@@ -157,6 +158,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={i}
                   draggable
+                  data-no-drag="true"
                   onDragStart={(e) => handleDragStart(e, url)}
                   className="group relative aspect-square flex items-center justify-center bg-slate-50 rounded-xl hover:bg-blue-50 transition-all cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200"
                 >
