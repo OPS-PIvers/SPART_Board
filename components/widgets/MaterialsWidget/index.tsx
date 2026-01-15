@@ -53,7 +53,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full w-full bg-white p-3 overflow-y-auto custom-scrollbar select-none">
+    <div className="h-full w-full bg-transparent p-3 overflow-y-auto custom-scrollbar select-none">
       <div className="flex flex-wrap gap-2 h-full content-start justify-center">
         {displayItems.map((item) => {
           const isActive = activeItems.has(item.id);
@@ -66,7 +66,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
                   ? `${item.color} ${
                       item.textColor ?? 'text-white'
                     } border-transparent shadow-lg scale-105 z-10`
-                  : 'bg-slate-50 border-slate-100 text-slate-300 hover:bg-slate-100 hover:border-slate-200'
+                  : 'bg-white/40 border-white/10 text-slate-600 hover:bg-white/60 hover:border-white/20'
               }`}
             >
               <item.icon

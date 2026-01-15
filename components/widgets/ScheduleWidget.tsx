@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ScheduleItem, ScheduleConfig } from '../../types';
-import { Circle, CheckCircle2, Clock } from 'lucide-react';
+import { Circle, CheckCircle2 } from 'lucide-react';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -19,18 +19,19 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="h-full flex flex-col p-4 bg-white rounded-lg">
-      <div className="text-[10px] font-black uppercase text-indigo-500 tracking-widest mb-4 flex items-center gap-2">
-        <Clock className="w-3 h-3" /> Our Daily Routine
-      </div>
-      <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
+    <div className="h-full flex flex-col p-4 bg-transparent rounded-lg">
+      <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
           <button
             key={i}
             onClick={() => {
               toggle(i);
             }}
-            className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${item.done ? 'bg-slate-50 border-slate-100' : 'bg-indigo-50 border-indigo-100'}`}
+            className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+              item.done
+                ? 'bg-white/20 border-white/10 opacity-60'
+                : 'bg-white/40 border-white/20'
+            }`}
           >
             {item.done ? (
               <CheckCircle2 className="w-5 h-5 text-green-500" />

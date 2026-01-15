@@ -22,12 +22,12 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 h-full gap-4 p-2">
-      <div className="flex flex-col items-center justify-center bg-blue-50 rounded-2xl p-4 border border-blue-100">
-        <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">
+    <div className="grid grid-cols-2 h-full gap-4 p-2 bg-transparent">
+      <div className="flex flex-col items-center justify-center bg-blue-500/20 backdrop-blur-sm rounded-2xl p-4 border border-blue-400/20">
+        <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
           {teamA}
         </div>
-        <div className="text-5xl font-black text-blue-700 mb-4 tabular-nums">
+        <div className="text-5xl font-black text-blue-700 mb-4 tabular-nums drop-shadow-sm">
           {scoreA}
         </div>
         <div className="flex gap-2">
@@ -35,7 +35,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             onClick={() => {
               updateScore('A', -1);
             }}
-            className="p-2 bg-white text-blue-600 rounded-lg shadow-sm hover:bg-blue-100"
+            className="p-2 bg-white/40 text-blue-700 rounded-lg shadow-sm hover:bg-white/60"
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -49,11 +49,11 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
           </button>
         </div>
       </div>
-      <div className="flex flex-col items-center justify-center bg-red-50 rounded-2xl p-4 border border-red-100">
-        <div className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-1">
+      <div className="flex flex-col items-center justify-center bg-red-500/20 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20">
+        <div className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-1">
           {teamB}
         </div>
-        <div className="text-5xl font-black text-red-700 mb-4 tabular-nums">
+        <div className="text-5xl font-black text-red-700 mb-4 tabular-nums drop-shadow-sm">
           {scoreB}
         </div>
         <div className="flex gap-2">
@@ -61,7 +61,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             onClick={() => {
               updateScore('B', -1);
             }}
-            className="p-2 bg-white text-red-600 rounded-lg shadow-sm hover:bg-red-100"
+            className="p-2 bg-white/40 text-red-700 rounded-lg shadow-sm hover:bg-white/60"
           >
             <Minus className="w-4 h-4" />
           </button>

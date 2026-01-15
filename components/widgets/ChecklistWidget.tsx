@@ -84,7 +84,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col">
+    <div className="h-full w-full bg-transparent relative overflow-hidden flex flex-col">
       {/* Notebook Margin Line */}
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 
