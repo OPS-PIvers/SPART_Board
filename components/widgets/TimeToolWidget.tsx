@@ -217,7 +217,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     config.theme === 'dark'
       ? 'bg-slate-900 text-white'
       : config.theme === 'glass'
-        ? 'bg-white/10 backdrop-blur-xl text-white'
+        ? 'bg-white/20 backdrop-blur-xl text-white'
         : 'bg-white text-slate-900';
 
   const getStatusColor = () => {
@@ -230,7 +230,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col h-full rounded-[2.5rem] shadow-xl border border-white/10 transition-all duration-500 ${themeClass} w-full`}
+      className={`flex flex-col h-full rounded-[2.5rem] shadow-xl border border-white/30 transition-all duration-500 ${themeClass} w-full`}
     >
       {/* Header: Digital/Visual Toggle & Themes */}
       <div className="px-8 pt-6 flex justify-between items-center shrink-0">

@@ -1,8 +1,9 @@
 description = "Saves your current work and updates your online preview."
 prompt = """
 
-You are a technical assistant. Execute the following steps:
+You are a technical assistant. Execute the following steps to save your work and update your preview:
 
+### PHASE 1: Save
 1. Run `git add .`.
 
 2. Run `git diff --cached` to analyze changes.
@@ -11,9 +12,17 @@ You are a technical assistant. Execute the following steps:
 
 4. Run `git commit -m "[AI] $GENERATED_MESSAGE"`.
 
-5. Run `git branch --show-current` to get the branch name.
+### PHASE 2: Sync & Integrate
+5. Run `git fetch origin main`.
 
-6. Run `git push origin $BRANCH_NAME`.
+6. Run `git rebase origin/main`.
+    - **If rebase fails**: 
+        - Analyze the conflicts. 
+        - If the conflicts are straightforward (e.g., imports, simple logic), attempt to resolve them, `git add` the files, and `git rebase --continue`.
+        - If too complex, run `git rebase --abort`. Report: "Preview paused. Complex conflicts with Main detected. Please type: **'Help me fix the sync conflicts'**" and STOP.
 
-7. Report: "Changes saved and uploaded. Your development URL is now being updated."
+7. If rebase success: 
+    - Run `git push --force-with-lease origin $(git branch --show-current)`.
+
+8. Report: "Changes saved, integrated from Main, and uploaded. Your development URL is now being updated."
 """

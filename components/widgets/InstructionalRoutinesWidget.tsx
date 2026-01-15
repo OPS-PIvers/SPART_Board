@@ -58,8 +58,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (!selectedRoutineId || !selectedRoutine) {
     return (
-      <div className="flex flex-col h-full bg-[#f3f3f3] p-4">
-        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">
+      <div className="flex flex-col h-full bg-transparent p-4">
+        <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">
           Library ({gradeFilter.toUpperCase()})
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
@@ -72,7 +72,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               <button
                 key={r.id}
                 onClick={() => selectRoutine(r)}
-                className="relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-[#2d3f89] transition-all text-left"
+                className="relative p-4 border border-white/30 rounded-2xl bg-white/50 shadow-sm hover:border-[#2d3f89] transition-all text-left"
               >
                 <Star
                   onClick={(e) => {
@@ -104,8 +104,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     ] ?? Icons.HelpCircle;
 
   return (
-    <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden">
-      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-[#eaecf5] pb-4">
+    <div className="flex flex-col h-full bg-transparent p-6 animate-in fade-in duration-200 overflow-hidden">
+      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-white/20 pb-4">
         <div>
           <h2
             className="font-black text-[#2d3f89] leading-tight"

@@ -1,0 +1,200 @@
+import * as functions from 'firebase-functions/v1';
+import * as admin from 'firebase-admin';
+import axios, { AxiosError } from 'axios';
+import OAuth from 'oauth-1.0a';
+import * as CryptoJS from 'crypto-js';
+
+admin.initializeApp();
+
+interface ClassLinkUser {
+  sourcedId: string;
+  email: string;
+  givenName: string;
+  familyName: string;
+}
+
+interface ClassLinkClass {
+  sourcedId: string;
+  title: string;
+  classCode?: string;
+}
+
+interface ClassLinkStudent {
+  sourcedId: string;
+  givenName: string;
+  familyName: string;
+  email: string;
+}
+
+/**
+ * Generates OAuth 1.0 Headers for ClassLink
+ * Robust version that separates base URL and query parameters
+ */
+function getOAuthHeaders(
+  baseUrl: string,
+  params: Record<string, string>,
+  method: string,
+  clientId: string,
+  clientSecret: string
+) {
+  const oauth = new OAuth({
+    consumer: {
+      key: clientId,
+      secret: clientSecret,
+    },
+    signature_method: 'HMAC-SHA1',
+    hash_function(base_string: string, key: string) {
+      return CryptoJS.HmacSHA1(base_string, key).toString(CryptoJS.enc.Base64);
+    },
+  });
+
+  const request_data = {
+    url: baseUrl,
+    method: method,
+    data: params, // Pass params here so the library encodes them for the signature
+  };
+
+  return oauth.toHeader(oauth.authorize(request_data));
+}
+
+// Version: 1.1.1 - Improved OAuth signature and logging
+export const getClassLinkRosterV1 = functions
+  .runWith({
+    secrets: [
+      'CLASSLINK_CLIENT_ID',
+      'CLASSLINK_CLIENT_SECRET',
+      'CLASSLINK_TENANT_URL',
+    ],
+    memory: '256MB',
+  })
+  .https.onCall(async (data: any, context: functions.https.CallableContext) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+
+    const userEmail = context.auth.token.email;
+    if (!userEmail) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        'User must have an email associated with their account.'
+      );
+    }
+
+    const clientId = process.env.CLASSLINK_CLIENT_ID;
+    const clientSecret = process.env.CLASSLINK_CLIENT_SECRET;
+    const tenantUrl = process.env.CLASSLINK_TENANT_URL;
+
+    if (!clientId || !clientSecret || !tenantUrl) {
+      throw new functions.https.HttpsError(
+        'internal',
+        'ClassLink configuration is missing on the server.'
+      );
+    }
+
+    const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
+    console.log(`[ClassLink] Fetching for: ${userEmail} at ${cleanTenantUrl}`);
+
+    try {
+      // Step 1: Find the user by email
+      const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
+      const userParams = { filter: `email='${userEmail}'` };
+
+      const userHeaders = getOAuthHeaders(
+        usersBaseUrl,
+        userParams,
+        'GET',
+        clientId,
+        clientSecret
+      );
+
+      const userResponse = await axios.get<{ users: ClassLinkUser[] }>(
+        usersBaseUrl,
+        {
+          params: userParams,
+          headers: { ...userHeaders },
+        }
+      );
+
+      const users = userResponse.data.users;
+
+      if (!users || users.length === 0) {
+        console.warn(`[ClassLink] No user found for email: ${userEmail}`);
+        return { classes: [], studentsByClass: {} };
+      }
+
+      const teacherSourcedId = users[0].sourcedId;
+      console.log(`[ClassLink] Found teacher: ${teacherSourcedId}`);
+
+      // Step 2: Get classes for this teacher
+      const classesUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users/${teacherSourcedId}/classes`;
+      const classesHeaders = getOAuthHeaders(
+        classesUrl,
+        {},
+        'GET',
+        clientId,
+        clientSecret
+      );
+
+      const classesResponse = await axios.get<{ classes: ClassLinkClass[] }>(
+        classesUrl,
+        { headers: { ...classesHeaders } }
+      );
+      const classes = classesResponse.data.classes;
+      console.log(`[ClassLink] Found ${classes.length} classes`);
+
+      // Step 3: Get students for each class
+      const studentsByClass: Record<string, ClassLinkStudent[]> = {};
+
+      await Promise.all(
+        classes.map(async (cls: ClassLinkClass) => {
+          const studentsUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/classes/${cls.sourcedId}/students`;
+          const studentsHeaders = getOAuthHeaders(
+            studentsUrl,
+            {},
+            'GET',
+            clientId,
+            clientSecret
+          );
+          try {
+            const studentsResponse = await axios.get<{
+              users: ClassLinkStudent[];
+            }>(studentsUrl, { headers: { ...studentsHeaders } });
+            studentsByClass[cls.sourcedId] = studentsResponse.data.users ?? [];
+          } catch (err) {
+            console.error(
+              `[ClassLink] Error fetching students for class ${cls.sourcedId}:`,
+              err
+            );
+            studentsByClass[cls.sourcedId] = [];
+          }
+        })
+      );
+
+      return {
+        classes,
+        studentsByClass,
+      };
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        const status = axiosError.response?.status;
+        console.error(
+          `[ClassLink] API Error (${status}):`,
+          axiosError.response?.data ?? axiosError.message
+        );
+        throw new functions.https.HttpsError(
+          'internal',
+          `Failed to fetch data from ClassLink (${status}): ${axiosError.message}`
+        );
+      }
+      const genericError = error as Error;
+      console.error('[ClassLink] Generic Error:', genericError.message);
+      throw new functions.https.HttpsError(
+        'internal',
+        `Failed to fetch data from ClassLink: ${genericError.message}`
+      );
+    }
+  });

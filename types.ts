@@ -20,9 +20,29 @@ export type WidgetType =
   | 'classes'
   | 'instructionalRoutines'
   | 'time-tool'
-  | 'miniApp';
+  | 'miniApp'
+  | 'materials';
 
 // --- ROSTER SYSTEM TYPES ---
+
+export interface ClassLinkClass {
+  sourcedId: string;
+  title: string;
+  classCode?: string;
+  subject?: string;
+}
+
+export interface ClassLinkStudent {
+  sourcedId: string;
+  givenName: string;
+  familyName: string;
+  email: string;
+}
+
+export interface ClassLinkData {
+  classes: ClassLinkClass[];
+  studentsByClass: Record<string, ClassLinkStudent[]>;
+}
 
 export interface Student {
   id: string;
@@ -271,6 +291,11 @@ export interface MiniAppConfig {
   activeApp: MiniAppItem | null;
 }
 
+export interface MaterialsConfig {
+  selectedItems: string[];
+  activeItems: string[];
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -295,7 +320,8 @@ export type WidgetConfig =
   | ClassesConfig
   | InstructionalRoutinesConfig
   | TimeToolConfig
-  | MiniAppConfig;
+  | MiniAppConfig
+  | MaterialsConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -342,7 +368,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                           ? TimeToolConfig
                                           : T extends 'miniApp'
                                             ? MiniAppConfig
-                                            : never;
+                                            : T extends 'materials'
+                                              ? MaterialsConfig
+                                              : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;
@@ -358,6 +386,7 @@ export interface WidgetData {
   maximized?: boolean;
   customTitle?: string | null;
   isLive?: boolean;
+  transparency?: number;
   config: WidgetConfig;
 }
 
@@ -367,6 +396,8 @@ export interface Dashboard {
   background: string;
   widgets: WidgetData[];
   createdAt: number;
+  isDefault?: boolean;
+  order?: number;
 }
 
 export interface Toast {

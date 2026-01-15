@@ -81,7 +81,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="w-full h-full bg-white flex flex-col">
+    <div className="w-full h-full bg-transparent flex flex-col">
       <iframe
         src={mode === 'url' ? embedUrl : undefined}
         srcDoc={mode === 'code' ? html : undefined}

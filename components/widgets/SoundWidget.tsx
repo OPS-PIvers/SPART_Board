@@ -228,7 +228,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const level = getLevelData(volume);
 
   return (
-    <div className="flex flex-col h-full p-4 gap-3 bg-white">
+    <div className="flex flex-col h-full p-4 gap-3 bg-transparent">
       <div className="flex-1 min-h-0 relative">
         {visual === 'thermometer' && <ThermometerView volume={volume} />}
         {visual === 'speedometer' && <SpeedometerView volume={volume} />}

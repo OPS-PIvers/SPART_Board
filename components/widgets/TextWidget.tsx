@@ -10,8 +10,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar"
-      style={{ backgroundColor: bgColor, fontSize: `${fontSize}px` }}
+      className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative"
       contentEditable
       onBlur={(e) =>
         updateWidget(widget.id, {
@@ -21,8 +20,18 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           } as TextConfig,
         })
       }
-      dangerouslySetInnerHTML={{ __html: content }}
-    />
+    >
+      {/* Background color overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{ backgroundColor: bgColor }}
+      />
+      <div
+        className="relative z-10 h-full w-full"
+        style={{ fontSize: `${fontSize}px` }}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    </div>
   );
 };
 
@@ -72,13 +81,11 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           {templates.map((t) => (
             <button
               key={t.name}
-              onClick={() => {
-                applyTemplate(t.content);
-              }}
-              className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg text-left hover:bg-slate-50 transition-all"
+              onClick={() => applyTemplate(t.content)}
+              className="flex items-center gap-2 p-2 bg-white/50 border border-white/30 rounded-lg text-left hover:bg-white/70 transition-all"
             >
-              <t.icon className="w-3 h-3 text-indigo-500" />
-              <span className="text-[9px] font-bold text-slate-700">
+              <t.icon className="w-3 h-3 text-indigo-600" />
+              <span className="text-[9px] font-bold text-slate-800">
                 {t.name}
               </span>
             </button>

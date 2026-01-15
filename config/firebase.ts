@@ -2,6 +2,7 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth';
 import { Firestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getFunctions, Functions } from 'firebase/functions';
 
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY as string | undefined;
 
@@ -24,6 +25,7 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
+let functions: Functions;
 let googleProvider: GoogleAuthProvider;
 
 if (isConfigured) {
@@ -44,6 +46,7 @@ if (isConfigured) {
     ignoreUndefinedProperties: true,
   });
   storage = getStorage(app);
+  functions = getFunctions(app);
   googleProvider = new GoogleAuthProvider();
 } else {
   // Mock objects to prevent crashes when importing
@@ -64,9 +67,10 @@ if (isConfigured) {
 
   db = {} as unknown as Firestore;
   storage = {} as unknown as FirebaseStorage;
+  functions = {} as unknown as Functions;
   googleProvider = {} as unknown as GoogleAuthProvider;
   app = {} as unknown as FirebaseApp;
   console.warn('Firebase is not configured. Missing VITE_FIREBASE_API_KEY.');
 }
 
-export { auth, db, storage, googleProvider };
+export { auth, db, storage, functions, googleProvider };

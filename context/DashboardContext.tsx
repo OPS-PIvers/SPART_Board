@@ -161,6 +161,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const {
     loadDashboards: _loadDashboards,
     saveDashboard,
+    saveDashboards,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
   } = useFirestore(user?.uid ?? null);
@@ -223,7 +224,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards((updatedDashboards) => {
-      const migratedDashboards = updatedDashboards.map((db) => ({
+      // Sort dashboards: default first, then by order, then by createdAt
+      const sortedDashboards = [...updatedDashboards].sort((a, b) => {
+        if (a.isDefault && !b.isDefault) return -1;
+        if (!a.isDefault && b.isDefault) return 1;
+        const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+        if (orderA !== orderB) return orderA - orderB;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+
+      const migratedDashboards = sortedDashboards.map((db) => ({
         ...db,
         widgets: db.widgets.map(migrateWidget),
       }));
@@ -246,7 +257,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (migratedDashboards.length > 0 && !activeIdRef.current) {
-        setActiveId(migratedDashboards[0].id);
+        // Try to load default dashboard first
+        const defaultDb = migratedDashboards.find((d) => d.isDefault);
+        setActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
       }
 
       // Create default dashboard if none exist
@@ -495,14 +508,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    const maxOrder = dashboards.reduce(
+      (max, db) => Math.max(max, db.order ?? 0),
+      0
+    );
+
     const newDb: Dashboard = data
-      ? { ...data, id: crypto.randomUUID(), name }
+      ? { ...data, id: crypto.randomUUID(), name, order: maxOrder + 1 }
       : {
           id: crypto.randomUUID(),
           name,
           background: 'bg-slate-800',
           widgets: [],
           createdAt: Date.now(),
+          order: maxOrder + 1,
         };
 
     saveDashboard(newDb)
@@ -583,6 +602,62 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         // Revert
         setDashboards((prev) => prev.map((d) => (d.id === id ? dashboard : d)));
       });
+  };
+
+  const reorderDashboards = (ids: string[]) => {
+    if (!user) return;
+
+    const updatedDashboards: Dashboard[] = [];
+    ids.forEach((id, index) => {
+      const db = dashboards.find((d) => d.id === id);
+      if (db) {
+        updatedDashboards.push({ ...db, order: index });
+      }
+    });
+
+    // Update local state
+    setDashboards((prev) => {
+      const next = [...prev];
+      updatedDashboards.forEach((updated) => {
+        const index = next.findIndex((d) => d.id === updated.id);
+        if (index >= 0) next[index] = updated;
+      });
+      return next.sort((a, b) => {
+        if (a.isDefault && !b.isDefault) return -1;
+        if (!a.isDefault && b.isDefault) return 1;
+        return (a.order ?? 0) - (b.order ?? 0);
+      });
+    });
+
+    // Save to Firestore
+    void saveDashboards(updatedDashboards).catch((err) => {
+      console.error('Failed to save reordered dashboards:', err);
+    });
+  };
+
+  const setDefaultDashboard = (id: string) => {
+    if (!user) return;
+
+    const updatedDashboards = dashboards.map((db) => ({
+      ...db,
+      isDefault: db.id === id,
+    }));
+
+    // Update local state
+    setDashboards(
+      [...updatedDashboards].sort((a, b) => {
+        if (a.isDefault && !b.isDefault) return -1;
+        if (!a.isDefault && b.isDefault) return 1;
+        return (a.order ?? 0) - (b.order ?? 0);
+      })
+    );
+
+    // Save to Firestore
+    void saveDashboards(updatedDashboards).catch((err) => {
+      console.error('Failed to save default dashboard status:', err);
+    });
+
+    addToast('Default board updated');
   };
 
   const loadDashboard = (id: string) => {
@@ -736,6 +811,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         h: 600,
         config: { activeApp: null },
       },
+      materials: {
+        w: 340,
+        h: 340,
+        config: { selectedItems: [], activeItems: [] },
+      },
     };
 
     setDashboards((prev) =>
@@ -749,6 +829,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           y: 150 + d.widgets.length * 20,
           flipped: false,
           z: maxZ + 1,
+          transparency: 0.2,
           ...defaults[type],
           config: { ...(defaults[type].config ?? {}) },
         } as WidgetData;
@@ -859,6 +940,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         deleteDashboard,
         renameDashboard,
         loadDashboard,
+        reorderDashboards,
+        setDefaultDashboard,
         addWidget,
         removeWidget,
         removeWidgets,
