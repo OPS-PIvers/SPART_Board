@@ -61,7 +61,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
             <button
               key={item.id}
               onClick={() => toggleActive(item.id)}
-              className={`flex-grow min-w-[90px] max-w-[140px] aspect-square flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all duration-300 ${
+              className={`flex-grow min-w-[90px] min-h-[100px] flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all duration-300 ${
                 isActive
                   ? `${item.color} ${
                       item.textColor ?? 'text-white'
@@ -70,7 +70,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
               }`}
             >
               <item.icon
-                className={`w-8 h-8 md:w-10 md:h-10 transition-transform duration-300 ${
+                className={`w-10 h-10 md:w-12 md:h-12 transition-transform duration-300 ${
                   isActive ? 'scale-110' : 'scale-100'
                 }`}
                 strokeWidth={isActive ? 2.5 : 2}
