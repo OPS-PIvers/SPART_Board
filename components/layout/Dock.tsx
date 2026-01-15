@@ -98,7 +98,8 @@ const DockItem = ({
     if (isLongPress) {
       e.preventDefault();
       e.stopPropagation();
-      setIsLongPress(false);
+      // Don't clear isLongPress here immediately so the X stays visible
+      // It will be cleared when clicking X or clicking elsewhere (handled by parent/outside click logic if we added it, but for now specific action clears it)
       return;
     }
 
@@ -237,6 +238,17 @@ const DockItem = ({
           </button>
         )}
 
+        {/* Invisible backdrop to dismiss remove mode */}
+        {isLongPress && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsLongPress(false);
+            }}
+          />
+        )}
+
         <button
           ref={(node) => {
             setNodeRef(node);
@@ -251,9 +263,9 @@ const DockItem = ({
           onMouseUp={handlePointerUp}
           onTouchStart={handlePointerDown}
           onTouchEnd={handlePointerUp}
-          onMouseLeave={handlePointerUp} // Cancel if mouse leaves
+          onMouseLeave={handlePointerUp}
           onClick={handleClick}
-          className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${isLongPress ? 'animate-pulse' : ''}`}
+          className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${isLongPress ? 'animate-pulse z-50' : ''}`}
         >
           <div
             className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
