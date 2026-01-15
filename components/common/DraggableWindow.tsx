@@ -437,14 +437,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     </span>
                     <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
                   </div>
-                  <button
-                    onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
-                    className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-400 transition-all ${
-                      isToolbarExpanded ? 'rotate-180' : ''
-                    }`}
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => {
+                        updateWidget(widget.id, { flipped: true });
+                        setShowTools(false);
+                      }}
+                      className="p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                      title="Settings"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
+                      className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all ${
+                        isToolbarExpanded ? 'rotate-180' : ''
+                      }`}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -452,7 +464,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             <div
               className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
                 isToolbarExpanded
-                  ? 'max-w-[500px] opacity-100 ml-1'
+                  ? 'max-w-[500px] opacity-100 ml-0.5'
                   : 'max-w-0 opacity-0 ml-0'
               }`}
             >
@@ -498,16 +510,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   title="Minimize"
                 >
                   <Minus className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    updateWidget(widget.id, { flipped: true });
-                    setShowTools(false);
-                  }}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                  title="Settings"
-                >
-                  <Settings className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => {
