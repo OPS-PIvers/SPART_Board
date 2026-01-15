@@ -488,9 +488,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               return item === type ? null : item;
             }
             // It's a folder
+            const newItems = item.items.filter((t) => t !== type);
+            // Clean up empty folders
+            if (newItems.length === 0) return null;
             return {
               ...item,
-              items: item.items.filter((t) => t !== type),
+              items: newItems,
             };
           })
           .filter((item): item is DockItem => item !== null);

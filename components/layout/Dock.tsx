@@ -394,6 +394,14 @@ export const Dock: React.FC = () => {
     if (showLiveInfo) setShowLiveInfo(false);
   }, [liveButtonRef]);
 
+  // Reset active folder when dock is collapsed or edit mode is exited
+  if (!isExpanded && activeFolderId) {
+    setActiveFolderId(null);
+  }
+  if (!isEditMode && activeFolderId) {
+    setActiveFolderId(null);
+  }
+
   const openClassEditor = () => {
     addWidget('classes');
     setShowRosterMenu(false);
@@ -558,24 +566,25 @@ export const Dock: React.FC = () => {
   };
 
   const handleRemoveItem = (id: string) => {
-    // Recursively find and remove item with id
-    const removeRecursive = (items: DockItem[]): DockItem[] => {
-      return items
-        .map((item) => {
-          if (typeof item === 'string') {
-            return item === id ? null : item;
-          } else {
-            if (item.id === id) return null; // Remove folder itself
-            return {
-              ...item,
-              items: removeRecursive(item.items) as WidgetType[],
-            };
-          }
-        })
-        .filter((i): i is DockItem => i !== null);
-    };
+    // Find and remove item with id from top-level and folder contents
+    // Recursion is not needed as folders cannot be nested
+    const newTools = visibleTools
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item === id ? null : item;
+        } else {
+          if (item.id === id) return null; // Remove folder itself
+          // Remove item from inside folder
+          const newItems = item.items.filter((widgetId) => widgetId !== id);
+          // If folder becomes empty, DashboardContext handles cleanup, but we update here for consistency
+          return {
+            ...item,
+            items: newItems,
+          };
+        }
+      })
+      .filter((i): i is DockItem => i !== null);
 
-    const newTools = removeRecursive(visibleTools);
     reorderTools(newTools);
   };
 

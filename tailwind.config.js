@@ -84,11 +84,16 @@ export default {
       },
       animation: {
         'spin-slow': 'spin-slow 12s linear infinite',
+        wiggle: 'wiggle 0.3s ease-in-out infinite',
       },
       keyframes: {
         'spin-slow': {
           from: { transform: 'rotate(0deg)' },
           to: { transform: 'rotate(360deg)' },
+        },
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' },
         },
       },
     },
