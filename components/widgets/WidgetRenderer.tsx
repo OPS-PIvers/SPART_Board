@@ -32,6 +32,8 @@ import {
 } from './InstructionalRoutinesWidget';
 import { MiniAppWidget } from './MiniAppWidget';
 import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
+import { StickerBookWidget } from './stickers/StickerBookWidget';
+import { StickerItemWidget } from './stickers/StickerItemWidget';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
@@ -128,6 +130,10 @@ export const WidgetRenderer: React.FC<{
     void updateSessionBackground(activeDashboard.background);
   }, [activeDashboard?.background, isThisWidgetLive, updateSessionBackground]);
 
+  if (widget.type === 'sticker') {
+    return <StickerItemWidget widget={widget} />;
+  }
+
   const getWidgetContent = () => {
     switch (widget.type) {
       case 'clock':
@@ -176,6 +182,8 @@ export const WidgetRenderer: React.FC<{
         return <MiniAppWidget widget={widget} />;
       case 'materials':
         return <MaterialsWidget widget={widget} />;
+      case 'stickers':
+        return <StickerBookWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -221,6 +229,12 @@ export const WidgetRenderer: React.FC<{
         return (
           <div className="text-slate-500 italic text-sm">
             Manage apps in the main view.
+          </div>
+        );
+      case 'stickers':
+        return (
+          <div className="text-slate-500 italic text-sm">
+            Manage stickers in the main view.
           </div>
         );
       default:
