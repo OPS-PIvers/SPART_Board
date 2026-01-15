@@ -8,6 +8,8 @@ import {
   Trash2,
   Users,
   Cast,
+  FolderPlus,
+  X,
 } from 'lucide-react';
 import {
   DndContext,
@@ -43,6 +45,8 @@ const DockItem = ({
   onRestore,
   onDelete,
   onDeleteAll,
+  onFolder,
+  onRemoveFromDock,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -50,6 +54,8 @@ const DockItem = ({
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   onDeleteAll: () => void;
+  onFolder: () => void;
+  onRemoveFromDock: () => void;
 }) => {
   const {
     attributes,
@@ -61,6 +67,8 @@ const DockItem = ({
   } = useSortable({ id: tool.type });
 
   const [showPopover, setShowPopover] = useState(false);
+  const [isLongPress, setIsLongPress] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [popoverPos, setPopoverPos] = useState<{
@@ -71,7 +79,29 @@ const DockItem = ({
   // Close popover when clicking outside
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
-  const handleClick = () => {
+  const handlePointerDown = () => {
+    setIsLongPress(false);
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPress(true);
+    }, 600); // 600ms long press threshold
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click if it was a long press
+    if (isLongPress) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsLongPress(false);
+      return;
+    }
+
     if (minimizedWidgets.length > 0) {
       if (showPopover) {
         setShowPopover(false);
@@ -154,26 +184,36 @@ const DockItem = ({
                 </div>
               ))}
             </div>
-            <div className="p-1 border-t border-white/30 grid grid-cols-2 gap-1">
+            <div className="p-1 border-t border-white/30 grid grid-cols-3 gap-1">
               <button
                 onClick={() => {
                   onAdd();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-xs font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-[10px] font-bold rounded-lg transition-colors"
               >
                 <Plus className="w-3 h-3" />
                 <span>Create</span>
               </button>
               <button
                 onClick={() => {
+                  onFolder();
+                  setShowPopover(false);
+                }}
+                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-white/50 hover:bg-white/80 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+              >
+                <FolderPlus className="w-3 h-3" />
+                <span>Folder</span>
+              </button>
+              <button
+                onClick={() => {
                   onDeleteAll();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-xs font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-[10px] font-bold rounded-lg transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
-                <span>Clear All</span>
+                <span>Clear</span>
               </button>
             </div>
           </GlassCard>,
@@ -181,33 +221,55 @@ const DockItem = ({
         )}
 
       {/* Dock Icon */}
-      <button
-        ref={(node) => {
-          setNodeRef(node);
-          if (node) {
-            buttonRef.current = node;
-          }
-        }}
-        style={style}
-        {...attributes}
-        {...listeners}
-        onClick={handleClick}
-        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative"
-      >
-        <div
-          className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+      <div className="relative group/icon">
+        {/* Floating Remove Button (Visible on Long Press) */}
+        {isLongPress && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveFromDock();
+              setIsLongPress(false);
+            }}
+            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 animate-in zoom-in duration-200"
+            title="Remove from Dock"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+
+        <button
+          ref={(node) => {
+            setNodeRef(node);
+            if (node) {
+              buttonRef.current = node;
+            }
+          }}
+          style={style}
+          {...attributes}
+          {...listeners}
+          onMouseDown={handlePointerDown}
+          onMouseUp={handlePointerUp}
+          onTouchStart={handlePointerDown}
+          onTouchEnd={handlePointerUp}
+          onMouseLeave={handlePointerUp} // Cancel if mouse leaves
+          onClick={handleClick}
+          className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${isLongPress ? 'animate-pulse' : ''}`}
         >
-          <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
-          {minimizedWidgets.length > 0 && (
-            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
-              {minimizedWidgets.length}
-            </div>
-          )}
-        </div>
-        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
-          {tool.label}
-        </span>
-      </button>
+          <div
+            className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+          >
+            <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
+            {minimizedWidgets.length > 0 && (
+              <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                {minimizedWidgets.length}
+              </div>
+            )}
+          </div>
+          <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+            {tool.label}
+          </span>
+        </button>
+      </div>
     </div>
   );
 };
@@ -221,6 +283,8 @@ export const Dock: React.FC = () => {
     reorderTools,
     activeDashboard,
     updateWidget,
+    toggleToolVisibility,
+    addToast,
   } = useDashboard();
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
@@ -398,6 +462,12 @@ export const Dock: React.FC = () => {
                             onDelete={(id) => removeWidget(id)}
                             onDeleteAll={() => {
                               removeWidgets(minimizedWidgets.map((w) => w.id));
+                            }}
+                            onFolder={() => {
+                              addToast('Folder creation coming soon', 'info');
+                            }}
+                            onRemoveFromDock={() => {
+                              toggleToolVisibility(tool.type);
                             }}
                           />
                         );
