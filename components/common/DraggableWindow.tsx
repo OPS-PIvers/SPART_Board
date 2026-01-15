@@ -190,7 +190,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           {/* Front Face */}
           <div
             className={`front relative h-full flex flex-col ${
-              hasBackground ? backgroundClass : ''
+              hasBackground ? backgroundClass : 'bg-white/20'
             }`}
             style={{
               pointerEvents: widget.flipped ? 'none' : 'auto',
@@ -228,8 +228,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className={`flex items-center justify-between px-3 py-2 border-b border-white/10 backdrop-blur-md ${
-                hasBackground ? 'bg-white/40' : 'bg-white/20'
+              className={`flex items-center justify-between px-3 py-2 border-b border-white/10 ${
+                hasBackground ? 'bg-white/40 backdrop-blur-md' : 'bg-white/20'
               } ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
