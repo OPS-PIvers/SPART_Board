@@ -241,9 +241,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         transparency={transparency}
         className={`absolute select-none widget group will-change-transform ${
           isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
-        } ${
-          isDragging ? 'shadow-2xl ring-2 ring-blue-400/50 scale-[1.01]' : ''
-        }`}
+        } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
           left: isMaximized ? 0 : widget.x,
           top: isMaximized ? 0 : widget.y,
@@ -394,7 +392,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           <div
             ref={menuRef}
             style={menuStyle}
-            className="flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl animate-in fade-in duration-200"
+            className="flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           >

@@ -76,7 +76,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     | undefined;
 
   const handleRefresh = useCallback(async () => {
-    if (!isAuto) return;
+    if (!isAuto || isSyncing) return;
     setIsSyncing(true);
 
     try {
@@ -89,10 +89,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
         const proxies = [
-          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
           (u: string) =>
             `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-          (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
         ];
 
         let data: EarthNetworksResponse | null = null;
@@ -101,7 +100,17 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             const res = await fetch(getProxyUrl(url));
             if (!res.ok) continue;
             const text = await res.text();
-            data = JSON.parse(text) as EarthNetworksResponse;
+            const trimmed = text.trim();
+
+            if (
+              !trimmed ||
+              trimmed.startsWith('<') ||
+              trimmed.toLowerCase().startsWith('<!doctype')
+            ) {
+              continue;
+            }
+
+            data = JSON.parse(trimmed) as EarthNetworksResponse;
             if (data && data.o) break;
           } catch (_) {
             /* try next */
@@ -165,6 +174,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     config,
     updateWidget,
     addToast,
+    isSyncing,
   ]);
 
   const getIcon = () => {
@@ -292,6 +302,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   };
 
   const fetchEarthNetworksWeather = async () => {
+    if (loading) return;
     setLoading(true);
     try {
       const queryParams = new URLSearchParams({
@@ -303,12 +314,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
 
       // Use a list of proxies to improve reliability.
-      // corsproxy.io is often more stable for Earth Networks.
       const proxies = [
-        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
         (u: string) =>
           `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       ];
 
       let lastError: Error | null = null;
@@ -321,15 +330,24 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
 
           const text = await res.text();
-          if (!text || text.trim().startsWith('<!doctype')) {
+          const trimmed = text.trim();
+
+          if (
+            !trimmed ||
+            trimmed.startsWith('<') ||
+            trimmed.toLowerCase().startsWith('<!doctype')
+          ) {
             throw new Error(
               'Proxy returned HTML or empty response instead of JSON'
             );
           }
 
           try {
-            data = JSON.parse(text) as EarthNetworksResponse;
-            console.warn('[WeatherWidget] Fetched Earth Networks Data:', data);
+            data = JSON.parse(trimmed) as EarthNetworksResponse;
+
+            console.warn(
+              '[WeatherWidget] Fetched Earth Networks Data successfully'
+            );
           } catch (_) {
             throw new Error('Failed to parse response as JSON');
           }
@@ -337,9 +355,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           if (data && data.o) break;
         } catch (e) {
           lastError = e instanceof Error ? e : new Error(String(e));
+
           console.warn(
-            `Proxy ${getProxyUrl.name || 'attempt'} failed, trying next...`,
-            e
+            `[WeatherWidget] Proxy attempt failed: ${lastError.message}`
           );
         }
       }
