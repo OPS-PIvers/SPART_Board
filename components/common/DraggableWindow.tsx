@@ -437,7 +437,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     </span>
                     <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center -mr-1">
                     <button
                       onClick={() => {
                         updateWidget(widget.id, { flipped: true });
@@ -464,11 +464,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             <div
               className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
                 isToolbarExpanded
-                  ? 'max-w-[500px] opacity-100 ml-0.5'
+                  ? 'max-w-[500px] opacity-100 ml-0'
                   : 'max-w-0 opacity-0 ml-0'
               }`}
             >
-              <div className="h-4 w-px bg-slate-300/50 mx-0.5" />
+              <div className="h-4 w-px bg-slate-300/50" />
 
               <div className="flex items-center gap-1">
                 {headerActions && (
