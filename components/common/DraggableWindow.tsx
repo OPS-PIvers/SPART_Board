@@ -227,11 +227,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             )}
             <div
               onMouseDown={handleDragStart}
-              className={`flex items-center justify-between px-3 py-2 border-b border-white/10 ${
+              className={`flex items-center justify-between px-4 pt-4 pb-2 border-b border-white/10 ${
                 isMaximized ? '' : 'cursor-grab active:cursor-grabbing'
               }`}
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+              <div className="flex items-center flex-1 min-w-0 mr-4">
                 {isEditingTitle ? (
                   <input
                     autoFocus
@@ -248,12 +248,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       e.stopPropagation(); // Prevent triggering other listeners
                     }}
                     onMouseDown={(e) => e.stopPropagation()} // Prevent drag start
-                    className="text-xs font-semibold text-slate-700 bg-white/50 border border-indigo-300 rounded px-1 py-0.5 outline-none w-full shadow-sm"
+                    className="text-[10px] font-bold text-white bg-slate-950/40 border border-white/20 rounded-full px-3 py-1 outline-none w-full shadow-sm"
                     aria-label="Edit widget title"
                   />
                 ) : (
                   <div
-                    className="flex items-center gap-2 group/title cursor-text min-w-0 overflow-hidden"
+                    className="flex items-center justify-center gap-2 group/title cursor-text min-w-0 overflow-hidden bg-slate-950/40 px-3 py-1 rounded-full border border-white/10"
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent drag start
                       setTempTitle(widget.customTitle ?? title);
@@ -261,10 +261,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     }}
                     onMouseDown={(e) => e.stopPropagation()} // Allow click without drag
                   >
-                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider truncate">
+                    <span className="text-[10px] font-bold text-white uppercase tracking-wider truncate">
                       {widget.customTitle ?? title}
                     </span>
-                    <Pencil className="w-3 h-3 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0" />
+                    <Pencil className="w-2.5 h-2.5 text-white/50 opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0" />
                   </div>
                 )}
               </div>
