@@ -623,9 +623,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         if (index >= 0) next[index] = updated;
       });
       return next.sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
-        return (a.order ?? 0) - (b.order ?? 0);
+        return (b.createdAt || 0) - (a.createdAt || 0);
       });
     });
 
@@ -646,9 +649,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     // Update local state
     setDashboards(
       [...updatedDashboards].sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
-        return (a.order ?? 0) - (b.order ?? 0);
+        return (b.createdAt || 0) - (a.createdAt || 0);
       })
     );
 

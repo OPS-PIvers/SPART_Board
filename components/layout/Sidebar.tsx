@@ -140,9 +140,6 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
             >
               {db.name}
             </div>
-            {db.isDefault && (
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
-            )}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
             {new Date(db.createdAt).toLocaleDateString()}
@@ -158,7 +155,7 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
           className={`p-1.5 rounded-lg transition-all ${
             db.isDefault
               ? 'text-amber-500 bg-amber-50'
-              : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50 opacity-0 group-hover:opacity-100'
+              : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50'
           }`}
           title={db.isDefault ? 'Default Board' : 'Set as Default'}
         >
@@ -169,7 +166,7 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
             e.stopPropagation();
             onRename(db.id, db.name);
           }}
-          className="p-1.5 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100"
+          className="p-1.5 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
           title="Rename"
         >
           <Pencil className="w-4 h-4" />
@@ -184,7 +181,7 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
           <label
             htmlFor={`delete-dashboard-${db.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="p-1.5 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
+            className="p-1.5 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all cursor-pointer inline-flex items-center justify-center"
           >
             <Trash2 className="w-4 h-4" />
           </label>
@@ -453,6 +450,7 @@ export const Sidebar: React.FC = () => {
   const presets = useMemo(() => {
     return managedBackgrounds.map((bg) => ({
       id: bg.url,
+      thumbnailUrl: bg.thumbnailUrl,
       label: bg.label,
     }));
   }, [managedBackgrounds]);
@@ -984,16 +982,23 @@ export const Sidebar: React.FC = () => {
                         <button
                           key={bg.id}
                           onClick={() => setBackground(bg.id)}
-                          className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
+                          className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all bg-slate-100 ${
                             activeDashboard?.background === bg.id
                               ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
                               : 'border-transparent hover:scale-[1.02]'
                           }`}
                         >
                           <img
-                            src={bg.id}
+                            src={bg.thumbnailUrl || bg.id}
                             alt={bg.label}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-opacity duration-300"
+                            loading="lazy"
+                            decoding="async"
+                            onLoad={(e) => {
+                              (e.target as HTMLImageElement).style.opacity =
+                                '1';
+                            }}
+                            style={{ opacity: 0 }}
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span className="text-white text-base font-bold uppercase tracking-wider">
