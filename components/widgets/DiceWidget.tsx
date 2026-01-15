@@ -57,7 +57,7 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
   return (
     <div
       className={`
-      relative w-24 h-24 bg-white rounded-2xl shadow-lg border-2 border-slate-200 
+      relative w-24 h-24 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-white/20 
       flex items-center justify-center p-4 transition-all duration-150
       ${isRolling ? 'animate-bounce scale-95 rotate-12' : 'scale-100 rotate-0'}
     `}

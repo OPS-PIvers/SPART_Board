@@ -10,15 +10,12 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const events = config.events ?? [];
 
   return (
-    <div className="h-full flex flex-col p-4 bg-white rounded-lg">
-      <div className="text-[10px] font-black uppercase text-rose-500 tracking-widest mb-4 flex items-center gap-2">
-        <CalendarIcon className="w-3 h-3" /> Important Dates
-      </div>
-      <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-2">
+    <div className="h-full flex flex-col p-4 bg-transparent rounded-lg">
+      <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {events.map((event, i: number) => (
           <div
             key={i}
-            className="group relative flex gap-3 p-3 bg-rose-50 rounded-2xl border border-rose-100 transition-all hover:bg-rose-100"
+            className="group relative flex gap-3 p-3 bg-white/40 backdrop-blur-sm rounded-2xl border border-white/20 transition-all hover:bg-white/60"
           >
             <div className="flex flex-col items-center justify-center min-w-[50px] py-1 border-r border-rose-200">
               <span className="text-[8px] font-black uppercase text-rose-400">
