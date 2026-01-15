@@ -13,6 +13,7 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
+  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
@@ -889,6 +890,29 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  const duplicateWidget = (id: string) => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeId) return d;
+        const target = d.widgets.find((w) => w.id === id);
+        if (!target) return d;
+
+        const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+        const duplicated: WidgetData = {
+          ...target,
+          id: crypto.randomUUID(),
+          x: target.x + 20,
+          y: target.y + 20,
+          z: maxZ + 1,
+          config: JSON.parse(JSON.stringify(target.config)) as WidgetConfig,
+        };
+        return { ...d, widgets: [...d.widgets, duplicated] };
+      })
+    );
+  };
+
   const removeWidgets = (ids: string[]) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
@@ -984,6 +1008,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setDefaultDashboard,
         addWidget,
         removeWidget,
+        duplicateWidget,
         removeWidgets,
         updateWidget,
         bringToFront,
