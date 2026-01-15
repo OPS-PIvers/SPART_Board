@@ -26,11 +26,12 @@ export interface DashboardContextType {
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
-  addWidget: (type: WidgetType) => void;
+  addWidget: (type: WidgetType, initialConfig?: Partial<WidgetData>) => void;
   removeWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
+  moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
   setBackground: (bg: string) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
