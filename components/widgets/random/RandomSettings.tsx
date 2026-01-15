@@ -1,0 +1,309 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useDashboard } from '../../../context/useDashboard';
+import { WidgetData, RandomConfig } from '../../../types';
+import { RosterModeControl } from '../../common/RosterModeControl';
+import {
+  Users,
+  UserPlus,
+  Layers,
+  Trash2,
+  Hash,
+  Play,
+  Target,
+  List,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
+
+export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
+  const { updateWidget } = useDashboard();
+  const config = widget.config as RandomConfig;
+  const {
+    firstNames = '',
+    lastNames = '',
+    mode = 'single',
+    visualStyle = 'flash',
+    groupSize = 3,
+    soundEnabled = true,
+    rosterMode = 'class',
+  } = config;
+
+  const [localFirstNames, setLocalFirstNames] = useState(firstNames);
+  const [localLastNames, setLocalLastNames] = useState(lastNames);
+  const firstNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastNamesTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Store latest values in refs to avoid unnecessary effect re-runs
+  const configRef = useRef(config);
+  const updateWidgetRef = useRef(updateWidget);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  useEffect(() => {
+    updateWidgetRef.current = updateWidget;
+  }, [updateWidget]);
+
+  useEffect(() => {
+    setLocalFirstNames(firstNames);
+  }, [firstNames]);
+
+  useEffect(() => {
+    setLocalLastNames(lastNames);
+  }, [lastNames]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localFirstNames !== firstNames) {
+        updateWidgetRef.current(widget.id, {
+          config: {
+            ...configRef.current,
+            firstNames: localFirstNames,
+          },
+        });
+      }
+    }, 1000);
+    firstNamesTimerRef.current = timer;
+    return () => clearTimeout(timer);
+  }, [localFirstNames, firstNames, widget.id]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localLastNames !== lastNames) {
+        updateWidgetRef.current(widget.id, {
+          config: {
+            ...configRef.current,
+            lastNames: localLastNames,
+          },
+        });
+      }
+    }, 1000);
+    lastNamesTimerRef.current = timer;
+    return () => clearTimeout(timer);
+  }, [localLastNames, lastNames, widget.id]);
+
+  const modes = [
+    { id: 'single', label: 'Pick One', icon: UserPlus },
+    { id: 'shuffle', label: 'Shuffle', icon: Layers },
+    { id: 'groups', label: 'Groups', icon: Users },
+  ];
+
+  const styles = [
+    { id: 'flash', label: 'Standard', icon: Play },
+    { id: 'wheel', label: 'Wheel', icon: Target },
+    { id: 'slots', label: 'Slots', icon: List },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <RosterModeControl
+        rosterMode={rosterMode}
+        onModeChange={(mode) =>
+          updateWidget(widget.id, {
+            config: { ...config, rosterMode: mode },
+          })
+        }
+      />
+
+      <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-3">
+          <div
+            className={`p-2 rounded-lg ${soundEnabled ? 'bg-brand-blue-lighter text-brand-blue-primary' : 'bg-slate-100 text-slate-400'}`}
+          >
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4" />
+            ) : (
+              <VolumeX className="w-4 h-4" />
+            )}
+          </div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-800">
+              Sound Effects
+            </div>
+            <div className="text-[8px] text-slate-500 font-bold uppercase">
+              Tick-tock while spinning
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, soundEnabled: !soundEnabled },
+            })
+          }
+          className={`w-12 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-brand-blue-primary' : 'bg-slate-300'}`}
+        >
+          <div
+            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`}
+          />
+        </button>
+      </div>
+
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Operation Mode
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {modes.map((m) => (
+            <button
+              key={m.id}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, mode: m.id, lastResult: null },
+                })
+              }
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
+                mode === m.id
+                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary'
+                  : 'border-slate-100 text-slate-400 hover:border-slate-200'
+              }`}
+            >
+              <m.icon className="w-5 h-5" />
+              <span className="text-[8px] font-black uppercase">{m.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'single' && (
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+            Animation Style
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {styles.map((s) => (
+              <button
+                key={s.id}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, visualStyle: s.id },
+                  })
+                }
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${
+                  visualStyle === s.id
+                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                    : 'border-slate-100 text-slate-400 hover:border-slate-200'
+                }`}
+              >
+                <s.icon className="w-5 h-5" />
+                <span className="text-[8px] font-black uppercase">
+                  {s.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mode === 'groups' && (
+        <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <Hash className="w-3 h-3" /> Group Size
+          </label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min="2"
+              max="10"
+              step="1"
+              value={groupSize}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    groupSize: parseInt(e.target.value),
+                  },
+                })
+              }
+              className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="w-10 text-center font-mono font-bold text-slate-700 text-sm">
+              {groupSize}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {rosterMode === 'custom' && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                First Names
+              </label>
+              <textarea
+                value={localFirstNames}
+                onChange={(e) => setLocalFirstNames(e.target.value)}
+                onBlur={() => {
+                  // Cancel debounce timer to prevent duplicate updates
+                  if (firstNamesTimerRef.current) {
+                    clearTimeout(firstNamesTimerRef.current);
+                    firstNamesTimerRef.current = null;
+                  }
+                  if (localFirstNames !== firstNames) {
+                    updateWidgetRef.current(widget.id, {
+                      config: {
+                        ...configRef.current,
+                        firstNames: localFirstNames,
+                      },
+                    });
+                  }
+                }}
+                placeholder="John&#10;Jane..."
+                className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                Last Names
+              </label>
+              <textarea
+                value={localLastNames}
+                onChange={(e) => setLocalLastNames(e.target.value)}
+                onBlur={() => {
+                  // Cancel debounce timer to prevent duplicate updates
+                  if (lastNamesTimerRef.current) {
+                    clearTimeout(lastNamesTimerRef.current);
+                    lastNamesTimerRef.current = null;
+                  }
+                  if (localLastNames !== lastNames) {
+                    updateWidgetRef.current(widget.id, {
+                      config: {
+                        ...configRef.current,
+                        lastNames: localLastNames,
+                      },
+                    });
+                  }
+                }}
+                placeholder="Smith&#10;Doe..."
+                className="w-full h-32 p-3 text-xs bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue-primary outline-none resize-none font-sans"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              if (confirm('Clear all custom student data?')) {
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    firstNames: '',
+                    lastNames: '',
+                    lastResult: null,
+                    remainingStudents: [],
+                  },
+                });
+              }
+            }}
+            className="w-full py-3 flex items-center justify-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-2 border-dashed border-red-100"
+          >
+            <Trash2 className="w-4 h-4" /> Clear Custom Names
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
