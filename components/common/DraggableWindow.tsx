@@ -275,7 +275,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   <button
                     onClick={takeScreenshot}
                     disabled={isCapturing}
-                    className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 hover:text-indigo-600 transition-all disabled:opacity-50"
+                    className="p-1.5 bg-slate-950/40 hover:bg-slate-950/60 rounded-full text-white transition-all disabled:opacity-50"
                     title="Take Screenshot"
                     aria-label="Take screenshot"
                   >
@@ -284,7 +284,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
                 <button
                   onClick={handleMaximizeToggle}
-                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 transition-all"
+                  className="p-1.5 bg-slate-950/40 hover:bg-slate-950/60 rounded-full text-white transition-all"
                   title={isMaximized ? 'Restore' : 'Maximize'}
                   aria-label={
                     isMaximized ? 'Restore widget' : 'Maximize widget'
@@ -298,14 +298,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
                 <button
                   onClick={() => updateWidget(widget.id, { minimized: true })}
-                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 transition-all"
+                  className="p-1.5 bg-slate-950/40 hover:bg-slate-950/60 rounded-full text-white transition-all"
                   aria-label="Minimize widget"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => updateWidget(widget.id, { flipped: true })}
-                  className="p-1.5 bg-white/20 hover:bg-white/40 rounded-full text-slate-600 transition-all"
+                  className="p-1.5 bg-slate-950/40 hover:bg-slate-950/60 rounded-full text-white transition-all"
                 >
                   <Settings className="w-3.5 h-3.5" />
                 </button>
@@ -317,7 +317,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       setShowConfirm(true);
                     }
                   }}
-                  className="p-1.5 bg-white/20 hover:bg-red-500/20 hover:text-red-600 rounded-full text-slate-600 transition-all"
+                  className="p-1.5 bg-slate-950/40 hover:bg-red-500/60 rounded-full text-white transition-all"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

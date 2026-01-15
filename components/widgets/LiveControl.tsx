@@ -131,8 +131,8 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           flex items-center justify-center p-1.5 rounded-full transition-all
           ${
             isLive
-              ? 'bg-red-500/80 text-white shadow-lg animate-pulse'
-              : 'bg-white/20 text-slate-600 hover:bg-white/40'
+              ? 'bg-red-500 text-white shadow-lg animate-pulse'
+              : 'bg-slate-950/40 text-white hover:bg-slate-950/60'
           }
         `}
       >
@@ -144,7 +144,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           ref={buttonRef}
           onClick={handleToggleMenu}
           aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
-          className="w-7 h-7 bg-white/20 hover:bg-white/40 text-slate-700 rounded-full flex items-center justify-center transition-all"
+          className="w-7 h-7 bg-slate-950/40 hover:bg-slate-950/60 text-white rounded-full flex items-center justify-center transition-all"
         >
           <span className="text-[10px] font-bold">{studentCount}</span>
         </button>
