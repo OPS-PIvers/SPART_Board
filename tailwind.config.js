@@ -93,7 +93,7 @@ export default {
       },
       animation: {
         'spin-slow': 'spin-slow 12s linear infinite',
-        jiggle: 'jiggle 0.2s ease-in-out infinite',
+        jiggle: 'jiggle 0.5s ease-in-out infinite',
       },
     },
   },

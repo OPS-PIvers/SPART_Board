@@ -502,7 +502,7 @@ export const Dock: React.FC = () => {
   return (
     <div
       data-screenshot="exclude"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] flex flex-col items-center"
     >
       {showRosterMenu && classesAnchorRect && (
         <ClassRosterMenu
