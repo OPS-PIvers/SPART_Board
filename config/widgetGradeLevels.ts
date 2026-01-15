@@ -56,6 +56,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   classes: ALL_GRADE_LEVELS,
   instructionalRoutines: ALL_GRADE_LEVELS,
   miniApp: ALL_GRADE_LEVELS,
+  materials: ALL_GRADE_LEVELS,
 };
 
 /**

@@ -8,6 +8,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  writeBatch,
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '../config/firebase';
 import { Dashboard } from '../types';
@@ -48,6 +49,18 @@ class MockDashboardStore {
     } else {
       this.dashboards.push({ ...dashboard });
     }
+    this.notifyListeners();
+  }
+
+  saveDashboards(dashboards: Dashboard[]): void {
+    dashboards.forEach((dashboard) => {
+      const index = this.dashboards.findIndex((d) => d.id === dashboard.id);
+      if (index >= 0) {
+        this.dashboards[index] = { ...dashboard };
+      } else {
+        this.dashboards.push({ ...dashboard });
+      }
+    });
     this.notifyListeners();
   }
 
@@ -126,6 +139,27 @@ export const useFirestore = (userId: string | null) => {
     [dashboardsRef]
   );
 
+  const saveDashboards = useCallback(
+    async (dashboards: Dashboard[]): Promise<void> => {
+      if (isAuthBypass) {
+        mockStore.saveDashboards(dashboards);
+        return Promise.resolve();
+      }
+
+      if (!dashboardsRef) throw new Error('User not authenticated');
+      const batch = writeBatch(db);
+      dashboards.forEach((dashboard) => {
+        const docRef = doc(dashboardsRef, dashboard.id);
+        batch.set(docRef, {
+          ...dashboard,
+          updatedAt: Date.now(),
+        });
+      });
+      await batch.commit();
+    },
+    [dashboardsRef]
+  );
+
   const deleteDashboard = useCallback(
     async (dashboardId: string): Promise<void> => {
       if (isAuthBypass) {
@@ -172,6 +206,7 @@ export const useFirestore = (userId: string | null) => {
   return {
     loadDashboards,
     saveDashboard,
+    saveDashboards,
     deleteDashboard,
     subscribeToDashboards,
   };

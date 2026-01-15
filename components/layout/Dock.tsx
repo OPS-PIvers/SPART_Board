@@ -33,6 +33,7 @@ import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
+import { GlassCard } from '../common/GlassCard';
 
 // Dock Item with Popover Logic
 const DockItem = ({
@@ -103,7 +104,7 @@ const DockItem = ({
         minimizedWidgets.length > 0 &&
         popoverPos &&
         createPortal(
-          <div
+          <GlassCard
             ref={popoverRef}
             style={{
               position: 'fixed',
@@ -112,13 +113,13 @@ const DockItem = ({
               transform: 'translateX(-50%)',
               zIndex: 10000,
             }}
-            className="w-56 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+            className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
-            <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+            <div className="bg-white/50 px-3 py-2 border-b border-white/30 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">
                 Restorable
               </span>
-              <span className="bg-slate-200 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              <span className="bg-white/60 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                 {minimizedWidgets.length}
               </span>
             </div>
@@ -126,7 +127,7 @@ const DockItem = ({
               {minimizedWidgets.map((widget) => (
                 <div
                   key={widget.id}
-                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-brand-blue-lighter rounded-lg group transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-2 hover:bg-white/50 rounded-lg group transition-colors"
                 >
                   <button
                     onClick={() => {
@@ -135,17 +136,17 @@ const DockItem = ({
                     }}
                     className="flex-1 text-left flex items-center gap-2 min-w-0"
                   >
-                    <span className="truncate text-xs text-slate-700 font-medium">
+                    <span className="truncate text-xs text-slate-800 font-medium">
                       {getTitle(widget)}
                     </span>
-                    <RefreshCcw className="w-3 h-3 text-brand-blue-light opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    <RefreshCcw className="w-3 h-3 text-brand-blue-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                   </button>
                   <button
                     onClick={() => {
                       onDelete(widget.id);
                       if (minimizedWidgets.length <= 1) setShowPopover(false);
                     }}
-                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                    className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50/50 rounded-md transition-all opacity-0 group-hover:opacity-100"
                     title="Close Widget"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -153,7 +154,7 @@ const DockItem = ({
                 </div>
               ))}
             </div>
-            <div className="p-1 border-t border-slate-100 grid grid-cols-2 gap-1">
+            <div className="p-1 border-t border-white/30 grid grid-cols-2 gap-1">
               <button
                 onClick={() => {
                   onAdd();
@@ -169,13 +170,13 @@ const DockItem = ({
                   onDeleteAll();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 text-xs font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-xs font-bold rounded-lg transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Clear All</span>
               </button>
             </div>
-          </div>,
+          </GlassCard>,
           document.body
         )}
 
@@ -370,7 +371,7 @@ export const Dock: React.FC = () => {
         {isExpanded ? (
           <>
             {/* Expanded Toolbar with integrated minimize button */}
-            <div className="bg-white/80 backdrop-blur-2xl px-4 py-3 rounded-[2rem] shadow-2xl border border-white/50 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+            <GlassCard className="relative px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {filteredTools.length > 0 ? (
                 <>
                   <DndContext
@@ -440,7 +441,7 @@ export const Dock: React.FC = () => {
                       {showLiveInfo &&
                         livePopoverPos &&
                         createPortal(
-                          <div
+                          <GlassCard
                             ref={livePopoverRef}
                             style={{
                               position: 'fixed',
@@ -449,31 +450,31 @@ export const Dock: React.FC = () => {
                               transform: 'translateX(-50%)',
                               zIndex: 10000,
                             }}
-                            className="w-64 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+                            className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
                           >
                             <div className="p-4 flex flex-col items-center gap-2 text-center">
-                              <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">
+                              <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
                                 Live Session
                               </h3>
-                              <div className="text-3xl font-black text-indigo-600 font-mono tracking-widest my-1">
+                              <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
                                 {session.code}
                               </div>
-                              <div className="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                              <div className="text-[10px] text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
                                 {getJoinUrl()}
                               </div>
-                              <div className="text-[10px] text-slate-400 mt-2">
+                              <div className="text-[10px] text-slate-500 mt-2">
                                 Provide this code to your students.
                               </div>
                             </div>
-                            <div className="p-2 border-t border-slate-100">
+                            <div className="p-2 border-t border-white/30">
                               <button
                                 onClick={() => setShowLiveInfo(false)}
-                                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
+                                className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
                               >
                                 Close
                               </button>
                             </div>
-                          </div>,
+                          </GlassCard>,
                           document.body
                         )}
 
@@ -518,13 +519,13 @@ export const Dock: React.FC = () => {
                   No apps selected in settings
                 </div>
               )}
-            </div>
+            </GlassCard>
           </>
         ) : (
           /* Compressed down to a single icon */
           <button
             onClick={() => setIsExpanded(true)}
-            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
+            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
             title="Open Tools"
           >
             <LayoutGrid className="w-6 h-6" />

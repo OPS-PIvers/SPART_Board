@@ -21,7 +21,27 @@ import {
   Paintbrush,
   FolderOpen,
   Pencil,
+  ChevronRight,
+  Star,
+  GripVertical,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
@@ -29,6 +49,7 @@ import { Dashboard, GradeLevel, BackgroundPreset } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
+import { GlassCard } from '../common/GlassCard';
 
 interface DashboardData {
   name: string;
@@ -49,15 +70,194 @@ const formatGradeLevel = (level: GradeLevel): string => {
   return level.toUpperCase();
 };
 
+interface SortableDashboardItemProps {
+  db: Dashboard;
+  isActive: boolean;
+  onLoad: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+  onSetDefault: (id: string) => void;
+}
+
+const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
+  db,
+  isActive,
+  onLoad,
+  onRename,
+  onDelete,
+  onSetDefault,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: db.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
+        isActive
+          ? 'bg-white border-brand-blue-light shadow-md ring-1 ring-brand-blue-lighter'
+          : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
+      } ${isDragging ? 'opacity-50 shadow-2xl scale-105' : ''}`}
+      onClick={() => onLoad(db.id)}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          {...attributes}
+          {...listeners}
+          className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="w-4 h-4" />
+        </div>
+        <div
+          className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
+            isActive
+              ? 'bg-brand-blue-primary'
+              : 'bg-slate-200 group-hover:bg-slate-300'
+          }`}
+        />
+        <div className="truncate">
+          <div className="flex items-center gap-2">
+            <div
+              className={`font-bold text-sm truncate ${
+                isActive ? 'text-brand-blue-dark' : 'text-slate-700'
+              }`}
+            >
+              {db.name}
+            </div>
+            {db.isDefault && (
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+            )}
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium">
+            {new Date(db.createdAt).toLocaleDateString()}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSetDefault(db.id);
+          }}
+          className={`p-1.5 rounded-lg transition-all ${
+            db.isDefault
+              ? 'text-amber-500 bg-amber-50'
+              : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50 opacity-0 group-hover:opacity-100'
+          }`}
+          title={db.isDefault ? 'Default Board' : 'Set as Default'}
+        >
+          <Star className={`w-4 h-4 ${db.isDefault ? 'fill-current' : ''}`} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRename(db.id, db.name);
+          }}
+          className="p-1.5 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100"
+          title="Rename"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+        <div className="relative">
+          <input
+            type="checkbox"
+            id={`delete-dashboard-${db.id}`}
+            className="peer hidden"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <label
+            htmlFor={`delete-dashboard-${db.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="p-1.5 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
+          >
+            <Trash2 className="w-4 h-4" />
+          </label>
+          <div className="peer-checked:flex hidden fixed inset-0 z-[11000] items-center justify-center bg-slate-900/40">
+            <div
+              className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4 className="text-base font-semibold text-slate-900 mb-2">
+                Delete board
+              </h4>
+              <p className="text-sm text-slate-600 mb-4">
+                Are you sure you want to delete “{db.name}”? This action cannot
+                be undone.
+              </p>
+              <div className="flex justify-end gap-2">
+                <label
+                  htmlFor={`delete-dashboard-${db.id}`}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </label>
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(db.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'widgets' | 'design' | 'manage'>(
+  const [activeTab, setActiveTab] = useState<'widgets' | 'design' | 'boards'>(
     'widgets'
   );
   // Sub-tab for design section
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = dashboards.findIndex((d) => d.id === active.id);
+      const newIndex = dashboards.findIndex((d) => d.id === over.id);
+
+      const newOrder = arrayMove(dashboards, oldIndex, newIndex).map(
+        (d) => d.id
+      );
+      reorderDashboards(newOrder);
+    }
+  };
 
   const { user, signOut, isAdmin, featurePermissions } = useAuth();
   const { uploadBackgroundImage } = useStorage();
@@ -73,10 +273,35 @@ export const Sidebar: React.FC = () => {
     loadDashboard,
     deleteDashboard,
     renameDashboard,
+    reorderDashboards,
+    setDefaultDashboard,
     saveCurrentDashboard,
     setBackground,
     addToast,
   } = useDashboard();
+
+  const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    if (isBoardSwitcherExpanded) {
+      // Small delay to allow transition to finish
+      const timer = setTimeout(checkScroll, 500);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+    return undefined;
+  }, [isBoardSwitcherExpanded, dashboards]);
 
   const [uploading, setUploading] = useState(false);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
@@ -290,13 +515,13 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <div
+      <GlassCard
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 bg-white/90 backdrop-blur shadow-xl rounded-full border border-slate-100/50 transition-all hover:scale-[1.02]"
+        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all"
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-brand-blue-primary text-white rounded-full hover:bg-brand-blue-dark transition-colors shadow-md shadow-brand-blue-lighter"
+          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-lighter"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
@@ -329,7 +554,7 @@ export const Sidebar: React.FC = () => {
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-full transition-all"
+            className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
             title="Admin Settings"
           >
             <Settings className="w-5 h-5" />
@@ -337,13 +562,73 @@ export const Sidebar: React.FC = () => {
         )}
 
         <button
-          onClick={signOut}
-          className="p-2 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-full transition-all"
-          title="Sign out"
+          onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
+          className={`p-2 rounded-full transition-all duration-300 ${
+            isBoardSwitcherExpanded
+              ? 'bg-brand-blue-primary text-white shadow-md'
+              : 'text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-lighter'
+          }`}
+          title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
         >
-          <LogOut className="w-5 h-5" />
+          <ChevronRight
+            className={`w-5 h-5 transition-transform duration-500 ${
+              isBoardSwitcherExpanded ? 'rotate-180' : 'rotate-0'
+            }`}
+          />
         </button>
-      </div>
+
+        {/* Board Switcher Sliding Toggle Bar */}
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-in-out flex items-center gap-1 ${
+            isBoardSwitcherExpanded
+              ? 'max-w-[80vw] ml-2 opacity-100'
+              : 'max-w-0 ml-0 opacity-0'
+          }`}
+        >
+          <div className="h-6 w-px bg-slate-200 mx-1 flex-shrink-0" />
+          <div className="relative flex items-center min-w-0">
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="flex bg-slate-100/80 p-1 rounded-full border border-slate-200/50 backdrop-blur-sm overflow-x-auto no-scrollbar scroll-smooth"
+            >
+              <div className="flex gap-1">
+                {dashboards.map((db) => (
+                  <button
+                    key={db.id}
+                    onClick={() => {
+                      loadDashboard(db.id);
+                    }}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${
+                      activeDashboard?.id === db.id
+                        ? 'bg-brand-blue-primary text-white shadow-md'
+                        : 'text-slate-500 hover:bg-slate-200/50'
+                    }`}
+                  >
+                    {db.isDefault && (
+                      <Star
+                        className={`w-3 h-3 ${
+                          activeDashboard?.id === db.id
+                            ? 'fill-white text-white'
+                            : 'fill-amber-400 text-amber-400'
+                        }`}
+                      />
+                    )}
+                    {db.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-0 flex items-center pr-1 pointer-events-none">
+                <div className="bg-gradient-to-l from-slate-100 to-transparent w-8 h-full rounded-r-full flex items-center justify-end">
+                  <ChevronRight className="w-3 h-3 text-slate-400 animate-pulse mr-1" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </GlassCard>
 
       {showAdminSettings && (
         <AdminSettings onClose={() => setShowAdminSettings(false)} />
@@ -505,14 +790,14 @@ export const Sidebar: React.FC = () => {
                   <Paintbrush className="w-4 h-4" /> Design
                 </button>
                 <button
-                  onClick={() => setActiveTab('manage')}
+                  onClick={() => setActiveTab('boards')}
                   className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                    activeTab === 'manage'
+                    activeTab === 'boards'
                       ? 'bg-white shadow-sm text-brand-blue-primary'
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <FolderOpen className="w-4 h-4" /> Manage
+                  <FolderOpen className="w-4 h-4" /> Boards
                 </button>
               </div>
             </div>
@@ -741,7 +1026,7 @@ export const Sidebar: React.FC = () => {
                           )}
                           {activeDashboard?.background === bg.id && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-full">
+                              <div className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full">
                                 <CheckSquare className="w-4 h-4 text-white drop-shadow-md" />
                               </div>
                             </div>
@@ -770,7 +1055,7 @@ export const Sidebar: React.FC = () => {
                             {bg.label}
                           </div>
                           {activeDashboard?.background === bg.id && (
-                            <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-md p-1 rounded-full">
+                            <div className="absolute top-2 right-2 bg-white/30 backdrop-blur-md p-1 rounded-full">
                               <CheckSquare className="w-3 h-3 text-white" />
                             </div>
                           )}
@@ -781,118 +1066,38 @@ export const Sidebar: React.FC = () => {
                 </div>
               )}
 
-              {/* MANAGE TAB */}
-              {activeTab === 'manage' && (
+              {/* BOARDS TAB */}
+              {activeTab === 'boards' && (
                 <div className="space-y-6">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
                       My Boards
                     </h3>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {dashboards.map((db) => (
-                        <div
-                          key={db.id}
-                          className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
-                            activeDashboard?.id === db.id
-                              ? 'bg-white border-brand-blue-light shadow-md ring-1 ring-brand-blue-lighter'
-                              : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
-                          }`}
-                          onClick={() => loadDashboard(db.id)}
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={dashboards.map((d) => d.id)}
+                          strategy={verticalListSortingStrategy}
                         >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-2 h-10 rounded-full ${
-                                activeDashboard?.id === db.id
-                                  ? 'bg-brand-blue-primary'
-                                  : 'bg-slate-200 group-hover:bg-slate-300'
-                              }`}
+                          {dashboards.map((db) => (
+                            <SortableDashboardItem
+                              key={db.id}
+                              db={db}
+                              isActive={activeDashboard?.id === db.id}
+                              onLoad={loadDashboard}
+                              onRename={(id, name) =>
+                                setEditingDashboard({ id, name })
+                              }
+                              onDelete={deleteDashboard}
+                              onSetDefault={setDefaultDashboard}
                             />
-                            <div>
-                              <div
-                                className={`font-bold text-base ${
-                                  activeDashboard?.id === db.id
-                                    ? 'text-brand-blue-dark'
-                                    : 'text-slate-700'
-                                }`}
-                              >
-                                {db.name}
-                              </div>
-                              <div className="text-xs text-slate-400 font-medium">
-                                {new Date(db.createdAt).toLocaleDateString()}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingDashboard({
-                                  id: db.id,
-                                  name: db.name,
-                                });
-                              }}
-                              className="p-2 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                              title="Rename"
-                            >
-                              <Pencil className="w-5 h-5" />
-                            </button>
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                id={`delete-dashboard-${db.id}`}
-                                className="peer hidden"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <label
-                                htmlFor={`delete-dashboard-${db.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </label>
-                              <div className="peer-checked:flex hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/40">
-                                <div
-                                  className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <h4 className="text-base font-semibold text-slate-900 mb-2">
-                                    Delete board
-                                  </h4>
-                                  <p className="text-sm text-slate-600 mb-4">
-                                    Are you sure you want to delete “{db.name}”?
-                                    This action cannot be undone.
-                                  </p>
-                                  <div className="flex justify-end gap-2">
-                                    <label
-                                      htmlFor={`delete-dashboard-${db.id}`}
-                                      className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
-                                    >
-                                      Cancel
-                                    </label>
-                                    <button
-                                      type="button"
-                                      className="px-4 py-2 text-sm font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteDashboard(db.id);
-                                        const checkbox =
-                                          document.getElementById(
-                                            `delete-dashboard-${db.id}`
-                                          ) as HTMLInputElement | null;
-                                        if (checkbox && checkbox.checked) {
-                                          checkbox.click();
-                                        }
-                                      }}
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          ))}
+                        </SortableContext>
+                      </DndContext>
                     </div>
                   </div>
 
@@ -933,21 +1138,30 @@ export const Sidebar: React.FC = () => {
                 onChange={(e) => void handleFileUpload(e)}
               />
 
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleShare}
+                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
+                  >
+                    <Share2 className="w-4 h-4" /> Share
+                  </button>
+                  <button
+                    onClick={() => {
+                      saveCurrentDashboard();
+                      setIsOpen(false);
+                    }}
+                    className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-xs uppercase tracking-wider"
+                  >
+                    <Save className="w-4 h-4" /> Save & Close
+                  </button>
+                </div>
+
                 <button
-                  onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 p-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
+                  onClick={signOut}
+                  className="w-full flex items-center justify-center gap-2 p-3 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
                 >
-                  <Share2 className="w-5 h-5" /> Share
-                </button>
-                <button
-                  onClick={() => {
-                    saveCurrentDashboard();
-                    setIsOpen(false);
-                  }}
-                  className="flex-1 bg-brand-blue-primary text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-sm uppercase tracking-wider"
-                >
-                  <Save className="w-5 h-5" /> Save & Close
+                  <LogOut className="w-4 h-4" /> Sign Out
                 </button>
               </div>
             </div>

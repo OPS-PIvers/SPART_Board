@@ -57,10 +57,11 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
   return (
     <div
       className={`
-      relative w-24 h-24 bg-white rounded-2xl shadow-lg border-2 border-slate-200 
-      flex items-center justify-center p-4 transition-all duration-150
-      ${isRolling ? 'animate-bounce scale-95 rotate-12' : 'scale-100 rotate-0'}
-    `}
+                  relative w-24 h-24 bg-white/70 rounded-2xl shadow-lg border-2 border-white/30
+                  flex items-center justify-center
+                  transition-all duration-300
+                  ${isRolling ? 'scale-110 rotate-12 blur-[1px]' : 'scale-100 rotate-0'}
+                `}
     >
       <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-1">
         {Array.from({ length: 9 }).map((_, i) => (

@@ -260,7 +260,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       );
     } else {
       const newApp: MiniAppItem = {
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID() as string,
         title: editTitle,
         html: editCode,
         createdAt: Date.now(),
@@ -320,9 +320,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             if (i.html.length > MAX_HTML_SIZE) return null;
 
             return {
-              id: `imported-${Date.now()}-${Math.random()
-                .toString(36)
-                .slice(2, 11)}`,
+              id: crypto.randomUUID() as string,
               title:
                 typeof i.title === 'string' && i.title
                   ? i.title.slice(0, 100)
@@ -360,7 +358,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/20"
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
           >
             <LayoutGrid className="w-3 h-3" /> Library
           </button>
@@ -437,10 +435,10 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
-  // --- RENDER: LIST MODE ---
   return (
-    <div className="w-full h-full bg-white flex flex-col">
-      <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+    <div className="w-full h-full bg-transparent flex flex-col">
+      <div className="p-5 border-b border-white/20 flex items-center justify-between bg-white/30 shrink-0">
+        {' '}
         <div>
           <h2 className="font-black text-lg text-slate-800 tracking-tight">
             App Library
@@ -448,14 +446,14 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={handleExport}
-              className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Download className="w-3 h-3" /> Export
             </button>
             <span className="text-slate-300 text-[10px]">•</span>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Upload className="w-3 h-3" /> Import
             </button>
@@ -470,17 +468,17 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
         <button
           onClick={handleCreate}
-          className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm"
+          className="p-2 bg-white/50 text-indigo-600 hover:bg-white/70 rounded-xl transition-colors shadow-sm"
           title="Create New App"
         >
           <Plus className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50/50 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
         {library.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[200px]">
-            <div className="p-4 bg-slate-100 rounded-full">
+            <div className="p-4 bg-white/50 rounded-full backdrop-blur-sm">
               <Box className="w-8 h-8 opacity-50" />
             </div>
             <p className="text-sm font-bold">No apps saved yet</p>
@@ -512,7 +510,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-slate-50 border-t border-slate-200 text-[9px] text-slate-400 text-center font-bold uppercase tracking-widest shrink-0">
+      <div className="p-3 bg-white/30 border-t border-white/20 text-[9px] text-slate-500 text-center font-bold uppercase tracking-widest shrink-0">
         Drag to reorder • Runs Locally
       </div>
     </div>

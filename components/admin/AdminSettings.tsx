@@ -31,8 +31,8 @@ const TabButton: React.FC<{
     onClick={onClick}
     className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
       isActive
-        ? 'bg-white text-brand-blue-primary'
-        : 'text-white/70 hover:bg-white/10 hover:text-white'
+        ? 'bg-brand-blue-primary text-white shadow-md'
+        : 'text-white/70 hover:bg-white/20 hover:text-white'
     }`}
   >
     {icon}
@@ -62,22 +62,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
     return null;
   }
 
-  // Handle backdrop click
-  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
     <div
-      className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={handleBackdropClick}
+      className="fixed inset-0 z-[10000] bg-slate-50 flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-settings-title"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-white w-full h-full overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-brand-blue-primary to-brand-blue-dark text-white p-6 pb-0 flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -89,9 +81,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              title="Close"
-              aria-label="Close admin settings"
+              className="p-2 hover:bg-white/30 rounded-lg transition-colors"
             >
               <X className="w-6 h-6" />
             </button>

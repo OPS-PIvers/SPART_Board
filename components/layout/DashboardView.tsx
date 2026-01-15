@@ -36,7 +36,28 @@ const ToastContainer: React.FC = () => {
 };
 
 export const DashboardView: React.FC = () => {
-  const { activeDashboard } = useDashboard();
+  const { activeDashboard, dashboards } = useDashboard();
+  const [prevIndex, setPrevIndex] = React.useState<number>(-1);
+  const [animationClass, setAnimationClass] =
+    React.useState<string>('animate-fade-in');
+
+  const currentIndex = useMemo(() => {
+    if (!activeDashboard) return -1;
+    return dashboards.findIndex((d) => d.id === activeDashboard.id);
+  }, [activeDashboard, dashboards]);
+
+  React.useEffect(() => {
+    if (currentIndex !== -1 && prevIndex !== -1 && currentIndex !== prevIndex) {
+      if (currentIndex > prevIndex) {
+        setAnimationClass('animate-slide-left-in');
+      } else {
+        setAnimationClass('animate-slide-right-in');
+      }
+    } else {
+      setAnimationClass('animate-fade-in');
+    }
+    setPrevIndex(currentIndex);
+  }, [currentIndex, prevIndex]);
 
   const backgroundStyles = useMemo(() => {
     if (!activeDashboard) return {};
@@ -85,7 +106,10 @@ export const DashboardView: React.FC = () => {
       <div className="absolute inset-0 bg-black/10 pointer-events-none" />
 
       {/* Dynamic Widget Surface */}
-      <div className="relative w-full h-full">
+      <div
+        key={activeDashboard.id}
+        className={`relative w-full h-full ${animationClass}`}
+      >
         {activeDashboard.widgets.map((widget) => (
           <WidgetRenderer key={widget.id} widget={widget} />
         ))}

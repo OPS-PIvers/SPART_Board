@@ -9,8 +9,8 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4 bg-white rounded-lg">
-      <div className="bg-slate-100 p-2 rounded-xl mb-3 shadow-inner">
+    <div className="flex flex-col items-center justify-center h-full p-4 bg-transparent rounded-lg">
+      <div className="bg-white p-2 rounded-xl mb-3 shadow-inner">
         <img
           src={qrUrl}
           alt="QR Code"
