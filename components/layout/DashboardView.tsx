@@ -101,6 +101,7 @@ export const DashboardView: React.FC = () => {
       id="dashboard-root"
       className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses}`}
       style={backgroundStyles}
+      onClick={(e) => e.stopPropagation()}
     >
       {/* Background Overlay for Depth (especially for images) */}
       <div className="absolute inset-0 bg-black/10 pointer-events-none" />
