@@ -101,11 +101,13 @@ describe('migration', () => {
     });
 
     it('handles json parse error', async () => {
-        localStorage.setItem('classroom_dashboards', 'invalid-json');
-        const saveDashboard = vi.fn();
+      localStorage.setItem('classroom_dashboards', 'invalid-json');
+      const saveDashboard = vi.fn();
 
-        await expect(migrateLocalStorageToFirestore('u1', saveDashboard)).rejects.toThrow();
-        expect(saveDashboard).not.toHaveBeenCalled();
+      await expect(
+        migrateLocalStorageToFirestore('u1', saveDashboard)
+      ).rejects.toThrow();
+      expect(saveDashboard).not.toHaveBeenCalled();
     });
   });
 });
