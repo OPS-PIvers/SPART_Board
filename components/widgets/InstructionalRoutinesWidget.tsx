@@ -72,7 +72,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               <button
                 key={r.id}
                 onClick={() => selectRoutine(r)}
-                className="relative p-4 border border-white/20 rounded-2xl bg-white/40 backdrop-blur-sm shadow-sm hover:border-[#2d3f89] transition-all text-left"
+                className="relative p-4 border border-white/20 rounded-2xl bg-white/40 shadow-sm hover:border-[#2d3f89] transition-all text-left"
               >
                 <Star
                   onClick={(e) => {
