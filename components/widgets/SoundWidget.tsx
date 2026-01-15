@@ -5,11 +5,11 @@ import { Thermometer, Gauge, Activity, Citrus } from 'lucide-react';
 
 // Poster Colors Mapping
 const POSTER_LEVELS = [
-  { label: '0 - Silence', color: '#3b82f6', threshold: 0 }, // Blue
-  { label: '1 - Whisper', color: '#22c55e', threshold: 20 }, // Green
-  { label: '2 - Conversation', color: '#eab308', threshold: 40 }, // Yellow
-  { label: '3 - Presenter', color: '#f97316', threshold: 60 }, // Orange
-  { label: '4 - Outside', color: '#ef4444', threshold: 80 }, // Red
+  { label: '0 - SILENCE', color: '#3b82f6', threshold: 0 }, // Blue
+  { label: '1 - WHISPER', color: '#22c55e', threshold: 20 }, // Green
+  { label: '2 - CONVERSATION', color: '#eab308', threshold: 40 }, // Yellow
+  { label: '3 - PRESENTER', color: '#f97316', threshold: 60 }, // Orange
+  { label: '4 - OUTSIDE', color: '#ef4444', threshold: 80 }, // Red
 ];
 
 const getLevelData = (volume: number) => {
@@ -61,40 +61,105 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
 };
 
 const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
-  const rotation = -90 + volume * 1.8; // -90 to +90 degrees
+  const rotation = -90 + volume * 1.8; // Maps 0-100 volume to -90 to +90 degrees
+
+  // Helper to create arc paths for the gauge segments
+  const describeArc = (
+    x: number,
+    y: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number
+  ) => {
+    const start = polarToCartesian(x, y, radius, endAngle);
+    const end = polarToCartesian(x, y, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+    return [
+      'M',
+      start.x,
+      start.y,
+      'A',
+      radius,
+      radius,
+      0,
+      largeArcFlag,
+      0,
+      end.x,
+      end.y,
+    ].join(' ');
+  };
+
+  const polarToCartesian = (
+    centerX: number,
+    centerY: number,
+    radius: number,
+    angleInDegrees: number
+  ) => {
+    const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+    return {
+      x: centerX + radius * Math.cos(angleInRadians),
+      y: centerY + radius * Math.sin(angleInRadians),
+    };
+  };
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
-      <svg viewBox="0 0 100 60" className="w-full h-auto">
-        {/* Arcs */}
-        {POSTER_LEVELS.map((level, i) => (
-          <path
-            key={i}
-            d={`M ${20 + i * 12} 55 A 40 40 0 0 1 ${32 + i * 12} 55`}
-            fill="none"
-            stroke={level.color}
-            strokeWidth="8"
-            className="opacity-30"
-          />
-        ))}
-        {/* Main Background Arc */}
+      <svg viewBox="0 0 100 65" className="w-full h-auto overflow-visible">
+        {/* Background Track */}
         <path
-          d="M 10 55 A 40 40 0 0 1 90 55"
+          d={describeArc(50, 55, 40, -90, 90)}
           fill="none"
           stroke="#f1f5f9"
-          strokeWidth="8"
-        />
-        {/* Needle */}
-        <line
-          x1="50"
-          y1="55"
-          x2={50 + 35 * Math.cos(((rotation - 90) * Math.PI) / 180)}
-          y2={55 + 35 * Math.sin(((rotation - 90) * Math.PI) / 180)}
-          stroke="#1e293b"
-          strokeWidth="2"
+          strokeWidth="10"
           strokeLinecap="round"
-          className="transition-all duration-150"
         />
-        <circle cx="50" cy="55" r="3" fill="#1e293b" />
+
+        {/* Gauge Colored Segments (behind needle) */}
+        {POSTER_LEVELS.map((level, i) => {
+          const segmentSize = 180 / POSTER_LEVELS.length;
+          const start = -90 + i * segmentSize;
+          const end = start + segmentSize;
+          return (
+            <path
+              key={i}
+              d={describeArc(50, 55, 40, start, end)}
+              fill="none"
+              stroke={level.color}
+              strokeWidth="10"
+              className="opacity-80"
+            />
+          );
+        })}
+
+        {/* Needle */}
+        <g
+          style={{
+            transform: `rotate(${rotation}deg)`,
+            transformOrigin: '50px 55px',
+          }}
+          className="transition-transform duration-150 ease-out"
+        >
+          <line
+            x1="50"
+            y1="55"
+            x2="50"
+            y2="15"
+            stroke="#1e293b"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          <path d="M 47 55 L 50 10 L 53 55 Z" fill="#1e293b" />
+        </g>
+
+        {/* Center Cap */}
+        <circle
+          cx="50"
+          cy="55"
+          r="5"
+          fill="#1e293b"
+          stroke="white"
+          strokeWidth="1.5"
+        />
       </svg>
     </div>
   );
