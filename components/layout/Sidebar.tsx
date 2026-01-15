@@ -529,28 +529,6 @@ export const Sidebar: React.FC = () => {
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
-        <div className="flex items-center gap-2 px-1">
-          {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt={user?.displayName ?? 'User'}
-              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
-            />
-          ) : (
-            <div
-              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-700"
-              aria-label={user?.displayName ?? 'User'}
-            >
-              {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="text-slate-700 font-bold text-sm hidden sm:block">
-            {user?.displayName}
-          </span>
-        </div>
-
-        <div className="h-6 w-px bg-slate-200 mx-1" />
-
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
@@ -1139,6 +1117,32 @@ export const Sidebar: React.FC = () => {
               />
 
               <div className="flex flex-col gap-4">
+                {/* User Profile */}
+                <div className="flex items-center gap-3 px-1 mb-1">
+                  {user?.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user?.displayName ?? 'User'}
+                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+                    />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700"
+                      aria-label={user?.displayName ?? 'User'}
+                    >
+                      {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-slate-800 font-bold text-sm truncate">
+                      {user?.displayName}
+                    </span>
+                    <span className="text-slate-500 text-[10px] truncate">
+                      {user?.email}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="flex gap-4">
                   <button
                     onClick={handleShare}
