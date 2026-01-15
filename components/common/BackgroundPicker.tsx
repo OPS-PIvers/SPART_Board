@@ -170,7 +170,7 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
                   )}
                   {selectedBackground === bg.id && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="bg-white/20 backdrop-blur-sm p-1 rounded-full">
+                      <div className="bg-white/30 backdrop-blur-sm p-1 rounded-full">
                         <CheckSquare className="w-3 h-3 text-white drop-shadow-md" />
                       </div>
                     </div>
@@ -203,7 +203,7 @@ export const BackgroundPicker: React.FC<BackgroundPickerProps> = ({
                   {bg.label}
                 </div>
                 {selectedBackground === bg.id && (
-                  <div className="absolute top-1 right-1 bg-white/20 backdrop-blur-md p-0.5 rounded-full">
+                  <div className="absolute top-1 right-1 bg-white/30 backdrop-blur-md p-0.5 rounded-full">
                     <CheckSquare className="w-3 h-3 text-white" />
                   </div>
                 )}

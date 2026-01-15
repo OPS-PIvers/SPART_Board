@@ -1026,7 +1026,7 @@ export const Sidebar: React.FC = () => {
                           )}
                           {activeDashboard?.background === bg.id && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-full">
+                              <div className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full">
                                 <CheckSquare className="w-4 h-4 text-white drop-shadow-md" />
                               </div>
                             </div>
@@ -1055,7 +1055,7 @@ export const Sidebar: React.FC = () => {
                             {bg.label}
                           </div>
                           {activeDashboard?.background === bg.id && (
-                            <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-md p-1 rounded-full">
+                            <div className="absolute top-2 right-2 bg-white/30 backdrop-blur-md p-1 rounded-full">
                               <CheckSquare className="w-3 h-3 text-white" />
                             </div>
                           )}

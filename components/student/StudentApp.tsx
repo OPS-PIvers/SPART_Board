@@ -158,7 +158,7 @@ export const StudentApp = () => {
           </p>
           <button
             onClick={() => void leaveSession()}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-bold transition-all"
+            className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-xl text-sm font-bold transition-all"
           >
             Leave Session
           </button>
@@ -176,7 +176,7 @@ export const StudentApp = () => {
         <p className="text-indigo-200 text-lg mb-8">Your screen is paused.</p>
         <button
           onClick={() => void leaveSession()}
-          className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-bold transition-all"
+          className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-xl text-sm font-bold transition-all"
         >
           Leave Session
         </button>
@@ -212,7 +212,7 @@ export const StudentApp = () => {
       <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500 z-50" />
       <button
         onClick={() => void leaveSession()}
-        className="absolute top-4 right-4 z-50 px-3 py-1.5 bg-black/20 hover:bg-red-500/40 text-white/70 hover:text-white border border-white/10 hover:border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all"
+        className="absolute top-4 right-4 z-50 px-3 py-1.5 bg-black/30 hover:bg-red-500/40 text-white/70 hover:text-white border border-white/20 hover:border-red-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all"
       >
         Leave
       </button>

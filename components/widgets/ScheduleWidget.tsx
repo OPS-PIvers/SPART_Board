@@ -29,8 +29,8 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             }}
             className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${
               item.done
-                ? 'bg-white/20 border-white/10 opacity-60'
-                : 'bg-white/40 border-white/20'
+                ? 'bg-white/30 border-white/20 opacity-60'
+                : 'bg-white/50 border-white/30'
             }`}
           >
             {item.done ? (

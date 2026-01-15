@@ -656,7 +656,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   return (
                     <div
                       key={i}
-                      className="bg-white/40 border border-white/20 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
+                      className="bg-white/50 border border-white/30 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
                       style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
                     >
                       <div

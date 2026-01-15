@@ -31,8 +31,8 @@ const TabButton: React.FC<{
     onClick={onClick}
     className={`px-4 py-3 rounded-t-xl font-bold text-sm uppercase tracking-wide flex items-center gap-2 transition-colors ${
       isActive
-        ? 'bg-white text-brand-blue-primary'
-        : 'text-white/70 hover:bg-white/10 hover:text-white'
+        ? 'bg-brand-blue-primary text-white shadow-md'
+        : 'text-white/70 hover:bg-white/20 hover:text-white'
     }`}
   >
     {icon}
@@ -81,9 +81,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              title="Close"
-              aria-label="Close admin settings"
+              className="p-2 hover:bg-white/30 rounded-lg transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
