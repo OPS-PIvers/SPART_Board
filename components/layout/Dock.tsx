@@ -515,10 +515,10 @@ export const Dock: React.FC = () => {
         />
       )}
       <div className="relative group/dock">
-        {/* Edit Mode Backdrop */}
+        {/* Edit Mode Backdrop - Transparent click catcher */}
         {isEditMode && (
           <div
-            className="fixed inset-0 z-[10000] bg-slate-900/20 backdrop-blur-[2px] animate-in fade-in duration-300"
+            className="fixed inset-0 z-[1000]" // Lower Z-index, well below the Dock's parent z-[10001]
             onClick={exitEditMode}
           />
         )}
