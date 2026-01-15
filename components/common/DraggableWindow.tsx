@@ -12,11 +12,6 @@ import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
-import {
-  getBackgroundClass,
-  getBackgroundImageStyle,
-} from '../../utils/styleUtils';
-import { BackgroundPicker } from './BackgroundPicker';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -80,11 +75,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
   const isMaximized = widget.maximized ?? false;
-
-  // Background logic
-  const backgroundStyle = getBackgroundImageStyle(widget.background);
-  const backgroundClass = getBackgroundClass(widget.background);
-  const hasBackground = !!widget.background;
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);
@@ -163,10 +153,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('mouseup', onMouseUp);
   };
 
+  const transparency = widget.transparency ?? 0.2;
+
   return (
     <GlassCard
       ref={windowRef}
       onMouseDown={handleMouseDown}
+      transparency={transparency}
       className={`absolute select-none widget group overflow-hidden will-change-transform ${
         isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
       } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50 scale-[1.01]' : ''}`}
@@ -188,12 +181,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         >
           {/* Front Face */}
           <div
-            className={`front absolute inset-0 w-full h-full flex flex-col ${
-              hasBackground ? backgroundClass : 'bg-white/30'
-            }`}
+            className="front absolute inset-0 w-full h-full flex flex-col"
             style={{
               pointerEvents: widget.flipped ? 'none' : 'auto',
-              ...backgroundStyle,
             }}
           >
             {showConfirm && (
@@ -360,12 +350,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             <div className="flex-1 p-4 overflow-y-auto">
               <div className="mb-6">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  Background
+                  Widget Transparency
                 </h4>
-                <BackgroundPicker
-                  selectedBackground={widget.background}
-                  onSelect={(bg) => updateWidget(widget.id, { background: bg })}
-                />
+                <div className="flex items-center gap-4 bg-white/40 p-3 rounded-2xl border border-white/20">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={transparency}
+                    onChange={(e) =>
+                      updateWidget(widget.id, {
+                        transparency: parseFloat(e.target.value),
+                      })
+                    }
+                    className="flex-1 accent-indigo-600"
+                  />
+                  <span className="text-[10px] font-mono font-bold text-slate-600 w-10">
+                    {Math.round(transparency * 100)}%
+                  </span>
+                </div>
               </div>
 
               {settings && (

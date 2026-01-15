@@ -821,6 +821,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           y: 150 + d.widgets.length * 20,
           flipped: false,
           z: maxZ + 1,
+          transparency: 0.2,
           ...defaults[type],
           config: { ...(defaults[type].config ?? {}) },
         } as WidgetData;
