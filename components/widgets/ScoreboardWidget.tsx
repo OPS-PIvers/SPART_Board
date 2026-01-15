@@ -23,7 +23,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="grid grid-cols-2 h-full gap-4 p-2 bg-transparent">
-      <div className="flex flex-col items-center justify-center bg-blue-500/20 backdrop-blur-sm rounded-2xl p-4 border border-blue-400/20">
+      <div className="flex flex-col items-center justify-center bg-blue-500/20 rounded-2xl p-4 border border-blue-400/20">
         <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
           {teamA}
         </div>
@@ -49,7 +49,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
           </button>
         </div>
       </div>
-      <div className="flex flex-col items-center justify-center bg-red-500/20 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20">
+      <div className="flex flex-col items-center justify-center bg-red-500/20 rounded-2xl p-4 border border-red-400/20">
         <div className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-1">
           {teamB}
         </div>

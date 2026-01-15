@@ -15,7 +15,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
         {events.map((event, i: number) => (
           <div
             key={i}
-            className="group relative flex gap-3 p-3 bg-white/40 backdrop-blur-sm rounded-2xl border border-white/20 transition-all hover:bg-white/60"
+            className="group relative flex gap-3 p-3 bg-white/40 rounded-2xl border border-white/20 transition-all hover:bg-white/60"
           >
             <div className="flex flex-col items-center justify-center min-w-[50px] py-1 border-r border-rose-200">
               <span className="text-[8px] font-black uppercase text-rose-400">

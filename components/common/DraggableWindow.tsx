@@ -167,7 +167,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     <GlassCard
       ref={windowRef}
       onMouseDown={handleMouseDown}
-      className={`absolute select-none widget group overflow-hidden ${
+      className={`absolute select-none widget group overflow-hidden will-change-transform ${
         isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
       } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50 scale-[1.01]' : ''}`}
       style={{

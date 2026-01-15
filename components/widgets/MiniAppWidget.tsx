@@ -437,10 +437,9 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
-  // --- RENDER: LIST MODE ---
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
-      <div className="p-5 border-b border-white/10 flex items-center justify-between bg-white/20 backdrop-blur-md shrink-0">
+      <div className="p-5 border-b border-white/10 flex items-center justify-between bg-white/20 shrink-0">
         <div>
           <h2 className="font-black text-lg text-slate-800 tracking-tight">
             App Library

@@ -727,7 +727,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => handleDrop(e, null)}
-          className="flex-1 bg-white/40 backdrop-blur-sm border border-white/20 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
+          className="flex-1 bg-white/40 border border-white/20 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
         >
           <div className="text-[10px] font-black uppercase text-slate-600 mb-4 tracking-widest text-center">
             Drag Your Name to Your Choice
