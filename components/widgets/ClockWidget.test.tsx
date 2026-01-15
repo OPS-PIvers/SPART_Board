@@ -82,7 +82,11 @@ describe('ClockWidget', () => {
     const date = new Date('2023-01-01T14:30:45');
     vi.setSystemTime(date);
 
-    render(<ClockWidget widget={createWidget({ showSeconds: false, format24: true })} />);
+    render(
+      <ClockWidget
+        widget={createWidget({ showSeconds: false, format24: true })}
+      />
+    );
 
     expect(screen.getByText('14')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
