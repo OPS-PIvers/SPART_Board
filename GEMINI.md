@@ -67,10 +67,10 @@ The following slash commands are available to streamline the development workflo
   - _Caution:_ Permanently deletes changes since the last `/preview`.
 - **/preview**: Saves your current work and updates your online preview.
   - _Action:_ Stages, commits, and pushes changes to the current branch.
-- **/submit**: Integrates latest changes from `main`, resolves conflicts, verifies with tests, and submits your work for review.
-  - _Action:_ Fetches `main`, rebases, runs `pnpm run validate`, then creates or updates a Pull Request (PR).
-- **/sync**: Updates your workspace with the latest changes from the main project.
-  - _Action:_ Fetches `origin/main`, rebases current branch, and handles stashing if necessary.
+- **/submit**: Integrates latest changes from `main`, resolves conflicts, verifies with tests, pushes to remote, and submits your work for review.
+  - _Action:_ Fetches `main`, rebases, runs `pnpm run validate`, pushes to remote, then creates or updates a Pull Request (PR).
+- **/sync**: Updates your workspace with the latest changes from the main project and syncs with your remote branch.
+  - _Action:_ Fetches `origin/main`, rebases current branch, handles stashing, and pushes to remote.
 - **/undo**: Reverses your last 'save' while keeping your work in the editor.
   - _Action:_ `git reset --soft HEAD~1`.
 

@@ -14,7 +14,7 @@ You are a technical assistant. Execute the following steps exactly:
 
     4A) If you ran `git stash` earlier, run `git stash pop`.
 
-    4B) Run `git push --force-with-lease`.
+    4B) Run `git push --force-with-lease origin $(git branch --show-current)`.
         - Explain: "I'm updating your online backup to match these new changes."
         - Note: If this fails, it's okay, just proceed to the report.
 
