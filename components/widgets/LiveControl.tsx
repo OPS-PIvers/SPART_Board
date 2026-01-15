@@ -132,7 +132,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           ${
             isLive
               ? 'bg-red-500 text-white shadow-lg animate-pulse'
-              : 'bg-slate-950/40 text-white hover:bg-slate-950/60'
+              : 'hover:bg-slate-800/10 text-slate-600'
           }
         `}
       >
