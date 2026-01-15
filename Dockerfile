@@ -3,9 +3,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Install pnpm
+RUN npm install -g pnpm
+
+COPY package.json pnpm-lock.yaml ./
 # Install dependencies including devDependencies (needed for build)
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
@@ -31,7 +34,7 @@ ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
 ENV VITE_OPENWEATHER_API_KEY=$VITE_OPENWEATHER_API_KEY
 
 # Build the application
-RUN npm run build
+RUN pnpm run build
 
 # Stage 2: Serve
 FROM nginx:alpine
