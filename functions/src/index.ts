@@ -28,9 +28,11 @@ interface ClassLinkStudent {
 
 /**
  * Generates OAuth 1.0 Headers for ClassLink
+ * Robust version that separates base URL and query parameters
  */
 function getOAuthHeaders(
-  url: string,
+  baseUrl: string,
+  params: Record<string, string>,
   method: string,
   clientId: string,
   clientSecret: string
@@ -47,14 +49,15 @@ function getOAuthHeaders(
   });
 
   const request_data = {
-    url: url,
+    url: baseUrl,
     method: method,
+    data: params, // Pass params here so the library encodes them for the signature
   };
 
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
-// Version: 1.1.0 - Explicitly using v1 import to avoid TS build errors
+// Version: 1.1.1 - Improved OAuth signature and logging
 export const getClassLinkRosterV1 = functions
   .runWith({
     secrets: [
@@ -92,32 +95,44 @@ export const getClassLinkRosterV1 = functions
     }
 
     const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
+    console.log(`[ClassLink] Fetching for: ${userEmail} at ${cleanTenantUrl}`);
 
     try {
-      const usersUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users?filter=email='${userEmail}'`;
+      // Step 1: Find the user by email
+      const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
+      const userParams = { filter: `email='${userEmail}'` };
+
       const userHeaders = getOAuthHeaders(
-        usersUrl,
+        usersBaseUrl,
+        userParams,
         'GET',
         clientId,
         clientSecret
       );
 
       const userResponse = await axios.get<{ users: ClassLinkUser[] }>(
-        usersUrl,
-        { headers: { ...userHeaders } }
+        usersBaseUrl,
+        {
+          params: userParams,
+          headers: { ...userHeaders },
+        }
       );
+
       const users = userResponse.data.users;
 
       if (!users || users.length === 0) {
-        console.warn(`No ClassLink user found for email: ${userEmail}`);
+        console.warn(`[ClassLink] No user found for email: ${userEmail}`);
         return { classes: [], studentsByClass: {} };
       }
 
       const teacherSourcedId = users[0].sourcedId;
+      console.log(`[ClassLink] Found teacher: ${teacherSourcedId}`);
 
+      // Step 2: Get classes for this teacher
       const classesUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users/${teacherSourcedId}/classes`;
       const classesHeaders = getOAuthHeaders(
         classesUrl,
+        {},
         'GET',
         clientId,
         clientSecret
@@ -128,7 +143,9 @@ export const getClassLinkRosterV1 = functions
         { headers: { ...classesHeaders } }
       );
       const classes = classesResponse.data.classes;
+      console.log(`[ClassLink] Found ${classes.length} classes`);
 
+      // Step 3: Get students for each class
       const studentsByClass: Record<string, ClassLinkStudent[]> = {};
 
       await Promise.all(
@@ -136,6 +153,7 @@ export const getClassLinkRosterV1 = functions
           const studentsUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/classes/${cls.sourcedId}/students`;
           const studentsHeaders = getOAuthHeaders(
             studentsUrl,
+            {},
             'GET',
             clientId,
             clientSecret
@@ -147,7 +165,7 @@ export const getClassLinkRosterV1 = functions
             studentsByClass[cls.sourcedId] = studentsResponse.data.users ?? [];
           } catch (err) {
             console.error(
-              `Error fetching students for class ${cls.sourcedId}:`,
+              `[ClassLink] Error fetching students for class ${cls.sourcedId}:`,
               err
             );
             studentsByClass[cls.sourcedId] = [];
@@ -162,17 +180,18 @@ export const getClassLinkRosterV1 = functions
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
+        const status = axiosError.response?.status;
         console.error(
-          'ClassLink API Error:',
+          `[ClassLink] API Error (${status}):`,
           axiosError.response?.data ?? axiosError.message
         );
         throw new functions.https.HttpsError(
           'internal',
-          `Failed to fetch data from ClassLink: ${axiosError.message}`
+          `Failed to fetch data from ClassLink (${status}): ${axiosError.message}`
         );
       }
       const genericError = error as Error;
-      console.error('ClassLink API Error:', genericError.message);
+      console.error('[ClassLink] Generic Error:', genericError.message);
       throw new functions.https.HttpsError(
         'internal',
         `Failed to fetch data from ClassLink: ${genericError.message}`
