@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Upload, Trash2 } from 'lucide-react';
 import { WidgetData } from '../../../types';
-import { trimImageWhitespace } from '../../../utils/imageProcessing';
+import {
+  trimImageWhitespace,
+  removeBackground,
+} from '../../../utils/imageProcessing';
 
 const DEFAULT_STICKERS = [
   // Star
@@ -52,7 +55,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       reader.onload = async (ev) => {
         const result = ev.target?.result as string;
         try {
-          const trimmed = await trimImageWhitespace(result);
+          // Remove background first (simple corner flood fill), then trim
+          const noBg = await removeBackground(result);
+          const trimmed = await trimImageWhitespace(noBg);
           const newStickers = [...customStickers, trimmed];
           setCustomStickers(newStickers);
           localStorage.setItem('custom_stickers', JSON.stringify(newStickers));
