@@ -16,9 +16,9 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       >
         {/* Glossy gradient overlay */}
         {gradientOverlay && (
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none rounded-[inherit]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none rounded-[inherit] -z-10" />
         )}
-        <div className="relative z-10 h-full">{children}</div>
+        {children}
       </div>
     );
   }
