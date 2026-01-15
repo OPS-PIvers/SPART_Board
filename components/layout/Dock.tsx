@@ -371,7 +371,7 @@ export const Dock: React.FC = () => {
         {isExpanded ? (
           <>
             {/* Expanded Toolbar with integrated minimize button */}
-            <GlassCard className="px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+            <GlassCard className="relative px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
               {filteredTools.length > 0 ? (
                 <>
                   <DndContext

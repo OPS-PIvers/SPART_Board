@@ -517,7 +517,7 @@ export const Sidebar: React.FC = () => {
     <>
       <GlassCard
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all"
+        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all relative"
       >
         <button
           onClick={() => setIsOpen(true)}
