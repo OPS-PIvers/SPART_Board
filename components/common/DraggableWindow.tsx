@@ -168,7 +168,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     <GlassCard
       ref={windowRef}
       onMouseDown={handleMouseDown}
-      className={`absolute select-none widget group overflow-hidden transition-all ${
+      className={`absolute select-none widget group overflow-hidden ${
         isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
       } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50 scale-[1.01]' : ''}`}
       style={{
@@ -189,7 +189,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         >
           {/* Front Face */}
           <div
-            className={`front relative h-full flex flex-col ${
+            className={`front absolute inset-0 w-full h-full flex flex-col ${
               hasBackground ? backgroundClass : 'bg-white/20'
             }`}
             style={{
@@ -345,7 +345,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
           {/* Back Face (Settings) */}
           <div
-            className="back rounded-3xl overflow-hidden relative h-full flex flex-col bg-white/50 backdrop-blur-xl"
+            className="back absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col bg-white/50 backdrop-blur-xl"
             style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
           >
             <div className="flex items-center justify-between px-3 py-2 bg-white/40 border-b border-white/20">
