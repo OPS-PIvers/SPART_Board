@@ -1,4 +1,8 @@
-import * as functions from 'firebase-functions';
+import {
+  onCall,
+  HttpsError,
+  CallableRequest,
+} from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
@@ -54,18 +58,20 @@ function getOAuthHeaders(
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
-export const getClassLinkRoster = functions.https.onCall(
+export const getClassLinkRoster = onCall(
   {
     secrets: [
       'CLASSLINK_CLIENT_ID',
       'CLASSLINK_CLIENT_SECRET',
       'CLASSLINK_TENANT_URL',
     ],
+    cors: true, // Explicitly enable CORS
+    region: 'us-central1',
   },
-  async (request: functions.https.CallableRequest) => {
+  async (request: CallableRequest) => {
     // 1. Ensure user is authenticated
     if (!request.auth) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'unauthenticated',
         'The function must be called while authenticated.'
       );
@@ -73,7 +79,7 @@ export const getClassLinkRoster = functions.https.onCall(
 
     const userEmail = request.auth.token.email;
     if (!userEmail) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'invalid-argument',
         'User must have an email associated with their account.'
       );
@@ -84,7 +90,7 @@ export const getClassLinkRoster = functions.https.onCall(
     const tenantUrl = process.env.CLASSLINK_TENANT_URL;
 
     if (!clientId || !clientSecret || !tenantUrl) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'internal',
         'ClassLink configuration is missing on the server.'
       );
@@ -168,14 +174,14 @@ export const getClassLinkRoster = functions.https.onCall(
           'ClassLink API Error:',
           axiosError.response?.data ?? axiosError.message
         );
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           'internal',
           `Failed to fetch data from ClassLink: ${axiosError.message}`
         );
       }
       const genericError = error as Error;
       console.error('ClassLink API Error:', genericError.message);
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'internal',
         `Failed to fetch data from ClassLink: ${genericError.message}`
       );
