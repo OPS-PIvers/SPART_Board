@@ -47,6 +47,8 @@ const DockItem = ({
   onDeleteAll,
   onFolder,
   onRemoveFromDock,
+  isEditMode,
+  onLongPress,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -56,6 +58,8 @@ const DockItem = ({
   onDeleteAll: () => void;
   onFolder: () => void;
   onRemoveFromDock: () => void;
+  isEditMode: boolean;
+  onLongPress: () => void;
 }) => {
   const {
     attributes,
@@ -64,10 +68,12 @@ const DockItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: tool.type });
+  } = useSortable({
+    id: tool.type,
+    disabled: !isEditMode, // Only allow dragging in Edit Mode
+  });
 
   const [showPopover, setShowPopover] = useState(false);
-  const [isLongPress, setIsLongPress] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -80,9 +86,9 @@ const DockItem = ({
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
   const handlePointerDown = () => {
-    setIsLongPress(false);
+    if (isEditMode) return;
     longPressTimer.current = setTimeout(() => {
-      setIsLongPress(true);
+      onLongPress();
     }, 600); // 600ms long press threshold
   };
 
@@ -94,11 +100,10 @@ const DockItem = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent click if it was a long press or if we are in "remove mode"
-    if (isLongPress) {
+    // In edit mode, clicking just shakes the icon (or does nothing for now)
+    if (isEditMode) {
       e.preventDefault();
       e.stopPropagation();
-      // We do NOT clear isLongPress here. It is cleared by the backdrop or the X button.
       return;
     }
 
@@ -131,6 +136,7 @@ const DockItem = ({
     <div className="relative flex flex-col items-center">
       {/* Popover Menu - Rendered in Portal to avoid clipping */}
       {showPopover &&
+        !isEditMode && // Hide popovers in edit mode
         minimizedWidgets.length > 0 &&
         popoverPos &&
         createPortal(
@@ -222,30 +228,18 @@ const DockItem = ({
 
       {/* Dock Icon */}
       <div className="relative group/icon">
-        {/* Floating Remove Button (Visible on Long Press) */}
-        {isLongPress && (
+        {/* Remove Button (Visible in Edit Mode) */}
+        {isEditMode && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onRemoveFromDock();
-              setIsLongPress(false);
             }}
-            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 animate-in zoom-in duration-200"
+            className="absolute -top-2 -right-2 z-50 bg-slate-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all animate-in zoom-in duration-200"
             title="Remove from Dock"
           >
-            <X className="w-3 h-3" />
+            <X className="w-2.5 h-2.5" />
           </button>
-        )}
-
-        {/* Invisible backdrop to dismiss remove mode */}
-        {isLongPress && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsLongPress(false);
-            }}
-          />
         )}
 
         <button
@@ -265,12 +259,14 @@ const DockItem = ({
           onMouseLeave={handlePointerUp}
           onClick={handleClick}
           className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
-            isLongPress ? 'animate-bounce z-50 cursor-default' : ''
+            isEditMode
+              ? 'animate-jiggle cursor-grab active:cursor-grabbing'
+              : ''
           }`}
         >
           <div
             className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg ${
-              isLongPress ? '' : 'group-hover:scale-110'
+              isEditMode ? '' : 'group-hover:scale-110'
             } transition-all duration-200 relative`}
           >
             <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
@@ -306,6 +302,8 @@ export const Dock: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
   const [showLiveInfo, setShowLiveInfo] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); // Global Edit Mode State
+
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
   const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
@@ -322,6 +320,10 @@ export const Dock: React.FC = () => {
     if (showLiveInfo) setShowLiveInfo(false);
   }, [liveButtonRef]);
 
+  // Handle exiting edit mode when clicking outside the dock area
+  // We'll use a backdrop for this to ensure it catches clicks
+  const exitEditMode = () => setIsEditMode(false);
+
   const openClassEditor = () => {
     addWidget('classes');
     setShowRosterMenu(false);
@@ -332,6 +334,11 @@ export const Dock: React.FC = () => {
       setClassesAnchorRect(classesButtonRef.current.getBoundingClientRect());
     }
     setShowRosterMenu(!showRosterMenu);
+  };
+
+  // Add long press handler for global edit mode
+  const handleLongPress = () => {
+    setIsEditMode(true);
   };
 
   const classToolMetadata = useMemo(() => {
@@ -447,10 +454,28 @@ export const Dock: React.FC = () => {
         />
       )}
       <div className="relative group/dock">
+        {/* Edit Mode Overlay - clicking background exits edit mode */}
+        {isEditMode && (
+          <div
+            className="fixed inset-0 z-[9998] cursor-default"
+            onClick={exitEditMode}
+          />
+        )}
+
         {isExpanded ? (
           <>
             {/* Expanded Toolbar with integrated minimize button */}
             <GlassCard className="relative px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+              {/* Done Button for Edit Mode */}
+              {isEditMode && (
+                <button
+                  onClick={exitEditMode}
+                  className="absolute -top-3 -right-3 z-[10001] px-3 py-1 bg-brand-blue-primary text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-lg hover:bg-brand-blue-dark transition-transform hover:scale-105 active:scale-95"
+                >
+                  Done
+                </button>
+              )}
+
               {filteredTools.length > 0 ? (
                 <>
                   <DndContext
@@ -484,6 +509,8 @@ export const Dock: React.FC = () => {
                             onRemoveFromDock={() => {
                               toggleToolVisibility(tool.type);
                             }}
+                            isEditMode={isEditMode}
+                            onLongPress={handleLongPress}
                           />
                         );
                       })}
