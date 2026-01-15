@@ -1,7 +1,22 @@
 import React, { useState } from 'react';
-import { WidgetData, Student, ClassRoster } from '../../types';
+import {
+  WidgetData,
+  Student,
+  ClassRoster,
+  ClassLinkClass,
+  ClassLinkStudent,
+} from '../../types';
 import { useDashboard } from '../../context/useDashboard';
-import { Plus, Trash2, Save, Star, Edit2 } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Save,
+  Star,
+  Edit2,
+  RefreshCw,
+  ExternalLink,
+} from 'lucide-react';
+import { classLinkService } from '../../utils/classlinkService';
 
 interface Props {
   widget: WidgetData;
@@ -135,11 +150,21 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
     deleteRoster,
     activeRosterId,
     setActiveRoster,
+    addToast,
   } = useDashboard();
 
-  const [view, setView] = useState<'list' | 'edit'>('list');
+  const [view, setView] = useState<'list' | 'edit' | 'classlink'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // ClassLink state
+  const [classLinkLoading, setClassLinkLoading] = useState(false);
+  const [classLinkClasses, setClassLinkClasses] = useState<ClassLinkClass[]>(
+    []
+  );
+  const [classLinkStudents, setClassLinkStudents] = useState<
+    Record<string, ClassLinkStudent[]>
+  >({});
 
   const onSave = async (name: string, students: Student[]) => {
     if (!editingId) {
@@ -149,6 +174,36 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
     }
     setView('list');
     setEditingId(null);
+  };
+
+  const handleFetchClassLink = async () => {
+    setClassLinkLoading(true);
+    setView('classlink');
+    try {
+      const data = await classLinkService.getRosters(true);
+      setClassLinkClasses(data.classes);
+      setClassLinkStudents(data.studentsByClass);
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to fetch from ClassLink. Check console.', 'error');
+      setView('list');
+    } finally {
+      setClassLinkLoading(false);
+    }
+  };
+
+  const importClassLinkClass = async (cls: ClassLinkClass) => {
+    const students: Student[] = (classLinkStudents[cls.sourcedId] || []).map(
+      (s) => ({
+        id: crypto.randomUUID(),
+        firstName: s.givenName,
+        lastName: s.familyName,
+      })
+    );
+
+    await addRoster(cls.title, students);
+    addToast(`Imported ${cls.title}`);
+    setView('list');
   };
 
   const editingRoster = rosters.find((r) => r.id === editingId) ?? null;
@@ -186,15 +241,28 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               </div>
             </div>
           )}
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setView('edit');
-            }}
-            className="mb-2 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm font-bold shadow-sm"
-          >
-            <Plus size={16} /> Create New Class
-          </button>
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setView('edit');
+              }}
+              className="flex-1 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm font-bold shadow-sm"
+            >
+              <Plus size={16} /> Create New Class
+            </button>
+            <button
+              onClick={handleFetchClassLink}
+              className="bg-white text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm font-bold shadow-sm transition-colors"
+              title="Sync from ClassLink"
+            >
+              <RefreshCw
+                size={16}
+                className={classLinkLoading ? 'animate-spin' : ''}
+              />
+              ClassLink
+            </button>
+          </div>
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {rosters.length === 0 && (
               <div className="text-center text-slate-400 py-8 text-sm italic">
@@ -265,6 +333,60 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           onSave={onSave}
           onBack={() => setView('list')}
         />
+      )}
+
+      {view === 'classlink' && (
+        <div className="flex flex-col h-full p-2">
+          <div className="flex justify-between items-center mb-3">
+            <button
+              onClick={() => setView('list')}
+              className="text-xs text-slate-500 hover:text-blue-600 font-bold uppercase tracking-wider"
+            >
+              &larr; Cancel
+            </button>
+            <h3 className="font-bold text-slate-800 text-sm">
+              ClassLink Rosters
+            </h3>
+            <div className="w-10"></div>
+          </div>
+
+          {classLinkLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3">
+              <RefreshCw size={32} className="animate-spin text-blue-500" />
+              <p className="text-sm font-medium">Connecting to ClassLink...</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {classLinkClasses.length === 0 ? (
+                <div className="text-center text-slate-400 py-8 text-sm italic">
+                  No classes found in ClassLink.
+                </div>
+              ) : (
+                classLinkClasses.map((cls) => (
+                  <div
+                    key={cls.sourcedId}
+                    className="p-3 border border-slate-200 rounded-lg bg-white flex justify-between items-center hover:shadow-md transition-shadow"
+                  >
+                    <div>
+                      <div className="font-bold text-slate-800">
+                        {cls.title}
+                      </div>
+                      <div className="text-xs text-slate-500 font-medium">
+                        {classLinkStudents[cls.sourcedId]?.length || 0} Students
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => importClassLinkClass(cls)}
+                      className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1"
+                    >
+                      <ExternalLink size={14} /> Import
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

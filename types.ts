@@ -25,6 +25,25 @@ export type WidgetType =
 
 // --- ROSTER SYSTEM TYPES ---
 
+export interface ClassLinkClass {
+  sourcedId: string;
+  title: string;
+  classCode?: string;
+  subject?: string;
+}
+
+export interface ClassLinkStudent {
+  sourcedId: string;
+  givenName: string;
+  familyName: string;
+  email: string;
+}
+
+export interface ClassLinkData {
+  classes: ClassLinkClass[];
+  studentsByClass: Record<string, ClassLinkStudent[]>;
+}
+
 export interface Student {
   id: string;
   firstName: string;
