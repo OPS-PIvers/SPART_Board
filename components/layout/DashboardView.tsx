@@ -69,7 +69,13 @@ export const DashboardView: React.FC = () => {
         const x = e.clientX - w / 2;
         const y = e.clientY - h / 2;
 
-        addWidget('sticker', { icon, color, rotation: 0 }, { x, y, w, h });
+        addWidget('sticker', {
+          x,
+          y,
+          w,
+          h,
+          config: { icon, color, rotation: 0 },
+        });
       } catch (err) {
         console.error('Failed to parse spart-sticker data', err);
       }
@@ -99,7 +105,13 @@ export const DashboardView: React.FC = () => {
         const x = e.clientX - w / 2;
         const y = e.clientY - h / 2;
 
-        addWidget('sticker', { url, rotation: 0 }, { x, y, w, h });
+        addWidget('sticker', {
+          x,
+          y,
+          w,
+          h,
+          config: { url, rotation: 0 },
+        });
       } catch (err) {
         console.error('Failed to parse sticker data', err);
       }

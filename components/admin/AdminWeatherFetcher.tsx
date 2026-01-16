@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { useAuth } from '../../context/useAuth';
-import { WeatherGlobalConfig } from '../../types';
+import { db } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
+import { WeatherGlobalConfig } from '@/types';
 
 // Constants shared with WeatherWidget
 const STATION_CONFIG = {

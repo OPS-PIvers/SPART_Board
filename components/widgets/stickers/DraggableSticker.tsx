@@ -7,9 +7,9 @@ import {
   RotateCw,
   Maximize2,
 } from 'lucide-react';
-import { WidgetData, StickerConfig } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
-import { useClickOutside } from '../../../hooks/useClickOutside';
+import { WidgetData, StickerConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface DraggableStickerProps {
   widget: WidgetData;

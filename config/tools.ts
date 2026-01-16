@@ -89,10 +89,10 @@ export const TOOLS: ToolMetadata[] = [
     color: 'bg-rose-600',
   },
   {
-    type: 'sticker-library',
+    type: 'stickers',
     icon: Sticker,
     label: 'Stickers',
-    color: 'bg-pink-600',
+    color: 'bg-pink-500',
   },
   {
     type: 'sticker-library',

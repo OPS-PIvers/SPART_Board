@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { LiveControl } from '../../../components/widgets/LiveControl';
+import { LiveControl } from '@/components/widgets/LiveControl';
 import { vi, describe, it, expect } from 'vitest';
 
 describe('LiveControl', () => {

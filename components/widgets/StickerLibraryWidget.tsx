@@ -37,15 +37,13 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
   };
 
   const placeSticker = (url: string) => {
-    addWidget(
-      'sticker',
-      {
-        url: url,
-        size: 150,
-        rotation: 0,
-      },
-      { x: 100, y: 100, w: 150, h: 150 }
-    );
+    addWidget('sticker', {
+      x: 100,
+      y: 100,
+      w: 150,
+      h: 150,
+      config: { url, rotation: 0 },
+    });
   };
 
   const removeStickerFromLibrary = (index: number) => {

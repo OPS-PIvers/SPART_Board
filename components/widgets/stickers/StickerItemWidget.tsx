@@ -1,5 +1,5 @@
 import React from 'react';
-import { WidgetData, StickerConfig } from '../../../types';
+import { WidgetData, StickerConfig } from '@/types';
 import { DraggableSticker } from './DraggableSticker';
 import * as Icons from 'lucide-react';
 

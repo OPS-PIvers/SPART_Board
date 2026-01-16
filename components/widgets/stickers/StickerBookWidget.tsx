@@ -1,10 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, Trash2, Loader2 } from 'lucide-react';
-import { WidgetData } from '../../../types';
-import {
-  trimImageWhitespace,
-  removeBackground,
-} from '../../../utils/imageProcessing';
+import { WidgetData } from '@/types';
+import { trimImageWhitespace, removeBackground } from '@/utils/imageProcessing';
 
 const DEFAULT_STICKERS = [
   // Star
