@@ -23,9 +23,75 @@ const TEAM_COLORS = [
   'bg-pink-500',
   'bg-indigo-500',
   'bg-orange-500',
-  'bg-teal-500',
+  'bg-teal-600', // Changed from 500 to 600 per review
   'bg-cyan-500',
 ];
+
+const COLOR_STYLES: Record<
+  string,
+  { label: string; score: string; button: string }
+> = {
+  'bg-blue-500': {
+    label: 'text-blue-600',
+    score: 'text-blue-700',
+    button: 'text-blue-700',
+  },
+  'bg-red-500': {
+    label: 'text-red-600',
+    score: 'text-red-700',
+    button: 'text-red-700',
+  },
+  'bg-green-500': {
+    label: 'text-green-600',
+    score: 'text-green-700',
+    button: 'text-green-700',
+  },
+  'bg-yellow-500': {
+    label: 'text-yellow-600',
+    score: 'text-yellow-700',
+    button: 'text-yellow-700',
+  },
+  'bg-purple-500': {
+    label: 'text-purple-600',
+    score: 'text-purple-700',
+    button: 'text-purple-700',
+  },
+  'bg-pink-500': {
+    label: 'text-pink-600',
+    score: 'text-pink-700',
+    button: 'text-pink-700',
+  },
+  'bg-indigo-500': {
+    label: 'text-indigo-600',
+    score: 'text-indigo-700',
+    button: 'text-indigo-700',
+  },
+  'bg-orange-500': {
+    label: 'text-orange-600',
+    score: 'text-orange-700',
+    button: 'text-orange-700',
+  },
+  'bg-teal-600': {
+    label: 'text-teal-600',
+    score: 'text-teal-700',
+    button: 'text-teal-700',
+  },
+  'bg-cyan-500': {
+    label: 'text-cyan-600',
+    score: 'text-cyan-700',
+    button: 'text-cyan-700',
+  },
+};
+
+const getStyles = (colorClass: string) => {
+  return (
+    COLOR_STYLES[colorClass] ?? {
+      label: 'text-slate-600',
+      score: 'text-slate-700',
+      button: 'text-slate-700',
+    }
+  );
+};
 
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -82,28 +148,27 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       {teams.map((team) => {
         // Parse color base for backgrounds
         const colorClass = team.color ?? 'bg-blue-500';
-        // Extract base color name (e.g., 'blue') from 'bg-blue-500' for text classes
-        const baseColor = colorClass.split('-')[1] || 'blue';
+        const styles = getStyles(colorClass);
 
         return (
           <div
             key={team.id}
-            className={`flex flex-col items-center justify-center ${colorClass.replace('bg-', 'bg-opacity-20 bg-')} rounded-2xl p-2 border border-white/20 relative group`}
+            className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
           >
             <div
-              className={`text-[10px] font-black uppercase tracking-widest text-${baseColor}-600 mb-1 text-center line-clamp-1 w-full px-2`}
+              className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
             >
               {team.name}
             </div>
             <div
-              className={`text-4xl lg:text-5xl font-black text-${baseColor}-700 mb-2 tabular-nums drop-shadow-sm`}
+              className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
             >
               {team.score}
             </div>
             <div className="flex gap-2 opacity-100 transition-opacity">
               <button
                 onClick={() => updateScore(team.id, -1)}
-                className={`p-1.5 bg-white/40 text-${baseColor}-700 rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
+                className={`p-1.5 bg-white/40 ${styles.button} rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
               >
                 <Minus className="w-4 h-4" />
               </button>
