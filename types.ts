@@ -244,6 +244,22 @@ export interface WeatherConfig {
   source?: 'openweather' | 'earth_networks';
 }
 
+export interface WeatherTemperatureRange {
+  id: string;
+  min: number;
+  max: number;
+  message: string;
+  imageUrl?: string;
+}
+
+export interface WeatherGlobalConfig {
+  fetchingStrategy: 'client' | 'admin_proxy';
+  updateFrequencyMinutes: number;
+  temperatureRanges: WeatherTemperatureRange[];
+  source?: 'openweather' | 'earth_networks';
+  city?: string;
+}
+
 export interface ScheduleConfig {
   items: ScheduleItem[];
 }

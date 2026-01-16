@@ -1,6 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, WeatherConfig } from '../../types';
+import { useAuth } from '../../context/useAuth';
+import { WidgetData, WeatherConfig, WeatherGlobalConfig } from '../../types';
 import {
   Sun,
   Cloud,
@@ -32,6 +35,14 @@ interface EarthNetworksResponse {
   };
 }
 
+interface GlobalWeatherData {
+  temp: number;
+  condition: string;
+  locationName: string;
+  updatedAt: number;
+  source?: string;
+}
+
 const STATION_CONFIG = {
   id: 'BLLST',
   lat: 44.99082,
@@ -58,6 +69,7 @@ const EARTH_NETWORKS_ICONS = {
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast } = useDashboard();
+  const { featurePermissions } = useAuth();
   const config = widget.config as WeatherConfig;
   const {
     temp = 72,
@@ -71,12 +83,72 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const weatherPermission = featurePermissions.find(
+    (p) => p.widgetType === 'weather'
+  );
+  const globalConfig = weatherPermission?.config as
+    | WeatherGlobalConfig
+    | undefined;
+
   const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
     | string
     | undefined;
 
+  // Admin Proxy Subscription
+  useEffect(() => {
+    if (!isAuto) return;
+    if (globalConfig?.fetchingStrategy !== 'admin_proxy') return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'global_weather', 'current'),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as GlobalWeatherData;
+          // Avoid infinite loop: check if data actually changed significantly
+          if (
+            Math.round(data.temp) !== Math.round(temp) ||
+            data.condition !== condition ||
+            data.updatedAt !== lastSync
+          ) {
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                temp: data.temp,
+                condition: data.condition,
+                locationName: data.locationName,
+                lastSync: data.updatedAt,
+              },
+            });
+          }
+        }
+      },
+      (error) => {
+        console.error('Failed to subscribe to global weather:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [
+    isAuto,
+    globalConfig?.fetchingStrategy,
+    widget.id,
+    updateWidget,
+    temp,
+    condition,
+    lastSync,
+    config,
+  ]);
+
   const handleRefresh = useCallback(async () => {
     if (!isAuto || isSyncing) return;
+
+    // If Admin Proxy is on, we don't fetch manually, we just wait for subscription.
+    // But user clicked "Refresh", so maybe we can trigger a check or just toast.
+    if (globalConfig?.fetchingStrategy === 'admin_proxy') {
+      addToast('Syncing with school station...', 'info');
+      return;
+    }
+
     setIsSyncing(true);
 
     try {
@@ -147,7 +219,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
         );
         const data = (await res.json()) as OpenWeatherData;
-        if (data.cod !== 200) throw new Error(String(data.message));
+        if (Number(data.cod) !== 200) throw new Error(String(data.message));
 
         updateWidget(widget.id, {
           config: {
@@ -167,6 +239,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }, [
     isAuto,
+    globalConfig?.fetchingStrategy,
     source,
     city,
     systemKey,
@@ -210,6 +283,34 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const clothing = getClothing();
 
+  // Custom Message/Image Logic
+  let displayMessage: React.ReactNode = (
+    <>
+      Today is <span className="text-indigo-600 uppercase">{condition}</span>.
+      <br />
+      Wear a <span className="text-indigo-600">{clothing.label}</span>!
+    </>
+  );
+  let displayImage = <span className="text-2xl">{clothing.icon}</span>;
+
+  if (globalConfig?.temperatureRanges) {
+    const match = globalConfig.temperatureRanges.find(
+      (r) => temp >= r.min && temp <= r.max
+    );
+    if (match) {
+      displayMessage = match.message;
+      if (match.imageUrl) {
+        displayImage = (
+          <img
+            src={match.imageUrl}
+            alt="Weather"
+            className="w-10 h-10 object-cover rounded-lg"
+          />
+        );
+      }
+    }
+  }
+
   return (
     <div className="flex flex-col items-center justify-between h-full p-4 gap-2 relative">
       <div className="flex flex-col items-center justify-center gap-2">
@@ -229,12 +330,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
 
         <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center gap-3">
-          <span className="text-2xl">{clothing.icon}</span>
+          <div className="shrink-0">{displayImage}</div>
           <div className="text-xs font-bold text-slate-700 leading-tight">
-            Today is{' '}
-            <span className="text-indigo-600 uppercase">{condition}</span>.
-            <br />
-            Wear a <span className="text-indigo-600">{clothing.label}</span>!
+            {displayMessage}
           </div>
         </div>
       </div>
@@ -284,6 +382,17 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     locationName: _locationName = 'Classroom',
     source = 'openweather',
   } = config;
+
+  // We should also access global config to hide controls if forced by admin proxy
+  const { featurePermissions } = useAuth();
+  const weatherPermission = featurePermissions.find(
+    (p) => p.widgetType === 'weather'
+  );
+  const globalConfig = weatherPermission?.config as
+    | WeatherGlobalConfig
+    | undefined;
+
+  const isAdminProxy = globalConfig?.fetchingStrategy === 'admin_proxy';
 
   const [loading, setLoading] = useState(false);
 
@@ -419,7 +528,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const data = (await res.json()) as OpenWeatherData;
 
-      if (data.cod !== 200) throw new Error(data.message ?? 'Failed to fetch');
+      if (Number(data.cod) !== 200)
+        throw new Error(data.message ?? 'Failed to fetch');
 
       updateWidget(widget.id, {
         config: {
@@ -556,115 +666,126 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       ) : (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {/* Source Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
-            <button
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, source: 'openweather' },
-                })
-              }
-              className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source === 'openweather' || !source ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-            >
-              OpenWeather
-            </button>
-            <button
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, source: 'earth_networks' },
-                })
-              }
-              className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source === 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
-            >
-              School Station
-            </button>
-          </div>
-
-          {source === 'earth_networks' ? (
-            <div className="space-y-3">
-              <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-indigo-900 uppercase">
-                    Station Feed Ready
-                  </span>
-                </div>
-                <p className="text-xs text-indigo-800 font-medium leading-tight">
-                  Connected to{' '}
-                  <span className="font-bold">
-                    {STATION_CONFIG.name} ({STATION_CONFIG.id})
-                  </span>{' '}
-                  weather station.
-                </p>
-              </div>
-              <button
-                onClick={fetchEarthNetworksWeather}
-                disabled={loading}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-md shadow-indigo-200"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
-                />
-                Refresh Station Data
-              </button>
+          {isAdminProxy ? (
+            <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+              <p className="text-[10px] font-bold text-blue-800 leading-tight flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Weather is managed by your administrator.
+              </p>
             </div>
           ) : (
             <>
-              {!hasApiKey && (
-                <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl items-start">
-                  <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[10px] font-bold text-amber-800 leading-tight">
-                    Weather service is not configured. Please contact your
-                    administrator to set up the API key.
-                  </p>
-                </div>
-              )}
+              {/* Source Toggle */}
+              <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
+                <button
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      config: { ...config, source: 'openweather' },
+                    })
+                  }
+                  className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source === 'openweather' || !source ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                >
+                  OpenWeather
+                </button>
+                <button
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      config: { ...config, source: 'earth_networks' },
+                    })
+                  }
+                  className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${source === 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                >
+                  School Station
+                </button>
+              </div>
 
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-                  <MapPin className="w-3 h-3" /> City / Zip
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. London, US"
-                    value={city}
-                    onChange={(e) =>
-                      updateWidget(widget.id, {
-                        config: { ...config, city: e.target.value },
-                      })
-                    }
-                    disabled={!hasApiKey}
-                    className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 disabled:opacity-50 disabled:bg-slate-50"
-                  />
+              {source === 'earth_networks' ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-[10px] font-bold text-indigo-900 uppercase">
+                        Station Feed Ready
+                      </span>
+                    </div>
+                    <p className="text-xs text-indigo-800 font-medium leading-tight">
+                      Connected to{' '}
+                      <span className="font-bold">
+                        {STATION_CONFIG.name} ({STATION_CONFIG.id})
+                      </span>{' '}
+                      weather station.
+                    </p>
+                  </div>
                   <button
-                    onClick={syncByCity}
-                    disabled={loading || !hasApiKey}
-                    className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    onClick={fetchEarthNetworksWeather}
+                    disabled={loading}
+                    className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-md shadow-indigo-200"
                   >
                     <RefreshCw
                       className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
                     />
+                    Refresh Station Data
                   </button>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {!hasApiKey && (
+                    <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl items-start">
+                      <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[10px] font-bold text-amber-800 leading-tight">
+                        Weather service is not configured. Please contact your
+                        administrator to set up the API key.
+                      </p>
+                    </div>
+                  )}
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-100" />
-                </div>
-                <div className="relative flex justify-center text-[8px] font-black text-slate-300 uppercase">
-                  <span className="bg-white px-2">OR</span>
-                </div>
-              </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                      <MapPin className="w-3 h-3" /> City / Zip
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. London, US"
+                        value={city}
+                        onChange={(e) =>
+                          updateWidget(widget.id, {
+                            config: { ...config, city: e.target.value },
+                          })
+                        }
+                        disabled={!hasApiKey}
+                        className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 disabled:opacity-50 disabled:bg-slate-50"
+                      />
+                      <button
+                        onClick={syncByCity}
+                        disabled={loading || !hasApiKey}
+                        className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                      >
+                        <RefreshCw
+                          className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+                        />
+                      </button>
+                    </div>
+                  </div>
 
-              <button
-                onClick={syncByLocation}
-                disabled={loading || !hasApiKey}
-                className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
-              >
-                <MapPin className="w-4 h-4" /> Use Current Location
-              </button>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-100" />
+                    </div>
+                    <div className="relative flex justify-center text-[8px] font-black text-slate-300 uppercase">
+                      <span className="bg-white px-2">OR</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={syncByLocation}
+                    disabled={loading || !hasApiKey}
+                    className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                  >
+                    <MapPin className="w-4 h-4" /> Use Current Location
+                  </button>
+                </>
+              )}
             </>
           )}
         </div>
