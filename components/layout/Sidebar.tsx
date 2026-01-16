@@ -812,7 +812,10 @@ export const Sidebar: React.FC = () => {
         <div className="fixed inset-0 z-[10000] flex">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              setActiveSection('main');
+            }}
           />
           <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
             {/* Header */}
@@ -838,7 +841,10 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    setActiveSection('main');
+                  }}
                   className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 text-slate-500" />
@@ -1236,130 +1242,120 @@ export const Sidebar: React.FC = () => {
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
-                  <div className="relative mb-4">
-                    {user?.photoURL ? (
-                      <img
-                        src={user.photoURL}
-                        alt=""
-                        className="w-20 h-20 rounded-full border-4 border-brand-blue-lighter shadow-md"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-brand-blue-primary flex items-center justify-center text-2xl font-black text-white shadow-md">
-                        {user?.displayName?.charAt(0).toUpperCase()}
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
+                      Widget Defaults
+                    </h4>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                      <label className="text-xs font-black text-slate-700 uppercase tracking-tight block mb-3">
+                        Default Widget Transparency
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={
+                            activeDashboard?.settings
+                              ?.defaultWidgetTransparency ?? 0.2
+                          }
+                          onChange={(e) =>
+                            updateDashboardSettings({
+                              defaultWidgetTransparency: parseFloat(
+                                e.target.value
+                              ),
+                            })
+                          }
+                          className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="min-w-[3ch] text-xs font-bold text-slate-500 text-right">
+                          {Math.round(
+                            (activeDashboard?.settings
+                              ?.defaultWidgetTransparency ?? 0.2) * 100
+                          )}
+                          %
+                        </span>
                       </div>
-                    )}
-                    <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-full shadow-md border border-slate-100">
-                      <div className="w-3 h-3 bg-emerald-500 rounded-full" />
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                        Applies to all new widgets added to this board.
+                      </p>
                     </div>
                   </div>
-                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">
-                    {user?.displayName}
-                  </h3>
-                  <p className="text-sm text-slate-500 mb-6">{user?.email}</p>
 
-                  <div className="w-full flex flex-col gap-2">
+                  {/* Future global settings will go here */}
+
+                  <div className="flex flex-col gap-2 pt-4">
                     <button
                       onClick={() => {
                         saveCurrentDashboard();
-                        addToast('Board saved manually');
+                        addToast('Settings saved successfully', 'success');
                       }}
-                      className="w-full flex items-center justify-center gap-2 p-3 bg-brand-blue-primary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
+                      className="w-full py-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all flex items-center justify-center gap-2"
                     >
-                      <Save className="w-4 h-4" /> Save Current Board
+                      <Save className="w-4 h-4" />
+                      Save all changes
                     </button>
                     <button
-                      onClick={() => handleShare()}
-                      className="w-full flex items-center justify-center gap-2 p-3 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
+                      onClick={() => setActiveSection('main')}
+                      className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
                     >
-                      <Share2 className="w-4 h-4" /> Share Board Data
+                      Cancel
                     </button>
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
-                    Widget Defaults
-                  </h4>
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-tight block mb-3">
-                      Default Widget Transparency
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={
-                          activeDashboard?.settings
-                            ?.defaultWidgetTransparency ?? 0.2
-                        }
-                        onChange={(e) =>
-                          updateDashboardSettings({
-                            defaultWidgetTransparency: parseFloat(
-                              e.target.value
-                            ),
-                          })
-                        }
-                        className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <span className="min-w-[3ch] text-xs font-bold text-slate-500 text-right">
-                        {Math.round(
-                          (activeDashboard?.settings
-                            ?.defaultWidgetTransparency ?? 0.2) * 100
-                        )}
-                        %
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                      Applies to all new widgets added to this board.
-                    </p>
-                  </div>
-
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
-                    Application
-                  </h4>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setShowAdminSettings(true)}
-                      className="w-full flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-2xl hover:border-brand-blue-primary transition-all text-left"
-                    >
-                      <div className="p-2 rounded-lg bg-slate-100 text-slate-600">
-                        <Settings className="w-5 h-5" />
-                      </div>
-                      <span className="text-sm font-black text-slate-700 uppercase">
-                        Admin Console
-                      </span>
-                    </button>
-                  )}
-                  <button
-                    onClick={signOut}
-                    className="w-full flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-2xl hover:border-brand-red-primary group transition-all text-left"
-                  >
-                    <div className="p-2 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-brand-red-lighter group-hover:text-brand-red-primary transition-colors">
-                      <LogOut className="w-5 h-5" />
-                    </div>
-                    <span className="text-sm font-black text-slate-700 uppercase group-hover:text-brand-red-primary">
-                      Sign Out
-                    </span>
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Footer with subtle branding or version */}
-            <div className="p-4 bg-slate-50 text-center">
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={(e) => void handleFileUpload(e)}
-              />
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
-                SpartBoard v2.0
-              </span>
+            {/* Footer with user profile and sign out */}
+            <div className="border-t border-slate-100 bg-white p-4">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative flex-shrink-0">
+                    {user?.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt=""
+                        className="w-10 h-10 rounded-full border-2 border-brand-blue-lighter shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-brand-blue-primary flex items-center justify-center text-sm font-black text-white shadow-sm">
+                        {user?.displayName?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">
+                      {user?.displayName}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium truncate">
+                      {user?.email}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={signOut}
+                  className="p-2 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl transition-all"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="text-center">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => void handleFileUpload(e)}
+                />
+                <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">
+                  SpartBoard v2.0
+                </span>
+              </div>
             </div>
           </div>
         </div>
