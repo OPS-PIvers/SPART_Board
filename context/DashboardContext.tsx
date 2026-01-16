@@ -18,6 +18,8 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
+  DockItem,
+  DockFolder,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -156,6 +158,11 @@ const validateRoster = (id: string, data: unknown): ClassRoster | null => {
   };
 };
 
+// Helper to migrate legacy visibleTools to dockItems
+const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
+  return visibleTools.map((type) => ({ type: 'tool', toolType: type }));
+};
+
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -183,6 +190,29 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     return TOOLS.map((t) => t.type);
   });
+
+  const [dockItems, setDockItems] = useState<DockItem[]>(() => {
+    const saved = localStorage.getItem('classroom_dock_items');
+    if (saved) {
+      try {
+        return JSON.parse(saved) as DockItem[];
+      } catch (e) {
+        console.error('Failed to parse saved dock items', e);
+      }
+    }
+    // Fallback: migrate from visibleTools if available
+    const savedTools = localStorage.getItem('classroom_visible_tools');
+    if (savedTools) {
+      try {
+        const tools = JSON.parse(savedTools) as WidgetType[];
+        return migrateToDockItems(tools);
+      } catch (e) {
+        console.error('Failed to migrate tools to dock items', e);
+      }
+    }
+    return migrateToDockItems(TOOLS.map((t) => t.type));
+  });
+
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
@@ -479,17 +509,188 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
       return next;
     });
+
+    setDockItems((prev) => {
+      const isVisible = visibleTools.includes(type);
+      let next: DockItem[];
+
+      if (isVisible) {
+        // Remove from dockItems (search globally in tools and folders)
+        next = prev
+          .map((item) => {
+            if (item.type === 'folder') {
+              return {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: item.folder.items.filter((t) => t !== type),
+                },
+              };
+            }
+            return item;
+          })
+          .filter((item) => !(item.type === 'tool' && item.toolType === type));
+      } else {
+        // Add to dockItems (if not already present)
+        const exists = prev.some(
+          (item) =>
+            (item.type === 'tool' && item.toolType === type) ||
+            (item.type === 'folder' && item.folder.items.includes(type))
+        );
+        next = exists ? prev : [...prev, { type: 'tool', toolType: type }];
+      }
+
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
   };
 
   const setAllToolsVisibility = (visible: boolean) => {
-    const next = visible ? TOOLS.map((t) => t.type) : [];
-    setVisibleTools(next);
-    localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
+    const nextTools = visible ? TOOLS.map((t) => t.type) : [];
+    setVisibleTools(nextTools);
+    localStorage.setItem('classroom_visible_tools', JSON.stringify(nextTools));
+
+    const nextDock = visible ? migrateToDockItems(nextTools) : [];
+    setDockItems(nextDock);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(nextDock));
   };
 
   const reorderTools = (tools: WidgetType[]) => {
     setVisibleTools(tools);
     localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
+    // When reordering tools globally, we should ideally reflect this in dockItems
+    // but only for top-level tools. For now, we'll let Dock handle its own reordering.
+  };
+
+  const reorderDockItems = (items: DockItem[]) => {
+    setDockItems(items);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(items));
+  };
+
+  // --- FOLDER ACTIONS ---
+  const addFolder = (name: string) => {
+    const newFolder: DockFolder = {
+      id: crypto.randomUUID(),
+      name,
+      items: [],
+    };
+    const next = [...dockItems, { type: 'folder' as const, folder: newFolder }];
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+    addToast(`Folder "${name}" created`);
+  };
+
+  const renameFolder = (id: string, name: string) => {
+    const next = dockItems.map((item) =>
+      item.type === 'folder' && item.folder.id === id
+        ? { ...item, folder: { ...item.folder, name } }
+        : item
+    );
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+  };
+
+  const deleteFolder = (id: string) => {
+    const folder = dockItems.find(
+      (item) => item.type === 'folder' && item.folder.id === id
+    );
+    if (!folder || folder.type !== 'folder') return;
+
+    // Move items back to root dock
+    const folderItems: DockItem[] = folder.folder.items.map((type) => ({
+      type: 'tool',
+      toolType: type,
+    }));
+
+    const next = dockItems
+      .filter((item) => !(item.type === 'folder' && item.folder.id === id))
+      .concat(folderItems);
+
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+    addToast('Folder removed');
+  };
+
+  const addItemToFolder = (folderId: string, type: WidgetType) => {
+    setDockItems((prev) => {
+      // 1. Remove the tool from wherever it was (top-level or another folder)
+      const cleaned = prev
+        .map((item) => {
+          if (item.type === 'folder') {
+            return {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            };
+          }
+          return item;
+        })
+        .filter((item) => !(item.type === 'tool' && item.toolType === type));
+
+      // 2. Add it to the target folder
+      const next = cleaned.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: [...item.folder.items, type],
+              },
+            }
+          : item
+      );
+
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const removeItemFromFolder = (folderId: string, type: WidgetType) => {
+    setDockItems((prev) => {
+      const next = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            }
+          : item
+      );
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const moveItemOutOfFolder = (
+    folderId: string,
+    type: WidgetType,
+    index: number
+  ) => {
+    setDockItems((prev) => {
+      // Remove from folder
+      const cleaned = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            }
+          : item
+      );
+
+      // Insert at root level at specified index
+      const next = [...cleaned];
+      next.splice(index, 0, { type: 'tool', toolType: type });
+
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
   };
 
   const addToast = (message: string, type: Toast['type'] = 'info') => {
@@ -897,6 +1098,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         activeDashboard,
         toasts,
         visibleTools,
+        dockItems,
         loading,
         gradeFilter,
         setGradeFilter: handleSetGradeFilter,
@@ -921,12 +1123,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         toggleToolVisibility,
         setAllToolsVisibility,
         reorderTools,
+        reorderDockItems,
         rosters,
         activeRosterId,
         addRoster,
         updateRoster,
         deleteRoster,
         setActiveRoster,
+        addFolder,
+        renameFolder,
+        deleteFolder,
+        addItemToFolder,
+        removeItemFromFolder,
+        moveItemOutOfFolder,
       }}
     >
       {children}

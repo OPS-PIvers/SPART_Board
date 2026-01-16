@@ -405,6 +405,16 @@ export interface WidgetData {
   config: WidgetConfig;
 }
 
+export interface DockFolder {
+  id: string;
+  name: string;
+  items: WidgetType[];
+}
+
+export type DockItem =
+  | { type: 'tool'; toolType: WidgetType }
+  | { type: 'folder'; folder: DockFolder };
+
 export interface Dashboard {
   id: string;
   name: string;
