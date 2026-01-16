@@ -8,3 +8,5 @@ pnpm-lock.yaml
 yarn.lock
 public/version.json
 functions/lib
+test-results/
+playwright-report/
