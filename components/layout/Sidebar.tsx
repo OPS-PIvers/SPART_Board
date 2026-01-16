@@ -332,9 +332,13 @@ export const Sidebar: React.FC = () => {
   }, []);
 
   // Sub-tab for design section
+
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
+
+  const [styleTab, setStyleTab] = useState<'window' | 'dock'>('window');
+
   const [pendingStyle, setPendingStyle] =
     useState<GlobalStyle>(DEFAULT_GLOBAL_STYLE);
 
@@ -648,6 +652,22 @@ export const Sidebar: React.FC = () => {
           ) : (
             <Maximize className="w-5 h-5" />
           )}
+        </button>
+
+        <button
+          onClick={() => {
+            if (
+              window.confirm(
+                'Are you sure you want to close ALL widget windows?'
+              )
+            ) {
+              clearAllWidgets();
+            }
+          }}
+          className="p-2 text-brand-red-primary bg-brand-red-lighter/50 hover:bg-brand-red-primary hover:text-white rounded-full transition-all shadow-sm"
+          title="Clear All Windows"
+        >
+          <Trash2 className="w-5 h-5" />
         </button>
 
         <button
@@ -976,32 +996,6 @@ export const Sidebar: React.FC = () => {
                   </div>
                   <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                 </button>
-
-                <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        'Are you sure you want to close ALL widget windows?'
-                      )
-                    ) {
-                      clearAllWidgets();
-                      setIsOpen(false);
-                    }
-                  }}
-                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-red-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="p-4 rounded-xl bg-brand-red-lighter text-brand-red-primary group-hover:bg-brand-red-primary group-hover:text-white transition-colors">
-                    <Trash2 className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight group-hover:text-brand-red-primary transition-colors">
-                      Clear Windows
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Close all active widget windows at once
-                    </p>
-                  </div>
-                </button>
               </div>
 
               {/* BOARDS SECTION */}
@@ -1304,19 +1298,22 @@ export const Sidebar: React.FC = () => {
               </div>
 
               {/* STYLE SECTION */}
+
               <div
-                className={`absolute inset-0 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                className={`absolute inset-0 flex flex-col transition-all duration-300 ease-in-out ${
                   activeSection === 'style'
                     ? 'translate-x-0 opacity-100 visible'
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
-                {/* PREVIEW WINDOW */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                {/* STICKY PREVIEW */}
+
+                <div className="p-6 bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">
                     Live Preview
                   </h3>
-                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner flex flex-col items-center justify-center p-4 gap-4">
+
+                  <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner flex flex-col items-center justify-center p-4 gap-4">
                     <div
                       className="absolute inset-0 opacity-20"
                       style={{
@@ -1325,19 +1322,23 @@ export const Sidebar: React.FC = () => {
                         )
                           ? `url(${activeDashboard.background})`
                           : undefined,
+
                         backgroundColor: activeDashboard?.background.startsWith(
                           'bg-'
                         )
                           ? undefined
                           : activeDashboard?.background,
+
                         backgroundSize: 'cover',
+
                         backgroundPosition: 'center',
                       }}
                     />
 
                     {/* Window Preview */}
+
                     <div
-                      className={`relative z-10 w-full p-4 border border-white/30 shadow-lg backdrop-blur-md ${
+                      className={`relative z-10 w-full p-3 border border-white/30 shadow-lg backdrop-blur-md transition-all duration-300 ${
                         pendingStyle.windowBorderRadius === 'none'
                           ? 'rounded-none'
                           : `rounded-${pendingStyle.windowBorderRadius}`
@@ -1355,18 +1356,20 @@ export const Sidebar: React.FC = () => {
                               : 'font-handwritten'
                         }`}
                       >
-                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">
                           Window
                         </div>
-                        <div className="text-sm font-bold text-slate-800 leading-tight">
-                          The quick brown fox jumps over the lazy dog.
+
+                        <div className="text-xs font-bold text-slate-800 leading-tight">
+                          The quick brown fox jumps...
                         </div>
                       </div>
                     </div>
 
                     {/* Dock Preview */}
+
                     <div
-                      className={`relative z-10 px-6 py-2 border border-white/30 shadow-lg backdrop-blur-md flex items-center gap-3 ${
+                      className={`relative z-10 px-4 py-1.5 border border-white/30 shadow-lg backdrop-blur-md flex items-center gap-3 transition-all duration-300 ${
                         pendingStyle.dockBorderRadius === 'none'
                           ? 'rounded-none'
                           : pendingStyle.dockBorderRadius === 'full'
@@ -1378,9 +1381,10 @@ export const Sidebar: React.FC = () => {
                       }}
                     >
                       <div className="flex flex-col items-center gap-0.5">
-                        <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
+                        <div className="w-5 h-5 bg-brand-blue-primary rounded-md shadow-sm" />
+
                         <span
-                          className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap ${
+                          className={`text-[7px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
                             pendingStyle.fontFamily === 'sans'
                               ? 'font-sans'
                               : pendingStyle.fontFamily === 'mono'
@@ -1389,6 +1393,7 @@ export const Sidebar: React.FC = () => {
                           }`}
                           style={{
                             color: pendingStyle.dockTextColor,
+
                             textShadow: pendingStyle.dockTextShadow
                               ? '0 1px 2px rgba(0,0,0,0.5)'
                               : 'none',
@@ -1397,10 +1402,12 @@ export const Sidebar: React.FC = () => {
                           Icon
                         </span>
                       </div>
+
                       <div className="flex flex-col items-center gap-0.5">
-                        <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
+                        <div className="w-5 h-5 bg-brand-red-primary rounded-md shadow-sm" />
+
                         <span
-                          className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap ${
+                          className={`text-[7px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
                             pendingStyle.fontFamily === 'sans'
                               ? 'font-sans'
                               : pendingStyle.fontFamily === 'mono'
@@ -1409,6 +1416,7 @@ export const Sidebar: React.FC = () => {
                           }`}
                           style={{
                             color: pendingStyle.dockTextColor,
+
                             textShadow: pendingStyle.dockTextShadow
                               ? '0 1px 2px rgba(0,0,0,0.5)'
                               : 'none',
@@ -1419,237 +1427,298 @@ export const Sidebar: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Global Font Family */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                    Global Typography
-                  </h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {[
-                      { id: 'sans', label: 'Modern Sans', font: 'font-sans' },
-                      {
-                        id: 'handwritten',
-                        label: 'Handwritten',
-                        font: 'font-handwritten',
-                      },
-                      { id: 'mono', label: 'Digital Mono', font: 'font-mono' },
-                    ].map((f) => (
-                      <button
-                        key={f.id}
-                        onClick={() =>
-                          setPendingStyle({
-                            ...pendingStyle,
-                            fontFamily: f.id as GlobalFontFamily,
-                          })
-                        }
-                        className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 ${
-                          pendingStyle.fontFamily === f.id
-                            ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
-                            : 'bg-white border-slate-100 text-slate-500'
-                        }`}
-                      >
-                        <span className={`text-base font-bold ${f.font}`}>
-                          {f.label}
-                        </span>
-                        {pendingStyle.fontFamily === f.id && (
-                          <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
-                        )}
-                      </button>
-                    ))}
+                  {/* Sub-tabs */}
+
+                  <div className="flex bg-slate-100 p-1 rounded-xl mt-6 text-xs font-black uppercase tracking-widest">
+                    <button
+                      onClick={() => setStyleTab('window')}
+                      className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                        styleTab === 'window'
+                          ? 'bg-white shadow-sm text-brand-blue-primary'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Maximize className="w-3.5 h-3.5" /> Window
+                    </button>
+
+                    <button
+                      onClick={() => setStyleTab('dock')}
+                      className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                        styleTab === 'dock'
+                          ? 'bg-white shadow-sm text-brand-blue-primary'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Minimize className="w-3.5 h-3.5 rotate-90" /> Dock
+                    </button>
                   </div>
                 </div>
 
-                {/* WINDOW SETTINGS */}
-                <div className="space-y-6 pt-4 border-t border-slate-100">
-                  <h4 className="text-[10px] font-black text-brand-blue-primary uppercase tracking-[0.2em]">
-                    Window Customization
-                  </h4>
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
+                  {/* Global Font Family - Always visible */}
 
-                  {/* Window Transparency */}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                        Window Transparency
-                      </h3>
-                      <span className="text-xs font-mono font-bold text-brand-blue-primary">
-                        {Math.round(pendingStyle.windowTransparency * 100)}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.05"
-                      max="1"
-                      step="0.05"
-                      value={pendingStyle.windowTransparency}
-                      onChange={(e) =>
-                        setPendingStyle({
-                          ...pendingStyle,
-                          windowTransparency: parseFloat(e.target.value),
-                        })
-                      }
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
-                    />
-                  </div>
-
-                  {/* Window Corners */}
                   <div className="space-y-4">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Window Corners
+                      Global Typography
                     </h3>
-                    <div className="flex bg-slate-100 p-1 rounded-xl">
+
+                    <div className="grid grid-cols-1 gap-2">
                       {[
-                        { id: 'none', label: 'Square' },
-                        { id: 'lg', label: 'Soft' },
-                        { id: '2xl', label: 'Round' },
-                        { id: '3xl', label: 'Extra' },
-                      ].map((r) => (
+                        { id: 'sans', label: 'Modern Sans', font: 'font-sans' },
+
+                        {
+                          id: 'handwritten',
+
+                          label: 'Handwritten',
+
+                          font: 'font-handwritten',
+                        },
+
+                        {
+                          id: 'mono',
+                          label: 'Digital Mono',
+                          font: 'font-mono',
+                        },
+                      ].map((f) => (
                         <button
-                          key={r.id}
+                          key={f.id}
                           onClick={() =>
                             setPendingStyle({
                               ...pendingStyle,
-                              windowBorderRadius:
-                                r.id as GlobalStyle['windowBorderRadius'],
+
+                              fontFamily: f.id as GlobalFontFamily,
                             })
                           }
-                          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
-                            pendingStyle.windowBorderRadius === r.id
-                              ? 'bg-white shadow-sm text-brand-blue-primary'
-                              : 'text-slate-500 hover:text-slate-700'
+                          className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 ${
+                            pendingStyle.fontFamily === f.id
+                              ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
+                              : 'bg-white border-slate-100 text-slate-500'
                           }`}
                         >
-                          {r.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                          <span className={`text-base font-bold ${f.font}`}>
+                            {f.label}
+                          </span>
 
-                {/* DOCK SETTINGS */}
-                <div className="space-y-6 pt-4 border-t border-slate-100">
-                  <h4 className="text-[10px] font-black text-brand-blue-primary uppercase tracking-[0.2em]">
-                    Dock Customization
-                  </h4>
-
-                  {/* Dock Transparency */}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                        Dock Transparency
-                      </h3>
-                      <span className="text-xs font-mono font-bold text-brand-blue-primary">
-                        {Math.round(pendingStyle.dockTransparency * 100)}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.05"
-                      max="1"
-                      step="0.05"
-                      value={pendingStyle.dockTransparency}
-                      onChange={(e) =>
-                        setPendingStyle({
-                          ...pendingStyle,
-                          dockTransparency: parseFloat(e.target.value),
-                        })
-                      }
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
-                    />
-                  </div>
-
-                  {/* Dock Corners */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Dock Corners
-                    </h3>
-                    <div className="flex bg-slate-100 p-1 rounded-xl">
-                      {[
-                        { id: 'none', label: 'Square' },
-                        { id: 'lg', label: 'Soft' },
-                        { id: '2xl', label: 'Round' },
-                        { id: 'full', label: 'Full' },
-                      ].map((r) => (
-                        <button
-                          key={r.id}
-                          onClick={() =>
-                            setPendingStyle({
-                              ...pendingStyle,
-                              dockBorderRadius:
-                                r.id as GlobalStyle['dockBorderRadius'],
-                            })
-                          }
-                          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
-                            pendingStyle.dockBorderRadius === r.id
-                              ? 'bg-white shadow-sm text-brand-blue-primary'
-                              : 'text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {r.label}
+                          {pendingStyle.fontFamily === f.id && (
+                            <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                          )}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Dock Text Style */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Dock Text Style
-                    </h3>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-4">
+                  {styleTab === 'window' ? (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
+                      {/* Window Transparency */}
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                            Window Transparency
+                          </h3>
+
+                          <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                            {Math.round(pendingStyle.windowTransparency * 100)}%
+                          </span>
+                        </div>
+
                         <input
-                          type="color"
-                          value={pendingStyle.dockTextColor}
+                          type="range"
+                          min="0.05"
+                          max="1"
+                          step="0.05"
+                          value={pendingStyle.windowTransparency}
                           onChange={(e) =>
                             setPendingStyle({
                               ...pendingStyle,
-                              dockTextColor: e.target.value,
+
+                              windowTransparency: parseFloat(e.target.value),
                             })
                           }
-                          className="w-10 h-10 rounded-lg border-2 border-slate-200 bg-white cursor-pointer"
+                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
                         />
-                        <span className="text-xs font-bold text-slate-600 uppercase">
-                          Text Color
-                        </span>
                       </div>
 
-                      <button
-                        onClick={() =>
-                          setPendingStyle({
-                            ...pendingStyle,
-                            dockTextShadow: !pendingStyle.dockTextShadow,
-                          })
-                        }
-                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                          pendingStyle.dockTextShadow
-                            ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
-                            : 'bg-white border-slate-100 text-slate-500'
-                        }`}
-                      >
-                        <span className="text-xs font-black uppercase tracking-wider">
-                          Enable Text Shadow
-                        </span>
-                        {pendingStyle.dockTextShadow && (
-                          <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
-                        )}
-                      </button>
+                      {/* Window Corners */}
+
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                          Window Corners
+                        </h3>
+
+                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                          {[
+                            { id: 'none', label: 'Square' },
+
+                            { id: 'lg', label: 'Soft' },
+
+                            { id: '2xl', label: 'Round' },
+
+                            { id: '3xl', label: 'Extra' },
+                          ].map((r) => (
+                            <button
+                              key={r.id}
+                              onClick={() =>
+                                setPendingStyle({
+                                  ...pendingStyle,
+
+                                  windowBorderRadius:
+                                    r.id as GlobalStyle['windowBorderRadius'],
+                                })
+                              }
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                                pendingStyle.windowBorderRadius === r.id
+                                  ? 'bg-white shadow-sm text-brand-blue-primary'
+                                  : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                            >
+                              {r.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                      {/* Dock Transparency */}
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                            Dock Transparency
+                          </h3>
+
+                          <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                            {Math.round(pendingStyle.dockTransparency * 100)}%
+                          </span>
+                        </div>
+
+                        <input
+                          type="range"
+                          min="0.05"
+                          max="1"
+                          step="0.05"
+                          value={pendingStyle.dockTransparency}
+                          onChange={(e) =>
+                            setPendingStyle({
+                              ...pendingStyle,
+
+                              dockTransparency: parseFloat(e.target.value),
+                            })
+                          }
+                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                        />
+                      </div>
+
+                      {/* Dock Corners */}
+
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                          Dock Corners
+                        </h3>
+
+                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                          {[
+                            { id: 'none', label: 'Square' },
+
+                            { id: 'lg', label: 'Soft' },
+
+                            { id: '2xl', label: 'Round' },
+
+                            { id: 'full', label: 'Full' },
+                          ].map((r) => (
+                            <button
+                              key={r.id}
+                              onClick={() =>
+                                setPendingStyle({
+                                  ...pendingStyle,
+
+                                  dockBorderRadius:
+                                    r.id as GlobalStyle['dockBorderRadius'],
+                                })
+                              }
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                                pendingStyle.dockBorderRadius === r.id
+                                  ? 'bg-white shadow-sm text-brand-blue-primary'
+                                  : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                            >
+                              {r.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dock Text Style */}
+
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                          Dock Text Style
+                        </h3>
+
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="color"
+                              value={pendingStyle.dockTextColor}
+                              onChange={(e) =>
+                                setPendingStyle({
+                                  ...pendingStyle,
+
+                                  dockTextColor: e.target.value,
+                                })
+                              }
+                              className="w-10 h-10 rounded-lg border-2 border-slate-200 bg-white cursor-pointer"
+                            />
+
+                            <span className="text-xs font-bold text-slate-600 uppercase">
+                              Text Color
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              setPendingStyle({
+                                ...pendingStyle,
+
+                                dockTextShadow: !pendingStyle.dockTextShadow,
+                              })
+                            }
+                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                              pendingStyle.dockTextShadow
+                                ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
+                                : 'bg-white border-slate-100 text-slate-500'
+                            }`}
+                          >
+                            <span className="text-xs font-black uppercase tracking-wider">
+                              Enable Text Shadow
+                            </span>
+
+                            {pendingStyle.dockTextShadow && (
+                              <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* ACTION BUTTONS */}
-                <div className="flex flex-col gap-3 mt-4 pt-6 border-t border-slate-100">
+                {/* ACTION BUTTONS - Fixed at bottom */}
+
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 z-20 flex flex-col gap-3">
                   <button
                     onClick={() => {
                       setGlobalStyle(pendingStyle);
+
                       addToast('Global style applied', 'success');
                     }}
-                    className="w-full flex items-center justify-center gap-2 p-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
+                    className="w-full flex items-center justify-center gap-2 py-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
                   >
                     <Save className="w-4 h-4" /> Save Changes
                   </button>
+
                   <button
                     onClick={() => {
                       if (activeDashboard) {
@@ -1658,7 +1727,7 @@ export const Sidebar: React.FC = () => {
                         );
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 p-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all"
+                    className="w-full flex items-center justify-center gap-2 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all"
                   >
                     Discard Changes
                   </button>
