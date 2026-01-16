@@ -169,13 +169,17 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   >
                     {i + 1}
                   </span>
-                  {StepIcon && (
+                  {StepIcon && step.icon && (
                     <div
                       draggable
                       onDragStart={(e) =>
-                        onDragStart(e, step.icon!, step.color || 'blue')
+                        onDragStart(
+                          e,
+                          step.icon as string,
+                          step.color ?? 'blue'
+                        )
                       }
-                      className={`p-2 rounded-lg bg-${step.color || 'blue'}-50 text-${step.color || 'blue'}-600 cursor-grab active:cursor-grabbing hover:scale-110 transition-transform shadow-sm`}
+                      className={`p-2 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600 cursor-grab active:cursor-grabbing hover:scale-110 transition-transform shadow-sm`}
                       title="Drag to whiteboard"
                     >
                       <StepIcon size={20} />
@@ -256,7 +260,7 @@ export const InstructionalRoutinesSettings: React.FC<{
               <div className="flex items-center gap-2">
                 {step.icon && (
                   <span
-                    className={`text-${step.color || 'blue'}-600 bg-${step.color || 'blue'}-50 p-1 rounded`}
+                    className={`text-${step.color ?? 'blue'}-600 bg-${step.color ?? 'blue'}-50 p-1 rounded`}
                   >
                     {(Icons as unknown as Record<string, React.ElementType>)[
                       step.icon
