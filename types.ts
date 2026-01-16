@@ -297,13 +297,6 @@ export interface InstructionalRoutinesConfig {
   scaleMultiplier: number;
 }
 
-export interface InstructionalRoutinesConfig {
-  selectedRoutineId: string | null;
-  customSteps: RoutineStep[];
-  favorites: string[];
-  scaleMultiplier: number;
-}
-
 export interface TimeToolConfig {
   mode: 'timer' | 'stopwatch';
   visualType: 'digital' | 'visual';
