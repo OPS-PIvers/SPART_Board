@@ -217,13 +217,13 @@ export interface ScoreboardTeam {
 
 export interface ScoreboardConfig {
   /** @deprecated use teams array instead */
-  scoreA: number;
+  scoreA?: number;
   /** @deprecated use teams array instead */
-  scoreB: number;
+  scoreB?: number;
   /** @deprecated use teams array instead */
-  teamA: string;
+  teamA?: string;
   /** @deprecated use teams array instead */
-  teamB: string;
+  teamB?: string;
   teams?: ScoreboardTeam[];
 }
 
