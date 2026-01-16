@@ -114,7 +114,7 @@ const QUICK_TOOLS: {
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter, addWidget } = useDashboard();
+  const { updateWidget, gradeFilter, addWidget, clearAllStickers } = useDashboard();
   const config = widget.config as InstructionalRoutinesConfig;
   const {
     selectedRoutineId,
@@ -173,8 +173,18 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   if (!selectedRoutineId || !selectedRoutine) {
     return (
       <div className="flex flex-col h-full bg-brand-gray-lightest p-4">
-        <div className="text-[10px]  uppercase text-slate-400 tracking-widest mb-3">
-          Library ({gradeFilter.toUpperCase()})
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+            Library ({gradeFilter.toUpperCase()})
+          </div>
+          <button
+            onClick={clearAllStickers}
+            className="flex items-center gap-1 text-[10px] font-black uppercase text-red-500 hover:text-red-600 transition-colors"
+            title="Remove all stickers from board"
+          >
+            <Trash2 size={12} />
+            Clear Board
+          </button>
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
           {displayedRoutines.map((r) => {
@@ -242,6 +252,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             {selectedRoutine.grades} Protocol
           </span>
         </div>
+        <button
+          onClick={clearAllStickers}
+          className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
+          title="Clear all stickers from board"
+        >
+          <Trash2 size={18} />
+        </button>
         <div className="p-4 bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm">
           <RoutineIcon className="w-8 h-8" />
         </div>
