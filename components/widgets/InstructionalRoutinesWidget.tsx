@@ -17,6 +17,7 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowLeft,
+  Grab,
 } from 'lucide-react';
 
 // --- FRONT VIEW (STUDENT FOCUS) ---
@@ -150,7 +151,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <ul className="space-y-6">
+        <ul className="space-y-8">
           {customSteps.map((step, i) => {
             const StepIcon = step.icon
               ? (Icons as unknown as Record<string, React.ElementType>)[
@@ -162,13 +163,20 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 key={step.id}
                 className="flex gap-4 items-start animate-in slide-in-from-left duration-300 group"
               >
-                <div className="flex flex-col items-center gap-2">
-                  <span
-                    className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
-                    style={{ fontSize: `${dynamicFontSize * 0.8}px` }}
+                <span
+                  className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
+                  style={{ fontSize: `${dynamicFontSize * 0.8}px` }}
+                >
+                  {i + 1}
+                </span>
+                <div className="flex-1 flex items-start justify-between gap-4">
+                  <p
+                    className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
+                    style={{ fontSize: `${dynamicFontSize}px` }}
                   >
-                    {i + 1}
-                  </span>
+                    {step.text}
+                  </p>
+
                   {StepIcon && step.icon && (
                     <div
                       draggable
@@ -179,19 +187,23 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           step.color ?? 'blue'
                         )
                       }
-                      className={`p-2 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600 cursor-grab active:cursor-grabbing hover:scale-110 transition-transform shadow-sm`}
+                      className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
                       title="Drag to whiteboard"
                     >
-                      <StepIcon size={20} />
+                      <div
+                        className={`p-1.5 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                      >
+                        <StepIcon size={18} strokeWidth={2.5} />
+                      </div>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
+                        <Grab size={8} className="text-slate-300" />
+                        <span className="text-[6px] font-black uppercase text-slate-400">
+                          Drag
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
-                <p
-                  className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                  style={{ fontSize: `${dynamicFontSize}px` }}
-                >
-                  {step.text}
-                </p>
               </li>
             );
           })}

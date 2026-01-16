@@ -412,7 +412,7 @@ export const ROUTINES: InstructionalRoutine[] = [
   },
   {
     id: 'blooms-analysis',
-    name: "Bloom's Analysis",
+    name: "Bloom's Taxonomy",
     grades: '9-12',
     gradeLevels: ['9-12'],
     icon: 'Brain',
