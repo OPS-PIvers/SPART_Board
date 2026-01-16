@@ -356,6 +356,7 @@ const SortableFolderWidget = ({
     >
       <div className="relative">
         <button
+          type="button"
           {...attributes}
           {...listeners}
           onClick={() => {
@@ -386,19 +387,23 @@ const SortableFolderWidget = ({
         </button>
 
         {isEditMode && (
-          <button
+          <div
+            role="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onRemove();
             }}
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              // Do not preventDefault here if it blocks the click, but usually stopPropagation is enough for dnd-kit
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
+            className="absolute -top-2 -right-2 z-[100] bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
           >
             <X className="w-2.5 h-2.5" />
-          </button>
+          </div>
         )}
       </div>
       <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
