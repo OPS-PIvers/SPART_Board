@@ -210,11 +210,23 @@ export interface WebcamConfig {
   isMirrored?: boolean;
 }
 
+export interface ScoreboardTeam {
+  id: string;
+  name: string;
+  score: number;
+  color?: string;
+}
+
 export interface ScoreboardConfig {
+  /** @deprecated use teams array instead */
   scoreA: number;
+  /** @deprecated use teams array instead */
   scoreB: number;
+  /** @deprecated use teams array instead */
   teamA: string;
+  /** @deprecated use teams array instead */
   teamB: string;
+  teams?: ScoreboardTeam[];
 }
 
 export interface WorkSymbolsConfig {
