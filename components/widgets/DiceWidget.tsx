@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, DiceConfig } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';

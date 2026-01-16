@@ -276,8 +276,9 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<
-    'main' | 'boards' | 'backgrounds' | 'widgets' | 'style'
+    'main' | 'boards' | 'backgrounds' | 'widgets' | 'style' | 'settings'
   >('main');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -354,6 +355,7 @@ export const Sidebar: React.FC = () => {
     setDefaultDashboard,
     saveCurrentDashboard,
     setBackground,
+    setGlobalStyle,
     addToast,
   } = useDashboard();
 
