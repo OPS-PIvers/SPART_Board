@@ -125,6 +125,9 @@ const mockDashboard: DashboardContextType = {
   moveItemOutOfFolder: () => {
     // No-op
   },
+  reorderFolderItems: () => {
+    // No-op
+  },
 
   // Roster mocks
   rosters: [],
