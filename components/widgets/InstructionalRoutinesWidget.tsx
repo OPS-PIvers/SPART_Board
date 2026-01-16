@@ -18,6 +18,7 @@ import {
   ROUTINES as DEFAULT_ROUTINES,
   InstructionalRoutine,
 } from '../../config/instructionalRoutines';
+import { COMMON_INSTRUCTIONAL_ICONS } from '../../config/instructionalIcons';
 import * as Icons from 'lucide-react';
 import {
   Star,
@@ -116,6 +117,77 @@ const QUICK_TOOLS: {
 ];
 
 // --- FRONT VIEW (STUDENT FOCUS) ---
+const IconPicker: React.FC<{
+  currentIcon: string;
+  onSelect: (icon: string) => void;
+  color?: string;
+}> = ({ currentIcon, onSelect, color = 'blue' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-center text-${color}-600 bg-${color}-50`}
+        title="Select Icon"
+      >
+        {(Icons as unknown as Record<string, React.ElementType>)[
+          currentIcon
+        ] ? (
+          React.createElement(
+            (Icons as unknown as Record<string, React.ElementType>)[
+              currentIcon
+            ],
+            { size: 16 }
+          )
+        ) : (
+          <Icons.HelpCircle size={16} />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 z-[100] bg-white border border-slate-200 shadow-2xl rounded-2xl p-3 w-64 animate-in zoom-in-95 duration-200">
+          <div className="flex justify-between items-center mb-2 px-1">
+            <span className="text-[10px] font-black uppercase text-slate-400">
+              Select Icon
+            </span>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-slate-400 hover:text-slate-600"
+            >
+              <Icons.X size={14} />
+            </button>
+          </div>
+          <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
+            {COMMON_INSTRUCTIONAL_ICONS.map((icon) => {
+              const IconComp = (
+                Icons as unknown as Record<string, React.ElementType>
+              )[icon];
+              if (!IconComp) return null;
+              return (
+                <button
+                  key={icon}
+                  onClick={() => {
+                    onSelect(icon);
+                    setIsOpen(false);
+                  }}
+                  className={`p-2 rounded-lg transition-all hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center ${
+                    currentIcon === icon
+                      ? 'bg-blue-600 text-white shadow-lg scale-110'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  <IconComp size={16} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -258,20 +330,18 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 className="w-full bg-slate-50 border-none rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 text-left">
               <label className="text-[8px] font-black uppercase text-slate-400 ml-1">
-                Main Icon (Lucide)
+                Main Icon
               </label>
-              <input
-                type="text"
-                value={routine.icon}
-                onChange={(e) =>
+              <IconPicker
+                currentIcon={routine.icon}
+                onSelect={(icon) =>
                   setEditingRoutine({
                     ...routine,
-                    icon: e.target.value,
+                    icon,
                   } as InstructionalRoutine)
                 }
-                className="w-full bg-slate-50 border-none rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -287,19 +357,17 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={step.icon ?? ''}
-                      onChange={(e) => {
+                    <IconPicker
+                      currentIcon={step.icon ?? 'Zap'}
+                      color={step.color}
+                      onSelect={(icon) => {
                         const nextSteps = [...routine.steps];
-                        nextSteps[i] = { ...step, icon: e.target.value };
+                        nextSteps[i] = { ...step, icon };
                         setEditingRoutine({
                           ...routine,
                           steps: nextSteps,
                         } as InstructionalRoutine);
                       }}
-                      placeholder="Icon"
-                      className="w-16 bg-white border-none rounded px-2 py-0.5 text-[9px] font-bold text-blue-600"
                     />
                     <input
                       type="text"
@@ -678,25 +746,17 @@ export const InstructionalRoutinesSettings: React.FC<{
             <div className="flex-1 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  {step.icon && (
-                    <span
-                      className={`text-${step.color ?? 'blue'}-600 bg-${step.color ?? 'blue'}-50 p-1 rounded`}
-                    >
-                      {(Icons as unknown as Record<string, React.ElementType>)[
-                        step.icon
-                      ]
-                        ? React.createElement(
-                            (
-                              Icons as unknown as Record<
-                                string,
-                                React.ElementType
-                              >
-                            )[step.icon],
-                            { size: 12 }
-                          )
-                        : null}
-                    </span>
-                  )}
+                  <IconPicker
+                    currentIcon={step.icon ?? 'Zap'}
+                    color={step.color}
+                    onSelect={(icon) => {
+                      const next = [...customSteps];
+                      next[i] = { ...next[i], icon };
+                      updateWidget(widget.id, {
+                        config: { ...config, customSteps: next },
+                      });
+                    }}
+                  />
                   <span className="text-[8px] font-bold text-slate-400 uppercase">
                     Step {i + 1}
                   </span>
@@ -704,24 +764,6 @@ export const InstructionalRoutinesSettings: React.FC<{
 
                 {isAdmin && (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                      <span className="text-[7px] font-black uppercase text-slate-400">
-                        Icon:
-                      </span>
-                      <input
-                        type="text"
-                        value={step.icon ?? ''}
-                        onChange={(e) => {
-                          const next = [...customSteps];
-                          next[i] = { ...next[i], icon: e.target.value };
-                          updateWidget(widget.id, {
-                            config: { ...config, customSteps: next },
-                          });
-                        }}
-                        placeholder="Lucide Name"
-                        className="w-16 bg-transparent border-none p-0 text-[9px] font-bold text-blue-600 focus:ring-0"
-                      />
-                    </div>
                     <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                       <span className="text-[7px] font-black uppercase text-slate-400">
                         Label:

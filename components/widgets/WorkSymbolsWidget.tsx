@@ -28,36 +28,80 @@ interface Routine {
 const ROUTINE_DB: Record<string, Routine[]> = {
   Catalyst: [
     {
-      id: 'do-now',
-      label: 'Do Now / Bell Ringer',
+      id: 'catalyst-do-now',
+      label: 'Catalyst: Do Now',
       icon: 'Zap',
       steps: [
-        { icon: 'Lightbulb', label: 'Recall & Think', color: 'amber' },
-        { icon: 'Pencil', label: 'Draft Response', color: 'blue' },
+        { icon: 'User', label: 'Sit', color: 'blue' },
+        { icon: 'Lightbulb', label: 'Think', color: 'amber' },
+        { icon: 'Pencil', label: 'Write', color: 'indigo' },
       ],
     },
     {
-      id: 'direct-inst',
-      label: 'Direct Instruction',
+      id: 'catalyst-direct-inst',
+      label: 'Catalyst: Direct Instruction',
       icon: 'Monitor',
       steps: [
-        { icon: 'Eye', label: 'Eyes on Facilitator', color: 'blue' },
-        { icon: 'Ear', label: 'Active Listening', color: 'indigo' },
+        { icon: 'Eye', label: 'Look', color: 'blue' },
+        { icon: 'Ear', label: 'Listen', color: 'indigo' },
       ],
     },
     {
-      id: 'cfu',
-      label: 'Check for Understanding',
+      id: 'catalyst-cfu',
+      label: 'Catalyst: Check for Understanding',
       icon: 'CheckCircle',
       steps: [
-        { icon: 'Hand', label: 'Visual Signal / Show Me', color: 'amber' },
+        { icon: 'Hand', label: 'Show', color: 'amber' },
+        { icon: 'MessageSquare', label: 'Answer', color: 'blue' },
       ],
     },
     {
-      id: 'exit-ticket',
-      label: 'Exit Ticket',
+      id: 'catalyst-exit-ticket',
+      label: 'Catalyst: Exit Ticket',
       icon: 'LogOut',
-      steps: [{ icon: 'Pencil', label: 'Final Reflection', color: 'green' }],
+      steps: [{ icon: 'Pencil', label: 'Write', color: 'green' }],
+    },
+  ],
+  SignalMode: [
+    {
+      id: 'catalyst-signal-hand',
+      label: 'Signal: Raise Hand',
+      icon: 'Hand',
+      steps: [
+        { icon: 'Timer', label: 'Wait', color: 'amber' },
+        { icon: 'Hand', label: 'Raise', color: 'blue' },
+        { icon: 'Ear', label: 'Listen', color: 'indigo' },
+      ],
+    },
+    {
+      id: 'catalyst-signal-neighbor',
+      label: 'Signal: Talk to Neighbor',
+      icon: 'Users',
+      steps: [
+        { icon: 'RefreshCw', label: 'Turn', color: 'blue' },
+        { icon: 'MessageSquare', label: 'Share', color: 'amber' },
+        { icon: 'Ear', label: 'Listen', color: 'indigo' },
+      ],
+    },
+    {
+      id: 'catalyst-signal-report',
+      label: 'Signal: Report Out',
+      icon: 'Mic',
+      steps: [
+        { icon: 'User', label: 'Ready', color: 'blue' },
+        { icon: 'Mic', label: 'Speak', color: 'amber' },
+        { icon: 'Ear', label: 'Listen', color: 'indigo' },
+      ],
+    },
+    {
+      id: 'catalyst-signal-outloud',
+      label: 'Signal: Answer Outloud',
+      icon: 'Volume2',
+      steps: [
+        { icon: 'Lightbulb', label: 'Think', color: 'amber' },
+        { icon: 'Timer', label: 'Wait', color: 'blue' },
+        { icon: 'Volume2', label: 'Answer', color: 'green' },
+      ],
     },
   ],
   Blooms: [
