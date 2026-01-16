@@ -228,10 +228,15 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const onDragStart = (e: React.DragEvent, icon: string, color: string) => {
+  const onDragStart = (
+    e: React.DragEvent,
+    icon: string,
+    color: string,
+    label?: string
+  ) => {
     e.dataTransfer.setData(
       'application/spart-sticker',
-      JSON.stringify({ icon, color })
+      JSON.stringify({ icon, color, label })
     );
     e.dataTransfer.effectAllowed = 'copy';
   };
@@ -283,7 +288,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={idx}
                     draggable
-                    onDragStart={(e) => onDragStart(e, step.icon, step.color)}
+                    onDragStart={(e) =>
+                      onDragStart(e, step.icon, step.color, step.label)
+                    }
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 bg-white cursor-grab active:cursor-grabbing hover:shadow-md transition-all group`}
                   >
                     <div

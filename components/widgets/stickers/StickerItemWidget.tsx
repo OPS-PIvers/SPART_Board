@@ -67,13 +67,25 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
     return (
       <DraggableSticker widget={widget}>
         <div
-          className={`w-full h-full flex items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl`}
+          className={`w-full h-full flex flex-col items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl relative overflow-hidden`}
         >
           <div
-            className={`p-2 rounded-2xl ${theme.bg} ${theme.text} w-[90%] h-[90%] flex items-center justify-center`}
+            className={`rounded-2xl ${theme.bg} ${theme.text} w-[90%] h-[90%] flex flex-col items-center justify-center transition-all ${config.label ? 'pb-6' : ''}`}
           >
-            <IconComponent className="w-[85%] h-[85%]" strokeWidth={2.5} />
+            <IconComponent className="w-[80%] h-[80%]" strokeWidth={2.5} />
           </div>
+
+          {config.label && (
+            <div
+              className={`absolute bottom-3 left-0 right-0 text-center pointer-events-none`}
+            >
+              <span
+                className={`text-[10px] font-black uppercase tracking-wider ${theme.text} bg-white/80 px-2 py-0.5 rounded-full`}
+              >
+                {config.label}
+              </span>
+            </div>
+          )}
         </div>
       </DraggableSticker>
     );

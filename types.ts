@@ -128,6 +128,7 @@ export interface RoutineStep {
     label: string;
     config: WidgetConfig;
   };
+  label?: string;
 }
 
 // Widget-specific config types
@@ -352,6 +353,7 @@ export interface StickerConfig {
   url?: string;
   icon?: string;
   color?: string;
+  label?: string;
   rotation?: number;
   size?: number;
 }

@@ -150,16 +150,22 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       text: step.text,
       icon: step.icon,
       color: step.color,
+      label: step.label,
     }));
     updateWidget(widget.id, {
       config: { ...config, selectedRoutineId: r.id, customSteps: initialSteps },
     });
   };
 
-  const onDragStart = (e: React.DragEvent, icon: string, color: string) => {
+  const onDragStart = (
+    e: React.DragEvent,
+    icon: string,
+    color: string,
+    label?: string
+  ) => {
     e.dataTransfer.setData(
       'application/spart-sticker',
-      JSON.stringify({ icon, color })
+      JSON.stringify({ icon, color, label })
     );
     e.dataTransfer.effectAllowed = 'copy';
   };
@@ -275,7 +281,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           onDragStart(
                             e,
                             step.icon as string,
-                            step.color ?? 'blue'
+                            step.color ?? 'blue',
+                            step.label
                           )
                         }
                         className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
@@ -286,6 +293,11 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                         >
                           <StepIcon size={18} strokeWidth={2.5} />
                         </div>
+                        {step.label && (
+                          <span className="text-[8px] font-black uppercase text-slate-500 text-center leading-none">
+                            {step.label}
+                          </span>
+                        )}
                         <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
                           <Grab size={8} className="text-slate-300" />
                           <span className="text-[6px] font-black uppercase text-slate-400">
