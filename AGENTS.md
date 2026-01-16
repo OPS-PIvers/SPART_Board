@@ -27,7 +27,7 @@ This project enforces a **STRICT ZERO-TOLERANCE POLICY** for code quality.
 ### 🚫 Strict Rules
 
 1.  **Zero Warnings, Zero Errors:**
-    - You **MUST** ensure that `npm run validate` (which runs linting, type-checking, and format checking) passes with **0 warnings and 0 errors**.
+    - You **MUST** ensure that `pnpm run validate` (which runs linting, type-checking, and format checking) passes with **0 warnings and 0 errors**.
     - Do **NOT** commit code that generates warnings, even if the build technically passes.
 2.  **No Suppressions:**
     - The use of suppression comments (e.g., `eslint-disable`, `// @ts-ignore`, `// @ts-nocheck`) is **FORBIDDEN** unless absolutely unavoidable and technically justified (e.g., library bug).
@@ -43,7 +43,7 @@ This project enforces a **STRICT ZERO-TOLERANCE POLICY** for code quality.
 Before marking any task as complete, you must run:
 
 ```bash
-npm run validate
+pnpm run validate
 ```
 
 If this command reports _any_ issues, you must fix them.
