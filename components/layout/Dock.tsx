@@ -749,7 +749,6 @@ export const Dock: React.FC = () => {
     addItemToFolder,
     moveItemOutOfFolder,
     reorderFolderItems,
-    createFolderWithItems,
   } = useDashboard();
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
@@ -842,19 +841,23 @@ export const Dock: React.FC = () => {
   };
 
   /**
-   * Custom Collision Detection to handle Grouping vs Reordering
-   * If the center of the dragged item is significantly over a folder, we prioritize grouping.
-   */
+
+     * Custom Collision Detection to handle Grouping vs Reordering
+
+     * If the center of the dragged item is significantly over a folder, we prioritize grouping.
+
+     */
+
   const customCollisionDetection: CollisionDetection = (args) => {
-    const { active, collisionRect, droppableRects } = args;
     const items = dockItems;
 
-    // 1. Check for folder grouping (rect intersection)
-    // We want robust detection for folders, so rectIntersection is good.
+    // 1. First, check for folder grouping (rect intersection)
+
     const folderCollisions = rectIntersection(args).filter((collision) => {
       const item = items.find(
         (i) => i.type === 'folder' && i.folder.id === collision.id
       );
+
       return !!item;
     });
 
@@ -862,65 +865,13 @@ export const Dock: React.FC = () => {
       folderCollisions.sort(
         (a, b) => (b.data?.value ?? 0) - (a.data?.value ?? 0)
       );
+
       return [folderCollisions[0]];
     }
 
-    // 2. Run standard closestCenter for tools
-    const closest = closestCenter(args);
+    // 2. Otherwise, fallback to standard sortable collision (closestCenter)
 
-    if (!closest || closest.length === 0) return [];
-
-    const targetId = closest[0].id;
-    if (targetId === active.id) return [];
-
-    const targetItem = items.find(
-      (i) => i.type === 'tool' && i.toolType === targetId
-    );
-
-    // If closest is a tool, check for high overlap to trigger grouping
-    if (targetItem) {
-      const targetRect = droppableRects.get(targetId);
-      if (targetRect) {
-        // Calculate intersection area manually
-        const intersectionRect = {
-          left: Math.max(collisionRect.left, targetRect.left),
-          right: Math.min(
-            collisionRect.left + collisionRect.width,
-            targetRect.left + targetRect.width
-          ),
-          top: Math.max(collisionRect.top, targetRect.top),
-          bottom: Math.min(
-            collisionRect.top + collisionRect.height,
-            targetRect.top + targetRect.height
-          ),
-        };
-
-        const width = Math.max(
-          0,
-          intersectionRect.right - intersectionRect.left
-        );
-        const height = Math.max(
-          0,
-          intersectionRect.bottom - intersectionRect.top
-        );
-        const intersectionArea = width * height;
-        const activeArea = collisionRect.width * collisionRect.height;
-        const overlapRatio = intersectionArea / activeArea;
-
-        // If overlap > 50%, force grouping
-        if (overlapRatio > 0.5) {
-          return [
-            {
-              id: `group:${targetId}`,
-              data: { value: intersectionArea },
-            },
-          ];
-        }
-      }
-    }
-
-    // Otherwise return the standard closest center result (triggering reorder)
-    return closest;
+    return closestCenter(args);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -929,20 +880,11 @@ export const Dock: React.FC = () => {
 
     if (!over) return;
 
-    const overId = over.id as string;
     const activeId = active.id as string;
-
-    // Check for grouping drop (special ID prefix)
-    if (overId.startsWith('group:')) {
-      const realOverId = overId.replace('group:', '') as WidgetType;
-      // Trigger folder creation
-      createFolderWithItems('Group', [realOverId, activeId as WidgetType]);
-      return;
-    }
-
+    const overId = over.id as string;
     const items = dockItems;
 
-    // Check if dropping onto a folder (existing logic)
+    // Check if dropping onto a folder
     const overItem = items.find(
       (item) => item.type === 'folder' && item.folder.id === overId
     );
