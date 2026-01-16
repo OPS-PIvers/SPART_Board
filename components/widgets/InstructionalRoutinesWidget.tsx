@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 import {
   WidgetData,
   InstructionalRoutinesConfig,
@@ -352,6 +353,7 @@ export const InstructionalRoutinesSettings: React.FC<{
   widget: WidgetData;
 }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
+  const { isAdmin } = useAuth();
   const config = widget.config as InstructionalRoutinesConfig;
   const { customSteps = [], scaleMultiplier = 1 } = config;
 
@@ -402,30 +404,73 @@ export const InstructionalRoutinesSettings: React.FC<{
               </button>
             </div>
             {/* Stable Key Fix: Using step.id prevents focus loss */}
-            <div className="flex-1 flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                {step.icon && (
-                  <span
-                    className={`text-${step.color ?? 'blue'}-600 bg-${step.color ?? 'blue'}-50 p-1 rounded`}
-                  >
-                    {(Icons as unknown as Record<string, React.ElementType>)[
-                      step.icon
-                    ]
-                      ? React.createElement(
-                          (
-                            Icons as unknown as Record<
-                              string,
-                              React.ElementType
-                            >
-                          )[step.icon],
-                          { size: 12 }
-                        )
-                      : null}
+            <div className="flex-1 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {step.icon && (
+                    <span
+                      className={`text-${step.color ?? 'blue'}-600 bg-${step.color ?? 'blue'}-50 p-1 rounded`}
+                    >
+                      {(Icons as unknown as Record<string, React.ElementType>)[
+                        step.icon
+                      ]
+                        ? React.createElement(
+                            (
+                              Icons as unknown as Record<
+                                string,
+                                React.ElementType
+                              >
+                            )[step.icon],
+                            { size: 12 }
+                          )
+                        : null}
+                    </span>
+                  )}
+                  <span className="text-[8px] font-bold text-slate-400 uppercase">
+                    Step {i + 1}
                   </span>
+                </div>
+
+                {isAdmin && (
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                      <span className="text-[7px] font-black uppercase text-slate-400">
+                        Icon:
+                      </span>
+                      <input
+                        type="text"
+                        value={step.icon ?? ''}
+                        onChange={(e) => {
+                          const next = [...customSteps];
+                          next[i] = { ...next[i], icon: e.target.value };
+                          updateWidget(widget.id, {
+                            config: { ...config, customSteps: next },
+                          });
+                        }}
+                        placeholder="Lucide Name"
+                        className="w-16 bg-transparent border-none p-0 text-[9px] font-bold text-blue-600 focus:ring-0"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                      <span className="text-[7px] font-black uppercase text-slate-400">
+                        Label:
+                      </span>
+                      <input
+                        type="text"
+                        value={step.label ?? ''}
+                        onChange={(e) => {
+                          const next = [...customSteps];
+                          next[i] = { ...next[i], label: e.target.value };
+                          updateWidget(widget.id, {
+                            config: { ...config, customSteps: next },
+                          });
+                        }}
+                        placeholder="Keyword"
+                        className="w-16 bg-transparent border-none p-0 text-[9px] font-bold text-emerald-600 focus:ring-0"
+                      />
+                    </div>
+                  </div>
                 )}
-                <span className="text-[8px]  text-slate-400 uppercase">
-                  Step {i + 1}
-                </span>
               </div>
               <textarea
                 value={step.text}
