@@ -56,7 +56,6 @@ import {
   GlobalFontFamily,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
-  GradeLevel,
 } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
@@ -76,10 +75,6 @@ const GRADE_FILTER_OPTIONS = [
   { value: '6-8', label: '6-8' },
   { value: '9-12', label: '9-12' },
 ] as const;
-
-const formatGradeLevel = (level: GradeLevel): string => {
-  return level.toUpperCase();
-};
 
 const StylePreview = ({
   pendingStyle,
@@ -1416,95 +1411,55 @@ export const Sidebar: React.FC = () => {
                 </div>
               </div>
 
-                            {/* STYLE SECTION */}
+              {/* STYLE SECTION */}
 
-                            <div
+              <div
+                className={`absolute inset-0 flex flex-col transition-all duration-300 ease-in-out ${
+                  activeSection === 'style'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                {/* TABS & MOBILE PREVIEW */}
 
-                              className={`absolute inset-0 flex flex-col transition-all duration-300 ease-in-out ${
+                <div className="bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm flex flex-col">
+                  {/* Mobile Preview only */}
 
-                                activeSection === 'style'
+                  <div className="lg:hidden p-6 pb-0">
+                    <StylePreview
+                      pendingStyle={pendingStyle}
+                      background={activeDashboard?.background}
+                    />
+                  </div>
 
-                                  ? 'translate-x-0 opacity-100 visible'
+                  {/* Sub-tabs */}
 
-                                  : 'translate-x-full opacity-0 invisible'
+                  <div className="p-6">
+                    <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-black uppercase tracking-widest">
+                      <button
+                        onClick={() => setStyleTab('window')}
+                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                          styleTab === 'window'
+                            ? 'bg-white shadow-sm text-brand-blue-primary'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <Maximize className="w-3.5 h-3.5" /> Window
+                      </button>
 
-                              }`}
-
-                            >
-
-                              {/* TABS & MOBILE PREVIEW */}
-
-                              <div className="bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm flex flex-col">
-
-                                {/* Mobile Preview only */}
-
-                                <div className="lg:hidden p-6 pb-0">
-
-                                  <StylePreview
-
-                                    pendingStyle={pendingStyle}
-
-                                    background={activeDashboard?.background}
-
-                                  />
-
-                                </div>
-
-              
-
-                                {/* Sub-tabs */}
-
-                                <div className="p-6">
-
-                                  <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-black uppercase tracking-widest">
-
-                                    <button
-
-                                      onClick={() => setStyleTab('window')}
-
-                                      className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-
-                                        styleTab === 'window'
-
-                                          ? 'bg-white shadow-sm text-brand-blue-primary'
-
-                                          : 'text-slate-500 hover:text-slate-700'
-
-                                      }`}
-
-                                    >
-
-                                      <Maximize className="w-3.5 h-3.5" /> Window
-
-                                    </button>
-
-                                    <button
-
-                                      onClick={() => setStyleTab('dock')}
-
-                                      className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-
-                                        styleTab === 'dock'
-
-                                          ? 'bg-white shadow-sm text-brand-blue-primary'
-
-                                          : 'text-slate-500 hover:text-slate-700'
-
-                                      }`}
-
-                                    >
-
-                                      <Minimize className="w-3.5 h-3.5 rotate-90" /> Dock
-
-                                    </button>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-              
+                      <button
+                        onClick={() => setStyleTab('dock')}
+                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                          styleTab === 'dock'
+                            ? 'bg-white shadow-sm text-brand-blue-primary'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <Minimize className="w-3.5 h-3.5 rotate-90" /> Dock
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
                   {/* Global Font Family - Always visible */}
