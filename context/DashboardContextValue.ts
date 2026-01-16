@@ -41,6 +41,7 @@ export interface DashboardContextType {
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
+  updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
 
   // --- FOLDER ACTIONS ---
   addFolder: (name: string) => void;

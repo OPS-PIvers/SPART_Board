@@ -348,6 +348,7 @@ export const Sidebar: React.FC = () => {
     setDefaultDashboard,
     saveCurrentDashboard,
     setBackground,
+    updateDashboardSettings,
     addToast,
   } = useDashboard();
 
@@ -1277,6 +1278,45 @@ export const Sidebar: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
+                    Widget Defaults
+                  </h4>
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-tight block mb-3">
+                      Default Widget Transparency
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={
+                          activeDashboard?.settings
+                            ?.defaultWidgetTransparency ?? 0.2
+                        }
+                        onChange={(e) =>
+                          updateDashboardSettings({
+                            defaultWidgetTransparency: parseFloat(
+                              e.target.value
+                            ),
+                          })
+                        }
+                        className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="min-w-[3ch] text-xs font-bold text-slate-500 text-right">
+                        {Math.round(
+                          (activeDashboard?.settings
+                            ?.defaultWidgetTransparency ?? 0.2) * 100
+                        )}
+                        %
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                      Applies to all new widgets added to this board.
+                    </p>
+                  </div>
+
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
                     Application
                   </h4>
