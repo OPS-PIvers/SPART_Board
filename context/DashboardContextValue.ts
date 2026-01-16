@@ -3,7 +3,6 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
-  WidgetConfig,
   Toast,
   ClassRoster,
   Student,

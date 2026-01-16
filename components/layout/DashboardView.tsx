@@ -42,19 +42,51 @@ export const DashboardView: React.FC = () => {
     React.useState<string>('animate-fade-in');
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('application/sticker')) {
+    if (
+      e.dataTransfer.types.includes('application/sticker') ||
+      e.dataTransfer.types.includes('application/spart-sticker')
+    ) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    const data = e.dataTransfer.getData('application/sticker');
-    if (data) {
+    const stickerData = e.dataTransfer.getData('application/sticker');
+    const spartStickerData = e.dataTransfer.getData(
+      'application/spart-sticker'
+    );
+
+    if (spartStickerData) {
+      e.preventDefault();
+      try {
+        const { icon, color } = JSON.parse(spartStickerData) as {
+          icon: string;
+          color: string;
+        };
+        const w = 150;
+        const h = 150;
+        const x = e.clientX - w / 2;
+        const y = e.clientY - h / 2;
+
+        addWidget('sticker', {
+          x,
+          y,
+          w,
+          h,
+          config: { icon, color },
+        });
+      } catch (err) {
+        console.error('Failed to parse spart-sticker data', err);
+      }
+      return;
+    }
+
+    if (stickerData) {
       e.preventDefault();
       try {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const parsed = JSON.parse(data);
+        const parsed = JSON.parse(stickerData);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const url = parsed.url as string;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

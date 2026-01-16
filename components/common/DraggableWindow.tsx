@@ -92,7 +92,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
   const isMaximized = widget.maximized ?? false;
-  const canFlip = widget.type !== 'sticker';
 
   const handleMouseDown = (_e: React.MouseEvent) => {
     bringToFront(widget.id);

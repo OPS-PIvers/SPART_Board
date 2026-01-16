@@ -3,48 +3,170 @@ import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, WorkSymbolsConfig } from '../../types';
 import * as Icons from 'lucide-react';
 
-const ROUTINE_CATEGORIES = {
-  Collaboration: [
-    { id: 'think-pair-share', label: 'Think-Pair-Share', icon: 'Users' },
-    { id: 'turn-talk', label: 'Turn and Talk', icon: 'MessageSquare' },
-    { id: 'gallery-walk', label: 'Gallery Walk', icon: 'Footprints' },
+// --- Types & Constants ---
+
+interface RoutineStep {
+  icon: string;
+  label: string;
+  color: string;
+}
+
+interface Routine {
+  id: string;
+  label: string;
+  icon: string;
+  hint?: string;
+  steps: RoutineStep[];
+}
+
+const ROUTINE_DB: Record<string, Routine[]> = {
+  Catalyst: [
     {
-      id: 'socratic-seminar',
-      label: 'Socratic Seminar',
-      icon: 'GraduationCap',
+      id: 'do-now',
+      label: 'Do Now / Bell Ringer',
+      icon: 'Zap',
+      steps: [
+        { icon: 'Lightbulb', label: 'Recall & Think', color: 'amber' },
+        { icon: 'Pencil', label: 'Draft Response', color: 'blue' },
+      ],
     },
-    { id: 'fishbowl', label: 'Fishbowl', icon: 'CircleDot' },
-    { id: 'jigsaw', label: 'Jigsaw', icon: 'Puzzle' },
+    {
+      id: 'direct-inst',
+      label: 'Direct Instruction',
+      icon: 'Monitor',
+      steps: [
+        { icon: 'Eye', label: 'Eyes on Facilitator', color: 'blue' },
+        { icon: 'Ear', label: 'Active Listening', color: 'indigo' },
+      ],
+    },
+    {
+      id: 'cfu',
+      label: 'Check for Understanding',
+      icon: 'CheckCircle',
+      steps: [
+        { icon: 'Hand', label: 'Visual Signal / Show Me', color: 'amber' },
+      ],
+    },
+    {
+      id: 'exit-ticket',
+      label: 'Exit Ticket',
+      icon: 'LogOut',
+      steps: [{ icon: 'Pencil', label: 'Final Reflection', color: 'green' }],
+    },
+  ],
+  Blooms: [
+    {
+      id: 'b1',
+      label: '1. Remember',
+      icon: 'Archive',
+      hint: 'Recall facts (Effect: 0.46)',
+      steps: [{ icon: 'Pencil', label: 'Recall & List Facts', color: 'slate' }],
+    },
+    {
+      id: 'b2',
+      label: '2. Understand',
+      icon: 'Book',
+      hint: 'Construct meaning',
+      steps: [
+        { icon: 'MessageSquare', label: 'Summarize / Explain', color: 'blue' },
+      ],
+    },
+    {
+      id: 'b3',
+      label: '3. Apply',
+      icon: 'Play',
+      hint: 'Carry out a procedure',
+      steps: [{ icon: 'Zap', label: 'Solve / Implement', color: 'indigo' }],
+    },
+    {
+      id: 'b4',
+      label: '4. Analyze',
+      icon: 'Brain',
+      hint: 'Break into components',
+      steps: [
+        { icon: 'Brain', label: 'Attribute / Organize', color: 'purple' },
+      ],
+    },
+    {
+      id: 'b5',
+      label: '5. Evaluate',
+      icon: 'Award',
+      hint: 'Make judgments',
+      steps: [
+        { icon: 'CheckCircle', label: 'Critique / Judge', color: 'amber' },
+      ],
+    },
+    {
+      id: 'b6',
+      label: '6. Create',
+      icon: 'Lightbulb',
+      hint: 'Produce original work',
+      steps: [
+        { icon: 'PlusCircle', label: 'Design / Produce', color: 'green' },
+      ],
+    },
+  ],
+  Collaboration: [
+    {
+      id: 'reciprocal',
+      label: 'Reciprocal Teaching',
+      icon: 'Users',
+      hint: 'Effect Size: 0.74',
+      steps: [
+        { icon: 'Search', label: 'Predict & Clarify', color: 'blue' },
+        { icon: 'Ear', label: 'Listen to Summarizer', color: 'indigo' },
+        { icon: 'HelpCircle', label: 'Question Content', color: 'purple' },
+      ],
+    },
+    {
+      id: 'tps',
+      label: 'Think-Pair-Share',
+      icon: 'Users',
+      steps: [
+        { icon: 'Lightbulb', label: 'Internal Think Time', color: 'amber' },
+        {
+          icon: 'MessageSquare',
+          label: 'Dialogue with Partner',
+          color: 'blue',
+        },
+        { icon: 'Share2', label: 'Whole Class Share', color: 'green' },
+      ],
+    },
   ],
   Literacy: [
-    { id: 'notice-wonder', label: 'Notice and Wonder', icon: 'Search' },
-    { id: 'chalk-talk', label: 'Chalk Talk', icon: 'Pencil' },
     {
-      id: 'stronger-clearer',
-      label: 'Stronger and Clearer',
-      icon: 'RefreshCw',
+      id: 'nw',
+      label: 'Notice & Wonder',
+      icon: 'Eye',
+      steps: [
+        { icon: 'Eye', label: 'Close Observation', color: 'slate' },
+        { icon: 'HelpCircle', label: 'Identify Wonders', color: 'purple' },
+      ],
     },
-    { id: 'annotation', label: 'Active Annotation', icon: 'Highlighter' },
-    { id: 'reading-protocol', label: 'Reading Protocol', icon: 'BookOpen' },
+    {
+      id: 'sc',
+      label: 'Stronger & Clearer',
+      icon: 'RefreshCw',
+      steps: [
+        { icon: 'Pencil', label: 'Write First Draft', color: 'blue' },
+        {
+          icon: 'MessageSquare',
+          label: 'Refine via Discussion',
+          color: 'indigo',
+        },
+      ],
+    },
   ],
   Thinking: [
-    { id: 'see-think-wonder', label: 'See-Think-Wonder', icon: 'Eye' },
-    { id: 'compass-points', label: 'Compass Points', icon: 'Compass' },
-    { id: 'bridge-321', label: '3-2-1 Bridge', icon: 'Bridge' },
     {
-      id: 'claim-support-question',
-      label: 'Claim-Support-Question',
-      icon: 'HelpCircle',
-    },
-  ],
-  Catalyst: [
-    { id: 'do-now', label: 'Do Now / Bell Ringer', icon: 'Play' },
-    { id: 'exit-ticket', label: 'Exit Ticket', icon: 'LogOut' },
-    { id: 'cfu', label: 'Check for Understanding', icon: 'CheckCircle2' },
-    {
-      id: 'direct-instruction',
-      label: 'Direct Instruction',
-      icon: 'Presentation',
+      id: 'stw',
+      label: 'See-Think-Wonder',
+      icon: 'Brain',
+      steps: [
+        { icon: 'Eye', label: 'What do you see?', color: 'blue' },
+        { icon: 'Lightbulb', label: 'What do you think?', color: 'amber' },
+        { icon: 'HelpCircle', label: 'What do you wonder?', color: 'purple' },
+      ],
     },
   ],
 };
@@ -56,8 +178,26 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   const config = (widget.config as WorkSymbolsConfig) ?? {};
   const activeRoutines = config.activeRoutines ?? [];
   const { voiceLevel = null, workMode = null } = config;
+
+  // View state: 'picker' or 'facilitator' (for specific routine steps)
+  const [viewState, setViewState] = useState<'picker' | 'facilitator'>(
+    'picker'
+  );
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(
+    null
+  );
   const [activeCategory, setActiveCategory] =
-    useState<keyof typeof ROUTINE_CATEGORIES>('Collaboration');
+    useState<keyof typeof ROUTINE_DB>('Catalyst');
+
+  // Helper to get current routine object
+  const getCurrentRoutine = () => {
+    if (!selectedRoutineId) return null;
+    for (const cat in ROUTINE_DB) {
+      const routine = ROUTINE_DB[cat].find((r) => r.id === selectedRoutineId);
+      if (routine) return routine;
+    }
+    return null;
+  };
 
   const toggleRoutine = (id: string) => {
     const newRoutines = activeRoutines.includes(id)
@@ -69,17 +209,100 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
+  const handleRoutineClick = (routineId: string) => {
+    // If not active, activate it first? Or just go to facilitator?
+    // Let's just go to facilitator view for that routine
+    setSelectedRoutineId(routineId);
+    setViewState('facilitator');
+
+    // Also toggle it on if not already (optional, but good for tracking)
+    if (!activeRoutines.includes(routineId)) {
+      toggleRoutine(routineId);
+    }
+  };
+
+  const onDragStart = (e: React.DragEvent, icon: string, color: string) => {
+    e.dataTransfer.setData(
+      'application/spart-sticker',
+      JSON.stringify({ icon, color })
+    );
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
   // 9-12 High School View
   if (gradeFilter === '9-12') {
+    if (viewState === 'facilitator') {
+      const routine = getCurrentRoutine();
+      if (!routine)
+        return (
+          <div onClick={() => setViewState('picker')}>
+            Error: Routine not found
+          </div>
+        );
+
+      return (
+        <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-2 p-3 border-b bg-slate-50">
+            <button
+              onClick={() => setViewState('picker')}
+              className="p-1.5 hover:bg-slate-200 rounded-full transition-colors"
+            >
+              <Icons.ArrowLeft size={18} className="text-slate-600" />
+            </button>
+            <div className="flex-1">
+              <h3 className="font-bold text-slate-800 leading-tight">
+                {routine.label}
+              </h3>
+              {routine.hint && (
+                <p className="text-[10px] text-slate-500">{routine.hint}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Steps / Drag Zone */}
+          <div className="flex-1 p-3 overflow-y-auto bg-slate-100">
+            <div className="space-y-3">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2">
+                Drag icons to whiteboard
+              </div>
+              {routine.steps.map((step, idx) => {
+                const IconComponent =
+                  (Icons as Record<string, React.ElementType>)[step.icon] ??
+                  Icons.HelpCircle;
+                const colorClass = `text-${step.color}-600`;
+                const bgClass = `bg-${step.color}-50`;
+
+                return (
+                  <div
+                    key={idx}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, step.icon, step.color)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 bg-white cursor-grab active:cursor-grabbing hover:shadow-md transition-all group`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${bgClass} ${colorClass} group-hover:scale-110 transition-transform`}
+                    >
+                      <IconComponent size={24} />
+                    </div>
+                    <span className="font-bold text-slate-700 text-sm">
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Picker View
     return (
       <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden">
         {/* Category Tabs */}
         <div className="flex gap-1 p-2 bg-gray-50 border-b overflow-x-auto no-scrollbar">
-          {(
-            Object.keys(ROUTINE_CATEGORIES) as Array<
-              keyof typeof ROUTINE_CATEGORIES
-            >
-          ).map((cat) => (
+          {Object.keys(ROUTINE_DB).map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -97,7 +320,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
         {/* Grid of Routine Cards */}
         <div className="flex-1 p-3 overflow-y-auto no-scrollbar">
           <div className="grid grid-cols-2 gap-3">
-            {ROUTINE_CATEGORIES[activeCategory].map((routine) => {
+            {ROUTINE_DB[activeCategory].map((routine) => {
               const isActive = activeRoutines.includes(routine.id);
               const IconComponent =
                 (Icons as Record<string, React.ElementType>)[routine.icon] ??
@@ -106,8 +329,8 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
               return (
                 <button
                   key={routine.id}
-                  onClick={() => toggleRoutine(routine.id)}
-                  className={`p-3 border-2 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group ${
+                  onClick={() => handleRoutineClick(routine.id)}
+                  className={`p-3 border-2 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group relative overflow-hidden ${
                     isActive
                       ? 'border-blue-500 bg-blue-50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                       : 'border-gray-100 bg-white hover:border-gray-300'
@@ -129,6 +352,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                   >
                     {routine.label}
                   </span>
+                  {isActive && (
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  )}
                 </button>
               );
             })}

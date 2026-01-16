@@ -301,7 +301,9 @@ export interface MaterialsConfig {
 }
 
 export interface StickerConfig {
-  url: string;
+  url?: string;
+  icon?: string;
+  color?: string;
   rotation?: number;
 }
 
