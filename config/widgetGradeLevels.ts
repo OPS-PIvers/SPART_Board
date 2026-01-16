@@ -59,6 +59,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   materials: ALL_GRADE_LEVELS,
   stickers: ALL_GRADE_LEVELS,
   sticker: ALL_GRADE_LEVELS,
+  'sticker-library': ALL_GRADE_LEVELS,
 };
 
 /**

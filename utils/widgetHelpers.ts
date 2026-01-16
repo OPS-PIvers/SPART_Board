@@ -11,6 +11,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'classes') return 'Class Roster';
   if (widget.type === 'time-tool') return 'Timer';
   if (widget.type === 'miniApp') return 'App Manager';
+  if (widget.type === 'sticker-library') return 'Sticker Library';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
@@ -81,6 +82,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     },
     stickers: {},
     sticker: { url: '', rotation: 0 },
+    'sticker-library': { uploadedUrls: [] },
   };
 
   return defaults[type];

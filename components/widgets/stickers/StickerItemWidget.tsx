@@ -60,7 +60,7 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
 
   if (config.icon) {
     const IconComponent =
-      (Icons as Record<string, React.ElementType>)[config.icon] ??
+      (Icons as unknown as Record<string, React.ElementType>)[config.icon] ??
       Icons.HelpCircle;
     const theme = getColorClasses(config.color ?? 'blue');
 

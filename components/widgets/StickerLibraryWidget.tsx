@@ -37,14 +37,13 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
   };
 
   const placeSticker = (url: string) => {
-    addWidget(
-      'sticker',
-      {
-        imageUrl: url,
-        size: 150,
-      },
-      { x: 100, y: 100, w: 150, h: 150 }
-    );
+    addWidget('sticker', {
+      x: 100,
+      y: 100,
+      w: 150,
+      h: 150,
+      config: { url, rotation: 0 },
+    });
   };
 
   const removeStickerFromLibrary = (index: number) => {
@@ -89,7 +88,7 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 grid grid-cols-3 gap-3">
-        {urls.map((url, i) => (
+        {urls.map((url: string, i: number) => (
           <div
             key={i}
             className="group relative aspect-square bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-400 transition-all cursor-pointer overflow-hidden"

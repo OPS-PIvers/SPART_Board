@@ -268,8 +268,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
               {routine.steps.map((step, idx) => {
                 const IconComponent =
-                  (Icons as Record<string, React.ElementType>)[step.icon] ??
-                  Icons.HelpCircle;
+                  (Icons as unknown as Record<string, React.ElementType>)[
+                    step.icon
+                  ] ?? Icons.HelpCircle;
                 const colorClass = `text-${step.color}-600`;
                 const bgClass = `bg-${step.color}-50`;
 
@@ -323,8 +324,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             {ROUTINE_DB[activeCategory].map((routine) => {
               const isActive = activeRoutines.includes(routine.id);
               const IconComponent =
-                (Icons as Record<string, React.ElementType>)[routine.icon] ??
-                Icons.HelpCircle;
+                (Icons as unknown as Record<string, React.ElementType>)[
+                  routine.icon
+                ] ?? Icons.HelpCircle;
 
               return (
                 <button
