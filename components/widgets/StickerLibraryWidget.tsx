@@ -40,7 +40,7 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
     addWidget(
       'sticker',
       {
-        imageUrl: url,
+        url: url,
         size: 150,
       },
       { x: 100, y: 100, w: 150, h: 150 }

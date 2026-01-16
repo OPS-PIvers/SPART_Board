@@ -73,13 +73,7 @@ export const DashboardView: React.FC = () => {
         const x = e.clientX - w / 2;
         const y = e.clientY - h / 2;
 
-        addWidget('sticker', {
-          x,
-          y,
-          w,
-          h,
-          config: { url, rotation: 0 },
-        });
+        addWidget('sticker', { url, rotation: 0 }, { x, y, w, h });
       } catch (err) {
         console.error('Failed to parse sticker data', err);
       }

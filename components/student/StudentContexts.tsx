@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { AuthContext, AuthContextType } from '../../context/AuthContextValue';
 import {
   DashboardContext,
-  DashboardContextType,
+  DashboardContextValue,
 } from '../../context/DashboardContextValue';
 
 interface StudentProviderProps {
@@ -30,7 +30,7 @@ const mockAuth: AuthContextType = {
 // is called by widgets for state management. This means widgets that attempt
 // to update their configuration will silently fail.
 // See studentViewConfig.ts for widget compatibility details.
-const mockDashboard: DashboardContextType = {
+const mockDashboard: DashboardContextValue = {
   dashboards: [],
   activeDashboard: null,
   toasts: [],

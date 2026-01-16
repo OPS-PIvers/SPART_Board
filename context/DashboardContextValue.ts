@@ -69,6 +69,6 @@ export interface DashboardContextValue {
   reorderFolderItems: (folderId: string, newItems: WidgetType[]) => void;
 }
 
-export const DashboardContext = createContext<DashboardContextValue | undefined>(
-  undefined
-);
+export const DashboardContext = createContext<
+  DashboardContextValue | undefined
+>(undefined);
