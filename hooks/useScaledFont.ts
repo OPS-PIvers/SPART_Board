@@ -25,19 +25,10 @@ export const useScaledFont = (
     // when the window is very narrow or very short.
     const minDim = Math.min(widgetWidth, widgetHeight);
 
-    // Base calculation: roughly 10% of the minimum dimension,
-    // multiplied by the global base font size relative to default (16),
-    // and then by the specific component's baseFactor.
-    const globalMultiplier = globalStyle.baseFontSize / 16;
-    const scaledSize = minDim * 0.1 * globalMultiplier * baseFactor;
-
+    // Base calculation: roughly 10% of the minimum dimension, 
+    // multiplied by the specific component's baseFactor.
+    const scaledSize = minDim * 0.1 * baseFactor;
+    
     return Math.max(minSize, Math.min(maxSize, scaledSize));
-  }, [
-    widgetWidth,
-    widgetHeight,
-    globalStyle.baseFontSize,
-    baseFactor,
-    minSize,
-    maxSize,
-  ]);
+  }, [widgetWidth, widgetHeight, baseFactor, minSize, maxSize]);
 };
