@@ -1,12 +1,18 @@
 import { GradeLevel } from '../types';
 
+export interface InstructionalStep {
+  text: string;
+  icon?: string;
+  color?: string;
+}
+
 export interface InstructionalRoutine {
   id: string;
   name: string;
   grades: string;
   gradeLevels: GradeLevel[];
   icon: string;
-  defaultSteps: string[];
+  steps: InstructionalStep[];
 }
 
 export const ROUTINES: InstructionalRoutine[] = [
@@ -16,10 +22,14 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'MessagesSquare',
-    defaultSteps: [
-      'Read the question on the board.',
-      'Write your answer quietly.',
-      'Read and answer what your friends wrote.',
+    steps: [
+      { text: 'Read the question on the board.', icon: 'Eye', color: 'blue' },
+      { text: 'Write your answer quietly.', icon: 'Pencil', color: 'slate' },
+      {
+        text: 'Read and answer what your friends wrote.',
+        icon: 'MessageSquare',
+        color: 'indigo',
+      },
     ],
   },
   {
@@ -28,9 +38,17 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Users',
-    defaultSteps: [
-      'Read the text together in one voice.',
-      'Listen to stay at the same speed.',
+    steps: [
+      {
+        text: 'Read the text together in one voice.',
+        icon: 'Volume2',
+        color: 'blue',
+      },
+      {
+        text: 'Listen to stay at the same speed.',
+        icon: 'Ear',
+        color: 'indigo',
+      },
     ],
   },
   {
@@ -39,9 +57,13 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Volume2',
-    defaultSteps: [
-      'Listen to the teacher read.',
-      'Read the same part back exactly the same way.',
+    steps: [
+      { text: 'Listen to the teacher read.', icon: 'Ear', color: 'blue' },
+      {
+        text: 'Read the same part back exactly the same way.',
+        icon: 'Volume2',
+        color: 'indigo',
+      },
     ],
   },
   {
@@ -50,10 +72,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'Eye',
-    defaultSteps: [
-      'Inside group: Practice the skill.',
-      'Outside group: Watch and learn.',
-      'Class: Talk about what we saw.',
+    steps: [
+      {
+        text: 'Inside group: Practice the skill.',
+        icon: 'Users',
+        color: 'blue',
+      },
+      { text: 'Outside group: Watch and learn.', icon: 'Eye', color: 'amber' },
+      {
+        text: 'Class: Talk about what we saw.',
+        icon: 'MessageSquare',
+        color: 'indigo',
+      },
     ],
   },
   {
@@ -62,10 +92,22 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Image',
-    defaultSteps: [
-      'Walk quietly around the room.',
-      'Look closely at the work on the walls.',
-      'Think about what you learned.',
+    steps: [
+      {
+        text: 'Walk quietly around the room.',
+        icon: 'Footprints',
+        color: 'slate',
+      },
+      {
+        text: 'Look closely at the work on the walls.',
+        icon: 'Eye',
+        color: 'blue',
+      },
+      {
+        text: 'Think about what you learned.',
+        icon: 'Lightbulb',
+        color: 'amber',
+      },
     ],
   },
   {
@@ -74,10 +116,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'ArrowRightLeft',
-    defaultSteps: [
-      'Write your idea on a card.',
-      'Trade ideas with a partner.',
-      'Find a new partner and share the new idea.',
+    steps: [
+      { text: 'Write your idea on a card.', icon: 'Pencil', color: 'blue' },
+      {
+        text: 'Trade ideas with a partner.',
+        icon: 'RefreshCw',
+        color: 'indigo',
+      },
+      {
+        text: 'Find a new partner and share the new idea.',
+        icon: 'Users',
+        color: 'green',
+      },
     ],
   },
   {
@@ -86,10 +136,22 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Puzzle',
-    defaultSteps: [
-      'Learn your part with your expert group.',
-      'Teach your part to your home group.',
-      'Listen to learn all the other parts.',
+    steps: [
+      {
+        text: 'Learn your part with your expert group.',
+        icon: 'Search',
+        color: 'blue',
+      },
+      {
+        text: 'Teach your part to your home group.',
+        icon: 'Users',
+        color: 'indigo',
+      },
+      {
+        text: 'Listen to learn all the other parts.',
+        icon: 'Ear',
+        color: 'amber',
+      },
     ],
   },
   {
@@ -98,10 +160,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'PencilLine',
-    defaultSteps: [
-      'Quickly write your answer.',
-      'Share your writing with a partner.',
-      'Share your ideas with the class.',
+    steps: [
+      { text: 'Quickly write your answer.', icon: 'Pencil', color: 'blue' },
+      {
+        text: 'Share your writing with a partner.',
+        icon: 'Users',
+        color: 'indigo',
+      },
+      {
+        text: 'Share your ideas with the class.',
+        icon: 'Share2',
+        color: 'green',
+      },
     ],
   },
   {
@@ -110,10 +180,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Users2',
-    defaultSteps: [
-      'Think about the question.',
-      'Find a partner and share your answer.',
-      'When told, move to find a new partner.',
+    steps: [
+      { text: 'Think about the question.', icon: 'Lightbulb', color: 'amber' },
+      {
+        text: 'Find a partner and share your answer.',
+        icon: 'Users',
+        color: 'blue',
+      },
+      {
+        text: 'When told, move to find a new partner.',
+        icon: 'Footprints',
+        color: 'slate',
+      },
     ],
   },
   {
@@ -122,10 +200,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-2',
     gradeLevels: ['k-2'],
     icon: 'Signpost',
-    defaultSteps: [
-      'Pick the corner you want to answer.',
-      'Walk to that corner.',
-      'Talk with the friends in your corner.',
+    steps: [
+      {
+        text: 'Pick the corner you want to answer.',
+        icon: 'Signpost',
+        color: 'blue',
+      },
+      { text: 'Walk to that corner.', icon: 'Footprints', color: 'slate' },
+      {
+        text: 'Talk with the friends in your corner.',
+        icon: 'Users',
+        color: 'indigo',
+      },
     ],
   },
   {
@@ -134,10 +220,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Smile',
-    defaultSteps: [
-      'Get your group and your parts.',
-      'Practice reading your lines.',
-      'Perform the story for the class!',
+    steps: [
+      { text: 'Get your group and your parts.', icon: 'Users', color: 'blue' },
+      {
+        text: 'Practice reading your lines.',
+        icon: 'BookOpen',
+        color: 'indigo',
+      },
+      {
+        text: 'Perform the story for the class!',
+        icon: 'Star',
+        color: 'amber',
+      },
     ],
   },
   {
@@ -146,10 +240,10 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Repeat2',
-    defaultSteps: [
-      'Read with the teacher.',
-      'Read with a partner.',
-      'Read it quietly by yourself.',
+    steps: [
+      { text: 'Read with the teacher.', icon: 'Users', color: 'blue' },
+      { text: 'Read with a partner.', icon: 'Users', color: 'indigo' },
+      { text: 'Read it quietly by yourself.', icon: 'User', color: 'slate' },
     ],
   },
   {
@@ -158,10 +252,14 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Pause',
-    defaultSteps: [
-      'Work with your group.',
-      'Make a statue scene from the story.',
-      'Stay very still and quiet.',
+    steps: [
+      { text: 'Work with your group.', icon: 'Users', color: 'blue' },
+      {
+        text: 'Make a statue scene from the story.',
+        icon: 'Pause',
+        color: 'amber',
+      },
+      { text: 'Stay very still and quiet.', icon: 'VolumeX', color: 'slate' },
     ],
   },
   {
@@ -170,10 +268,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'Vote',
-    defaultSteps: [
-      'Listen to the question.',
-      'Move to the area that matches your choice.',
-      'Explain why you chose that spot.',
+    steps: [
+      { text: 'Listen to the question.', icon: 'Ear', color: 'blue' },
+      {
+        text: 'Move to the area that matches your choice.',
+        icon: 'Footprints',
+        color: 'slate',
+      },
+      {
+        text: 'Explain why you chose that spot.',
+        icon: 'MessageSquare',
+        color: 'indigo',
+      },
     ],
   },
   {
@@ -182,10 +288,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-12',
     gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
     icon: 'Brain',
-    defaultSteps: [
-      'Think silently about the question.',
-      'Share your thoughts with a partner.',
-      'Join the class discussion.',
+    steps: [
+      {
+        text: 'Think silently about the question.',
+        icon: 'Lightbulb',
+        color: 'amber',
+      },
+      {
+        text: 'Share your thoughts with a partner.',
+        icon: 'Users',
+        color: 'blue',
+      },
+      { text: 'Join the class discussion.', icon: 'Share2', color: 'green' },
     ],
   },
   {
@@ -194,10 +308,14 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'BookOpenCheck',
-    defaultSteps: [
-      'Listen to the word.',
-      'Say the word and clap the beats.',
-      'Learn what the word means.',
+    steps: [
+      { text: 'Listen to the word.', icon: 'Ear', color: 'blue' },
+      {
+        text: 'Say the word and clap the beats.',
+        icon: 'Volume2',
+        color: 'indigo',
+      },
+      { text: 'Learn what the word means.', icon: 'Search', color: 'amber' },
     ],
   },
   {
@@ -206,10 +324,14 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'Zap',
-    defaultSteps: [
-      'Listen to the prompt.',
-      'Quickly share your answer one by one.',
-      "Listen to everyone's ideas.",
+    steps: [
+      { text: 'Listen to the prompt.', icon: 'Ear', color: 'blue' },
+      {
+        text: 'Quickly share your answer one by one.',
+        icon: 'Zap',
+        color: 'amber',
+      },
+      { text: "Listen to everyone's ideas.", icon: 'Ear', color: 'indigo' },
     ],
   },
   {
@@ -218,10 +340,10 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '6-12',
     gradeLevels: ['6-8', '9-12'],
     icon: 'Users',
-    defaultSteps: [
-      'Predict and clarify content.',
-      'Summarize key ideas.',
-      'Question the content.',
+    steps: [
+      { text: 'Predict and clarify content.', icon: 'Search', color: 'blue' },
+      { text: 'Summarize key ideas.', icon: 'BookOpen', color: 'indigo' },
+      { text: 'Question the content.', icon: 'HelpCircle', color: 'purple' },
     ],
   },
   {
@@ -230,10 +352,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '6-12',
     gradeLevels: ['6-8', '9-12'],
     icon: 'GraduationCap',
-    defaultSteps: [
-      'Read and annotate the text.',
-      'Participate in student-led dialogue.',
-      'Refine understanding through questioning.',
+    steps: [
+      { text: 'Read and annotate the text.', icon: 'Pencil', color: 'blue' },
+      {
+        text: 'Participate in student-led dialogue.',
+        icon: 'Users',
+        color: 'indigo',
+      },
+      {
+        text: 'Refine understanding through questioning.',
+        icon: 'Search',
+        color: 'purple',
+      },
     ],
   },
   {
@@ -242,10 +372,22 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '6-12',
     gradeLevels: ['6-8', '9-12'],
     icon: 'RefreshCw',
-    defaultSteps: [
-      'Write your first draft response.',
-      'Discuss and refine with partners.',
-      'Finalize your stronger and clearer response.',
+    steps: [
+      {
+        text: 'Write your first draft response.',
+        icon: 'Pencil',
+        color: 'blue',
+      },
+      {
+        text: 'Discuss and refine with partners.',
+        icon: 'Users',
+        color: 'indigo',
+      },
+      {
+        text: 'Finalize your stronger and clearer response.',
+        icon: 'RefreshCw',
+        color: 'green',
+      },
     ],
   },
   {
@@ -254,10 +396,18 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '9-12',
     gradeLevels: ['9-12'],
     icon: 'Eye',
-    defaultSteps: [
-      'Observe the phenomenon or text closely.',
-      'Identify what you notice.',
-      'Record what you wonder about.',
+    steps: [
+      {
+        text: 'Observe the phenomenon or text closely.',
+        icon: 'Eye',
+        color: 'blue',
+      },
+      { text: 'Identify what you notice.', icon: 'Search', color: 'indigo' },
+      {
+        text: 'Record what you wonder about.',
+        icon: 'HelpCircle',
+        color: 'purple',
+      },
     ],
   },
   {
@@ -266,11 +416,23 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '9-12',
     gradeLevels: ['9-12'],
     icon: 'Brain',
-    defaultSteps: [
-      'Recall and list facts (Remember).',
-      'Explain and summarize (Understand).',
-      'Apply and solve (Apply).',
-      'Analyze and organize (Analyze).',
+    steps: [
+      {
+        text: 'Recall and list facts (Remember).',
+        icon: 'Pencil',
+        color: 'slate',
+      },
+      {
+        text: 'Explain and summarize (Understand).',
+        icon: 'BookOpen',
+        color: 'blue',
+      },
+      { text: 'Apply and solve (Apply).', icon: 'Zap', color: 'indigo' },
+      {
+        text: 'Analyze and organize (Analyze).',
+        icon: 'Brain',
+        color: 'purple',
+      },
     ],
   },
 ];

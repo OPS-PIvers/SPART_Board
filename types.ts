@@ -120,6 +120,8 @@ export interface CalendarEvent {
 export interface RoutineStep {
   id: string;
   text: string;
+  icon?: string;
+  color?: string;
 }
 
 // Widget-specific config types
