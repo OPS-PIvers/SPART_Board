@@ -21,7 +21,6 @@ import {
   DragOverlay,
   DragStartEvent,
   rectIntersection,
-  pointerWithin,
   CollisionDetection,
 } from '@dnd-kit/core';
 import {
@@ -847,10 +846,11 @@ export const Dock: React.FC = () => {
    * If the center of the dragged item is significantly over a folder, we prioritize grouping.
    */
   const customCollisionDetection: CollisionDetection = (args) => {
-    const { active, droppableRects, pointerCoordinates } = args;
+    const { active, collisionRect, droppableRects } = args;
     const items = dockItems;
 
     // 1. Check for folder grouping (rect intersection)
+    // We want robust detection for folders, so rectIntersection is good.
     const folderCollisions = rectIntersection(args).filter((collision) => {
       const item = items.find(
         (i) => i.type === 'folder' && i.folder.id === collision.id
@@ -865,53 +865,62 @@ export const Dock: React.FC = () => {
       return [folderCollisions[0]];
     }
 
-    // 2. Check for Tool-on-Tool grouping (pointer proximity)
-    // Only if active item is a tool and target is a tool.
-    const activeItemType = items.find(
-      (i) => i.type === 'tool' && i.toolType === active.id
-    )?.type;
+    // 2. Run standard closestCenter for tools
+    const closest = closestCenter(args);
 
-    if (activeItemType === 'tool' && pointerCoordinates) {
-      const pointerCollisions = pointerWithin(args).filter((collision) => {
-        // Exclude self
-        if (collision.id === active.id) return false;
-        // Check if target is a tool
-        const targetItem = items.find(
-          (i) => i.type === 'tool' && i.toolType === collision.id
+    if (!closest || closest.length === 0) return [];
+
+    const targetId = closest[0].id;
+    if (targetId === active.id) return [];
+
+    const targetItem = items.find(
+      (i) => i.type === 'tool' && i.toolType === targetId
+    );
+
+    // If closest is a tool, check for high overlap to trigger grouping
+    if (targetItem) {
+      const targetRect = droppableRects.get(targetId);
+      if (targetRect) {
+        // Calculate intersection area manually
+        const intersectionRect = {
+          left: Math.max(collisionRect.left, targetRect.left),
+          right: Math.min(
+            collisionRect.left + collisionRect.width,
+            targetRect.left + targetRect.width
+          ),
+          top: Math.max(collisionRect.top, targetRect.top),
+          bottom: Math.min(
+            collisionRect.top + collisionRect.height,
+            targetRect.top + targetRect.height
+          ),
+        };
+
+        const width = Math.max(
+          0,
+          intersectionRect.right - intersectionRect.left
         );
-        return !!targetItem;
-      });
+        const height = Math.max(
+          0,
+          intersectionRect.bottom - intersectionRect.top
+        );
+        const intersectionArea = width * height;
+        const activeArea = collisionRect.width * collisionRect.height;
+        const overlapRatio = intersectionArea / activeArea;
 
-      if (pointerCollisions.length > 0) {
-        // Find closest target based on pointer
-        const best = pointerCollisions[0]; // pointerWithin returns matches under pointer
-        const rect = droppableRects.get(best.id);
-
-        if (rect) {
-          const centerX = rect.left + rect.width / 2;
-          const centerY = rect.top + rect.height / 2;
-          const dist = Math.sqrt(
-            Math.pow(pointerCoordinates.x - centerX, 2) +
-              Math.pow(pointerCoordinates.y - centerY, 2)
-          );
-
-          // If pointer is within 35% of the radius (inner 70% circle roughly), treat as grouping
-          // Use smaller dimension for radius to be safe
-          const radius = Math.min(rect.width, rect.height) / 2;
-          if (dist < radius * 0.7) {
-            return [
-              {
-                ...best,
-                id: `group:${best.id}`,
-              },
-            ];
-          }
+        // If overlap > 50%, force grouping
+        if (overlapRatio > 0.5) {
+          return [
+            {
+              id: `group:${targetId}`,
+              data: { value: intersectionArea },
+            },
+          ];
         }
       }
     }
 
-    // 3. Otherwise, fallback to standard sortable collision (closestCenter)
-    return closestCenter(args);
+    // Otherwise return the standard closest center result (triggering reorder)
+    return closest;
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
