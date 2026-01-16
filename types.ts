@@ -427,6 +427,10 @@ export type DockItem =
   | { type: 'tool'; toolType: WidgetType }
   | { type: 'folder'; folder: DockFolder };
 
+export interface DashboardSettings {
+  defaultWidgetTransparency?: number;
+}
+
 export interface Dashboard {
   id: string;
   name: string;
@@ -436,6 +440,7 @@ export interface Dashboard {
   createdAt: number;
   isDefault?: boolean;
   order?: number;
+  settings?: DashboardSettings;
 }
 
 export interface Toast {
