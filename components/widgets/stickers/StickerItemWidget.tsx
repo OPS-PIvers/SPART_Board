@@ -69,11 +69,10 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
         <div
           className={`w-full h-full flex items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl`}
         >
-          <div className={`p-4 rounded-2xl ${theme.bg} ${theme.text}`}>
-            <IconComponent
-              className="w-[60%] h-[60%] mx-auto"
-              strokeWidth={3}
-            />
+          <div
+            className={`p-2 rounded-2xl ${theme.bg} ${theme.text} w-[90%] h-[90%] flex items-center justify-center`}
+          >
+            <IconComponent className="w-[85%] h-[85%]" strokeWidth={2.5} />
           </div>
         </div>
       </DraggableSticker>
