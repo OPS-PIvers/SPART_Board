@@ -465,6 +465,96 @@ export const ROUTINES: InstructionalRoutine[] = [
     ],
   },
   {
+    id: 'do-now',
+    name: 'Do Now / Bell Ringer',
+    grades: 'Universal',
+    gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
+    icon: 'Zap',
+    steps: [
+      {
+        text: 'Enter and find your seat.',
+        icon: 'User',
+        color: 'blue',
+        label: 'Sit',
+      },
+      {
+        text: 'Recall and think about the prompt.',
+        icon: 'Lightbulb',
+        color: 'amber',
+        label: 'Think',
+      },
+      {
+        text: 'Draft your initial response.',
+        icon: 'Pencil',
+        color: 'indigo',
+        label: 'Write',
+      },
+    ],
+  },
+  {
+    id: 'direct-inst',
+    name: 'Direct Instruction',
+    grades: 'Universal',
+    gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
+    icon: 'Monitor',
+    steps: [
+      {
+        text: 'Eyes on the facilitator.',
+        icon: 'Eye',
+        color: 'blue',
+        label: 'Look',
+      },
+      {
+        text: 'Active listening to the lesson.',
+        icon: 'Ear',
+        color: 'indigo',
+        label: 'Listen',
+      },
+    ],
+  },
+  {
+    id: 'cfu',
+    name: 'Check for Understanding',
+    grades: 'Universal',
+    gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
+    icon: 'CheckCircle',
+    steps: [
+      {
+        text: 'Prepare your visual signal.',
+        icon: 'Hand',
+        color: 'amber',
+        label: 'Show',
+      },
+      {
+        text: 'Respond to the facilitator.',
+        icon: 'MessageSquare',
+        color: 'blue',
+        label: 'Answer',
+      },
+    ],
+  },
+  {
+    id: 'exit-ticket',
+    name: 'Exit Ticket',
+    grades: 'Universal',
+    gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
+    icon: 'LogOut',
+    steps: [
+      {
+        text: 'Complete your final reflection.',
+        icon: 'Pencil',
+        color: 'green',
+        label: 'Write',
+      },
+      {
+        text: 'Turn in your work and prepare to transition.',
+        icon: 'LogOut',
+        color: 'blue',
+        label: 'Exit',
+      },
+    ],
+  },
+  {
     id: 'reciprocal-teaching',
     name: 'Reciprocal Teaching',
     grades: '6-12',
