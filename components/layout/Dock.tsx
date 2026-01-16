@@ -21,6 +21,7 @@ import {
   DragOverlay,
   DragStartEvent,
   rectIntersection,
+  pointerWithin,
   CollisionDetection,
 } from '@dnd-kit/core';
 import {
@@ -846,7 +847,7 @@ export const Dock: React.FC = () => {
    * If the center of the dragged item is significantly over a folder, we prioritize grouping.
    */
   const customCollisionDetection: CollisionDetection = (args) => {
-    const { active, collisionRect } = args;
+    const { active, droppableRects, pointerCoordinates } = args;
     const items = dockItems;
 
     // 1. Check for folder grouping (rect intersection)
@@ -864,15 +865,14 @@ export const Dock: React.FC = () => {
       return [folderCollisions[0]];
     }
 
-    // 2. Check for Tool-on-Tool grouping (high overlap)
-    // Only if active item is a tool (can't group folders into folders easily yet)
-    // and target is a tool.
+    // 2. Check for Tool-on-Tool grouping (pointer proximity)
+    // Only if active item is a tool and target is a tool.
     const activeItemType = items.find(
       (i) => i.type === 'tool' && i.toolType === active.id
     )?.type;
 
-    if (activeItemType === 'tool') {
-      const toolCollisions = rectIntersection(args).filter((collision) => {
+    if (activeItemType === 'tool' && pointerCoordinates) {
+      const pointerCollisions = pointerWithin(args).filter((collision) => {
         // Exclude self
         if (collision.id === active.id) return false;
         // Check if target is a tool
@@ -882,29 +882,30 @@ export const Dock: React.FC = () => {
         return !!targetItem;
       });
 
-      if (toolCollisions.length > 0) {
-        // Find best collision
-        const best = toolCollisions.sort(
-          (a, b) => (b.data?.value ?? 0) - (a.data?.value ?? 0)
-        )[0];
+      if (pointerCollisions.length > 0) {
+        // Find closest target based on pointer
+        const best = pointerCollisions[0]; // pointerWithin returns matches under pointer
+        const rect = droppableRects.get(best.id);
 
-        // Calculate overlap ratio
-        // value is the intersection area.
-        // We need the area of the active item or target item to determine %.
-        // dnd-kit rectIntersection returns area in `data.value`.
-        // collisionRect is the active item's rect.
-        const activeArea = collisionRect.width * collisionRect.height;
-        const overlapRatio = (best.data?.value ?? 0) / activeArea;
+        if (rect) {
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const dist = Math.sqrt(
+            Math.pow(pointerCoordinates.x - centerX, 2) +
+              Math.pow(pointerCoordinates.y - centerY, 2)
+          );
 
-        // If overlap is significant (> 40%), treat as grouping intent
-        // We return a Modified ID so SortableContext doesn't recognize it and doesn't swap.
-        if (overlapRatio > 0.4) {
-          return [
-            {
-              ...best,
-              id: `group:${best.id}`,
-            },
-          ];
+          // If pointer is within 35% of the radius (inner 70% circle roughly), treat as grouping
+          // Use smaller dimension for radius to be safe
+          const radius = Math.min(rect.width, rect.height) / 2;
+          if (dist < radius * 0.7) {
+            return [
+              {
+                ...best,
+                id: `group:${best.id}`,
+              },
+            ];
+          }
         }
       }
     }
