@@ -94,6 +94,9 @@ const mockDashboard: DashboardContextValue = {
   setBackground: () => {
     // No-op
   },
+  setGlobalStyle: () => {
+    // No-op
+  },
   toggleToolVisibility: () => {
     // No-op
   },

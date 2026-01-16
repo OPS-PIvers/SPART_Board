@@ -11,7 +11,7 @@ import {
   ChevronRight,
   Copy,
 } from 'lucide-react';
-import { WidgetData, WidgetType } from '@/types';
+import { WidgetData, WidgetType, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
@@ -47,7 +47,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     duplicateWidget,
     bringToFront,
     addToast,
+    activeDashboard,
   } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -184,7 +187,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const transparency = widget.transparency ?? 0.2;
+  const transparency = widget.transparency ?? globalStyle.windowTransparency;
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
@@ -248,8 +251,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onMouseDown={handleMouseDown}
         onClick={handleWidgetClick}
         transparency={transparency}
+        cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform ${
-          isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
+          isMaximized ? 'border-none !shadow-none' : ''
         } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
           left: isMaximized ? 0 : widget.x,

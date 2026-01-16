@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, ClockConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 import { WIDGET_PALETTE } from '../../config/colors';
 
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -18,17 +21,19 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     format24 = true,
     showSeconds = true,
     themeColor = '#1e293b',
-    fontFamily = 'font-mono',
+    fontFamily = 'global',
     clockStyle = 'modern',
     glow = false,
   } = widget.config as ClockConfig;
 
-  // Calculate font size based on widget width/height
-  const fontSize = useMemo(() => {
-    const baseW = widget.w / (showSeconds ? 5 : 3.5);
-    const baseH = widget.h / 2;
-    return Math.min(baseW, baseH);
-  }, [widget.w, widget.h, showSeconds]);
+  // Calculate scaled font size
+  const fontSize = useScaledFont(
+    widget.w,
+    widget.h,
+    showSeconds ? 1.8 : 2.5, // Base factor
+    16, // Min size
+    200 // Max size
+  );
 
   const hours = time.getHours();
   const displayHours = format24
@@ -49,12 +54,25 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
+  const getFontClass = () => {
+    if (fontFamily === 'global') {
+      return globalStyle.fontFamily === 'sans'
+        ? 'font-sans'
+        : globalStyle.fontFamily === 'mono'
+          ? 'font-mono'
+          : globalStyle.fontFamily === 'handwritten'
+            ? 'font-handwritten'
+            : 'font-sans';
+    }
+    return fontFamily;
+  };
+
   return (
     <div
       className={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-500 rounded-lg ${clockStyle === 'lcd' ? 'bg-black/5' : ''}`}
     >
       <div
-        className={`flex items-baseline leading-none transition-all ${fontFamily} ${getStyleClasses()}`}
+        className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
         style={{
           fontSize: `${fontSize}px`,
           color: themeColor,
@@ -94,7 +112,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         {!format24 && (
           <span
-            className="text-xs font-sans opacity-40 ml-2 uppercase font-black"
+            className="text-xs opacity-40 ml-2 uppercase font-black"
             style={{ fontSize: '0.2em' }}
           >
             {ampm}
@@ -102,7 +120,9 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="text-[10px] md:text-xs font-bold opacity-40 uppercase tracking-[0.2em] font-sans text-slate-900">
+      <div
+        className={`text-[10px] md:text-xs font-bold opacity-40 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+      >
         {time.toLocaleDateString(undefined, {
           weekday: 'long',
           month: 'short',
@@ -118,10 +138,10 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as ClockConfig;
 
   const fonts = [
+    { id: 'global', label: 'Inherit', icon: 'G' },
     { id: 'font-mono', label: 'Digital', icon: '01' },
     { id: 'font-sans', label: 'Modern', icon: 'Aa' },
     { id: 'font-handwritten', label: 'School', icon: '✏️' },
-    { id: 'serif', label: 'Classic', icon: 'T' },
   ];
 
   const colors = WIDGET_PALETTE;

@@ -469,6 +469,7 @@ export interface Dashboard {
   background: string;
   thumbnailUrl?: string;
   widgets: WidgetData[];
+  globalStyle?: GlobalStyle;
   createdAt: number;
   isDefault?: boolean;
   order?: number;
@@ -549,10 +550,32 @@ export interface LunchCountGlobalConfig {
 export interface BackgroundPreset {
   id: string;
   url: string;
-  thumbnailUrl?: string;
   label: string;
   active: boolean; // Whether it shows up for users
   accessLevel: AccessLevel; // Who can see it
   betaUsers: string[]; // Specific users if beta
   createdAt: number;
 }
+
+// --- GLOBAL STYLING TYPES ---
+
+export type GlobalFontFamily =
+  | 'sans'
+  | 'handwritten'
+  | 'mono'
+  | 'comic'
+  | 'dyslexic';
+
+export interface GlobalStyle {
+  fontFamily: GlobalFontFamily;
+  windowTransparency: number; // 0 to 1
+  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  baseFontSize: number; // 12 to 24
+}
+
+export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
+  fontFamily: 'sans',
+  windowTransparency: 0.8,
+  borderRadius: '2xl',
+  baseFontSize: 16,
+};

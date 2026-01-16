@@ -37,6 +37,7 @@ export interface DashboardContextValue {
   bringToFront: (id: string) => void;
   moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
   setBackground: (bg: string) => void;
+  setGlobalStyle: (style: Partial<GlobalStyle>) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;

@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { DEFAULT_GLOBAL_STYLE } from '../../types';
 
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
@@ -173,10 +174,20 @@ export const DashboardView: React.FC = () => {
     );
   }
 
+  const globalStyle = activeDashboard.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+  const fontClass =
+    globalStyle.fontFamily === 'sans'
+      ? 'font-sans'
+      : globalStyle.fontFamily === 'mono'
+        ? 'font-mono'
+        : globalStyle.fontFamily === 'handwritten'
+          ? 'font-handwritten'
+          : 'font-sans';
+
   return (
     <div
       id="dashboard-root"
-      className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses}`}
+      className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses} ${fontClass}`}
       style={backgroundStyles}
       onClick={(e) => e.stopPropagation()}
       onDragOver={handleDragOver}

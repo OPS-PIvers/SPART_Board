@@ -4,6 +4,7 @@ import { db } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { WidgetData, WeatherConfig, WeatherGlobalConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
 import {
   Sun,
   Cloud,
@@ -311,6 +312,8 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }
 
+  const tempFontSize = useScaledFont(widget.w, widget.h, 1.2, 24, 80);
+
   return (
     <div className="flex flex-col items-center justify-between h-full p-4 gap-2 relative">
       <div className="flex flex-col items-center justify-center gap-2">
@@ -320,7 +323,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         <div className="flex items-center gap-4">
           {getIcon()}
-          <div className="text-4xl font-black text-slate-800 tabular-nums">
+          <div
+            className="font-black text-slate-800 tabular-nums leading-none"
+            style={{ fontSize: `${tempFontSize}px` }}
+          >
             {Math.round(temp)}°
           </div>
         </div>

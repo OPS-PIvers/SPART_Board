@@ -28,6 +28,7 @@ import {
   Minimize,
   Copy,
   ArrowLeft,
+  Palette,
 } from 'lucide-react';
 import {
   DndContext,
@@ -49,7 +50,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, BackgroundPreset } from '../../types';
+import {
+  Dashboard,
+  BackgroundPreset,
+  GlobalFontFamily,
+  GlobalStyle,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
@@ -266,12 +273,11 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
   );
 };
 
-type MenuSection = 'main' | 'widgets' | 'backgrounds' | 'boards' | 'settings';
-
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activeSection, setActiveSection] = useState<MenuSection>('main');
+  const [activeSection, setActiveSection] = useState<
+    'main' | 'boards' | 'backgrounds' | 'widgets' | 'style'
+  >('main');
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -566,7 +572,8 @@ export const Sidebar: React.FC = () => {
       addToast('Custom background uploaded to cloud', 'success');
     } catch (error) {
       console.error('Upload failed:', error);
-      addToast('Upload failed', 'error');
+      const message = error instanceof Error ? error.message : 'Upload failed';
+      addToast(message, 'error');
     } finally {
       setUploading(false);
     }
@@ -917,6 +924,24 @@ export const Sidebar: React.FC = () => {
                 </button>
 
                 <button
+                  onClick={() => setActiveSection('style')}
+                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
+                >
+                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+                    <Palette className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
+                      Global Style
+                    </div>
+                    <p className="text-sm text-slate-500 font-medium">
+                      Control fonts, transparency, and more
+                    </p>
+                  </div>
+                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
+                </button>
+
+                <button
                   onClick={() => setActiveSection('settings')}
                   className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
                 >
@@ -1231,6 +1256,158 @@ export const Sidebar: React.FC = () => {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* STYLE SECTION */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                  activeSection === 'style'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                {/* Global Font Family */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    Global Typography
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: 'sans', label: 'Modern Sans', font: 'font-sans' },
+                      {
+                        id: 'handwritten',
+                        label: 'Handwritten',
+                        font: 'font-handwritten',
+                      },
+                      { id: 'mono', label: 'Digital Mono', font: 'font-mono' },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() =>
+                          setGlobalStyle({
+                            fontFamily: f.id as GlobalFontFamily,
+                          })
+                        }
+                        className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 ${
+                          (activeDashboard?.globalStyle?.fontFamily ??
+                            DEFAULT_GLOBAL_STYLE.fontFamily) === f.id
+                            ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
+                            : 'bg-white border-slate-100 text-slate-500'
+                        }`}
+                      >
+                        <span className={`text-base font-bold ${f.font}`}>
+                          {f.label}
+                        </span>
+                        {(activeDashboard?.globalStyle?.fontFamily ??
+                          DEFAULT_GLOBAL_STYLE.fontFamily) === f.id && (
+                          <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Window Transparency */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                      Window Transparency
+                    </h3>
+                    <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                      {Math.round(
+                        (activeDashboard?.globalStyle?.windowTransparency ??
+                          DEFAULT_GLOBAL_STYLE.windowTransparency) * 100
+                      )}
+                      %
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.05"
+                    value={
+                      activeDashboard?.globalStyle?.windowTransparency ??
+                      DEFAULT_GLOBAL_STYLE.windowTransparency
+                    }
+                    onChange={(e) =>
+                      setGlobalStyle({
+                        windowTransparency: parseFloat(e.target.value),
+                      })
+                    }
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                  />
+                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Clear</span>
+                    <span>Solid</span>
+                  </div>
+                </div>
+
+                {/* Border Radius */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    Window Corners
+                  </h3>
+                  <div className="flex bg-slate-100 p-1 rounded-xl">
+                    {[
+                      { id: 'none', label: 'Square' },
+                      { id: 'lg', label: 'Soft' },
+                      { id: '2xl', label: 'Round' },
+                      { id: '3xl', label: 'Full' },
+                    ].map((r) => (
+                      <button
+                        key={r.id}
+                        onClick={() =>
+                          setGlobalStyle({
+                            borderRadius: r.id as GlobalStyle['borderRadius'],
+                          })
+                        }
+                        className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                          (activeDashboard?.globalStyle?.borderRadius ??
+                            DEFAULT_GLOBAL_STYLE.borderRadius) === r.id
+                            ? 'bg-white shadow-sm text-brand-blue-primary'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Base Font Size */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                      Global Text Size
+                    </h3>
+                    <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                      {activeDashboard?.globalStyle?.baseFontSize ??
+                        DEFAULT_GLOBAL_STYLE.baseFontSize}
+                      px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="12"
+                    max="24"
+                    step="1"
+                    value={
+                      activeDashboard?.globalStyle?.baseFontSize ??
+                      DEFAULT_GLOBAL_STYLE.baseFontSize
+                    }
+                    onChange={(e) =>
+                      setGlobalStyle({
+                        baseFontSize: parseInt(e.target.value),
+                      })
+                    }
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                  />
+                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Smaller</span>
+                    <span>Larger</span>
+                  </div>
                 </div>
               </div>
 
