@@ -353,11 +353,11 @@ const SortableFolderWidget = ({
       ref={setNodeRef}
       style={style}
       className="relative group/item flex flex-col items-center gap-1"
-      {...attributes}
-      {...listeners}
     >
       <div className="relative">
         <button
+          {...attributes}
+          {...listeners}
           onClick={() => {
             if (isEditMode) return;
             onAdd();
@@ -393,6 +393,8 @@ const SortableFolderWidget = ({
               onRemove();
             }}
             onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
           >
             <X className="w-2.5 h-2.5" />
