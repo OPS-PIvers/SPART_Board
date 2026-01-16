@@ -39,14 +39,14 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       const newTeams: ScoreboardTeam[] = [
         {
           id: 'team-a',
-          name: config.teamA || 'Team A',
-          score: config.scoreA || 0,
+          name: config.teamA ?? 'Team A',
+          score: config.scoreA ?? 0,
           color: 'bg-blue-500',
         },
         {
           id: 'team-b',
-          name: config.teamB || 'Team B',
-          score: config.scoreB || 0,
+          name: config.teamB ?? 'Team B',
+          score: config.scoreB ?? 0,
           color: 'bg-red-500',
         },
       ];
@@ -56,7 +56,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     }
   }, [config, widget.id, updateWidget]);
 
-  const teams = config.teams || DEFAULT_TEAMS;
+  const teams = config.teams ?? DEFAULT_TEAMS;
 
   const updateScore = (teamId: string, delta: number) => {
     const newTeams = teams.map((t) =>
@@ -81,7 +81,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     <div className={`grid ${gridCols} h-full gap-2 p-2 bg-transparent`}>
       {teams.map((team) => {
         // Parse color base for backgrounds
-        const colorClass = team.color || 'bg-blue-500';
+        const colorClass = team.color ?? 'bg-blue-500';
         // Extract base color name (e.g., 'blue') from 'bg-blue-500' for text classes
         const baseColor = colorClass.split('-')[1] || 'blue';
 
@@ -134,7 +134,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, activeDashboard, addToast } = useDashboard();
   const config = widget.config as ScoreboardConfig;
-  const teams = config.teams || [];
+  const teams = config.teams ?? [];
 
   // Find Random Widget
   const randomWidget = useMemo(
@@ -258,13 +258,13 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
 
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-          {teams.map((team, i) => (
+          {teams.map((team) => (
             <div
               key={team.id}
               className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200"
             >
               <div
-                className={`w-3 h-3 rounded-full shrink-0 ${team.color || 'bg-slate-300'}`}
+                className={`w-3 h-3 rounded-full shrink-0 ${team.color ?? 'bg-slate-300'}`}
               />
               <input
                 value={team.name}
