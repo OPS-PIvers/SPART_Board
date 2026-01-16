@@ -56,6 +56,7 @@ import {
   GlobalFontFamily,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
+  GradeLevel,
 } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
