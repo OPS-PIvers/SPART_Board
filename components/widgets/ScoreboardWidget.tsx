@@ -1,79 +1,298 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, ScoreboardConfig } from '../../types';
-import { Plus, Minus } from 'lucide-react';
+import {
+  WidgetData,
+  ScoreboardConfig,
+  ScoreboardTeam,
+  RandomConfig,
+} from '../../types';
+import { Plus, Minus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import { Button } from '../common/Button';
+
+const DEFAULT_TEAMS: ScoreboardTeam[] = [
+  { id: 'team-a', name: 'Team A', score: 0, color: 'bg-blue-500' },
+  { id: 'team-b', name: 'Team B', score: 0, color: 'bg-red-500' },
+];
+
+const TEAM_COLORS = [
+  'bg-blue-500',
+  'bg-red-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-purple-500',
+  'bg-pink-500',
+  'bg-indigo-500',
+  'bg-orange-500',
+  'bg-teal-500',
+  'bg-cyan-500',
+];
 
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as ScoreboardConfig;
-  const { scoreA = 0, scoreB = 0, teamA = 'Team A', teamB = 'Team B' } = config;
 
-  const updateScore = (team: 'A' | 'B', delta: number) => {
-    if (team === 'A')
+  // Auto-migration: If no teams array, convert legacy A/B to teams
+  useEffect(() => {
+    if (!config.teams) {
+      const newTeams: ScoreboardTeam[] = [
+        {
+          id: 'team-a',
+          name: config.teamA || 'Team A',
+          score: config.scoreA || 0,
+          color: 'bg-blue-500',
+        },
+        {
+          id: 'team-b',
+          name: config.teamB || 'Team B',
+          score: config.scoreB || 0,
+          color: 'bg-red-500',
+        },
+      ];
       updateWidget(widget.id, {
-        config: { ...config, scoreA: Math.max(0, scoreA + delta) },
+        config: { ...config, teams: newTeams },
       });
-    else
+    }
+  }, [config, widget.id, updateWidget]);
+
+  const teams = config.teams || DEFAULT_TEAMS;
+
+  const updateScore = (teamId: string, delta: number) => {
+    const newTeams = teams.map((t) =>
+      t.id === teamId ? { ...t, score: Math.max(0, t.score + delta) } : t
+    );
+    updateWidget(widget.id, {
+      config: { ...config, teams: newTeams },
+    });
+  };
+
+  // Dynamic grid sizing based on team count
+  const gridCols =
+    teams.length === 1
+      ? 'grid-cols-1'
+      : teams.length === 2
+        ? 'grid-cols-2'
+        : teams.length <= 4
+          ? 'grid-cols-2'
+          : 'grid-cols-3';
+
+  return (
+    <div className={`grid ${gridCols} h-full gap-2 p-2 bg-transparent`}>
+      {teams.map((team) => {
+        // Parse color base for backgrounds
+        const colorClass = team.color || 'bg-blue-500';
+        // Extract base color name (e.g., 'blue') from 'bg-blue-500' for text classes
+        const baseColor = colorClass.split('-')[1] || 'blue';
+
+        return (
+          <div
+            key={team.id}
+            className={`flex flex-col items-center justify-center ${colorClass.replace('bg-', 'bg-opacity-20 bg-')} rounded-2xl p-2 border border-white/20 relative group`}
+          >
+            <div
+              className={`text-[10px] font-black uppercase tracking-widest text-${baseColor}-600 mb-1 text-center line-clamp-1 w-full px-2`}
+            >
+              {team.name}
+            </div>
+            <div
+              className={`text-4xl lg:text-5xl font-black text-${baseColor}-700 mb-2 tabular-nums drop-shadow-sm`}
+            >
+              {team.score}
+            </div>
+            <div className="flex gap-2 opacity-100 transition-opacity">
+              <button
+                onClick={() => updateScore(team.id, -1)}
+                className={`p-1.5 bg-white/40 text-${baseColor}-700 rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => updateScore(team.id, 1)}
+                className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+      {teams.length === 0 && (
+        <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2">
+          <Trophy className="w-8 h-8 opacity-20" />
+          <span className="text-xs font-bold uppercase tracking-widest">
+            No Teams
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
+  const { updateWidget, activeDashboard, addToast } = useDashboard();
+  const config = widget.config as ScoreboardConfig;
+  const teams = config.teams || [];
+
+  // Find Random Widget
+  const randomWidget = useMemo(
+    () => activeDashboard?.widgets.find((w) => w.type === 'random'),
+    [activeDashboard]
+  );
+
+  const importFromRandom = () => {
+    if (!randomWidget) {
+      addToast('No Randomizer widget found!', 'error');
+      return;
+    }
+
+    const randomConfig = randomWidget.config as RandomConfig;
+    const lastResult = randomConfig.lastResult;
+
+    // Check if result is groups (array of objects with names array)
+    if (
+      Array.isArray(lastResult) &&
+      lastResult.length > 0 &&
+      typeof lastResult[0] === 'object' &&
+      lastResult[0] !== null &&
+      'names' in lastResult[0]
+    ) {
+      const groups = lastResult as { names: string[] }[];
+      const newTeams: ScoreboardTeam[] = groups.map((g, i) => ({
+        id: crypto.randomUUID(),
+        name: `Group ${i + 1}`,
+        score: 0,
+        color: TEAM_COLORS[i % TEAM_COLORS.length],
+      }));
+
       updateWidget(widget.id, {
-        config: { ...config, scoreB: Math.max(0, scoreB + delta) },
+        config: { ...config, teams: newTeams },
       });
+      addToast(`Imported ${newTeams.length} groups!`, 'success');
+    } else {
+      addToast('Randomizer needs to have generated groups first.', 'info');
+    }
+  };
+
+  const addTeam = () => {
+    const newTeam: ScoreboardTeam = {
+      id: crypto.randomUUID(),
+      name: `Team ${teams.length + 1}`,
+      score: 0,
+      color: TEAM_COLORS[teams.length % TEAM_COLORS.length],
+    };
+    updateWidget(widget.id, {
+      config: { ...config, teams: [...teams, newTeam] },
+    });
+  };
+
+  const removeTeam = (id: string) => {
+    updateWidget(widget.id, {
+      config: { ...config, teams: teams.filter((t) => t.id !== id) },
+    });
+  };
+
+  const updateTeamName = (id: string, name: string) => {
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        teams: teams.map((t) => (t.id === id ? { ...t, name } : t)),
+      },
+    });
+  };
+
+  const resetScores = () => {
+    if (confirm('Reset all scores to 0?')) {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          teams: teams.map((t) => ({ ...t, score: 0 })),
+        },
+      });
+    }
   };
 
   return (
-    <div className="grid grid-cols-2 h-full gap-4 p-2 bg-transparent">
-      <div className="flex flex-col items-center justify-center bg-blue-500/20 rounded-2xl p-4 border border-blue-400/20">
-        <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
-          {teamA}
-        </div>
-        <div className="text-5xl font-black text-blue-700 mb-4 tabular-nums drop-shadow-sm">
-          {scoreA}
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              updateScore('A', -1);
-            }}
-            className="p-2 bg-white/40 text-blue-700 rounded-lg shadow-sm hover:bg-white/60"
+    <div className="space-y-6">
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import from Randomizer
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromRandom}
+            disabled={!randomWidget}
+            title={
+              !randomWidget ? 'Add a Randomizer widget first' : 'Import Groups'
+            }
+            icon={<RefreshCw className="w-3 h-3" />}
           >
-            <Minus className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              updateScore('A', 1);
-            }}
-            className="p-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+            Import Groups
+          </Button>
         </div>
+        {!randomWidget && (
+          <div className="text-[10px] text-indigo-400 font-medium">
+            Tip: Add a Randomizer widget and create groups to import them here.
+          </div>
+        )}
       </div>
-      <div className="flex flex-col items-center justify-center bg-red-500/20 rounded-2xl p-4 border border-red-400/20">
-        <div className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-1">
-          {teamB}
-        </div>
-        <div className="text-5xl font-black text-red-700 mb-4 tabular-nums drop-shadow-sm">
-          {scoreB}
-        </div>
-        <div className="flex gap-2">
+
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+            Teams ({teams.length})
+          </label>
           <button
-            onClick={() => {
-              updateScore('B', -1);
-            }}
-            className="p-2 bg-white/40 text-red-700 rounded-lg shadow-sm hover:bg-white/60"
+            onClick={resetScores}
+            className="text-[10px] font-bold text-red-500 hover:text-red-600 underline"
           >
-            <Minus className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              updateScore('B', 1);
-            }}
-            className="p-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700"
-          >
-            <Plus className="w-4 h-4" />
+            Reset Scores
           </button>
         </div>
+
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+          {teams.map((team, i) => (
+            <div
+              key={team.id}
+              className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200"
+            >
+              <div
+                className={`w-3 h-3 rounded-full shrink-0 ${team.color || 'bg-slate-300'}`}
+              />
+              <input
+                value={team.name}
+                onChange={(e) => updateTeamName(team.id, e.target.value)}
+                className="flex-1 text-xs font-bold text-slate-700 bg-transparent outline-none"
+                placeholder="Team Name"
+              />
+              <div className="text-xs font-mono text-slate-400 w-8 text-right">
+                {team.score}
+              </div>
+              <button
+                onClick={() => removeTeam(team.id)}
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          onClick={addTeam}
+          className="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary"
+          variant="ghost"
+          icon={<Plus className="w-4 h-4" />}
+        >
+          Add Team
+        </Button>
       </div>
     </div>
   );
