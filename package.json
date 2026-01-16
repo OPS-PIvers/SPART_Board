@@ -14,9 +14,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "validate": "pnpm type-check && pnpm lint && pnpm format:check && pnpm test",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
     "prepare": "husky"
   },
   "pnpm": {
