@@ -577,6 +577,27 @@ const WidgetLibrary = ({
   );
 };
 
+const QuickAccessButton = ({
+  type,
+  onClick,
+}: {
+  type: WidgetType;
+  onClick: () => void;
+}) => {
+  const tool = TOOLS.find((t) => t.type === type);
+  if (!tool) return null;
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-12 h-12 flex items-center justify-center ${tool.color} text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all ring-2 ring-white/20`}
+      title={tool.label}
+    >
+      <tool.icon className="w-6 h-6" />
+    </button>
+  );
+};
+
 export const Dock: React.FC = () => {
   const {
     addWidget,
@@ -1076,14 +1097,36 @@ export const Dock: React.FC = () => {
             </GlassCard>
           </>
         ) : (
-          /* Compressed down to a single icon */
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
-            title="Open Tools"
-          >
-            <LayoutGrid className="w-6 h-6" />
-          </button>
+          /* Compressed down to a single icon (plus quick access) */
+          <div className="flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+            {activeDashboard?.settings?.quickAccessWidgets?.[0] && (
+              <QuickAccessButton
+                type={activeDashboard.settings.quickAccessWidgets[0]}
+                onClick={() => {
+                  const type =
+                    activeDashboard.settings?.quickAccessWidgets?.[0];
+                  if (type) addWidget(type);
+                }}
+              />
+            )}
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40"
+              title="Open Tools"
+            >
+              <LayoutGrid className="w-6 h-6" />
+            </button>
+            {activeDashboard?.settings?.quickAccessWidgets?.[1] && (
+              <QuickAccessButton
+                type={activeDashboard.settings.quickAccessWidgets[1]}
+                onClick={() => {
+                  const type =
+                    activeDashboard.settings?.quickAccessWidgets?.[1];
+                  if (type) addWidget(type);
+                }}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>

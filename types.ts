@@ -429,6 +429,7 @@ export type DockItem =
 
 export interface DashboardSettings {
   defaultWidgetTransparency?: number;
+  quickAccessWidgets?: WidgetType[];
 }
 
 export interface Dashboard {

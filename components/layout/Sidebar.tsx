@@ -1284,7 +1284,67 @@ export const Sidebar: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Future global settings will go here */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-xs font-black text-slate-700 uppercase tracking-tight block">
+                        Quick Access Widgets
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {activeDashboard?.settings?.quickAccessWidgets
+                          ?.length ?? 0}
+                        /2
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mb-3 font-medium">
+                      Select up to 2 widgets to appear when the dock is
+                      minimized.
+                    </p>
+                    <div className="grid grid-cols-6 gap-2">
+                      {TOOLS.map((tool) => {
+                        const isSelected =
+                          activeDashboard?.settings?.quickAccessWidgets?.includes(
+                            tool.type
+                          );
+                        const isFull =
+                          (activeDashboard?.settings?.quickAccessWidgets
+                            ?.length ?? 0) >= 2;
+                        const disabled = !isSelected && isFull;
+
+                        return (
+                          <button
+                            key={tool.type}
+                            onClick={() => {
+                              const current =
+                                activeDashboard?.settings?.quickAccessWidgets ??
+                                [];
+                              let next;
+                              if (current.includes(tool.type)) {
+                                next = current.filter((t) => t !== tool.type);
+                              } else if (current.length < 2) {
+                                next = [...current, tool.type];
+                              } else {
+                                return;
+                              }
+                              updateDashboardSettings({
+                                quickAccessWidgets: next,
+                              });
+                            }}
+                            disabled={disabled}
+                            title={tool.label}
+                            className={`aspect-square flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+                              isSelected
+                                ? 'bg-brand-blue-primary text-white shadow-md scale-105'
+                                : disabled
+                                  ? 'bg-slate-50 text-slate-300 cursor-not-allowed opacity-50'
+                                  : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                            }`}
+                          >
+                            <tool.icon className="w-5 h-5" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   <div className="flex flex-col gap-2 pt-4">
                     <button
