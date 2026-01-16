@@ -47,7 +47,6 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   lunchCount: { w: 500, h: 400 },
   'time-tool': { w: 420, h: 400 },
   traffic: { w: 120, h: 320 },
-  scoreboard: { w: 320, h: 200 },
   qr: { w: 200, h: 250 },
   dice: { w: 240, h: 240 },
   materials: { w: 340, h: 340 },
