@@ -356,26 +356,34 @@ const SortableFolderWidget = ({
       {...attributes}
       {...listeners}
     >
-      <button
-        onClick={() => {
-          if (isEditMode) return;
-          onAdd();
-        }}
-        onMouseDown={handlePointerDown}
-        onMouseUp={handlePointerUp}
-        onTouchStart={handlePointerDown}
-        onTouchEnd={handlePointerUp}
-        className={`relative ${
-          isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-        }`}
-      >
-        <div
-          className={`${tool.color} p-2.5 rounded-2xl text-white shadow-md ${
-            isEditMode ? '' : 'group-hover:scale-110'
-          } transition-transform`}
+      <div className="relative">
+        <button
+          onClick={() => {
+            if (isEditMode) return;
+            onAdd();
+          }}
+          onMouseDown={handlePointerDown}
+          onMouseUp={handlePointerUp}
+          onTouchStart={handlePointerDown}
+          onTouchEnd={handlePointerUp}
+          className={`relative ${
+            isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+          }`}
         >
-          <tool.icon className="w-5 h-5" />
-        </div>
+          <div
+            className={`${tool.color} p-2.5 rounded-2xl text-white shadow-md ${
+              isEditMode ? '' : 'group-hover:scale-110'
+            } transition-transform`}
+          >
+            <tool.icon className="w-5 h-5" />
+          </div>
+
+          {minimizedCount > 0 && (
+            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+              {minimizedCount}
+            </div>
+          )}
+        </button>
 
         {isEditMode && (
           <button
@@ -390,13 +398,7 @@ const SortableFolderWidget = ({
             <X className="w-2.5 h-2.5" />
           </button>
         )}
-
-        {minimizedCount > 0 && (
-          <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
-            {minimizedCount}
-          </div>
-        )}
-      </button>
+      </div>
       <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
         {tool.label}
       </span>
