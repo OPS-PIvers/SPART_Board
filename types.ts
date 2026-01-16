@@ -571,12 +571,10 @@ export interface GlobalStyle {
   fontFamily: GlobalFontFamily;
   windowTransparency: number; // 0 to 1
   borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
-  baseFontSize: number; // 12 to 24
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
   windowTransparency: 0.8,
   borderRadius: '2xl',
-  baseFontSize: 16,
 };

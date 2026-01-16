@@ -310,6 +310,16 @@ export const Sidebar: React.FC = () => {
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
+  const [pendingStyle, setPendingStyle] = useState<GlobalStyle>(
+    DEFAULT_GLOBAL_STYLE
+  );
+
+  // Initialize pending style when sidebar opens or section changes to 'style'
+  useEffect(() => {
+    if (activeSection === 'style' && activeDashboard) {
+      setPendingStyle(activeDashboard.globalStyle ?? DEFAULT_GLOBAL_STYLE);
+    }
+  }, [activeSection, activeDashboard]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1269,6 +1279,62 @@ export const Sidebar: React.FC = () => {
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
+                {/* PREVIEW WINDOW */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    Live Preview
+                  </h3>
+                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner flex items-center justify-center p-4">
+                    <div
+                      className="absolute inset-0 opacity-20"
+                      style={{
+                        backgroundImage: activeDashboard?.background.startsWith(
+                          'http'
+                        )
+                          ? `url(${activeDashboard.background})`
+                          : undefined,
+                        backgroundColor: activeDashboard?.background.startsWith(
+                          'bg-'
+                        )
+                          ? undefined
+                          : activeDashboard?.background,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    />
+                    <div
+                      className={`relative z-10 w-full p-4 border border-white/30 shadow-lg backdrop-blur-md ${
+                        pendingStyle.borderRadius === 'none'
+                          ? 'rounded-none'
+                          : `rounded-${pendingStyle.borderRadius}`
+                      }`}
+                      style={{
+                        backgroundColor: `rgba(255, 255, 255, ${pendingStyle.windowTransparency})`,
+                      }}
+                    >
+                      <div
+                        className={`text-center space-y-2 ${
+                          pendingStyle.fontFamily === 'sans'
+                            ? 'font-sans'
+                            : pendingStyle.fontFamily === 'mono'
+                              ? 'font-mono'
+                              : 'font-handwritten'
+                        }`}
+                      >
+                        <div className="text-xs font-black uppercase text-slate-400 tracking-widest">
+                          Preview
+                        </div>
+                        <div className="text-xl font-bold text-slate-800 leading-tight">
+                          The quick brown fox jumps over the lazy dog.
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-medium">
+                          12:34 PM • 72°F Sunny
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Global Font Family */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
@@ -1287,13 +1353,13 @@ export const Sidebar: React.FC = () => {
                       <button
                         key={f.id}
                         onClick={() =>
-                          setGlobalStyle({
+                          setPendingStyle({
+                            ...pendingStyle,
                             fontFamily: f.id as GlobalFontFamily,
                           })
                         }
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 ${
-                          (activeDashboard?.globalStyle?.fontFamily ??
-                            DEFAULT_GLOBAL_STYLE.fontFamily) === f.id
+                          pendingStyle.fontFamily === f.id
                             ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
                             : 'bg-white border-slate-100 text-slate-500'
                         }`}
@@ -1301,8 +1367,7 @@ export const Sidebar: React.FC = () => {
                         <span className={`text-base font-bold ${f.font}`}>
                           {f.label}
                         </span>
-                        {(activeDashboard?.globalStyle?.fontFamily ??
-                          DEFAULT_GLOBAL_STYLE.fontFamily) === f.id && (
+                        {pendingStyle.fontFamily === f.id && (
                           <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
                         )}
                       </button>
@@ -1317,24 +1382,18 @@ export const Sidebar: React.FC = () => {
                       Window Transparency
                     </h3>
                     <span className="text-xs font-mono font-bold text-brand-blue-primary">
-                      {Math.round(
-                        (activeDashboard?.globalStyle?.windowTransparency ??
-                          DEFAULT_GLOBAL_STYLE.windowTransparency) * 100
-                      )}
-                      %
+                      {Math.round(pendingStyle.windowTransparency * 100)}%
                     </span>
                   </div>
                   <input
                     type="range"
-                    min="0.1"
+                    min="0.05"
                     max="1"
                     step="0.05"
-                    value={
-                      activeDashboard?.globalStyle?.windowTransparency ??
-                      DEFAULT_GLOBAL_STYLE.windowTransparency
-                    }
+                    value={pendingStyle.windowTransparency}
                     onChange={(e) =>
-                      setGlobalStyle({
+                      setPendingStyle({
+                        ...pendingStyle,
                         windowTransparency: parseFloat(e.target.value),
                       })
                     }
@@ -1361,13 +1420,13 @@ export const Sidebar: React.FC = () => {
                       <button
                         key={r.id}
                         onClick={() =>
-                          setGlobalStyle({
+                          setPendingStyle({
+                            ...pendingStyle,
                             borderRadius: r.id as GlobalStyle['borderRadius'],
                           })
                         }
                         className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
-                          (activeDashboard?.globalStyle?.borderRadius ??
-                            DEFAULT_GLOBAL_STYLE.borderRadius) === r.id
+                          pendingStyle.borderRadius === r.id
                             ? 'bg-white shadow-sm text-brand-blue-primary'
                             : 'text-slate-500 hover:text-slate-700'
                         }`}
@@ -1378,38 +1437,29 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Base Font Size */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Global Text Size
-                    </h3>
-                    <span className="text-xs font-mono font-bold text-brand-blue-primary">
-                      {activeDashboard?.globalStyle?.baseFontSize ??
-                        DEFAULT_GLOBAL_STYLE.baseFontSize}
-                      px
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="12"
-                    max="24"
-                    step="1"
-                    value={
-                      activeDashboard?.globalStyle?.baseFontSize ??
-                      DEFAULT_GLOBAL_STYLE.baseFontSize
-                    }
-                    onChange={(e) =>
-                      setGlobalStyle({
-                        baseFontSize: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
-                  />
-                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
-                    <span>Smaller</span>
-                    <span>Larger</span>
-                  </div>
+                {/* ACTION BUTTONS */}
+                <div className="flex flex-col gap-3 mt-4 pt-6 border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      setGlobalStyle(pendingStyle);
+                      addToast('Global style applied', 'success');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 p-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
+                  >
+                    <Save className="w-4 h-4" /> Save Changes
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (activeDashboard) {
+                        setPendingStyle(
+                          activeDashboard.globalStyle ?? DEFAULT_GLOBAL_STYLE
+                        );
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 p-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all"
+                  >
+                    Discard Changes
+                  </button>
                 </div>
               </div>
 
