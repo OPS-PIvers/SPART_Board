@@ -113,6 +113,9 @@ const mockDashboard: DashboardContextType = {
   addFolder: () => {
     // No-op
   },
+  createFolderWithItems: () => {
+    // No-op
+  },
   renameFolder: () => {
     // No-op
   },
@@ -126,6 +129,9 @@ const mockDashboard: DashboardContextType = {
     // No-op
   },
   moveItemOutOfFolder: () => {
+    // No-op
+  },
+  reorderFolderItems: () => {
     // No-op
   },
 

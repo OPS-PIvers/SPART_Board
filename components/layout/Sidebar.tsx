@@ -19,7 +19,7 @@ import {
   Settings,
   LayoutGrid,
   Paintbrush,
-  FolderOpen,
+  SquareSquare,
   Pencil,
   ChevronRight,
   Star,
@@ -867,7 +867,7 @@ export const Sidebar: React.FC = () => {
                   className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
                 >
                   <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <FolderOpen className="w-8 h-8" />
+                    <SquareSquare className="w-8 h-8" />
                   </div>
                   <div>
                     <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
@@ -1284,7 +1284,71 @@ export const Sidebar: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Future global settings will go here */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-xs font-black text-slate-700 uppercase tracking-tight block">
+                        Quick Access Widgets
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {activeDashboard?.settings?.quickAccessWidgets
+                          ?.length ?? 0}
+                        /2
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mb-3 font-medium">
+                      Select up to 2 widgets to appear when the dock is
+                      minimized.
+                    </p>
+                    <div className="grid grid-cols-6 gap-2">
+                      {TOOLS.map((tool) => {
+                        const isSelected =
+                          activeDashboard?.settings?.quickAccessWidgets?.includes(
+                            tool.type
+                          );
+                        const isFull =
+                          (activeDashboard?.settings?.quickAccessWidgets
+                            ?.length ?? 0) >= 2;
+                        const disabled = !isSelected && isFull;
+
+                        return (
+                          <div key={tool.type} className="group relative">
+                            <button
+                              onClick={() => {
+                                const current =
+                                  activeDashboard?.settings
+                                    ?.quickAccessWidgets ?? [];
+                                let next;
+                                if (current.includes(tool.type)) {
+                                  next = current.filter((t) => t !== tool.type);
+                                } else if (current.length < 2) {
+                                  next = [...current, tool.type];
+                                } else {
+                                  return;
+                                }
+                                updateDashboardSettings({
+                                  quickAccessWidgets: next,
+                                });
+                              }}
+                              disabled={disabled}
+                              className={`w-full aspect-square flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+                                isSelected
+                                  ? 'bg-brand-blue-primary text-white shadow-md scale-105'
+                                  : disabled
+                                    ? 'bg-slate-50 text-slate-300 cursor-not-allowed opacity-50'
+                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                              }`}
+                            >
+                              <tool.icon className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10 scale-95 group-hover:scale-100">
+                              {tool.label}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   <div className="flex flex-col gap-2 pt-4">
                     <button

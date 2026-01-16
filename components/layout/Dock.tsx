@@ -38,15 +38,28 @@ import { ToolMetadata, WidgetType, WidgetData, DockFolder } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
+import { isLightBackground } from '../../utils/styleUtils';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
 
 /**
  * Custom Label Component for consistent readability
- * Uses a strong drop shadow and pure white to stay visible over any background.
+ * Adjusts text color based on background brightness.
  */
-const DockLabel = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-[9px] font-black uppercase tracking-tighter text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,1)] whitespace-nowrap">
+const DockLabel = ({
+  children,
+  isLight,
+}: {
+  children: React.ReactNode;
+  isLight: boolean;
+}) => (
+  <span
+    className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 ${
+      isLight
+        ? 'text-slate-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]'
+        : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
+    }`}
+  >
     {children}
   </span>
 );
@@ -62,6 +75,7 @@ const ToolDockItem = ({
   onRemoveFromDock,
   isEditMode,
   onLongPress,
+  isLight,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -72,6 +86,7 @@ const ToolDockItem = ({
   onRemoveFromDock: () => void;
   isEditMode: boolean;
   onLongPress: () => void;
+  isLight: boolean;
 }) => {
   const {
     attributes,
@@ -241,7 +256,7 @@ const ToolDockItem = ({
               e.stopPropagation();
               onRemoveFromDock();
             }}
-            className="absolute -top-2 -right-2 z-50 bg-slate-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all animate-in zoom-in duration-200"
+            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all animate-in zoom-in duration-200"
             title="Remove from Dock"
           >
             <X className="w-2.5 h-2.5" />
@@ -274,30 +289,30 @@ const ToolDockItem = ({
               </div>
             )}
           </div>
-          <DockLabel>{tool.label}</DockLabel>
+          <DockLabel isLight={isLight}>{tool.label}</DockLabel>
         </button>
       </div>
     </div>
   );
 };
 
-// Folder Item Component
-const FolderItem = ({
-  folder,
-  onAdd,
-  onRename,
-  onDelete,
+// Sortable Widget Icon within Folder
+const SortableFolderWidget = ({
+  type,
+  tool,
+  minimizedCount,
   isEditMode,
+  onRemove,
+  onAdd,
   onLongPress,
-  minimizedWidgetsByType,
 }: {
-  folder: DockFolder;
-  onAdd: (type: WidgetType) => void;
-  onRename: (id: string) => void;
-  onDelete: (id: string) => void;
+  type: WidgetType;
+  tool: ToolMetadata;
+  minimizedCount: number;
   isEditMode: boolean;
+  onRemove: () => void;
+  onAdd: () => void;
   onLongPress: () => void;
-  minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
 }) => {
   const {
     attributes,
@@ -307,19 +322,13 @@ const FolderItem = ({
     transition,
     isDragging,
   } = useSortable({
-    id: folder.id,
+    id: type,
     disabled: !isEditMode,
   });
 
-  const [showPopover, setShowPopover] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
-
   const handlePointerDown = () => {
-    if (isEditMode) return;
     longPressTimer.current = setTimeout(() => {
       onLongPress();
     }, 600);
@@ -343,10 +352,157 @@ const FolderItem = ({
     <div
       ref={setNodeRef}
       style={style}
+      className="relative group/item flex flex-col items-center gap-1"
+    >
+      <div className="relative">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={() => {
+            if (isEditMode) return;
+            onAdd();
+          }}
+          onMouseDown={handlePointerDown}
+          onMouseUp={handlePointerUp}
+          onTouchStart={handlePointerDown}
+          onTouchEnd={handlePointerUp}
+          className={`relative ${
+            isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+          }`}
+        >
+          <div
+            className={`${tool.color} p-2.5 rounded-2xl text-white shadow-md ${
+              isEditMode ? '' : 'group-hover:scale-110'
+            } transition-transform`}
+          >
+            <tool.icon className="w-5 h-5" />
+          </div>
+
+          {minimizedCount > 0 && (
+            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+              {minimizedCount}
+            </div>
+          )}
+        </button>
+
+        {isEditMode && (
+          <div
+            role="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemove();
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              // Do not preventDefault here if it blocks the click, but usually stopPropagation is enough for dnd-kit
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute -top-2 -right-2 z-[100] bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
+          >
+            <X className="w-2.5 h-2.5" />
+          </div>
+        )}
+      </div>
+      <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
+        {tool.label}
+      </span>
+    </div>
+  );
+};
+
+// Folder Item Component
+const FolderItem = ({
+  folder,
+  onAdd,
+  onRename,
+  onDelete,
+  isEditMode,
+  onLongPress,
+  minimizedWidgetsByType,
+  isLight,
+  onRemoveItem,
+  onReorder,
+}: {
+  folder: DockFolder;
+  onAdd: (type: WidgetType) => void;
+  onRename: (id: string) => void;
+  onDelete: (id: string) => void;
+  isEditMode: boolean;
+  onLongPress: () => void;
+  minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
+  isLight: boolean;
+  onRemoveItem: (folderId: string, type: WidgetType) => void;
+  onReorder: (folderId: string, newItems: WidgetType[]) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: folder.id,
+    disabled: !isEditMode,
+  });
+
+  const [showPopover, setShowPopover] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // DND Sensors for internal folder sorting
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
+
+  const handlePointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      onLongPress();
+    }, 600);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = folder.items.indexOf(active.id as WidgetType);
+      const newIndex = folder.items.indexOf(over?.id as WidgetType);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onReorder(folder.id, arrayMove(folder.items, oldIndex, newIndex));
+      }
+    }
+  };
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
       className="relative flex flex-col items-center"
     >
       {showPopover &&
-        !isEditMode &&
         createPortal(
           <GlassCard
             ref={popoverRef}
@@ -366,43 +522,42 @@ const FolderItem = ({
                 Rename
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {folder.items.map((type) => {
-                const tool = TOOLS.find((t) => t.type === type);
-                if (!tool) return null;
-                const minimizedCount =
-                  minimizedWidgetsByType[type]?.length ?? 0;
-                return (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      onAdd(type);
-                      setShowPopover(false);
-                    }}
-                    className="flex flex-col items-center gap-1 group relative"
-                  >
-                    <div
-                      className={`${tool.color} p-2 rounded-xl text-white shadow-md group-hover:scale-110 transition-transform`}
-                    >
-                      <tool.icon className="w-4 h-4" />
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={folder.items}>
+                <div className="grid grid-cols-3 gap-3">
+                  {folder.items.map((type) => {
+                    const tool = TOOLS.find((t) => t.type === type);
+                    if (!tool) return null;
+                    const minimizedCount =
+                      minimizedWidgetsByType[type]?.length ?? 0;
+                    return (
+                      <SortableFolderWidget
+                        key={type}
+                        type={type}
+                        tool={tool}
+                        minimizedCount={minimizedCount}
+                        isEditMode={isEditMode}
+                        onRemove={() => onRemoveItem(folder.id, type)}
+                        onAdd={() => {
+                          onAdd(type);
+                          setShowPopover(false);
+                        }}
+                        onLongPress={onLongPress}
+                      />
+                    );
+                  })}
+                  {folder.items.length === 0 && (
+                    <div className="col-span-3 py-4 text-center text-[10px] text-slate-400 italic">
+                      Drag items here to add them
                     </div>
-                    {minimizedCount > 0 && (
-                      <div className="absolute top-0 right-0 bg-brand-red-primary text-white text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-white shadow-sm translate-x-1/4 -translate-y-1/4">
-                        {minimizedCount}
-                      </div>
-                    )}
-                    <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
-                      {tool.label}
-                    </span>
-                  </button>
-                );
-              })}
-              {folder.items.length === 0 && (
-                <div className="col-span-3 py-4 text-center text-[10px] text-slate-400 italic">
-                  Drag items here to add them
+                  )}
                 </div>
-              )}
-            </div>
+              </SortableContext>
+            </DndContext>
           </GlassCard>,
           document.body
         )}
@@ -417,7 +572,7 @@ const FolderItem = ({
               e.stopPropagation();
               onDelete(folder.id);
             }}
-            className="absolute -top-2 -right-2 z-50 bg-slate-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all"
+            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all"
           >
             <X className="w-2.5 h-2.5" />
           </button>
@@ -431,7 +586,7 @@ const FolderItem = ({
           onMouseUp={handlePointerUp}
           onTouchStart={handlePointerDown}
           onTouchEnd={handlePointerUp}
-          onClick={() => !isEditMode && setShowPopover(true)}
+          onClick={() => setShowPopover(true)}
           className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
             isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
           }`}
@@ -452,7 +607,7 @@ const FolderItem = ({
               </div>
             )}
           </div>
-          <DockLabel>{folder.name}</DockLabel>
+          <DockLabel isLight={isLight}>{folder.name}</DockLabel>
         </button>
       </div>
     </div>
@@ -577,6 +732,32 @@ const WidgetLibrary = ({
   );
 };
 
+const QuickAccessButton = ({
+  type,
+  onClick,
+}: {
+  type: WidgetType;
+  onClick: () => void;
+}) => {
+  const tool = TOOLS.find((t) => t.type === type);
+  if (!tool) return null;
+
+  return (
+    <div className="group relative">
+      <button
+        onClick={onClick}
+        className={`w-12 h-12 flex items-center justify-center ${tool.color} text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all ring-2 ring-white/20`}
+      >
+        <tool.icon className="w-6 h-6" />
+      </button>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-[10000] shadow-2xl border border-white/10 scale-90 group-hover:scale-100">
+        {tool.label}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+      </div>
+    </div>
+  );
+};
+
 export const Dock: React.FC = () => {
   const {
     addWidget,
@@ -592,6 +773,8 @@ export const Dock: React.FC = () => {
     renameFolder,
     deleteFolder,
     addItemToFolder,
+    moveItemOutOfFolder,
+    reorderFolderItems,
   } = useDashboard();
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
@@ -602,6 +785,8 @@ export const Dock: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+
+  const isLight = isLightBackground(activeDashboard?.background);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -682,16 +867,23 @@ export const Dock: React.FC = () => {
   };
 
   /**
-   * Custom Collision Detection to handle Grouping vs Reordering
-   * If the center of the dragged item is significantly over a folder, we prioritize grouping.
-   */
+
+     * Custom Collision Detection to handle Grouping vs Reordering
+
+     * If the center of the dragged item is significantly over a folder, we prioritize grouping.
+
+     */
+
   const customCollisionDetection: CollisionDetection = (args) => {
     const items = dockItems;
+
     // 1. First, check for folder grouping (rect intersection)
+
     const folderCollisions = rectIntersection(args).filter((collision) => {
       const item = items.find(
         (i) => i.type === 'folder' && i.folder.id === collision.id
       );
+
       return !!item;
     });
 
@@ -699,10 +891,12 @@ export const Dock: React.FC = () => {
       folderCollisions.sort(
         (a, b) => (b.data?.value ?? 0) - (a.data?.value ?? 0)
       );
+
       return [folderCollisions[0]];
     }
 
     // 2. Otherwise, fallback to standard sortable collision (closestCenter)
+
     return closestCenter(args);
   };
 
@@ -772,9 +966,9 @@ export const Dock: React.FC = () => {
     <div
       ref={dockContainerRef}
       data-screenshot="exclude"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] flex flex-col items-center gap-4"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9000] flex flex-col items-center gap-4"
     >
-      {showRosterMenu && classesAnchorRect && (
+      {showRosterMenu && (
         <ClassRosterMenu
           onClose={() => setShowRosterMenu(false)}
           onOpenFullEditor={openClassEditor}
@@ -913,6 +1107,7 @@ export const Dock: React.FC = () => {
                               }}
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
+                              isLight={isLight}
                             />
                           );
                         } else {
@@ -926,6 +1121,15 @@ export const Dock: React.FC = () => {
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
                               minimizedWidgetsByType={minimizedWidgetsByType}
+                              isLight={isLight}
+                              onRemoveItem={(folderId, type) =>
+                                moveItemOutOfFolder(
+                                  folderId,
+                                  type,
+                                  dockItems.length
+                                )
+                              }
+                              onReorder={reorderFolderItems}
                             />
                           );
                         }
@@ -992,7 +1196,7 @@ export const Dock: React.FC = () => {
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <DockLabel>Live</DockLabel>
+                        <DockLabel isLight={isLight}>Live</DockLabel>
                       </button>
 
                       {/* LIVE POPOVER */}
@@ -1052,7 +1256,9 @@ export const Dock: React.FC = () => {
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel>{classToolMetadata.label}</DockLabel>
+                    <DockLabel isLight={isLight}>
+                      {classToolMetadata.label}
+                    </DockLabel>
                   </button>
 
                   {/* Separator and Minimize Button */}
@@ -1066,7 +1272,7 @@ export const Dock: React.FC = () => {
                     <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel>Hide</DockLabel>
+                    <DockLabel isLight={isLight}>Hide</DockLabel>
                   </button>
                 </>
               ) : (
@@ -1077,14 +1283,36 @@ export const Dock: React.FC = () => {
             </GlassCard>
           </>
         ) : (
-          /* Compressed down to a single icon */
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
-            title="Open Tools"
-          >
-            <LayoutGrid className="w-6 h-6" />
-          </button>
+          /* Compressed down to a single icon (plus quick access) */
+          <div className="flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+            {activeDashboard?.settings?.quickAccessWidgets?.[0] && (
+              <QuickAccessButton
+                type={activeDashboard.settings.quickAccessWidgets[0]}
+                onClick={() => {
+                  const type =
+                    activeDashboard.settings?.quickAccessWidgets?.[0];
+                  if (type) addWidget(type);
+                }}
+              />
+            )}
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40"
+              title="Open Tools"
+            >
+              <LayoutGrid className="w-6 h-6" />
+            </button>
+            {activeDashboard?.settings?.quickAccessWidgets?.[1] && (
+              <QuickAccessButton
+                type={activeDashboard.settings.quickAccessWidgets[1]}
+                onClick={() => {
+                  const type =
+                    activeDashboard.settings?.quickAccessWidgets?.[1];
+                  if (type) addWidget(type);
+                }}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>

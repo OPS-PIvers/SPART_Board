@@ -45,6 +45,7 @@ export interface DashboardContextType {
 
   // --- FOLDER ACTIONS ---
   addFolder: (name: string) => void;
+  createFolderWithItems: (name: string, items: WidgetType[]) => void;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
   addItemToFolder: (folderId: string, type: WidgetType) => void;
@@ -54,6 +55,7 @@ export interface DashboardContextType {
     type: WidgetType,
     index: number
   ) => void;
+  reorderFolderItems: (folderId: string, newItems: WidgetType[]) => void;
 
   // --- ROSTER SYSTEM ---
   rosters: ClassRoster[];

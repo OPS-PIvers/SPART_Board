@@ -39,3 +39,28 @@ export const getBackgroundClass = (bg?: string): string => {
 
   return isValidTailwindBgClass ? trimmed : '';
 };
+
+/**
+ * Determines if a background string represents a "light" background.
+ * Used to adjust text color for contrast (e.g. icon labels).
+ * Returns true for known light tailwind classes.
+ * Returns false for URLs (defaulting to dark mode text) or dark classes.
+ */
+export const isLightBackground = (bg?: string): boolean => {
+  if (!bg) return false;
+
+  // Treat images/URLs as dark (requiring white text) by default
+  // This is a safe fallback as white text with shadow is usually visible
+  if (bg.startsWith('https://') || bg.startsWith('data:')) return false;
+
+  const lightClasses = [
+    'bg-white',
+    'bg-slate-50',
+    'bg-slate-100',
+    'bg-gray-50',
+    'bg-gray-100',
+    'bg-brand-gray-lightest',
+  ];
+
+  return lightClasses.some((c) => bg.includes(c));
+};

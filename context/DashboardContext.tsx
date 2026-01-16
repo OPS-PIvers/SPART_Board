@@ -580,6 +580,45 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     addToast(`Folder "${name}" created`);
   };
 
+  const createFolderWithItems = (name: string, items: WidgetType[]) => {
+    // 1. Remove items from their current locations
+    let currentItems = [...dockItems];
+    items.forEach((type) => {
+      currentItems = currentItems
+        .map((item) => {
+          if (item.type === 'folder') {
+            return {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            };
+          }
+          return item;
+        })
+        .filter((item) => !(item.type === 'tool' && item.toolType === type));
+    });
+
+    // 2. Create new folder with items
+    const newFolder: DockFolder = {
+      id: crypto.randomUUID(),
+      name,
+      items,
+    };
+
+    // 3. Add to dock (at the end? or replace the position of the first item?)
+    // For now, append to end.
+    const next = [
+      ...currentItems,
+      { type: 'folder' as const, folder: newFolder },
+    ];
+
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+    addToast('Group created');
+  };
+
   const renameFolder = (id: string, name: string) => {
     const next = dockItems.map((item) =>
       item.type === 'folder' && item.folder.id === id
@@ -688,6 +727,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       const next = [...cleaned];
       next.splice(index, 0, { type: 'tool', toolType: type });
 
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const reorderFolderItems = (folderId: string, newItems: WidgetType[]) => {
+    setDockItems((prev) => {
+      const next = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: newItems,
+              },
+            }
+          : item
+      );
       localStorage.setItem('classroom_dock_items', JSON.stringify(next));
       return next;
     });
@@ -1152,11 +1209,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         deleteRoster,
         setActiveRoster,
         addFolder,
+        createFolderWithItems,
         renameFolder,
         deleteFolder,
         addItemToFolder,
         removeItemFromFolder,
         moveItemOutOfFolder,
+        reorderFolderItems,
       }}
     >
       {children}
