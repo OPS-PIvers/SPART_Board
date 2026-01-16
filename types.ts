@@ -23,8 +23,8 @@ export type WidgetType =
   | 'miniApp'
   | 'materials'
   | 'stickers'
-  | 'sticker-library'
-  | 'sticker';
+  | 'sticker'
+  | 'sticker-library';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -120,6 +120,8 @@ export interface CalendarEvent {
 export interface RoutineStep {
   id: string;
   text: string;
+  icon?: string;
+  color?: string;
 }
 
 // Widget-specific config types
@@ -306,7 +308,9 @@ export interface MaterialsConfig {
 }
 
 export interface StickerConfig {
-  url: string;
+  url?: string;
+  icon?: string;
+  color?: string;
   rotation?: number;
   size?: number;
 }

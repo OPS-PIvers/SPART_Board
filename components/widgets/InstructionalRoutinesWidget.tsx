@@ -10,7 +10,15 @@ import {
   InstructionalRoutine,
 } from '../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import { Star, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  Star,
+  Trash2,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  ArrowLeft,
+  Grab,
+} from 'lucide-react';
 
 // --- FRONT VIEW (STUDENT FOCUS) ---
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
@@ -47,13 +55,23 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   }, [gradeFilter, favorites]);
 
   const selectRoutine = (r: InstructionalRoutine) => {
-    const initialSteps: RoutineStep[] = r.defaultSteps.map((text) => ({
+    const initialSteps: RoutineStep[] = r.steps.map((step) => ({
       id: crypto.randomUUID(),
-      text,
+      text: step.text,
+      icon: step.icon,
+      color: step.color,
     }));
     updateWidget(widget.id, {
       config: { ...config, selectedRoutineId: r.id, customSteps: initialSteps },
     });
+  };
+
+  const onDragStart = (e: React.DragEvent, icon: string, color: string) => {
+    e.dataTransfer.setData(
+      'application/spart-sticker',
+      JSON.stringify({ icon, color })
+    );
+    e.dataTransfer.effectAllowed = 'copy';
   };
 
   if (!selectedRoutineId || !selectedRoutine) {
@@ -104,9 +122,20 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     ] ?? Icons.HelpCircle;
 
   return (
-    <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden">
-      <div className="flex items-start justify-between mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
-        <div>
+    <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden relative">
+      <div className="flex items-center gap-3 mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, selectedRoutineId: null },
+            })
+          }
+          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          title="Back to Library"
+        >
+          <ArrowLeft size={20} className="text-slate-600" />
+        </button>
+        <div className="flex-1">
           <h2
             className="font-black text-brand-blue-primary leading-tight"
             style={{ fontSize: `${dynamicFontSize * 1.4}px` }}
@@ -118,30 +147,66 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           </span>
         </div>
         <div className="p-4 bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm">
-          <RoutineIcon className="w-10 h-10" />
+          <RoutineIcon className="w-8 h-8" />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <ul className="space-y-6">
-          {customSteps.map((step, i) => (
-            <li
-              key={step.id}
-              className="flex gap-4 items-start animate-in slide-in-from-left duration-300"
-            >
-              <span
-                className="w-10 h-10 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
-                style={{ fontSize: `${dynamicFontSize}px` }}
+        <ul className="space-y-8">
+          {customSteps.map((step, i) => {
+            const StepIcon = step.icon
+              ? (Icons as unknown as Record<string, React.ElementType>)[
+                  step.icon
+                ]
+              : null;
+            return (
+              <li
+                key={step.id}
+                className="flex gap-4 items-start animate-in slide-in-from-left duration-300 group"
               >
-                {i + 1}
-              </span>
-              <p
-                className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                style={{ fontSize: `${dynamicFontSize}px` }}
-              >
-                {step.text}
-              </p>
-            </li>
-          ))}
+                <span
+                  className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
+                  style={{ fontSize: `${dynamicFontSize * 0.8}px` }}
+                >
+                  {i + 1}
+                </span>
+                <div className="flex-1 flex items-start justify-between gap-4">
+                  <p
+                    className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
+                    style={{ fontSize: `${dynamicFontSize}px` }}
+                  >
+                    {step.text}
+                  </p>
+
+                  {StepIcon && step.icon && (
+                    <div
+                      draggable
+                      onDragStart={(e) =>
+                        onDragStart(
+                          e,
+                          step.icon as string,
+                          step.color ?? 'blue'
+                        )
+                      }
+                      className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
+                      title="Drag to whiteboard"
+                    >
+                      <div
+                        className={`p-1.5 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                      >
+                        <StepIcon size={18} strokeWidth={2.5} />
+                      </div>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
+                        <Grab size={8} className="text-slate-300" />
+                        <span className="text-[6px] font-black uppercase text-slate-400">
+                          Drag
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
@@ -203,19 +268,45 @@ export const InstructionalRoutinesSettings: React.FC<{
               </button>
             </div>
             {/* Stable Key Fix: Using step.id prevents focus loss */}
-            <textarea
-              value={step.text}
-              onChange={(e) => {
-                const next = [...customSteps];
-                next[i] = { ...next[i], text: e.target.value };
-                updateWidget(widget.id, {
-                  config: { ...config, customSteps: next },
-                });
-              }}
-              rows={2}
-              placeholder="Enter student direction..."
-              className="flex-1 text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
-            />
+            <div className="flex-1 flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                {step.icon && (
+                  <span
+                    className={`text-${step.color ?? 'blue'}-600 bg-${step.color ?? 'blue'}-50 p-1 rounded`}
+                  >
+                    {(Icons as unknown as Record<string, React.ElementType>)[
+                      step.icon
+                    ]
+                      ? React.createElement(
+                          (
+                            Icons as unknown as Record<
+                              string,
+                              React.ElementType
+                            >
+                          )[step.icon],
+                          { size: 12 }
+                        )
+                      : null}
+                  </span>
+                )}
+                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                  Step {i + 1}
+                </span>
+              </div>
+              <textarea
+                value={step.text}
+                onChange={(e) => {
+                  const next = [...customSteps];
+                  next[i] = { ...next[i], text: e.target.value };
+                  updateWidget(widget.id, {
+                    config: { ...config, customSteps: next },
+                  });
+                }}
+                rows={2}
+                placeholder="Enter student direction..."
+                className="w-full text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
+              />
+            </div>
             <button
               onClick={() =>
                 updateWidget(widget.id, {

@@ -243,7 +243,7 @@ export const WidgetRenderer: React.FC<{
       case 'sticker-library':
         return (
           <div className="text-slate-500 italic text-sm">
-            Manage stickers in the main view.
+            Upload and manage your custom stickers.
           </div>
         );
       default:
