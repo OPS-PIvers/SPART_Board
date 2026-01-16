@@ -19,7 +19,7 @@ import {
   Settings,
   LayoutGrid,
   Paintbrush,
-  FolderOpen,
+  SquareSquare,
   Pencil,
   ChevronRight,
   Star,
@@ -867,7 +867,7 @@ export const Sidebar: React.FC = () => {
                   className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
                 >
                   <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <FolderOpen className="w-8 h-8" />
+                    <SquareSquare className="w-8 h-8" />
                   </div>
                   <div>
                     <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
@@ -1311,36 +1311,40 @@ export const Sidebar: React.FC = () => {
                         const disabled = !isSelected && isFull;
 
                         return (
-                          <button
-                            key={tool.type}
-                            onClick={() => {
-                              const current =
-                                activeDashboard?.settings?.quickAccessWidgets ??
-                                [];
-                              let next;
-                              if (current.includes(tool.type)) {
-                                next = current.filter((t) => t !== tool.type);
-                              } else if (current.length < 2) {
-                                next = [...current, tool.type];
-                              } else {
-                                return;
-                              }
-                              updateDashboardSettings({
-                                quickAccessWidgets: next,
-                              });
-                            }}
-                            disabled={disabled}
-                            title={tool.label}
-                            className={`aspect-square flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
-                              isSelected
-                                ? 'bg-brand-blue-primary text-white shadow-md scale-105'
-                                : disabled
-                                  ? 'bg-slate-50 text-slate-300 cursor-not-allowed opacity-50'
-                                  : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
-                            }`}
-                          >
-                            <tool.icon className="w-5 h-5" />
-                          </button>
+                          <div key={tool.type} className="group relative">
+                            <button
+                              onClick={() => {
+                                const current =
+                                  activeDashboard?.settings
+                                    ?.quickAccessWidgets ?? [];
+                                let next;
+                                if (current.includes(tool.type)) {
+                                  next = current.filter((t) => t !== tool.type);
+                                } else if (current.length < 2) {
+                                  next = [...current, tool.type];
+                                } else {
+                                  return;
+                                }
+                                updateDashboardSettings({
+                                  quickAccessWidgets: next,
+                                });
+                              }}
+                              disabled={disabled}
+                              className={`w-full aspect-square flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+                                isSelected
+                                  ? 'bg-brand-blue-primary text-white shadow-md scale-105'
+                                  : disabled
+                                    ? 'bg-slate-50 text-slate-300 cursor-not-allowed opacity-50'
+                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                              }`}
+                            >
+                              <tool.icon className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10 scale-95 group-hover:scale-100">
+                              {tool.label}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
