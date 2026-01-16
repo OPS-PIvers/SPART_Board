@@ -20,6 +20,8 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  rectIntersection,
+  CollisionDetection,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -39,8 +41,18 @@ import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
 
-// Dock Item with Popover Logic
-const DockItem = ({
+/**
+ * Custom Label Component for consistent readability
+ * Uses a strong drop shadow and pure white to stay visible over any background.
+ */
+const DockLabel = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-[9px] font-black uppercase tracking-tighter text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,1)] whitespace-nowrap">
+    {children}
+  </span>
+);
+
+// Tool Item with Popover Logic
+const ToolDockItem = ({
   tool,
   minimizedWidgets,
   onAdd,
@@ -100,7 +112,6 @@ const DockItem = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent click if in edit mode
     if (isEditMode) {
       e.preventDefault();
       e.stopPropagation();
@@ -115,7 +126,7 @@ const DockItem = ({
           const rect = buttonRef.current.getBoundingClientRect();
           setPopoverPos({
             left: rect.left + rect.width / 2,
-            bottom: window.innerHeight - rect.top + 10, // 10px spacing
+            bottom: window.innerHeight - rect.top + 10,
           });
         }
         setShowPopover(true);
@@ -140,7 +151,7 @@ const DockItem = ({
     >
       {/* Popover Menu - Rendered in Portal to avoid clipping */}
       {showPopover &&
-        !isEditMode && // Hide popovers in edit mode
+        !isEditMode &&
         minimizedWidgets.length > 0 &&
         popoverPos &&
         createPortal(
@@ -220,7 +231,6 @@ const DockItem = ({
           document.body
         )}
 
-      {/* Dock Icon */}
       <div
         className={`relative group/icon ${isEditMode ? 'animate-jiggle' : ''}`}
       >
@@ -264,9 +274,7 @@ const DockItem = ({
               </div>
             )}
           </div>
-          <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
-            {tool.label}
-          </span>
+          <DockLabel>{tool.label}</DockLabel>
         </button>
       </div>
     </div>
@@ -401,6 +409,7 @@ const FolderItem = ({
 
       <div
         className={`relative group/folder ${isEditMode ? 'animate-jiggle' : ''}`}
+        data-folder-id={folder.id}
       >
         {isEditMode && (
           <button
@@ -443,9 +452,7 @@ const FolderItem = ({
               </div>
             )}
           </div>
-          <span className="text-[9px] font-black uppercase tracking-tighter smart-text">
-            {folder.name}
-          </span>
+          <DockLabel>{folder.name}</DockLabel>
         </button>
       </div>
     </div>
@@ -454,25 +461,28 @@ const FolderItem = ({
 
 const RenameFolderModal = ({
   name,
+  title = 'Rename Folder',
   onClose,
   onSave,
 }: {
   name: string;
+  title?: string;
   onClose: () => void;
   onSave: (newName: string) => void;
 }) => {
   const [val, setVal] = useState(name);
-  return (
-    <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-      <GlassCard className="w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <GlassCard className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">
-          Rename Folder
+          {title}
         </h3>
         <input
           type="text"
           value={val}
           onChange={(e) => setVal(e.target.value)}
           autoFocus
+          placeholder="Folder name..."
           className="w-full px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-brand-blue-primary text-sm font-bold mb-6"
           onKeyDown={(e) => e.key === 'Enter' && onSave(val)}
         />
@@ -491,7 +501,8 @@ const RenameFolderModal = ({
           </button>
         </div>
       </GlassCard>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -507,7 +518,7 @@ const WidgetLibrary = ({
   canAccess: (type: WidgetType) => boolean;
   onClose: () => void;
 }) => {
-  return (
+  return createPortal(
     <GlassCard className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-[10002]">
       <div className="bg-white/50 px-6 py-4 border-b border-white/30 flex justify-between items-center shrink-0 backdrop-blur-xl">
         <div className="flex items-center gap-2">
@@ -561,7 +572,8 @@ const WidgetLibrary = ({
           Tap a widget to add or remove it from your dock
         </p>
       </div>
-    </GlassCard>
+    </GlassCard>,
+    document.body
   );
 };
 
@@ -589,6 +601,7 @@ export const Dock: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false); // Global Edit Mode State
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -609,7 +622,12 @@ export const Dock: React.FC = () => {
 
   // Handle exiting edit mode when clicking outside the dock area
   useClickOutside(dockContainerRef, () => {
-    if (isEditMode && !showLibrary && !renamingFolderId) {
+    if (
+      isEditMode &&
+      !showLibrary &&
+      !renamingFolderId &&
+      !showCreateFolderModal
+    ) {
       setIsEditMode(false);
     }
   });
@@ -631,7 +649,6 @@ export const Dock: React.FC = () => {
     setShowRosterMenu(!showRosterMenu);
   };
 
-  // Add long press handler for global edit mode
   const handleLongPress = () => {
     setIsEditMode(true);
   };
@@ -664,6 +681,31 @@ export const Dock: React.FC = () => {
     setActiveItemId(event.active.id as string);
   };
 
+  /**
+   * Custom Collision Detection to handle Grouping vs Reordering
+   * If the center of the dragged item is significantly over a folder, we prioritize grouping.
+   */
+  const customCollisionDetection: CollisionDetection = (args) => {
+    const items = dockItems;
+    // 1. First, check for folder grouping (rect intersection)
+    const folderCollisions = rectIntersection(args).filter((collision) => {
+      const item = items.find(
+        (i) => i.type === 'folder' && i.folder.id === collision.id
+      );
+      return !!item;
+    });
+
+    if (folderCollisions.length > 0) {
+      folderCollisions.sort(
+        (a, b) => (b.data?.value ?? 0) - (a.data?.value ?? 0)
+      );
+      return [folderCollisions[0]];
+    }
+
+    // 2. Otherwise, fallback to standard sortable collision (closestCenter)
+    return closestCenter(args);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveItemId(null);
@@ -672,15 +714,16 @@ export const Dock: React.FC = () => {
 
     const activeId = active.id as string;
     const overId = over.id as string;
+    const items = dockItems;
 
     // Check if dropping onto a folder
-    const overItem = dockItems.find(
+    const overItem = items.find(
       (item) => item.type === 'folder' && item.folder.id === overId
     );
 
-    if (overItem && overItem.type === 'folder') {
+    if (overItem && overItem.type === 'folder' && activeId !== overId) {
       // Find the tool type being dragged
-      const activeItem = dockItems.find(
+      const activeItem = items.find(
         (item) => item.type === 'tool' && item.toolType === activeId
       );
       if (activeItem && activeItem.type === 'tool') {
@@ -691,17 +734,17 @@ export const Dock: React.FC = () => {
 
     // Standard reordering
     if (activeId !== overId) {
-      const oldIndex = dockItems.findIndex((item) => {
+      const oldIndex = items.findIndex((item) => {
         const id = item.type === 'tool' ? item.toolType : item.folder.id;
         return id === activeId;
       });
-      const newIndex = dockItems.findIndex((item) => {
+      const newIndex = items.findIndex((item) => {
         const id = item.type === 'tool' ? item.toolType : item.folder.id;
         return id === overId;
       });
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        const next = arrayMove(dockItems, oldIndex, newIndex);
+        const next = arrayMove(items, oldIndex, newIndex);
         reorderDockItems(next);
       }
     }
@@ -751,18 +794,18 @@ export const Dock: React.FC = () => {
                 <div className="p-1 bg-brand-blue-primary text-white rounded-full group-hover:rotate-90 transition-transform duration-300">
                   <Plus className="w-3 h-3" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
                   Add Widgets
                 </span>
               </button>
               <button
-                onClick={() => addFolder('New Folder')}
+                onClick={() => setShowCreateFolderModal(true)}
                 className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200 text-slate-600 rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
               >
                 <div className="p-1 bg-slate-100 text-slate-500 rounded-full group-hover:bg-slate-200 transition-colors">
                   <FolderPlus className="w-3 h-3" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
                   Add Folder
                 </span>
               </button>
@@ -777,6 +820,20 @@ export const Dock: React.FC = () => {
         </div>
       )}
 
+      {showCreateFolderModal && (
+        <RenameFolderModal
+          name=""
+          title="Create New Folder"
+          onClose={() => setShowCreateFolderModal(false)}
+          onSave={(newName) => {
+            if (newName.trim()) {
+              addFolder(newName.trim());
+              setShowCreateFolderModal(false);
+            }
+          }}
+        />
+      )}
+
       {renamingFolderId && (
         <RenameFolderModal
           name={
@@ -788,8 +845,10 @@ export const Dock: React.FC = () => {
           }
           onClose={() => setRenamingFolderId(null)}
           onSave={(newName) => {
-            renameFolder(renamingFolderId, newName);
-            setRenamingFolderId(null);
+            if (newName.trim()) {
+              renameFolder(renamingFolderId, newName.trim());
+              setRenamingFolderId(null);
+            }
           }}
         />
       )}
@@ -815,7 +874,7 @@ export const Dock: React.FC = () => {
                 <>
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCenter}
+                    collisionDetection={customCollisionDetection}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                   >
@@ -835,7 +894,7 @@ export const Dock: React.FC = () => {
                           const minimizedWidgets =
                             minimizedWidgetsByType[tool.type] ?? [];
                           return (
-                            <DockItem
+                            <ToolDockItem
                               key={tool.type}
                               tool={tool}
                               minimizedWidgets={minimizedWidgets}
@@ -933,9 +992,7 @@ export const Dock: React.FC = () => {
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
-                          Live
-                        </span>
+                        <DockLabel>Live</DockLabel>
                       </button>
 
                       {/* LIVE POPOVER */}
@@ -994,9 +1051,7 @@ export const Dock: React.FC = () => {
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
-                      {classToolMetadata.label}
-                    </span>
+                    <DockLabel>{classToolMetadata.label}</DockLabel>
                   </button>
 
                   {/* Separator and Minimize Button */}
@@ -1010,9 +1065,7 @@ export const Dock: React.FC = () => {
                     <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
-                      Hide
-                    </span>
+                    <DockLabel>Hide</DockLabel>
                   </button>
                 </>
               ) : (
