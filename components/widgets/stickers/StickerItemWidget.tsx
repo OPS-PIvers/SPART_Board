@@ -67,20 +67,20 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
     return (
       <DraggableSticker widget={widget}>
         <div
-          className={`w-full h-full flex flex-col items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl relative overflow-hidden`}
+          className={`w-full h-full flex flex-col items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl relative p-2`}
         >
+          {/* Icon Container */}
           <div
-            className={`rounded-2xl ${theme.bg} ${theme.text} w-[90%] h-[90%] flex flex-col items-center justify-center transition-all ${config.label ? 'pb-6' : ''}`}
+            className={`rounded-2xl ${theme.bg} ${theme.text} w-full flex-1 flex items-center justify-center transition-all overflow-hidden`}
           >
-            <IconComponent className="w-[80%] h-[80%]" strokeWidth={2.5} />
+            <IconComponent className="w-[70%] h-[70%]" strokeWidth={2.5} />
           </div>
 
+          {/* Label Area (Outside the icon bg, but inside the white card) */}
           {config.label && (
-            <div
-              className={`absolute bottom-3 left-0 right-0 text-center pointer-events-none`}
-            >
+            <div className="w-full pt-1.5 pb-0.5 text-center">
               <span
-                className={`text-[10px] font-black uppercase tracking-wider ${theme.text} bg-white/80 px-2 py-0.5 rounded-full`}
+                className={`text-[11px] font-black uppercase tracking-wider ${theme.text} block truncate px-1`}
               >
                 {config.label}
               </span>
@@ -93,20 +93,33 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
 
   return (
     <DraggableSticker widget={widget}>
-      {config.url ? (
-        <img
-          src={config.url}
-          alt="Sticker"
-          className="w-full h-full object-contain pointer-events-none"
-          style={{
-            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.15))',
-          }}
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
-          <span className="text-xs text-pink-500 ">No Image</span>
-        </div>
-      )}
+      <div className="w-full h-full flex flex-col items-center justify-center rounded-3xl border-[6px] border-white bg-white shadow-2xl p-2">
+        {config.url ? (
+          <div className="w-full flex-1 flex items-center justify-center overflow-hidden">
+            <img
+              src={config.url}
+              alt="Sticker"
+              className="max-w-full max-h-full object-contain pointer-events-none"
+              style={{
+                filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.1))',
+              }}
+            />
+          </div>
+        ) : (
+          <div className="w-full flex-1 flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
+            <span className="text-xs text-pink-500 font-bold">No Image</span>
+          </div>
+        )}
+
+        {config.label && (
+          <div className="w-full pt-1.5 pb-0.5 text-center">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 block truncate px-1">
+              {config.label}
+            </span>
+          </div>
+        )}
+      </div>
+    </DraggableSticker>
     </DraggableSticker>
   );
 };
