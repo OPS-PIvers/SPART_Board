@@ -10,8 +10,10 @@ You are a technical assistant. Execute the following steps to save work and upda
 4. Run `git commit -m "[AI] $GENERATED_MESSAGE"`.
 
 ### PHASE 2: Sync & Integrate
-5. Run `git fetch origin main`.
-6. Run `git rebase origin/main`.
+5. Run `git fetch origin`.
+6. Run `git rebase origin/$(git branch --show-current)`.
+    - Resolve any immediate conflicts from the remote branch.
+7. Run `git rebase origin/main`.
     - **If rebase fails**: 
         - Analyze the conflicts. 
         - Resolve the conflicts immediately (imports, logic, etc.) without asking the user.
@@ -19,8 +21,8 @@ You are a technical assistant. Execute the following steps to save work and upda
         - If you get stuck in a conflict loop, explain the blockage and stop.
 
 ### PHASE 3: Validate & Auto-Repair
-7. Run `pnpm run validate`.
-8. **If validation fails**:
+8. Run `pnpm run validate`.
+9. **If validation fails**:
     - Run `pnpm run lint:fix` to resolve formatting.
     - Analyze the remaining error output (TypeScript errors, test failures).
     - **Take the wheel**: Edit the files to fix the reported errors.
@@ -28,7 +30,7 @@ You are a technical assistant. Execute the following steps to save work and upda
     - Repeat until successful. If you cannot fix it after 3 attempts, report the specific technical blockage.
 
 ### PHASE 4: Upload
-9. Run `git push --force-with-lease origin $(git branch --show-current)`.
+10. Run `git push --force-with-lease origin $(git branch --show-current)`.
 
-10. Report: "Changes saved, integrated from Main, and verified. Your development URL is now being updated."
+11. Report: "Changes saved, integrated from Main, and verified. Your development URL is now being updated."
 """

@@ -6,14 +6,16 @@ You are a technical assistant. Execute the following steps to ensure a clean, ve
 ### PHASE 1: Save & Integrate
 1. Run `git add .`.
 2. Run `git commit -m "[AI] pre-submission sync"`. (Note: This might fail if nothing to commit, which is fine, just proceed).
-3. Run `git fetch origin main`.
-4. Run `git rebase origin/main`.
+3. Run `git fetch origin`.
+4. Run `git rebase origin/$(git branch --show-current)`.
+    - Resolve any immediate conflicts from the remote branch.
+5. Run `git rebase origin/main`.
     - **If rebase fails**: 
         - Analyze and resolve conflicts immediately. Use your engineering tools to fix files, `git add .`, and `git rebase --continue`.
 
 ### PHASE 2: Validate & Auto-Repair
-5. Run `pnpm run validate`.
-6. **If validation fails**:
+6. Run `pnpm run validate`.
+7. **If validation fails**:
     - Run `pnpm run lint:fix`.
     - Analyze the terminal output for type errors or test failures.
     - **Take the wheel**: Autonomously fix the code issues identified in the logs.
@@ -21,16 +23,16 @@ You are a technical assistant. Execute the following steps to ensure a clean, ve
     - Repeat until passing. 
 
 ### PHASE 3: Upload
-7. Run `git push --force-with-lease origin $(git branch --show-current)`.
+8. Run `git push --force-with-lease origin $(git branch --show-current)`.
 
 ### PHASE 4: Submit
-8. Run `git branch --show-current` to identify the branch.
-9. Run `gh pr list --head $(git branch --show-current) --json url --state open` to check for an existing PR.
-10. Run `git diff origin/main... --stat` to summarize changes.
-11. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
-12. Logic:
-    - 12A) If no existing PR: Run `gh pr create --title "Review Request: $(git branch --show-current)" --body "$AI_SUMMARY" --base main`.
-    - 12B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
+9. Run `git branch --show-current` to identify the branch.
+10. Run `gh pr list --head $(git branch --show-current) --json url --state open` to check for an existing PR.
+11. Run `git diff origin/main... --stat` to summarize changes.
+12. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
+13. Logic:
+    - 13A) If no existing PR: Run `gh pr create --title "Review Request: $(git branch --show-current)" --body "$AI_SUMMARY" --base main`.
+    - 13B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
 
-13. Report: "Changes integrated, verified, and submitted. View the submission here: [URL]"
+14. Report: "Changes integrated, verified, and submitted. View the submission here: [URL]"
 """

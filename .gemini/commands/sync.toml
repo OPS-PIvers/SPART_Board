@@ -1,32 +1,32 @@
-description = "Updates your workspace with the latest changes from the main project."
+description = "Updates your workspace with the latest changes from the main project and syncs with your remote branch."
 prompt = """
 
-You are a technical assistant. Execute the following steps exactly:
+You are a technical assistant. Execute the following steps to ensure the workspace is fully synchronized:
 
+### PHASE 1: Prepare
 1. Run `git status --short`. 
-    1A) If the output is not empty, run `git stash` and notify the user: "Your current unsaved changes have been temporarily set aside to allow for the update."
+    1A) If the output is not empty, run `git stash` and notify the user: "Your current unsaved changes have been temporarily stashed to allow for a clean update."
 
-2. Run `git fetch origin main`.
+### PHASE 2: Fetch
+2. Run `git fetch origin`.
 
-3. Run `git rebase origin/main`.
+### PHASE 3: Sync Current Branch
+3. Run `git branch --show-current` to get the current branch name.
+4. Attempt to rebase onto its remote counterpart to catch any remote changes: `git rebase origin/$(git branch --show-current)`.
+    - If conflicts occur: Resolve them immediately (imports, simple logic) or `git rebase --abort` if they are too complex.
 
-4. If the rebase is successful:
+### PHASE 4: Sync with Main
+5. Run `git rebase origin/main`.
+    - **If rebase fails**: 
+        - Analyze the conflicts. 
+        - Resolve the conflicts immediately (imports, logic, etc.) without asking the user.
+        - Run `git add .` and `git rebase --continue`.
+        - If you get stuck in a conflict loop, explain the blockage and stop.
 
-    4A) If you ran `git stash` earlier, run `git stash pop`.
+### PHASE 5: Finalize
+6. If you ran `git stash` earlier, run `git stash pop`.
+7. Run `git push --force-with-lease origin $(git branch --show-current)`.
+    - Note: This ensures the remote preview is updated with the synced state.
 
-    4B) Run `git push --force-with-lease origin $(git branch --show-current)`.
-        - Explain: "I'm updating your online backup to match these new changes."
-        - Note: If this fails, it's okay, just proceed to the report.
-
-    4C) Report: "Update complete. Your workspace is now up-to-date with the latest version of the project."
-
-5. If the rebase fails (exit code non-zero):
-
-    5A) Run `git rebase --abort`.
-
-    5B) If you ran `git stash` earlier, run `git stash pop`.
-
-    5C) Identify conflicting files via `git status`.
-
-    5D) Report: "Update paused. There are conflicting changes between your work and the latest updates from Main. To keep your work safe, I have stopped the update.\n\nPlease type this to me now: **'Help me fix the sync conflicts'**\n\nI will then help you manually merge the updates so nothing gets lost." 
+8. Report: "Synchronization complete. Your workspace is now up-to-date with both 'main' and your remote branch."
 """
