@@ -16,6 +16,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
+import { PASTEL_PALETTE } from '../../config/colors';
 
 // Singleton-like Audio Manager to prevent performance issues
 let audioCtx: AudioContext | null = null;
@@ -25,16 +26,7 @@ interface CustomWindow extends Window {
   webkitAudioContext: typeof AudioContext;
 }
 
-const WHEEL_COLORS = [
-  '#f87171',
-  '#fbbf24',
-  '#34d399',
-  '#60a5fa',
-  '#818cf8',
-  '#a78bfa',
-  '#f472b6',
-  '#2DD4BF',
-];
+const WHEEL_COLORS = PASTEL_PALETTE;
 
 const getAudioCtx = () => {
   if (!audioCtx) {

@@ -19,6 +19,7 @@ import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { Button } from '../common/Button';
+import { WIDGET_PALETTE } from '../../config/colors';
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -56,7 +57,7 @@ export const DrawingWidget: React.FC<{
     color = '#1e293b',
     width = 4,
     paths = [],
-    customColors = ['#1e293b', '#ef4444', '#3b82f6', '#22c55e', '#eab308'],
+    customColors = WIDGET_PALETTE.slice(0, 5),
   } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -412,13 +413,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as DrawingConfig;
   const width = config.width ?? 4;
-  const customColors = config.customColors ?? [
-    '#1e293b',
-    '#ef4444',
-    '#3b82f6',
-    '#22c55e',
-    '#eab308',
-  ];
+  const customColors = config.customColors ?? WIDGET_PALETTE.slice(0, 5);
 
   const handleColorChange = (index: number, newColor: string) => {
     const nextColors = [...customColors];
