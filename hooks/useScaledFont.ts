@@ -1,6 +1,4 @@
 import { useMemo } from 'react';
-import { useDashboard } from '../context/useDashboard';
-import { DEFAULT_GLOBAL_STYLE } from '../types';
 
 /**
  * Hook to calculate a scaled font size based on widget dimensions.
@@ -17,18 +15,15 @@ export const useScaledFont = (
   minSize: number = 12,
   maxSize: number = 120
 ) => {
-  const { activeDashboard } = useDashboard();
-  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-
   return useMemo(() => {
     // We use the smaller of the two dimensions to prevent text from overflowing
     // when the window is very narrow or very short.
     const minDim = Math.min(widgetWidth, widgetHeight);
 
-    // Base calculation: roughly 10% of the minimum dimension, 
+    // Base calculation: roughly 10% of the minimum dimension,
     // multiplied by the specific component's baseFactor.
     const scaledSize = minDim * 0.1 * baseFactor;
-    
+
     return Math.max(minSize, Math.min(maxSize, scaledSize));
   }, [widgetWidth, widgetHeight, baseFactor, minSize, maxSize]);
 };

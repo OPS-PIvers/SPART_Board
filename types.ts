@@ -570,11 +570,19 @@ export type GlobalFontFamily =
 export interface GlobalStyle {
   fontFamily: GlobalFontFamily;
   windowTransparency: number; // 0 to 1
-  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  windowBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  dockTransparency: number; // 0 to 1
+  dockBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
+  dockTextColor: string; // hex color
+  dockTextShadow: boolean;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
   windowTransparency: 0.8,
-  borderRadius: '2xl',
+  windowBorderRadius: '2xl',
+  dockTransparency: 0.4,
+  dockBorderRadius: 'full',
+  dockTextColor: '#334155', // Slate 700 (dark grey)
+  dockTextShadow: false,
 };

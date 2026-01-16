@@ -34,6 +34,7 @@ export interface DashboardContextValue {
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
+  clearAllWidgets: () => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
   moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;

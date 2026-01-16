@@ -280,6 +280,30 @@ export const Sidebar: React.FC = () => {
   >('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const { user, signOut, isAdmin, featurePermissions } = useAuth();
+  const { uploadBackgroundImage } = useStorage();
+  const {
+    dashboards,
+    activeDashboard,
+    visibleTools,
+    gradeFilter,
+    setGradeFilter,
+    toggleToolVisibility,
+    setAllToolsVisibility,
+    createNewDashboard,
+    loadDashboard,
+    deleteDashboard,
+    duplicateDashboard,
+    renameDashboard,
+    reorderDashboards,
+    setDefaultDashboard,
+    saveCurrentDashboard,
+    setBackground,
+    setGlobalStyle,
+    clearAllWidgets,
+    addToast,
+  } = useDashboard();
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err: unknown) => {
@@ -306,13 +330,13 @@ export const Sidebar: React.FC = () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
+
   // Sub-tab for design section
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
-  const [pendingStyle, setPendingStyle] = useState<GlobalStyle>(
-    DEFAULT_GLOBAL_STYLE
-  );
+  const [pendingStyle, setPendingStyle] =
+    useState<GlobalStyle>(DEFAULT_GLOBAL_STYLE);
 
   // Initialize pending style when sidebar opens or section changes to 'style'
   useEffect(() => {
@@ -345,30 +369,6 @@ export const Sidebar: React.FC = () => {
       reorderDashboards(newOrder);
     }
   };
-
-  const { user, signOut, isAdmin, featurePermissions } = useAuth();
-  const { uploadBackgroundImage } = useStorage();
-  const {
-    dashboards,
-    activeDashboard,
-    visibleTools,
-    gradeFilter,
-    setGradeFilter,
-    toggleToolVisibility,
-    setAllToolsVisibility,
-    createNewDashboard,
-    loadDashboard,
-    deleteDashboard,
-    duplicateDashboard,
-    renameDashboard,
-    reorderDashboards,
-    setDefaultDashboard,
-    saveCurrentDashboard,
-    setBackground,
-    updateDashboardSettings,
-    setGlobalStyle,
-    addToast,
-  } = useDashboard();
 
   const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -547,9 +547,15 @@ export const Sidebar: React.FC = () => {
   const handleShare = (db?: Dashboard) => {
     const target = db ?? activeDashboard;
     if (!target) return;
-    const data = JSON.stringify(target);
-    void navigator.clipboard.writeText(data);
-    addToast('Board data copied to clipboard!', 'success');
+    try {
+      const data = JSON.stringify(target);
+      void navigator.clipboard.writeText(data);
+      addToast('Board data copied to clipboard!', 'success');
+    } catch (error) {
+      console.error('Failed to share board:', error);
+      const message = error instanceof Error ? error.message : 'Share failed';
+      addToast(message, 'error');
+    }
   };
 
   const handleImport = () => {
@@ -970,6 +976,32 @@ export const Sidebar: React.FC = () => {
                   </div>
                   <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                 </button>
+
+                <button
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        'Are you sure you want to close ALL widget windows?'
+                      )
+                    ) {
+                      clearAllWidgets();
+                      setIsOpen(false);
+                    }
+                  }}
+                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-red-primary hover:shadow-md transition-all text-left"
+                >
+                  <div className="p-4 rounded-xl bg-brand-red-lighter text-brand-red-primary group-hover:bg-brand-red-primary group-hover:text-white transition-colors">
+                    <Trash2 className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight group-hover:text-brand-red-primary transition-colors">
+                      Clear Windows
+                    </div>
+                    <p className="text-sm text-slate-500 font-medium">
+                      Close all active widget windows at once
+                    </p>
+                  </div>
+                </button>
               </div>
 
               {/* BOARDS SECTION */}
@@ -1284,7 +1316,7 @@ export const Sidebar: React.FC = () => {
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                     Live Preview
                   </h3>
-                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner flex items-center justify-center p-4">
+                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-inner flex flex-col items-center justify-center p-4 gap-4">
                     <div
                       className="absolute inset-0 opacity-20"
                       style={{
@@ -1302,18 +1334,20 @@ export const Sidebar: React.FC = () => {
                         backgroundPosition: 'center',
                       }}
                     />
+
+                    {/* Window Preview */}
                     <div
                       className={`relative z-10 w-full p-4 border border-white/30 shadow-lg backdrop-blur-md ${
-                        pendingStyle.borderRadius === 'none'
+                        pendingStyle.windowBorderRadius === 'none'
                           ? 'rounded-none'
-                          : `rounded-${pendingStyle.borderRadius}`
+                          : `rounded-${pendingStyle.windowBorderRadius}`
                       }`}
                       style={{
                         backgroundColor: `rgba(255, 255, 255, ${pendingStyle.windowTransparency})`,
                       }}
                     >
                       <div
-                        className={`text-center space-y-2 ${
+                        className={`text-center space-y-1 ${
                           pendingStyle.fontFamily === 'sans'
                             ? 'font-sans'
                             : pendingStyle.fontFamily === 'mono'
@@ -1321,15 +1355,67 @@ export const Sidebar: React.FC = () => {
                               : 'font-handwritten'
                         }`}
                       >
-                        <div className="text-xs font-black uppercase text-slate-400 tracking-widest">
-                          Preview
+                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          Window
                         </div>
-                        <div className="text-xl font-bold text-slate-800 leading-tight">
+                        <div className="text-sm font-bold text-slate-800 leading-tight">
                           The quick brown fox jumps over the lazy dog.
                         </div>
-                        <div className="text-[10px] text-slate-500 font-medium">
-                          12:34 PM • 72°F Sunny
-                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dock Preview */}
+                    <div
+                      className={`relative z-10 px-6 py-2 border border-white/30 shadow-lg backdrop-blur-md flex items-center gap-3 ${
+                        pendingStyle.dockBorderRadius === 'none'
+                          ? 'rounded-none'
+                          : pendingStyle.dockBorderRadius === 'full'
+                            ? 'rounded-full'
+                            : `rounded-${pendingStyle.dockBorderRadius}`
+                      }`}
+                      style={{
+                        backgroundColor: `rgba(255, 255, 255, ${pendingStyle.dockTransparency})`,
+                      }}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
+                        <span
+                          className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap ${
+                            pendingStyle.fontFamily === 'sans'
+                              ? 'font-sans'
+                              : pendingStyle.fontFamily === 'mono'
+                                ? 'font-mono'
+                                : 'font-handwritten'
+                          }`}
+                          style={{
+                            color: pendingStyle.dockTextColor,
+                            textShadow: pendingStyle.dockTextShadow
+                              ? '0 1px 2px rgba(0,0,0,0.5)'
+                              : 'none',
+                          }}
+                        >
+                          Icon
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
+                        <span
+                          className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap ${
+                            pendingStyle.fontFamily === 'sans'
+                              ? 'font-sans'
+                              : pendingStyle.fontFamily === 'mono'
+                                ? 'font-mono'
+                                : 'font-handwritten'
+                          }`}
+                          style={{
+                            color: pendingStyle.dockTextColor,
+                            textShadow: pendingStyle.dockTextShadow
+                              ? '0 1px 2px rgba(0,0,0,0.5)'
+                              : 'none',
+                          }}
+                        >
+                          Label
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1375,65 +1461,181 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Window Transparency */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Window Transparency
-                    </h3>
-                    <span className="text-xs font-mono font-bold text-brand-blue-primary">
-                      {Math.round(pendingStyle.windowTransparency * 100)}%
-                    </span>
+                {/* WINDOW SETTINGS */}
+                <div className="space-y-6 pt-4 border-t border-slate-100">
+                  <h4 className="text-[10px] font-black text-brand-blue-primary uppercase tracking-[0.2em]">
+                    Window Customization
+                  </h4>
+
+                  {/* Window Transparency */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Window Transparency
+                      </h3>
+                      <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                        {Math.round(pendingStyle.windowTransparency * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.05"
+                      max="1"
+                      step="0.05"
+                      value={pendingStyle.windowTransparency}
+                      onChange={(e) =>
+                        setPendingStyle({
+                          ...pendingStyle,
+                          windowTransparency: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min="0.05"
-                    max="1"
-                    step="0.05"
-                    value={pendingStyle.windowTransparency}
-                    onChange={(e) =>
-                      setPendingStyle({
-                        ...pendingStyle,
-                        windowTransparency: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
-                  />
-                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
-                    <span>Clear</span>
-                    <span>Solid</span>
+
+                  {/* Window Corners */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                      Window Corners
+                    </h3>
+                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                      {[
+                        { id: 'none', label: 'Square' },
+                        { id: 'lg', label: 'Soft' },
+                        { id: '2xl', label: 'Round' },
+                        { id: '3xl', label: 'Extra' },
+                      ].map((r) => (
+                        <button
+                          key={r.id}
+                          onClick={() =>
+                            setPendingStyle({
+                              ...pendingStyle,
+                              windowBorderRadius:
+                                r.id as GlobalStyle['windowBorderRadius'],
+                            })
+                          }
+                          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                            pendingStyle.windowBorderRadius === r.id
+                              ? 'bg-white shadow-sm text-brand-blue-primary'
+                              : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Border Radius */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                    Window Corners
-                  </h3>
-                  <div className="flex bg-slate-100 p-1 rounded-xl">
-                    {[
-                      { id: 'none', label: 'Square' },
-                      { id: 'lg', label: 'Soft' },
-                      { id: '2xl', label: 'Round' },
-                      { id: '3xl', label: 'Full' },
-                    ].map((r) => (
+                {/* DOCK SETTINGS */}
+                <div className="space-y-6 pt-4 border-t border-slate-100">
+                  <h4 className="text-[10px] font-black text-brand-blue-primary uppercase tracking-[0.2em]">
+                    Dock Customization
+                  </h4>
+
+                  {/* Dock Transparency */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Dock Transparency
+                      </h3>
+                      <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                        {Math.round(pendingStyle.dockTransparency * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.05"
+                      max="1"
+                      step="0.05"
+                      value={pendingStyle.dockTransparency}
+                      onChange={(e) =>
+                        setPendingStyle({
+                          ...pendingStyle,
+                          dockTransparency: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                    />
+                  </div>
+
+                  {/* Dock Corners */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                      Dock Corners
+                    </h3>
+                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                      {[
+                        { id: 'none', label: 'Square' },
+                        { id: 'lg', label: 'Soft' },
+                        { id: '2xl', label: 'Round' },
+                        { id: 'full', label: 'Full' },
+                      ].map((r) => (
+                        <button
+                          key={r.id}
+                          onClick={() =>
+                            setPendingStyle({
+                              ...pendingStyle,
+                              dockBorderRadius:
+                                r.id as GlobalStyle['dockBorderRadius'],
+                            })
+                          }
+                          className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                            pendingStyle.dockBorderRadius === r.id
+                              ? 'bg-white shadow-sm text-brand-blue-primary'
+                              : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dock Text Style */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                      Dock Text Style
+                    </h3>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="color"
+                          value={pendingStyle.dockTextColor}
+                          onChange={(e) =>
+                            setPendingStyle({
+                              ...pendingStyle,
+                              dockTextColor: e.target.value,
+                            })
+                          }
+                          className="w-10 h-10 rounded-lg border-2 border-slate-200 bg-white cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-slate-600 uppercase">
+                          Text Color
+                        </span>
+                      </div>
+
                       <button
-                        key={r.id}
                         onClick={() =>
                           setPendingStyle({
                             ...pendingStyle,
-                            borderRadius: r.id as GlobalStyle['borderRadius'],
+                            dockTextShadow: !pendingStyle.dockTextShadow,
                           })
                         }
-                        className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
-                          pendingStyle.borderRadius === r.id
-                            ? 'bg-white shadow-sm text-brand-blue-primary'
-                            : 'text-slate-500 hover:text-slate-700'
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                          pendingStyle.dockTextShadow
+                            ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
+                            : 'bg-white border-slate-100 text-slate-500'
                         }`}
                       >
-                        {r.label}
+                        <span className="text-xs font-black uppercase tracking-wider">
+                          Enable Text Shadow
+                        </span>
+                        {pendingStyle.dockTextShadow && (
+                          <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                        )}
                       </button>
-                    ))}
+                    </div>
                   </div>
                 </div>
 

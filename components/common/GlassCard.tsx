@@ -31,9 +31,9 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       propTransparency ?? globalStyle.windowTransparency;
     const finalRadiusClass = propCornerRadius
       ? `rounded-${propCornerRadius}`
-      : globalStyle.borderRadius === 'none'
+      : globalStyle.windowBorderRadius === 'none'
         ? 'rounded-none'
-        : `rounded-${globalStyle.borderRadius}`;
+        : `rounded-${globalStyle.windowBorderRadius}`;
 
     return (
       <div
