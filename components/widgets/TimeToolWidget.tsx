@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TimeToolConfig, WidgetData } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
+import { STANDARD_COLORS } from '../../config/colors';
 
 interface Props {
   widget: WidgetData;
@@ -333,10 +334,10 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
               className="transition-all duration-300"
               stroke={
                 getStatusColor().includes('red')
-                  ? '#ef4444'
+                  ? STANDARD_COLORS.red
                   : getStatusColor().includes('amber')
-                    ? '#fbbf24'
-                    : '#3b82f6'
+                    ? STANDARD_COLORS.amber
+                    : STANDARD_COLORS.blue
               }
               strokeWidth="10"
               strokeLinecap="round"
