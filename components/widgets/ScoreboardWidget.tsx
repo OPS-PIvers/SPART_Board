@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, ScoreboardConfig } from '../../types';
 import { Plus, Minus } from 'lucide-react';
 
@@ -9,6 +10,8 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as ScoreboardConfig;
   const { scoreA = 0, scoreB = 0, teamA = 'Team A', teamB = 'Team B' } = config;
+
+  const scoreFontSize = useScaledFont(widget.w, widget.h, 1.5, 24, 120);
 
   const updateScore = (team: 'A' | 'B', delta: number) => {
     if (team === 'A')
@@ -27,7 +30,10 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
         <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
           {teamA}
         </div>
-        <div className="text-5xl font-black text-blue-700 mb-4 tabular-nums drop-shadow-sm">
+        <div
+          className="font-black text-blue-700 mb-4 tabular-nums drop-shadow-sm leading-none"
+          style={{ fontSize: `${scoreFontSize}px` }}
+        >
           {scoreA}
         </div>
         <div className="flex gap-2">
@@ -53,7 +59,10 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
         <div className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-1">
           {teamB}
         </div>
-        <div className="text-5xl font-black text-red-700 mb-4 tabular-nums drop-shadow-sm">
+        <div
+          className="font-black text-red-700 mb-4 tabular-nums drop-shadow-sm leading-none"
+          style={{ fontSize: `${scoreFontSize}px` }}
+        >
           {scoreB}
         </div>
         <div className="flex gap-2">

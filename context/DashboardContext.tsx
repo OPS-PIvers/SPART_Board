@@ -13,13 +13,14 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
-  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
   GradeFilter,
   DockItem,
   DockFolder,
+  GlobalStyle,
+  DEFAULT_GLOBAL_STYLE,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -1148,6 +1149,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  const setGlobalStyle = (style: Partial<GlobalStyle>) => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeId
+          ? {
+              ...d,
+              globalStyle: {
+                ...(d.globalStyle ?? DEFAULT_GLOBAL_STYLE),
+                ...style,
+              },
+            }
+          : d
+      )
+    );
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -1177,6 +1196,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         bringToFront,
         moveWidgetLayer,
         setBackground,
+        setGlobalStyle,
         toggleToolVisibility,
         setAllToolsVisibility,
         reorderTools,

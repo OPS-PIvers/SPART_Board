@@ -1,10 +1,13 @@
 import React, { forwardRef } from 'react';
+import { useDashboard } from '../../context/useDashboard';
+import { DEFAULT_GLOBAL_STYLE } from '../../types';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   gradientOverlay?: boolean;
   transparency?: number;
+  cornerRadius?: string;
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -13,18 +16,31 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       children,
       className = '',
       gradientOverlay = true,
-      transparency = 0.2,
+      transparency: propTransparency,
+      cornerRadius: propCornerRadius,
       style,
       ...props
     },
     ref
   ) => {
+    const { activeDashboard } = useDashboard();
+    const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
+    // Determine values, prioritizing props over global settings
+    const finalTransparency =
+      propTransparency ?? globalStyle.windowTransparency;
+    const finalRadiusClass = propCornerRadius
+      ? `rounded-${propCornerRadius}`
+      : globalStyle.borderRadius === 'none'
+        ? 'rounded-none'
+        : `rounded-${globalStyle.borderRadius}`;
+
     return (
       <div
         ref={ref}
-        className={`backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] rounded-3xl ${className}`}
+        className={`backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] ${finalRadiusClass} ${className}`}
         style={{
-          backgroundColor: `rgba(255, 255, 255, ${transparency})`,
+          backgroundColor: `rgba(255, 255, 255, ${finalTransparency})`,
           ...style,
         }}
         {...props}
