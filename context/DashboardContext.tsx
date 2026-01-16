@@ -693,6 +693,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const reorderFolderItems = (folderId: string, newItems: WidgetType[]) => {
+    setDockItems((prev) => {
+      const next = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: newItems,
+              },
+            }
+          : item
+      );
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const addToast = (message: string, type: Toast['type'] = 'info') => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -1136,6 +1154,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         addItemToFolder,
         removeItemFromFolder,
         moveItemOutOfFolder,
+        reorderFolderItems,
       }}
     >
       {children}

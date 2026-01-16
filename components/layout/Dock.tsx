@@ -296,6 +296,111 @@ const ToolDockItem = ({
   );
 };
 
+// Sortable Widget Icon within Folder
+const SortableFolderWidget = ({
+  type,
+  tool,
+  minimizedCount,
+  isEditMode,
+  onRemove,
+  onAdd,
+  onLongPress,
+}: {
+  type: WidgetType;
+  tool: ToolMetadata;
+  minimizedCount: number;
+  isEditMode: boolean;
+  onRemove: () => void;
+  onAdd: () => void;
+  onLongPress: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: type,
+    disabled: !isEditMode,
+  });
+
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      onLongPress();
+    }, 600);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group/item"
+      {...attributes}
+      {...listeners}
+    >
+      {isEditMode && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute -top-1 -right-1 z-10 bg-slate-400 text-white rounded-full p-0.5 shadow-sm hover:bg-red-500 transition-colors cursor-pointer"
+        >
+          <X className="w-2 h-2" />
+        </button>
+      )}
+      <button
+        onClick={() => {
+          if (isEditMode) return;
+          onAdd();
+        }}
+        onMouseDown={handlePointerDown}
+        onMouseUp={handlePointerUp}
+        onTouchStart={handlePointerDown}
+        onTouchEnd={handlePointerUp}
+        className={`flex flex-col items-center gap-1 group relative w-full ${
+          isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+        }`}
+      >
+        <div
+          className={`${tool.color} p-2 rounded-xl text-white shadow-md ${
+            isEditMode ? '' : 'group-hover:scale-110'
+          } transition-transform`}
+        >
+          <tool.icon className="w-4 h-4" />
+        </div>
+        {minimizedCount > 0 && (
+          <div className="absolute top-0 right-0 bg-brand-red-primary text-white text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-white shadow-sm translate-x-1/4 -translate-y-1/4">
+            {minimizedCount}
+          </div>
+        )}
+        <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
+          {tool.label}
+        </span>
+      </button>
+    </div>
+  );
+};
+
 // Folder Item Component
 const FolderItem = ({
   folder,
@@ -307,6 +412,7 @@ const FolderItem = ({
   minimizedWidgetsByType,
   isLight,
   onRemoveItem,
+  onReorder,
 }: {
   folder: DockFolder;
   onAdd: (type: WidgetType) => void;
@@ -317,6 +423,7 @@ const FolderItem = ({
   minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
   isLight: boolean;
   onRemoveItem: (folderId: string, type: WidgetType) => void;
+  onReorder: (folderId: string, newItems: WidgetType[]) => void;
 }) => {
   const {
     attributes,
@@ -335,6 +442,15 @@ const FolderItem = ({
   const popoverRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // DND Sensors for internal folder sorting
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
   const handlePointerDown = () => {
@@ -347,6 +463,17 @@ const FolderItem = ({
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = folder.items.indexOf(active.id as WidgetType);
+      const newIndex = folder.items.indexOf(over?.id as WidgetType);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onReorder(folder.id, arrayMove(folder.items, oldIndex, newIndex));
+      }
     }
   };
 
@@ -383,60 +510,42 @@ const FolderItem = ({
                 Rename
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {folder.items.map((type) => {
-                const tool = TOOLS.find((t) => t.type === type);
-                if (!tool) return null;
-                const minimizedCount =
-                  minimizedWidgetsByType[type]?.length ?? 0;
-                return (
-                  <div key={type} className="relative group/item">
-                    {isEditMode && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveItem(folder.id, type);
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={folder.items}>
+                <div className="grid grid-cols-3 gap-3">
+                  {folder.items.map((type) => {
+                    const tool = TOOLS.find((t) => t.type === type);
+                    if (!tool) return null;
+                    const minimizedCount =
+                      minimizedWidgetsByType[type]?.length ?? 0;
+                    return (
+                      <SortableFolderWidget
+                        key={type}
+                        type={type}
+                        tool={tool}
+                        minimizedCount={minimizedCount}
+                        isEditMode={isEditMode}
+                        onRemove={() => onRemoveItem(folder.id, type)}
+                        onAdd={() => {
+                          onAdd(type);
+                          setShowPopover(false);
                         }}
-                        className="absolute -top-1 -right-1 z-10 bg-slate-400 text-white rounded-full p-0.5 shadow-sm hover:bg-red-500 transition-colors"
-                      >
-                        <X className="w-2 h-2" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        if (isEditMode) return;
-                        onAdd(type);
-                        setShowPopover(false);
-                      }}
-                      onMouseDown={handlePointerDown}
-                      onMouseUp={handlePointerUp}
-                      onTouchStart={handlePointerDown}
-                      onTouchEnd={handlePointerUp}
-                      className={`flex flex-col items-center gap-1 group relative w-full ${isEditMode ? 'cursor-default' : ''}`}
-                    >
-                      <div
-                        className={`${tool.color} p-2 rounded-xl text-white shadow-md ${isEditMode ? '' : 'group-hover:scale-110'} transition-transform`}
-                      >
-                        <tool.icon className="w-4 h-4" />
-                      </div>
-                      {minimizedCount > 0 && (
-                        <div className="absolute top-0 right-0 bg-brand-red-primary text-white text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-white shadow-sm translate-x-1/4 -translate-y-1/4">
-                          {minimizedCount}
-                        </div>
-                      )}
-                      <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
-                        {tool.label}
-                      </span>
-                    </button>
-                  </div>
-                );
-              })}
-              {folder.items.length === 0 && (
-                <div className="col-span-3 py-4 text-center text-[10px] text-slate-400 italic">
-                  Drag items here to add them
+                        onLongPress={onLongPress}
+                      />
+                    );
+                  })}
+                  {folder.items.length === 0 && (
+                    <div className="col-span-3 py-4 text-center text-[10px] text-slate-400 italic">
+                      Drag items here to add them
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </SortableContext>
+            </DndContext>
           </GlassCard>,
           document.body
         )}
@@ -627,6 +736,7 @@ export const Dock: React.FC = () => {
     deleteFolder,
     addItemToFolder,
     moveItemOutOfFolder,
+    reorderFolderItems,
   } = useDashboard();
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
@@ -972,6 +1082,7 @@ export const Dock: React.FC = () => {
                                   dockItems.length
                                 )
                               }
+                              onReorder={reorderFolderItems}
                             />
                           );
                         }

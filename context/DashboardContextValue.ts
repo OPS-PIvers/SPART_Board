@@ -53,6 +53,7 @@ export interface DashboardContextType {
     type: WidgetType,
     index: number
   ) => void;
+  reorderFolderItems: (folderId: string, newItems: WidgetType[]) => void;
 
   // --- ROSTER SYSTEM ---
   rosters: ClassRoster[];
