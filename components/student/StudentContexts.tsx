@@ -103,6 +103,28 @@ const mockDashboard: DashboardContextType = {
   reorderTools: () => {
     // No-op
   },
+  dockItems: [],
+  reorderDockItems: () => {
+    // No-op
+  },
+  addFolder: () => {
+    // No-op
+  },
+  renameFolder: () => {
+    // No-op
+  },
+  deleteFolder: () => {
+    // No-op
+  },
+  addItemToFolder: () => {
+    // No-op
+  },
+  removeItemFromFolder: () => {
+    // No-op
+  },
+  moveItemOutOfFolder: () => {
+    // No-op
+  },
 
   // Roster mocks
   rosters: [],

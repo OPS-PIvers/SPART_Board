@@ -7,6 +7,7 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
+  DockItem,
 } from '../types';
 
 export interface DashboardContextType {

@@ -32,13 +32,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { useClickOutside } from '../../hooks/useClickOutside';
-import {
-  ToolMetadata,
-  WidgetType,
-  WidgetData,
-  DockFolder,
-  DockItem as DockItemType,
-} from '../../types';
+import { ToolMetadata, WidgetType, WidgetData, DockFolder } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
@@ -680,13 +674,13 @@ export const Dock: React.FC = () => {
     const overId = over.id as string;
 
     // Check if dropping onto a folder
-    const overItem = (dockItems as DockItemType[]).find(
+    const overItem = dockItems.find(
       (item) => item.type === 'folder' && item.folder.id === overId
     );
 
     if (overItem && overItem.type === 'folder') {
       // Find the tool type being dragged
-      const activeItem = (dockItems as DockItemType[]).find(
+      const activeItem = dockItems.find(
         (item) => item.type === 'tool' && item.toolType === activeId
       );
       if (activeItem && activeItem.type === 'tool') {
@@ -697,17 +691,17 @@ export const Dock: React.FC = () => {
 
     // Standard reordering
     if (activeId !== overId) {
-      const oldIndex = (dockItems as DockItemType[]).findIndex((item) => {
+      const oldIndex = dockItems.findIndex((item) => {
         const id = item.type === 'tool' ? item.toolType : item.folder.id;
         return id === activeId;
       });
-      const newIndex = (dockItems as DockItemType[]).findIndex((item) => {
+      const newIndex = dockItems.findIndex((item) => {
         const id = item.type === 'tool' ? item.toolType : item.folder.id;
         return id === overId;
       });
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        const next = arrayMove(dockItems as DockItemType[], oldIndex, newIndex);
+        const next = arrayMove(dockItems, oldIndex, newIndex);
         reorderDockItems(next);
       }
     }
@@ -787,7 +781,7 @@ export const Dock: React.FC = () => {
         <RenameFolderModal
           name={
             (
-              (dockItems as DockItemType[]).find(
+              dockItems.find(
                 (i) => i.type === 'folder' && i.folder.id === renamingFolderId
               ) as { folder: DockFolder }
             ).folder.name
@@ -817,7 +811,7 @@ export const Dock: React.FC = () => {
 
             {/* Expanded Toolbar with integrated minimize button */}
             <GlassCard className="relative z-10 px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
-              {(dockItems as DockItemType[]).length > 0 ? (
+              {dockItems.length > 0 ? (
                 <>
                   <DndContext
                     sensors={sensors}
@@ -826,12 +820,12 @@ export const Dock: React.FC = () => {
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={(dockItems as DockItemType[]).map((item) =>
+                      items={dockItems.map((item) =>
                         item.type === 'tool' ? item.toolType : item.folder.id
                       )}
                       strategy={horizontalListSortingStrategy}
                     >
-                      {(dockItems as DockItemType[]).map((item) => {
+                      {dockItems.map((item) => {
                         if (item.type === 'tool') {
                           const tool = TOOLS.find(
                             (t) => t.type === item.toolType
