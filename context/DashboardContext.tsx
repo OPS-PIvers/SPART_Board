@@ -974,6 +974,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((d) => {
         if (d.id !== activeId) return d;
         const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+        const defaultTransparency =
+          d.settings?.defaultWidgetTransparency ?? 0.2;
         const newWidget: WidgetData = {
           id: crypto.randomUUID(),
           type,
@@ -981,7 +983,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           y: 150 + d.widgets.length * 20,
           flipped: false,
           z: maxZ + 1,
-          transparency: 0.2,
+          transparency: defaultTransparency,
           ...WIDGET_DEFAULTS[type],
           ...initialConfig,
           config: {
@@ -1148,6 +1150,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  const updateDashboardSettings = (updates: Partial<Dashboard['settings']>) => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeId
+          ? {
+              ...d,
+              settings: {
+                ...(d.settings ?? {}),
+                ...updates,
+              },
+            }
+          : d
+      )
+    );
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -1177,6 +1197,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         bringToFront,
         moveWidgetLayer,
         setBackground,
+        updateDashboardSettings,
         toggleToolVisibility,
         setAllToolsVisibility,
         reorderTools,
