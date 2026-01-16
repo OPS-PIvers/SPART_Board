@@ -71,7 +71,7 @@ const ClassRosterMenu: React.FC<Props> = ({
 
     transform: 'translateX(-50%)',
 
-    zIndex: 10000,
+    zIndex: 10100,
   };
 
   return createPortal(

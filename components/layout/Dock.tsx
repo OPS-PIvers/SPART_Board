@@ -177,7 +177,7 @@ const ToolDockItem = ({
               left: popoverPos.left,
               bottom: popoverPos.bottom,
               transform: 'translateX(-50%)',
-              zIndex: 10000,
+              zIndex: 10100,
             }}
             className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
@@ -506,7 +506,7 @@ const FolderItem = ({
         createPortal(
           <GlassCard
             ref={popoverRef}
-            className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-[10000]"
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-[10100]"
           >
             <div className="flex justify-between items-center mb-3">
               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
@@ -729,6 +729,32 @@ const WidgetLibrary = ({
       </div>
     </GlassCard>,
     document.body
+  );
+};
+
+const QuickAccessButton = ({
+  type,
+  onClick,
+}: {
+  type: WidgetType;
+  onClick: () => void;
+}) => {
+  const tool = TOOLS.find((t) => t.type === type);
+  if (!tool) return null;
+
+  return (
+    <div className="group relative">
+      <button
+        onClick={onClick}
+        className={`w-12 h-12 flex items-center justify-center ${tool.color} text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all ring-2 ring-white/20`}
+      >
+        <tool.icon className="w-6 h-6" />
+      </button>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-[10000] shadow-2xl border border-white/10 scale-90 group-hover:scale-100">
+        {tool.label}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+      </div>
+    </div>
   );
 };
 
@@ -1184,10 +1210,11 @@ export const Dock: React.FC = () => {
                               left: livePopoverPos.left,
                               bottom: livePopoverPos.bottom,
                               transform: 'translateX(-50%)',
-                              zIndex: 10000,
+                              zIndex: 10100,
                             }}
                             className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
                           >
+                            {' '}
                             <div className="p-4 flex flex-col items-center gap-2 text-center">
                               <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
                                 Live Session
@@ -1256,14 +1283,36 @@ export const Dock: React.FC = () => {
             </GlassCard>
           </>
         ) : (
-          /* Compressed down to a single icon */
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300"
-            title="Open Tools"
-          >
-            <LayoutGrid className="w-6 h-6" />
-          </button>
+          /* Compressed down to a single icon (plus quick access) */
+          <div className="flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+            {activeDashboard?.settings?.quickAccessWidgets?.[0] && (
+              <QuickAccessButton
+                type={activeDashboard.settings.quickAccessWidgets[0]}
+                onClick={() => {
+                  const type =
+                    activeDashboard.settings?.quickAccessWidgets?.[0];
+                  if (type) addWidget(type);
+                }}
+              />
+            )}
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40"
+              title="Open Tools"
+            >
+              <LayoutGrid className="w-6 h-6" />
+            </button>
+            {activeDashboard?.settings?.quickAccessWidgets?.[1] && (
+              <QuickAccessButton
+                type={activeDashboard.settings.quickAccessWidgets[1]}
+                onClick={() => {
+                  const type =
+                    activeDashboard.settings?.quickAccessWidgets?.[1];
+                  if (type) addWidget(type);
+                }}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>

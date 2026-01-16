@@ -3,7 +3,6 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
-  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
@@ -30,11 +29,7 @@ export interface DashboardContextValue {
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
-  addWidget: (
-    type: WidgetType,
-    config?: Partial<WidgetConfig>,
-    dimensions?: { x: number; y: number; w: number; h: number }
-  ) => void;
+  addWidget: (type: WidgetType, initialData?: Partial<WidgetData>) => void;
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
@@ -46,6 +41,7 @@ export interface DashboardContextValue {
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
+  updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   clearAllStickers: () => void;
   // Roster system
   rosters: ClassRoster[];

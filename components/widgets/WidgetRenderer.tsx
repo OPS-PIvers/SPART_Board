@@ -18,7 +18,7 @@ import { RandomSettings } from './random/RandomSettings';
 import { DiceWidget, DiceSettings } from './DiceWidget';
 import { DrawingWidget, DrawingSettings } from './DrawingWidget';
 import { QRWidget, QRSettings } from './QRWidget';
-import { ScoreboardWidget } from './ScoreboardWidget';
+import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
 import { WorkSymbolsWidget } from './WorkSymbolsWidget';
 import { PollWidget } from './PollWidget';
 import { WeatherWidget, WeatherSettings } from './WeatherWidget';
@@ -48,7 +48,6 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   lunchCount: { w: 500, h: 400 },
   'time-tool': { w: 420, h: 400 },
   traffic: { w: 120, h: 320 },
-  scoreboard: { w: 320, h: 200 },
   qr: { w: 200, h: 250 },
   dice: { w: 240, h: 240 },
   materials: { w: 340, h: 340 },
@@ -216,6 +215,8 @@ export const WidgetRenderer: React.FC<{
         return <DrawingSettings widget={widget} />;
       case 'qr':
         return <QRSettings widget={widget} />;
+      case 'scoreboard':
+        return <ScoreboardSettings widget={widget} />;
       case 'webcam':
         return <WebcamSettings widget={widget} />;
       case 'calendar':

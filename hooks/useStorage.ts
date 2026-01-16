@@ -64,6 +64,20 @@ export const useStorage = () => {
     return uploadFile(`admin_backgrounds/${backgroundId}/${file.name}`, file);
   };
 
+  const uploadWeatherImage = async (
+    rangeId: string,
+    file: File
+  ): Promise<string> => {
+    const timestamp = Date.now();
+    const storageRef = ref(
+      storage,
+      `admin_weather/${rangeId}/${timestamp}-${file.name}`
+    );
+
+    const snapshot = await uploadBytes(storageRef, file);
+    return getDownloadURL(snapshot.ref);
+  };
+
   return {
     uploading,
     uploadFile,
@@ -71,5 +85,6 @@ export const useStorage = () => {
     uploadScreenshot,
     deleteFile,
     uploadAdminBackground,
+    uploadWeatherImage,
   };
 };

@@ -213,11 +213,23 @@ export interface WebcamConfig {
   isMirrored?: boolean;
 }
 
+export interface ScoreboardTeam {
+  id: string;
+  name: string;
+  score: number;
+  color?: string;
+}
+
 export interface ScoreboardConfig {
-  scoreA: number;
-  scoreB: number;
-  teamA: string;
-  teamB: string;
+  /** @deprecated use teams array instead */
+  scoreA?: number;
+  /** @deprecated use teams array instead */
+  scoreB?: number;
+  /** @deprecated use teams array instead */
+  teamA?: string;
+  /** @deprecated use teams array instead */
+  teamB?: string;
+  teams?: ScoreboardTeam[];
 }
 
 export interface WorkSymbolsConfig {
@@ -235,6 +247,22 @@ export interface WeatherConfig {
   lastSync?: number | null;
   city?: string;
   source?: 'openweather' | 'earth_networks';
+}
+
+export interface WeatherTemperatureRange {
+  id: string;
+  min: number;
+  max: number;
+  message: string;
+  imageUrl?: string;
+}
+
+export interface WeatherGlobalConfig {
+  fetchingStrategy: 'client' | 'admin_proxy';
+  updateFrequencyMinutes: number;
+  temperatureRanges: WeatherTemperatureRange[];
+  source?: 'openweather' | 'earth_networks';
+  city?: string;
 }
 
 export interface ScheduleConfig {
@@ -430,6 +458,11 @@ export type DockItem =
   | { type: 'tool'; toolType: WidgetType }
   | { type: 'folder'; folder: DockFolder };
 
+export interface DashboardSettings {
+  defaultWidgetTransparency?: number;
+  quickAccessWidgets?: WidgetType[];
+}
+
 export interface Dashboard {
   id: string;
   name: string;
@@ -439,6 +472,7 @@ export interface Dashboard {
   createdAt: number;
   isDefault?: boolean;
   order?: number;
+  settings?: DashboardSettings;
 }
 
 export interface Toast {

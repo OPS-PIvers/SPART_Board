@@ -107,6 +107,9 @@ const mockDashboard: DashboardContextValue = {
   reorderDockItems: () => {
     // No-op
   },
+  updateDashboardSettings: () => {
+    // No-op
+  },
   addFolder: () => {
     // No-op
   },

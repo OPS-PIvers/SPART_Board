@@ -966,11 +966,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
-  const addWidget = (
-    type: WidgetType,
-    config?: Partial<WidgetConfig>,
-    dimensions?: { x: number; y: number; w: number; h: number }
-  ) => {
+  const addWidget = (type: WidgetType, initialData?: Partial<WidgetData>) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
 
@@ -978,6 +974,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((d) => {
         if (d.id !== activeId) return d;
         const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+        const defaultTransparency =
+          d.settings?.defaultWidgetTransparency ?? 0.2;
 
         const defaultPosition = {
           x: 150 + d.widgets.length * 20,
@@ -989,17 +987,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         const newWidget: WidgetData = {
           id: crypto.randomUUID(),
           type,
-          x: dimensions?.x ?? defaultPosition.x,
-          y: dimensions?.y ?? defaultPosition.y,
-          w: dimensions?.w ?? defaults.w ?? 200,
-          h: dimensions?.h ?? defaults.h ?? 200,
+          x: initialData?.x ?? defaultPosition.x,
+          y: initialData?.y ?? defaultPosition.y,
+          w: initialData?.w ?? defaults.w ?? 200,
+          h: initialData?.h ?? defaults.h ?? 200,
           flipped: false,
           z: maxZ + 1,
-          transparency: 0.2,
+          transparency: initialData?.transparency ?? defaultTransparency,
           ...defaults,
+          ...initialData,
           config: {
             ...(defaults.config ?? {}),
-            ...(config ?? {}),
+            ...(initialData?.config ?? {}),
           },
         } as WidgetData;
         return { ...d, widgets: [...d.widgets, newWidget] };
@@ -1171,6 +1170,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  const updateDashboardSettings = (updates: Partial<Dashboard['settings']>) => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeId
+          ? {
+              ...d,
+              settings: {
+                ...(d.settings ?? {}),
+                ...updates,
+              },
+            }
+          : d
+      )
+    );
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -1200,6 +1217,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         bringToFront,
         moveWidgetLayer,
         setBackground,
+        updateDashboardSettings,
         toggleToolVisibility,
         setAllToolsVisibility,
         reorderTools,

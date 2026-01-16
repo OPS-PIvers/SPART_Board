@@ -31,5 +31,7 @@ service-account-key.json
 # Backups
 *.backup
 firebase_config.md
+
+# Playwright
 test-results/
 playwright-report/

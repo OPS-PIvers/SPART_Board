@@ -1,15 +1,7 @@
 import React from 'react';
+import { PASTEL_PALETTE } from '../../../config/colors';
 
-const WHEEL_COLORS = [
-  '#f87171',
-  '#fbbf24',
-  '#34d399',
-  '#60a5fa',
-  '#818cf8',
-  '#a78bfa',
-  '#f472b6',
-  '#2DD4BF',
-];
+const WHEEL_COLORS = PASTEL_PALETTE;
 
 interface RandomWheelProps {
   students: string[];

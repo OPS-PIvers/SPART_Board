@@ -9,3 +9,5 @@ yarn.lock
 public/version.json
 functions/lib
 functions/node_modules
+test-results/
+playwright-report/
