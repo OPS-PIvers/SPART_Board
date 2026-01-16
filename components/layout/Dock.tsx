@@ -38,15 +38,28 @@ import { ToolMetadata, WidgetType, WidgetData, DockFolder } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
+import { isLightBackground } from '../../utils/styleUtils';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
 
 /**
  * Custom Label Component for consistent readability
- * Uses a strong drop shadow and pure white to stay visible over any background.
+ * Adjusts text color based on background brightness.
  */
-const DockLabel = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-[9px] font-black uppercase tracking-tighter text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,1)] whitespace-nowrap">
+const DockLabel = ({
+  children,
+  isLight,
+}: {
+  children: React.ReactNode;
+  isLight: boolean;
+}) => (
+  <span
+    className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 ${
+      isLight
+        ? 'text-slate-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]'
+        : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
+    }`}
+  >
     {children}
   </span>
 );
@@ -62,6 +75,7 @@ const ToolDockItem = ({
   onRemoveFromDock,
   isEditMode,
   onLongPress,
+  isLight,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -72,6 +86,7 @@ const ToolDockItem = ({
   onRemoveFromDock: () => void;
   isEditMode: boolean;
   onLongPress: () => void;
+  isLight: boolean;
 }) => {
   const {
     attributes,
@@ -274,7 +289,7 @@ const ToolDockItem = ({
               </div>
             )}
           </div>
-          <DockLabel>{tool.label}</DockLabel>
+          <DockLabel isLight={isLight}>{tool.label}</DockLabel>
         </button>
       </div>
     </div>
@@ -290,6 +305,8 @@ const FolderItem = ({
   isEditMode,
   onLongPress,
   minimizedWidgetsByType,
+  isLight,
+  onRemoveItem,
 }: {
   folder: DockFolder;
   onAdd: (type: WidgetType) => void;
@@ -298,6 +315,8 @@ const FolderItem = ({
   isEditMode: boolean;
   onLongPress: () => void;
   minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
+  isLight: boolean;
+  onRemoveItem: (folderId: string, type: WidgetType) => void;
 }) => {
   const {
     attributes,
@@ -319,7 +338,6 @@ const FolderItem = ({
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
   const handlePointerDown = () => {
-    if (isEditMode) return;
     longPressTimer.current = setTimeout(() => {
       onLongPress();
     }, 600);
@@ -346,7 +364,6 @@ const FolderItem = ({
       className="relative flex flex-col items-center"
     >
       {showPopover &&
-        !isEditMode &&
         createPortal(
           <GlassCard
             ref={popoverRef}
@@ -373,28 +390,45 @@ const FolderItem = ({
                 const minimizedCount =
                   minimizedWidgetsByType[type]?.length ?? 0;
                 return (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      onAdd(type);
-                      setShowPopover(false);
-                    }}
-                    className="flex flex-col items-center gap-1 group relative"
-                  >
-                    <div
-                      className={`${tool.color} p-2 rounded-xl text-white shadow-md group-hover:scale-110 transition-transform`}
-                    >
-                      <tool.icon className="w-4 h-4" />
-                    </div>
-                    {minimizedCount > 0 && (
-                      <div className="absolute top-0 right-0 bg-brand-red-primary text-white text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-white shadow-sm translate-x-1/4 -translate-y-1/4">
-                        {minimizedCount}
-                      </div>
+                  <div key={type} className="relative group/item">
+                    {isEditMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveItem(folder.id, type);
+                        }}
+                        className="absolute -top-1 -right-1 z-10 bg-slate-400 text-white rounded-full p-0.5 shadow-sm hover:bg-red-500 transition-colors"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
                     )}
-                    <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
-                      {tool.label}
-                    </span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        if (isEditMode) return;
+                        onAdd(type);
+                        setShowPopover(false);
+                      }}
+                      onMouseDown={handlePointerDown}
+                      onMouseUp={handlePointerUp}
+                      onTouchStart={handlePointerDown}
+                      onTouchEnd={handlePointerUp}
+                      className={`flex flex-col items-center gap-1 group relative w-full ${isEditMode ? 'cursor-default' : ''}`}
+                    >
+                      <div
+                        className={`${tool.color} p-2 rounded-xl text-white shadow-md ${isEditMode ? '' : 'group-hover:scale-110'} transition-transform`}
+                      >
+                        <tool.icon className="w-4 h-4" />
+                      </div>
+                      {minimizedCount > 0 && (
+                        <div className="absolute top-0 right-0 bg-brand-red-primary text-white text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-white shadow-sm translate-x-1/4 -translate-y-1/4">
+                          {minimizedCount}
+                        </div>
+                      )}
+                      <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
+                        {tool.label}
+                      </span>
+                    </button>
+                  </div>
                 );
               })}
               {folder.items.length === 0 && (
@@ -431,7 +465,7 @@ const FolderItem = ({
           onMouseUp={handlePointerUp}
           onTouchStart={handlePointerDown}
           onTouchEnd={handlePointerUp}
-          onClick={() => !isEditMode && setShowPopover(true)}
+          onClick={() => setShowPopover(true)}
           className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
             isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
           }`}
@@ -452,7 +486,7 @@ const FolderItem = ({
               </div>
             )}
           </div>
-          <DockLabel>{folder.name}</DockLabel>
+          <DockLabel isLight={isLight}>{folder.name}</DockLabel>
         </button>
       </div>
     </div>
@@ -592,6 +626,7 @@ export const Dock: React.FC = () => {
     renameFolder,
     deleteFolder,
     addItemToFolder,
+    moveItemOutOfFolder,
   } = useDashboard();
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
@@ -602,6 +637,8 @@ export const Dock: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+
+  const isLight = isLightBackground(activeDashboard?.background);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -772,9 +809,9 @@ export const Dock: React.FC = () => {
     <div
       ref={dockContainerRef}
       data-screenshot="exclude"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] flex flex-col items-center gap-4"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9000] flex flex-col items-center gap-4"
     >
-      {showRosterMenu && classesAnchorRect && (
+      {showRosterMenu && (
         <ClassRosterMenu
           onClose={() => setShowRosterMenu(false)}
           onOpenFullEditor={openClassEditor}
@@ -913,6 +950,7 @@ export const Dock: React.FC = () => {
                               }}
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
+                              isLight={isLight}
                             />
                           );
                         } else {
@@ -926,6 +964,14 @@ export const Dock: React.FC = () => {
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
                               minimizedWidgetsByType={minimizedWidgetsByType}
+                              isLight={isLight}
+                              onRemoveItem={(folderId, type) =>
+                                moveItemOutOfFolder(
+                                  folderId,
+                                  type,
+                                  dockItems.length
+                                )
+                              }
                             />
                           );
                         }
@@ -992,7 +1038,7 @@ export const Dock: React.FC = () => {
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <DockLabel>Live</DockLabel>
+                        <DockLabel isLight={isLight}>Live</DockLabel>
                       </button>
 
                       {/* LIVE POPOVER */}
@@ -1051,7 +1097,9 @@ export const Dock: React.FC = () => {
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel>{classToolMetadata.label}</DockLabel>
+                    <DockLabel isLight={isLight}>
+                      {classToolMetadata.label}
+                    </DockLabel>
                   </button>
 
                   {/* Separator and Minimize Button */}
@@ -1065,7 +1113,7 @@ export const Dock: React.FC = () => {
                     <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel>Hide</DockLabel>
+                    <DockLabel isLight={isLight}>Hide</DockLabel>
                   </button>
                 </>
               ) : (
