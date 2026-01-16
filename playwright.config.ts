@@ -8,7 +8,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
+  reporter: 'html',
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -20,10 +20,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command:
-      'cross-env VITE_FIREBASE_API_KEY=dummy VITE_AUTH_BYPASS=true npm run dev',
+    command: 'pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: WEBSERVER_TIMEOUT,
+    env: {
+      VITE_FIREBASE_API_KEY: 'dummy',
+      VITE_AUTH_BYPASS: 'true',
+    },
   },
 });
