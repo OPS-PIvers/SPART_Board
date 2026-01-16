@@ -82,6 +82,12 @@ body.is-dragging-widget iframe {
   pointer-events: none !important;
 }
 
+/* Smart Adaptive Text */
+.smart-text {
+  color: white;
+  mix-blend-mode: difference;
+}
+
 /* Dashboard Transitions */
 @keyframes slideLeftIn {
   from {

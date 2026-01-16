@@ -40,55 +40,87 @@ import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
 
 // Dock Item with Popover Logic
+
 const DockItem = ({
   tool,
+
   minimizedWidgets,
+
   onAdd,
+
   onRestore,
+
   onDelete,
+
   onDeleteAll,
+
   onFolder,
+
   onRemoveFromDock,
+
   isEditMode,
+
   onLongPress,
 }: {
   tool: ToolMetadata;
+
   minimizedWidgets: WidgetData[];
+
   onAdd: () => void;
+
   onRestore: (id: string) => void;
+
   onDelete: (id: string) => void;
+
   onDeleteAll: () => void;
+
   onFolder: () => void;
+
   onRemoveFromDock: () => void;
+
   isEditMode: boolean;
+
   onLongPress: () => void;
 }) => {
   const {
     attributes,
+
     listeners,
+
     setNodeRef,
+
     transform,
+
     transition,
+
     isDragging,
   } = useSortable({
     id: tool.type,
+
     disabled: !isEditMode, // Only allow dragging in Edit Mode
   });
 
   const [showPopover, setShowPopover] = useState(false);
+
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
   const popoverRef = useRef<HTMLDivElement>(null);
+
   const buttonRef = useRef<HTMLButtonElement>(null);
+
   const [popoverPos, setPopoverPos] = useState<{
     left: number;
+
     bottom: number;
   } | null>(null);
 
   // Close popover when clicking outside
+
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
   const handlePointerDown = () => {
     if (isEditMode) return;
+
     longPressTimer.current = setTimeout(() => {
       onLongPress();
     }, 600); // 600ms long press threshold
@@ -97,15 +129,19 @@ const DockItem = ({
   const handlePointerUp = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
+
       longPressTimer.current = null;
     }
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // In edit mode, clicking just shakes the icon (or does nothing for now)
+    // Prevent click if in edit mode
+
     if (isEditMode) {
       e.preventDefault();
+
       e.stopPropagation();
+
       return;
     }
 
@@ -115,11 +151,14 @@ const DockItem = ({
       } else {
         if (buttonRef.current) {
           const rect = buttonRef.current.getBoundingClientRect();
+
           setPopoverPos({
             left: rect.left + rect.width / 2,
+
             bottom: window.innerHeight - rect.top + 10, // 10px spacing
           });
         }
+
         setShowPopover(true);
       }
     } else {
@@ -128,19 +167,23 @@ const DockItem = ({
   };
 
   const style = {
-    transform: CSS.Translate.toString(transform), // Use Translate instead of Transform for better Sortable behavior
+    transform: CSS.Translate.toString(transform),
+
     transition,
-    opacity: isDragging ? 0.3 : 1, // Ghost effect for the item left behind
-    scale: isDragging ? 1.1 : 1, // Pop effect
+
+    opacity: isDragging ? 0.3 : 1,
+
     zIndex: isDragging ? 1000 : 'auto',
-    boxShadow: isDragging
-      ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
-      : 'none',
   };
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative flex flex-col items-center"
+    >
       {/* Popover Menu - Rendered in Portal to avoid clipping */}
+
       {showPopover &&
         !isEditMode && // Hide popovers in edit mode
         minimizedWidgets.length > 0 &&
@@ -150,9 +193,13 @@ const DockItem = ({
             ref={popoverRef}
             style={{
               position: 'fixed',
+
               left: popoverPos.left,
+
               bottom: popoverPos.bottom,
+
               transform: 'translateX(-50%)',
+
               zIndex: 10000,
             }}
             className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
@@ -161,10 +208,12 @@ const DockItem = ({
               <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">
                 Restorable
               </span>
+
               <span className="bg-white/60 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                 {minimizedWidgets.length}
               </span>
             </div>
+
             <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
               {minimizedWidgets.map((widget) => (
                 <div
@@ -174,6 +223,7 @@ const DockItem = ({
                   <button
                     onClick={() => {
                       onRestore(widget.id);
+
                       if (minimizedWidgets.length <= 1) setShowPopover(false);
                     }}
                     className="flex-1 text-left flex items-center gap-2 min-w-0"
@@ -181,11 +231,14 @@ const DockItem = ({
                     <span className="truncate text-xs text-slate-800 font-medium">
                       {getTitle(widget)}
                     </span>
+
                     <RefreshCcw className="w-3 h-3 text-brand-blue-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                   </button>
+
                   <button
                     onClick={() => {
                       onDelete(widget.id);
+
                       if (minimizedWidgets.length <= 1) setShowPopover(false);
                     }}
                     className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50/50 rounded-md transition-all opacity-0 group-hover:opacity-100"
@@ -196,49 +249,64 @@ const DockItem = ({
                 </div>
               ))}
             </div>
+
             <div className="p-1 border-t border-white/30 grid grid-cols-3 gap-1">
               <button
                 onClick={() => {
                   onAdd();
+
                   setShowPopover(false);
                 }}
                 className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-[10px] font-bold rounded-lg transition-colors"
               >
                 <Plus className="w-3 h-3" />
+
                 <span>Create</span>
               </button>
+
               <button
                 onClick={() => {
                   onFolder();
+
                   setShowPopover(false);
                 }}
                 className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-white/50 hover:bg-white/80 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
               >
                 <FolderPlus className="w-3 h-3" />
+
                 <span>Folder</span>
               </button>
+
               <button
                 onClick={() => {
                   onDeleteAll();
+
                   setShowPopover(false);
                 }}
                 className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-[10px] font-bold rounded-lg transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
+
                 <span>Clear</span>
               </button>
             </div>
           </GlassCard>,
+
           document.body
         )}
 
       {/* Dock Icon */}
-      <div className="relative group/icon">
+
+      <div
+        className={`relative group/icon ${isEditMode ? 'animate-jiggle' : ''}`}
+      >
         {/* Remove Button (Visible in Edit Mode) */}
+
         {isEditMode && (
           <button
             onClick={(e) => {
               e.stopPropagation();
+
               onRemoveFromDock();
             }}
             className="absolute -top-2 -right-2 z-50 bg-slate-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all animate-in zoom-in duration-200"
@@ -249,13 +317,7 @@ const DockItem = ({
         )}
 
         <button
-          ref={(node) => {
-            setNodeRef(node);
-            if (node) {
-              buttonRef.current = node;
-            }
-          }}
-          style={style}
+          ref={buttonRef}
           {...attributes}
           {...listeners}
           onMouseDown={handlePointerDown}
@@ -265,9 +327,7 @@ const DockItem = ({
           onMouseLeave={handlePointerUp}
           onClick={handleClick}
           className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
-            isEditMode
-              ? 'animate-jiggle cursor-grab active:cursor-grabbing'
-              : ''
+            isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
           }`}
         >
           <div
@@ -276,13 +336,15 @@ const DockItem = ({
             } transition-all duration-200 relative`}
           >
             <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
+
             {minimizedWidgets.length > 0 && (
               <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                 {minimizedWidgets.length}
               </div>
             )}
           </div>
-          <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap">
+
+          <span className="text-[9px] font-black uppercase tracking-tighter opacity-100 transition-opacity duration-300 whitespace-nowrap smart-text">
             {tool.label}
           </span>
         </button>
@@ -446,7 +508,7 @@ export const Dock: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Require 5px movement to start drag
       },
     })
   );
@@ -543,7 +605,7 @@ export const Dock: React.FC = () => {
     <div
       ref={dockContainerRef}
       data-screenshot="exclude"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] flex flex-col items-center"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] flex flex-col items-center gap-4"
     >
       {showRosterMenu && classesAnchorRect && (
         <ClassRosterMenu
@@ -552,36 +614,35 @@ export const Dock: React.FC = () => {
           anchorRect={classesAnchorRect}
         />
       )}
-      <div className="relative group/dock">
-        {/* Done Button for Edit Mode - Positioned above the dock container */}
-        {isEditMode && (
+
+      {/* Edit Mode Controls (Above the main dock) */}
+      {isEditMode && (
+        <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-300">
+          {!showLibrary && (
+            <button
+              onClick={() => setShowLibrary(true)}
+              className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-brand-blue-light text-brand-blue-primary rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
+            >
+              <div className="p-1 bg-brand-blue-primary text-white rounded-full group-hover:rotate-90 transition-transform duration-300">
+                <Plus className="w-3 h-3" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                Add Widgets
+              </span>
+            </button>
+          )}
           <button
             onClick={exitEditMode}
-            className="absolute -top-12 -right-4 z-[10005] px-5 py-2 bg-brand-blue-primary text-white text-xs font-black uppercase tracking-wider rounded-full shadow-2xl hover:bg-brand-blue-dark transition-all hover:scale-105 active:scale-95 ring-4 ring-white/20"
+            className="px-5 py-2 bg-brand-blue-primary text-white text-xs font-black uppercase tracking-wider rounded-full shadow-2xl hover:bg-brand-blue-dark transition-all hover:scale-105 active:scale-95 ring-4 ring-white/20"
           >
             Done
           </button>
-        )}
+        </div>
+      )}
 
+      <div className="relative group/dock">
         {isExpanded ? (
           <>
-            {/* Add Widget Button (Floating above dock in Edit Mode) */}
-            {isEditMode && !showLibrary && (
-              <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-[20] animate-in slide-in-from-bottom-2 duration-300">
-                <button
-                  onClick={() => setShowLibrary(true)}
-                  className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-brand-blue-light text-brand-blue-primary rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
-                >
-                  <div className="p-1 bg-brand-blue-primary text-white rounded-full group-hover:rotate-90 transition-transform duration-300">
-                    <Plus className="w-3 h-3" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">
-                    Add Widgets
-                  </span>
-                </button>
-              </div>
-            )}
-
             {/* Widget Library Modal (Triggered by button) */}
             {isEditMode && showLibrary && (
               <WidgetLibrary
@@ -638,9 +699,9 @@ export const Dock: React.FC = () => {
                     </SortableContext>
 
                     {/* Drag Preview Overlay */}
-                    <DragOverlay zIndex={10005}>
+                    <DragOverlay zIndex={10005} dropAnimation={null}>
                       {activeToolId ? (
-                        <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 transition-transform">
+                        <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
                           <div
                             className={`${
                               TOOLS.find((t) => t.type === activeToolId)
