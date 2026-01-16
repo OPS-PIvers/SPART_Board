@@ -133,18 +133,8 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  // Dynamic grid sizing based on team count
-  const gridCols =
-    teams.length === 1
-      ? 'grid-cols-1'
-      : teams.length === 2
-        ? 'grid-cols-2'
-        : teams.length <= 4
-          ? 'grid-cols-2'
-          : 'grid-cols-3';
-
   return (
-    <div className={`grid ${gridCols} h-full gap-2 p-2 bg-transparent`}>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto">
       {teams.map((team) => {
         // Parse color base for backgrounds
         const colorClass = team.color ?? 'bg-blue-500';
