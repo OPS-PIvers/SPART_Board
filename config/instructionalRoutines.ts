@@ -179,8 +179,8 @@ export const ROUTINES: InstructionalRoutine[] = [
   {
     id: 'think-pair-share',
     name: 'Think-Pair-Share',
-    grades: 'K-5',
-    gradeLevels: ['k-2', '3-5'],
+    grades: 'K-12',
+    gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
     icon: 'Brain',
     defaultSteps: [
       'Think silently about the question.',
@@ -210,6 +210,67 @@ export const ROUTINES: InstructionalRoutine[] = [
       'Listen to the prompt.',
       'Quickly share your answer one by one.',
       "Listen to everyone's ideas.",
+    ],
+  },
+  {
+    id: 'reciprocal-teaching',
+    name: 'Reciprocal Teaching',
+    grades: '6-12',
+    gradeLevels: ['6-8', '9-12'],
+    icon: 'Users',
+    defaultSteps: [
+      'Predict and clarify content.',
+      'Summarize key ideas.',
+      'Question the content.',
+    ],
+  },
+  {
+    id: 'socratic-seminar',
+    name: 'Socratic Seminar',
+    grades: '6-12',
+    gradeLevels: ['6-8', '9-12'],
+    icon: 'GraduationCap',
+    defaultSteps: [
+      'Read and annotate the text.',
+      'Participate in student-led dialogue.',
+      'Refine understanding through questioning.',
+    ],
+  },
+  {
+    id: 'stronger-clearer',
+    name: 'Stronger & Clearer',
+    grades: '6-12',
+    gradeLevels: ['6-8', '9-12'],
+    icon: 'RefreshCw',
+    defaultSteps: [
+      'Write your first draft response.',
+      'Discuss and refine with partners.',
+      'Finalize your stronger and clearer response.',
+    ],
+  },
+  {
+    id: 'notice-wonder-hs',
+    name: 'Notice & Wonder',
+    grades: '9-12',
+    gradeLevels: ['9-12'],
+    icon: 'Eye',
+    defaultSteps: [
+      'Observe the phenomenon or text closely.',
+      'Identify what you notice.',
+      'Record what you wonder about.',
+    ],
+  },
+  {
+    id: 'blooms-analysis',
+    name: "Bloom's Analysis",
+    grades: '9-12',
+    gradeLevels: ['9-12'],
+    icon: 'Brain',
+    defaultSteps: [
+      'Recall and list facts (Remember).',
+      'Explain and summarize (Understand).',
+      'Apply and solve (Apply).',
+      'Analyze and organize (Analyze).',
     ],
   },
 ];
