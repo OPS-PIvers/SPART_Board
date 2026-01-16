@@ -82,6 +82,9 @@ const mockDashboard: DashboardContextValue = {
   removeWidgets: () => {
     // No-op
   },
+  clearAllWidgets: () => {
+    // No-op
+  },
   updateWidget: () => {
     // No-op. Widgets in student view are read-only or handle state internally.
   },
