@@ -1,8 +1,13 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { WidgetData } from '../../types';
+import {
+  WidgetData,
+  ScoreboardConfig,
+  RandomConfig,
+  WidgetType,
+} from '../../types';
 
 vi.mock('../../context/useDashboard');
 
@@ -20,7 +25,9 @@ const mockDashboardContext = {
 describe('ScoreboardWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockDashboardContext);
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockDashboardContext
+    );
   });
 
   it('migrates legacy config on mount', () => {
@@ -32,34 +39,47 @@ describe('ScoreboardWidget', () => {
         scoreB: 3,
         teamA: 'Alphas',
         teamB: 'Betas',
-      },
-      x: 0, y: 0, w: 100, h: 100, z: 1, flipped: false
-    } as any;
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
 
     render(<ScoreboardWidget widget={legacyWidget} />);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith('test-id', expect.objectContaining({
-      config: expect.objectContaining({
-        teams: expect.arrayContaining([
-          expect.objectContaining({ name: 'Alphas', score: 5 }),
-          expect.objectContaining({ name: 'Betas', score: 3 }),
-        ])
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Alphas', score: 5 }),
+            expect.objectContaining({ name: 'Betas', score: 3 }),
+          ]) as unknown,
+        }) as unknown,
       })
-    }));
+    );
   });
 
   it('renders teams from config', () => {
-     const widget: WidgetData = {
+    const widget: WidgetData = {
       id: 'test-id',
       type: 'scoreboard',
       config: {
         teams: [
-            { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
-            { id: '2', name: 'Team Two', score: 20, color: 'bg-red-500' }
-        ]
-      },
-      x: 0, y: 0, w: 100, h: 100, z: 1, flipped: false
-    } as any;
+          { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
+          { id: '2', name: 'Team Two', score: 20, color: 'bg-red-500' },
+        ],
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
 
     render(<ScoreboardWidget widget={widget} />);
     expect(screen.getByText('Team One')).toBeInTheDocument();
@@ -72,33 +92,46 @@ describe('ScoreboardWidget', () => {
 describe('ScoreboardSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockDashboardContext);
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockDashboardContext
+    );
   });
 
   it('imports groups from random widget', () => {
-     const widget: WidgetData = {
+    const widget: WidgetData = {
       id: 'scoreboard-id',
       type: 'scoreboard',
-      config: { teams: [] },
-      x: 0, y: 0, w: 100, h: 100, z: 1, flipped: true
-    } as any;
+      config: { teams: [] } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
 
     const randomWidget: WidgetData = {
-        id: 'random-id',
-        type: 'random',
-        config: {
-            lastResult: [
-                { names: ['Alice', 'Bob'] },
-                { names: ['Charlie', 'Dave'] }
-            ]
-        }
-    } as any;
+      id: 'random-id',
+      type: 'random' as WidgetType,
+      config: {
+        lastResult: [
+          { names: ['Alice', 'Bob'] },
+          { names: ['Charlie', 'Dave'] },
+        ],
+      } as RandomConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
 
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockDashboardContext,
-        activeDashboard: {
-            widgets: [randomWidget]
-        }
+      ...mockDashboardContext,
+      activeDashboard: {
+        widgets: [randomWidget],
+      },
     });
 
     render(<ScoreboardSettings widget={widget} />);
@@ -106,36 +139,50 @@ describe('ScoreboardSettings', () => {
     const importButton = screen.getByText('Import Groups');
     fireEvent.click(importButton);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith('scoreboard-id', expect.objectContaining({
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
         config: expect.objectContaining({
-            teams: expect.arrayContaining([
-                expect.objectContaining({ name: 'Group 1' }),
-                expect.objectContaining({ name: 'Group 2' })
-            ])
-        })
-    }));
-    expect(mockAddToast).toHaveBeenCalledWith(expect.stringContaining('Imported 2 groups'), 'success');
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Group 1' }),
+            expect.objectContaining({ name: 'Group 2' }),
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Imported 2 groups'),
+      'success'
+    );
   });
 
   it('adds a new team', () => {
-      const widget: WidgetData = {
+    const widget: WidgetData = {
       id: 'scoreboard-id',
       type: 'scoreboard',
-      config: { teams: [] },
-      x: 0, y: 0, w: 100, h: 100, z: 1, flipped: true
-    } as any;
+      config: { teams: [] } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
 
     render(<ScoreboardSettings widget={widget} />);
 
     const addButton = screen.getByText('Add Team');
     fireEvent.click(addButton);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith('scoreboard-id', expect.objectContaining({
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
         config: expect.objectContaining({
-            teams: expect.arrayContaining([
-                expect.objectContaining({ name: 'Team 1' })
-            ])
-        })
-    }));
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Team 1' }),
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
   });
 });
