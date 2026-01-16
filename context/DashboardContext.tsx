@@ -1043,6 +1043,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  const clearAllWidgets = () => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
+    );
+    addToast('All windows cleared');
+  };
+
   const updateWidget = useCallback(
     (id: string, updates: Partial<WidgetData>) => {
       if (!activeId) return;
@@ -1193,6 +1202,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         removeWidget,
         duplicateWidget,
         removeWidgets,
+        clearAllWidgets,
         updateWidget,
         bringToFront,
         moveWidgetLayer,
