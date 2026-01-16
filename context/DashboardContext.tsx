@@ -22,6 +22,7 @@ import {
   DockFolder,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
+  WidgetConfig,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';

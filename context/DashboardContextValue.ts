@@ -8,6 +8,7 @@ import {
   Student,
   GradeFilter,
   DockItem,
+  GlobalStyle,
 } from '../types';
 
 export interface DashboardContextValue {

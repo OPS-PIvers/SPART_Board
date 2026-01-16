@@ -551,6 +551,7 @@ export interface BackgroundPreset {
   id: string;
   url: string;
   label: string;
+  thumbnailUrl?: string;
   active: boolean; // Whether it shows up for users
   accessLevel: AccessLevel; // Who can see it
   betaUsers: string[]; // Specific users if beta
