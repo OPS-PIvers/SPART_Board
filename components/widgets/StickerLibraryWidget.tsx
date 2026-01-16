@@ -19,7 +19,7 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
 
   // Explicitly cast the config for type safety
   const config = widget.config as StickerLibraryConfig;
-  const urls = config.uploadedUrls || [];
+  const urls = config.uploadedUrls ?? [];
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,7 +47,7 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
   };
 
   const removeStickerFromLibrary = (index: number) => {
-    const currentUrls = config.uploadedUrls || [];
+    const currentUrls = config.uploadedUrls ?? [];
 
     const newUrls = [...currentUrls];
     newUrls.splice(index, 1);
