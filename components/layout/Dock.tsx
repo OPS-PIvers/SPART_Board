@@ -177,7 +177,7 @@ const ToolDockItem = ({
               left: popoverPos.left,
               bottom: popoverPos.bottom,
               transform: 'translateX(-50%)',
-              zIndex: 10000,
+              zIndex: 10100,
             }}
             className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
@@ -506,7 +506,7 @@ const FolderItem = ({
         createPortal(
           <GlassCard
             ref={popoverRef}
-            className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-[10000]"
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-[10100]"
           >
             <div className="flex justify-between items-center mb-3">
               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
@@ -1184,10 +1184,11 @@ export const Dock: React.FC = () => {
                               left: livePopoverPos.left,
                               bottom: livePopoverPos.bottom,
                               transform: 'translateX(-50%)',
-                              zIndex: 10000,
+                              zIndex: 10100,
                             }}
                             className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
                           >
+                            {' '}
                             <div className="p-4 flex flex-col items-center gap-2 text-center">
                               <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
                                 Live Session
