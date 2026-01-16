@@ -297,6 +297,13 @@ export interface InstructionalRoutinesConfig {
   scaleMultiplier: number;
 }
 
+export interface InstructionalRoutinesConfig {
+  selectedRoutineId: string | null;
+  customSteps: RoutineStep[];
+  favorites: string[];
+  scaleMultiplier: number;
+}
+
 export interface TimeToolConfig {
   mode: 'timer' | 'stopwatch';
   visualType: 'digital' | 'visual';
@@ -445,6 +452,7 @@ export type DockItem =
 
 export interface DashboardSettings {
   defaultWidgetTransparency?: number;
+  quickAccessWidgets?: WidgetType[];
 }
 
 export interface Dashboard {
