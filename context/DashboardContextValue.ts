@@ -44,6 +44,7 @@ export interface DashboardContextType {
 
   // --- FOLDER ACTIONS ---
   addFolder: (name: string) => void;
+  createFolderWithItems: (name: string, items: WidgetType[]) => void;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
   addItemToFolder: (folderId: string, type: WidgetType) => void;

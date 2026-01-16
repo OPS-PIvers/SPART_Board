@@ -110,6 +110,9 @@ const mockDashboard: DashboardContextType = {
   addFolder: () => {
     // No-op
   },
+  createFolderWithItems: () => {
+    // No-op
+  },
   renameFolder: () => {
     // No-op
   },

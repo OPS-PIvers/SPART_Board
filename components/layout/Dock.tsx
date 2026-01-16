@@ -749,6 +749,7 @@ export const Dock: React.FC = () => {
     addItemToFolder,
     moveItemOutOfFolder,
     reorderFolderItems,
+    createFolderWithItems,
   } = useDashboard();
   const { canAccessWidget, featurePermissions, user } = useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
@@ -845,8 +846,10 @@ export const Dock: React.FC = () => {
    * If the center of the dragged item is significantly over a folder, we prioritize grouping.
    */
   const customCollisionDetection: CollisionDetection = (args) => {
+    const { active, collisionRect } = args;
     const items = dockItems;
-    // 1. First, check for folder grouping (rect intersection)
+
+    // 1. Check for folder grouping (rect intersection)
     const folderCollisions = rectIntersection(args).filter((collision) => {
       const item = items.find(
         (i) => i.type === 'folder' && i.folder.id === collision.id
@@ -861,7 +864,52 @@ export const Dock: React.FC = () => {
       return [folderCollisions[0]];
     }
 
-    // 2. Otherwise, fallback to standard sortable collision (closestCenter)
+    // 2. Check for Tool-on-Tool grouping (high overlap)
+    // Only if active item is a tool (can't group folders into folders easily yet)
+    // and target is a tool.
+    const activeItemType = items.find(
+      (i) => i.type === 'tool' && i.toolType === active.id
+    )?.type;
+
+    if (activeItemType === 'tool') {
+      const toolCollisions = rectIntersection(args).filter((collision) => {
+        // Exclude self
+        if (collision.id === active.id) return false;
+        // Check if target is a tool
+        const targetItem = items.find(
+          (i) => i.type === 'tool' && i.toolType === collision.id
+        );
+        return !!targetItem;
+      });
+
+      if (toolCollisions.length > 0) {
+        // Find best collision
+        const best = toolCollisions.sort(
+          (a, b) => (b.data?.value ?? 0) - (a.data?.value ?? 0)
+        )[0];
+
+        // Calculate overlap ratio
+        // value is the intersection area.
+        // We need the area of the active item or target item to determine %.
+        // dnd-kit rectIntersection returns area in `data.value`.
+        // collisionRect is the active item's rect.
+        const activeArea = collisionRect.width * collisionRect.height;
+        const overlapRatio = (best.data?.value ?? 0) / activeArea;
+
+        // If overlap is significant (> 40%), treat as grouping intent
+        // We return a Modified ID so SortableContext doesn't recognize it and doesn't swap.
+        if (overlapRatio > 0.4) {
+          return [
+            {
+              ...best,
+              id: `group:${best.id}`,
+            },
+          ];
+        }
+      }
+    }
+
+    // 3. Otherwise, fallback to standard sortable collision (closestCenter)
     return closestCenter(args);
   };
 
@@ -871,11 +919,20 @@ export const Dock: React.FC = () => {
 
     if (!over) return;
 
-    const activeId = active.id as string;
     const overId = over.id as string;
+    const activeId = active.id as string;
+
+    // Check for grouping drop (special ID prefix)
+    if (overId.startsWith('group:')) {
+      const realOverId = overId.replace('group:', '') as WidgetType;
+      // Trigger folder creation
+      createFolderWithItems('Group', [realOverId, activeId as WidgetType]);
+      return;
+    }
+
     const items = dockItems;
 
-    // Check if dropping onto a folder
+    // Check if dropping onto a folder (existing logic)
     const overItem = items.find(
       (item) => item.type === 'folder' && item.folder.id === overId
     );
