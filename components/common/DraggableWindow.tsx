@@ -8,6 +8,8 @@ import {
   Camera,
   Maximize,
   Minimize2,
+  ChevronRight,
+  Copy,
 } from 'lucide-react';
 import { WidgetData, WidgetType } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
@@ -39,11 +41,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   skipCloseConfirmation = false,
   headerActions,
 }) => {
-  const { updateWidget, removeWidget, bringToFront, addToast } = useDashboard();
+  const {
+    updateWidget,
+    removeWidget,
+    duplicateWidget,
+    bringToFront,
+    addToast,
+  } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
   const windowRef = useRef<HTMLDivElement>(null);
@@ -113,7 +122,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(
-      'button, input, textarea, select, canvas, [role="button"], .resize-handle'
+      'button, input, textarea, select, canvas, [role="button"], .resize-handle, [draggable="true"], [data-no-drag="true"]'
     );
     if (isInteractive) return;
 
@@ -241,9 +250,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         transparency={transparency}
         className={`absolute select-none widget group will-change-transform ${
           isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
-        } ${
-          isDragging ? 'shadow-2xl ring-2 ring-blue-400/50 scale-[1.01]' : ''
-        }`}
+        } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
           left: isMaximized ? 0 : widget.x,
           top: isMaximized ? 0 : widget.y,
@@ -343,11 +350,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
               <div className="flex-1 p-4 overflow-y-auto">
-                <div className="mb-6">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                    Widget Transparency
-                  </h4>
-                  <div className="flex items-center gap-4 bg-white/40 p-3 rounded-2xl border border-white/20">
+                <div className="mb-4 flex items-center gap-3 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    Transparency
+                  </span>
+                  <div className="flex-1 flex items-center gap-2">
                     <input
                       type="range"
                       min="0"
@@ -359,9 +366,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           transparency: parseFloat(e.target.value),
                         })
                       }
-                      className="flex-1 accent-indigo-600"
+                      className="flex-1 accent-indigo-600 h-1.5"
                     />
-                    <span className="text-[10px] font-mono font-bold text-slate-600 w-10">
+                    <span className="text-[10px] font-mono font-bold text-slate-600 w-8 text-right">
                       {Math.round(transparency * 100)}%
                     </span>
                   </div>
@@ -394,7 +401,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           <div
             ref={menuRef}
             style={menuStyle}
-            className="flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl animate-in fade-in duration-200"
+            className="flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           >
@@ -417,81 +424,108 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   className="text-[10px] font-bold text-slate-800 bg-white/50 border border-white/50 rounded-full px-3 py-1 outline-none w-32 shadow-sm"
                 />
               ) : (
-                <div
-                  className="flex items-center gap-2 group/title cursor-text px-2"
-                  onClick={() => {
-                    setTempTitle(widget.customTitle ?? title);
-                    setIsEditingTitle(true);
-                  }}
-                >
-                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate max-w-[100px]">
-                    {widget.customTitle ?? title}
-                  </span>
-                  <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                <div className="flex items-center gap-1">
+                  <div
+                    className="flex items-center gap-2 group/title cursor-text px-2"
+                    onClick={() => {
+                      setTempTitle(widget.customTitle ?? title);
+                      setIsEditingTitle(true);
+                    }}
+                  >
+                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate max-w-[100px]">
+                      {widget.customTitle ?? title}
+                    </span>
+                    <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="flex items-center -mr-1">
+                    <button
+                      onClick={() => {
+                        updateWidget(widget.id, { flipped: true });
+                        setShowTools(false);
+                      }}
+                      className="p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                      title="Settings"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
+                      className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all ${
+                        isToolbarExpanded ? 'rotate-180' : ''
+                      }`}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="h-4 w-px bg-slate-300/50 mx-0.5" />
+            <div
+              className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
+                isToolbarExpanded
+                  ? 'max-w-[500px] opacity-100 ml-0'
+                  : 'max-w-0 opacity-0 ml-0'
+              }`}
+            >
+              <div className="h-4 w-px bg-slate-300/50" />
 
-            <div className="flex items-center gap-1">
-              {headerActions && (
-                <div className="flex items-center text-slate-700">
-                  {headerActions}
-                </div>
-              )}
-              {canScreenshot && (
-                <button
-                  onClick={takeScreenshot}
-                  disabled={isCapturing}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
-                  title="Take Screenshot"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button
-                onClick={handleMaximizeToggle}
-                className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                title={isMaximized ? 'Restore' : 'Maximize'}
-              >
-                {isMaximized ? (
-                  <Minimize2 className="w-3.5 h-3.5" />
-                ) : (
-                  <Maximize className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1">
+                {headerActions && (
+                  <div className="flex items-center text-slate-700">
+                    {headerActions}
+                  </div>
                 )}
-              </button>
-              <button
-                onClick={() => updateWidget(widget.id, { minimized: true })}
-                className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                title="Minimize"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  updateWidget(widget.id, { flipped: true });
-                  setShowTools(false);
-                }}
-                className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                title="Settings"
-              >
-                <Settings className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  if (skipCloseConfirmation) {
-                    removeWidget(widget.id);
-                  } else {
-                    setShowConfirm(true);
-                    setShowTools(false);
-                  }
-                }}
-                className="p-1.5 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
-                title="Close"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+                {canScreenshot && (
+                  <button
+                    onClick={takeScreenshot}
+                    disabled={isCapturing}
+                    className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
+                    title="Take Screenshot"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => duplicateWidget(widget.id)}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title="Duplicate"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleMaximizeToggle}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title={isMaximized ? 'Restore' : 'Maximize'}
+                >
+                  {isMaximized ? (
+                    <Minimize2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <Maximize className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => updateWidget(widget.id, { minimized: true })}
+                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  title="Minimize"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (skipCloseConfirmation) {
+                      removeWidget(widget.id);
+                    } else {
+                      setShowConfirm(true);
+                      setShowTools(false);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
+                  title="Close"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>,
           document.body

@@ -1,28 +1,34 @@
-description = "Saves your current work and updates your online preview."
+description = "Saves work, integrates from main, validates code quality, and updates online preview."
 prompt = """
 
-You are a technical assistant. Execute the following steps to save your work and update your preview:
+You are a technical assistant. Execute the following steps to save work and update the preview safely:
 
 ### PHASE 1: Save
 1. Run `git add .`.
-
 2. Run `git diff --cached` to analyze changes.
-
 3. Generate a concise, one-line technical commit message.
-
 4. Run `git commit -m "[AI] $GENERATED_MESSAGE"`.
 
 ### PHASE 2: Sync & Integrate
 5. Run `git fetch origin main`.
-
 6. Run `git rebase origin/main`.
     - **If rebase fails**: 
         - Analyze the conflicts. 
-        - If the conflicts are straightforward (e.g., imports, simple logic), attempt to resolve them, `git add` the files, and `git rebase --continue`.
-        - If too complex, run `git rebase --abort`. Report: "Preview paused. Complex conflicts with Main detected. Please type: **'Help me fix the sync conflicts'**" and STOP.
+        - Resolve the conflicts immediately (imports, logic, etc.) without asking the user.
+        - Run `git add .` and `git rebase --continue`.
+        - If you get stuck in a conflict loop, explain the blockage and stop.
 
-7. If rebase success: 
-    - Run `git push --force-with-lease origin $(git branch --show-current)`.
+### PHASE 3: Validate & Auto-Repair
+7. Run `pnpm run validate`.
+8. **If validation fails**:
+    - Run `pnpm run lint:fix` to resolve formatting.
+    - Analyze the remaining error output (TypeScript errors, test failures).
+    - **Take the wheel**: Edit the files to fix the reported errors.
+    - Re-run `pnpm run validate`.
+    - Repeat until successful. If you cannot fix it after 3 attempts, report the specific technical blockage.
 
-8. Report: "Changes saved, integrated from Main, and uploaded. Your development URL is now being updated."
+### PHASE 4: Upload
+9. Run `git push --force-with-lease origin $(git branch --show-current)`.
+
+10. Report: "Changes saved, integrated from Main, and verified. Your development URL is now being updated."
 """

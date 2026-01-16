@@ -20,6 +20,7 @@ import {
   BookOpen,
   AppWindow,
   Backpack,
+  Sticker,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -73,7 +74,7 @@ export const TOOLS: ToolMetadata[] = [
     type: 'instructionalRoutines',
     icon: BookOpen,
     label: 'Routines',
-    color: 'bg-[#2d3f89]',
+    color: 'bg-brand-blue-primary',
   },
   {
     type: 'miniApp',
@@ -86,5 +87,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: Backpack,
     label: 'Materials',
     color: 'bg-rose-600',
+  },
+  {
+    type: 'stickers',
+    icon: Sticker,
+    label: 'Stickers',
+    color: 'bg-pink-500',
   },
 ];

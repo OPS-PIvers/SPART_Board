@@ -9,6 +9,8 @@
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS (Custom Brand Theme), Lucide React
 - **Backend:** Firebase (Auth, Firestore, Storage)
 - **AI:** Gemini API (via `@google/genai`)
+- **Package Manager:** pnpm
+- **Testing:** Vitest (Unit), Playwright (E2E), Istanbul (Coverage)
 
 ## Project Structure & Architecture
 
@@ -20,15 +22,20 @@
 - `/components/`: React components.
   - `admin/`: Admin-specific components (`AdminSettings.tsx`, `FeaturePermissionsManager.tsx`).
   - `auth/`: Authentication UI (`LoginScreen.tsx`).
-  - `common/`: Reusable components (e.g., `DraggableWindow.tsx`).
+  - `common/`: Reusable components (e.g., `DraggableWindow.tsx`, `Button.tsx`).
   - `layout/`: Core layout (`Sidebar.tsx`, `Dock.tsx`, `DashboardView.tsx`).
   - `widgets/`: Individual widget implementations and `WidgetRenderer.tsx`.
+    - `random/`: Specialized sub-folder for the refactored Random widget.
+    - `MaterialsWidget/`: Specialized sub-folder for the Materials widget.
 - `/context/`: React Context providers (`AuthContext`, `DashboardContext`).
 - `/hooks/`: Custom hooks (`useFirestore`, `useStorage`).
 - `/config/`: Configuration files (`firebase.ts`, `tools.ts`, `widgetGradeLevels.ts`).
+- `/tests/`: Test setup and E2E tests.
+  - `e2e/`: Playwright end-to-end tests.
 - `/types.ts`: Global TypeScript definitions.
 - `/App.tsx`: Root application component.
 - `/index.tsx`: Entry point.
+- `/Dockerfile` & `/nginx.conf`: Infrastructure for containerized deployment.
 
 ### Architecture Patterns
 
@@ -45,9 +52,10 @@
 ## Design System & Styling
 
 - **Typography**: **Lexend** (UI), **Patrick Hand** (Accents), **Roboto Mono** (Code).
-- **Brand Colors**: Custom brand colors configured in tailwind.config.js:
-  - **Brand Blue**: Primary (#2d3f89), Dark (#1d2a5d), Light (#4356a0).
-  - **Brand Red**: Primary (#ad2122), Dark (#7a1718), Light (#c13435).
+- **Brand Colors**: Custom brand colors configured in `tailwind.config.js`:
+  - **Brand Blue**: Primary (#2d3f89), Dark (#1d2a5d), Light (#4356a0), Lighter (#eaecf5).
+  - **Brand Red**: Primary (#ad2122), Dark (#7a1718), Light (#c13435), Lighter (#e5c7c7).
+  - **Brand Gray**: A semantic grayscale palette (darkest to lightest) for UI consistency.
 - **Theme Config**: See `tailwind.config.js` for full palette and extensions.
 
 ## Slash Commands
@@ -59,10 +67,10 @@ The following slash commands are available to streamline the development workflo
   - _Caution:_ Permanently deletes changes since the last `/preview`.
 - **/preview**: Saves your current work and updates your online preview.
   - _Action:_ Stages, commits, and pushes changes to the current branch.
-- **/submit**: Integrates latest changes from `main`, resolves conflicts, verifies with tests, and submits your work for review.
-  - _Action:_ Fetches `main`, rebases, runs `npm test`, then creates or updates a Pull Request (PR).
-- **/sync**: Updates your workspace with the latest changes from the main project.
-  - _Action:_ Fetches `origin/main`, rebases current branch, and handles stashing if necessary.
+- **/submit**: Integrates latest changes from `main`, resolves conflicts, verifies with tests, pushes to remote, and submits your work for review.
+  - _Action:_ Fetches `main`, rebases, runs `pnpm run validate`, pushes to remote, then creates or updates a Pull Request (PR).
+- **/sync**: Updates your workspace with the latest changes from the main project and syncs with your remote branch.
+  - _Action:_ Fetches `origin/main`, rebases current branch, handles stashing, and pushes to remote.
 - **/undo**: Reverses your last 'save' while keeping your work in the editor.
   - _Action:_ `git reset --soft HEAD~1`.
 
@@ -70,14 +78,18 @@ The following slash commands are available to streamline the development workflo
 
 ### Key Commands
 
-- **Install Dependencies:** `npm install`
-- **Start Dev Server:** `npm run dev` (Port 3000)
-- **Build for Production:** `npm run build`
-- **Preview Build:** `npm run preview`
-- **Linting:** `npm run lint` (Zero-tolerance policy)
-- **Fix Linting:** `npm run lint:fix`
-- **Type Check:** `npm run type-check`
-- **Format:** `npm run format`
+- **Install Dependencies:** `pnpm install`
+- **Start Dev Server:** `pnpm run dev` (Port 3000)
+- **Build for Production:** `pnpm run build`
+- **Preview Build:** `pnpm run preview`
+- **Linting:** `pnpm run lint` (Zero-tolerance policy)
+- **Fix Linting:** `pnpm run lint:fix`
+- **Type Check:** `pnpm run type-check`
+- **Format:** `pnpm run format`
+- **Run All Checks:** `pnpm run validate`
+- **Unit Tests:** `pnpm test`
+- **E2E Tests:** `pnpm run test:e2e`
+- **Coverage:** `pnpm run test:coverage`
 
 ### Code Quality & Standards
 
@@ -111,4 +123,5 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_GEMINI_API_KEY=...
+VITE_OPENWEATHER_API_KEY=...
 ```

@@ -24,6 +24,10 @@ import {
   ChevronRight,
   Star,
   GripVertical,
+  Maximize,
+  Minimize,
+  Copy,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   DndContext,
@@ -45,7 +49,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-import { Dashboard, GradeLevel, BackgroundPreset } from '../../types';
+import { Dashboard, BackgroundPreset } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
@@ -65,11 +69,6 @@ const GRADE_FILTER_OPTIONS = [
   { value: '9-12', label: '9-12' },
 ] as const;
 
-// Helper to format grade level for display with proper capitalization
-const formatGradeLevel = (level: GradeLevel): string => {
-  return level.toUpperCase();
-};
-
 interface SortableDashboardItemProps {
   db: Dashboard;
   isActive: boolean;
@@ -77,6 +76,8 @@ interface SortableDashboardItemProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onSetDefault: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onShare: (db: Dashboard) => void;
 }
 
 const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
@@ -86,6 +87,8 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
   onRename,
   onDelete,
   onSetDefault,
+  onDuplicate,
+  onShare,
 }) => {
   const {
     attributes,
@@ -106,31 +109,47 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
+      className={`group relative flex flex-col p-0 rounded-2xl cursor-pointer transition-all border overflow-hidden ${
         isActive
-          ? 'bg-white border-brand-blue-light shadow-md ring-1 ring-brand-blue-lighter'
-          : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
+          ? 'bg-white border-brand-blue-primary shadow-md ring-1 ring-brand-blue-lighter'
+          : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm'
       } ${isDragging ? 'opacity-50 shadow-2xl scale-105' : ''}`}
       onClick={() => onLoad(db.id)}
     >
-      <div className="flex items-center gap-3 min-w-0">
+      {/* Board Thumbnail Placeholder or Image */}
+      <div className="aspect-video w-full bg-slate-100 relative group-hover:bg-slate-50 transition-colors">
+        {db.background?.startsWith('bg-') ? (
+          <div className={`w-full h-full ${db.background}`} />
+        ) : (
+          <img
+            src={db.background}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+
+        {/* Drag handle overlay */}
         <div
           {...attributes}
           {...listeners}
-          className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+          className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur rounded-lg text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="w-4 h-4" />
         </div>
-        <div
-          className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
-            isActive
-              ? 'bg-brand-blue-primary'
-              : 'bg-slate-200 group-hover:bg-slate-300'
-          }`}
-        />
-        <div className="truncate">
-          <div className="flex items-center gap-2">
+
+        {/* Default star overlay */}
+        {db.isDefault && (
+          <div className="absolute top-2 right-2 p-1 bg-amber-500 text-white rounded-full shadow-sm">
+            <Star className="w-3 h-3 fill-current" />
+          </div>
+        )}
+      </div>
+
+      <div className="p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="min-w-0 flex-1">
             <div
               className={`font-bold text-sm truncate ${
                 isActive ? 'text-brand-blue-dark' : 'text-slate-700'
@@ -138,83 +157,106 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
             >
               {db.name}
             </div>
-            {db.isDefault && (
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
-            )}
-          </div>
-          <div className="text-[10px] text-slate-400 font-medium">
-            {new Date(db.createdAt).toLocaleDateString()}
+            <div className="text-[10px] text-slate-400 font-medium">
+              {new Date(db.createdAt).toLocaleDateString()}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSetDefault(db.id);
-          }}
-          className={`p-1.5 rounded-lg transition-all ${
-            db.isDefault
-              ? 'text-amber-500 bg-amber-50'
-              : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50 opacity-0 group-hover:opacity-100'
-          }`}
-          title={db.isDefault ? 'Default Board' : 'Set as Default'}
-        >
-          <Star className={`w-4 h-4 ${db.isDefault ? 'fill-current' : ''}`} />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRename(db.id, db.name);
-          }}
-          className="p-1.5 text-slate-300 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100"
-          title="Rename"
-        >
-          <Pencil className="w-4 h-4" />
-        </button>
-        <div className="relative">
-          <input
-            type="checkbox"
-            id={`delete-dashboard-${db.id}`}
-            className="peer hidden"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <label
-            htmlFor={`delete-dashboard-${db.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="p-1.5 text-slate-300 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer inline-flex items-center justify-center"
-          >
-            <Trash2 className="w-4 h-4" />
-          </label>
-          <div className="peer-checked:flex hidden fixed inset-0 z-[11000] items-center justify-center bg-slate-900/40">
-            <div
-              className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
-              onClick={(e) => e.stopPropagation()}
+
+        <div className="flex items-center justify-between gap-1 border-t border-slate-50 pt-2">
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSetDefault(db.id);
+              }}
+              className={`p-1.5 rounded-lg transition-all ${
+                db.isDefault
+                  ? 'text-amber-500 bg-amber-50'
+                  : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
+              }`}
+              title={db.isDefault ? 'Default Board' : 'Set as Default'}
             >
-              <h4 className="text-base font-semibold text-slate-900 mb-2">
-                Delete board
-              </h4>
-              <p className="text-sm text-slate-600 mb-4">
-                Are you sure you want to delete “{db.name}”? This action cannot
-                be undone.
-              </p>
-              <div className="flex justify-end gap-2">
-                <label
-                  htmlFor={`delete-dashboard-${db.id}`}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
-                >
-                  Cancel
-                </label>
-                <button
-                  type="button"
-                  className="px-4 py-2 text-sm font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(db.id);
-                  }}
-                >
-                  Delete
-                </button>
+              <Star
+                className={`w-3.5 h-3.5 ${db.isDefault ? 'fill-current' : ''}`}
+              />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRename(db.id, db.name);
+              }}
+              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+              title="Rename"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate(db.id);
+              }}
+              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+              title="Duplicate"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(db);
+              }}
+              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+              title="Share"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <input
+              type="checkbox"
+              id={`delete-dashboard-${db.id}`}
+              className="peer hidden"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <label
+              htmlFor={`delete-dashboard-${db.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="p-1.5 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all cursor-pointer inline-flex items-center justify-center"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </label>
+            <div className="peer-checked:flex hidden fixed inset-0 z-[11000] items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+              <div
+                className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h4 className="text-base font-semibold text-slate-900 mb-2">
+                  Delete board
+                </h4>
+                <p className="text-sm text-slate-600 mb-4">
+                  Are you sure you want to delete “{db.name}”? This action
+                  cannot be undone.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <label
+                    htmlFor={`delete-dashboard-${db.id}`}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </label>
+                  <button
+                    type="button"
+                    className="px-4 py-2 text-sm font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(db.id);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -224,11 +266,39 @@ const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
   );
 };
 
+type MenuSection = 'main' | 'widgets' | 'backgrounds' | 'boards' | 'settings';
+
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'widgets' | 'design' | 'boards'>(
-    'widgets'
-  );
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeSection, setActiveSection] = useState<MenuSection>('main');
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err: unknown) => {
+        if (err instanceof Error) {
+          console.error(
+            `Error attempting to enable fullscreen: ${err.message}`
+          );
+        }
+      });
+    } else {
+      if (document.exitFullscreen) {
+        void document.exitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
   // Sub-tab for design section
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
@@ -272,6 +342,7 @@ export const Sidebar: React.FC = () => {
     createNewDashboard,
     loadDashboard,
     deleteDashboard,
+    duplicateDashboard,
     renameDashboard,
     reorderDashboards,
     setDefaultDashboard,
@@ -423,6 +494,7 @@ export const Sidebar: React.FC = () => {
   const presets = useMemo(() => {
     return managedBackgrounds.map((bg) => ({
       id: bg.url,
+      thumbnailUrl: bg.thumbnailUrl,
       label: bg.label,
     }));
   }, [managedBackgrounds]);
@@ -453,9 +525,10 @@ export const Sidebar: React.FC = () => {
     { id: 'bg-gradient-to-br from-rose-400 to-orange-400', label: 'Sunset' },
   ];
 
-  const handleShare = () => {
-    if (!activeDashboard) return;
-    const data = JSON.stringify(activeDashboard);
+  const handleShare = (db?: Dashboard) => {
+    const target = db ?? activeDashboard;
+    if (!target) return;
+    const data = JSON.stringify(target);
     void navigator.clipboard.writeText(data);
     addToast('Board data copied to clipboard!', 'success');
   };
@@ -529,28 +602,6 @@ export const Sidebar: React.FC = () => {
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
-        <div className="flex items-center gap-2 px-1">
-          {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt={user?.displayName ?? 'User'}
-              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
-            />
-          ) : (
-            <div
-              className="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-700"
-              aria-label={user?.displayName ?? 'User'}
-            >
-              {(user?.displayName ?? 'User').charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="text-slate-700 font-bold text-sm hidden sm:block">
-            {user?.displayName}
-          </span>
-        </div>
-
-        <div className="h-6 w-px bg-slate-200 mx-1" />
-
         {isAdmin && (
           <button
             onClick={() => setShowAdminSettings(true)}
@@ -560,6 +611,18 @@ export const Sidebar: React.FC = () => {
             <Settings className="w-5 h-5" />
           </button>
         )}
+
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        >
+          {isFullscreen ? (
+            <Minimize className="w-5 h-5" />
+          ) : (
+            <Maximize className="w-5 h-5" />
+          )}
+        </button>
 
         <button
           onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
@@ -752,13 +815,26 @@ export const Sidebar: React.FC = () => {
           />
           <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
             {/* Header */}
-            <div className="p-6 pb-2 border-b border-slate-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-brand-blue-primary">
-                  <Layout className="w-6 h-6" />
-                  <span className="font-black text-xl tracking-tight">
-                    SCHOOL BOARDS
-                  </span>
+            <div className="p-6 border-b border-slate-100 bg-white z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {activeSection !== 'main' && (
+                    <button
+                      onClick={() => setActiveSection('main')}
+                      className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
+                      title="Back to Main Menu"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                  )}
+                  <div className="flex items-center gap-2 text-brand-blue-primary">
+                    <Layout className="w-6 h-6" />
+                    <span className="font-black text-xl tracking-tight uppercase">
+                      {activeSection === 'main'
+                        ? 'School Boards'
+                        : activeSection}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -767,369 +843,473 @@ export const Sidebar: React.FC = () => {
                   <X className="w-5 h-5 text-slate-500" />
                 </button>
               </div>
+            </div>
 
-              <div className="flex bg-slate-100 p-1 rounded-xl text-sm font-bold uppercase tracking-wide">
+            {/* Content Area with Sliding Sections */}
+            <div className="flex-1 relative overflow-hidden bg-slate-50/30">
+              {/* MAIN MENU */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-4 transition-all duration-300 ease-in-out ${
+                  activeSection === 'main'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : '-translate-x-full opacity-0 invisible'
+                }`}
+              >
                 <button
-                  onClick={() => setActiveTab('widgets')}
-                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                    activeTab === 'widgets'
-                      ? 'bg-white shadow-sm text-brand-blue-primary'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  onClick={() => setActiveSection('boards')}
+                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
                 >
-                  <LayoutGrid className="w-4 h-4" /> Widgets
+                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+                    <FolderOpen className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
+                      Boards
+                    </div>
+                    <p className="text-sm text-slate-500 font-medium">
+                      Manage and switch between your boards
+                    </p>
+                  </div>
+                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                 </button>
+
                 <button
-                  onClick={() => setActiveTab('design')}
-                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                    activeTab === 'design'
-                      ? 'bg-white shadow-sm text-brand-blue-primary'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  onClick={() => setActiveSection('backgrounds')}
+                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
                 >
-                  <Paintbrush className="w-4 h-4" /> Design
+                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+                    <Paintbrush className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
+                      Backgrounds
+                    </div>
+                    <p className="text-sm text-slate-500 font-medium">
+                      Customize your board&apos;s appearance
+                    </p>
+                  </div>
+                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                 </button>
+
                 <button
-                  onClick={() => setActiveTab('boards')}
-                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                    activeTab === 'boards'
-                      ? 'bg-white shadow-sm text-brand-blue-primary'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  onClick={() => setActiveSection('widgets')}
+                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
                 >
-                  <FolderOpen className="w-4 h-4" /> Boards
+                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+                    <LayoutGrid className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
+                      Widgets
+                    </div>
+                    <p className="text-sm text-slate-500 font-medium">
+                      Add tools and interactives to your board
+                    </p>
+                  </div>
+                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                 </button>
+
+                <button
+                  onClick={() => setActiveSection('settings')}
+                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
+                >
+                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+                    <Settings className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
+                      Settings
+                    </div>
+                    <p className="text-sm text-slate-500 font-medium">
+                      Account and application preferences
+                    </p>
+                  </div>
+                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
+                </button>
+              </div>
+
+              {/* BOARDS SECTION */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                  activeSection === 'boards'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setNewDashboardName('');
+                      setShowNewDashboardModal(true);
+                    }}
+                    className="flex flex-col items-center justify-center gap-2 p-4 bg-brand-blue-primary text-white rounded-2xl shadow-md hover:bg-brand-blue-dark transition-all"
+                  >
+                    <Plus className="w-6 h-6" />
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      New Board
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleImport}
+                    className="flex flex-col items-center justify-center gap-2 p-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
+                  >
+                    <Download className="w-6 h-6" />
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      Import
+                    </span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                    My Boards
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={dashboards.map((d) => d.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {dashboards.map((db) => (
+                          <SortableDashboardItem
+                            key={db.id}
+                            db={db}
+                            isActive={activeDashboard?.id === db.id}
+                            onLoad={loadDashboard}
+                            onRename={(id, name) =>
+                              setEditingDashboard({ id, name })
+                            }
+                            onDelete={deleteDashboard}
+                            onSetDefault={setDefaultDashboard}
+                            onDuplicate={duplicateDashboard}
+                            onShare={handleShare}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                </div>
+              </div>
+
+              {/* BACKGROUNDS SECTION */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                  activeSection === 'backgrounds'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-black uppercase tracking-widest">
+                  <button
+                    onClick={() => setDesignTab('presets')}
+                    className={`flex-1 py-2 rounded-lg transition-all ${
+                      designTab === 'presets'
+                        ? 'bg-white shadow-sm text-brand-blue-primary'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    Presets
+                  </button>
+                  <button
+                    onClick={() => setDesignTab('colors')}
+                    className={`flex-1 py-2 rounded-lg transition-all ${
+                      designTab === 'colors'
+                        ? 'bg-white shadow-sm text-brand-blue-primary'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    Colors
+                  </button>
+                  <button
+                    onClick={() => setDesignTab('gradients')}
+                    className={`flex-1 py-2 rounded-lg transition-all ${
+                      designTab === 'gradients'
+                        ? 'bg-white shadow-sm text-brand-blue-primary'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    Gradients
+                  </button>
+                </div>
+
+                {designTab === 'presets' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="aspect-video rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
+                    >
+                      {uploading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 mb-2" />
+                          <span className="text-[10px] font-black uppercase">
+                            Upload
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    {presets.map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setBackground(bg.id)}
+                        className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
+                          activeDashboard?.background === bg.id
+                            ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
+                            : 'border-transparent'
+                        }`}
+                      >
+                        <img
+                          src={bg.thumbnailUrl ?? bg.id}
+                          alt={bg.label}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-[10px] font-black uppercase px-2 text-center">
+                            {bg.label}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {designTab === 'colors' && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {colors.map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setBackground(bg.id)}
+                        className={`aspect-square rounded-xl border-2 transition-all relative ${bg.id} ${
+                          activeDashboard?.background === bg.id
+                            ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
+                            : 'border-slate-100'
+                        }`}
+                      >
+                        {bg.label === 'Dot Grid' && (
+                          <Grid className="w-6 h-6 absolute inset-0 m-auto text-slate-300" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {designTab === 'gradients' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {gradients.map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setBackground(bg.id)}
+                        className={`aspect-video rounded-xl border-2 transition-all relative ${
+                          activeDashboard?.background === bg.id
+                            ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
+                            : 'border-transparent'
+                        }`}
+                      >
+                        <div className={`w-full h-full rounded-lg ${bg.id}`} />
+                        <div className="absolute bottom-2 left-2 text-[10px] font-black uppercase text-white drop-shadow-md">
+                          {bg.label}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* WIDGETS SECTION */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                  activeSection === 'widgets'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                {/* Grade Level Filter */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">
+                      Grade Filter
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {GRADE_FILTER_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setGradeFilter(option.value)}
+                        className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                          gradeFilter === option.value
+                            ? 'bg-brand-blue-primary text-white shadow-sm'
+                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    Available Widgets
+                  </h3>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setAllToolsVisibility(true)}
+                      className="text-[10px] font-black text-brand-blue-primary uppercase tracking-wider"
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setAllToolsVisibility(false)}
+                      className="text-[10px] font-black text-slate-400 uppercase tracking-wider"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {filteredTools.map((tool) => {
+                    const permission = featurePermissions.find(
+                      (p) => p.widgetType === tool.type
+                    );
+                    const gradeLevels =
+                      permission?.gradeLevels ??
+                      getWidgetGradeLevels(tool.type);
+                    const isActive = visibleTools.includes(tool.type);
+                    const displayLabel =
+                      permission?.displayName?.trim() ?? tool.label;
+
+                    return (
+                      <button
+                        key={tool.type}
+                        onClick={() => toggleToolVisibility(tool.type)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 ${
+                          isActive
+                            ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
+                            : 'bg-white border-slate-100 text-slate-500 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`p-2 rounded-lg ${isActive ? tool.color : 'bg-slate-100'} text-white`}
+                          >
+                            <tool.icon className="w-5 h-5" />
+                          </div>
+                          <div className="text-left">
+                            <div className="text-xs font-black uppercase tracking-tight">
+                              {displayLabel}
+                            </div>
+                            <div className="flex gap-1 mt-0.5">
+                              {gradeLevels.map((level) => (
+                                <span
+                                  key={level}
+                                  className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 uppercase"
+                                >
+                                  {level}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SETTINGS SECTION */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                  activeSection === 'settings'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+                  <div className="relative mb-4">
+                    {user?.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt=""
+                        className="w-20 h-20 rounded-full border-4 border-brand-blue-lighter shadow-md"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-brand-blue-primary flex items-center justify-center text-2xl font-black text-white shadow-md">
+                        {user?.displayName?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-full shadow-md border border-slate-100">
+                      <div className="w-3 h-3 bg-emerald-500 rounded-full" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">
+                    {user?.displayName}
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-6">{user?.email}</p>
+
+                  <div className="w-full flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        saveCurrentDashboard();
+                        addToast('Board saved manually');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 p-3 bg-brand-blue-primary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
+                    >
+                      <Save className="w-4 h-4" /> Save Current Board
+                    </button>
+                    <button
+                      onClick={() => handleShare()}
+                      className="w-full flex items-center justify-center gap-2 p-3 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
+                    >
+                      <Share2 className="w-4 h-4" /> Share Board Data
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
+                    Application
+                  </h4>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowAdminSettings(true)}
+                      className="w-full flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-2xl hover:border-brand-blue-primary transition-all text-left"
+                    >
+                      <div className="p-2 rounded-lg bg-slate-100 text-slate-600">
+                        <Settings className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-black text-slate-700 uppercase">
+                        Admin Console
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    onClick={signOut}
+                    className="w-full flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-2xl hover:border-brand-red-primary group transition-all text-left"
+                  >
+                    <div className="p-2 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-brand-red-lighter group-hover:text-brand-red-primary transition-colors">
+                      <LogOut className="w-5 h-5" />
+                    </div>
+                    <span className="text-sm font-black text-slate-700 uppercase group-hover:text-brand-red-primary">
+                      Sign Out
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-              {/* WIDGETS TAB */}
-              {activeTab === 'widgets' && (
-                <div className="space-y-4">
-                  {/* Grade Level Filter */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1.5">
-                        <Filter className="w-5 h-5 text-slate-400" />
-                        <span className="text-sm font-bold uppercase tracking-wider text-slate-400">
-                          Grade Filter
-                        </span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-5 gap-1.5">
-                      {GRADE_FILTER_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setGradeFilter(option.value)}
-                          className={`py-2 px-1 rounded-lg text-xs sm:text-sm font-bold uppercase transition-all ${
-                            gradeFilter === option.value
-                              ? 'bg-brand-blue-primary text-white shadow-sm'
-                              : 'bg-white text-slate-500 hover:bg-slate-200'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-slate-800 uppercase tracking-wider">
-                      Available Widgets
-                    </h3>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setAllToolsVisibility(true)}
-                        className="text-sm font-bold text-brand-blue-primary hover:underline"
-                      >
-                        Select All
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        onClick={() => setAllToolsVisibility(false)}
-                        className="text-sm font-bold text-slate-500 hover:underline"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {filteredTools.map((tool) => {
-                      const permission = featurePermissions.find(
-                        (p) => p.widgetType === tool.type
-                      );
-                      const gradeLevels =
-                        permission?.gradeLevels ??
-                        getWidgetGradeLevels(tool.type);
-                      const isActive = visibleTools.includes(tool.type);
-                      const trimmedDisplayName =
-                        permission?.displayName?.trim();
-                      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-                      const displayLabel = trimmedDisplayName
-                        ? trimmedDisplayName
-                        : tool.label;
-
-                      return (
-                        <button
-                          key={tool.type}
-                          onClick={() => toggleToolVisibility(tool.type)}
-                          className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 group ${
-                            isActive
-                              ? 'bg-brand-blue-lighter border-brand-blue-lighter text-brand-blue-dark'
-                              : 'bg-white border-transparent hover:border-slate-100 text-slate-500'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4 min-w-0">
-                            <div
-                              className={`p-3 rounded-lg ${isActive ? tool.color : 'bg-slate-100 group-hover:bg-slate-200'} ${isActive ? 'text-white' : 'text-slate-500'} transition-colors`}
-                            >
-                              <tool.icon className="w-6 h-6" />
-                            </div>
-                            <div className="text-left">
-                              <div className="text-base font-bold uppercase tracking-tight">
-                                {displayLabel}
-                              </div>
-                              <div className="flex gap-1.5 mt-1">
-                                {gradeLevels.map((level) => (
-                                  <span
-                                    key={level}
-                                    className="text-xs font-bold px-2 py-0.5 rounded bg-white/50 text-slate-500 border border-slate-200"
-                                  >
-                                    {formatGradeLevel(level)}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                              isActive
-                                ? 'bg-brand-blue-primary border-brand-blue-primary'
-                                : 'border-slate-200'
-                            }`}
-                          >
-                            {isActive && (
-                              <CheckSquare className="w-4 h-4 text-white" />
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* DESIGN TAB */}
-              {activeTab === 'design' && (
-                <div className="space-y-6">
-                  {/* Design Sub-tabs */}
-                  <div className="flex border-b border-slate-100 mb-4">
-                    <button
-                      onClick={() => setDesignTab('presets')}
-                      className={`flex-1 pb-2 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
-                        designTab === 'presets'
-                          ? 'border-brand-blue-primary text-brand-blue-primary'
-                          : 'border-transparent text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      Presets
-                    </button>
-                    <button
-                      onClick={() => setDesignTab('colors')}
-                      className={`flex-1 pb-2 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
-                        designTab === 'colors'
-                          ? 'border-brand-blue-primary text-brand-blue-primary'
-                          : 'border-transparent text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      Colors
-                    </button>
-                    <button
-                      onClick={() => setDesignTab('gradients')}
-                      className={`flex-1 pb-2 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
-                        designTab === 'gradients'
-                          ? 'border-brand-blue-primary text-brand-blue-primary'
-                          : 'border-transparent text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      Gradients
-                    </button>
-                  </div>
-
-                  {designTab === 'presets' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {presets.map((bg) => (
-                        <button
-                          key={bg.id}
-                          onClick={() => setBackground(bg.id)}
-                          className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
-                            activeDashboard?.background === bg.id
-                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
-                              : 'border-transparent hover:scale-[1.02]'
-                          }`}
-                        >
-                          <img
-                            src={bg.id}
-                            alt={bg.label}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-base font-bold uppercase tracking-wider">
-                              {bg.label}
-                            </span>
-                          </div>
-                          {activeDashboard?.background === bg.id && (
-                            <div className="absolute top-2 right-2 bg-brand-blue-primary text-white p-1 rounded-full">
-                              <CheckSquare className="w-3 h-3" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="aspect-video rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-light hover:text-brand-blue-light hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
-                      >
-                        {uploading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <>
-                            <Upload className="w-6 h-6 mb-2" />
-                            <span className="text-sm font-bold uppercase">
-                              Upload Image
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {designTab === 'colors' && (
-                    <div className="grid grid-cols-3 gap-3">
-                      {colors.map((bg) => (
-                        <button
-                          key={bg.id}
-                          onClick={() => setBackground(bg.id)}
-                          className={`aspect-square rounded-xl border-2 transition-all relative ${bg.id} ${
-                            activeDashboard?.background === bg.id
-                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
-                              : 'border-slate-100 hover:border-slate-300'
-                          }`}
-                        >
-                          {bg.id.includes('radial') && (
-                            <div className={`w-full h-full ${bg.id}`} />
-                          )}
-                          {bg.label === 'Dot Grid' && (
-                            <Grid className="w-6 h-6 absolute inset-0 m-auto text-slate-300" />
-                          )}
-                          {activeDashboard?.background === bg.id && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full">
-                                <CheckSquare className="w-4 h-4 text-white drop-shadow-md" />
-                              </div>
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {designTab === 'gradients' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {gradients.map((bg) => (
-                        <button
-                          key={bg.id}
-                          onClick={() => setBackground(bg.id)}
-                          className={`aspect-video rounded-xl border-2 transition-all relative ${
-                            activeDashboard?.background === bg.id
-                              ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter ring-offset-2'
-                              : 'border-transparent hover:scale-[1.02]'
-                          }`}
-                        >
-                          <div
-                            className={`w-full h-full rounded-lg ${bg.id}`}
-                          />
-                          <div className="absolute bottom-3 left-3 text-xs font-bold uppercase text-white/90 drop-shadow-md">
-                            {bg.label}
-                          </div>
-                          {activeDashboard?.background === bg.id && (
-                            <div className="absolute top-2 right-2 bg-white/30 backdrop-blur-md p-1 rounded-full">
-                              <CheckSquare className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* BOARDS TAB */}
-              {activeTab === 'boards' && (
-                <div className="space-y-6">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">
-                      My Boards
-                    </h3>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={dashboards.map((d) => d.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {dashboards.map((db) => (
-                            <SortableDashboardItem
-                              key={db.id}
-                              db={db}
-                              isActive={activeDashboard?.id === db.id}
-                              onLoad={loadDashboard}
-                              onRename={(id, name) =>
-                                setEditingDashboard({ id, name })
-                              }
-                              onDelete={deleteDashboard}
-                              onSetDefault={setDefaultDashboard}
-                            />
-                          ))}
-                        </SortableContext>
-                      </DndContext>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        setNewDashboardName('');
-                        setShowNewDashboardModal(true);
-                      }}
-                      className="flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
-                    >
-                      <Plus className="w-8 h-8" />
-                      <span className="text-sm font-bold uppercase">
-                        New Board
-                      </span>
-                    </button>
-                    <button
-                      onClick={handleImport}
-                      className="flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:border-brand-blue-light hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all"
-                    >
-                      <Download className="w-8 h-8" />
-                      <span className="text-sm font-bold uppercase">
-                        Import
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50/50 backdrop-blur">
+            {/* Footer with subtle branding or version */}
+            <div className="p-4 bg-slate-50 text-center">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -1137,33 +1317,9 @@ export const Sidebar: React.FC = () => {
                 accept="image/*"
                 onChange={(e) => void handleFileUpload(e)}
               />
-
-              <div className="flex flex-col gap-4">
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleShare}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all"
-                  >
-                    <Share2 className="w-4 h-4" /> Share
-                  </button>
-                  <button
-                    onClick={() => {
-                      saveCurrentDashboard();
-                      setIsOpen(false);
-                    }}
-                    className="flex-1 bg-brand-blue-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark hover:shadow-brand-blue-light active:scale-95 transition-all text-xs uppercase tracking-wider"
-                  >
-                    <Save className="w-4 h-4" /> Save & Close
-                  </button>
-                </div>
-
-                <button
-                  onClick={signOut}
-                  className="w-full flex items-center justify-center gap-2 p-3 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
-                >
-                  <LogOut className="w-4 h-4" /> Sign Out
-                </button>
-              </div>
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
+                SpartBoard v2.0
+              </span>
             </div>
           </div>
         </div>

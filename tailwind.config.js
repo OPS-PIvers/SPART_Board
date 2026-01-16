@@ -29,7 +29,6 @@ export default {
     'bg-rose-500',
     'bg-orange-600',
     'bg-indigo-600',
-    'bg-[#2d3f89]',
     'bg-violet-600',
     // Background customization classes
     'bg-brand-gray-darkest',
@@ -82,14 +81,19 @@ export default {
           },
         },
       },
-      animation: {
-        'spin-slow': 'spin-slow 12s linear infinite',
-      },
       keyframes: {
         'spin-slow': {
           from: { transform: 'rotate(0deg)' },
           to: { transform: 'rotate(360deg)' },
         },
+        jiggle: {
+          '0%, 100%': { transform: 'rotate(-1deg)' },
+          '50%': { transform: 'rotate(1deg)' },
+        },
+      },
+      animation: {
+        'spin-slow': 'spin-slow 12s linear infinite',
+        jiggle: 'jiggle 0.5s ease-in-out infinite',
       },
     },
   },

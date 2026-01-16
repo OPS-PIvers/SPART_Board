@@ -7,6 +7,7 @@ import {
   ClassRoster,
   Student,
   GradeFilter,
+  DockItem,
 } from '../types';
 
 export interface DashboardContextType {
@@ -14,6 +15,7 @@ export interface DashboardContextType {
   activeDashboard: Dashboard | null;
   toasts: Toast[];
   visibleTools: WidgetType[];
+  dockItems: DockItem[];
   loading: boolean;
   gradeFilter: GradeFilter;
   setGradeFilter: (filter: GradeFilter) => void;
@@ -22,19 +24,35 @@ export interface DashboardContextType {
   createNewDashboard: (name: string, data?: Dashboard) => void;
   saveCurrentDashboard: () => void;
   deleteDashboard: (id: string) => void;
+  duplicateDashboard: (id: string) => void;
   renameDashboard: (id: string, name: string) => void;
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
-  addWidget: (type: WidgetType) => void;
+  addWidget: (type: WidgetType, initialConfig?: Partial<WidgetData>) => void;
   removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
+  moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
   setBackground: (bg: string) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
+  reorderDockItems: (items: DockItem[]) => void;
+
+  // --- FOLDER ACTIONS ---
+  addFolder: (name: string) => void;
+  renameFolder: (id: string, name: string) => void;
+  deleteFolder: (id: string) => void;
+  addItemToFolder: (folderId: string, type: WidgetType) => void;
+  removeItemFromFolder: (folderId: string, type: WidgetType) => void;
+  moveItemOutOfFolder: (
+    folderId: string,
+    type: WidgetType,
+    index: number
+  ) => void;
 
   // --- ROSTER SYSTEM ---
   rosters: ClassRoster[];

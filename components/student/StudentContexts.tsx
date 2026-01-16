@@ -55,6 +55,9 @@ const mockDashboard: DashboardContextType = {
   deleteDashboard: () => {
     /* mock */
   },
+  duplicateDashboard: () => {
+    /* mock */
+  },
   renameDashboard: () => {
     /* mock */
   },
@@ -73,6 +76,9 @@ const mockDashboard: DashboardContextType = {
   removeWidget: () => {
     // No-op
   },
+  duplicateWidget: () => {
+    // No-op
+  },
   removeWidgets: () => {
     // No-op
   },
@@ -80,6 +86,9 @@ const mockDashboard: DashboardContextType = {
     // No-op. Widgets in student view are read-only or handle state internally.
   },
   bringToFront: () => {
+    // No-op
+  },
+  moveWidgetLayer: () => {
     // No-op
   },
   setBackground: () => {
@@ -92,6 +101,28 @@ const mockDashboard: DashboardContextType = {
     // No-op
   },
   reorderTools: () => {
+    // No-op
+  },
+  dockItems: [],
+  reorderDockItems: () => {
+    // No-op
+  },
+  addFolder: () => {
+    // No-op
+  },
+  renameFolder: () => {
+    // No-op
+  },
+  deleteFolder: () => {
+    // No-op
+  },
+  addItemToFolder: () => {
+    // No-op
+  },
+  removeItemFromFolder: () => {
+    // No-op
+  },
+  moveItemOutOfFolder: () => {
     // No-op
   },
 

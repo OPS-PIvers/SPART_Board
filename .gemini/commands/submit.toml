@@ -1,40 +1,36 @@
-description = "Updates from main, fixes conflicts, verifies, and submits your work for review."
+description = "Final validation and submission of your work for review."
 prompt = """
 
 You are a technical assistant. Execute the following steps to ensure a clean, verified submission:
 
-### PHASE 1: Sync & Integrate
-1. Run `git status --short`. 
-    - If not empty, run `git stash` and notify: "Unsaved changes stashed for the update."
-
-2. Run `git fetch origin main`.
-
-3. Run `git rebase origin/main`.
+### PHASE 1: Save & Integrate
+1. Run `git add .`.
+2. Run `git commit -m "[AI] pre-submission sync"`. (Note: This might fail if nothing to commit, which is fine, just proceed).
+3. Run `git fetch origin main`.
+4. Run `git rebase origin/main`.
     - **If rebase fails**: 
-        - Analyze the conflicts. 
-        - If the conflicts are straightforward (e.g., imports, simple logic), attempt to resolve them, `git add` the files, and `git rebase --continue`.
-        - If too complex, run `git rebase --abort`. If you stashed, run `git stash pop`. Report: "Submission paused. Complex conflicts with Main detected. Please type: **'Help me fix the sync conflicts'**" and STOP.
+        - Analyze and resolve conflicts immediately. Use your engineering tools to fix files, `git add .`, and `git rebase --continue`.
 
-4. If rebase success: 
-    - If you stashed, run `git stash pop`. Resolve any minor conflicts from the stash pop immediately.
-    - Run `git push --force-with-lease origin $(git branch --show-current)`.
+### PHASE 2: Validate & Auto-Repair
+5. Run `pnpm run validate`.
+6. **If validation fails**:
+    - Run `pnpm run lint:fix`.
+    - Analyze the terminal output for type errors or test failures.
+    - **Take the wheel**: Autonomously fix the code issues identified in the logs.
+    - Re-run `pnpm run validate`.
+    - Repeat until passing. 
 
-### PHASE 2: Verify
-5. Run `npm test`.
-    - If tests fail: Attempt to fix the tests if caused by integration issues. If fixed, commit and push. If they cannot be easily fixed, STOP and ask the user for guidance.
+### PHASE 3: Upload
+7. Run `git push --force-with-lease origin $(git branch --show-current)`.
 
-### PHASE 3: Submit
-6. Run `git branch --show-current` to identify the branch.
+### PHASE 4: Submit
+8. Run `git branch --show-current` to identify the branch.
+9. Run `gh pr list --head $(git branch --show-current) --json url --state open` to check for an existing PR.
+10. Run `git diff origin/main... --stat` to summarize changes.
+11. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
+12. Logic:
+    - 12A) If no existing PR: Run `gh pr create --title "Review Request: $(git branch --show-current)" --body "$AI_SUMMARY" --base main`.
+    - 12B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
 
-7. Run `gh pr list --head $BRANCH --json url --state open` to check for an existing submission.
-
-8. Run `git diff main... --stat` to summarize changes.
-
-9. Based on the diff, write a one-to-two paragraph summary of "What changed" and "Why."
-
-10. Logic:
-    - 10A) If no existing PR: Run `gh pr create --title "Review Request: $BRANCH" --body "$AI_SUMMARY" --base main`.
-    - 10B) If PR exists: Run `gh pr edit --body "$AI_SUMMARY"`.
-
-11. Report: "Changes integrated from Main, verified, and submitted. View the submission here: [URL]"
+13. Report: "Changes integrated, verified, and submitted. View the submission here: [URL]"
 """

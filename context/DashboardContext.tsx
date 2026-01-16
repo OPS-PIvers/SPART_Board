@@ -13,15 +13,19 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
+  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
   GradeFilter,
+  DockItem,
+  DockFolder,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { db, isAuthBypass } from '../config/firebase';
 import { TOOLS } from '../config/tools';
+import { WIDGET_DEFAULTS } from '../config/widgetDefaults';
 import {
   migrateLocalStorageToFirestore,
   migrateWidget,
@@ -154,6 +158,11 @@ const validateRoster = (id: string, data: unknown): ClassRoster | null => {
   };
 };
 
+// Helper to migrate legacy visibleTools to dockItems
+const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
+  return visibleTools.map((type) => ({ type: 'tool', toolType: type }));
+};
+
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -181,6 +190,29 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     return TOOLS.map((t) => t.type);
   });
+
+  const [dockItems, setDockItems] = useState<DockItem[]>(() => {
+    const saved = localStorage.getItem('classroom_dock_items');
+    if (saved) {
+      try {
+        return JSON.parse(saved) as DockItem[];
+      } catch (e) {
+        console.error('Failed to parse saved dock items', e);
+      }
+    }
+    // Fallback: migrate from visibleTools if available
+    const savedTools = localStorage.getItem('classroom_visible_tools');
+    if (savedTools) {
+      try {
+        const tools = JSON.parse(savedTools) as WidgetType[];
+        return migrateToDockItems(tools);
+      } catch (e) {
+        console.error('Failed to migrate tools to dock items', e);
+      }
+    }
+    return migrateToDockItems(TOOLS.map((t) => t.type));
+  });
+
   const [loading, setLoading] = useState(true);
   const [migrated, setMigrated] = useState(false);
 
@@ -477,17 +509,188 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
       return next;
     });
+
+    setDockItems((prev) => {
+      const isVisible = visibleTools.includes(type);
+      let next: DockItem[];
+
+      if (isVisible) {
+        // Remove from dockItems (search globally in tools and folders)
+        next = prev
+          .map((item) => {
+            if (item.type === 'folder') {
+              return {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: item.folder.items.filter((t) => t !== type),
+                },
+              };
+            }
+            return item;
+          })
+          .filter((item) => !(item.type === 'tool' && item.toolType === type));
+      } else {
+        // Add to dockItems (if not already present)
+        const exists = prev.some(
+          (item) =>
+            (item.type === 'tool' && item.toolType === type) ||
+            (item.type === 'folder' && item.folder.items.includes(type))
+        );
+        next = exists ? prev : [...prev, { type: 'tool', toolType: type }];
+      }
+
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
   };
 
   const setAllToolsVisibility = (visible: boolean) => {
-    const next = visible ? TOOLS.map((t) => t.type) : [];
-    setVisibleTools(next);
-    localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
+    const nextTools = visible ? TOOLS.map((t) => t.type) : [];
+    setVisibleTools(nextTools);
+    localStorage.setItem('classroom_visible_tools', JSON.stringify(nextTools));
+
+    const nextDock = visible ? migrateToDockItems(nextTools) : [];
+    setDockItems(nextDock);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(nextDock));
   };
 
   const reorderTools = (tools: WidgetType[]) => {
     setVisibleTools(tools);
     localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
+    // When reordering tools globally, we should ideally reflect this in dockItems
+    // but only for top-level tools. For now, we'll let Dock handle its own reordering.
+  };
+
+  const reorderDockItems = (items: DockItem[]) => {
+    setDockItems(items);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(items));
+  };
+
+  // --- FOLDER ACTIONS ---
+  const addFolder = (name: string) => {
+    const newFolder: DockFolder = {
+      id: crypto.randomUUID(),
+      name,
+      items: [],
+    };
+    const next = [...dockItems, { type: 'folder' as const, folder: newFolder }];
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+    addToast(`Folder "${name}" created`);
+  };
+
+  const renameFolder = (id: string, name: string) => {
+    const next = dockItems.map((item) =>
+      item.type === 'folder' && item.folder.id === id
+        ? { ...item, folder: { ...item.folder, name } }
+        : item
+    );
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+  };
+
+  const deleteFolder = (id: string) => {
+    const folder = dockItems.find(
+      (item) => item.type === 'folder' && item.folder.id === id
+    );
+    if (!folder || folder.type !== 'folder') return;
+
+    // Move items back to root dock
+    const folderItems: DockItem[] = folder.folder.items.map((type) => ({
+      type: 'tool',
+      toolType: type,
+    }));
+
+    const next = dockItems
+      .filter((item) => !(item.type === 'folder' && item.folder.id === id))
+      .concat(folderItems);
+
+    setDockItems(next);
+    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+    addToast('Folder removed');
+  };
+
+  const addItemToFolder = (folderId: string, type: WidgetType) => {
+    setDockItems((prev) => {
+      // 1. Remove the tool from wherever it was (top-level or another folder)
+      const cleaned = prev
+        .map((item) => {
+          if (item.type === 'folder') {
+            return {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            };
+          }
+          return item;
+        })
+        .filter((item) => !(item.type === 'tool' && item.toolType === type));
+
+      // 2. Add it to the target folder
+      const next = cleaned.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: [...item.folder.items, type],
+              },
+            }
+          : item
+      );
+
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const removeItemFromFolder = (folderId: string, type: WidgetType) => {
+    setDockItems((prev) => {
+      const next = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            }
+          : item
+      );
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const moveItemOutOfFolder = (
+    folderId: string,
+    type: WidgetType,
+    index: number
+  ) => {
+    setDockItems((prev) => {
+      // Remove from folder
+      const cleaned = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === folderId
+          ? {
+              ...item,
+              folder: {
+                ...item.folder,
+                items: item.folder.items.filter((t) => t !== type),
+              },
+            }
+          : item
+      );
+
+      // Insert at root level at specified index
+      const next = [...cleaned];
+      next.splice(index, 0, { type: 'tool', toolType: type });
+
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
+    });
   };
 
   const addToast = (message: string, type: Toast['type'] = 'info') => {
@@ -574,6 +777,39 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       });
   };
 
+  const duplicateDashboard = (id: string) => {
+    if (!user) {
+      addToast('Must be signed in to duplicate', 'error');
+      return;
+    }
+
+    const dashboard = dashboards.find((d) => d.id === id);
+    if (!dashboard) return;
+
+    const maxOrder = dashboards.reduce(
+      (max, db) => Math.max(max, db.order ?? 0),
+      0
+    );
+
+    const duplicated: Dashboard = {
+      ...dashboard,
+      id: crypto.randomUUID(),
+      name: `${dashboard.name} (Copy)`,
+      isDefault: false,
+      createdAt: Date.now(),
+      order: maxOrder + 1,
+    };
+
+    saveDashboard(duplicated)
+      .then(() => {
+        addToast(`Board "${dashboard.name}" duplicated`);
+      })
+      .catch((err) => {
+        console.error('Duplicate failed:', err);
+        addToast('Duplicate failed', 'error');
+      });
+  };
+
   const renameDashboard = (id: string, name: string) => {
     if (!user) {
       addToast('Must be signed in to rename', 'error');
@@ -623,9 +859,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         if (index >= 0) next[index] = updated;
       });
       return next.sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
-        return (a.order ?? 0) - (b.order ?? 0);
+        return (b.createdAt || 0) - (a.createdAt || 0);
       });
     });
 
@@ -646,9 +885,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     // Update local state
     setDashboards(
       [...updatedDashboards].sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
-        return (a.order ?? 0) - (b.order ?? 0);
+        return (b.createdAt || 0) - (a.createdAt || 0);
       })
     );
 
@@ -667,156 +909,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
-  const addWidget = (type: WidgetType) => {
+  const addWidget = (type: WidgetType, initialConfig?: Partial<WidgetData>) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
-
-    const defaults: Record<string, Partial<WidgetData>> = {
-      clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
-      'time-tool': {
-        w: 420,
-        h: 400,
-        config: {
-          mode: 'timer',
-          visualType: 'digital',
-          theme: 'light',
-          duration: 600,
-          elapsedTime: 600,
-          isRunning: false,
-          selectedSound: 'Gong',
-        },
-      },
-      traffic: { w: 120, h: 320, config: {} },
-      text: {
-        w: 300,
-        h: 250,
-        config: {
-          content: 'Double click to edit...',
-          bgColor: '#fef9c3',
-          fontSize: 18,
-        },
-      },
-      checklist: {
-        w: 280,
-        h: 300,
-        config: {
-          items: [],
-          mode: 'manual',
-          firstNames: '',
-          lastNames: '',
-          completedNames: [],
-          scaleMultiplier: 1,
-        },
-      },
-      random: {
-        w: 300,
-        h: 320,
-        config: {
-          firstNames: '',
-          lastNames: '',
-          mode: 'single',
-          rosterMode: 'class',
-        },
-      },
-      dice: { w: 240, h: 240, config: { count: 1 } },
-      sound: {
-        w: 300,
-        h: 300,
-        config: { sensitivity: 1, visual: 'thermometer' },
-      },
-      drawing: { w: 400, h: 350, config: { mode: 'window', paths: [] } },
-      qr: { w: 200, h: 250, config: { url: 'https://google.com' } },
-      embed: { w: 480, h: 350, config: { url: '' } },
-      poll: {
-        w: 300,
-        h: 250,
-        config: {
-          question: 'Vote now!',
-          options: [
-            { label: 'Option A', votes: 0 },
-            { label: 'Option B', votes: 0 },
-          ],
-        },
-      },
-      webcam: {
-        w: 400,
-        h: 300,
-        config: {
-          zoomLevel: 1,
-          isMirrored: true,
-        },
-      },
-      scoreboard: {
-        w: 320,
-        h: 200,
-        config: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
-      },
-      workSymbols: {
-        w: 320,
-        h: 350,
-        config: { voiceLevel: null, workMode: null },
-      },
-      weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
-      schedule: {
-        w: 300,
-        h: 350,
-        config: {
-          items: [
-            { time: '08:00', task: 'Morning Meeting' },
-            { time: '09:00', task: 'Math' },
-          ],
-        },
-      },
-      calendar: {
-        w: 300,
-        h: 350,
-        config: {
-          events: [
-            { date: 'Friday', title: 'Pillar Power' },
-            { date: 'Monday', title: 'Loon Day - PE' },
-          ],
-        },
-      },
-      lunchCount: {
-        w: 500,
-        h: 400,
-        config: {
-          schoolSite: 'schumann-elementary',
-          isManualMode: false,
-          manualHotLunch: '',
-          manualBentoBox: '',
-          roster: [],
-          assignments: {},
-          recipient: '',
-          rosterMode: 'class',
-        },
-      },
-      classes: {
-        w: 600,
-        h: 500,
-        config: {},
-      },
-      instructionalRoutines: {
-        w: 400,
-        h: 480,
-        config: {
-          selectedRoutineId: null,
-          customSteps: [],
-          favorites: [],
-          scaleMultiplier: 1,
-        },
-      },
-      miniApp: {
-        w: 500,
-        h: 600,
-        config: { activeApp: null },
-      },
-      materials: {
-        w: 340,
-        h: 340,
-        config: { selectedItems: [], activeItems: [] },
-      },
-    };
 
     setDashboards((prev) =>
       prev.map((d) => {
@@ -830,8 +925,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           flipped: false,
           z: maxZ + 1,
           transparency: 0.2,
-          ...defaults[type],
-          config: { ...(defaults[type].config ?? {}) },
+          ...WIDGET_DEFAULTS[type],
+          ...initialConfig,
+          config: {
+            ...(WIDGET_DEFAULTS[type]?.config ?? {}),
+            ...(initialConfig?.config ?? {}),
+          },
         } as WidgetData;
         return { ...d, widgets: [...d.widgets, newWidget] };
       })
@@ -847,6 +946,29 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           ? { ...d, widgets: d.widgets.filter((w) => w.id !== id) }
           : d
       )
+    );
+  };
+
+  const duplicateWidget = (id: string) => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => {
+        if (d.id !== activeId) return d;
+        const target = d.widgets.find((w) => w.id === id);
+        if (!target) return d;
+
+        const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+        const duplicated: WidgetData = {
+          ...target,
+          id: crypto.randomUUID(),
+          x: target.x + 20,
+          y: target.y + 20,
+          z: maxZ + 1,
+          config: JSON.parse(JSON.stringify(target.config)) as WidgetConfig,
+        };
+        return { ...d, widgets: [...d.widgets, duplicated] };
+      })
     );
   };
 
@@ -915,6 +1037,52 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const moveWidgetLayer = (id: string, direction: 'up' | 'down') => {
+    if (!activeId) return;
+
+    setDashboards((prev) => {
+      const active = prev.find((d) => d.id === activeId);
+      if (!active) return prev;
+
+      // Deep copy widgets to avoid mutation and prepare for sort/modify
+      const widgets = active.widgets.map((w) => ({ ...w }));
+
+      // Sort by Z
+      widgets.sort((a, b) => a.z - b.z);
+
+      // Normalize Zs to ensure contiguous 0..N-1
+      widgets.forEach((w, i) => {
+        w.z = i;
+      });
+
+      const idx = widgets.findIndex((w) => w.id === id);
+      if (idx === -1) return prev;
+
+      if (direction === 'up') {
+        if (idx < widgets.length - 1) {
+          // Swap with next
+          widgets[idx].z = idx + 1;
+          widgets[idx + 1].z = idx;
+          lastLocalUpdateAt.current = Date.now();
+        } else {
+          return prev;
+        }
+      } else {
+        // down
+        if (idx > 0) {
+          // Swap with prev
+          widgets[idx].z = idx - 1;
+          widgets[idx - 1].z = idx;
+          lastLocalUpdateAt.current = Date.now();
+        } else {
+          return prev;
+        }
+      }
+
+      return prev.map((d) => (d.id === activeId ? { ...d, widgets } : d));
+    });
+  };
+
   const setBackground = (bg: string) => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
@@ -930,6 +1098,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         activeDashboard,
         toasts,
         visibleTools,
+        dockItems,
         loading,
         gradeFilter,
         setGradeFilter: handleSetGradeFilter,
@@ -938,25 +1107,35 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         createNewDashboard,
         saveCurrentDashboard,
         deleteDashboard,
+        duplicateDashboard,
         renameDashboard,
         loadDashboard,
         reorderDashboards,
         setDefaultDashboard,
         addWidget,
         removeWidget,
+        duplicateWidget,
         removeWidgets,
         updateWidget,
         bringToFront,
+        moveWidgetLayer,
         setBackground,
         toggleToolVisibility,
         setAllToolsVisibility,
         reorderTools,
+        reorderDockItems,
         rosters,
         activeRosterId,
         addRoster,
         updateRoster,
         deleteRoster,
         setActiveRoster,
+        addFolder,
+        renameFolder,
+        deleteFolder,
+        addItemToFolder,
+        removeItemFromFolder,
+        moveItemOutOfFolder,
       }}
     >
       {children}
