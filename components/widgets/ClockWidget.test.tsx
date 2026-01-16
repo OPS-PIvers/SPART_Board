@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, cleanup } from '@testing-library/react';
 import { ClockWidget } from './ClockWidget';
 import { WidgetData, ClockConfig } from '../../types';
 
@@ -10,6 +10,7 @@ describe('ClockWidget', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    cleanup();
   });
 
   const createWidget = (config: Partial<ClockConfig> = {}): WidgetData => {
@@ -70,14 +71,6 @@ describe('ClockWidget', () => {
   });
 
   it('hides seconds when configured', () => {
-    render(<ClockWidget widget={createWidget({ showSeconds: false })} />);
-
-    // We expect hours and minutes to be there, but not seconds
-    // Since seconds are rendered in their own span, we can check for their absence
-    // However, the component renders :88 ghost elements in LCD mode, so we need to be careful.
-    // In default mode, it just renders <span>{seconds}</span>.
-    // But wait, the component renders seconds conditionally: {showSeconds && ...}
-
     // Let's set a specific time so we know what to look for
     const date = new Date('2023-01-01T14:30:45');
     vi.setSystemTime(date);
