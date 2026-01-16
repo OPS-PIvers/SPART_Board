@@ -698,25 +698,28 @@ export const Dock: React.FC = () => {
                       })}
                     </SortableContext>
 
-                    {/* Drag Preview Overlay */}
-                    <DragOverlay zIndex={10005} dropAnimation={null}>
-                      {activeToolId ? (
-                        <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
-                          <div
-                            className={`${
-                              TOOLS.find((t) => t.type === activeToolId)
-                                ?.color ?? 'bg-slate-500'
-                            } p-3 rounded-2xl text-white shadow-2xl ring-2 ring-white/50`}
-                          >
-                            {React.createElement(
-                              TOOLS.find((t) => t.type === activeToolId)
-                                ?.icon ?? Users,
-                              { className: 'w-6 h-6' }
-                            )}
+                    {/* Drag Preview Overlay - Rendered in Portal to avoid offset bugs */}
+                    {createPortal(
+                      <DragOverlay zIndex={10005} dropAnimation={null}>
+                        {activeToolId ? (
+                          <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
+                            <div
+                              className={`${
+                                TOOLS.find((t) => t.type === activeToolId)
+                                  ?.color ?? 'bg-slate-500'
+                              } p-3 rounded-2xl text-white shadow-2xl ring-2 ring-white/50`}
+                            >
+                              {React.createElement(
+                                TOOLS.find((t) => t.type === activeToolId)
+                                  ?.icon ?? Users,
+                                { className: 'w-6 h-6' }
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
-                    </DragOverlay>
+                        ) : null}
+                      </DragOverlay>,
+                      document.body
+                    )}
                   </DndContext>
 
                   {/* Separator and Roster/Classes Button */}
