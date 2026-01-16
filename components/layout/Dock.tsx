@@ -256,7 +256,7 @@ const ToolDockItem = ({
               e.stopPropagation();
               onRemoveFromDock();
             }}
-            className="absolute -top-2 -right-2 z-50 bg-slate-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all animate-in zoom-in duration-200"
+            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all animate-in zoom-in duration-200"
             title="Remove from Dock"
           >
             <X className="w-2.5 h-2.5" />
@@ -352,22 +352,10 @@ const SortableFolderWidget = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group/item"
+      className="relative group/item flex flex-col items-center gap-1"
       {...attributes}
       {...listeners}
     >
-      {isEditMode && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="absolute -top-1 -right-1 z-10 bg-slate-400 text-white rounded-full p-0.5 shadow-sm hover:bg-red-500 transition-colors cursor-pointer"
-        >
-          <X className="w-2 h-2" />
-        </button>
-      )}
       <button
         onClick={() => {
           if (isEditMode) return;
@@ -377,26 +365,41 @@ const SortableFolderWidget = ({
         onMouseUp={handlePointerUp}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
-        className={`flex flex-col items-center gap-1 group relative w-full ${
+        className={`relative ${
           isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
       >
         <div
-          className={`${tool.color} p-2 rounded-xl text-white shadow-md ${
+          className={`${tool.color} p-2.5 rounded-2xl text-white shadow-md ${
             isEditMode ? '' : 'group-hover:scale-110'
           } transition-transform`}
         >
-          <tool.icon className="w-4 h-4" />
+          <tool.icon className="w-5 h-5" />
         </div>
+
+        {isEditMode && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemove();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
+          >
+            <X className="w-2.5 h-2.5" />
+          </button>
+        )}
+
         {minimizedCount > 0 && (
-          <div className="absolute top-0 right-0 bg-brand-red-primary text-white text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-white shadow-sm translate-x-1/4 -translate-y-1/4">
+          <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
             {minimizedCount}
           </div>
         )}
-        <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
-          {tool.label}
-        </span>
       </button>
+      <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
+        {tool.label}
+      </span>
     </div>
   );
 };
@@ -560,7 +563,7 @@ const FolderItem = ({
               e.stopPropagation();
               onDelete(folder.id);
             }}
-            className="absolute -top-2 -right-2 z-50 bg-slate-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all"
+            className="absolute -top-2 -right-2 z-50 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all"
           >
             <X className="w-2.5 h-2.5" />
           </button>
