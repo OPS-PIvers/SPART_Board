@@ -108,10 +108,13 @@ describe('TextSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
 
     const lastCall = mockUpdateWidget.mock.lastCall;
+    expect(lastCall).toBeDefined();
 
-    expect(lastCall[0]).toBe('test-widget');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(lastCall[1].config.content).toContain('Integrity Code');
+    if (lastCall) {
+      expect(lastCall[0]).toBe('test-widget');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(lastCall[1].config.content).toContain('Integrity Code');
+    }
   });
 
   it('changes background color', () => {
