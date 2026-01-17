@@ -28,8 +28,8 @@ try {
   // Ensure public/.gitignore exists and includes version.json
   const publicGitignorePath = path.join(publicDir, '.gitignore');
   if (!fs.existsSync(publicGitignorePath)) {
-     fs.writeFileSync(publicGitignorePath, 'version.json\n');
-     console.log('Created public/.gitignore with version.json');
+    fs.writeFileSync(publicGitignorePath, 'version.json\n');
+    console.log('Created public/.gitignore with version.json');
   } else {
     // Check if version.json is in the ignore file
     const content = fs.readFileSync(publicGitignorePath, 'utf8');
