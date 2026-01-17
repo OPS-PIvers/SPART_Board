@@ -2,14 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, SoundConfig } from '../../types';
 import { Thermometer, Gauge, Activity, Citrus } from 'lucide-react';
+import { STANDARD_COLORS } from '../../config/colors';
 
 // Poster Colors Mapping
 const POSTER_LEVELS = [
-  { label: '0 - Silence', color: '#3b82f6', threshold: 0 }, // Blue
-  { label: '1 - Whisper', color: '#22c55e', threshold: 20 }, // Green
-  { label: '2 - Conversation', color: '#eab308', threshold: 40 }, // Yellow
-  { label: '3 - Presenter', color: '#f97316', threshold: 60 }, // Orange
-  { label: '4 - Outside', color: '#ef4444', threshold: 80 }, // Red
+  { label: '0 - Silence', color: STANDARD_COLORS.blue, threshold: 0 }, // Blue
+  { label: '1 - Whisper', color: STANDARD_COLORS.green, threshold: 20 }, // Green
+  { label: '2 - Conversation', color: STANDARD_COLORS.yellow, threshold: 40 }, // Yellow
+  { label: '3 - Presenter', color: STANDARD_COLORS.orange, threshold: 60 }, // Orange
+  { label: '4 - Outside', color: STANDARD_COLORS.red, threshold: 80 }, // Red
 ];
 
 const getLevelData = (volume: number) => {
@@ -89,12 +90,12 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
           y1="55"
           x2={50 + 35 * Math.cos(((rotation - 90) * Math.PI) / 180)}
           y2={55 + 35 * Math.sin(((rotation - 90) * Math.PI) / 180)}
-          stroke="#1e293b"
+          stroke={STANDARD_COLORS.slate}
           strokeWidth="2"
           strokeLinecap="round"
           className="transition-all duration-150"
         />
-        <circle cx="50" cy="55" r="3" fill="#1e293b" />
+        <circle cx="50" cy="55" r="3" fill={STANDARD_COLORS.slate} />
       </svg>
     </div>
   );
