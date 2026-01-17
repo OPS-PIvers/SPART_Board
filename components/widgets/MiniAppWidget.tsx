@@ -14,7 +14,10 @@ import {
   Upload,
   Box,
   Code2,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { generateMiniAppCode } from '../../utils/ai';
 import {
   DndContext,
   closestCenter,
@@ -190,6 +193,9 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editCode, setEditCode] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [showPromptInput, setShowPromptInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dnd Kit Sensors
@@ -228,6 +234,8 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setEditTitle('');
     setEditCode(DEFAULT_HTML_TEMPLATE);
     setView('editor');
+    setShowPromptInput(false);
+    setPrompt('');
   };
 
   const handleEdit = (app: MiniAppItem) => {
@@ -235,6 +243,28 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setEditTitle(app.title);
     setEditCode(app.html);
     setView('editor');
+    setShowPromptInput(false);
+    setPrompt('');
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+
+    setIsGenerating(true);
+    try {
+      const result = await generateMiniAppCode(prompt);
+      setEditTitle(result.title);
+      setEditCode(result.html);
+      setShowPromptInput(false);
+      addToast('App generated successfully!', 'success');
+    } catch (error) {
+      addToast(
+        error instanceof Error ? error.message : 'Failed to generate app',
+        'error'
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -390,18 +420,74 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </button>
         </div>
 
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar">
-          <div>
-            <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
-              App Title
-            </label>
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="e.g. Lunch Randomizer"
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
+          {showPromptInput && (
+            <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+              <div className="w-full max-w-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-indigo-600 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5" /> Magic Generator
+                  </h4>
+                  <button
+                    onClick={() => setShowPromptInput(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Describe the mini-app you want to build. Be specific about
+                  features and style.
+                </p>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="e.g. A team randomizer for 5 groups with a spinning wheel animation and confetti effect."
+                  className="w-full h-32 p-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none"
+                  autoFocus
+                />
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !prompt.trim()}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" /> Generate Code
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+                App Title
+              </label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Lunch Randomizer"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="pt-6">
+              <button
+                onClick={() => setShowPromptInput(true)}
+                className="h-[46px] px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
+                title="Generate with AI"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Magic</span>
+              </button>
+            </div>
           </div>
           <div className="flex-1 flex flex-col min-h-[300px]">
             <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
