@@ -6,6 +6,11 @@ import {
   RoutineStep,
   WidgetType,
   WidgetConfig,
+  TimeToolConfig,
+  SoundConfig,
+  TrafficConfig,
+  RandomConfig,
+  PollConfig,
 } from '../../types';
 import {
   ROUTINES,
@@ -22,64 +27,86 @@ import {
   Grab,
   Rocket,
 } from 'lucide-react';
+import { WIDGET_DEFAULTS } from '../../config/widgetDefaults';
 
 const QUICK_TOOLS: {
   label: string;
   type: WidgetType | 'none';
-  config?: Partial<WidgetConfig>;
+  config?: WidgetConfig;
 }[] = [
   { label: 'None', type: 'none' },
   {
     label: 'Timer (1 min)',
     type: 'time-tool',
     config: {
+      ...(WIDGET_DEFAULTS['time-tool'].config as TimeToolConfig),
       mode: 'timer',
       duration: 60,
       isRunning: true,
-    } as Partial<WidgetConfig>,
+    },
   },
   {
     label: 'Timer (2 min)',
     type: 'time-tool',
     config: {
+      ...(WIDGET_DEFAULTS['time-tool'].config as TimeToolConfig),
       mode: 'timer',
       duration: 120,
       isRunning: true,
-    } as Partial<WidgetConfig>,
+    },
   },
   {
     label: 'Timer (5 min)',
     type: 'time-tool',
     config: {
+      ...(WIDGET_DEFAULTS['time-tool'].config as TimeToolConfig),
       mode: 'timer',
       duration: 300,
       isRunning: true,
-    } as Partial<WidgetConfig>,
+    },
   },
   {
     label: 'Stopwatch',
     type: 'time-tool',
-    config: { mode: 'stopwatch', isRunning: true } as Partial<WidgetConfig>,
+    config: {
+      ...(WIDGET_DEFAULTS['time-tool'].config as TimeToolConfig),
+      mode: 'stopwatch',
+      isRunning: true,
+    },
   },
   {
     label: 'Noise Meter',
     type: 'sound',
-    config: { sensitivity: 50, visual: 'balls' } as Partial<WidgetConfig>,
+    config: {
+      ...(WIDGET_DEFAULTS['sound'].config as SoundConfig),
+      sensitivity: 50,
+      visual: 'balls',
+    },
   },
   {
     label: 'Traffic Light',
     type: 'traffic',
-    config: { active: 'red' } as Partial<WidgetConfig>,
+    config: {
+      ...(WIDGET_DEFAULTS['traffic'].config as TrafficConfig),
+      active: 'red',
+    },
   },
   {
     label: 'Random Picker',
     type: 'random',
-    config: { mode: 'spinner' } as Partial<WidgetConfig>,
+    config: {
+      ...(WIDGET_DEFAULTS['random'].config as RandomConfig),
+      mode: 'spinner',
+    },
   },
   {
     label: 'Poll',
     type: 'poll',
-    config: { question: '', options: [] } as Partial<WidgetConfig>,
+    config: {
+      ...(WIDGET_DEFAULTS['poll'].config as PollConfig),
+      question: '',
+      options: [],
+    },
   },
 ];
 
@@ -272,7 +299,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     <button
                       onClick={() =>
                         addWidget(step.attachedWidget?.type as WidgetType, {
-                          config: step.attachedWidget?.config as WidgetConfig,
+                          config: step.attachedWidget?.config,
                         })
                       }
                       className="self-start px-3 py-1.5 bg-brand-blue-light/10 text-brand-blue-primary rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:bg-brand-blue-light/20 transition-colors"
@@ -390,12 +417,13 @@ export const InstructionalRoutinesSettings: React.FC<{
                 </span>
                 <select
                   value={
+                    // Robust lookup: match existing config type/label, OR fallback to attached label
                     step.attachedWidget
-                      ? QUICK_TOOLS.find(
+                      ? (QUICK_TOOLS.find(
                           (t) =>
                             t.type === step.attachedWidget?.type &&
                             t.label === step.attachedWidget.label
-                        )?.label
+                        )?.label ?? step.attachedWidget.label)
                       : 'None'
                   }
                   onChange={(e) => {
@@ -403,13 +431,17 @@ export const InstructionalRoutinesSettings: React.FC<{
                       (t) => t.label === e.target.value
                     );
                     const next = [...customSteps];
-                    if (selectedTool && selectedTool.type !== 'none') {
+                    if (
+                      selectedTool &&
+                      selectedTool.type !== 'none' &&
+                      selectedTool.config
+                    ) {
                       next[i] = {
                         ...next[i],
                         attachedWidget: {
                           type: selectedTool.type,
                           label: selectedTool.label,
-                          config: selectedTool.config ?? {},
+                          config: selectedTool.config,
                         },
                       };
                     } else {

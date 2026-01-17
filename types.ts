@@ -125,7 +125,7 @@ export interface RoutineStep {
   attachedWidget?: {
     type: WidgetType;
     label: string;
-    config: Partial<WidgetConfig>;
+    config: WidgetConfig;
   };
 }
 
