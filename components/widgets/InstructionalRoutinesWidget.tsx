@@ -4,6 +4,8 @@ import {
   WidgetData,
   InstructionalRoutinesConfig,
   RoutineStep,
+  WidgetType,
+  WidgetConfig,
 } from '../../types';
 import {
   ROUTINES,
@@ -18,13 +20,74 @@ import {
   ChevronDown,
   ArrowLeft,
   Grab,
+  Rocket,
 } from 'lucide-react';
+
+const QUICK_TOOLS: {
+  label: string;
+  type: WidgetType | 'none';
+  config?: Partial<WidgetConfig>;
+}[] = [
+  { label: 'None', type: 'none' },
+  {
+    label: 'Timer (1 min)',
+    type: 'time-tool',
+    config: {
+      mode: 'timer',
+      duration: 60,
+      isRunning: true,
+    } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Timer (2 min)',
+    type: 'time-tool',
+    config: {
+      mode: 'timer',
+      duration: 120,
+      isRunning: true,
+    } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Timer (5 min)',
+    type: 'time-tool',
+    config: {
+      mode: 'timer',
+      duration: 300,
+      isRunning: true,
+    } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Stopwatch',
+    type: 'time-tool',
+    config: { mode: 'stopwatch', isRunning: true } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Noise Meter',
+    type: 'sound',
+    config: { sensitivity: 50, visual: 'balls' } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Traffic Light',
+    type: 'traffic',
+    config: { active: 'red' } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Random Picker',
+    type: 'random',
+    config: { mode: 'spinner' } as Partial<WidgetConfig>,
+  },
+  {
+    label: 'Poll',
+    type: 'poll',
+    config: { question: '', options: [] } as Partial<WidgetConfig>,
+  },
+];
 
 // --- FRONT VIEW (STUDENT FOCUS) ---
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter } = useDashboard();
+  const { updateWidget, gradeFilter, addWidget } = useDashboard();
   const config = widget.config as InstructionalRoutinesConfig;
   const {
     selectedRoutineId,
@@ -169,39 +232,54 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 >
                   {i + 1}
                 </span>
-                <div className="flex-1 flex items-start justify-between gap-4">
-                  <p
-                    className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                    style={{ fontSize: `${dynamicFontSize}px` }}
-                  >
-                    {step.text}
-                  </p>
-
-                  {StepIcon && step.icon && (
-                    <div
-                      draggable
-                      onDragStart={(e) =>
-                        onDragStart(
-                          e,
-                          step.icon as string,
-                          step.color ?? 'blue'
-                        )
-                      }
-                      className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
-                      title="Drag to whiteboard"
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <p
+                      className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
+                      style={{ fontSize: `${dynamicFontSize}px` }}
                     >
+                      {step.text}
+                    </p>
+
+                    {StepIcon && step.icon && (
                       <div
-                        className={`p-1.5 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                        draggable
+                        onDragStart={(e) =>
+                          onDragStart(
+                            e,
+                            step.icon as string,
+                            step.color ?? 'blue'
+                          )
+                        }
+                        className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
+                        title="Drag to whiteboard"
                       >
-                        <StepIcon size={18} strokeWidth={2.5} />
+                        <div
+                          className={`p-1.5 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                        >
+                          <StepIcon size={18} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
+                          <Grab size={8} className="text-slate-300" />
+                          <span className="text-[6px] font-black uppercase text-slate-400">
+                            Drag
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
-                        <Grab size={8} className="text-slate-300" />
-                        <span className="text-[6px] font-black uppercase text-slate-400">
-                          Drag
-                        </span>
-                      </div>
-                    </div>
+                    )}
+                  </div>
+                  {step.attachedWidget && (
+                    <button
+                      onClick={() =>
+                        addWidget(step.attachedWidget?.type as WidgetType, {
+                          config: step.attachedWidget?.config as WidgetConfig,
+                        })
+                      }
+                      className="self-start px-3 py-1.5 bg-brand-blue-light/10 text-brand-blue-primary rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:bg-brand-blue-light/20 transition-colors"
+                    >
+                      <Rocket size={12} />
+                      Launch {step.attachedWidget.label}
+                    </button>
                   )}
                 </div>
               </li>
@@ -306,6 +384,52 @@ export const InstructionalRoutinesSettings: React.FC<{
                 placeholder="Enter student direction..."
                 className="w-full text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
               />
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                  Attached Tool:
+                </span>
+                <select
+                  value={
+                    step.attachedWidget
+                      ? QUICK_TOOLS.find(
+                          (t) =>
+                            t.type === step.attachedWidget?.type &&
+                            t.label === step.attachedWidget.label
+                        )?.label
+                      : 'None'
+                  }
+                  onChange={(e) => {
+                    const selectedTool = QUICK_TOOLS.find(
+                      (t) => t.label === e.target.value
+                    );
+                    const next = [...customSteps];
+                    if (selectedTool && selectedTool.type !== 'none') {
+                      next[i] = {
+                        ...next[i],
+                        attachedWidget: {
+                          type: selectedTool.type,
+                          label: selectedTool.label,
+                          config: selectedTool.config ?? {},
+                        },
+                      };
+                    } else {
+                      // Remove attached widget
+                      const { attachedWidget: _unused, ...rest } = next[i];
+                      next[i] = rest as RoutineStep;
+                    }
+                    updateWidget(widget.id, {
+                      config: { ...config, customSteps: next },
+                    });
+                  }}
+                  className="text-[10px] bg-slate-50 border border-slate-200 rounded p-1"
+                >
+                  {QUICK_TOOLS.map((t) => (
+                    <option key={t.label} value={t.label}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button
               onClick={() =>
