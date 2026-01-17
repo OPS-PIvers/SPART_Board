@@ -37,7 +37,14 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const colors = ['#fef9c3', '#dcfce7', '#dbeafe', '#fce7f3', '#f3f4f6'];
+
+  const colors = [
+    { hex: '#fef9c3', label: 'yellow' },
+    { hex: '#dcfce7', label: 'green' },
+    { hex: '#dbeafe', label: 'blue' },
+    { hex: '#fce7f3', label: 'pink' },
+    { hex: '#f3f4f6', label: 'gray' },
+  ];
 
   const templates = [
     {
@@ -99,15 +106,15 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="flex gap-2">
           {colors.map((c) => (
             <button
-              key={c}
-              aria-label={`Select color ${c}`}
+              key={c.hex}
+              aria-label={`Select ${c.label} background`}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...config, bgColor: c } as TextConfig,
+                  config: { ...config, bgColor: c.hex } as TextConfig,
                 })
               }
-              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
-              style={{ backgroundColor: c }}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c.hex ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
+              style={{ backgroundColor: c.hex }}
             />
           ))}
         </div>

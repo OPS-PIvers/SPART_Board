@@ -3,18 +3,22 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TextWidget, TextSettings } from './TextWidget';
 import { WidgetData, TextConfig } from '../../types';
+import { useDashboard } from '../../context/useDashboard';
 
 // Mock useDashboard
 const mockUpdateWidget = vi.fn();
-vi.mock('../../context/useDashboard', () => ({
-  useDashboard: () => ({
-    updateWidget: mockUpdateWidget,
-  }),
-}));
+const mockDashboardContext = {
+  updateWidget: mockUpdateWidget,
+};
+
+vi.mock('../../context/useDashboard');
 
 describe('TextWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockDashboardContext
+    );
   });
 
   const mockConfig: TextConfig = {
@@ -59,14 +63,13 @@ describe('TextWidget', () => {
       .getByText('Hello World')
       .closest('div[contentEditable="true"]');
 
+    expect(editableDiv).not.toBeNull();
     if (editableDiv) {
       editableDiv.innerHTML = 'New Content';
       fireEvent.blur(editableDiv);
       expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
         config: { ...mockConfig, content: 'New Content' },
       });
-    } else {
-      throw new Error('Editable div not found');
     }
   });
 });
@@ -74,6 +77,9 @@ describe('TextWidget', () => {
 describe('TextSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockDashboardContext
+    );
   });
 
   const mockConfig: TextConfig = {
@@ -110,8 +116,8 @@ describe('TextSettings', () => {
 
   it('changes background color', () => {
     render(<TextSettings widget={mockWidget} />);
-    // Find the button for the second color (#dcfce7)
-    const colorButton = screen.getByLabelText('Select color #dcfce7');
+    // Find the button for the second color (#dcfce7 - Green)
+    const colorButton = screen.getByLabelText('Select green background');
     fireEvent.click(colorButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
