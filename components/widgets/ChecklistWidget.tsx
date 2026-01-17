@@ -1,7 +1,13 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { ChecklistConfig, ChecklistItem, WidgetData } from '../../types';
+import {
+  ChecklistConfig,
+  ChecklistItem,
+  WidgetData,
+  InstructionalRoutinesConfig,
+} from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
+import { Button } from '../common/Button';
 import {
   CheckSquare,
   Square,
@@ -189,7 +195,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard, addToast } = useDashboard();
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -222,8 +228,77 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, items: newItems } });
   };
 
+  const routinesWidget = useMemo(
+    () =>
+      activeDashboard?.widgets.find(
+        (w) => w.type === 'instructionalRoutines'
+      ),
+    [activeDashboard]
+  );
+
+  const importFromRoutine = () => {
+    if (!routinesWidget) {
+      addToast('No Instructional Routines widget found!', 'error');
+      return;
+    }
+
+    const routineConfig = routinesWidget.config as InstructionalRoutinesConfig;
+    const steps = routineConfig.customSteps || [];
+
+    if (steps.length === 0) {
+      addToast('Routine has no steps to import.', 'info');
+      return;
+    }
+
+    const newItems: ChecklistItem[] = steps.map((step, idx) => ({
+      id: crypto.randomUUID(),
+      text: step.text || `Step ${idx + 1}`,
+      completed: false,
+    }));
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        items: newItems,
+        mode: 'manual',
+      },
+    });
+    setLocalText(newItems.map((i) => i.text).join('\n'));
+    addToast(`Imported ${newItems.length} steps!`, 'success');
+  };
+
   return (
     <div className="space-y-6">
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import from Routine
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromRoutine}
+            disabled={!routinesWidget}
+            title={
+              !routinesWidget
+                ? 'Add an Instructional Routines widget first'
+                : 'Import Steps'
+            }
+            icon={<RefreshCw className="w-3 h-3" />}
+          >
+            Import Steps
+          </Button>
+        </div>
+        {!routinesWidget && (
+          <div className="text-[10px] text-indigo-400 font-medium">
+            Tip: Add an Instructional Routines widget to import steps.
+          </div>
+        )}
+      </div>
+
       {/* Mode Toggle */}
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
