@@ -25,26 +25,21 @@ try {
     fs.mkdirSync(publicDir, { recursive: true });
   }
 
-  // Ensure version.json is ignored in git
+  // Ensure public/.gitignore exists and includes version.json
   const publicGitignorePath = path.join(publicDir, '.gitignore');
-  let gitignoreContent = '';
-  if (fs.existsSync(publicGitignorePath)) {
-    gitignoreContent = fs.readFileSync(publicGitignorePath, 'utf8');
-  }
+  if (!fs.existsSync(publicGitignorePath)) {
+     fs.writeFileSync(publicGitignorePath, 'version.json\n');
+     console.log('Created public/.gitignore with version.json');
+  } else {
+    // Check if version.json is in the ignore file
+    const content = fs.readFileSync(publicGitignorePath, 'utf8');
+    const hasVersionIgnore = content.split('\n').map(line => line.trim()).includes('version.json');
 
-  const hasVersionIgnore = gitignoreContent
-    .split('\n')
-    .some((line) => line.trim() === 'version.json');
-
-  if (!hasVersionIgnore) {
-    const needsNewline =
-      gitignoreContent.length > 0 && !gitignoreContent.endsWith('\n');
-    const prefix = needsNewline ? '\n' : '';
-    fs.writeFileSync(
-      publicGitignorePath,
-      `${gitignoreContent}${prefix}version.json\n`
-    );
-    console.log('Added version.json to public/.gitignore');
+    if (!hasVersionIgnore) {
+        const prefix = content.endsWith('\n') || content.length === 0 ? '' : '\n';
+        fs.appendFileSync(publicGitignorePath, `${prefix}version.json\n`);
+        console.log('Added version.json to public/.gitignore');
+    }
   }
 
   fs.writeFileSync(
