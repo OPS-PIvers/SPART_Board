@@ -256,6 +256,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       setEditTitle(result.title);
       setEditCode(result.html);
       setShowPromptInput(false);
+      setPrompt('');
       addToast('App generated successfully!', 'success');
     } catch (error) {
       addToast(
@@ -422,7 +423,12 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
           {showPromptInput && (
-            <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div
+              className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setShowPromptInput(false);
+              }}
+            >
               <div className="w-full max-w-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-black text-indigo-600 flex items-center gap-2">
@@ -431,6 +437,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   <button
                     onClick={() => setShowPromptInput(false)}
                     className="text-slate-400 hover:text-slate-600"
+                    aria-label="Close Magic Generator"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -445,6 +452,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   placeholder="e.g. A team randomizer for 5 groups with a spinning wheel animation and confetti effect."
                   className="w-full h-32 p-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none"
                   autoFocus
+                  aria-label="Describe your mini-app"
                 />
                 <button
                   onClick={handleGenerate}

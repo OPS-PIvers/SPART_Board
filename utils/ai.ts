@@ -1,23 +1,26 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-// Note: The package is @google/genai, but we are looking for the main entry point class.
-// Based on the grep output, it's `GoogleGenAI`.
-
 import { GoogleGenAI } from '@google/genai';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
 let client: GoogleGenAI | null = null;
 
 if (API_KEY) {
-  try {
-    client = new GoogleGenAI({ apiKey: API_KEY });
-  } catch (e) {
-    console.warn('Failed to initialize Gemini AI', e);
+  // Simple validation for API Key format (non-empty string)
+  if (typeof API_KEY === 'string' && API_KEY.length > 0) {
+    try {
+      client = new GoogleGenAI({ apiKey: API_KEY });
+    } catch (e) {
+      console.warn('Failed to initialize Gemini AI', e);
+    }
+  } else {
+    console.warn('Invalid Gemini API Key format');
   }
 }
 
 export interface GeneratedMiniApp {
+  /** The generated HTML code for the mini-app, including embedded CSS and JS */
   html: string;
+  /** A short, descriptive title for the mini-app */
   title: string;
 }
 
@@ -28,12 +31,29 @@ interface ParsedResponse {
 
 /**
  * Generates a mini-app based on a natural language prompt using Gemini.
+ *
+ * @param prompt - The natural language description of the app to generate.
+ * @returns A promise resolving to the generated app title and HTML code.
+ * @throws Error if the API key is missing, the generation fails, or the response is invalid.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   const app = await generateMiniAppCode('A simple calculator with blue buttons');
+ *   console.log(app.title); // "Blue Calculator"
+ *   console.log(app.html);  // "<!DOCTYPE html>..."
+ * } catch (err) {
+ *   console.error(err);
+ * }
+ * ```
  */
 export async function generateMiniAppCode(
   prompt: string
 ): Promise<GeneratedMiniApp> {
   if (!client) {
-    throw new Error('Gemini API Key is missing (VITE_GEMINI_API_KEY)');
+    throw new Error(
+      'Gemini API Key is missing or invalid (VITE_GEMINI_API_KEY)'
+    );
   }
 
   const systemPrompt = `
@@ -58,7 +78,6 @@ export async function generateMiniAppCode(
   `;
 
   try {
-    // The new SDK uses models.generateContent
     const response = await client.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
@@ -99,14 +118,30 @@ export async function generateMiniAppCode(
       throw new Error('Invalid response format from AI');
     }
 
+    if (parsed.html.toLowerCase().includes('<script src="http')) {
+      // Check if it's NOT tailwind
+      if (!parsed.html.includes('cdn.tailwindcss.com')) {
+        console.warn('Potential external script detected in generated code.');
+        // We technically might throw here, but for now we'll just warn as the iframe sandbox blocks a lot.
+      }
+    }
+
     return {
       title: parsed.title,
       html: parsed.html,
     };
   } catch (error) {
     console.error('AI Generation Error:', error);
-    throw new Error(
-      'Failed to generate app. Please try again with a different prompt.'
-    );
+
+    let errorMessage =
+      'Failed to generate app. Please try again with a different prompt.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    } else if (typeof error === 'string') {
+      errorMessage += ` Underlying error: ${error}`;
+    }
+
+    throw new Error(errorMessage);
   }
 }
