@@ -13,6 +13,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'miniApp') return 'App Manager';
   if (widget.type === 'sticker-library') return 'Sticker Library';
   if (widget.type === 'sticker') return 'Sticker';
+  if (widget.type === 'seating-chart') return 'Seating Chart';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
@@ -84,6 +85,11 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     stickers: {},
     'sticker-library': { uploadedUrls: [] },
     sticker: { url: '', rotation: 0, size: 150 },
+    'seating-chart': {
+      furniture: [],
+      assignments: {},
+      gridSize: 20,
+    },
   };
 
   return defaults[type];
