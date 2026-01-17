@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
 import {
@@ -56,6 +56,18 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null); // Furniture ID
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
+
+  // Clear animation on unmount
+  useEffect(() => {
+    return () => {
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Roster logic
   const activeRoster = useMemo(
@@ -74,8 +86,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   }, [activeRoster, rosterMode]);
 
   // Determine unassigned students
-  const assignedStudentIds = new Set(Object.keys(assignments));
-  const unassignedStudents = students.filter((s) => !assignedStudentIds.has(s));
+  const assignedStudentNames = new Set(Object.keys(assignments));
+  const unassignedStudents = students.filter(
+    (s) => !assignedStudentNames.has(s)
+  );
 
   // --- FURNITURE ACTIONS ---
 
@@ -193,6 +207,12 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   // --- INTERACT LOGIC ---
 
   const pickRandom = () => {
+    // Prevent multiple animations
+    if (animationIntervalRef.current) {
+      clearInterval(animationIntervalRef.current);
+      animationIntervalRef.current = null;
+    }
+
     const occupiedFurnitureIds = Object.values(assignments);
     if (occupiedFurnitureIds.length === 0) {
       addToast('No students assigned to seats!', 'info');
@@ -205,12 +225,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     // Animate
     let count = 0;
     const max = 15;
-    const interval = setInterval(() => {
+    animationIntervalRef.current = setInterval(() => {
       const rnd = uniqueIds[Math.floor(Math.random() * uniqueIds.length)];
       setRandomHighlight(rnd);
       count++;
       if (count > max) {
-        clearInterval(interval);
+        if (animationIntervalRef.current) {
+          clearInterval(animationIntervalRef.current);
+          animationIntervalRef.current = null;
+        }
         // Final pick
         const winner = uniqueIds[Math.floor(Math.random() * uniqueIds.length)];
         setRandomHighlight(winner);
@@ -295,6 +318,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             size="sm"
             icon={<Dice5 className="w-4 h-4" />}
             className="ml-auto"
+            disabled={!!animationIntervalRef.current}
           >
             Pick Random
           </Button>
