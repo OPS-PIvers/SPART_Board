@@ -230,9 +230,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
   const routinesWidget = useMemo(
     () =>
-      activeDashboard?.widgets.find(
-        (w) => w.type === 'instructionalRoutines'
-      ),
+      activeDashboard?.widgets.find((w) => w.type === 'instructionalRoutines'),
     [activeDashboard]
   );
 
