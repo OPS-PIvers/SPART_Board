@@ -5,40 +5,15 @@ import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
 import { useLiveSession } from '@/hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
-import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimeToolWidget } from './TimeToolWidget';
-import { TrafficLightWidget } from './TrafficLightWidget';
-import { TextWidget, TextSettings } from './TextWidget';
-import { SoundWidget, SoundSettings } from './SoundWidget';
-import { WebcamWidget, WebcamSettings } from './WebcamWidget';
-import { EmbedWidget, EmbedSettings } from './EmbedWidget';
-import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
-import { RandomWidget } from './random/RandomWidget';
-import { RandomSettings } from './random/RandomSettings';
-import { DiceWidget, DiceSettings } from './DiceWidget';
-import { DrawingWidget, DrawingSettings } from './DrawingWidget';
-import { QRWidget, QRSettings } from './QRWidget';
-import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
-import { WorkSymbolsWidget } from './WorkSymbolsWidget';
-import { PollWidget } from './PollWidget';
-import { WeatherWidget, WeatherSettings } from './WeatherWidget';
-import { ScheduleWidget } from './ScheduleWidget';
-import { CalendarWidget, CalendarSettings } from './CalendarWidget';
-import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
-import ClassesWidget from './ClassesWidget';
-import {
-  InstructionalRoutinesWidget,
-  InstructionalRoutinesSettings,
-} from './InstructionalRoutinesWidget';
-import { MiniAppWidget } from './MiniAppWidget';
-import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
-import { StickerBookWidget } from './stickers/StickerBookWidget';
 import { StickerItemWidget } from './stickers/StickerItemWidget';
-import { StickerLibraryWidget } from './StickerLibraryWidget';
 import { getTitle } from '@/utils/widgetHelpers';
 import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
 import { useWindowSize } from '@/hooks/useWindowSize';
+import {
+  WIDGET_COMPONENTS,
+  WIDGET_SETTINGS_COMPONENTS,
+} from './WidgetRegistry';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
@@ -134,126 +109,29 @@ export const WidgetRenderer: React.FC<{
     return <StickerItemWidget widget={widget} />;
   }
 
+  const WidgetComponent = WIDGET_COMPONENTS[widget.type];
+  const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
+
   const getWidgetContent = () => {
-    switch (widget.type) {
-      case 'clock':
-        return <ClockWidget widget={widget} />;
-      case 'time-tool':
-        return <TimeToolWidget widget={widget} />;
-      case 'traffic':
-        return <TrafficLightWidget widget={widget} />;
-      case 'text':
-        return <TextWidget widget={widget} />;
-      case 'checklist':
-        return <ChecklistWidget widget={widget} />;
-      case 'random':
-        return <RandomWidget widget={widget} />;
-      case 'dice':
-        return <DiceWidget widget={widget} />;
-      case 'sound':
-        return <SoundWidget widget={widget} />;
-      case 'webcam':
-        return <WebcamWidget widget={widget} />;
-      case 'embed':
-        return <EmbedWidget widget={widget} />;
-      case 'drawing':
-        return <DrawingWidget widget={widget} isStudentView={isStudentView} />;
-      case 'qr':
-        return <QRWidget widget={widget} />;
-      case 'scoreboard':
-        return <ScoreboardWidget widget={widget} />;
-      case 'workSymbols':
-        return <WorkSymbolsWidget widget={widget} />;
-      case 'poll':
-        return <PollWidget widget={widget} />;
-      case 'weather':
-        return <WeatherWidget widget={widget} />;
-      case 'schedule':
-        return <ScheduleWidget widget={widget} />;
-      case 'calendar':
-        return <CalendarWidget widget={widget} />;
-      case 'lunchCount':
-        return <LunchCountWidget widget={widget} />;
-      case 'classes':
-        return <ClassesWidget widget={widget} />;
-      case 'instructionalRoutines':
-        return <InstructionalRoutinesWidget widget={widget} />;
-      case 'miniApp':
-        return <MiniAppWidget widget={widget} />;
-      case 'materials':
-        return <MaterialsWidget widget={widget} />;
-      case 'stickers':
-        return <StickerBookWidget widget={widget} />;
-      case 'sticker-library':
-        return <StickerLibraryWidget widget={widget} />;
-      default:
-        return (
-          <div className="p-4 text-center text-slate-400 text-sm">
-            Widget under construction
-          </div>
-        );
+    if (WidgetComponent) {
+      return <WidgetComponent widget={widget} isStudentView={isStudentView} />;
     }
+    return (
+      <div className="p-4 text-center text-slate-400 text-sm">
+        Widget under construction
+      </div>
+    );
   };
 
   const getWidgetSettings = () => {
-    switch (widget.type) {
-      case 'clock':
-        return <ClockSettings widget={widget} />;
-      case 'text':
-        return <TextSettings widget={widget} />;
-      case 'checklist':
-        return <ChecklistSettings widget={widget} />;
-      case 'random':
-        return <RandomSettings widget={widget} />;
-      case 'dice':
-        return <DiceSettings widget={widget} />;
-      case 'sound':
-        return <SoundSettings widget={widget} />;
-      case 'embed':
-        return <EmbedSettings widget={widget} />;
-      case 'drawing':
-        return <DrawingSettings widget={widget} />;
-      case 'qr':
-        return <QRSettings widget={widget} />;
-      case 'scoreboard':
-        return <ScoreboardSettings widget={widget} />;
-      case 'webcam':
-        return <WebcamSettings widget={widget} />;
-      case 'calendar':
-        return <CalendarSettings widget={widget} />;
-      case 'weather':
-        return <WeatherSettings widget={widget} />;
-      case 'lunchCount':
-        return <LunchCountSettings widget={widget} />;
-      case 'instructionalRoutines':
-        return <InstructionalRoutinesSettings widget={widget} />;
-      case 'materials':
-        return <MaterialsSettings widget={widget} />;
-      case 'miniApp':
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Manage apps in the main view.
-          </div>
-        );
-      case 'stickers':
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Manage stickers in the main view.
-          </div>
-        );
-      case 'sticker-library':
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Upload and manage your custom stickers.
-          </div>
-        );
-      default:
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Standard settings available.
-          </div>
-        );
+    if (SettingsComponent) {
+      return <SettingsComponent widget={widget} />;
     }
+    return (
+      <div className="text-slate-500 italic text-sm">
+        Standard settings available.
+      </div>
+    );
   };
 
   const isDrawingOverlay =
