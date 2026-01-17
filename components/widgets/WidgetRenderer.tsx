@@ -6,7 +6,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { useLiveSession } from '@/hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimeToolWidget } from './TimeToolWidget';
+import { TimeToolWidget, TimeToolSettings } from './TimeToolWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
 import { TextWidget, TextSettings } from './TextWidget';
 import { SoundWidget, SoundSettings } from './SoundWidget';
@@ -199,6 +199,8 @@ export const WidgetRenderer: React.FC<{
     switch (widget.type) {
       case 'clock':
         return <ClockSettings widget={widget} />;
+      case 'time-tool':
+        return <TimeToolSettings widget={widget} />;
       case 'text':
         return <TextSettings widget={widget} />;
       case 'checklist':
