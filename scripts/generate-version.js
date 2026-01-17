@@ -33,7 +33,10 @@ try {
   } else {
     // Check if version.json is in the ignore file
     const content = fs.readFileSync(publicGitignorePath, 'utf8');
-    const hasVersionIgnore = content.split('\n').map(line => line.trim()).includes('version.json');
+    const hasVersionIgnore = content
+      .split('\n')
+      .map((line) => line.trim())
+      .includes('version.json');
 
     if (!hasVersionIgnore) {
         const prefix = content.endsWith('\n') || content.length === 0 ? '' : '\n';
