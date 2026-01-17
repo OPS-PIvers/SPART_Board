@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TimeToolConfig, WidgetData } from '../../types';
+import {
+  TimeToolConfig,
+  WidgetData,
+  WorkSymbolsConfig,
+  WidgetConfig,
+} from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
@@ -181,24 +186,16 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 (w) => w.type === 'workSymbols'
               );
               if (wsWidget) {
-                // We use a small timeout to allow the render cycle to complete and ensure this side effect is handled cleanly
-                setTimeout(() => {
-                  if (
-                    config.timerEndVoiceLevel !== undefined &&
-                    config.timerEndVoiceLevel !== null
-                  ) {
-                    // Force the config type to unknown then WidgetConfig to satisfy the linter
-                    // while allowing the update.
-                    const newConfig = {
-                      ...(wsWidget.config || {}),
-                      voiceLevel: config.timerEndVoiceLevel,
-                    } as unknown as TimeToolConfig;
+                // Force the config type to unknown then WorkSymbolsConfig to satisfy the linter
+                // while allowing the update.
+                const newConfig = {
+                  ...(wsWidget.config || {}),
+                  voiceLevel: config.timerEndVoiceLevel,
+                } as unknown as WorkSymbolsConfig;
 
-                    updateWidget(wsWidget.id, {
-                      config: newConfig,
-                    });
-                  }
-                }, 0);
+                updateWidget(wsWidget.id, {
+                  config: newConfig as unknown as WidgetConfig,
+                });
               }
             }
           }
