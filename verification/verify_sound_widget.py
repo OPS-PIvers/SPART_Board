@@ -1,88 +1,59 @@
+import asyncio
+from playwright.async_api import async_playwright
 
-from playwright.sync_api import Page, expect, sync_playwright
-import time
-import os
+async def run():
+    async with async_playwright() as p:
+        # Launch browser with microphone permissions granted
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            permissions=['microphone'],
+            viewport={'width': 1920, 'height': 1080}
+        )
+        page = await context.new_page()
 
-def verify_sound_widget_colors(page: Page):
-    """
-    Verifies that the Sound Widget uses the correct colors after refactoring.
-    """
-    # 1. Arrange: Go to the app.
-    # Note: Port is 3000
-    page.goto("http://localhost:3000")
+        try:
+            print("Navigating to dashboard...")
+            await page.goto("http://localhost:3000")
 
-    # Wait for the app to load.
-    # The dock has title="Open Tools" when collapsed.
-    # When expanded, it has a "Hide" button (ChevronDown).
+            # Wait for dashboard to load
+            await page.wait_for_timeout(2000)
 
-    # Wait for the dock container. In Dock.tsx, it's <div ref={dockContainerRef} ...>
-    # It has fixed bottom-6.
-    # Let's wait for "Open Tools" button or the Dock expanded view.
+            # Check if Dock is collapsed (look for Open Tools button)
+            open_tools_btn = page.locator('button[title="Open Tools"]')
+            if await open_tools_btn.is_visible():
+                print("Dock is collapsed. Expanding...")
+                await open_tools_btn.click()
+                await page.wait_for_timeout(1000) # Wait for animation
+            else:
+                print("Dock appears to be expanded or Open Tools button not found.")
 
-    try:
-        # Try to find "Open Tools" button first
-        open_tools_btn = page.get_by_role("button", name="Open Tools")
-        if open_tools_btn.is_visible(timeout=5000):
-            open_tools_btn.click()
-    except:
-        # If timeout, maybe it's already expanded?
-        pass
+            # Locate the Noise button
+            # We target the button that contains the text "Noise"
+            noise_btn = page.locator('button', has_text="Noise").first
 
-    # Now look for "Noise" button.
-    # If not found, maybe we need to open the "Widget Library"?
-    # "Add Widgets" button is only in Edit Mode.
+            print("Waiting for Noise button...")
+            await noise_btn.wait_for(state="visible", timeout=10000)
 
-    # The dock displays items in `dockItems`. If "sound" is not in dockItems, we can't click it easily.
-    # BUT, the memory says: "Automated verification scripts running against the `MOCK_USER` environment must explicitly add widgets by opening the Dock (title='Open Tools') if collapsed, and then clicking the specific tool button."
-    # This implies the tool is usually available.
+            print("Clicking Noise button...")
+            # force=True is needed because dnd-kit adds aria-disabled="true" when not in edit mode
+            # which Playwright interprets as the button being disabled.
+            await noise_btn.click(force=True)
 
-    # Let's try to click "Noise".
-    # Note: ToolDockItem has children "Noise".
+            # Wait for widget to appear
+            # The widget displays "0 - Silence" at 0 volume
+            print("Waiting for Sound Widget to appear...")
+            widget_text = page.locator('text="0 - Silence"')
+            await widget_text.wait_for(state="visible", timeout=10000)
 
-    try:
-        page.get_by_text("Noise").click(timeout=5000)
-    except:
-        # If "Noise" is not visible, it might be in a folder or not in the dock.
-        # But for MOCK_USER, default dashboard might have it?
-        # If not, we might need to add it via Settings or similar?
-        # Or maybe the dock is just collapsed again?
+            print("Widget found! Taking screenshot...")
+            await page.screenshot(path="verification/sound_widget_verified.png")
+            print("Screenshot saved to verification/sound_widget_verified.png")
 
-        # Let's try to find if "Noise" text exists.
-        if page.get_by_text("Noise").count() > 0:
-            page.get_by_text("Noise").click()
-        else:
-             print("Noise tool not found in Dock. Attempting to add via Edit Mode?")
-             # This might be too complex.
-             # Let's assume standard config has it.
-             pass
-
-    # Wait for widget to appear. It should have "0 - Silence" text.
-    # This text is inside the SoundWidget.
-    expect(page.get_by_text("0 - Silence")).to_be_visible(timeout=5000)
-
-    # 3. Assert & Screenshot
-    # We want to verify the color of the label.
-    # "0 - Silence" should have background color STANDARD_COLORS.blue (#3b82f6)
-
-    # Take a screenshot of the widget
-    widget_locator = page.locator(".widget", has_text="0 - Silence").first
-    widget_locator.screenshot(path="verification/sound_widget.png")
-
-    # Also take a full page screenshot just in case
-    page.screenshot(path="verification/full_page.png")
+        except Exception as e:
+            print(f"Verification failed: {e}")
+            await page.screenshot(path="verification/error_v2.png")
+        finally:
+            await browser.close()
 
 if __name__ == "__main__":
-    # Ensure verification directory exists
-    os.makedirs("verification", exist_ok=True)
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1920, "height": 1080})
-        try:
-            verify_sound_widget_colors(page)
-            print("Verification script finished successfully.")
-        except Exception as e:
-            print(f"Verification script failed: {e}")
-            page.screenshot(path="verification/error.png")
-        finally:
-            browser.close()
+    asyncio.run(run())
