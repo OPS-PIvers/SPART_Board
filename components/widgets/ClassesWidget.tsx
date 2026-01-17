@@ -15,6 +15,7 @@ import {
   Edit2,
   RefreshCw,
   ExternalLink,
+  Download,
 } from 'lucide-react';
 import { classLinkService } from '../../utils/classlinkService';
 
@@ -218,6 +219,31 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
 
   const editingRoster = rosters.find((r) => r.id === editingId) ?? null;
 
+  const handleExportCSV = (roster: ClassRoster) => {
+    const headers = ['First Name', 'Last Name', 'ID'];
+    const rows = roster.students.map((s) => [s.firstName, s.lastName, s.id]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row.map((cell) => `"${(cell || '').replace(/"/g, '""')}"`).join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `${roster.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_roster.csv`
+    );
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden rounded-lg">
       {view === 'list' && (
@@ -312,6 +338,13 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                   </div>
                 </div>
                 <div className="flex gap-1">
+                  <button
+                    onClick={() => handleExportCSV(r)}
+                    className="p-2 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                    title="Export CSV"
+                  >
+                    <Download size={16} />
+                  </button>
                   <button
                     onClick={() => {
                       setEditingId(r.id);
