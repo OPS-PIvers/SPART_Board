@@ -39,9 +39,9 @@ try {
       .includes('version.json');
 
     if (!hasVersionIgnore) {
-        const prefix = content.endsWith('\n') || content.length === 0 ? '' : '\n';
-        fs.appendFileSync(publicGitignorePath, `${prefix}version.json\n`);
-        console.log('Added version.json to public/.gitignore');
+      const prefix = content.endsWith('\n') || content.length === 0 ? '' : '\n';
+      fs.appendFileSync(publicGitignorePath, `${prefix}version.json\n`);
+      console.log('Added version.json to public/.gitignore');
     }
   }
 
