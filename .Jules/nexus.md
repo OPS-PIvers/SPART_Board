@@ -1,0 +1,1 @@
+## 2024-05-23 - [Routine-to-Checklist] **Source:** Instructional Routines (Steps) **Destination:** Checklist (Tasks) **Value:** Instantly converts a pedagogical routine into a student-facing checklist.
