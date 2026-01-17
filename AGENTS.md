@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This document provides comprehensive instructions and context for AI assistants working on the Classroom Dashboard Pro repository. It consolidates information from `CLAUDE.md`, `DEV_WORKFLOW.md`, and `LINTING_SETUP.md`.
+This document provides comprehensive instructions and context for AI assistants working on the School Boards repository. It consolidates information from `CLAUDE.md`, `DEV_WORKFLOW.md`, and `LINTING_SETUP.md`.
 
 **Scope:** These instructions apply to the entire directory tree.
 
@@ -8,15 +8,17 @@ This document provides comprehensive instructions and context for AI assistants 
 
 ## 1. Project Overview
 
-**Classroom Dashboard Pro** is an interactive classroom management dashboard built with **React 19**, **TypeScript**, and **Vite**. It features a plugin-based widget system (timers, noise meters, drawing boards, etc.) and uses **Firebase** for backend services.
+**School Boards** is an interactive classroom management dashboard built with **React 19**, **TypeScript**, and **Vite**. It features a plugin-based widget system (timers, noise meters, drawing boards, etc.) and uses **Firebase** for backend services.
 
 ### Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite
-- **Styling:** Tailwind CSS (Custom Brand Theme: Lexend, Patrick Hand fonts, Blue/Red brand colors)
+- **Styling:** Tailwind CSS (Custom Brand Theme: Lexend, Patrick Hand fonts, Blue/Red/Gray brand colors)
 - **Backend:** Firebase (Auth, Firestore, Storage)
+- **Package Manager:** pnpm
 - **State Management:** React Context (`DashboardContext`)
 - **AI Integration:** Google Gemini API
+- **Testing:** Vitest (Unit), Playwright (E2E)
 
 ---
 
@@ -27,7 +29,7 @@ This project enforces a **STRICT ZERO-TOLERANCE POLICY** for code quality.
 ### 🚫 Strict Rules
 
 1.  **Zero Warnings, Zero Errors:**
-    - You **MUST** ensure that `npm run validate` (which runs linting, type-checking, and format checking) passes with **0 warnings and 0 errors**.
+    - You **MUST** ensure that `pnpm run validate` (which runs linting, type-checking, format checking, and unit tests) passes with **0 warnings and 0 errors**.
     - Do **NOT** commit code that generates warnings, even if the build technically passes.
 2.  **No Suppressions:**
     - The use of suppression comments (e.g., `eslint-disable`, `// @ts-ignore`, `// @ts-nocheck`) is **FORBIDDEN** unless absolutely unavoidable and technically justified (e.g., library bug).
@@ -43,7 +45,7 @@ This project enforces a **STRICT ZERO-TOLERANCE POLICY** for code quality.
 Before marking any task as complete, you must run:
 
 ```bash
-npm run validate
+pnpm run validate
 ```
 
 If this command reports _any_ issues, you must fix them.
@@ -54,12 +56,13 @@ If this command reports _any_ issues, you must fix them.
 
 ### Directory Structure
 
-- `components/widgets/`: Individual widget components.
+- `components/widgets/`: Individual widget components. Large or complex widgets (like `random`) use their own sub-folders.
 - `context/`: Global state providers (`DashboardContext.tsx`, `AuthContext.tsx`).
 - `types.ts`: Central type definitions.
-- `components/common/`: Shared UI components (e.g., `DraggableWindow`).
+- `components/common/`: Shared UI components (e.g., `DraggableWindow`, `Button`).
 - `components/admin/`: Administrative tools (`AdminSettings.tsx`, `FeaturePermissionsManager.tsx`).
 - `config/`: Firebase and application configuration (`tools.ts`, `widgetGradeLevels.ts`).
+- `tests/e2e/`: Playwright end-to-end tests.
 
 ### State Management
 
@@ -88,7 +91,7 @@ Access to specific widgets can be dynamically controlled:
 
 ### Audio Handling
 
-- **Singleton Pattern:** Use a single `AudioContext` instance per widget type (or globally where appropriate) to avoid browser limits.
+- **Singleton Pattern:** Use a single `AudioContext` instance per widget type (shared via an `audioUtils.ts` file in the widget's folder) to avoid browser limits.
 - **Unlock on Interaction:** Resume `AudioContext` within user interaction handlers (e.g., click) to comply with autoplay policies.
 - **Browser Compatibility:** Handle `window.webkitAudioContext` for Safari support.
 
@@ -133,10 +136,11 @@ To add a new widget, you must follow these exact steps to maintain strict type s
 
 - **Preview:** Pushing to a `dev-*` branch triggers a Firebase Preview deployment.
 - **Production:** Merging to `main` deploys to the live site.
+- **Infrastructure:** The project includes a `Dockerfile` and `nginx.conf` for containerized environments.
 
 ### Environment
 
-- **Local:** Create `.env.local` with `VITE_FIREBASE_*` keys and `VITE_GEMINI_API_KEY`.
+- **Local:** Create `.env.local` with `VITE_FIREBASE_*` keys, `VITE_GEMINI_API_KEY`, and `VITE_OPENWEATHER_API_KEY`.
 - **Secrets:** Never commit `.env` files.
 
 ---

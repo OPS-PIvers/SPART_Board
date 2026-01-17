@@ -13,7 +13,10 @@ import {
   WidgetType,
   GradeLevel,
   LunchCountGlobalConfig,
+  WeatherGlobalConfig,
+  WeatherTemperatureRange,
 } from '../../types';
+import { useStorage } from '../../hooks/useStorage';
 import { TOOLS } from '../../config/tools';
 import {
   getWidgetGradeLevels,
@@ -28,6 +31,10 @@ import {
   Save,
   AlertCircle,
   Settings,
+  Upload,
+  Loader2,
+  Image as ImageIcon,
+  X,
 } from 'lucide-react';
 
 export const FeaturePermissionsManager: React.FC = () => {
@@ -44,6 +51,8 @@ export const FeaturePermissionsManager: React.FC = () => {
     new Set()
   );
   const [editingConfig, setEditingConfig] = useState<WidgetType | null>(null);
+  const [uploadingRangeId, setUploadingRangeId] = useState<string | null>(null);
+  const { uploadWeatherImage } = useStorage();
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -196,6 +205,79 @@ export const FeaturePermissionsManager: React.FC = () => {
     updatePermission(widgetType, {
       betaUsers: permission.betaUsers.filter((e) => e !== email),
     });
+  };
+
+  const addWeatherRange = (widgetType: WidgetType) => {
+    const permission = getPermission(widgetType);
+    const config = (permission.config ?? {
+      fetchingStrategy: 'client',
+      updateFrequencyMinutes: 15,
+      temperatureRanges: [],
+    }) as unknown as WeatherGlobalConfig;
+
+    const newRange: WeatherTemperatureRange = {
+      id: crypto.randomUUID(),
+      min: 0,
+      max: 100,
+      message: 'New Range',
+    };
+
+    updatePermission(widgetType, {
+      config: {
+        ...config,
+        temperatureRanges: [...(config.temperatureRanges ?? []), newRange],
+      },
+    });
+  };
+
+  const updateWeatherRange = (
+    widgetType: WidgetType,
+    rangeId: string,
+    updates: Partial<WeatherTemperatureRange>
+  ) => {
+    const permission = getPermission(widgetType);
+    const config = (permission.config ?? {}) as unknown as WeatherGlobalConfig;
+    const ranges = config.temperatureRanges ?? [];
+
+    const newRanges = ranges.map((r) =>
+      r.id === rangeId ? { ...r, ...updates } : r
+    );
+
+    updatePermission(widgetType, {
+      config: { ...config, temperatureRanges: newRanges },
+    });
+  };
+
+  const removeWeatherRange = (widgetType: WidgetType, rangeId: string) => {
+    const permission = getPermission(widgetType);
+    const config = (permission.config ?? {}) as unknown as WeatherGlobalConfig;
+    const ranges = config.temperatureRanges ?? [];
+
+    updatePermission(widgetType, {
+      config: {
+        ...config,
+        temperatureRanges: ranges.filter((r) => r.id !== rangeId),
+      },
+    });
+  };
+
+  const handleWeatherImageUpload = async (
+    widgetType: WidgetType,
+    rangeId: string,
+    file: File
+  ) => {
+    if (!file) return;
+    setUploadingRangeId(rangeId);
+    try {
+      const url = await uploadWeatherImage(rangeId, file);
+      updateWeatherRange(widgetType, rangeId, { imageUrl: url });
+      showMessage('success', 'Image uploaded');
+    } catch (e) {
+      console.error(e);
+      showMessage('error', 'Upload failed');
+    } finally {
+      setUploadingRangeId(null);
+    }
   };
 
   const toggleGradeLevel = (widgetType: WidgetType, level: GradeLevel) => {
@@ -438,7 +520,316 @@ export const FeaturePermissionsManager: React.FC = () => {
                     </div>
                   )}
 
-                  {!['lunchCount'].includes(tool.type) && (
+                  {tool.type === 'weather' && (
+                    <div className="space-y-4">
+                      {(() => {
+                        const config = (permission.config ?? {
+                          fetchingStrategy: 'client',
+                          updateFrequencyMinutes: 15,
+                          temperatureRanges: [],
+                        }) as unknown as WeatherGlobalConfig;
+
+                        return (
+                          <>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                Fetching Strategy
+                              </label>
+                              <div className="flex bg-white rounded-lg border border-slate-200 p-1">
+                                <button
+                                  onClick={() =>
+                                    updatePermission(tool.type, {
+                                      config: {
+                                        ...config,
+                                        fetchingStrategy: 'client',
+                                      },
+                                    })
+                                  }
+                                  className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                    config.fetchingStrategy === 'client' ||
+                                    !config.fetchingStrategy
+                                      ? 'bg-brand-blue-primary text-white shadow-sm'
+                                      : 'text-slate-500 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  Client (Direct)
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    updatePermission(tool.type, {
+                                      config: {
+                                        ...config,
+                                        fetchingStrategy: 'admin_proxy',
+                                      },
+                                    })
+                                  }
+                                  className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                    config.fetchingStrategy === 'admin_proxy'
+                                      ? 'bg-brand-blue-primary text-white shadow-sm'
+                                      : 'text-slate-500 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  Admin Proxy
+                                </button>
+                              </div>
+                              <p className="text-[9px] text-slate-400 mt-1">
+                                <strong>Client:</strong> Each user fetches data
+                                directly (higher API usage).
+                                <br />
+                                <strong>Admin Proxy:</strong> Admin fetches
+                                data, users sync from database (saves API
+                                calls).
+                              </p>
+                            </div>
+
+                            {config.fetchingStrategy === 'admin_proxy' && (
+                              <div className="space-y-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                    Data Source
+                                  </label>
+                                  <div className="flex bg-white rounded-lg border border-slate-200 p-1">
+                                    <button
+                                      onClick={() =>
+                                        updatePermission(tool.type, {
+                                          config: {
+                                            ...config,
+                                            source: 'openweather',
+                                          },
+                                        })
+                                      }
+                                      className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                        config.source === 'openweather' ||
+                                        !config.source
+                                          ? 'bg-brand-blue-primary text-white shadow-sm'
+                                          : 'text-slate-500 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      OpenWeather
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        updatePermission(tool.type, {
+                                          config: {
+                                            ...config,
+                                            source: 'earth_networks',
+                                          },
+                                        })
+                                      }
+                                      className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                        config.source === 'earth_networks'
+                                          ? 'bg-brand-blue-primary text-white shadow-sm'
+                                          : 'text-slate-500 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      Earth Networks
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {(config.source === 'openweather' ||
+                                  !config.source) && (
+                                  <div>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                      City (Optional)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder="Default: Local Station"
+                                      value={config.city ?? ''}
+                                      onChange={(e) =>
+                                        updatePermission(tool.type, {
+                                          config: {
+                                            ...config,
+                                            city: e.target.value,
+                                          },
+                                        })
+                                      }
+                                      className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                Update Frequency (Minutes)
+                              </label>
+                              <input
+                                type="number"
+                                min="5"
+                                max="1440"
+                                value={config.updateFrequencyMinutes ?? 15}
+                                onChange={(e) =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...config,
+                                      updateFrequencyMinutes: parseInt(
+                                        e.target.value
+                                      ),
+                                    },
+                                  })
+                                }
+                                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase block">
+                                  Temperature Ranges
+                                </label>
+                                <button
+                                  onClick={() => addWeatherRange(tool.type)}
+                                  className="text-[9px] font-bold text-brand-blue-primary hover:text-brand-blue-dark flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> Add Range
+                                </button>
+                              </div>
+
+                              <div className="space-y-2">
+                                {(config.temperatureRanges || []).map(
+                                  (range) => (
+                                    <div
+                                      key={range.id}
+                                      className="bg-white border border-slate-200 rounded-lg p-2 space-y-2"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="number"
+                                          placeholder="Min"
+                                          value={range.min}
+                                          onChange={(e) =>
+                                            updateWeatherRange(
+                                              tool.type,
+                                              range.id,
+                                              {
+                                                min: parseInt(e.target.value),
+                                              }
+                                            )
+                                          }
+                                          className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                          title="Min Temp"
+                                        />
+                                        <span className="text-slate-400 text-xs">
+                                          -
+                                        </span>
+                                        <input
+                                          type="number"
+                                          placeholder="Max"
+                                          value={range.max}
+                                          onChange={(e) =>
+                                            updateWeatherRange(
+                                              tool.type,
+                                              range.id,
+                                              {
+                                                max: parseInt(e.target.value),
+                                              }
+                                            )
+                                          }
+                                          className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                          title="Max Temp"
+                                        />
+                                        <div className="flex-1" />
+                                        <button
+                                          onClick={() =>
+                                            removeWeatherRange(
+                                              tool.type,
+                                              range.id
+                                            )
+                                          }
+                                          className="text-red-500 hover:text-red-700 p-1"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+
+                                      <input
+                                        type="text"
+                                        placeholder="Display Message..."
+                                        value={range.message}
+                                        onChange={(e) =>
+                                          updateWeatherRange(
+                                            tool.type,
+                                            range.id,
+                                            {
+                                              message: e.target.value,
+                                            }
+                                          )
+                                        }
+                                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:border-brand-blue-primary outline-none"
+                                      />
+
+                                      <div className="flex items-center gap-2">
+                                        {range.imageUrl ? (
+                                          <div className="relative w-10 h-10 rounded bg-slate-100 overflow-hidden shrink-0 group">
+                                            <img
+                                              src={range.imageUrl}
+                                              alt="Range"
+                                              className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                              onClick={() =>
+                                                updateWeatherRange(
+                                                  tool.type,
+                                                  range.id,
+                                                  {
+                                                    imageUrl: undefined,
+                                                  }
+                                                )
+                                              }
+                                              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                                            >
+                                              <X className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="w-10 h-10 rounded bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center shrink-0">
+                                            <ImageIcon className="w-4 h-4 text-slate-300" />
+                                          </div>
+                                        )}
+
+                                        <div className="flex-1">
+                                          <label className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded px-3 py-1.5 transition-colors w-max">
+                                            {uploadingRangeId === range.id ? (
+                                              <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-blue-primary" />
+                                            ) : (
+                                              <Upload className="w-3.5 h-3.5 text-slate-500" />
+                                            )}
+                                            <span className="text-[10px] font-bold text-slate-600 uppercase">
+                                              {range.imageUrl
+                                                ? 'Change Image'
+                                                : 'Upload Image'}
+                                            </span>
+                                            <input
+                                              type="file"
+                                              className="hidden"
+                                              accept="image/*"
+                                              onChange={(e) =>
+                                                handleWeatherImageUpload(
+                                                  tool.type,
+                                                  range.id,
+                                                  e.target.files?.[0] as File
+                                                )
+                                              }
+                                              disabled={!!uploadingRangeId}
+                                            />
+                                          </label>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {!['lunchCount', 'weather'].includes(tool.type) && (
                     <p className="text-xs text-slate-500 italic">
                       No additional configuration available for this widget.
                     </p>

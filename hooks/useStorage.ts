@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ref,
   uploadBytes,
@@ -7,20 +8,29 @@ import {
 import { storage } from '../config/firebase';
 
 export const useStorage = () => {
+  const [uploading, setUploading] = useState(false);
+
+  const uploadFile = async (path: string, file: File): Promise<string> => {
+    setUploading(true);
+    try {
+      const storageRef = ref(storage, path);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      return url;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const uploadBackgroundImage = async (
     userId: string,
     file: File
   ): Promise<string> => {
     const timestamp = Date.now();
-    const storageRef = ref(
-      storage,
-      `users/${userId}/backgrounds/${timestamp}-${file.name}`
+    return uploadFile(
+      `users/${userId}/backgrounds/${timestamp}-${file.name}`,
+      file
     );
-
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-
-    return downloadURL;
   };
 
   const uploadScreenshot = async (
@@ -33,10 +43,13 @@ export const useStorage = () => {
       `users/${userId}/screenshots/${timestamp}.jpg`
     );
 
-    const snapshot = await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-
-    return downloadURL;
+    setUploading(true);
+    try {
+      const snapshot = await uploadBytes(storageRef, blob);
+      return await getDownloadURL(snapshot.ref);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const deleteFile = async (filePath: string): Promise<void> => {
@@ -48,9 +61,17 @@ export const useStorage = () => {
     backgroundId: string,
     file: File
   ): Promise<string> => {
+    return uploadFile(`admin_backgrounds/${backgroundId}/${file.name}`, file);
+  };
+
+  const uploadWeatherImage = async (
+    rangeId: string,
+    file: File
+  ): Promise<string> => {
+    const timestamp = Date.now();
     const storageRef = ref(
       storage,
-      `admin_backgrounds/${backgroundId}/${file.name}`
+      `admin_weather/${rangeId}/${timestamp}-${file.name}`
     );
 
     const snapshot = await uploadBytes(storageRef, file);
@@ -58,9 +79,12 @@ export const useStorage = () => {
   };
 
   return {
+    uploading,
+    uploadFile,
     uploadBackgroundImage,
     uploadScreenshot,
     deleteFile,
     uploadAdminBackground,
+    uploadWeatherImage,
   };
 };

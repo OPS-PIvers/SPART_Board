@@ -1,9 +1,9 @@
 import React from 'react';
-import { WidgetData, DrawingConfig, WidgetConfig } from '../../types';
+import { WidgetData, DrawingConfig, WidgetConfig } from '@/types';
 import { DraggableWindow } from '../common/DraggableWindow';
-import { useAuth } from '../../context/useAuth';
-import { useDashboard } from '../../context/useDashboard';
-import { useLiveSession } from '../../hooks/useLiveSession';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useLiveSession } from '@/hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimeToolWidget } from './TimeToolWidget';
@@ -13,11 +13,12 @@ import { SoundWidget, SoundSettings } from './SoundWidget';
 import { WebcamWidget, WebcamSettings } from './WebcamWidget';
 import { EmbedWidget, EmbedSettings } from './EmbedWidget';
 import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
-import { RandomWidget, RandomSettings } from './RandomWidget';
+import { RandomWidget } from './random/RandomWidget';
+import { RandomSettings } from './random/RandomSettings';
 import { DiceWidget, DiceSettings } from './DiceWidget';
 import { DrawingWidget, DrawingSettings } from './DrawingWidget';
 import { QRWidget, QRSettings } from './QRWidget';
-import { ScoreboardWidget } from './ScoreboardWidget';
+import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
 import { WorkSymbolsWidget } from './WorkSymbolsWidget';
 import { PollWidget } from './PollWidget';
 import { WeatherWidget, WeatherSettings } from './WeatherWidget';
@@ -31,10 +32,13 @@ import {
 } from './InstructionalRoutinesWidget';
 import { MiniAppWidget } from './MiniAppWidget';
 import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
-import { getTitle } from '../../utils/widgetHelpers';
-import { getJoinUrl } from '../../utils/urlHelpers';
+import { StickerBookWidget } from './stickers/StickerBookWidget';
+import { StickerItemWidget } from './stickers/StickerItemWidget';
+import { StickerLibraryWidget } from './StickerLibraryWidget';
+import { getTitle } from '@/utils/widgetHelpers';
+import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
-import { useWindowSize } from '../../hooks/useWindowSize';
+import { useWindowSize } from '@/hooks/useWindowSize';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
@@ -44,7 +48,6 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   lunchCount: { w: 500, h: 400 },
   'time-tool': { w: 420, h: 400 },
   traffic: { w: 120, h: 320 },
-  scoreboard: { w: 320, h: 200 },
   qr: { w: 200, h: 250 },
   dice: { w: 240, h: 240 },
   materials: { w: 340, h: 340 },
@@ -127,6 +130,10 @@ export const WidgetRenderer: React.FC<{
     void updateSessionBackground(activeDashboard.background);
   }, [activeDashboard?.background, isThisWidgetLive, updateSessionBackground]);
 
+  if (widget.type === 'sticker') {
+    return <StickerItemWidget widget={widget} />;
+  }
+
   const getWidgetContent = () => {
     switch (widget.type) {
       case 'clock':
@@ -175,6 +182,10 @@ export const WidgetRenderer: React.FC<{
         return <MiniAppWidget widget={widget} />;
       case 'materials':
         return <MaterialsWidget widget={widget} />;
+      case 'stickers':
+        return <StickerBookWidget widget={widget} />;
+      case 'sticker-library':
+        return <StickerLibraryWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -204,6 +215,8 @@ export const WidgetRenderer: React.FC<{
         return <DrawingSettings widget={widget} />;
       case 'qr':
         return <QRSettings widget={widget} />;
+      case 'scoreboard':
+        return <ScoreboardSettings widget={widget} />;
       case 'webcam':
         return <WebcamSettings widget={widget} />;
       case 'calendar':
@@ -220,6 +233,18 @@ export const WidgetRenderer: React.FC<{
         return (
           <div className="text-slate-500 italic text-sm">
             Manage apps in the main view.
+          </div>
+        );
+      case 'stickers':
+        return (
+          <div className="text-slate-500 italic text-sm">
+            Manage stickers in the main view.
+          </div>
+        );
+      case 'sticker-library':
+        return (
+          <div className="text-slate-500 italic text-sm">
+            Upload and manage your custom stickers.
           </div>
         );
       default:

@@ -21,7 +21,10 @@ export type WidgetType =
   | 'instructionalRoutines'
   | 'time-tool'
   | 'miniApp'
-  | 'materials';
+  | 'materials'
+  | 'stickers'
+  | 'sticker'
+  | 'sticker-library';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -117,6 +120,8 @@ export interface CalendarEvent {
 export interface RoutineStep {
   id: string;
   text: string;
+  icon?: string;
+  color?: string;
 }
 
 // Widget-specific config types
@@ -208,16 +213,30 @@ export interface WebcamConfig {
   isMirrored?: boolean;
 }
 
+export interface ScoreboardTeam {
+  id: string;
+  name: string;
+  score: number;
+  color?: string;
+}
+
 export interface ScoreboardConfig {
-  scoreA: number;
-  scoreB: number;
-  teamA: string;
-  teamB: string;
+  /** @deprecated use teams array instead */
+  scoreA?: number;
+  /** @deprecated use teams array instead */
+  scoreB?: number;
+  /** @deprecated use teams array instead */
+  teamA?: string;
+  /** @deprecated use teams array instead */
+  teamB?: string;
+  teams?: ScoreboardTeam[];
 }
 
 export interface WorkSymbolsConfig {
   voiceLevel: number | null; // 0, 1, 2, 3, or 4
   workMode: 'individual' | 'partner' | 'group' | null;
+  instructionalRoutine?: string; // Legacy/K-8
+  activeRoutines?: string[]; // New: 9-12 Multi-select
 }
 
 export interface WeatherConfig {
@@ -228,6 +247,22 @@ export interface WeatherConfig {
   lastSync?: number | null;
   city?: string;
   source?: 'openweather' | 'earth_networks';
+}
+
+export interface WeatherTemperatureRange {
+  id: string;
+  min: number;
+  max: number;
+  message: string;
+  imageUrl?: string;
+}
+
+export interface WeatherGlobalConfig {
+  fetchingStrategy: 'client' | 'admin_proxy';
+  updateFrequencyMinutes: number;
+  temperatureRanges: WeatherTemperatureRange[];
+  source?: 'openweather' | 'earth_networks';
+  city?: string;
 }
 
 export interface ScheduleConfig {
@@ -278,6 +313,10 @@ export interface TimeToolConfig {
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
 }
 
+export interface StickerLibraryConfig {
+  uploadedUrls: string[];
+}
+
 // 1. Define the Data Model for a Mini App
 export interface MiniAppItem {
   id: string;
@@ -295,6 +334,16 @@ export interface MaterialsConfig {
   selectedItems: string[];
   activeItems: string[];
 }
+
+export interface StickerConfig {
+  url?: string;
+  icon?: string;
+  color?: string;
+  rotation?: number;
+  size?: number;
+}
+
+export type StickerBookConfig = Record<string, never>;
 
 // Union of all widget configs
 export type WidgetConfig =
@@ -321,7 +370,10 @@ export type WidgetConfig =
   | InstructionalRoutinesConfig
   | TimeToolConfig
   | MiniAppConfig
-  | MaterialsConfig;
+  | MaterialsConfig
+  | StickerBookConfig
+  | StickerLibraryConfig
+  | StickerConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -370,7 +422,13 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                             ? MiniAppConfig
                                             : T extends 'materials'
                                               ? MaterialsConfig
-                                              : never;
+                                              : T extends 'stickers'
+                                                ? StickerBookConfig
+                                                : T extends 'sticker-library'
+                                                  ? StickerLibraryConfig
+                                                  : T extends 'sticker'
+                                                    ? StickerConfig
+                                                    : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;
@@ -390,14 +448,31 @@ export interface WidgetData {
   config: WidgetConfig;
 }
 
+export interface DockFolder {
+  id: string;
+  name: string;
+  items: WidgetType[];
+}
+
+export type DockItem =
+  | { type: 'tool'; toolType: WidgetType }
+  | { type: 'folder'; folder: DockFolder };
+
+export interface DashboardSettings {
+  defaultWidgetTransparency?: number;
+  quickAccessWidgets?: WidgetType[];
+}
+
 export interface Dashboard {
   id: string;
   name: string;
   background: string;
+  thumbnailUrl?: string;
   widgets: WidgetData[];
   createdAt: number;
   isDefault?: boolean;
   order?: number;
+  settings?: DashboardSettings;
 }
 
 export interface Toast {
@@ -474,6 +549,7 @@ export interface LunchCountGlobalConfig {
 export interface BackgroundPreset {
   id: string;
   url: string;
+  thumbnailUrl?: string;
   label: string;
   active: boolean; // Whether it shows up for users
   accessLevel: AccessLevel; // Who can see it

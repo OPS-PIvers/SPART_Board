@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { AuthContext, AuthContextType } from '../../context/AuthContextValue';
 import {
   DashboardContext,
-  DashboardContextType,
+  DashboardContextValue,
 } from '../../context/DashboardContextValue';
 
 interface StudentProviderProps {
@@ -30,7 +30,7 @@ const mockAuth: AuthContextType = {
 // is called by widgets for state management. This means widgets that attempt
 // to update their configuration will silently fail.
 // See studentViewConfig.ts for widget compatibility details.
-const mockDashboard: DashboardContextType = {
+const mockDashboard: DashboardContextValue = {
   dashboards: [],
   activeDashboard: null,
   toasts: [],
@@ -55,6 +55,9 @@ const mockDashboard: DashboardContextType = {
   deleteDashboard: () => {
     /* mock */
   },
+  duplicateDashboard: () => {
+    /* mock */
+  },
   renameDashboard: () => {
     /* mock */
   },
@@ -73,6 +76,9 @@ const mockDashboard: DashboardContextType = {
   removeWidget: () => {
     // No-op
   },
+  duplicateWidget: () => {
+    // No-op
+  },
   removeWidgets: () => {
     // No-op
   },
@@ -80,6 +86,9 @@ const mockDashboard: DashboardContextType = {
     // No-op. Widgets in student view are read-only or handle state internally.
   },
   bringToFront: () => {
+    // No-op
+  },
+  moveWidgetLayer: () => {
     // No-op
   },
   setBackground: () => {
@@ -94,7 +103,41 @@ const mockDashboard: DashboardContextType = {
   reorderTools: () => {
     // No-op
   },
+  dockItems: [],
+  reorderDockItems: () => {
+    // No-op
+  },
+  updateDashboardSettings: () => {
+    // No-op
+  },
+  addFolder: () => {
+    // No-op
+  },
+  createFolderWithItems: () => {
+    // No-op
+  },
+  renameFolder: () => {
+    // No-op
+  },
+  deleteFolder: () => {
+    // No-op
+  },
+  addItemToFolder: () => {
+    // No-op
+  },
+  removeItemFromFolder: () => {
+    // No-op
+  },
+  moveItemOutOfFolder: () => {
+    // No-op
+  },
+  reorderFolderItems: () => {
+    // No-op
+  },
 
+  clearAllStickers: () => {
+    // No-op
+  },
   // Roster mocks
   rosters: [],
   activeRosterId: null,

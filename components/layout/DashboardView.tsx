@@ -36,10 +36,87 @@ const ToastContainer: React.FC = () => {
 };
 
 export const DashboardView: React.FC = () => {
-  const { activeDashboard, dashboards } = useDashboard();
+  const { activeDashboard, dashboards, addWidget } = useDashboard();
   const [prevIndex, setPrevIndex] = React.useState<number>(-1);
   const [animationClass, setAnimationClass] =
     React.useState<string>('animate-fade-in');
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (
+      e.dataTransfer.types.includes('application/sticker') ||
+      e.dataTransfer.types.includes('application/spart-sticker')
+    ) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    const stickerData = e.dataTransfer.getData('application/sticker');
+    const spartStickerData = e.dataTransfer.getData(
+      'application/spart-sticker'
+    );
+
+    if (spartStickerData) {
+      e.preventDefault();
+      try {
+        const { icon, color } = JSON.parse(spartStickerData) as {
+          icon: string;
+          color: string;
+        };
+        const w = 150;
+        const h = 150;
+        const x = e.clientX - w / 2;
+        const y = e.clientY - h / 2;
+
+        addWidget('sticker', {
+          x,
+          y,
+          w,
+          h,
+          config: { icon, color, rotation: 0 },
+        });
+      } catch (err) {
+        console.error('Failed to parse spart-sticker data', err);
+      }
+      return;
+    }
+
+    if (stickerData) {
+      e.preventDefault();
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const parsed = JSON.parse(stickerData);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const url = parsed.url as string;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const ratio = (parsed.ratio as number) || 1;
+
+        const baseSize = 200;
+        let w = baseSize;
+        let h = baseSize;
+
+        if (ratio > 1) {
+          h = baseSize / ratio;
+        } else {
+          w = baseSize * ratio;
+        }
+
+        const x = e.clientX - w / 2;
+        const y = e.clientY - h / 2;
+
+        addWidget('sticker', {
+          x,
+          y,
+          w,
+          h,
+          config: { url, rotation: 0 },
+        });
+      } catch (err) {
+        console.error('Failed to parse sticker data', err);
+      }
+    }
+  };
 
   const currentIndex = useMemo(() => {
     if (!activeDashboard) return -1;
@@ -101,6 +178,9 @@ export const DashboardView: React.FC = () => {
       id="dashboard-root"
       className={`relative h-screen w-screen overflow-hidden transition-all duration-1000 ${backgroundClasses}`}
       style={backgroundStyles}
+      onClick={(e) => e.stopPropagation()}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* Background Overlay for Depth (especially for images) */}
       <div className="absolute inset-0 bg-black/10 pointer-events-none" />

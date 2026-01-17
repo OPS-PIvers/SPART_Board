@@ -44,6 +44,7 @@ if (isConfigured) {
   auth = getAuth(app);
   db = initializeFirestore(app, {
     ignoreUndefinedProperties: true,
+    experimentalForceLongPolling: true,
   });
   storage = getStorage(app);
   functions = getFunctions(app);

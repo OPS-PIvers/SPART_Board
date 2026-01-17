@@ -8,9 +8,10 @@ import { UpdateNotification } from './components/layout/UpdateNotification';
 import { isConfigured } from './config/firebase';
 import { StudentApp } from './components/student/StudentApp';
 import { StudentProvider } from './components/student/StudentContexts';
+import { AdminWeatherFetcher } from './components/admin/AdminWeatherFetcher';
 
 const AuthenticatedApp: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   if (!user) {
     return <LoginScreen />;
@@ -18,6 +19,7 @@ const AuthenticatedApp: React.FC = () => {
 
   return (
     <DashboardProvider>
+      {isAdmin && <AdminWeatherFetcher />}
       <DashboardView />
       <UpdateNotification />
     </DashboardProvider>

@@ -297,10 +297,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   // to get proper CORS headers configured for a production-ready solution.
   const fetchWithFallback = async (url: string) => {
     const proxies = [
-      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       (u: string) =>
         `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
     ];
 
     let lastError: Error | null = null;
@@ -311,22 +310,33 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         if (!response.ok) throw new Error(`Proxy status: ${response.status}`);
 
         const text = await response.text();
-        if (!text || text.trim().startsWith('<!doctype')) {
+        const trimmedText = text.trim();
+
+        // Improved HTML/Empty detection (case-insensitive and more robust)
+        if (
+          !trimmedText ||
+          trimmedText.startsWith('<') ||
+          trimmedText.toLowerCase().startsWith('<!doctype') ||
+          trimmedText.toLowerCase().startsWith('<html')
+        ) {
           throw new Error(
             'Proxy returned HTML or empty response instead of JSON'
           );
         }
 
-        const jsonContent = JSON.parse(text) as NutrisliceWeek;
-        console.warn(
-          '[LunchCountWidget] Fetched Nutrislice Data:',
-          jsonContent
-        );
+        const jsonContent = JSON.parse(trimmedText) as NutrisliceWeek;
+
+        console.warn('[LunchCountWidget] Fetched Nutrislice Data successfully');
 
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
         lastError = e instanceof Error ? e : new Error(String(e));
-        console.warn('Proxy attempt failed, trying next...', e);
+
+        // Use console.warn as required by lint rules
+
+        console.warn(
+          `[LunchCountWidget] Proxy attempt failed: ${lastError.message}`
+        );
       }
     }
     throw lastError ?? new Error('All proxies failed');
@@ -347,7 +357,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   }, [activeRoster, roster, rosterMode]);
 
   const fetchNutrislice = useCallback(async () => {
-    if (configRef.current.isManualMode) return;
+    if (configRef.current.isManualMode || isSyncing) return;
     setIsSyncing(true);
     updateWidget(widget.id, {
       config: { ...configRef.current, syncError: null },
@@ -426,18 +436,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     } finally {
       setIsSyncing(false);
     }
-  }, [widget.id, updateWidget, addToast]);
+  }, [widget.id, updateWidget, addToast, isSyncing]);
 
   useEffect(() => {
-    if (
+    if (isSyncing) return;
+
+    const needsSync =
       !cachedMenu ||
       (config.lastSyncDate &&
         new Date(config.lastSyncDate).toDateString() !==
-          new Date().toDateString())
-    ) {
+          new Date().toDateString());
+
+    if (needsSync) {
       void fetchNutrislice();
     }
-  }, [fetchNutrislice, cachedMenu, config.lastSyncDate]);
+  }, [fetchNutrislice, cachedMenu, config.lastSyncDate, isSyncing]);
 
   const handleDrop = (e: React.DragEvent, type: LunchType | null) => {
     const name = e.dataTransfer.getData('studentName');
@@ -585,21 +598,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="h-full flex flex-col bg-transparent select-none relative">
-      {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-1 right-2 flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 z-10 animate-in fade-in slide-in-from-top-1">
-          <Box className="w-2 h-2 text-orange-500" />
-          <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
-            {activeRoster.name}
-          </span>
-        </div>
-      )}
-
       {/* Header Actions */}
       <div className="p-3 bg-white/30 border-b border-white/20 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button
             onClick={submitReport}
             variant="success"
+            className="rounded-xl"
             icon={<CheckCircle2 className="w-3.5 h-3.5" />}
           >
             Submit Report
@@ -607,11 +612,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           <Button
             onClick={resetBoard}
             variant="secondary"
+            className="rounded-xl"
             icon={<Undo2 className="w-3.5 h-3.5" />}
           >
             Reset
           </Button>
         </div>
+
+        {activeRoster && rosterMode === 'class' && (
+          <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 animate-in fade-in slide-in-from-top-1 ml-auto">
+            <Box className="w-2 h-2 text-orange-500" />
+            <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
+              {activeRoster.name}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 p-3 flex flex-col gap-3 min-h-0">
@@ -641,6 +656,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={name}
                     draggable
+                    data-no-drag="true"
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
@@ -676,6 +692,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={name}
                     draggable
+                    data-no-drag="true"
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
@@ -711,6 +728,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={name}
                     draggable
+                    data-no-drag="true"
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
@@ -738,6 +756,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={name}
                   draggable
+                  data-no-drag="true"
                   onDragStart={(e) =>
                     e.dataTransfer.setData('studentName', name)
                   }
@@ -759,7 +778,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         <button
           onClick={() => void fetchNutrislice()}
           disabled={isSyncing || isManualMode}
-          className="p-2 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-all border border-slate-100 disabled:opacity-50 relative"
+          className="p-2 bg-white hover:bg-white/80 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 disabled:opacity-50 relative"
           title="Sync from Nutrislice"
         >
           {isSyncing ? (
@@ -776,10 +795,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           )}
         </button>
-        <div className="text-[8px] font-bold text-slate-300 uppercase flex items-center gap-1.5">
+        <div className="text-[8px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
           <span>Last Sync</span>
           {config.lastSyncDate && (
-            <span className="text-slate-400">
+            <span className="text-slate-500">
               {new Date(config.lastSyncDate).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
