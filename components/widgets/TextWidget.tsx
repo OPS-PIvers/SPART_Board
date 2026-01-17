@@ -9,27 +9,26 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { content = '', bgColor = '#fef9c3', fontSize = 18 } = config;
 
   return (
-    <div
-      className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative"
-      contentEditable
-      onBlur={(e) =>
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            content: e.currentTarget.innerHTML,
-          } as TextConfig,
-        })
-      }
-    >
+    <div className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative">
       {/* Background color overlay */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{ backgroundColor: bgColor }}
       />
       <div
-        className="relative z-10 h-full w-full"
+        className="relative z-10 h-full w-full outline-none"
         style={{ fontSize: `${fontSize}px` }}
+        contentEditable
+        suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: content }}
+        onBlur={(e) =>
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              content: e.currentTarget.innerHTML,
+            } as TextConfig,
+          })
+        }
       />
     </div>
   );
