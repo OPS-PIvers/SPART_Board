@@ -1,5 +1,27 @@
+/**
+ * Widget Registry
+ *
+ * This file serves as the central directory for all widgets in the application.
+ * It maps widget types (enums) to their respective React components for both
+ * the main widget view and the settings panel.
+ *
+ * The Registry Pattern is used here to:
+ * 1. Decouple the WidgetRenderer from specific widget implementations.
+ * 2. Adhere to the Open/Closed Principle - adding a new widget only requires
+ *    registering it here, not modifying the renderer logic.
+ * 3. Provide a single source of truth for available widgets.
+ *
+ * HOW TO ADD A NEW WIDGET:
+ * 1. Import your WidgetComponent and SettingsComponent.
+ * 2. Add the mapping to WIDGET_COMPONENTS using the WidgetType enum key.
+ * 3. Add the mapping to WIDGET_SETTINGS_COMPONENTS.
+ *
+ * NOTE: If your widget does not have a custom settings panel, use one of the
+ * fallback components from './FallbackSettings' (e.g., DefaultSettings).
+ */
+
 import React from 'react';
-import { WidgetData } from '@/types';
+import { WidgetData, WidgetType } from '@/types';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimeToolWidget } from './TimeToolWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
@@ -46,7 +68,7 @@ type SettingsComponent = React.ComponentType<{
   widget: WidgetData;
 }>;
 
-export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
+export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   clock: ClockWidget,
   'time-tool': TimeToolWidget,
   traffic: TrafficLightWidget,
@@ -74,7 +96,9 @@ export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'sticker-library': StickerLibraryWidget,
 };
 
-export const WIDGET_SETTINGS_COMPONENTS: Record<string, SettingsComponent> = {
+export const WIDGET_SETTINGS_COMPONENTS: Partial<
+  Record<WidgetType, SettingsComponent>
+> = {
   clock: ClockSettings,
   text: TextSettings,
   checklist: ChecklistSettings,
@@ -94,7 +118,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Record<string, SettingsComponent> = {
   miniApp: MiniAppSettings,
   stickers: StickerSettings,
   'sticker-library': StickerLibrarySettings,
-  'time-tool': DefaultSettings, // TimeTool doesn't seem to have settings exported in the switch
+  'time-tool': DefaultSettings,
   traffic: DefaultSettings,
   poll: DefaultSettings,
   workSymbols: DefaultSettings,
