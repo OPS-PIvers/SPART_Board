@@ -173,9 +173,25 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     saveDashboards,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
+    shareDashboard,
+    loadSharedDashboard,
   } = useFirestore(user?.uid ?? null);
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+  const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const path = window.location.pathname;
+    if (path.startsWith('/share/')) {
+      return path.split('/share/')[1] || null;
+    }
+    return null;
+  });
+
+  const clearPendingShare = () => {
+    setPendingShareId(null);
+    window.history.replaceState(null, '', '/');
+  };
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = React.useRef(activeId);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -1216,6 +1232,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         removeItemFromFolder,
         moveItemOutOfFolder,
         reorderFolderItems,
+        shareDashboard,
+        loadSharedDashboard,
+        pendingShareId,
+        clearPendingShare,
       }}
     >
       {children}

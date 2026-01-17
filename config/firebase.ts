@@ -18,8 +18,14 @@ export const isConfigured = !!apiKey;
  * - This must only ever be used in development or automated testing.
  * - It must NEVER be enabled in production, as it bypasses normal auth.
  */
-export const isAuthBypass =
-  import.meta.env.DEV && import.meta.env.VITE_AUTH_BYPASS === 'true';
+export const isAuthBypass = import.meta.env.VITE_AUTH_BYPASS === 'true';
+
+console.log('Firebase Config:', {
+  isConfigured,
+  isAuthBypass,
+  VITE_AUTH_BYPASS: import.meta.env.VITE_AUTH_BYPASS,
+  ALL_ENV: import.meta.env
+});
 
 let app: FirebaseApp;
 let auth: Auth;

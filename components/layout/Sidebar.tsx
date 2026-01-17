@@ -350,6 +350,7 @@ export const Sidebar: React.FC = () => {
     setBackground,
     updateDashboardSettings,
     addToast,
+    shareDashboard,
   } = useDashboard();
 
   const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
@@ -526,12 +527,19 @@ export const Sidebar: React.FC = () => {
     { id: 'bg-gradient-to-br from-rose-400 to-orange-400', label: 'Sunset' },
   ];
 
-  const handleShare = (db?: Dashboard) => {
+  const handleShare = async (db?: Dashboard) => {
     const target = db ?? activeDashboard;
     if (!target) return;
-    const data = JSON.stringify(target);
-    void navigator.clipboard.writeText(data);
-    addToast('Board data copied to clipboard!', 'success');
+
+    try {
+      const shareId = await shareDashboard(target);
+      const url = `${window.location.origin}/share/${shareId}`;
+      await navigator.clipboard.writeText(url);
+      addToast('Board link copied to clipboard!', 'success');
+    } catch (err) {
+      console.error('Share failed:', err);
+      addToast('Failed to generate share link', 'error');
+    }
   };
 
   const handleImport = () => {
