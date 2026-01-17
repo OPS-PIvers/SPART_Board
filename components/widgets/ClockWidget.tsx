@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ClockConfig } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
-import { WIDGET_PALETTE } from '../../config/colors';
+import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [time, setTime] = useState(new Date());
@@ -17,7 +17,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     format24 = true,
     showSeconds = true,
-    themeColor = '#1e293b',
+    themeColor = STANDARD_COLORS.slate,
     fontFamily = 'font-mono',
     clockStyle = 'modern',
     glow = false,
