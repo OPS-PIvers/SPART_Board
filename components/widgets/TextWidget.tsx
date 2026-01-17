@@ -2,11 +2,16 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TextConfig } from '../../types';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
+import { STICKY_NOTE_COLORS } from '../../config/colors';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const { content = '', bgColor = '#fef9c3', fontSize = 18 } = config;
+  const {
+    content = '',
+    bgColor = STICKY_NOTE_COLORS.yellow,
+    fontSize = 18,
+  } = config;
 
   return (
     <div
@@ -38,7 +43,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const colors = ['#fef9c3', '#dcfce7', '#dbeafe', '#fce7f3', '#f3f4f6'];
+  const colors = Object.values(STICKY_NOTE_COLORS);
 
   const templates = [
     {
