@@ -60,7 +60,7 @@ export async function generateMiniAppCode(
   try {
     // The new SDK uses models.generateContent
     const response = await client.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
