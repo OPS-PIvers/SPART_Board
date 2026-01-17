@@ -100,6 +100,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           {colors.map((c) => (
             <button
               key={c}
+              aria-label={`Select color ${c}`}
               onClick={() =>
                 updateWidget(widget.id, {
                   config: { ...config, bgColor: c } as TextConfig,

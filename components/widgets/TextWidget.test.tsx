@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TextWidget, TextSettings } from './TextWidget';
 import { WidgetData, TextConfig } from '../../types';
 
@@ -13,6 +13,10 @@ vi.mock('../../context/useDashboard', () => ({
 }));
 
 describe('TextWidget', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const mockConfig: TextConfig = {
     content: 'Hello World',
     bgColor: '#fef9c3',
@@ -51,20 +55,27 @@ describe('TextWidget', () => {
 
   it('updates content on blur', () => {
     render(<TextWidget widget={mockWidget} />);
-    const editableDiv = screen.getByText('Hello World').closest('div[contentEditable="true"]');
+    const editableDiv = screen
+      .getByText('Hello World')
+      .closest('div[contentEditable="true"]');
 
     if (editableDiv) {
-      fireEvent.blur(editableDiv, { target: { innerHTML: 'New Content' } });
+      editableDiv.innerHTML = 'New Content';
+      fireEvent.blur(editableDiv);
       expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
         config: { ...mockConfig, content: 'New Content' },
       });
     } else {
-        throw new Error('Editable div not found');
+      throw new Error('Editable div not found');
     }
   });
 });
 
 describe('TextSettings', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const mockConfig: TextConfig = {
     content: '',
     bgColor: '#fef9c3',
@@ -88,22 +99,23 @@ describe('TextSettings', () => {
     const templateButton = screen.getByText('Integrity Code');
     fireEvent.click(templateButton);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', expect.objectContaining({
-        config: expect.objectContaining({
-            content: expect.stringContaining('Integrity Code')
-        })
-    }));
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
+
+    const lastCall = mockUpdateWidget.mock.lastCall;
+
+    expect(lastCall[0]).toBe('test-widget');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(lastCall[1].config.content).toContain('Integrity Code');
   });
 
   it('changes background color', () => {
     render(<TextSettings widget={mockWidget} />);
-    // Find a color button (e.g., the second one)
-    const colorButtons = screen.getAllByRole('button').filter(btn => btn.className.includes('rounded-full'));
-    // Assuming the second color is #dcfce7 based on the TextWidget.tsx file
-    fireEvent.click(colorButtons[1]);
+    // Find the button for the second color (#dcfce7)
+    const colorButton = screen.getByLabelText('Select color #dcfce7');
+    fireEvent.click(colorButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
-        config: { ...mockConfig, bgColor: '#dcfce7' }
+      config: { ...mockConfig, bgColor: '#dcfce7' },
     });
   });
 
@@ -113,7 +125,7 @@ describe('TextSettings', () => {
     fireEvent.change(slider, { target: { value: '24' } });
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
-        config: { ...mockConfig, fontSize: 24 }
+      config: { ...mockConfig, fontSize: 24 },
     });
   });
 });
