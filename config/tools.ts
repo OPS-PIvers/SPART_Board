@@ -21,6 +21,7 @@ import {
   AppWindow,
   Backpack,
   Sticker,
+  LayoutGrid,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -99,5 +100,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: Sticker,
     label: 'Sticker Library',
     color: 'bg-rose-500',
+  },
+  {
+    type: 'seating-chart',
+    icon: LayoutGrid,
+    label: 'Seating',
+    color: 'bg-cyan-600',
   },
 ];

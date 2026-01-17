@@ -84,6 +84,12 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     stickers: {},
     'sticker-library': { uploadedUrls: [] },
     sticker: { url: '', rotation: 0, size: 150 },
+    'seating-chart': {
+      furniture: [],
+      assignments: {},
+      gridSize: 20,
+      rosterMode: 'class',
+    },
   };
 
   return defaults[type];

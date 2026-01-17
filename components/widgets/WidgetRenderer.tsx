@@ -35,6 +35,8 @@ import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
 import { StickerBookWidget } from './stickers/StickerBookWidget';
 import { StickerItemWidget } from './stickers/StickerItemWidget';
 import { StickerLibraryWidget } from './StickerLibraryWidget';
+import { SeatingChartWidget } from './SeatingChartWidget';
+import { SeatingChartSettings } from './SeatingChartSettings';
 import { getTitle } from '@/utils/widgetHelpers';
 import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
@@ -51,6 +53,7 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   qr: { w: 200, h: 250 },
   dice: { w: 240, h: 240 },
   materials: { w: 340, h: 340 },
+  'seating-chart': { w: 800, h: 600 },
 };
 
 export const WidgetRenderer: React.FC<{
@@ -186,6 +189,8 @@ export const WidgetRenderer: React.FC<{
         return <StickerBookWidget widget={widget} />;
       case 'sticker-library':
         return <StickerLibraryWidget widget={widget} />;
+      case 'seating-chart':
+        return <SeatingChartWidget widget={widget} />;
       default:
         return (
           <div className="p-4 text-center text-slate-400 text-sm">
@@ -247,6 +252,8 @@ export const WidgetRenderer: React.FC<{
             Upload and manage your custom stickers.
           </div>
         );
+      case 'seating-chart':
+        return <SeatingChartSettings widget={widget} />;
       default:
         return (
           <div className="text-slate-500 italic text-sm">
