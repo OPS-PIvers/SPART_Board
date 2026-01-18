@@ -122,6 +122,7 @@ export interface RoutineStep {
   text: string;
   icon?: string;
   color?: string;
+  attachedWidget?: WidgetType;
 }
 
 // Widget-specific config types

@@ -4,11 +4,13 @@ import {
   WidgetData,
   InstructionalRoutinesConfig,
   RoutineStep,
+  WidgetType,
 } from '../../types';
 import {
   ROUTINES,
   InstructionalRoutine,
 } from '../../config/instructionalRoutines';
+import { TOOLS } from '../../config/tools';
 import * as Icons from 'lucide-react';
 import {
   Star,
@@ -18,13 +20,15 @@ import {
   ChevronDown,
   ArrowLeft,
   Grab,
+  Wrench,
+  Play,
 } from 'lucide-react';
 
 // --- FRONT VIEW (STUDENT FOCUS) ---
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter } = useDashboard();
+  const { updateWidget, gradeFilter, addWidget } = useDashboard();
   const config = widget.config as InstructionalRoutinesConfig;
   const {
     selectedRoutineId,
@@ -170,12 +174,31 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   {i + 1}
                 </span>
                 <div className="flex-1 flex items-start justify-between gap-4">
-                  <p
-                    className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                    style={{ fontSize: `${dynamicFontSize}px` }}
-                  >
-                    {step.text}
-                  </p>
+                  <div className="flex flex-col items-start gap-1">
+                    <p
+                      className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
+                      style={{ fontSize: `${dynamicFontSize}px` }}
+                    >
+                      {step.text}
+                    </p>
+                    {step.attachedWidget && (
+                      <button
+                        onClick={() => {
+                          if (step.attachedWidget) {
+                            addWidget(step.attachedWidget);
+                          }
+                        }}
+                        className="flex items-center gap-1.5 bg-brand-blue-lighter hover:bg-brand-blue-light text-brand-blue-primary px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm"
+                      >
+                        <Play size={10} className="fill-current" />
+                        Launch{' '}
+                        {
+                          TOOLS.find((t) => t.type === step.attachedWidget)
+                            ?.label
+                        }
+                      </button>
+                    )}
+                  </div>
 
                   {StepIcon && step.icon && (
                     <div
@@ -306,6 +329,38 @@ export const InstructionalRoutinesSettings: React.FC<{
                 placeholder="Enter student direction..."
                 className="w-full text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
               />
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                  <Wrench size={10} className="text-slate-400" />
+                  <select
+                    value={step.attachedWidget ?? ''}
+                    onChange={(e) => {
+                      const next = [...customSteps];
+                      const val = e.target.value;
+                      if (val) {
+                        next[i] = {
+                          ...next[i],
+                          attachedWidget: val as WidgetType,
+                        };
+                      } else {
+                        const { attachedWidget: _, ...rest } = next[i];
+                        next[i] = rest;
+                      }
+                      updateWidget(widget.id, {
+                        config: { ...config, customSteps: next },
+                      });
+                    }}
+                    className="bg-transparent text-[9px] font-bold text-slate-600 outline-none uppercase tracking-wide cursor-pointer w-24"
+                  >
+                    <option value="">Attach Tool...</option>
+                    {TOOLS.map((t) => (
+                      <option key={t.type} value={t.type}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
             <button
               onClick={() =>
