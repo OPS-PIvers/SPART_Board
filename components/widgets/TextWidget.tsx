@@ -2,6 +2,7 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TextConfig } from '../../types';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
+import { sanitizeHtml } from '../../utils/security';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
@@ -16,7 +17,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         updateWidget(widget.id, {
           config: {
             ...config,
-            content: e.currentTarget.innerHTML,
+            content: sanitizeHtml(e.currentTarget.innerHTML),
           } as TextConfig,
         })
       }
@@ -68,7 +69,9 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ];
 
   const applyTemplate = (content: string) => {
-    updateWidget(widget.id, { config: { ...config, content } as TextConfig });
+    updateWidget(widget.id, {
+      config: { ...config, content: sanitizeHtml(content) } as TextConfig,
+    });
   };
 
   return (
