@@ -4,6 +4,7 @@ import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
+import { sanitizeHtml } from '../../utils/security';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -92,7 +93,9 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ];
 
   const applyTemplate = (content: string) => {
-    updateWidget(widget.id, { config: { ...config, content } as TextConfig });
+    updateWidget(widget.id, {
+      config: { ...config, content: sanitizeHtml(content) } as TextConfig,
+    });
   };
 
   return (
