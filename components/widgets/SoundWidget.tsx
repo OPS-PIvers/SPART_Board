@@ -2,14 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, SoundConfig } from '../../types';
 import { Thermometer, Gauge, Activity, Citrus } from 'lucide-react';
+import { STANDARD_COLORS } from '../../config/colors';
 
 // Poster Colors Mapping
 const POSTER_LEVELS = [
-  { label: '0 - Silence', color: '#3b82f6', threshold: 0 }, // Blue
-  { label: '1 - Whisper', color: '#22c55e', threshold: 20 }, // Green
-  { label: '2 - Conversation', color: '#eab308', threshold: 40 }, // Yellow
-  { label: '3 - Presenter', color: '#f97316', threshold: 60 }, // Orange
-  { label: '4 - Outside', color: '#ef4444', threshold: 80 }, // Red
+  { label: '0 - Silence', color: STANDARD_COLORS.blue, threshold: 0 },
+  { label: '1 - Whisper', color: STANDARD_COLORS.green, threshold: 20 },
+  { label: '2 - Conversation', color: STANDARD_COLORS.yellow, threshold: 40 },
+  { label: '3 - Presenter', color: STANDARD_COLORS.orange, threshold: 60 },
+  { label: '4 - Outside', color: STANDARD_COLORS.red, threshold: 80 },
 ];
 
 const getLevelData = (volume: number) => {
@@ -33,8 +34,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
           width="10"
           height="75"
           rx="5"
-          fill="#f1f5f9"
-          stroke="#e2e8f0"
+          className="fill-slate-100 stroke-slate-200"
           strokeWidth="1"
         />
         {/* Liquid Fill */}
@@ -52,7 +52,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
           cy="85"
           r="10"
           fill={color}
-          stroke="#e2e8f0"
+          className="stroke-slate-200"
           strokeWidth="1"
         />
       </svg>
@@ -80,7 +80,7 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
         <path
           d="M 10 55 A 40 40 0 0 1 90 55"
           fill="none"
-          stroke="#f1f5f9"
+          className="stroke-slate-100"
           strokeWidth="8"
         />
         {/* Needle */}
@@ -89,12 +89,11 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
           y1="55"
           x2={50 + 35 * Math.cos(((rotation - 90) * Math.PI) / 180)}
           y2={55 + 35 * Math.sin(((rotation - 90) * Math.PI) / 180)}
-          stroke="#1e293b"
           strokeWidth="2"
           strokeLinecap="round"
-          className="transition-all duration-150"
+          className="transition-all duration-150 stroke-slate-800"
         />
-        <circle cx="50" cy="55" r="3" fill="#1e293b" />
+        <circle cx="50" cy="55" r="3" className="fill-slate-800" />
       </svg>
     </div>
   );
