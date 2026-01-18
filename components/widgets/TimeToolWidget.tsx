@@ -3,19 +3,11 @@ import { TimeToolConfig, WidgetData } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
+import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
 
 interface Props {
   widget: WidgetData;
 }
-
-// Add type definition for webkitAudioContext
-interface CustomWindow extends Window {
-  webkitAudioContext: typeof AudioContext;
-}
-
-const AUDIO_CONTEXT = new (
-  window.AudioContext || (window as unknown as CustomWindow).webkitAudioContext
-)();
 
 export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const { updateWidget } = useDashboard();
@@ -37,83 +29,6 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   useEffect(() => {
     displayTimeRef.current = displayTime;
   }, [displayTime]);
-
-  // --- AUDIO SYNTHESIS ---
-  const playAlert = React.useCallback(() => {
-    const now = AUDIO_CONTEXT.currentTime;
-    if (config.selectedSound === 'Chime') {
-      [523.25, 659.25, 783.99].forEach((f, i) => {
-        const osc = AUDIO_CONTEXT.createOscillator();
-        const gain = AUDIO_CONTEXT.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, now + i * 0.05);
-        gain.gain.setValueAtTime(0, now + i * 0.05);
-        gain.gain.linearRampToValueAtTime(0.2, now + i * 0.05 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5 + i * 0.1);
-        osc.connect(gain);
-        gain.connect(AUDIO_CONTEXT.destination);
-        osc.start(now + i * 0.05);
-        osc.stop(now + 2);
-      });
-    } else if (config.selectedSound === 'Gong') {
-      const fund = AUDIO_CONTEXT.createOscillator();
-      const fundGain = AUDIO_CONTEXT.createGain();
-      fund.type = 'sine';
-      fund.frequency.setValueAtTime(55, now);
-      fundGain.gain.setValueAtTime(0, now);
-      fundGain.gain.linearRampToValueAtTime(0.8, now + 0.08);
-      fundGain.gain.exponentialRampToValueAtTime(0.001, now + 5);
-      fund.connect(fundGain);
-      fundGain.connect(AUDIO_CONTEXT.destination);
-      fund.start(now);
-      fund.stop(now + 5);
-      [113, 167, 223, 317, 449].forEach((f) => {
-        const pOsc = AUDIO_CONTEXT.createOscillator();
-        const pGain = AUDIO_CONTEXT.createGain();
-        pOsc.type = 'sine';
-        pOsc.frequency.setValueAtTime(f, now);
-        pGain.gain.setValueAtTime(0, now);
-        pGain.gain.linearRampToValueAtTime(0.2, now + 0.01);
-        pGain.gain.exponentialRampToValueAtTime(0.001, now + 3);
-        pOsc.connect(pGain);
-        pGain.connect(AUDIO_CONTEXT.destination);
-        pOsc.start(now);
-        pOsc.stop(now + 3);
-      });
-    } else if (config.selectedSound === 'Blip') {
-      const osc = AUDIO_CONTEXT.createOscillator();
-      const gain = AUDIO_CONTEXT.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      osc.connect(gain);
-      gain.connect(AUDIO_CONTEXT.destination);
-      osc.start(now);
-      osc.stop(now + 0.3);
-    } else if (config.selectedSound === 'Alert') {
-      [440, 880, 440, 880].forEach((f, i) => {
-        const osc = AUDIO_CONTEXT.createOscillator();
-        const gain = AUDIO_CONTEXT.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(f, now + i * 0.2);
-        gain.gain.setValueAtTime(0, now + i * 0.2);
-        gain.gain.linearRampToValueAtTime(0.1, now + i * 0.2 + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.2 + 0.15);
-        osc.connect(gain);
-        gain.connect(AUDIO_CONTEXT.destination);
-        osc.start(now + i * 0.2);
-        osc.stop(now + i * 0.2 + 0.2);
-      });
-    }
-  }, [config.selectedSound]);
-
-  const resumeAudio = async () => {
-    if (AUDIO_CONTEXT.state === 'suspended') {
-      await AUDIO_CONTEXT.resume();
-    }
-  };
 
   const handleStop = React.useCallback(
     (finalTime?: number) => {
@@ -161,6 +76,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     if (config.isRunning && config.startTime) {
       const start = config.startTime;
       const base = config.elapsedTime;
+      const sound = config.selectedSound;
 
       interval = setInterval(() => {
         const delta = (Date.now() - start) / 1000;
@@ -169,7 +85,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
           next = Math.max(0, base - delta);
           if (next === 0) {
             handleStop(0);
-            playAlert();
+            playTimerAlert(sound);
           }
         } else {
           next = base + delta;
@@ -185,7 +101,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     config.startTime,
     config.elapsedTime,
     config.mode,
-    playAlert,
+    config.selectedSound,
     handleStop,
   ]);
 
