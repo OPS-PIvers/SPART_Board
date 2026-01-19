@@ -134,7 +134,7 @@ const StylePreview = ({
 
       {/* Dock Preview */}
       <div
-        className={`relative z-10 px-6 py-2 border border-white/30 shadow-lg backdrop-blur-md flex items-center gap-4 transition-all duration-300 ${
+        className={`relative z-10 px-6 py-2 border border-white/30 shadow-lg backdrop-blur-md flex flex-col items-center gap-2 transition-all duration-300 ${
           pendingStyle.dockBorderRadius === 'none'
             ? 'rounded-none'
             : pendingStyle.dockBorderRadius === 'full'
@@ -145,45 +145,50 @@ const StylePreview = ({
           backgroundColor: `rgba(255, 255, 255, ${pendingStyle.dockTransparency})`,
         }}
       >
-        <div className="flex flex-col items-center gap-1">
-          <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
-          <span
-            className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
-              pendingStyle.fontFamily === 'sans'
-                ? 'font-sans'
-                : pendingStyle.fontFamily === 'mono'
-                  ? 'font-mono'
-                  : 'font-handwritten'
-            }`}
-            style={{
-              color: pendingStyle.dockTextColor,
-              textShadow: pendingStyle.dockTextShadow
-                ? '0 1px 2px rgba(0,0,0,0.5)'
-                : 'none',
-            }}
-          >
-            Icon
-          </span>
+        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">
+          Dock Preview
         </div>
-        <div className="flex flex-col items-center gap-1">
-          <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
-          <span
-            className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
-              pendingStyle.fontFamily === 'sans'
-                ? 'font-sans'
-                : pendingStyle.fontFamily === 'mono'
-                  ? 'font-mono'
-                  : 'font-handwritten'
-            }`}
-            style={{
-              color: pendingStyle.dockTextColor,
-              textShadow: pendingStyle.dockTextShadow
-                ? '0 1px 2px rgba(0,0,0,0.5)'
-                : 'none',
-            }}
-          >
-            Label
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
+            <span
+              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
+                pendingStyle.fontFamily === 'sans'
+                  ? 'font-sans'
+                  : pendingStyle.fontFamily === 'mono'
+                    ? 'font-mono'
+                    : 'font-handwritten'
+              }`}
+              style={{
+                color: pendingStyle.dockTextColor,
+                textShadow: pendingStyle.dockTextShadow
+                  ? '0 1px 2px rgba(0,0,0,0.5)'
+                  : 'none',
+              }}
+            >
+              Icon
+            </span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
+            <span
+              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
+                pendingStyle.fontFamily === 'sans'
+                  ? 'font-sans'
+                  : pendingStyle.fontFamily === 'mono'
+                    ? 'font-mono'
+                    : 'font-handwritten'
+              }`}
+              style={{
+                color: pendingStyle.dockTextColor,
+                textShadow: pendingStyle.dockTextShadow
+                  ? '0 1px 2px rgba(0,0,0,0.5)'
+                  : 'none',
+              }}
+            >
+              Label
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -1461,7 +1466,7 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-48">
                   {/* Global Font Family - Always visible */}
 
                   <div className="space-y-4">
