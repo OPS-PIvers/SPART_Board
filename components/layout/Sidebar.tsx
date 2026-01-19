@@ -115,13 +115,7 @@ const StylePreview = ({
         }}
       >
         <div
-          className={`text-center space-y-1 ${
-            pendingStyle.fontFamily === 'sans'
-              ? 'font-sans'
-              : pendingStyle.fontFamily === 'mono'
-                ? 'font-mono'
-                : 'font-handwritten'
-          }`}
+          className={`text-center space-y-1 font-${pendingStyle.fontFamily}`}
         >
           <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">
             Window Preview
@@ -152,13 +146,7 @@ const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
             <span
-              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
-                pendingStyle.fontFamily === 'sans'
-                  ? 'font-sans'
-                  : pendingStyle.fontFamily === 'mono'
-                    ? 'font-mono'
-                    : 'font-handwritten'
-              }`}
+              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow
@@ -172,13 +160,7 @@ const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
             <span
-              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 ${
-                pendingStyle.fontFamily === 'sans'
-                  ? 'font-sans'
-                  : pendingStyle.fontFamily === 'mono'
-                    ? 'font-mono'
-                    : 'font-handwritten'
-              }`}
+              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow

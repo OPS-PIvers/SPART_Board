@@ -562,10 +562,12 @@ export interface BackgroundPreset {
 
 export type GlobalFontFamily =
   | 'sans'
-  | 'handwritten'
+  | 'serif'
   | 'mono'
-  | 'comic'
-  | 'dyslexic';
+  | 'handwritten'
+  | 'rounded'
+  | 'fun'
+  | 'comic';
 
 export interface GlobalStyle {
   fontFamily: GlobalFontFamily;

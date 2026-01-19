@@ -54,8 +54,12 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Lexend"', 'sans-serif'],
-        handwritten: ['"Patrick Hand"', 'cursive'],
+        serif: ['"Merriweather"', 'serif'],
         mono: ['"Roboto Mono"', 'monospace'],
+        handwritten: ['"Patrick Hand"', 'cursive'],
+        rounded: ['"Varela Round"', 'sans-serif'],
+        fun: ['"Fredoka"', 'sans-serif'],
+        comic: ['"Comic Neue"', 'cursive'],
       },
       colors: {
         brand: {
