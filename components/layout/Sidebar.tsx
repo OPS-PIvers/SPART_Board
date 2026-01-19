@@ -76,6 +76,20 @@ const GRADE_FILTER_OPTIONS = [
   { value: '9-12', label: '9-12' },
 ] as const;
 
+const FONT_OPTIONS: { id: GlobalFontFamily; label: string; font: string }[] = [
+  { id: 'sans', label: 'Modern Sans', font: 'font-sans' },
+  { id: 'serif', label: 'Classic Serif', font: 'font-serif' },
+  { id: 'rounded', label: 'Soft Rounded', font: 'font-rounded' },
+  { id: 'handwritten', label: 'Handwritten', font: 'font-handwritten' },
+  { id: 'comic', label: 'Comic Style', font: 'font-comic' },
+  { id: 'fun', label: 'Playful Fun', font: 'font-fun' },
+  { id: 'slab', label: 'Classic Slab', font: 'font-slab' },
+  { id: 'retro', label: '8-Bit Retro', font: 'font-retro' },
+  { id: 'marker', label: 'Permanent Marker', font: 'font-marker' },
+  { id: 'cursive', label: 'Elegant Cursive', font: 'font-cursive' },
+  { id: 'mono', label: 'Digital Mono', font: 'font-mono' },
+];
+
 const StylePreview = ({
   pendingStyle,
   background,
@@ -440,6 +454,7 @@ export const Sidebar: React.FC = () => {
   >('presets');
 
   const [styleTab, setStyleTab] = useState<'window' | 'dock'>('window');
+  const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
 
   const [pendingStyle, setPendingStyle] =
     useState<GlobalStyle>(DEFAULT_GLOBAL_STYLE);
@@ -1453,84 +1468,76 @@ export const Sidebar: React.FC = () => {
                   {/* Global Font Family - Always visible */}
 
                   <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                      Global Typography
-                    </h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Global Typography
+                      </h3>
+                      <button
+                        onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
+                        className="text-[10px] font-black uppercase text-brand-blue-primary hover:underline flex items-center gap-1"
+                      >
+                        {isFontMenuOpen ? 'Close Menu' : 'Change Font'}
+                        <ChevronRight
+                          className={`w-3 h-3 transition-transform duration-300 ${isFontMenuOpen ? 'rotate-90' : 'rotate-0'}`}
+                        />
+                      </button>
+                    </div>
 
-                    <div className="grid grid-cols-1 gap-2">
-                      {[
-                        { id: 'sans', label: 'Modern Sans', font: 'font-sans' },
-                        {
-                          id: 'serif',
-                          label: 'Classic Serif',
-                          font: 'font-serif',
-                        },
-                        {
-                          id: 'rounded',
-                          label: 'Soft Rounded',
-                          font: 'font-rounded',
-                        },
-                        {
-                          id: 'handwritten',
-                          label: 'Handwritten',
-                          font: 'font-handwritten',
-                        },
-                        {
-                          id: 'comic',
-                          label: 'Comic Style',
-                          font: 'font-comic',
-                        },
-                        { id: 'fun', label: 'Playful Fun', font: 'font-fun' },
-                        {
-                          id: 'slab',
-                          label: 'Classic Slab',
-                          font: 'font-slab',
-                        },
-                        {
-                          id: 'retro',
-                          label: '8-Bit Retro',
-                          font: 'font-retro',
-                        },
-                        {
-                          id: 'marker',
-                          label: 'Permanent Marker',
-                          font: 'font-marker',
-                        },
-                        {
-                          id: 'cursive',
-                          label: 'Elegant Cursive',
-                          font: 'font-cursive',
-                        },
-                        {
-                          id: 'mono',
-                          label: 'Digital Mono',
-                          font: 'font-mono',
-                        },
-                      ].map((f) => (
-                        <button
-                          key={f.id}
-                          onClick={() =>
-                            setPendingStyle({
-                              ...pendingStyle,
-
-                              fontFamily: f.id as GlobalFontFamily,
-                            })
-                          }
-                          className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 ${
-                            pendingStyle.fontFamily === f.id
-                              ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
-                              : 'bg-white border-slate-100 text-slate-500'
-                          }`}
+                    <div className="relative">
+                      {/* Selected Font (Always Visible) */}
+                      <button
+                        onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
+                        className="w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm"
+                      >
+                        <span
+                          className={`text-base font-bold font-${pendingStyle.fontFamily}`}
                         >
-                          <span className={`text-base font-bold ${f.font}`}>
-                            {f.label}
-                          </span>
+                          {
+                            FONT_OPTIONS.find(
+                              (f) => f.id === pendingStyle.fontFamily
+                            )?.label
+                          }
+                        </span>
+                        <ChevronRight
+                          className={`w-4 h-4 transition-transform duration-300 ${isFontMenuOpen ? 'rotate-90' : 'rotate-0'}`}
+                        />
+                      </button>
 
-                          {pendingStyle.fontFamily === f.id && (
-                            <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
-                          )}
-                        </button>
-                      ))}
+                      {/* Collapsible Font List */}
+                      <div
+                        className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                          isFontMenuOpen
+                            ? 'max-h-[500px] opacity-100 mt-2 visible'
+                            : 'max-h-0 opacity-0 invisible'
+                        }`}
+                      >
+                        <div className="grid grid-cols-1 gap-2 p-1 bg-slate-100/50 rounded-2xl border border-slate-200">
+                          {FONT_OPTIONS.map((f) => (
+                            <button
+                              key={f.id}
+                              onClick={() => {
+                                setPendingStyle({
+                                  ...pendingStyle,
+                                  fontFamily: f.id,
+                                });
+                                setIsFontMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                                pendingStyle.fontFamily === f.id
+                                  ? 'bg-brand-blue-primary text-white shadow-md'
+                                  : 'bg-white hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              <span className={`text-sm font-bold ${f.font}`}>
+                                {f.label}
+                              </span>
+                              {pendingStyle.fontFamily === f.id && (
+                                <CheckSquare className="w-4 h-4 text-white" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
