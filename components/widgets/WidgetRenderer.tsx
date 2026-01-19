@@ -20,7 +20,7 @@ import { DrawingWidget, DrawingSettings } from './DrawingWidget';
 import { QRWidget, QRSettings } from './QRWidget';
 import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
 import { WorkSymbolsWidget } from './WorkSymbolsWidget';
-import { PollWidget } from './PollWidget';
+import { PollWidget, PollSettings } from './PollWidget';
 import { WeatherWidget, WeatherSettings } from './WeatherWidget';
 import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
@@ -219,6 +219,8 @@ export const WidgetRenderer: React.FC<{
         return <ScoreboardSettings widget={widget} />;
       case 'webcam':
         return <WebcamSettings widget={widget} />;
+      case 'poll':
+        return <PollSettings widget={widget} />;
       case 'calendar':
         return <CalendarSettings widget={widget} />;
       case 'weather':
