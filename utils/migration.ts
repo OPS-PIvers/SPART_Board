@@ -1,4 +1,5 @@
-import { Dashboard, WidgetData, TimeToolConfig } from '../types';
+import { Dashboard, WidgetData, TimeToolConfig, TextConfig } from '../types';
+import { sanitizeHtml } from './security';
 
 interface LegacyConfig {
   duration?: number;
@@ -6,6 +7,21 @@ interface LegacyConfig {
 
 export const migrateWidget = (widget: WidgetData): WidgetData => {
   const type = widget.type as string;
+
+  // Sanitize stored text widget content to prevent XSS
+  if (type === 'text') {
+    const config = widget.config as TextConfig;
+    if (config.content) {
+      return {
+        ...widget,
+        config: {
+          ...config,
+          content: sanitizeHtml(config.content),
+        } as TextConfig,
+      };
+    }
+  }
+
   if (type === 'timer' || type === 'stopwatch') {
     const isTimer = type === 'timer';
     const oldConfig = widget.config as LegacyConfig;

@@ -49,6 +49,24 @@ describe('migration', () => {
       });
     });
 
+    it('sanitizes text widget content', () => {
+      const dangerousWidget = {
+        id: '123',
+        type: 'text',
+        config: { content: 'Safe<script>alert(1)</script>' },
+        x: 0,
+        y: 0,
+        w: 100,
+        h: 100,
+        z: 1,
+      } as unknown as WidgetData;
+
+      const newWidget = migrateWidget(dangerousWidget);
+
+      expect(newWidget.type).toBe('text');
+      expect((newWidget.config as any).content).toBe('Safe');
+    });
+
     it('returns other widgets unchanged', () => {
       const widget = {
         id: '123',

@@ -40,9 +40,43 @@ describe('sanitizeHtml', () => {
     expect(output).toContain('<b>Safe</b>');
   });
 
-  it('should remove data: URIs', () => {
-    const input = '<img src="data:image/svg+xml;base64,...">';
+  it('should remove dangerous data: URIs', () => {
+    const input = '<a href="data:text/html;base64,...">Link</a>';
     const output = sanitizeHtml(input);
-    expect(output).not.toContain('data:');
+    expect(output).not.toContain('data:text/html');
+  });
+
+  it('should allow image data: URIs', () => {
+    const input = '<img src="data:image/png;base64,safe">';
+    const output = sanitizeHtml(input);
+    expect(output).toContain('data:image/png;base64,safe');
+  });
+
+  it('should handle SVG-based XSS', () => {
+    const input = '<svg onload="alert(1)"></svg>';
+    const output = sanitizeHtml(input);
+    expect(output).not.toContain('onload');
+  });
+
+  it('should handle case variation', () => {
+    const input = '<div onClick="alert(1)" OnMouseOver="alert(1)">Click</div>';
+    const output = sanitizeHtml(input);
+    expect(output).not.toContain('onClick');
+    expect(output).not.toContain('OnMouseOver');
+  });
+
+  it('should handle javascript: case variation', () => {
+    const input = '<a href="JaVaScRiPt:alert(1)">Link</a>';
+    const output = sanitizeHtml(input);
+    expect(output).not.toContain('JaVaScRiPt:');
+  });
+
+  it('should handle HTML entity encoding bypasses', () => {
+    // Basic check - browsers decode entities in attributes, but our logic checks attr.value
+    // If the browser parses it, DOMParser puts decoded value in attribute
+    const input =
+      '<a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;alert(1)">Link</a>';
+    const output = sanitizeHtml(input);
+    expect(output).not.toContain('javascript:');
   });
 });

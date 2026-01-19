@@ -39,10 +39,13 @@ export const sanitizeHtml = (html: string): string => {
     allElements.forEach((el) => {
       const attributes = Array.from(el.attributes);
       attributes.forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        const value = attr.value.toLowerCase();
+
         if (
-          attr.name.startsWith('on') ||
-          attr.value.toLowerCase().includes('javascript:') ||
-          attr.value.toLowerCase().includes('data:')
+          name.startsWith('on') ||
+          value.includes('javascript:') ||
+          (value.includes('data:') && !value.startsWith('data:image/'))
         ) {
           el.removeAttribute(attr.name);
         }
@@ -50,6 +53,13 @@ export const sanitizeHtml = (html: string): string => {
     });
 
     return doc.body.innerHTML;
+  } else {
+    // Fallback warning in development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        'Security Warning: DOMParser not available. Using regex fallback for sanitization which may be less secure.'
+      );
+    }
   }
 
   return clean;
