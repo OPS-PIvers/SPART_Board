@@ -1,11 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { ClockWidget } from './ClockWidget';
-import { WidgetData, ClockConfig } from '../../types';
+import { useDashboard } from '../../context/useDashboard';
+import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+
+vi.mock('../../context/useDashboard');
+
+const mockDashboardContext = {
+  activeDashboard: {
+    globalStyle: DEFAULT_GLOBAL_STYLE,
+  },
+};
 
 describe('ClockWidget', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockDashboardContext
+    );
   });
 
   afterEach(() => {
@@ -26,7 +38,7 @@ describe('ClockWidget', () => {
         format24: true,
         showSeconds: true,
         themeColor: '#000000',
-        fontFamily: 'font-mono',
+        fontFamily: 'global',
         clockStyle: 'modern',
         ...config,
       },
