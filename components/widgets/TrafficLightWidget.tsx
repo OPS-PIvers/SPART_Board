@@ -23,18 +23,24 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
     <div className="flex items-center justify-center h-full">
       <div className="bg-slate-800 p-4 rounded-3xl shadow-inner flex flex-col gap-4 border-2 border-slate-700">
         <button
+          aria-label="Red Light"
+          aria-pressed={current === 'red'}
           onClick={() => {
             toggle('red');
           }}
           className={`w-16 h-16 rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'}`}
         />
         <button
+          aria-label="Yellow Light"
+          aria-pressed={current === 'yellow'}
           onClick={() => {
             toggle('yellow');
           }}
           className={`w-16 h-16 rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400' : 'bg-yellow-950/50'}`}
         />
         <button
+          aria-label="Green Light"
+          aria-pressed={current === 'green'}
           onClick={() => {
             toggle('green');
           }}
