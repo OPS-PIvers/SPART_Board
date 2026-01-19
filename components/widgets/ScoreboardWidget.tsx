@@ -5,6 +5,7 @@ import {
   ScoreboardConfig,
   ScoreboardTeam,
   RandomConfig,
+  DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import { Plus, Minus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
@@ -97,7 +98,8 @@ const getStyles = (colorClass: string) => {
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScoreboardConfig;
 
   // Auto-migration: If no teams array, convert legacy A/B to teams
@@ -138,7 +140,9 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   const scoreFontSize = useScaledFont(widget.w, widget.h, 0.5, 24, 120);
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto">
+    <div
+      className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
       {teams.map((team) => {
         // Parse color base for backgrounds
         const colorClass = team.color ?? 'bg-blue-500';

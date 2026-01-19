@@ -1,4 +1,6 @@
 import React from 'react';
+import { useDashboard } from '../../../context/useDashboard';
+import { DEFAULT_GLOBAL_STYLE } from '../../../types';
 import { PASTEL_PALETTE } from '../../../config/colors';
 
 const WHEEL_COLORS = PASTEL_PALETTE;
@@ -20,6 +22,8 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   isSpinning,
   fontSize: resultFontSize,
 }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const radius = 120;
   const centerX = 150;
   const centerY = 150;
@@ -27,8 +31,11 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   const sliceAngle = 360 / totalNames;
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
+    <div
+      className={`relative w-full h-full flex items-center justify-center p-2 overflow-hidden font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
       {/* Static Pointer Arrow (Top Center) */}
+
       <div className="absolute top-2 z-20 flex flex-col items-center">
         <div
           className="w-10 h-8 bg-red-600 shadow-lg"

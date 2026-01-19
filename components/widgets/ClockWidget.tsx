@@ -56,13 +56,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const getFontClass = () => {
     if (fontFamily === 'global') {
-      return globalStyle.fontFamily === 'sans'
-        ? 'font-sans'
-        : globalStyle.fontFamily === 'mono'
-          ? 'font-mono'
-          : globalStyle.fontFamily === 'handwritten'
-            ? 'font-handwritten'
-            : 'font-sans';
+      return `font-${globalStyle.fontFamily}`;
     }
     return fontFamily;
   };

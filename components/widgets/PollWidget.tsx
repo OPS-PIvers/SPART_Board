@@ -1,10 +1,12 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, PollConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { RotateCcw } from 'lucide-react';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as PollConfig;
   const { question = 'Vote Now!', options = [] } = config;
 
@@ -21,9 +23,17 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const total = options.reduce((sum, o) => sum + o.votes, 0);
 
+  const questionSize = useScaledFont(widget.w, widget.h, 0.4, 14, 32);
+  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 10, 18);
+
   return (
-    <div className="flex flex-col h-full p-4">
-      <div className="text-sm font-black uppercase text-slate-800 mb-4 tracking-tight border-b pb-2">
+    <div
+      className={`flex flex-col h-full p-4 font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
+      <div
+        className="font-black uppercase text-slate-800 mb-4 tracking-tight border-b pb-2"
+        style={{ fontSize: `${questionSize}px` }}
+      >
         {question}
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
@@ -37,7 +47,10 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               }}
               className="w-full text-left group"
             >
-              <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-wider text-slate-600">
+              <div
+                className="flex justify-between font-bold mb-1 uppercase tracking-wider text-slate-600"
+                style={{ fontSize: `${labelSize}px` }}
+              >
                 <span>{o.label}</span>
                 <span>
                   {o.votes} ({percent}%)

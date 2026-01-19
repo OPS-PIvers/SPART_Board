@@ -3,7 +3,12 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
-import { WidgetData, WeatherConfig, WeatherGlobalConfig } from '../../types';
+import {
+  WidgetData,
+  WeatherConfig,
+  WeatherGlobalConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import {
   Sun,
@@ -69,7 +74,8 @@ const EARTH_NETWORKS_ICONS = {
 };
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const { featurePermissions } = useAuth();
   const config = widget.config as WeatherConfig;
   const {
@@ -315,7 +321,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const tempFontSize = useScaledFont(widget.w, widget.h, 1.2, 24, 80);
 
   return (
-    <div className="flex flex-col items-center justify-between h-full p-4 gap-2 relative">
+    <div
+      className={`flex flex-col items-center justify-between h-full p-4 gap-2 relative font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
           <MapPin className="w-2.5 h-2.5" /> {locationName}

@@ -1,6 +1,11 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { ChecklistConfig, ChecklistItem, WidgetData } from '../../types';
+import {
+  ChecklistConfig,
+  ChecklistItem,
+  WidgetData,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
@@ -14,7 +19,9 @@ import {
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, rosters, activeRosterId } = useDashboard();
+  const { updateWidget, rosters, activeRosterId, activeDashboard } =
+    useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -116,7 +123,9 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group">
+    <div
+      className={`h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
       {/* Notebook Margin Line */}
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 

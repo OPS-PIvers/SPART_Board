@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, DiceConfig } from '../../types';
+import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
 
 // Singleton-like Audio Manager for Dice
@@ -88,6 +88,8 @@ const DiceFace: React.FC<{
 };
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as DiceConfig;
   const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = config.count ?? 1;
@@ -150,7 +152,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={roll}
         disabled={isRolling}
         className={`
-          flex items-center gap-2 px-8 py-3 rounded-full font-black uppercase tracking-widest transition-all
+          flex items-center gap-2 px-8 py-3 rounded-full font-black uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
           ${
             isRolling
               ? 'bg-slate-100 text-slate-400'

@@ -1,12 +1,19 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, ScheduleItem, ScheduleConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import {
+  WidgetData,
+  ScheduleItem,
+  ScheduleConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../types';
 import { Circle, CheckCircle2 } from 'lucide-react';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
   const items = config.items ?? [];
 
@@ -18,8 +25,13 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
+  const taskSize = useScaledFont(widget.w, widget.h, 0.35, 14, 24);
+  const timeSize = useScaledFont(widget.w, widget.h, 0.2, 10, 14);
+
   return (
-    <div className="h-full flex flex-col p-4 bg-transparent rounded-lg">
+    <div
+      className={`h-full flex flex-col p-4 bg-transparent rounded-lg font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
           <button
@@ -40,12 +52,14 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             )}
             <div className="flex flex-col items-start">
               <span
-                className={`text-[10px] font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+                className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+                style={{ fontSize: `${timeSize}px` }}
               >
                 {item.time}
               </span>
               <span
-                className={`text-sm font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+                className={`font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+                style={{ fontSize: `${taskSize}px` }}
               >
                 {item.task}
               </span>

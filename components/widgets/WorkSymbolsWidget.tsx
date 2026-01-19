@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, WorkSymbolsConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import {
+  WidgetData,
+  WorkSymbolsConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../types';
 import * as Icons from 'lucide-react';
 
 // --- Types & Constants ---
+// ... (rest of constants remains same)
 
 interface RoutineStep {
   icon: string;
@@ -174,10 +180,14 @@ const ROUTINE_DB: Record<string, Routine[]> = {
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter } = useDashboard();
+  const { updateWidget, gradeFilter, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = (widget.config as WorkSymbolsConfig) ?? {};
   const activeRoutines = config.activeRoutines ?? [];
   const { voiceLevel = null, workMode = null } = config;
+
+  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 8, 12);
+  const voiceSize = useScaledFont(widget.w, widget.h, 0.3, 10, 14);
 
   // View state: 'picker' or 'facilitator' (for specific routine steps)
   const [viewState, setViewState] = useState<'picker' | 'facilitator'>(
@@ -413,8 +423,11 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   ];
 
   return (
-    <div className="flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none">
+    <div
+      className={`flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+    >
       {/* Voice Level Thermometer */}
+
       <div className="flex-1 flex flex-col gap-1.5 h-full">
         <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest pl-1 mb-1">
           Voice Level
@@ -438,10 +451,16 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <span className="text-2xl font-black opacity-40">{v.id}</span>
             <div className="flex flex-col items-start leading-none">
-              <span className="text-[11px] font-black uppercase tracking-tight">
+              <span
+                className="font-black uppercase tracking-tight"
+                style={{ fontSize: `${voiceSize}px` }}
+              >
                 {v.label}
               </span>
-              <span className="text-[8px] font-bold opacity-60 uppercase">
+              <span
+                className="font-bold opacity-60 uppercase"
+                style={{ fontSize: `${voiceSize * 0.7}px` }}
+              >
                 {v.sub}
               </span>
             </div>
@@ -473,7 +492,10 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             }`}
           >
             <m.icon className="w-6 h-6" strokeWidth={2.5} />
-            <span className="text-[8px] font-black uppercase text-center leading-tight px-1">
+            <span
+              className="font-black uppercase text-center leading-tight px-1"
+              style={{ fontSize: `${labelSize}px` }}
+            >
               {m.label}
             </span>
           </button>

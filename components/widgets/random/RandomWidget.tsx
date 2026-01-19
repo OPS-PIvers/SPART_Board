@@ -144,12 +144,19 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       if (widget.w > 600) cols = 3;
       else if (widget.w > 400) cols = 2;
       const rows = Math.ceil(numGroups / cols);
+
+      // Find max name length to scale font
+      const allNames = (displayResult as string[][]).flat();
+      const maxNameLength =
+        allNames.reduce((max, name) => Math.max(max, name.length), 0) || 10;
+
       const maxItemsInGroup = Math.max(
         ...(displayResult as string[][]).map((g: string[]) => g.length)
       );
       const linesPerRow = maxItemsInGroup + 1.5;
       const fontSizeH = availableH / rows / linesPerRow;
-      const fontSizeW = availableW / cols / 12;
+      // Base width calculation on character count
+      const fontSizeW = availableW / cols / (maxNameLength * 0.7);
       const fontSize = Math.max(10, Math.min(24, fontSizeH, fontSizeW));
       return { gridCols: cols, fontSize, gap: fontSize / 2 };
     }

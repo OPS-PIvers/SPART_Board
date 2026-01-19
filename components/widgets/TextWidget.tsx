@@ -1,16 +1,27 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, TextConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as TextConfig;
   const { content = '', bgColor = '#fef9c3', fontSize = 18 } = config;
 
+  // Scale the base font size with window dimensions
+  const scaledFontSize = useScaledFont(
+    widget.w,
+    widget.h,
+    fontSize / 100, // Use the manual size as a percentage factor
+    12,
+    200
+  );
+
   return (
     <div
-      className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative"
+      className={`h-full w-full p-4 font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
       contentEditable
       onBlur={(e) =>
         updateWidget(widget.id, {
@@ -28,7 +39,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       />
       <div
         className="relative z-10 h-full w-full"
-        style={{ fontSize: `${fontSize}px` }}
+        style={{ fontSize: `${scaledFontSize}px` }}
         dangerouslySetInnerHTML={{ __html: content }}
       />
     </div>
