@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, PollConfig } from '../../types';
 import { RotateCcw, Plus, Trash2, Download, Type } from 'lucide-react';
@@ -80,10 +80,6 @@ interface OptionInputProps {
 const OptionInput: React.FC<OptionInputProps> = ({ label, index, onSave }) => {
   const [val, setVal] = useState(label);
 
-  // Sync state only when label changes from external source and NOT focused?
-  // Actually, standard pattern is using key to force reset.
-  // But let's try just removing the effect and relying on initial state + key.
-
   return (
     <input
       type="text"
@@ -102,10 +98,8 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { question = 'Vote Now!', options = [] } = config;
 
   // Question local state
+  // Using key={question} on input allows removing the useEffect sync
   const [localQuestion, setLocalQuestion] = useState(question);
-  useEffect(() => {
-    setLocalQuestion(question);
-  }, [question]);
 
   const saveQuestion = () => {
     if (localQuestion !== question) {
@@ -168,6 +162,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <Type className="w-3 h-3" /> Question
         </label>
         <input
+          key={question} // Force reset when prop changes
           type="text"
           value={localQuestion}
           onChange={(e) => setLocalQuestion(e.target.value)}
