@@ -567,7 +567,11 @@ export type GlobalFontFamily =
   | 'handwritten'
   | 'rounded'
   | 'fun'
-  | 'comic';
+  | 'comic'
+  | 'slab'
+  | 'retro'
+  | 'marker'
+  | 'cursive';
 
 export interface GlobalStyle {
   fontFamily: GlobalFontFamily;

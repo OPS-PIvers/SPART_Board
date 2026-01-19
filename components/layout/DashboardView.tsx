@@ -175,14 +175,7 @@ export const DashboardView: React.FC = () => {
   }
 
   const globalStyle = activeDashboard.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-  const fontClass =
-    globalStyle.fontFamily === 'sans'
-      ? 'font-sans'
-      : globalStyle.fontFamily === 'mono'
-        ? 'font-mono'
-        : globalStyle.fontFamily === 'handwritten'
-          ? 'font-handwritten'
-          : 'font-sans';
+  const fontClass = `font-${globalStyle.fontFamily}`;
 
   return (
     <div

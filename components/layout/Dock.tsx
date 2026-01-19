@@ -52,7 +52,7 @@ const DockLabel = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <span
-      className="text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300"
+      className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily}`}
       style={{
         color: globalStyle.dockTextColor,
         textShadow: globalStyle.dockTextShadow

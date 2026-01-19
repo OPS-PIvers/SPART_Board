@@ -1460,15 +1460,47 @@ export const Sidebar: React.FC = () => {
                     <div className="grid grid-cols-1 gap-2">
                       {[
                         { id: 'sans', label: 'Modern Sans', font: 'font-sans' },
-
+                        {
+                          id: 'serif',
+                          label: 'Classic Serif',
+                          font: 'font-serif',
+                        },
+                        {
+                          id: 'rounded',
+                          label: 'Soft Rounded',
+                          font: 'font-rounded',
+                        },
                         {
                           id: 'handwritten',
-
                           label: 'Handwritten',
-
                           font: 'font-handwritten',
                         },
-
+                        {
+                          id: 'comic',
+                          label: 'Comic Style',
+                          font: 'font-comic',
+                        },
+                        { id: 'fun', label: 'Playful Fun', font: 'font-fun' },
+                        {
+                          id: 'slab',
+                          label: 'Classic Slab',
+                          font: 'font-slab',
+                        },
+                        {
+                          id: 'retro',
+                          label: '8-Bit Retro',
+                          font: 'font-retro',
+                        },
+                        {
+                          id: 'marker',
+                          label: 'Permanent Marker',
+                          font: 'font-marker',
+                        },
+                        {
+                          id: 'cursive',
+                          label: 'Elegant Cursive',
+                          font: 'font-cursive',
+                        },
                         {
                           id: 'mono',
                           label: 'Digital Mono',
