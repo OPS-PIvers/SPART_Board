@@ -152,7 +152,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={roll}
         disabled={isRolling}
         className={`
-          flex items-center gap-2 px-8 py-3 rounded-full font-black uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
+          flex items-center gap-2 px-8 py-3 rounded-full  uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
           ${
             isRolling
               ? 'bg-slate-100 text-slate-400'
@@ -175,7 +175,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
           <Hash className="w-3 h-3" /> Number of Dice
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -196,8 +196,8 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 }
               `}
             >
-              <span className="text-xl font-black">{n}</span>
-              <span className="text-[8px] font-black uppercase">
+              <span className="text-xl ">{n}</span>
+              <span className="text-[8px]  uppercase">
                 {n === 1 ? 'Dice' : 'Dice'}
               </span>
             </button>
@@ -208,11 +208,11 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
         <div className="flex items-center gap-3 text-purple-700 mb-2">
           <Dices className="w-5 h-5" />
-          <span className="text-xs font-bold uppercase tracking-wider">
+          <span className="text-xs  uppercase tracking-wider">
             Instructions
           </span>
         </div>
-        <p className="text-[10px] text-purple-600 leading-relaxed font-medium">
+        <p className="text-[10px] text-purple-600 leading-relaxed ">
           Select between 1 and 3 dice for your classroom activities. The dice
           will scale to fit the window as you add more.
         </p>

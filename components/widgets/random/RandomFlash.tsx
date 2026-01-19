@@ -18,7 +18,7 @@ export const RandomFlash: React.FC<RandomFlashProps> = ({
 
   return (
     <div
-      className={`text-center font-bold px-4 transition-all duration-300 w-full flex items-center justify-center font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'} ${
+      className={`text-center px-4 transition-all duration-300 w-full flex items-center justify-center font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'} ${
         isSpinning
           ? 'scale-90 opacity-30 grayscale'
           : 'scale-100 text-brand-blue-primary drop-shadow-xl'

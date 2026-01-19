@@ -588,7 +588,7 @@ export interface GlobalStyle {
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
-  fontWeight: 'bold',
+  fontWeight: 'normal',
   windowTransparency: 0.8,
   windowBorderRadius: '2xl',
   dockTransparency: 0.4,

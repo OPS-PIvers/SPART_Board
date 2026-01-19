@@ -376,7 +376,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
         <Users className="w-12 h-12 opacity-20" />
         <div>
-          <p className="text-sm font-bold uppercase tracking-widest mb-1">
+          <p className="text-sm  uppercase tracking-widest mb-1">
             No Names Provided
           </p>
           <p className="text-xs">
@@ -392,7 +392,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {activeRoster && rosterMode === 'class' && (
         <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
           <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
-          <span className="text-[9px] font-black uppercase text-brand-blue-primary tracking-wider">
+          <span className="text-[9px]  uppercase text-brand-blue-primary tracking-wider">
             {activeRoster.name}
           </span>
         </div>
@@ -415,10 +415,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     data-no-drag="true"
                     className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
                   >
-                    <span className="text-xs font-mono font-black text-slate-300">
+                    <span className="text-xs font-mono  text-slate-300">
                       {i + 1}
                     </span>
-                    <span className="text-lg leading-none font-bold text-slate-700">
+                    <span className="text-lg leading-none  text-slate-700">
                       {name}
                     </span>
                   </div>
@@ -454,7 +454,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
                     >
                       <div
-                        className="font-black uppercase text-blue-400 mb-1 tracking-widest opacity-80"
+                        className=" uppercase text-blue-400 mb-1 tracking-widest opacity-80"
                         style={{ fontSize: '0.6em' }}
                       >
                         Group {i + 1}
@@ -464,7 +464,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                           <div
                             key={ni}
                             data-no-drag="true"
-                            className="font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                            className=" text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
                           >
                             {name}
                           </div>

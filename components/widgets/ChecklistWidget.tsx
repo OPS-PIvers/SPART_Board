@@ -109,7 +109,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
           <Users className="w-12 h-12 opacity-20" />
         )}
         <div>
-          <p className="text-sm font-bold uppercase tracking-widest mb-1">
+          <p className="text-sm  uppercase tracking-widest mb-1">
             {mode === 'manual' ? 'No Tasks' : 'Roster Empty'}
           </p>
           <p className="text-xs">
@@ -171,7 +171,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                   )}
                 </div>
                 <span
-                  className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
+                  className={` leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
                   style={{ fontSize: `${dynamicFontSize}px` }}
                 >
                   {label}
@@ -186,7 +186,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={resetToday}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-[10px] font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-[10px]  text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
         >
           <RefreshCw className="w-3 h-3" /> Reset Checks
         </button>
@@ -235,7 +235,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-6">
       {/* Mode Toggle */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           List Source
         </label>
         <div className="flex bg-slate-100 p-1 rounded-xl">
@@ -243,7 +243,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             onClick={() =>
               updateWidget(widget.id, { config: { ...config, mode: 'manual' } })
             }
-            className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            className={`flex-1 py-2 text-[10px]  rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
           >
             CUSTOM TASKS
           </button>
@@ -251,7 +251,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             onClick={() =>
               updateWidget(widget.id, { config: { ...config, mode: 'roster' } })
             }
-            className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            className={`flex-1 py-2 text-[10px]  rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
           >
             CLASS ROSTER
           </button>
@@ -260,14 +260,14 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'manual' && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <ListPlus className="w-3 h-3" /> Task List (One per line)
           </label>
           <textarea
             value={localText}
             onChange={(e) => handleBulkChange(e.target.value)}
             placeholder="Enter tasks here..."
-            className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+            className="w-full h-40 p-3 text-xs  bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
           />
         </div>
       )}
@@ -286,7 +286,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           {rosterMode === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
                   First Names
                 </label>
                 <textarea
@@ -301,7 +301,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
                   Last Names
                 </label>
                 <textarea
@@ -321,7 +321,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Text Scale
         </label>
         <div className="flex items-center gap-4 px-2">
@@ -341,7 +341,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             }
             className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
           />
-          <span className="w-10 text-center font-mono font-bold text-slate-700 text-xs">
+          <span className="w-10 text-center font-mono  text-slate-700 text-xs">
             {scaleMultiplier}x
           </span>
         </div>

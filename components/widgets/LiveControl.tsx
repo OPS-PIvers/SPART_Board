@@ -146,7 +146,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
           className="w-7 h-7 bg-slate-950/40 hover:bg-slate-950/60 text-white rounded-full flex items-center justify-center transition-all"
         >
-          <span className="text-[10px] font-bold">{studentCount}</span>
+          <span className="text-[10px] ">{studentCount}</span>
         </button>
       )}
     </div>
@@ -179,7 +179,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           className="w-64 bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col animate-in fade-in slide-in-from-top-2"
         >
           <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-xl">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <span className="text-xs  text-slate-700 uppercase tracking-wider">
               Classroom ({studentCount})
             </span>
             <button
@@ -194,10 +194,10 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           {/* SESSION INFO */}
           {code && (
             <div className="p-3 bg-indigo-50 border-b border-indigo-100 flex flex-col items-center gap-1">
-              <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+              <div className="text-[10px]  text-indigo-400 uppercase tracking-wider">
                 Join Code
               </div>
-              <div className="text-2xl font-black text-indigo-600 font-mono tracking-widest">
+              <div className="text-2xl  text-indigo-600 font-mono tracking-widest">
                 {code}
               </div>
               <div className="text-[10px] text-indigo-400">
@@ -222,7 +222,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                     className={`w-2 h-2 rounded-full ${s.status === 'active' ? 'bg-green-500' : 'bg-blue-400'}`}
                   ></div>
                   <span
-                    className={`text-xs font-medium truncate max-w-[100px] ${s.status === 'frozen' ? 'text-blue-400 line-through' : 'text-slate-700'}`}
+                    className={`text-xs  truncate max-w-[100px] ${s.status === 'frozen' ? 'text-blue-400 line-through' : 'text-slate-700'}`}
                   >
                     {s.name}
                   </span>
@@ -264,7 +264,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                   ? 'Unfreeze all students'
                   : 'Freeze all students'
               }
-              className="w-full flex items-center justify-center gap-2 py-2 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase hover:bg-blue-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-50"
+              className="w-full flex items-center justify-center gap-2 py-2 bg-blue-100 text-blue-700 rounded-lg text-[10px]  uppercase hover:bg-blue-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-50"
             >
               <Snowflake size={12} /> Freeze / Unfreeze All
             </button>

@@ -48,9 +48,9 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       case 'lcd':
         return 'tracking-widest opacity-90';
       case 'minimal':
-        return 'font-light tracking-tighter';
+        return ' tracking-tighter';
       default:
-        return 'font-bold';
+        return '';
     }
   };
 
@@ -106,7 +106,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         {!format24 && (
           <span
-            className="text-xs opacity-40 ml-2 uppercase font-black"
+            className="text-xs opacity-40 ml-2 uppercase "
             style={{ fontSize: '0.2em' }}
           >
             {ampm}
@@ -115,7 +115,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div
-        className={`text-[10px] md:text-xs font-bold opacity-40 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+        className={`text-[10px] md:text-xs  opacity-40 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
       >
         {time.toLocaleDateString(undefined, {
           weekday: 'long',
@@ -156,7 +156,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               config: { ...config, format24: !config.format24 },
             })
           }
-          className={`p-2 rounded-lg text-[10px] font-bold border-2 transition-all ${config.format24 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+          className={`p-2 rounded-lg text-[10px]  border-2 transition-all ${config.format24 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
         >
           24H FORMAT
         </button>
@@ -166,7 +166,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               config: { ...config, showSeconds: !config.showSeconds },
             })
           }
-          className={`p-2 rounded-lg text-[10px] font-bold border-2 transition-all ${config.showSeconds ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+          className={`p-2 rounded-lg text-[10px]  border-2 transition-all ${config.showSeconds ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
         >
           SHOW SECONDS
         </button>
@@ -174,7 +174,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Font Family */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Typography
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -189,7 +189,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${config.fontFamily === f.id ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
             >
               <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
-              <span className="text-[8px] font-bold uppercase text-slate-600">
+              <span className="text-[8px]  uppercase text-slate-600">
                 {f.label}
               </span>
             </button>
@@ -199,7 +199,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Clock Style */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Sparkles className="w-3 h-3" /> Display Style
         </label>
         <div className="flex bg-slate-100 p-1 rounded-xl">
@@ -211,7 +211,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   config: { ...config, clockStyle: s.id },
                 })
               }
-              className={`flex-1 py-1.5 text-[9px] font-black rounded-lg transition-all ${config.clockStyle === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`flex-1 py-1.5 text-[9px]  rounded-lg transition-all ${config.clockStyle === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             >
               {s.label.toUpperCase()}
             </button>
@@ -222,7 +222,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {/* Color & Glow */}
       <div className="flex items-end justify-between gap-4">
         <div className="flex-1">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <Palette className="w-3 h-3" /> Color Palette
           </label>
           <div className="flex gap-1.5">
@@ -249,7 +249,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           className={`p-2 rounded-lg border-2 flex items-center gap-2 transition-all ${config.glow ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
         >
           <Sun className={`w-4 h-4 ${config.glow ? 'fill-current' : ''}`} />
-          <span className="text-[9px] font-black uppercase">Glow</span>
+          <span className="text-[9px]  uppercase">Glow</span>
         </button>
       </div>
     </div>

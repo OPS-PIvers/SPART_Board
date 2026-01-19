@@ -85,7 +85,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Templates
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -96,16 +96,14 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="flex items-center gap-2 p-2 bg-white/50 border border-white/30 rounded-lg text-left hover:bg-white/70 transition-all"
             >
               <t.icon className="w-3 h-3 text-indigo-600" />
-              <span className="text-[9px] font-bold text-slate-800">
-                {t.name}
-              </span>
+              <span className="text-[9px]  text-slate-800">{t.name}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Background Color
         </label>
         <div className="flex gap-2">
@@ -125,7 +123,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Font Size
         </label>
         <div className="flex items-center gap-4">
@@ -144,7 +142,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             }
             className="flex-1 accent-blue-600"
           />
-          <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
+          <span className="w-8 text-center font-mono  text-slate-700 text-xs">
             {config.fontSize}
           </span>
         </div>

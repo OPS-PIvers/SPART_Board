@@ -52,7 +52,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
   if (displayItems.length === 0) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none">
-        <p className="text-sm font-medium mb-1">No materials selected</p>
+        <p className="text-sm  mb-1">No materials selected</p>
         <p className="text-xs opacity-70">
           Open settings to choose class materials
         </p>
@@ -86,7 +86,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
                 strokeWidth={isActive ? 2.5 : 2}
               />
               <span
-                className="font-black uppercase tracking-wide text-center leading-tight"
+                className=" uppercase tracking-wide text-center leading-tight"
                 style={{ fontSize: `${labelSize}px` }}
               >
                 {item.label}

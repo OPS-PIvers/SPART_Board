@@ -154,12 +154,12 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
           >
             <div
-              className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+              className={`text-[10px] uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
             >
               {team.name}
             </div>
             <div
-              className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
+              className={`${styles.score} mb-2 tabular-nums drop-shadow-sm`}
               style={{ fontSize: `${scoreFontSize}px`, lineHeight: 1 }}
             >
               {team.score}
@@ -184,9 +184,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       {teams.length === 0 && (
         <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2">
           <Trophy className="w-8 h-8 opacity-20" />
-          <span className="text-xs font-bold uppercase tracking-widest">
-            No Teams
-          </span>
+          <span className="text-xs  uppercase tracking-widest">No Teams</span>
         </div>
       )}
     </div>
@@ -284,7 +282,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 text-indigo-900">
             <Users className="w-4 h-4" />
-            <span className="text-xs font-black uppercase tracking-wider">
+            <span className="text-xs  uppercase tracking-wider">
               Import from Randomizer
             </span>
           </div>
@@ -302,7 +300,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
           </Button>
         </div>
         {!randomWidget && (
-          <div className="text-[10px] text-indigo-400 font-medium">
+          <div className="text-[10px] text-indigo-400 ">
             Tip: Add a Randomizer widget and create groups to import them here.
           </div>
         )}
@@ -310,12 +308,12 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+          <label className="text-[10px]  text-slate-400 uppercase tracking-widest block">
             Teams ({teams.length})
           </label>
           <button
             onClick={resetScores}
-            className="text-[10px] font-bold text-red-500 hover:text-red-600 underline"
+            className="text-[10px]  text-red-500 hover:text-red-600 underline"
           >
             Reset Scores
           </button>
@@ -333,7 +331,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
               <input
                 value={team.name}
                 onChange={(e) => updateTeamName(team.id, e.target.value)}
-                className="flex-1 text-xs font-bold text-slate-700 bg-transparent outline-none"
+                className="flex-1 text-xs  text-slate-700 bg-transparent outline-none"
                 placeholder="Team Name"
               />
               <div className="text-xs font-mono text-slate-400 w-8 text-right">

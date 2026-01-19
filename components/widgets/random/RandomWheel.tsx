@@ -126,7 +126,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
       {!isSpinning && displayResult && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-30">
           <div
-            className="bg-white/95 backdrop-blur px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500 font-bold text-indigo-900 animate-bounce text-center max-w-full break-words"
+            className="bg-white/95 backdrop-blur px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500  text-indigo-900 animate-bounce text-center max-w-full break-words"
             style={{
               fontSize: `${resultFontSize ?? 24}px`,
               lineHeight: 1.1,

@@ -135,7 +135,7 @@ const StylePreview = ({
           <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">
             Window Preview
           </div>
-          <div className="text-sm font-bold text-slate-800 leading-tight">
+          <div className="text-sm leading-tight text-slate-800">
             The quick brown fox jumps over the lazy dog.
           </div>
         </div>
@@ -161,7 +161,7 @@ const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
             <span
-              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow
@@ -175,7 +175,7 @@ const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
             <span
-              className={`text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow
@@ -1491,7 +1491,7 @@ export const Sidebar: React.FC = () => {
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm`}
                       >
                         <span
-                          className={`text-base font-bold font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+                          className={`text-base font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
                         >
                           {
                             FONT_OPTIONS.find(
@@ -1529,7 +1529,7 @@ export const Sidebar: React.FC = () => {
                                   : 'bg-white hover:bg-slate-50 text-slate-600'
                               }`}
                             >
-                              <span className={`text-sm font-bold ${f.font}`}>
+                              <span className={`text-sm ${f.font}`}>
                                 {f.label}
                               </span>
                               {pendingStyle.fontFamily === f.id && (

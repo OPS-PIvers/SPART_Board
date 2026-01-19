@@ -52,13 +52,13 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             )}
             <div className="flex flex-col items-start">
               <span
-                className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+                className={`font-mono ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
                 style={{ fontSize: `${timeSize}px` }}
               >
                 {item.time}
               </span>
               <span
-                className={`font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+                className={`leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
                 style={{ fontSize: `${taskSize}px` }}
               >
                 {item.task}

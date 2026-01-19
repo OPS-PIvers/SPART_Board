@@ -31,14 +31,16 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       className={`flex flex-col h-full p-4 font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
     >
       <div
-        className="font-black uppercase text-slate-800 mb-4 tracking-tight border-b pb-2"
+        className="uppercase text-slate-800 mb-4 tracking-tight border-b pb-2"
         style={{ fontSize: `${questionSize}px` }}
       >
         {question}
       </div>
+
       <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
         {options.map((o, i: number) => {
           const percent = total === 0 ? 0 : Math.round((o.votes / total) * 100);
+
           return (
             <button
               key={i}
@@ -48,14 +50,16 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="w-full text-left group"
             >
               <div
-                className="flex justify-between font-bold mb-1 uppercase tracking-wider text-slate-600"
+                className="flex justify-between mb-1 uppercase tracking-wider text-slate-600"
                 style={{ fontSize: `${labelSize}px` }}
               >
                 <span>{o.label}</span>
+
                 <span>
                   {o.votes} ({percent}%)
                 </span>
               </div>
+
               <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
                 <div
                   className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
@@ -75,7 +79,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             } as PollConfig,
           })
         }
-        className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
+        className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px]  uppercase text-slate-400 hover:text-indigo-600 transition-colors"
       >
         <RotateCcw className="w-3 h-3" /> Reset Poll
       </button>

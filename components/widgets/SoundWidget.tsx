@@ -255,7 +255,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
       <div className="text-center">
         <span
-          className="text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm transition-colors duration-300"
+          className="text-xs  uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm transition-colors duration-300"
           style={{ backgroundColor: level.color }}
         >
           {level.label}
@@ -280,7 +280,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Sensitivity
         </label>
         <input
@@ -299,7 +299,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Visual Mode
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -318,7 +318,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               }`}
             >
               <m.icon className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase">{m.label}</span>
+              <span className="text-[10px]  uppercase">{m.label}</span>
             </button>
           ))}
         </div>

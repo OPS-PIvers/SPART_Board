@@ -77,7 +77,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   if (!selectedRoutineId || !selectedRoutine) {
     return (
       <div className="flex flex-col h-full bg-brand-gray-lightest p-4">
-        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">
+        <div className="text-[10px]  uppercase text-slate-400 tracking-widest mb-3">
           Library ({gradeFilter.toUpperCase()})
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
@@ -105,7 +105,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   className={`absolute top-2 right-2 w-4 h-4 ${isFav ? 'fill-brand-blue-light text-brand-blue-light' : 'text-slate-200 hover:text-slate-400'}`}
                 />
                 <Icon className="w-8 h-8 text-brand-red-primary mb-2" />
-                <div className="text-[11px] font-black text-brand-gray-darkest uppercase leading-tight">
+                <div className="text-[11px]  text-brand-gray-darkest uppercase leading-tight">
                   {r.name}
                 </div>
               </button>
@@ -137,12 +137,12 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         </button>
         <div className="flex-1">
           <h2
-            className="font-black text-brand-blue-primary leading-tight"
+            className=" text-brand-blue-primary leading-tight"
             style={{ fontSize: `${dynamicFontSize * 1.4}px` }}
           >
             {selectedRoutine.name}
           </h2>
-          <span className="text-[10px] font-black text-brand-blue-light uppercase tracking-widest">
+          <span className="text-[10px]  text-brand-blue-light uppercase tracking-widest">
             {selectedRoutine.grades} Protocol
           </span>
         </div>
@@ -164,14 +164,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 className="flex gap-4 items-start animate-in slide-in-from-left duration-300 group"
               >
                 <span
-                  className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-lg"
+                  className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center  shrink-0 shadow-lg"
                   style={{ fontSize: `${dynamicFontSize * 0.8}px` }}
                 >
                   {i + 1}
                 </span>
                 <div className="flex-1 flex items-start justify-between gap-4">
                   <p
-                    className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
+                    className=" text-brand-gray-darkest leading-relaxed pt-1"
                     style={{ fontSize: `${dynamicFontSize}px` }}
                   >
                     {step.text}
@@ -197,7 +197,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       </div>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
                         <Grab size={8} className="text-slate-300" />
-                        <span className="text-[6px] font-black uppercase text-slate-400">
+                        <span className="text-[6px]  uppercase text-slate-400">
                           Drag
                         </span>
                       </div>
@@ -239,13 +239,13 @@ export const InstructionalRoutinesSettings: React.FC<{
             config: { ...config, selectedRoutineId: null },
           })
         }
-        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue-light/20 transition-colors"
+        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-[10px]  uppercase tracking-widest hover:bg-brand-blue-light/20 transition-colors"
       >
         Switch Routine Template
       </button>
 
       <div className="space-y-3">
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-2">
+        <label className="text-[10px]  uppercase text-slate-400 tracking-[0.2em] block mb-2">
           Step Editor
         </label>
         {customSteps.map((step, i) => (
@@ -289,7 +289,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                       : null}
                   </span>
                 )}
-                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                <span className="text-[8px]  text-slate-400 uppercase">
                   Step {i + 1}
                 </span>
               </div>
@@ -304,7 +304,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                 }}
                 rows={2}
                 placeholder="Enter student direction..."
-                className="w-full text-[11px] font-bold bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
+                className="w-full text-[11px]  bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
               />
             </div>
             <button
@@ -334,14 +334,14 @@ export const InstructionalRoutinesSettings: React.FC<{
               },
             })
           }
-          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
+          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-[10px]  uppercase"
         >
           <Plus className="w-4 h-4" /> Add Next Step
         </button>
       </div>
 
       <div className="bg-slate-50 p-4 rounded-2xl">
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">
+        <label className="text-[10px]  uppercase text-slate-400 tracking-widest mb-3 block">
           Text Zoom
         </label>
         <input
