@@ -79,7 +79,10 @@ interface OptionInputProps {
 
 const OptionInput: React.FC<OptionInputProps> = ({ label, index, onSave }) => {
   const [val, setVal] = useState(label);
-  useEffect(() => setVal(label), [label]);
+
+  // Sync state only when label changes from external source and NOT focused?
+  // Actually, standard pattern is using key to force reset.
+  // But let's try just removing the effect and relying on initial state + key.
 
   return (
     <input
@@ -183,6 +186,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           {options.map((option, idx) => (
             <div key={idx} className="flex gap-2 items-center">
               <OptionInput
+                key={`${option.label}-${idx}`} // Use label as key to reset internal state when external data changes
                 index={idx}
                 label={option.label}
                 onSave={updateOptionLabel}
