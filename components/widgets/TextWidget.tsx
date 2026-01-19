@@ -21,7 +21,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className={`h-full w-full p-4 font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
+      className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
       contentEditable
       onBlur={(e) =>
         updateWidget(widget.id, {

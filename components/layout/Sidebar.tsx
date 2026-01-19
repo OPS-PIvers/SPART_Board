@@ -54,7 +54,6 @@ import {
   Dashboard,
   BackgroundPreset,
   GlobalFontFamily,
-  GlobalFontWeight,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
@@ -130,7 +129,7 @@ const StylePreview = ({
         }}
       >
         <div
-          className={`text-center space-y-1 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+          className={`text-center space-y-1 font-${pendingStyle.fontFamily}`}
         >
           <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">
             Window Preview
@@ -161,7 +160,7 @@ const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
             <span
-              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow
@@ -175,7 +174,7 @@ const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
             <span
-              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow
@@ -1491,7 +1490,7 @@ export const Sidebar: React.FC = () => {
                         className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm`}
                       >
                         <span
-                          className={`text-base font-${pendingStyle.fontFamily} font-${pendingStyle.fontWeight}`}
+                          className={`text-base font-bold font-${pendingStyle.fontFamily}`}
                         >
                           {
                             FONT_OPTIONS.find(
@@ -1529,7 +1528,7 @@ export const Sidebar: React.FC = () => {
                                   : 'bg-white hover:bg-slate-50 text-slate-600'
                               }`}
                             >
-                              <span className={`text-sm ${f.font}`}>
+                              <span className={`text-sm font-bold ${f.font}`}>
                                 {f.label}
                               </span>
                               {pendingStyle.fontFamily === f.id && (
@@ -1538,35 +1537,6 @@ export const Sidebar: React.FC = () => {
                             </button>
                           ))}
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Font Weight Selector */}
-                    <div className="pt-2">
-                      <div className="flex bg-slate-100 p-1 rounded-xl">
-                        {[
-                          { id: 'light', label: 'Light' },
-                          { id: 'normal', label: 'Regular' },
-                          { id: 'medium', label: 'Medium' },
-                          { id: 'bold', label: 'Bold' },
-                        ].map((w) => (
-                          <button
-                            key={w.id}
-                            onClick={() =>
-                              setPendingStyle({
-                                ...pendingStyle,
-                                fontWeight: w.id as GlobalFontWeight,
-                              })
-                            }
-                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
-                              pendingStyle.fontWeight === w.id
-                                ? 'bg-white shadow-sm text-brand-blue-primary'
-                                : 'text-slate-500 hover:text-slate-700'
-                            }`}
-                          >
-                            {w.label}
-                          </button>
-                        ))}
                       </div>
                     </div>
                   </div>

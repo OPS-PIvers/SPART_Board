@@ -322,30 +322,30 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col items-center justify-between h-full p-4 gap-2 relative font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+      className={`flex flex-col items-center justify-between h-full p-4 gap-2 relative font-${globalStyle.fontFamily}`}
     >
       <div className="flex flex-col items-center justify-center gap-2">
-        <div className="text-[9px]  uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
+        <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
           <MapPin className="w-2.5 h-2.5" /> {locationName}
         </div>
 
         <div className="flex items-center gap-4">
           {getIcon()}
           <div
-            className=" text-slate-800 tabular-nums leading-none"
+            className="font-black text-slate-800 tabular-nums leading-none"
             style={{ fontSize: `${tempFontSize}px` }}
           >
             {Math.round(temp)}°
           </div>
         </div>
 
-        <div className="text-[10px]  uppercase tracking-[0.2em] text-slate-400 mt-2">
+        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
           Instruction
         </div>
 
         <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center gap-3">
           <div className="shrink-0">{displayImage}</div>
-          <div className="text-xs  text-slate-700 leading-tight">
+          <div className="text-xs font-bold text-slate-700 leading-tight">
             {displayMessage}
           </div>
         </div>

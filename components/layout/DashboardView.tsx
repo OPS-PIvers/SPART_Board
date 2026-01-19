@@ -175,7 +175,7 @@ export const DashboardView: React.FC = () => {
   }
 
   const globalStyle = activeDashboard.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-  const fontClass = `font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`;
+  const fontClass = `font-${globalStyle.fontFamily} font-bold`;
 
   return (
     <div

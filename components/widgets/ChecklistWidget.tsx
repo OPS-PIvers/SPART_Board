@@ -109,7 +109,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
           <Users className="w-12 h-12 opacity-20" />
         )}
         <div>
-          <p className="text-sm  uppercase tracking-widest mb-1">
+          <p className="text-sm font-bold uppercase tracking-widest mb-1">
             {mode === 'manual' ? 'No Tasks' : 'Roster Empty'}
           </p>
           <p className="text-xs">
@@ -124,7 +124,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+      className={`h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
     >
       {/* Notebook Margin Line */}
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
@@ -171,7 +171,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                   )}
                 </div>
                 <span
-                  className={` leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
+                  className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
                   style={{ fontSize: `${dynamicFontSize}px` }}
                 >
                   {label}
@@ -186,7 +186,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={resetToday}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-[10px]  text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-[10px] font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
         >
           <RefreshCw className="w-3 h-3" /> Reset Checks
         </button>

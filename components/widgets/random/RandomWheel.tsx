@@ -32,7 +32,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full flex items-center justify-center p-2 overflow-hidden font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+      className={`relative w-full h-full flex items-center justify-center p-2 overflow-hidden font-${globalStyle.fontFamily}`}
     >
       {/* Static Pointer Arrow (Top Center) */}
 

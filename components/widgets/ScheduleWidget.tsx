@@ -30,7 +30,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full flex flex-col p-4 bg-transparent rounded-lg font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+      className={`h-full flex flex-col p-4 bg-transparent rounded-lg font-${globalStyle.fontFamily}`}
     >
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
@@ -52,13 +52,13 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             )}
             <div className="flex flex-col items-start">
               <span
-                className={`font-mono ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+                className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
                 style={{ fontSize: `${timeSize}px` }}
               >
                 {item.time}
               </span>
               <span
-                className={`leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+                className={`font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
                 style={{ fontSize: `${taskSize}px` }}
               >
                 {item.task}

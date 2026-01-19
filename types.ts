@@ -573,11 +573,8 @@ export type GlobalFontFamily =
   | 'marker'
   | 'cursive';
 
-export type GlobalFontWeight = 'light' | 'normal' | 'medium' | 'bold';
-
 export interface GlobalStyle {
   fontFamily: GlobalFontFamily;
-  fontWeight: GlobalFontWeight;
   windowTransparency: number; // 0 to 1
   windowBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   dockTransparency: number; // 0 to 1
@@ -588,7 +585,6 @@ export interface GlobalStyle {
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
-  fontWeight: 'normal',
   windowTransparency: 0.8,
   windowBorderRadius: '2xl',
   dockTransparency: 0.4,

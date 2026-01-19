@@ -422,7 +422,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+      className={`flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none font-${globalStyle.fontFamily}`}
     >
       {/* Voice Level Thermometer */}
 
@@ -447,16 +447,16 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                 : 'border-white/20 bg-white/30 text-slate-600 hover:bg-white/50'
             }`}
           >
-            <span className="text-2xl  opacity-40">{v.id}</span>
+            <span className="text-2xl font-black opacity-40">{v.id}</span>
             <div className="flex flex-col items-start leading-none">
               <span
-                className="uppercase tracking-tight"
+                className="font-black uppercase tracking-tight"
                 style={{ fontSize: `${voiceSize}px` }}
               >
                 {v.label}
               </span>
               <span
-                className="opacity-60 uppercase"
+                className="font-bold opacity-60 uppercase"
                 style={{ fontSize: `${voiceSize * 0.7}px` }}
               >
                 {v.sub}
@@ -491,7 +491,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <m.icon className="w-6 h-6" strokeWidth={2.5} />
             <span
-              className="uppercase text-center leading-tight px-1"
+              className="font-black uppercase text-center leading-tight px-1"
               style={{ fontSize: `${labelSize}px` }}
             >
               {m.label}

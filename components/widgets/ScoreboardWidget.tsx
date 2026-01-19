@@ -141,11 +141,13 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily} font-${globalStyle.fontWeight ?? 'bold'}`}
+      className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily}`}
     >
       {teams.map((team) => {
         // Parse color base for backgrounds
+
         const colorClass = team.color ?? 'bg-blue-500';
+
         const styles = getStyles(colorClass);
 
         return (
@@ -154,16 +156,18 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
           >
             <div
-              className={`text-[10px] uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+              className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
             >
               {team.name}
             </div>
+
             <div
-              className={`${styles.score} mb-2 tabular-nums drop-shadow-sm`}
+              className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
               style={{ fontSize: `${scoreFontSize}px`, lineHeight: 1 }}
             >
               {team.score}
             </div>
+
             <div className="flex gap-2 opacity-100 transition-opacity">
               <button
                 onClick={() => updateScore(team.id, -1)}
@@ -171,6 +175,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 <Minus className="w-4 h-4" />
               </button>
+
               <button
                 onClick={() => updateScore(team.id, 1)}
                 className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
@@ -181,10 +186,14 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         );
       })}
+
       {teams.length === 0 && (
         <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2">
           <Trophy className="w-8 h-8 opacity-20" />
-          <span className="text-xs  uppercase tracking-widest">No Teams</span>
+
+          <span className="text-xs font-bold uppercase tracking-widest">
+            No Teams
+          </span>
         </div>
       )}
     </div>
