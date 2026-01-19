@@ -22,7 +22,6 @@ import {
   DockFolder,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
-  WidgetConfig,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -1056,7 +1055,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-<<<<<<< HEAD
   const clearAllStickers = () => {
     if (!activeDashboard) return;
     const stickerWidgetIds = activeDashboard.widgets
@@ -1065,7 +1063,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     if (stickerWidgetIds.length > 0) {
       removeWidgets(stickerWidgetIds);
     }
-=======
+  };
+
   const clearAllWidgets = () => {
     if (!activeId) return;
     lastLocalUpdateAt.current = Date.now();
@@ -1073,7 +1072,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
     );
     addToast('All windows cleared');
->>>>>>> 38a670d ([AI] Finalize Global Styling: separate window/dock settings, add live preview, and 'Clear Windows' feature)
   };
 
   const updateWidget = useCallback(
@@ -1244,7 +1242,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         removeWidget,
         duplicateWidget,
         removeWidgets,
-        clearAllWidgets,
         updateWidget,
         bringToFront,
         moveWidgetLayer,
@@ -1256,6 +1253,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         reorderTools,
         reorderDockItems,
         clearAllStickers,
+        clearAllWidgets,
         rosters,
         activeRosterId,
         addRoster,

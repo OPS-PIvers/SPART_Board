@@ -418,6 +418,7 @@ export const Sidebar: React.FC = () => {
     setDefaultDashboard,
     saveCurrentDashboard,
     setBackground,
+    updateDashboardSettings,
     setGlobalStyle,
     clearAllWidgets,
     addToast,
