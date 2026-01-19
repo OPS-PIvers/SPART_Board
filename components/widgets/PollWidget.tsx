@@ -20,6 +20,16 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
   };
 
+  const handleReset = () => {
+    if (!confirm('Are you sure you want to reset the poll?')) return;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        options: options.map((o) => ({ ...o, votes: 0 })),
+      } as PollConfig,
+    });
+  };
+
   const total = options.reduce((sum, o) => sum + o.votes, 0);
 
   return (
@@ -55,14 +65,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         })}
       </div>
       <button
-        onClick={() =>
-          updateWidget(widget.id, {
-            config: {
-              ...config,
-              options: options.map((o) => ({ ...o, votes: 0 })),
-            } as PollConfig,
-          })
-        }
+        onClick={handleReset}
         className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
       >
         <RotateCcw className="w-3 h-3" /> Reset Poll
@@ -154,6 +157,16 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
   };
 
+  const handleReset = () => {
+    if (!confirm('Are you sure you want to reset the poll?')) return;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        options: options.map((o) => ({ ...o, votes: 0 })),
+      } as PollConfig,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Question Edit */}
@@ -212,14 +225,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="secondary"
-            onClick={() =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  options: options.map((o) => ({ ...o, votes: 0 })),
-                } as PollConfig,
-              })
-            }
+            onClick={handleReset}
             icon={<RotateCcw className="w-3.5 h-3.5" />}
           >
             Reset
