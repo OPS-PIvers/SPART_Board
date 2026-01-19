@@ -20,7 +20,9 @@ import {
   X,
   FileSpreadsheet,
   Send,
+  Download,
 } from 'lucide-react';
+import { generateCSVContent, downloadCSV } from '../../utils/csvHelper';
 
 type LunchType = 'hot' | 'bento' | 'home';
 
@@ -61,6 +63,8 @@ interface SubmitReportModalProps {
   onClose: () => void;
   /** Callback to submit the report data */
   onSubmit: (notes: string, extraPizza?: number) => Promise<void>;
+  /** Callback to download report as CSV */
+  onDownloadCSV: () => void;
   /** The report data to display and submit */
   data: {
     date: string;
@@ -83,6 +87,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  onDownloadCSV,
   data,
   isSubmitting,
 }) => {
@@ -236,6 +241,15 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           </div>
 
           <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
+            <Button
+              onClick={onDownloadCSV}
+              variant="secondary"
+              className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-slate-500"
+              disabled={isSubmitting}
+              icon={<Download className="w-4 h-4" />}
+            >
+              CSV
+            </Button>
             <Button
               onClick={onClose}
               variant="secondary"
@@ -517,6 +531,46 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const submitReport = () => {
     setIsReportModalOpen(true);
   };
+
+  const handleDownloadCSV = useCallback(() => {
+    const data = getReportData();
+    const headers = [
+      'Date',
+      'Staff',
+      'School Site',
+      'Hot Lunch',
+      'Bento Box',
+      'Hot Lunch Name',
+      'Bento Box Name',
+    ];
+    const summaryRow = [
+      data.date,
+      data.staffName,
+      data.schoolSite,
+      data.hotLunch,
+      data.bentoBox,
+      data.hotLunchName,
+      data.bentoBoxName,
+    ];
+
+    const studentHeaders = ['Student Name', 'Choice'];
+    const studentRows = Object.entries(assignments).map(([name, choice]) => {
+      let choiceLabel = 'Unassigned';
+      if (choice === 'hot') choiceLabel = 'Hot Lunch';
+      else if (choice === 'bento') choiceLabel = 'Bento Box';
+      else if (choice === 'home') choiceLabel = 'Home Lunch';
+      return [name, choiceLabel];
+    });
+
+    const summaryCsv = generateCSVContent(headers, [summaryRow]);
+    const detailsCsv = generateCSVContent(studentHeaders, studentRows);
+
+    const fullContent = `${summaryCsv}\n\n${detailsCsv}`;
+
+    const filename = `LunchReport_${data.date.replace(/\//g, '-')}_${data.staffName.replace(/ /g, '_')}.csv`;
+    downloadCSV(filename, fullContent);
+    addToast('CSV Downloaded', 'success');
+  }, [getReportData, assignments, addToast]);
 
   const handleConfirmReport = async (notes: string, extraPizza?: number) => {
     const data = getReportData();
@@ -814,6 +868,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           isOpen={isReportModalOpen}
           onClose={() => setIsReportModalOpen(false)}
           onSubmit={handleConfirmReport}
+          onDownloadCSV={handleDownloadCSV}
           data={reportDataSnapshot ?? getReportData()}
           isSubmitting={isSubmittingReport}
         />
