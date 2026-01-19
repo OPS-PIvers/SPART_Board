@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { migrateWidget, migrateLocalStorageToFirestore } from './migration';
-import { WidgetData, Dashboard } from '../types';
+import { WidgetData, Dashboard, TextConfig } from '../types';
 
 describe('migration', () => {
   describe('migrateWidget', () => {
@@ -64,7 +64,7 @@ describe('migration', () => {
       const newWidget = migrateWidget(dangerousWidget);
 
       expect(newWidget.type).toBe('text');
-      expect((newWidget.config as any).content).toBe('Safe');
+      expect((newWidget.config as TextConfig).content).toBe('Safe');
     });
 
     it('returns other widgets unchanged', () => {
