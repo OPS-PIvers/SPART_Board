@@ -34,8 +34,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
           width="10"
           height="75"
           rx="5"
-          fill="#f1f5f9"
-          stroke="#e2e8f0"
+          className="fill-slate-100 stroke-slate-200"
           strokeWidth="1"
         />
         {/* Liquid Fill */}
@@ -53,7 +52,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
           cy="85"
           r="10"
           fill={color}
-          stroke="#e2e8f0"
+          className="stroke-slate-200"
           strokeWidth="1"
         />
       </svg>
@@ -81,7 +80,7 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
         <path
           d="M 10 55 A 40 40 0 0 1 90 55"
           fill="none"
-          stroke="#f1f5f9"
+          className="stroke-slate-100"
           strokeWidth="8"
         />
         {/* Needle */}
@@ -93,9 +92,15 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
           stroke={STANDARD_COLORS.slate}
           strokeWidth="2"
           strokeLinecap="round"
-          className="transition-all duration-150"
+          className="transition-all duration-150 stroke-slate-800"
         />
-        <circle cx="50" cy="55" r="3" fill={STANDARD_COLORS.slate} />
+        <circle
+          cx="50"
+          cy="55"
+          r="3"
+          fill={STANDARD_COLORS.slate}
+          className="fill-slate-800"
+        />
       </svg>
     </div>
   );
