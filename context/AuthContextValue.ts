@@ -9,6 +9,7 @@ import {
 
 export interface AuthContextType {
   user: User | null;
+  googleAccessToken: string | null;
   loading: boolean;
   isAdmin: boolean | null; // null = admin status not yet determined
   featurePermissions: FeaturePermission[];
