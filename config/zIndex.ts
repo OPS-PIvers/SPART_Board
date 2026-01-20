@@ -1,6 +1,8 @@
-// Centralized Z-Index Registry
-// Defines the vertical stacking order of the application.
-// Used in tailwind.config.js for utility classes and in components for inline styles.
+/**
+ * Centralized Z-Index Registry
+ * Defines the vertical stacking order of the application.
+ * Used in tailwind.config.js for utility classes and in components for inline styles.
+ */
 
 export const Z_INDEX = {
   // Base layers
@@ -16,11 +18,13 @@ export const Z_INDEX = {
 
   // System UI layers
   dock: 1000, // Dock bar
-  sidebar: 1100, // Sidebar
-  header: 1200, // Top navigation/header
+  dockDragging: 1100, // Dock item being dragged
+  sidebar: 1200, // Sidebar
+  header: 1300, // Top navigation/header
 
   // Overlay layers
   backdrop: 9900, // Dimmed backgrounds
+  confirmOverlay: 9950, // Confirmation dialogs within widgets
   modal: 10000, // Standard Modals (e.g. Settings, Reports)
   modalContent: 10001, // Content within modals (dropdowns etc)
 
@@ -33,4 +37,6 @@ export const Z_INDEX = {
   // Critical layers
   critical: 20000, // Overlays that must block everything (e.g. Dock expanded, Critical Errors)
   cursor: 21000, // Custom cursors
-};
+} as const;
+
+export type ZIndexLayer = keyof typeof Z_INDEX;

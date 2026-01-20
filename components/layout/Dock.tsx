@@ -156,7 +156,7 @@ const ToolDockItem = ({
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? Z_INDEX.dock + 100 : 'auto',
+    zIndex: isDragging ? Z_INDEX.dockDragging : 'auto',
   };
 
   return (
@@ -346,7 +346,7 @@ const SortableFolderWidget = ({
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? Z_INDEX.dock + 100 : 'auto',
+    zIndex: isDragging ? Z_INDEX.dockDragging : 'auto',
   };
 
   return (
@@ -494,7 +494,7 @@ const FolderItem = ({
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? Z_INDEX.dock + 100 : 'auto',
+    zIndex: isDragging ? Z_INDEX.dockDragging : 'auto',
   };
 
   return (
