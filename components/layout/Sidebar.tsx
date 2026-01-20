@@ -24,7 +24,6 @@ import {
   ArrowLeft,
   Palette,
   Image as ImageIcon,
-  Database,
   CloudUpload,
   CloudDownload,
 } from 'lucide-react';
@@ -901,7 +900,11 @@ export const Sidebar: React.FC = () => {
               >
                 {!isDriveConnected ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white border border-slate-200 rounded-3xl shadow-sm">
-                    <Database className="w-16 h-16 text-slate-200 mb-4" />
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/330px-Google_Drive_icon_%282020%29.svg.png"
+                      alt="Google Drive"
+                      className="w-16 h-16 mb-4 opacity-80"
+                    />
                     <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">
                       Not Connected
                     </h3>
@@ -995,7 +998,11 @@ export const Sidebar: React.FC = () => {
                           ))
                         ) : (
                           <div className="text-center py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl">
-                            <Database className="w-12 h-12 text-slate-200 mx-auto mb-2" />
+                            <img
+                              src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/330px-Google_Drive_icon_%282020%29.svg.png"
+                              alt="Google Drive"
+                              className="w-12 h-12 mx-auto mb-2 opacity-20 grayscale"
+                            />
                             <p className="text-xs text-slate-400 font-medium">
                               No board files found in Drive
                             </p>
@@ -1142,7 +1149,11 @@ export const Sidebar: React.FC = () => {
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
                         <>
-                          <Database className="w-6 h-6 mb-2" />
+                          <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/330px-Google_Drive_icon_%282020%29.svg.png"
+                            alt="Google Drive"
+                            className="w-6 h-6 mb-2 object-contain"
+                          />
                           <span className="text-[10px] font-black uppercase">
                             Google Drive
                           </span>
@@ -1779,7 +1790,11 @@ export const Sidebar: React.FC = () => {
                     }`}
                     title="Google Drive"
                   >
-                    <Database className="w-5 h-5" />
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/330px-Google_Drive_icon_%282020%29.svg.png"
+                      alt="Google Drive"
+                      className="w-5 h-5 object-contain"
+                    />
                   </button>
                   <button
                     onClick={signOut}
@@ -1886,7 +1901,11 @@ export const Sidebar: React.FC = () => {
                 </div>
               ) : (
                 <div className="h-64 flex flex-col items-center justify-center text-slate-400">
-                  <Database className="w-16 h-16 mb-4 opacity-10" />
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/330px-Google_Drive_icon_%282020%29.svg.png"
+                    alt="Google Drive"
+                    className="w-16 h-16 mb-4 opacity-20 grayscale"
+                  />
                   <p className="font-black uppercase tracking-widest text-xs">
                     No images found in your Google Drive
                   </p>

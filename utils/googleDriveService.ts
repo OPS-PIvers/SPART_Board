@@ -54,7 +54,11 @@ export class GoogleDriveService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to list Drive files: ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error('Drive API Error:', errorBody);
+      throw new Error(
+        `Failed to list Drive files: ${response.status} ${response.statusText} - ${errorBody}`
+      );
     }
 
     const data = (await response.json()) as DriveFileListResponse;
@@ -84,7 +88,11 @@ export class GoogleDriveService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create app folder in Drive');
+      const errorBody = await response.text();
+      console.error('Drive API Error (Create Folder):', errorBody);
+      throw new Error(
+        `Failed to create app folder in Drive: ${response.status} ${response.statusText}`
+      );
     }
 
     const folder = (await response.json()) as DriveFileCreateResponse;
@@ -135,8 +143,14 @@ export class GoogleDriveService {
         }
       );
 
-      if (!uploadResponse.ok)
+      if (!uploadResponse.ok) {
+        const errorBody = await uploadResponse.text();
+
+        console.error('Drive API Error (Update Content):', errorBody);
+
         throw new Error('Failed to update dashboard in Drive');
+      }
+
       return fileId;
     } else {
       // Create new
@@ -148,8 +162,14 @@ export class GoogleDriveService {
         body: JSON.stringify(metadata),
       });
 
-      if (!createResponse.ok)
+      if (!createResponse.ok) {
+        const errorBody = await createResponse.text();
+
+        console.error('Drive API Error (Create Metadata):', errorBody);
+
         throw new Error('Failed to create dashboard metadata in Drive');
+      }
+
       const file = (await createResponse.json()) as DriveFileCreateResponse;
 
       // Then upload content
@@ -165,8 +185,14 @@ export class GoogleDriveService {
         }
       );
 
-      if (!uploadResponse.ok)
+      if (!uploadResponse.ok) {
+        const errorBody = await uploadResponse.text();
+
+        console.error('Drive API Error (Upload Content):', errorBody);
+
         throw new Error('Failed to upload dashboard content to Drive');
+      }
+
       return file.id;
     }
   }
