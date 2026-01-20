@@ -220,6 +220,7 @@ export const Sidebar: React.FC = () => {
     setGlobalStyle,
     clearAllWidgets,
     addToast,
+    shareDashboard,
   } = useDashboard();
 
   const toggleFullscreen = () => {
@@ -292,31 +293,6 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const { user, signOut, isAdmin, featurePermissions } = useAuth();
-  const { uploadBackgroundImage } = useStorage();
-  const {
-    dashboards,
-    activeDashboard,
-    visibleTools,
-    gradeFilter,
-    setGradeFilter,
-    toggleToolVisibility,
-    setAllToolsVisibility,
-    createNewDashboard,
-    loadDashboard,
-    deleteDashboard,
-    duplicateDashboard,
-    renameDashboard,
-    reorderDashboards,
-    setDefaultDashboard,
-    saveCurrentDashboard,
-    setBackground,
-    updateDashboardSettings,
-    setGlobalStyle,
-    clearAllWidgets,
-    addToast,
-    shareDashboard,
-  } = useDashboard();
   const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
