@@ -590,7 +590,7 @@ export interface GlobalStyle {
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
-  windowTransparency: 0.2,
+  windowTransparency: 0.8,
   windowBorderRadius: '2xl',
   dockTransparency: 0.4,
   dockBorderRadius: 'full',
