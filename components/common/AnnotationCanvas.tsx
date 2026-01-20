@@ -105,15 +105,15 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
     if (!isDrawing) return;
+    e.stopPropagation();
     const pos = getPos(e);
     setCurrentPath((prev) => [...prev, pos]);
   };
 
   const handleEnd = (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
     if (!isDrawing) return;
+    e.stopPropagation();
     setIsDrawing(false);
     if (currentPath.length > 0) {
       const newPath: Path = { points: currentPath, color, width };

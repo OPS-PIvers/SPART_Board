@@ -77,8 +77,10 @@ body {
   background-color: #f8fafc;
 }
 
-/* Disable pointer events on iframes during drag/resize to prevent event swallowing */
-body.is-dragging-widget iframe {
+/* Disable pointer events on specific elements during drag/resize to prevent event swallowing */
+body.is-dragging-widget iframe,
+body.is-dragging-widget canvas,
+body.is-dragging-widget video {
   pointer-events: none !important;
 }
 
