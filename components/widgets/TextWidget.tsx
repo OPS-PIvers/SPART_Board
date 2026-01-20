@@ -1,16 +1,27 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, TextConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as TextConfig;
   const { content = '', bgColor = '#fef9c3', fontSize = 18 } = config;
 
+  // Scale the base font size with window dimensions
+  const scaledFontSize = useScaledFont(
+    widget.w,
+    widget.h,
+    fontSize / 100, // Use the manual size as a percentage factor
+    12,
+    200
+  );
+
   return (
     <div
-      className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative"
+      className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
       contentEditable
       onBlur={(e) =>
         updateWidget(widget.id, {
@@ -28,7 +39,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       />
       <div
         className="relative z-10 h-full w-full"
-        style={{ fontSize: `${fontSize}px` }}
+        style={{ fontSize: `${scaledFontSize}px` }}
         dangerouslySetInnerHTML={{ __html: content }}
       />
     </div>
@@ -74,7 +85,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Templates
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -85,16 +96,14 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="flex items-center gap-2 p-2 bg-white/50 border border-white/30 rounded-lg text-left hover:bg-white/70 transition-all"
             >
               <t.icon className="w-3 h-3 text-indigo-600" />
-              <span className="text-[9px] font-bold text-slate-800">
-                {t.name}
-              </span>
+              <span className="text-[9px]  text-slate-800">{t.name}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Background Color
         </label>
         <div className="flex gap-2">
@@ -114,7 +123,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Font Size
         </label>
         <div className="flex items-center gap-4">
@@ -133,7 +142,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             }
             className="flex-1 accent-blue-600"
           />
-          <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
+          <span className="w-8 text-center font-mono  text-slate-700 text-xs">
             {config.fontSize}
           </span>
         </div>

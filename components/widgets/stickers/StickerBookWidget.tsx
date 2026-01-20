@@ -103,9 +103,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="h-full flex flex-col bg-white">
       <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-        <span className="font-bold text-slate-700">Sticker Collection</span>
+        <span className=" text-slate-700">Sticker Collection</span>
         <label
-          className={`flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold cursor-pointer hover:bg-blue-100 transition-colors ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
+          className={`flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs  cursor-pointer hover:bg-blue-100 transition-colors ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
         >
           <Upload size={14} />
           {isProcessing ? 'Processing...' : 'Upload'}
@@ -122,7 +122,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {/* Defaults */}
         <div className="mb-6">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h4 className="text-xs  text-slate-400 uppercase tracking-wider mb-3">
             Essentials
           </h4>
           <div className="grid grid-cols-4 gap-4">
@@ -147,7 +147,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         {/* Custom */}
         {customStickers.length > 0 && (
           <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            <h4 className="text-xs  text-slate-400 uppercase tracking-wider mb-3">
               My Stickers
             </h4>
             <div className="grid grid-cols-4 gap-4">
@@ -195,7 +195,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             ) : (
               <Upload className="w-8 h-8 text-slate-300" />
             )}
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-tight">
+            <p className="text-slate-400 text-sm  uppercase tracking-tight">
               {isProcessing
                 ? 'Processing...'
                 : 'Upload or drag images to create custom stickers!'}

@@ -93,7 +93,7 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
-          <span className="text-xs text-pink-500 font-bold">No Image</span>
+          <span className="text-xs text-pink-500 ">No Image</span>
         </div>
       )}
     </DraggableSticker>

@@ -120,10 +120,10 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             )}
           </div>
           <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-800">
+            <div className="text-[10px]  uppercase tracking-widest text-slate-800">
               Sound Effects
             </div>
-            <div className="text-[8px] text-slate-500 font-bold uppercase">
+            <div className="text-[8px] text-slate-500  uppercase">
               Tick-tock while spinning
             </div>
           </div>
@@ -143,7 +143,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Operation Mode
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -162,7 +162,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               }`}
             >
               <m.icon className="w-5 h-5" />
-              <span className="text-[8px] font-black uppercase">{m.label}</span>
+              <span className="text-[8px]  uppercase">{m.label}</span>
             </button>
           ))}
         </div>
@@ -170,7 +170,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'single' && (
         <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
             Animation Style
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -189,9 +189,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 }`}
               >
                 <s.icon className="w-5 h-5" />
-                <span className="text-[8px] font-black uppercase">
-                  {s.label}
-                </span>
+                <span className="text-[8px]  uppercase">{s.label}</span>
               </button>
             ))}
           </div>
@@ -200,7 +198,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'groups' && (
         <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <Hash className="w-3 h-3" /> Group Size
           </label>
           <div className="flex items-center gap-4">
@@ -220,7 +218,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               }
               className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
             />
-            <span className="w-10 text-center font-mono font-bold text-slate-700 text-sm">
+            <span className="w-10 text-center font-mono  text-slate-700 text-sm">
               {groupSize}
             </span>
           </div>
@@ -231,7 +229,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
         <>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
                 First Names
               </label>
               <textarea
@@ -257,7 +255,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
               />
             </div>
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+              <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
                 Last Names
               </label>
               <textarea
@@ -298,7 +296,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 });
               }
             }}
-            className="w-full py-3 flex items-center justify-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-2 border-dashed border-red-100"
+            className="w-full py-3 flex items-center justify-center gap-2 text-red-500 text-[10px]  uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-2 border-dashed border-red-100"
           >
             <Trash2 className="w-4 h-4" /> Clear Custom Names
           </button>

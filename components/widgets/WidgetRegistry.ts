@@ -37,7 +37,7 @@ import { DrawingWidget, DrawingSettings } from './DrawingWidget';
 import { QRWidget, QRSettings } from './QRWidget';
 import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
 import { WorkSymbolsWidget } from './WorkSymbolsWidget';
-import { PollWidget } from './PollWidget';
+import { PollWidget, PollSettings } from './PollWidget';
 import { WeatherWidget, WeatherSettings } from './WeatherWidget';
 import { ScheduleWidget } from './ScheduleWidget';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
@@ -113,6 +113,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   calendar: CalendarSettings,
   weather: WeatherSettings,
   lunchCount: LunchCountSettings,
+  poll: PollSettings,
   instructionalRoutines: InstructionalRoutinesSettings,
   materials: MaterialsSettings,
   miniApp: MiniAppSettings,
@@ -120,7 +121,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   'sticker-library': StickerLibrarySettings,
   'time-tool': DefaultSettings,
   traffic: DefaultSettings,
-  poll: DefaultSettings,
   workSymbols: DefaultSettings,
   schedule: DefaultSettings,
   classes: DefaultSettings,
