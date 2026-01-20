@@ -1,3 +1,5 @@
+import { Z_INDEX } from './config/zIndex';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -52,10 +54,41 @@ export default {
   ],
   theme: {
     extend: {
+      zIndex: {
+        base: Z_INDEX.base.toString(),
+        decorator: Z_INDEX.decorator.toString(),
+        content: Z_INDEX.content.toString(),
+        controls: Z_INDEX.controls.toString(),
+        widget: Z_INDEX.widget.toString(),
+        'widget-drag': Z_INDEX.widgetDrag.toString(),
+        maximized: Z_INDEX.maximized.toString(),
+        dock: Z_INDEX.dock.toString(),
+        'dock-dragging': Z_INDEX.dockDragging.toString(),
+        sidebar: Z_INDEX.sidebar.toString(),
+        header: Z_INDEX.header.toString(),
+        backdrop: Z_INDEX.backdrop.toString(),
+        'confirm-overlay': Z_INDEX.confirmOverlay.toString(),
+        modal: Z_INDEX.modal.toString(),
+        'modal-content': Z_INDEX.modalContent.toString(),
+        popover: Z_INDEX.popover.toString(),
+        'tool-menu': Z_INDEX.toolMenu.toString(),
+        tooltip: Z_INDEX.tooltip.toString(),
+        toast: Z_INDEX.toast.toString(),
+        critical: Z_INDEX.critical.toString(),
+        cursor: Z_INDEX.cursor.toString(),
+      },
       fontFamily: {
         sans: ['"Lexend"', 'sans-serif'],
-        handwritten: ['"Patrick Hand"', 'cursive'],
+        serif: ['"Merriweather"', 'serif'],
         mono: ['"Roboto Mono"', 'monospace'],
+        handwritten: ['"Patrick Hand"', 'cursive'],
+        rounded: ['"Varela Round"', 'sans-serif'],
+        fun: ['"Fredoka"', 'sans-serif'],
+        comic: ['"Comic Neue"', 'cursive'],
+        slab: ['"Roboto Slab"', 'serif'],
+        retro: ['"VT323"', 'monospace'],
+        marker: ['"Permanent Marker"', 'cursive'],
+        cursive: ['"Dancing Script"', 'cursive'],
       },
       colors: {
         brand: {

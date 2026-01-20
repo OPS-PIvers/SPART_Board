@@ -1,4 +1,6 @@
 import React from 'react';
+import { useDashboard } from '../../../context/useDashboard';
+import { DEFAULT_GLOBAL_STYLE } from '../../../types';
 import { PASTEL_PALETTE } from '../../../config/colors';
 
 const WHEEL_COLORS = PASTEL_PALETTE;
@@ -20,6 +22,8 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   isSpinning,
   fontSize: resultFontSize,
 }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const radius = 120;
   const centerX = 150;
   const centerY = 150;
@@ -27,8 +31,11 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   const sliceAngle = 360 / totalNames;
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center p-2 overflow-hidden">
+    <div
+      className={`relative w-full h-full flex items-center justify-center p-2 overflow-hidden font-${globalStyle.fontFamily}`}
+    >
       {/* Static Pointer Arrow (Top Center) */}
+
       <div className="absolute top-2 z-20 flex flex-col items-center">
         <div
           className="w-10 h-8 bg-red-600 shadow-lg"
@@ -119,7 +126,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
       {!isSpinning && displayResult && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-30">
           <div
-            className="bg-white/95 backdrop-blur px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500 font-bold text-indigo-900 animate-bounce text-center max-w-full break-words"
+            className="bg-white/95 backdrop-blur px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500  text-indigo-900 animate-bounce text-center max-w-full break-words"
             style={{
               fontSize: `${resultFontSize ?? 24}px`,
               lineHeight: 1.1,

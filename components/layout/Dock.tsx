@@ -38,31 +38,33 @@ import { ToolMetadata, WidgetType, WidgetData, DockFolder } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
-import { isLightBackground } from '../../utils/styleUtils';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
+import { DEFAULT_GLOBAL_STYLE } from '../../types';
+import { Z_INDEX } from '../../config/zIndex';
 
 /**
  * Custom Label Component for consistent readability
- * Adjusts text color based on background brightness.
+ * Adjusts text color based on background brightness or global settings.
  */
-const DockLabel = ({
-  children,
-  isLight,
-}: {
-  children: React.ReactNode;
-  isLight: boolean;
-}) => (
-  <span
-    className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 ${
-      isLight
-        ? 'text-slate-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]'
-        : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
-    }`}
-  >
-    {children}
-  </span>
-);
+const DockLabel = ({ children }: { children: React.ReactNode }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
+  return (
+    <span
+      className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily}`}
+      style={{
+        color: globalStyle.dockTextColor,
+        textShadow: globalStyle.dockTextShadow
+          ? '0 1px 3px rgba(0,0,0,0.9)'
+          : 'none',
+      }}
+    >
+      {children}
+    </span>
+  );
+};
 
 // Tool Item with Popover Logic
 const ToolDockItem = ({
@@ -75,7 +77,6 @@ const ToolDockItem = ({
   onRemoveFromDock,
   isEditMode,
   onLongPress,
-  isLight,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -86,7 +87,6 @@ const ToolDockItem = ({
   onRemoveFromDock: () => void;
   isEditMode: boolean;
   onLongPress: () => void;
-  isLight: boolean;
 }) => {
   const {
     attributes,
@@ -155,7 +155,7 @@ const ToolDockItem = ({
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
+    zIndex: isDragging ? Z_INDEX.dockDragging : 'auto',
   };
 
   return (
@@ -177,7 +177,7 @@ const ToolDockItem = ({
               left: popoverPos.left,
               bottom: popoverPos.bottom,
               transform: 'translateX(-50%)',
-              zIndex: 10100,
+              zIndex: Z_INDEX.popover,
             }}
             className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
@@ -289,7 +289,7 @@ const ToolDockItem = ({
               </div>
             )}
           </div>
-          <DockLabel isLight={isLight}>{tool.label}</DockLabel>
+          <DockLabel>{tool.label}</DockLabel>
         </button>
       </div>
     </div>
@@ -345,7 +345,7 @@ const SortableFolderWidget = ({
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
+    zIndex: isDragging ? Z_INDEX.dockDragging : 'auto',
   };
 
   return (
@@ -400,7 +400,7 @@ const SortableFolderWidget = ({
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute -top-2 -right-2 z-[100] bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
+            className="absolute -top-2 -right-2 z-widget-drag bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
           >
             <X className="w-2.5 h-2.5" />
           </div>
@@ -422,7 +422,6 @@ const FolderItem = ({
   isEditMode,
   onLongPress,
   minimizedWidgetsByType,
-  isLight,
   onRemoveItem,
   onReorder,
 }: {
@@ -433,7 +432,6 @@ const FolderItem = ({
   isEditMode: boolean;
   onLongPress: () => void;
   minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
-  isLight: boolean;
   onRemoveItem: (folderId: string, type: WidgetType) => void;
   onReorder: (folderId: string, newItems: WidgetType[]) => void;
 }) => {
@@ -493,7 +491,7 @@ const FolderItem = ({
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
+    zIndex: isDragging ? Z_INDEX.dockDragging : 'auto',
   };
 
   return (
@@ -506,7 +504,7 @@ const FolderItem = ({
         createPortal(
           <GlassCard
             ref={popoverRef}
-            className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-[10100]"
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-popover"
           >
             <div className="flex justify-between items-center mb-3">
               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
@@ -607,7 +605,7 @@ const FolderItem = ({
               </div>
             )}
           </div>
-          <DockLabel isLight={isLight}>{folder.name}</DockLabel>
+          <DockLabel>{folder.name}</DockLabel>
         </button>
       </div>
     </div>
@@ -627,7 +625,7 @@ const RenameFolderModal = ({
 }) => {
   const [val, setVal] = useState(name);
   return createPortal(
-    <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-critical flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <GlassCard className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">
           {title}
@@ -674,7 +672,7 @@ const WidgetLibrary = ({
   onClose: () => void;
 }) => {
   return createPortal(
-    <GlassCard className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-[10002]">
+    <GlassCard className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-modal">
       <div className="bg-white/50 px-6 py-4 border-b border-white/30 flex justify-between items-center shrink-0 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <LayoutGrid className="w-5 h-5 text-brand-blue-primary" />
@@ -750,7 +748,7 @@ const QuickAccessButton = ({
       >
         <tool.icon className="w-6 h-6" />
       </button>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-[10000] shadow-2xl border border-white/10 scale-90 group-hover:scale-100">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-2xl border border-white/10 scale-90 group-hover:scale-100">
         {tool.label}
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
       </div>
@@ -786,7 +784,7 @@ export const Dock: React.FC = () => {
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
 
-  const isLight = isLightBackground(activeDashboard?.background);
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -966,7 +964,7 @@ export const Dock: React.FC = () => {
     <div
       ref={dockContainerRef}
       data-screenshot="exclude"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9000] flex flex-col items-center gap-4"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-dock flex flex-col items-center gap-4"
     >
       {showRosterMenu && (
         <ClassRosterMenu
@@ -1063,7 +1061,17 @@ export const Dock: React.FC = () => {
             )}
 
             {/* Expanded Toolbar with integrated minimize button */}
-            <GlassCard className="relative z-10 px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+            <GlassCard
+              transparency={globalStyle.dockTransparency}
+              cornerRadius={
+                globalStyle.dockBorderRadius === 'full'
+                  ? 'full'
+                  : globalStyle.dockBorderRadius === 'none'
+                    ? 'none'
+                    : globalStyle.dockBorderRadius
+              }
+              className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300"
+            >
               {dockItems.length > 0 ? (
                 <>
                   <DndContext
@@ -1107,7 +1115,6 @@ export const Dock: React.FC = () => {
                               }}
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
-                              isLight={isLight}
                             />
                           );
                         } else {
@@ -1121,7 +1128,6 @@ export const Dock: React.FC = () => {
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
                               minimizedWidgetsByType={minimizedWidgetsByType}
-                              isLight={isLight}
                               onRemoveItem={(folderId, type) =>
                                 moveItemOutOfFolder(
                                   folderId,
@@ -1138,7 +1144,10 @@ export const Dock: React.FC = () => {
 
                     {/* Drag Preview Overlay - Rendered in Portal to avoid offset bugs */}
                     {createPortal(
-                      <DragOverlay zIndex={10005} dropAnimation={null}>
+                      <DragOverlay
+                        zIndex={Z_INDEX.modalContent}
+                        dropAnimation={null}
+                      >
                         {activeItemId ? (
                           <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
                             {TOOLS.find((t) => t.type === activeItemId) ? (
@@ -1196,7 +1205,7 @@ export const Dock: React.FC = () => {
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <DockLabel isLight={isLight}>Live</DockLabel>
+                        <DockLabel>Live</DockLabel>
                       </button>
 
                       {/* LIVE POPOVER */}
@@ -1210,7 +1219,7 @@ export const Dock: React.FC = () => {
                               left: livePopoverPos.left,
                               bottom: livePopoverPos.bottom,
                               transform: 'translateX(-50%)',
-                              zIndex: 10100,
+                              zIndex: Z_INDEX.popover,
                             }}
                             className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
                           >
@@ -1256,9 +1265,7 @@ export const Dock: React.FC = () => {
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel isLight={isLight}>
-                      {classToolMetadata.label}
-                    </DockLabel>
+                    <DockLabel>{classToolMetadata.label}</DockLabel>
                   </button>
 
                   {/* Separator and Minimize Button */}
@@ -1272,7 +1279,7 @@ export const Dock: React.FC = () => {
                     <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel isLight={isLight}>Hide</DockLabel>
+                    <DockLabel>Hide</DockLabel>
                   </button>
                 </>
               ) : (
@@ -1297,7 +1304,16 @@ export const Dock: React.FC = () => {
             )}
             <button
               onClick={() => setIsExpanded(true)}
-              className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40"
+              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300 ${
+                globalStyle.dockBorderRadius === 'none'
+                  ? 'rounded-none'
+                  : globalStyle.dockBorderRadius === 'full'
+                    ? 'rounded-full'
+                    : `rounded-${globalStyle.dockBorderRadius}`
+              }`}
+              style={{
+                backgroundColor: `rgba(45, 63, 137, ${globalStyle.dockTransparency + 0.4})`, // Slightly more opaque than expanded
+              }}
               title="Open Tools"
             >
               <LayoutGrid className="w-6 h-6" />

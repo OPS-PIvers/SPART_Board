@@ -1,4 +1,6 @@
 import React from 'react';
+import { useDashboard } from '../../../context/useDashboard';
+import { DEFAULT_GLOBAL_STYLE } from '../../../types';
 
 interface RandomFlashProps {
   displayResult: string | string[] | string[][] | null;
@@ -11,9 +13,12 @@ export const RandomFlash: React.FC<RandomFlashProps> = ({
   isSpinning,
   fontSize,
 }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
   return (
     <div
-      className={`text-center font-bold px-4 transition-all duration-300 w-full flex items-center justify-center ${
+      className={`text-center font-bold px-4 transition-all duration-300 w-full flex items-center justify-center font-${globalStyle.fontFamily} ${
         isSpinning
           ? 'scale-90 opacity-30 grayscale'
           : 'scale-100 text-brand-blue-primary drop-shadow-xl'

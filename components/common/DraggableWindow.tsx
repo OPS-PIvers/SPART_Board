@@ -11,16 +11,16 @@ import {
   ChevronRight,
   Copy,
 } from 'lucide-react';
-import { WidgetData, WidgetType } from '@/types';
+import { WidgetData, WidgetType, DEFAULT_GLOBAL_STYLE } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
+import { Z_INDEX } from '../../config/zIndex';
+
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
-const MAXIMIZED_Z_INDEX = 900;
-const TOOL_MENU_Z_INDEX = 12000;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -47,7 +47,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     duplicateWidget,
     bringToFront,
     addToast,
+    activeDashboard,
   } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -184,7 +187,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const transparency = widget.transparency ?? 0.2;
+  const transparency = widget.transparency ?? globalStyle.windowTransparency;
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
@@ -215,7 +218,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             position: 'fixed',
             top: '24px',
             right: '24px',
-            zIndex: TOOL_MENU_Z_INDEX,
+            zIndex: Z_INDEX.toolMenu,
           });
           return;
         }
@@ -229,7 +232,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           top: shouldShowBelow ? rect.bottom + 12 : rect.top - 56,
           left: rect.left + rect.width / 2,
           transform: 'translateX(-50%)',
-          zIndex: TOOL_MENU_Z_INDEX,
+          zIndex: Z_INDEX.toolMenu,
         });
       };
 
@@ -248,15 +251,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onMouseDown={handleMouseDown}
         onClick={handleWidgetClick}
         transparency={transparency}
+        cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform ${
-          isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
+          isMaximized ? 'border-none !shadow-none' : ''
         } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
           left: isMaximized ? 0 : widget.x,
           top: isMaximized ? 0 : widget.y,
           width: isMaximized ? '100vw' : widget.w,
           height: isMaximized ? '100vh' : widget.h,
-          zIndex: isMaximized ? MAXIMIZED_Z_INDEX : widget.z,
+          zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
           opacity: widget.minimized ? 0 : 1,
@@ -278,7 +282,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             >
               {showConfirm && (
                 <div
-                  className="absolute inset-0 z-[60] bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
+                  className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
                   role="alertdialog"
                   aria-labelledby={`dialog-title-${widget.id}`}
                   aria-describedby={`dialog-desc-${widget.id}`}
@@ -401,7 +405,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           <div
             ref={menuRef}
             style={menuStyle}
-            className="flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl"
+            className={`flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl font-${globalStyle.fontFamily}`}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           >

@@ -8,6 +8,7 @@ import {
   Student,
   GradeFilter,
   DockItem,
+  GlobalStyle,
 } from '../types';
 
 export interface DashboardContextValue {
@@ -33,10 +34,12 @@ export interface DashboardContextValue {
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
+  clearAllWidgets: () => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
   moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
   setBackground: (bg: string) => void;
+  setGlobalStyle: (style: Partial<GlobalStyle>) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
