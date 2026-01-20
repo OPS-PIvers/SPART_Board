@@ -3,7 +3,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
-import { WIDGET_PALETTE } from '../../config/colors';
+import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
@@ -20,8 +20,10 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     format24 = true,
     showSeconds = true,
-    themeColor = '#1e293b',
+    themeColor = STANDARD_COLORS.slate,
     fontFamily = 'global',
+    clockStyle = 'modern',
+    glow = false,
     clockStyle = 'modern',
     glow = false,
   } = widget.config as ClockConfig;

@@ -19,7 +19,7 @@ import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { Button } from '../common/Button';
-import { WIDGET_PALETTE } from '../../config/colors';
+import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -54,7 +54,7 @@ export const DrawingWidget: React.FC<{
   const config = widget.config as DrawingConfig;
   const {
     mode = 'window',
-    color = '#1e293b',
+    color = STANDARD_COLORS.slate,
     width = 4,
     paths = [],
     customColors = WIDGET_PALETTE.slice(0, 5),
