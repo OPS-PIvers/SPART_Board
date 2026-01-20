@@ -14,3 +14,8 @@
 
 **Drift:** `SoundWidget.tsx` contained hardcoded hex values duplicating the centralized `STANDARD_COLORS` palette.
 **Fix:** Replaced hardcoded hex strings with `STANDARD_COLORS` imports to ensure consistency and single source of truth.
+
+## 2026-01-20 - [Sticky Note Colors]
+
+**Drift:** Found hardcoded pastel hex values for the TextWidget (Sticky Note) scattered across components, defaults, and helpers.
+**Fix:** Centralized these values into `STICKY_NOTE_COLORS` in `config/colors.ts` and refactored dependent files to use the single source of truth.

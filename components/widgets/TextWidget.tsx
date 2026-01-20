@@ -2,6 +2,7 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { STICKY_NOTE_COLORS } from '../../config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
 
