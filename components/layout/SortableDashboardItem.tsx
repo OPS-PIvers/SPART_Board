@@ -3,6 +3,7 @@ import { GripVertical, Star, Pencil, Copy, Share2, Trash2 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Dashboard } from '../../types';
+import { Z_INDEX } from '../../config/zIndex';
 
 interface SortableDashboardItemProps {
   db: Dashboard;
@@ -37,7 +38,7 @@ export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 100 : 1,
+    zIndex: isDragging ? Z_INDEX.widgetDrag : Z_INDEX.base + 1,
   };
 
   return (
@@ -162,7 +163,7 @@ export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
             >
               <Trash2 className="w-3.5 h-3.5" />
             </label>
-            <div className="peer-checked:flex hidden fixed inset-0 z-[11000] items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+            <div className="peer-checked:flex hidden fixed inset-0 z-popover items-center justify-center bg-slate-900/40 backdrop-blur-sm">
               <div
                 className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
                 onClick={(e) => e.stopPropagation()}

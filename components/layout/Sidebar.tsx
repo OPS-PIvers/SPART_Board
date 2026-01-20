@@ -249,7 +249,7 @@ export const Sidebar: React.FC = () => {
     <>
       <GlassCard
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all"
+        className="fixed top-6 left-6 z-dock flex items-center gap-2 p-2 rounded-full transition-all"
       >
         <button
           onClick={() => setIsOpen(true)}
@@ -357,7 +357,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {editingDashboard && (
-        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-popover flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
             <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
               Rename Dashboard
@@ -417,7 +417,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {showNewDashboardModal && (
-        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-popover flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
             <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
               New Board
@@ -467,7 +467,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {isOpen && (
-        <div className="fixed inset-0 z-[10000] flex">
+        <div className="fixed inset-0 z-modal flex">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => {
@@ -998,7 +998,7 @@ export const Sidebar: React.FC = () => {
                             >
                               <tool.icon className="w-5 h-5" />
                             </button>
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10 scale-95 group-hover:scale-100">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-xl border border-white/10 scale-95 group-hover:scale-100">
                               {tool.label}
                               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
                             </div>
