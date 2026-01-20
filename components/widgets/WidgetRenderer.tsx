@@ -1,9 +1,14 @@
-import React from 'react';
-import { WidgetData, DrawingConfig, WidgetConfig } from '@/types';
+import React, { memo } from 'react';
+import {
+  WidgetData,
+  DrawingConfig,
+  WidgetConfig,
+  LiveSession,
+  LiveStudent,
+  GlobalStyle,
+  WidgetType,
+} from '@/types';
 import { DraggableWindow } from '../common/DraggableWindow';
-import { useAuth } from '@/context/useAuth';
-import { useDashboard } from '@/context/useDashboard';
-import { useLiveSession } from '@/hooks/useLiveSession';
 import { LiveControl } from './LiveControl';
 import { ClockWidget, ClockSettings } from './ClockWidget';
 import { TimeToolWidget } from './TimeToolWidget';
@@ -53,36 +58,64 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   materials: { w: 340, h: 340 },
 };
 
-export const WidgetRenderer: React.FC<{
+interface WidgetRendererProps {
   widget: WidgetData;
   isStudentView?: boolean;
-}> = ({ widget, isStudentView = false }) => {
-  const { user } = useAuth();
-  const { activeDashboard } = useDashboard();
+  // Session Props
+  session: LiveSession | null;
+  isLive: boolean;
+  students: LiveStudent[];
+  updateSessionConfig: (config: WidgetConfig) => Promise<void>;
+  updateSessionBackground: (background: string) => Promise<void>;
+  startSession: (
+    widgetId: string,
+    widgetType: WidgetType,
+    config?: WidgetConfig,
+    background?: string
+  ) => Promise<void>;
+  endSession: () => Promise<void>;
+  removeStudent: (studentId: string) => Promise<void>;
+  toggleFreezeStudent: (
+    studentId: string,
+    currentStatus: 'active' | 'frozen' | 'disconnected'
+  ) => Promise<void>;
+  toggleGlobalFreeze: (freeze: boolean) => Promise<void>;
+  // Dashboard Actions
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  globalStyle: GlobalStyle;
+  dashboardBackground?: string;
+}
+
+const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
+  widget,
+  isStudentView = false,
+  session,
+  isLive,
+  students,
+  updateSessionConfig,
+  updateSessionBackground,
+  startSession,
+  endSession,
+  removeStudent,
+  toggleFreezeStudent,
+  toggleGlobalFreeze,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  addToast,
+  globalStyle,
+  dashboardBackground,
+}) => {
   const windowSize = useWindowSize();
-
-  // Initialize the hook (only active if user exists)
-  const {
-    session,
-    students,
-    startSession,
-    updateSessionConfig,
-    updateSessionBackground,
-    endSession,
-    removeStudent,
-    toggleFreezeStudent,
-    toggleGlobalFreeze,
-  } = useLiveSession(user?.uid, 'teacher');
-
-  const dashboardBackground = activeDashboard?.background;
-
-  // Logic to determine if THIS widget is the live one
-  const isThisWidgetLive =
-    session?.isActive && session?.activeWidgetId === widget.id;
 
   const handleToggleLive = async () => {
     try {
-      if (isThisWidgetLive) {
+      if (isLive) {
         await endSession();
       } else {
         await startSession(
@@ -100,7 +133,7 @@ export const WidgetRenderer: React.FC<{
   // Sync config changes to session when live
   const configJson = JSON.stringify(widget.config);
   React.useEffect(() => {
-    if (!isThisWidgetLive) {
+    if (!isLive) {
       return undefined;
     }
 
@@ -109,26 +142,23 @@ export const WidgetRenderer: React.FC<{
         try {
           await updateSessionConfig(JSON.parse(configJson) as WidgetConfig);
         } catch (error) {
-          // Log the error so failures are visible during development and debugging
-          // while avoiding disruption to the UI.
-
           console.error('Failed to update live session config', error);
         }
       })();
-    }, LIVE_SESSION_UPDATE_DEBOUNCE_MS); // Debounce updates to reduce write frequency under rapid changes
+    }, LIVE_SESSION_UPDATE_DEBOUNCE_MS);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [configJson, isThisWidgetLive, updateSessionConfig]);
+  }, [configJson, isLive, updateSessionConfig]);
 
   // Sync background changes to session when live
   React.useEffect(() => {
-    if (!isThisWidgetLive || !activeDashboard?.background) {
+    if (!isLive || !dashboardBackground) {
       return;
     }
-    void updateSessionBackground(activeDashboard.background);
-  }, [activeDashboard?.background, isThisWidgetLive, updateSessionBackground]);
+    void updateSessionBackground(dashboardBackground);
+  }, [dashboardBackground, isLive, updateSessionBackground]);
 
   if (widget.type === 'sticker') {
     return <StickerItemWidget widget={widget} />;
@@ -268,9 +298,6 @@ export const WidgetRenderer: React.FC<{
   const content = getWidgetContent();
 
   const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
-  // Account for sidebar (top-6, left-6) and dock (bottom-6) spacing
-  // Horizontal: 1.5rem left + 1.5rem right = 3rem total (48px)
-  // Vertical: 4.5rem top (for sidebar and spacing) + 4.5rem bottom (for dock and spacing) = 9rem total (144px)
   const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
   const effectiveHeight = widget.maximized ? windowSize.height : widget.h;
 
@@ -307,9 +334,15 @@ export const WidgetRenderer: React.FC<{
       settings={getWidgetSettings()}
       style={customStyle}
       skipCloseConfirmation={widget.type === 'classes'}
+      updateWidget={updateWidget}
+      removeWidget={removeWidget}
+      duplicateWidget={duplicateWidget}
+      bringToFront={bringToFront}
+      addToast={addToast}
+      globalStyle={globalStyle}
       headerActions={
         <LiveControl
-          isLive={isThisWidgetLive ?? false}
+          isLive={isLive}
           studentCount={students.length}
           students={students}
           code={session?.code}
@@ -337,3 +370,5 @@ export const WidgetRenderer: React.FC<{
     </DraggableWindow>
   );
 };
+
+export const WidgetRenderer = memo(WidgetRendererComponent);

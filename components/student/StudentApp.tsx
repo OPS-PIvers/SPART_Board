@@ -5,8 +5,13 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { Snowflake, Radio } from 'lucide-react';
-import { WidgetData } from '../../types';
+import { WidgetData, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { getDefaultWidgetConfig } from '../../utils/widgetHelpers';
+
+const noop = () => undefined;
+const asyncNoop = async () => {
+  await Promise.resolve();
+};
 
 export const StudentApp = () => {
   const [joinedCode, setJoinedCode] = useState<string | null>(null);
@@ -218,7 +223,26 @@ export const StudentApp = () => {
       </button>
       <div className="h-full w-full">
         {/* Pass isStudentView to render content without window chrome */}
-        <WidgetRenderer widget={activeWidgetStub} isStudentView={true} />
+        <WidgetRenderer
+          widget={activeWidgetStub}
+          isStudentView={true}
+          session={session}
+          isLive={true}
+          students={[]}
+          updateSessionConfig={asyncNoop}
+          updateSessionBackground={asyncNoop}
+          startSession={asyncNoop}
+          endSession={asyncNoop}
+          removeStudent={asyncNoop}
+          toggleFreezeStudent={asyncNoop}
+          toggleGlobalFreeze={asyncNoop}
+          updateWidget={noop}
+          removeWidget={noop}
+          duplicateWidget={noop}
+          bringToFront={noop}
+          addToast={noop}
+          globalStyle={DEFAULT_GLOBAL_STYLE}
+        />
       </div>
     </div>
   );
