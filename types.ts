@@ -465,7 +465,6 @@ export type DockItem =
   | { type: 'folder'; folder: DockFolder };
 
 export interface DashboardSettings {
-  defaultWidgetTransparency?: number;
   quickAccessWidgets?: WidgetType[];
 }
 
@@ -591,7 +590,7 @@ export interface GlobalStyle {
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
-  windowTransparency: 0.8,
+  windowTransparency: 0.2,
   windowBorderRadius: '2xl',
   dockTransparency: 0.4,
   dockBorderRadius: 'full',

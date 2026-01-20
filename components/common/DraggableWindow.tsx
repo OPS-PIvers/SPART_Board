@@ -355,10 +355,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
               <div className="flex-1 p-4 overflow-y-auto">
-                <div className="mb-4 flex items-center gap-3 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                    Transparency
-                  </span>
+                <div className="mb-4 flex flex-col gap-2 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                      Transparency{' '}
+                      {widget.transparency === undefined ? '(Global)' : ''}
+                    </span>
+                    {widget.transparency !== undefined && (
+                      <button
+                        onClick={() =>
+                          updateWidget(widget.id, { transparency: undefined })
+                        }
+                        className="text-[9px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      >
+                        Reset to Global
+                      </button>
+                    )}
+                  </div>
                   <div className="flex-1 flex items-center gap-2">
                     <input
                       type="range"

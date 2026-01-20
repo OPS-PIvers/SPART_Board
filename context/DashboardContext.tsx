@@ -1049,8 +1049,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((d) => {
           if (d.id !== activeId) return d;
           const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
-          const defaultTransparency =
-            d.settings?.defaultWidgetTransparency ?? 0.2;
 
           const defaultPosition = {
             x: 150 + d.widgets.length * 20,
@@ -1068,7 +1066,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             h: initialData?.h ?? defaults.h ?? 200,
             flipped: false,
             z: maxZ + 1,
-            transparency: initialData?.transparency ?? defaultTransparency,
             ...defaults,
             ...initialData,
             config: {
