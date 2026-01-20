@@ -15,18 +15,17 @@ import {
   Trash2,
   Highlighter,
 } from 'lucide-react';
-import { WidgetData, WidgetType, DEFAULT_GLOBAL_STYLE, Path } from '@/types';
-import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
 
+import { Z_INDEX } from '../../config/zIndex';
+
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
-const MAXIMIZED_Z_INDEX = 900;
-const TOOL_MENU_Z_INDEX = 12000;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -36,6 +35,12 @@ interface DraggableWindowProps {
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  globalStyle: GlobalStyle;
 }
 
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -46,17 +51,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   style,
   skipCloseConfirmation = false,
   headerActions,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  addToast,
+  globalStyle,
 }) => {
-  const {
-    updateWidget,
-    removeWidget,
-    duplicateWidget,
-    bringToFront,
-    addToast,
-    activeDashboard,
-  } = useDashboard();
-  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -237,7 +238,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             position: 'fixed',
             top: '24px',
             right: '24px',
-            zIndex: TOOL_MENU_Z_INDEX,
+            zIndex: Z_INDEX.toolMenu,
           });
           return;
         }
@@ -251,7 +252,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           top: shouldShowBelow ? rect.bottom + 12 : rect.top - 56,
           left: rect.left + rect.width / 2,
           transform: 'translateX(-50%)',
-          zIndex: TOOL_MENU_Z_INDEX,
+          zIndex: Z_INDEX.toolMenu,
         });
       };
 
@@ -279,7 +280,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           top: isMaximized ? 0 : widget.y,
           width: isMaximized ? '100vw' : widget.w,
           height: isMaximized ? '100vh' : widget.h,
-          zIndex: isMaximized ? MAXIMIZED_Z_INDEX : widget.z,
+          zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
           opacity: widget.minimized ? 0 : 1,
@@ -301,7 +302,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             >
               {showConfirm && (
                 <div
-                  className="absolute inset-0 z-[60] bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
+                  className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
                   role="alertdialog"
                   aria-labelledby={`dialog-title-${widget.id}`}
                   aria-describedby={`dialog-desc-${widget.id}`}
@@ -384,12 +385,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       </div>
                       <div className="w-px h-4 bg-slate-300 mx-1" />
                       <button
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           setAnnotationColor('eraser');
-                         }}
-                         className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
-                         title="Eraser"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAnnotationColor('eraser');
+                        }}
+                        className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+                        title="Eraser"
                       >
                         <Eraser className="w-3.5 h-3.5" />
                       </button>
@@ -468,10 +469,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
               <div className="flex-1 p-4 overflow-y-auto">
-                <div className="mb-4 flex items-center gap-3 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                    Transparency
-                  </span>
+                <div className="mb-4 flex flex-col gap-2 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                      Transparency{' '}
+                      {widget.transparency === undefined ? '(Global)' : ''}
+                    </span>
+                    {widget.transparency !== undefined && (
+                      <button
+                        onClick={() =>
+                          updateWidget(widget.id, { transparency: undefined })
+                        }
+                        className="text-[9px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      >
+                        Reset to Global
+                      </button>
+                    )}
+                  </div>
                   <div className="flex-1 flex items-center gap-2">
                     <input
                       type="range"

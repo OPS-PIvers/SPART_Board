@@ -144,6 +144,17 @@ const mockDashboard: DashboardContextValue = {
   clearAllStickers: () => {
     // No-op
   },
+  // Sharing system mocks
+  shareDashboard: async () => {
+    return Promise.reject(new Error('Sharing not implemented in student view'));
+  },
+  loadSharedDashboard: async () => {
+    return Promise.resolve(null);
+  },
+  pendingShareId: null,
+  clearPendingShare: () => {
+    // No-op
+  },
   // Roster mocks
   rosters: [],
   activeRosterId: null,

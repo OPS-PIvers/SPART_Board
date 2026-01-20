@@ -5,6 +5,7 @@ import {
   ChecklistItem,
   WidgetData,
   DEFAULT_GLOBAL_STYLE,
+  InstructionalRoutinesConfig,
 } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
@@ -14,6 +15,7 @@ import {
   Type,
   Users,
   RefreshCw,
+  BookOpen,
 } from 'lucide-react';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
@@ -198,7 +200,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard, addToast } = useDashboard();
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -231,8 +233,60 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, items: newItems } });
   };
 
+  // Nexus Connection: Import from Instructional Routines
+  const importFromRoutine = () => {
+    const routineWidget = activeDashboard?.widgets.find(
+      (w) => w.type === 'instructionalRoutines'
+    );
+
+    if (!routineWidget) {
+      addToast('No Instructional Routines widget found!', 'error');
+      return;
+    }
+
+    const routineConfig = routineWidget.config as InstructionalRoutinesConfig;
+    const steps = routineConfig.customSteps;
+
+    if (!steps || steps.length === 0) {
+      addToast('Active routine has no steps to import.', 'info');
+      return;
+    }
+
+    const newItems: ChecklistItem[] = steps.map((step) => ({
+      id: crypto.randomUUID(),
+      text: step.text,
+      completed: false,
+    }));
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        mode: 'manual',
+        items: newItems,
+      },
+    });
+    setLocalText(newItems.map((i) => i.text).join('\n'));
+    addToast('Imported steps from Routine!', 'success');
+  };
+
   return (
     <div className="space-y-6">
+      {/* Nexus Connection: Routine Import */}
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between">
+        <div className="flex items-center gap-2 text-indigo-900">
+          <BookOpen className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Import Routine
+          </span>
+        </div>
+        <button
+          onClick={importFromRoutine}
+          className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
+        >
+          <RefreshCw className="w-3 h-3" /> Sync
+        </button>
+      </div>
+
       {/* Mode Toggle */}
       <div>
         <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">

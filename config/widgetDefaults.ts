@@ -1,4 +1,5 @@
 import { WidgetData } from '../types';
+import { STICKY_NOTE_COLORS } from './colors';
 
 export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
   clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
@@ -21,7 +22,7 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 250,
     config: {
       content: 'Double click to edit...',
-      bgColor: '#fef9c3',
+      bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },
   },

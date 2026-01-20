@@ -1,14 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
 import {
   Layout,
   Save,
   Plus,
-  Trash2,
   X,
   Menu,
-  Share2,
   Download,
   Upload,
   Grid,
@@ -20,15 +16,13 @@ import {
   LayoutGrid,
   Paintbrush,
   SquareSquare,
-  Pencil,
   ChevronRight,
   Star,
-  GripVertical,
   Maximize,
   Minimize,
-  Copy,
   ArrowLeft,
   Palette,
+  Trash2,
 } from 'lucide-react';
 import {
   DndContext,
@@ -44,15 +38,13 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
+import { useBackgrounds } from '../../hooks/useBackgrounds';
 import {
   Dashboard,
-  BackgroundPreset,
   GlobalFontFamily,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
@@ -61,6 +53,7 @@ import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 import { GlassCard } from '../common/GlassCard';
+import { SortableDashboardItem } from './SortableDashboardItem';
 
 interface DashboardData {
   name: string;
@@ -191,208 +184,17 @@ const StylePreview = ({
   );
 };
 
-interface SortableDashboardItemProps {
-  db: Dashboard;
-  isActive: boolean;
-  onLoad: (id: string) => void;
-  onRename: (id: string, name: string) => void;
-  onDelete: (id: string) => void;
-  onSetDefault: (id: string) => void;
-  onDuplicate: (id: string) => void;
-  onShare: (db: Dashboard) => void;
-}
-
-const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
-  db,
-  isActive,
-  onLoad,
-  onRename,
-  onDelete,
-  onSetDefault,
-  onDuplicate,
-  onShare,
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: db.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group relative flex flex-col p-0 rounded-2xl cursor-pointer transition-all border overflow-hidden ${
-        isActive
-          ? 'bg-white border-brand-blue-primary shadow-md ring-1 ring-brand-blue-lighter'
-          : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm'
-      } ${isDragging ? 'opacity-50 shadow-2xl scale-105' : ''}`}
-      onClick={() => onLoad(db.id)}
-    >
-      {/* Board Thumbnail Placeholder or Image */}
-      <div className="aspect-video w-full bg-slate-100 relative group-hover:bg-slate-50 transition-colors">
-        {db.background?.startsWith('bg-') ? (
-          <div className={`w-full h-full ${db.background}`} />
-        ) : (
-          <img
-            src={db.background}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-
-        {/* Drag handle overlay */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur rounded-lg text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="w-4 h-4" />
-        </div>
-
-        {/* Default star overlay */}
-        {db.isDefault && (
-          <div className="absolute top-2 right-2 p-1 bg-amber-500 text-white rounded-full shadow-sm">
-            <Star className="w-3 h-3 fill-current" />
-          </div>
-        )}
-      </div>
-
-      <div className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="min-w-0 flex-1">
-            <div
-              className={`font-bold text-sm truncate ${
-                isActive ? 'text-brand-blue-dark' : 'text-slate-700'
-              }`}
-            >
-              {db.name}
-            </div>
-            <div className="text-[10px] text-slate-400 font-medium">
-              {new Date(db.createdAt).toLocaleDateString()}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-1 border-t border-slate-50 pt-2">
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSetDefault(db.id);
-              }}
-              className={`p-1.5 rounded-lg transition-all ${
-                db.isDefault
-                  ? 'text-amber-500 bg-amber-50'
-                  : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
-              }`}
-              title={db.isDefault ? 'Default Board' : 'Set as Default'}
-            >
-              <Star
-                className={`w-3.5 h-3.5 ${db.isDefault ? 'fill-current' : ''}`}
-              />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRename(db.id, db.name);
-              }}
-              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
-              title="Rename"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDuplicate(db.id);
-              }}
-              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
-              title="Duplicate"
-            >
-              <Copy className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onShare(db);
-              }}
-              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
-              title="Share"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="relative">
-            <input
-              type="checkbox"
-              id={`delete-dashboard-${db.id}`}
-              className="peer hidden"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <label
-              htmlFor={`delete-dashboard-${db.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="p-1.5 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-lg transition-all cursor-pointer inline-flex items-center justify-center"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </label>
-            <div className="peer-checked:flex hidden fixed inset-0 z-[11000] items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-              <div
-                className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h4 className="text-base font-semibold text-slate-900 mb-2">
-                  Delete board
-                </h4>
-                <p className="text-sm text-slate-600 mb-4">
-                  Are you sure you want to delete “{db.name}”? This action
-                  cannot be undone.
-                </p>
-                <div className="flex justify-end gap-2">
-                  <label
-                    htmlFor={`delete-dashboard-${db.id}`}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
-                  >
-                    Cancel
-                  </label>
-                  <button
-                    type="button"
-                    className="px-4 py-2 text-sm font-medium text-white bg-brand-red-primary hover:bg-brand-red-dark rounded-lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(db.id);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+type MenuSection =
+  | 'main'
+  | 'boards'
+  | 'backgrounds'
+  | 'widgets'
+  | 'style'
+  | 'settings';
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<
-    'main' | 'boards' | 'backgrounds' | 'widgets' | 'style' | 'settings'
-  >('main');
+  const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { user, signOut, isAdmin, featurePermissions } = useAuth();
@@ -418,6 +220,7 @@ export const Sidebar: React.FC = () => {
     setGlobalStyle,
     clearAllWidgets,
     addToast,
+    shareDashboard,
   } = useDashboard();
 
   const toggleFullscreen = () => {
@@ -448,7 +251,6 @@ export const Sidebar: React.FC = () => {
   }, []);
 
   // Sub-tab for design section
-
   const [designTab, setDesignTab] = useState<
     'presets' | 'colors' | 'gradients'
   >('presets');
@@ -522,160 +324,22 @@ export const Sidebar: React.FC = () => {
     id: string;
     name: string;
   } | null>(null);
-  const [managedBackgrounds, setManagedBackgrounds] = useState<
-    BackgroundPreset[]
-  >([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const publicBgsRef = useRef<BackgroundPreset[]>([]);
-  const betaBgsRef = useRef<BackgroundPreset[]>([]);
 
-  // Fetch managed backgrounds from Firestore
+  const { presets, colors, gradients } = useBackgrounds();
 
-  useEffect(() => {
-    if (!user) return;
-
-    const baseRef = collection(db, 'admin_backgrounds');
-
-    const unsubscribes: (() => void)[] = [];
-
-    if (isAdmin) {
-      // Admins can query everything active without permission errors
-
-      const q = query(baseRef, where('active', '==', true));
-
-      unsubscribes.push(
-        onSnapshot(
-          q,
-          (snapshot) => {
-            const backgrounds: BackgroundPreset[] = [];
-
-            snapshot.forEach((doc) => {
-              backgrounds.push(doc.data() as BackgroundPreset);
-            });
-
-            setManagedBackgrounds(
-              backgrounds.sort((a, b) => b.createdAt - a.createdAt)
-            );
-          },
-          (error) => {
-            console.error('Error fetching admin backgrounds:', error);
-          }
-        )
-      );
-    } else {
-      // Non-admins need separate queries to avoid reading restricted documents (admin-only)
-      // Use refs to prevent race conditions when both queries update simultaneously
-
-      const updateCombinedBackgrounds = () => {
-        const all = [...publicBgsRef.current, ...betaBgsRef.current];
-        const unique = Array.from(new Map(all.map((b) => [b.id, b])).values());
-        setManagedBackgrounds(unique.sort((a, b) => b.createdAt - a.createdAt));
-      };
-
-      // Query 1: Public backgrounds
-
-      const qPublic = query(
-        baseRef,
-
-        where('active', '==', true),
-
-        where('accessLevel', '==', 'public')
-      );
-
-      // Query 2: Beta backgrounds where the user is authorized
-      // Note: Beta backgrounds require user email for authorization
-      if (user.email) {
-        const qBeta = query(
-          baseRef,
-          where('active', '==', true),
-          where('accessLevel', '==', 'beta'),
-          where('betaUsers', 'array-contains', user.email.toLowerCase())
-        );
-
-        unsubscribes.push(
-          onSnapshot(
-            qBeta,
-            (snapshot) => {
-              betaBgsRef.current = snapshot.docs.map(
-                (d) => d.data() as BackgroundPreset
-              );
-              updateCombinedBackgrounds();
-            },
-            (error) => {
-              console.error('Error fetching beta backgrounds:', error);
-            }
-          )
-        );
-      } else {
-        console.warn('Skipping beta background query: User has no email.');
-      }
-
-      // Public backgrounds are always available regardless of user email
-      unsubscribes.push(
-        onSnapshot(
-          qPublic,
-          (snapshot) => {
-            publicBgsRef.current = snapshot.docs.map(
-              (d) => d.data() as BackgroundPreset
-            );
-            updateCombinedBackgrounds();
-          },
-          (error) => {
-            console.error('Error fetching public backgrounds:', error);
-          }
-        )
-      );
-    }
-
-    return () => unsubscribes.forEach((unsub) => unsub());
-  }, [user, isAdmin]);
-
-  // Combine static and managed presets
-  const presets = useMemo(() => {
-    return managedBackgrounds.map((bg) => ({
-      id: bg.url,
-      thumbnailUrl: bg.thumbnailUrl,
-      label: bg.label,
-    }));
-  }, [managedBackgrounds]);
-
-  const colors = [
-    { id: 'bg-brand-gray-darkest' },
-    { id: 'bg-brand-blue-dark' },
-    { id: 'bg-emerald-950' },
-    { id: 'bg-brand-red-dark' },
-    { id: 'bg-brand-gray-lightest' },
-    { id: 'bg-white' },
-    {
-      id: 'bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-slate-100',
-      label: 'Dot Grid',
-    },
-  ];
-
-  const gradients = [
-    { id: 'bg-gradient-to-br from-slate-900 to-slate-700', label: 'Slate' },
-    {
-      id: 'bg-gradient-to-br from-brand-blue-primary to-brand-blue-dark',
-      label: 'Brand',
-    },
-    {
-      id: 'bg-gradient-to-br from-emerald-400 to-cyan-500',
-      label: 'Tropical',
-    },
-    { id: 'bg-gradient-to-br from-rose-400 to-orange-400', label: 'Sunset' },
-  ];
-
-  const handleShare = (db?: Dashboard) => {
+  const handleShare = async (db?: Dashboard) => {
     const target = db ?? activeDashboard;
     if (!target) return;
     try {
-      const data = JSON.stringify(target);
-      void navigator.clipboard.writeText(data);
-      addToast('Board data copied to clipboard!', 'success');
-    } catch (error) {
-      console.error('Failed to share board:', error);
-      const message = error instanceof Error ? error.message : 'Share failed';
-      addToast(message, 'error');
+      const shareId = await shareDashboard(target);
+      const url = `${window.location.origin}/share/${shareId}`;
+      await navigator.clipboard.writeText(url);
+      addToast('Board link copied to clipboard!', 'success');
+    } catch (err) {
+      console.error('Share failed:', err);
+      addToast('Failed to generate share link', 'error');
     }
   };
 
@@ -737,7 +401,7 @@ export const Sidebar: React.FC = () => {
     <>
       <GlassCard
         data-screenshot="exclude"
-        className="fixed top-6 left-6 z-[1000] flex items-center gap-2 p-2 rounded-full transition-all"
+        className="fixed top-6 left-6 z-dock flex items-center gap-2 p-2 rounded-full transition-all"
       >
         <button
           onClick={() => setIsOpen(true)}
@@ -861,7 +525,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {editingDashboard && (
-        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-popover flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
             <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
               Rename Dashboard
@@ -921,7 +585,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {showNewDashboardModal && (
-        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-popover flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
             <h2 className="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">
               New Board
@@ -971,7 +635,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {isOpen && (
-        <div className="fixed inset-0 z-[10000] flex">
+        <div className="fixed inset-0 z-modal flex">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => {
@@ -1415,7 +1079,6 @@ export const Sidebar: React.FC = () => {
               </div>
 
               {/* STYLE SECTION */}
-
               <div
                 className={`absolute inset-0 flex flex-col transition-all duration-300 ease-in-out ${
                   activeSection === 'style'
@@ -1424,10 +1087,8 @@ export const Sidebar: React.FC = () => {
                 }`}
               >
                 {/* TABS & MOBILE PREVIEW */}
-
                 <div className="bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm flex flex-col">
                   {/* Mobile Preview only */}
-
                   <div className="lg:hidden p-6 pb-0">
                     <StylePreview
                       pendingStyle={pendingStyle}
@@ -1436,7 +1097,6 @@ export const Sidebar: React.FC = () => {
                   </div>
 
                   {/* Sub-tabs */}
-
                   <div className="p-6">
                     <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-black uppercase tracking-widest">
                       <button
@@ -1466,7 +1126,6 @@ export const Sidebar: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-48">
                   {/* Global Font Family - Always visible */}
-
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
@@ -1544,18 +1203,15 @@ export const Sidebar: React.FC = () => {
                   {styleTab === 'window' ? (
                     <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
                       {/* Window Transparency */}
-
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                             Window Transparency
                           </h3>
-
                           <span className="text-xs font-mono font-bold text-brand-blue-primary">
                             {Math.round(pendingStyle.windowTransparency * 100)}%
                           </span>
                         </div>
-
                         <input
                           type="range"
                           min="0.05"
@@ -1565,7 +1221,6 @@ export const Sidebar: React.FC = () => {
                           onChange={(e) =>
                             setPendingStyle({
                               ...pendingStyle,
-
                               windowTransparency: parseFloat(e.target.value),
                             })
                           }
@@ -1574,20 +1229,15 @@ export const Sidebar: React.FC = () => {
                       </div>
 
                       {/* Window Corners */}
-
                       <div className="space-y-4">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                           Window Corners
                         </h3>
-
                         <div className="flex bg-slate-100 p-1 rounded-xl">
                           {[
                             { id: 'none', label: 'Square' },
-
                             { id: 'lg', label: 'Soft' },
-
                             { id: '2xl', label: 'Round' },
-
                             { id: '3xl', label: 'Extra' },
                           ].map((r) => (
                             <button
@@ -1595,7 +1245,6 @@ export const Sidebar: React.FC = () => {
                               onClick={() =>
                                 setPendingStyle({
                                   ...pendingStyle,
-
                                   windowBorderRadius:
                                     r.id as GlobalStyle['windowBorderRadius'],
                                 })
@@ -1615,18 +1264,15 @@ export const Sidebar: React.FC = () => {
                   ) : (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                       {/* Dock Transparency */}
-
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                             Dock Transparency
                           </h3>
-
                           <span className="text-xs font-mono font-bold text-brand-blue-primary">
                             {Math.round(pendingStyle.dockTransparency * 100)}%
                           </span>
                         </div>
-
                         <input
                           type="range"
                           min="0.05"
@@ -1636,7 +1282,6 @@ export const Sidebar: React.FC = () => {
                           onChange={(e) =>
                             setPendingStyle({
                               ...pendingStyle,
-
                               dockTransparency: parseFloat(e.target.value),
                             })
                           }
@@ -1645,20 +1290,15 @@ export const Sidebar: React.FC = () => {
                       </div>
 
                       {/* Dock Corners */}
-
                       <div className="space-y-4">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                           Dock Corners
                         </h3>
-
                         <div className="flex bg-slate-100 p-1 rounded-xl">
                           {[
                             { id: 'none', label: 'Square' },
-
                             { id: 'lg', label: 'Soft' },
-
                             { id: '2xl', label: 'Round' },
-
                             { id: 'full', label: 'Full' },
                           ].map((r) => (
                             <button
@@ -1666,7 +1306,6 @@ export const Sidebar: React.FC = () => {
                               onClick={() =>
                                 setPendingStyle({
                                   ...pendingStyle,
-
                                   dockBorderRadius:
                                     r.id as GlobalStyle['dockBorderRadius'],
                                 })
@@ -1684,12 +1323,10 @@ export const Sidebar: React.FC = () => {
                       </div>
 
                       {/* Dock Text Style */}
-
                       <div className="space-y-4">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                           Dock Text Style
                         </h3>
-
                         <div className="flex flex-col gap-4">
                           <div className="flex items-center gap-4">
                             <input
@@ -1698,13 +1335,11 @@ export const Sidebar: React.FC = () => {
                               onChange={(e) =>
                                 setPendingStyle({
                                   ...pendingStyle,
-
                                   dockTextColor: e.target.value,
                                 })
                               }
                               className="w-10 h-10 rounded-lg border-2 border-slate-200 bg-white cursor-pointer"
                             />
-
                             <span className="text-xs font-bold text-slate-600 uppercase">
                               Text Color
                             </span>
@@ -1714,7 +1349,6 @@ export const Sidebar: React.FC = () => {
                             onClick={() =>
                               setPendingStyle({
                                 ...pendingStyle,
-
                                 dockTextShadow: !pendingStyle.dockTextShadow,
                               })
                             }
@@ -1727,7 +1361,6 @@ export const Sidebar: React.FC = () => {
                             <span className="text-xs font-black uppercase tracking-wider">
                               Enable Text Shadow
                             </span>
-
                             {pendingStyle.dockTextShadow && (
                               <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
                             )}
@@ -1739,12 +1372,10 @@ export const Sidebar: React.FC = () => {
                 </div>
 
                 {/* ACTION BUTTONS - Fixed at bottom */}
-
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 z-20 flex flex-col gap-3">
                   <button
                     onClick={() => {
                       setGlobalStyle(pendingStyle);
-
                       addToast('Global style applied', 'success');
                     }}
                     className="w-full flex items-center justify-center gap-2 py-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
@@ -1776,47 +1407,6 @@ export const Sidebar: React.FC = () => {
                 }`}
               >
                 <div className="space-y-6">
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">
-                      Widget Defaults
-                    </h4>
-                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                      <label className="text-xs font-black text-slate-700 uppercase tracking-tight block mb-3">
-                        Default Widget Transparency
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.05"
-                          value={
-                            activeDashboard?.settings
-                              ?.defaultWidgetTransparency ?? 0.2
-                          }
-                          onChange={(e) =>
-                            updateDashboardSettings({
-                              defaultWidgetTransparency: parseFloat(
-                                e.target.value
-                              ),
-                            })
-                          }
-                          className="flex-1 accent-brand-blue-primary h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="min-w-[3ch] text-xs font-bold text-slate-500 text-right">
-                          {Math.round(
-                            (activeDashboard?.settings
-                              ?.defaultWidgetTransparency ?? 0.2) * 100
-                          )}
-                          %
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                        Applies to all new widgets added to this board.
-                      </p>
-                    </div>
-                  </div>
-
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-3">
                       <label className="text-xs font-black text-slate-700 uppercase tracking-tight block">
@@ -1873,7 +1463,7 @@ export const Sidebar: React.FC = () => {
                             >
                               <tool.icon className="w-5 h-5" />
                             </button>
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10 scale-95 group-hover:scale-100">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-xl border border-white/10 scale-95 group-hover:scale-100">
                               {tool.label}
                               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
                             </div>

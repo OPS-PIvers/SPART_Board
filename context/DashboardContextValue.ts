@@ -46,6 +46,13 @@ export interface DashboardContextValue {
   reorderDockItems: (items: DockItem[]) => void;
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   clearAllStickers: () => void;
+
+  // Sharing system
+  shareDashboard: (dashboard: Dashboard) => Promise<string>;
+  loadSharedDashboard: (shareId: string) => Promise<Dashboard | null>;
+  pendingShareId: string | null;
+  clearPendingShare: () => void;
+
   // Roster system
   rosters: ClassRoster[];
   activeRosterId: string | null;
@@ -53,6 +60,7 @@ export interface DashboardContextValue {
   updateRoster: (id: string, updates: Partial<ClassRoster>) => Promise<void>;
   deleteRoster: (id: string) => Promise<void>;
   setActiveRoster: (id: string | null) => void;
+
   // Folder system
   addFolder: (name: string) => void;
   createFolderWithItems: (name: string, items: WidgetType[]) => void;
