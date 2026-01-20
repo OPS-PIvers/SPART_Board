@@ -10,17 +10,22 @@ import {
   Minimize2,
   ChevronRight,
   Copy,
+  Eraser,
+  Undo2,
+  Trash2,
+  Highlighter,
 } from 'lucide-react';
-import { WidgetData, WidgetType } from '@/types';
-import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { AnnotationCanvas } from './AnnotationCanvas';
+import { WIDGET_PALETTE } from '@/config/colors';
+
+import { Z_INDEX } from '../../config/zIndex';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
-const MAXIMIZED_Z_INDEX = 900;
-const TOOL_MENU_Z_INDEX = 12000;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -30,6 +35,12 @@ interface DraggableWindowProps {
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  globalStyle: GlobalStyle;
 }
 
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -40,14 +51,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   style,
   skipCloseConfirmation = false,
   headerActions,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  addToast,
+  globalStyle,
 }) => {
-  const {
-    updateWidget,
-    removeWidget,
-    duplicateWidget,
-    bringToFront,
-    addToast,
-  } = useDashboard();
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -55,6 +65,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
+
+  // Annotation state
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [annotationColor, setAnnotationColor] = useState(
+    widget.annotation?.color ?? WIDGET_PALETTE[0]
+  );
+  const [annotationWidth, _setAnnotationWidth] = useState(
+    widget.annotation?.width ?? 4
+  );
+
   const windowRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
@@ -126,6 +146,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     );
     if (isInteractive) return;
 
+    // Don't drag if annotating
+    if (isAnnotating) return;
+
     setIsDragging(true);
     document.body.classList.add('is-dragging-widget');
     const startX = e.clientX - widget.x;
@@ -184,7 +207,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const transparency = widget.transparency ?? 0.2;
+  const transparency = widget.transparency ?? globalStyle.windowTransparency;
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
@@ -215,7 +238,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             position: 'fixed',
             top: '24px',
             right: '24px',
-            zIndex: TOOL_MENU_Z_INDEX,
+            zIndex: Z_INDEX.toolMenu,
           });
           return;
         }
@@ -229,7 +252,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           top: shouldShowBelow ? rect.bottom + 12 : rect.top - 56,
           left: rect.left + rect.width / 2,
           transform: 'translateX(-50%)',
-          zIndex: TOOL_MENU_Z_INDEX,
+          zIndex: Z_INDEX.toolMenu,
         });
       };
 
@@ -248,15 +271,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onMouseDown={handleMouseDown}
         onClick={handleWidgetClick}
         transparency={transparency}
+        cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform ${
-          isMaximized ? 'rounded-none border-none !shadow-none' : 'rounded-3xl'
+          isMaximized ? 'border-none !shadow-none' : ''
         } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
           left: isMaximized ? 0 : widget.x,
           top: isMaximized ? 0 : widget.y,
           width: isMaximized ? '100vw' : widget.w,
           height: isMaximized ? '100vh' : widget.h,
-          zIndex: isMaximized ? MAXIMIZED_Z_INDEX : widget.z,
+          zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
           opacity: widget.minimized ? 0 : 1,
@@ -278,7 +302,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             >
               {showConfirm && (
                 <div
-                  className="absolute inset-0 z-[60] bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
+                  className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
                   role="alertdialog"
                   aria-labelledby={`dialog-title-${widget.id}`}
                   aria-describedby={`dialog-desc-${widget.id}`}
@@ -324,6 +348,101 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   />
                 )}
                 {children}
+
+                {isAnnotating && (
+                  <>
+                    <AnnotationCanvas
+                      className="absolute inset-0 z-40 pointer-events-auto"
+                      paths={widget.annotation?.paths ?? []}
+                      color={annotationColor}
+                      width={annotationWidth}
+                      canvasWidth={isMaximized ? window.innerWidth : widget.w}
+                      canvasHeight={isMaximized ? window.innerHeight : widget.h}
+                      onPathsChange={(newPaths: Path[]) => {
+                        updateWidget(widget.id, {
+                          annotation: {
+                            mode: 'window',
+                            paths: newPaths,
+                            color: annotationColor,
+                            width: annotationWidth,
+                          },
+                        });
+                      }}
+                    />
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1 bg-white/90 backdrop-blur shadow-lg rounded-full border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200">
+                      <div className="flex items-center gap-1 px-1">
+                        {WIDGET_PALETTE.slice(0, 5).map((c) => (
+                          <button
+                            key={c}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAnnotationColor(c);
+                            }}
+                            className={`w-5 h-5 rounded-full border border-slate-100 transition-transform ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      </div>
+                      <div className="w-px h-4 bg-slate-300 mx-1" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAnnotationColor('eraser');
+                        }}
+                        className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+                        title="Eraser"
+                      >
+                        <Eraser className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const paths = widget.annotation?.paths ?? [];
+                          if (paths.length > 0) {
+                            updateWidget(widget.id, {
+                              annotation: {
+                                ...widget.annotation,
+                                mode: 'window',
+                                paths: paths.slice(0, -1),
+                              },
+                            });
+                          }
+                        }}
+                        className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                        title="Undo"
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateWidget(widget.id, {
+                            annotation: {
+                              mode: 'window',
+                              paths: [],
+                              color: annotationColor,
+                              width: annotationWidth,
+                            },
+                          });
+                        }}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Clear All"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-px h-4 bg-slate-300 mx-1" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAnnotating(false);
+                        }}
+                        className="px-2 py-0.5 text-[10px] font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
+                      >
+                        DONE
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               <div
                 onMouseDown={handleResizeStart}
@@ -350,10 +469,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
               <div className="flex-1 p-4 overflow-y-auto">
-                <div className="mb-4 flex items-center gap-3 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                    Transparency
-                  </span>
+                <div className="mb-4 flex flex-col gap-2 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                      Transparency{' '}
+                      {widget.transparency === undefined ? '(Global)' : ''}
+                    </span>
+                    {widget.transparency !== undefined && (
+                      <button
+                        onClick={() =>
+                          updateWidget(widget.id, { transparency: undefined })
+                        }
+                        className="text-[9px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      >
+                        Reset to Global
+                      </button>
+                    )}
+                  </div>
                   <div className="flex-1 flex items-center gap-2">
                     <input
                       type="range"
@@ -401,7 +533,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           <div
             ref={menuRef}
             style={menuStyle}
-            className="flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl"
+            className={`flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl font-${globalStyle.fontFamily}`}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           >
@@ -486,6 +618,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     <Camera className="w-3.5 h-3.5" />
                   </button>
                 )}
+                <button
+                  onClick={() => {
+                    setIsAnnotating(!isAnnotating);
+                    setShowTools(false);
+                  }}
+                  className={`p-1.5 hover:bg-slate-800/10 rounded-full transition-all ${isAnnotating ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                  title="Annotate"
+                >
+                  <Highlighter className="w-3.5 h-3.5" />
+                </button>
                 <button
                   onClick={() => duplicateWidget(widget.id)}
                   className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"

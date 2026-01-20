@@ -14,7 +14,10 @@ import {
   Upload,
   Box,
   Code2,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { generateMiniAppCode } from '../../utils/ai';
 import {
   DndContext,
   closestCenter,
@@ -137,13 +140,11 @@ const SortableItem: React.FC<SortableItemProps> = ({
       </div>
 
       {/* Icon & Title */}
-      <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0 font-black text-xs border border-indigo-100">
+      <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0  text-xs border border-indigo-100">
         HTML
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-slate-700 text-sm truncate">
-          {app.title}
-        </h4>
+        <h4 className=" text-slate-700 text-sm truncate">{app.title}</h4>
         <div className="text-[10px] text-slate-400 font-mono">
           {(app.html.length / 1024).toFixed(1)} KB
         </div>
@@ -190,6 +191,9 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editCode, setEditCode] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [showPromptInput, setShowPromptInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dnd Kit Sensors
@@ -228,6 +232,8 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setEditTitle('');
     setEditCode(DEFAULT_HTML_TEMPLATE);
     setView('editor');
+    setShowPromptInput(false);
+    setPrompt('');
   };
 
   const handleEdit = (app: MiniAppItem) => {
@@ -235,6 +241,29 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setEditTitle(app.title);
     setEditCode(app.html);
     setView('editor');
+    setShowPromptInput(false);
+    setPrompt('');
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+
+    setIsGenerating(true);
+    try {
+      const result = await generateMiniAppCode(prompt);
+      setEditTitle(result.title);
+      setEditCode(result.html);
+      setShowPromptInput(false);
+      setPrompt('');
+      addToast('App generated successfully!', 'success');
+    } catch (error) {
+      addToast(
+        error instanceof Error ? error.message : 'Failed to generate app',
+        'error'
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -358,7 +387,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px]  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
           >
             <LayoutGrid className="w-3 h-3" /> Library
           </button>
@@ -378,7 +407,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return (
       <div className="w-full h-full bg-white flex flex-col rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h3 className="font-black text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2">
+          <h3 className=" text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2">
             <Code2 className="w-4 h-4 text-indigo-500" />
             {editingId ? 'Edit App' : 'New Mini-App'}
           </h3>
@@ -390,21 +419,84 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </button>
         </div>
 
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar">
-          <div>
-            <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
-              App Title
-            </label>
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="e.g. Lunch Randomizer"
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
+          {showPromptInput && (
+            <div
+              className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setShowPromptInput(false);
+              }}
+            >
+              <div className="w-full max-w-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-indigo-600 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5" /> Magic Generator
+                  </h4>
+                  <button
+                    onClick={() => setShowPromptInput(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                    aria-label="Close Magic Generator"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Describe the mini-app you want to build. Be specific about
+                  features and style.
+                </p>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="e.g. A team randomizer for 5 groups with a spinning wheel animation and confetti effect."
+                  className="w-full h-32 p-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none"
+                  autoFocus
+                  aria-label="Describe your mini-app"
+                />
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !prompt.trim()}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" /> Generate Code
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+                App Title
+              </label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Lunch Randomizer"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="pt-6">
+              <button
+                onClick={() => setShowPromptInput(true)}
+                className="h-[46px] px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
+                title="Generate with AI"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Magic</span>
+              </button>
+            </div>
           </div>
           <div className="flex-1 flex flex-col min-h-[300px]">
-            <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+            <label className="block text-[10px]  uppercase text-slate-400 tracking-widest mb-1">
               HTML Code
             </label>
             <textarea
@@ -420,13 +512,13 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="p-4 border-t border-slate-100 bg-white flex gap-2">
           <button
             onClick={() => setView('list')}
-            className="px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition-colors"
+            className="px-4 py-3 rounded-xl  text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl  text-xs uppercase tracking-wider shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" /> Save App
           </button>
@@ -440,20 +532,20 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="p-5 border-b border-white/20 flex items-center justify-between bg-white/30 shrink-0 rounded-t-2xl">
         {' '}
         <div>
-          <h2 className="font-black text-lg text-slate-800 tracking-tight">
+          <h2 className=" text-lg text-slate-800 tracking-tight">
             App Library
           </h2>
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={handleExport}
-              className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-[10px]  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Download className="w-3 h-3" /> Export
             </button>
             <span className="text-slate-300 text-[10px]">•</span>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-[10px]  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Upload className="w-3 h-3" /> Import
             </button>
@@ -481,7 +573,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <div className="p-4 bg-white/50 rounded-full backdrop-blur-sm">
               <Box className="w-8 h-8 opacity-50" />
             </div>
-            <p className="text-sm font-bold">No apps saved yet</p>
+            <p className="text-sm ">No apps saved yet</p>
             <p className="text-xs max-w-[200px] text-center opacity-70">
               Import a file or create your first mini-app to get started.
             </p>
@@ -510,7 +602,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-white/30 border-t border-white/20 text-[9px] text-slate-500 text-center font-bold uppercase tracking-widest shrink-0 rounded-b-2xl">
+      <div className="p-3 bg-white/30 border-t border-white/20 text-[9px] text-slate-500 text-center  uppercase tracking-widest shrink-0 rounded-b-2xl">
         Drag to reorder • Runs Locally
       </div>
     </div>

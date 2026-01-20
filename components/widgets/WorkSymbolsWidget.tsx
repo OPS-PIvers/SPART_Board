@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, WorkSymbolsConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import {
+  WidgetData,
+  WorkSymbolsConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../types';
 import * as Icons from 'lucide-react';
 
 // --- Types & Constants ---
+// ... (rest of constants remains same)
 
 interface RoutineStep {
   icon: string;
@@ -174,10 +180,14 @@ const ROUTINE_DB: Record<string, Routine[]> = {
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter } = useDashboard();
+  const { updateWidget, gradeFilter, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = (widget.config as WorkSymbolsConfig) ?? {};
   const activeRoutines = config.activeRoutines ?? [];
   const { voiceLevel = null, workMode = null } = config;
+
+  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 8, 12);
+  const voiceSize = useScaledFont(widget.w, widget.h, 0.3, 10, 14);
 
   // View state: 'picker' or 'facilitator' (for specific routine steps)
   const [viewState, setViewState] = useState<'picker' | 'facilitator'>(
@@ -248,9 +258,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
               <Icons.ArrowLeft size={18} className="text-slate-600" />
             </button>
             <div className="flex-1">
-              <h3 className="font-bold text-slate-800 leading-tight">
-                {routine.label}
-              </h3>
+              <h3 className=" text-slate-800 leading-tight">{routine.label}</h3>
               {routine.hint && (
                 <p className="text-[10px] text-slate-500">{routine.hint}</p>
               )}
@@ -260,7 +268,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
           {/* Steps / Drag Zone */}
           <div className="flex-1 p-3 overflow-y-auto bg-slate-100">
             <div className="space-y-3">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2">
+              <div className="text-[10px]  text-slate-400 uppercase tracking-wider text-center mb-2">
                 Drag icons to whiteboard
               </div>
               {routine.steps.map((step, idx) => {
@@ -283,7 +291,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                     >
                       <IconComponent size={24} />
                     </div>
-                    <span className="font-bold text-slate-700 text-sm">
+                    <span className=" text-slate-700 text-sm">
                       {step.label}
                     </span>
                   </div>
@@ -304,7 +312,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-full text-xs  transition-all whitespace-nowrap ${
                 activeCategory === cat
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -345,7 +353,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                     <IconComponent size={20} />
                   </div>
                   <span
-                    className={`text-[10px] font-bold text-center leading-tight ${
+                    className={`text-[10px]  text-center leading-tight ${
                       isActive ? 'text-blue-700' : 'text-gray-500'
                     }`}
                   >
@@ -413,10 +421,13 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   ];
 
   return (
-    <div className="flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none">
+    <div
+      className={`flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none font-${globalStyle.fontFamily}`}
+    >
       {/* Voice Level Thermometer */}
+
       <div className="flex-1 flex flex-col gap-1.5 h-full">
-        <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest pl-1 mb-1">
+        <label className="text-[9px]  uppercase text-slate-500 tracking-widest pl-1 mb-1">
           Voice Level
         </label>
         {voices.map((v) => (
@@ -438,10 +449,16 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <span className="text-2xl font-black opacity-40">{v.id}</span>
             <div className="flex flex-col items-start leading-none">
-              <span className="text-[11px] font-black uppercase tracking-tight">
+              <span
+                className="font-black uppercase tracking-tight"
+                style={{ fontSize: `${voiceSize}px` }}
+              >
                 {v.label}
               </span>
-              <span className="text-[8px] font-bold opacity-60 uppercase">
+              <span
+                className="font-bold opacity-60 uppercase"
+                style={{ fontSize: `${voiceSize * 0.7}px` }}
+              >
                 {v.sub}
               </span>
             </div>
@@ -452,7 +469,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Working Mode Section */}
       <div className="w-28 flex flex-col gap-2 h-full border-l border-white/20 pl-3">
         {' '}
-        <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-1">
+        <label className="text-[9px]  uppercase text-slate-500 tracking-widest mb-1">
           Working...
         </label>
         {modes.map((m) => (
@@ -473,7 +490,10 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             }`}
           >
             <m.icon className="w-6 h-6" strokeWidth={2.5} />
-            <span className="text-[8px] font-black uppercase text-center leading-tight px-1">
+            <span
+              className="font-black uppercase text-center leading-tight px-1"
+              style={{ fontSize: `${labelSize}px` }}
+            >
               {m.label}
             </span>
           </button>

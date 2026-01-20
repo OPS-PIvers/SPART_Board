@@ -82,6 +82,9 @@ const mockDashboard: DashboardContextValue = {
   removeWidgets: () => {
     // No-op
   },
+  clearAllWidgets: () => {
+    // No-op
+  },
   updateWidget: () => {
     // No-op. Widgets in student view are read-only or handle state internally.
   },
@@ -92,6 +95,9 @@ const mockDashboard: DashboardContextValue = {
     // No-op
   },
   setBackground: () => {
+    // No-op
+  },
+  setGlobalStyle: () => {
     // No-op
   },
   toggleToolVisibility: () => {
@@ -136,6 +142,17 @@ const mockDashboard: DashboardContextValue = {
   },
 
   clearAllStickers: () => {
+    // No-op
+  },
+  // Sharing system mocks
+  shareDashboard: async () => {
+    return Promise.reject(new Error('Sharing not implemented in student view'));
+  },
+  loadSharedDashboard: async () => {
+    return Promise.resolve(null);
+  },
+  pendingShareId: null,
+  clearPendingShare: () => {
     // No-op
   },
   // Roster mocks

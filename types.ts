@@ -123,6 +123,11 @@ export interface RoutineStep {
   text: string;
   icon?: string;
   color?: string;
+  attachedWidget?: {
+    type: WidgetType;
+    label: string;
+    config: WidgetConfig;
+  };
 }
 
 // Widget-specific config types
@@ -312,6 +317,7 @@ export interface TimeToolConfig {
   isRunning: boolean;
   startTime?: number | null; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
+  timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
 }
 
 export interface StickerLibraryConfig {
@@ -467,6 +473,7 @@ export interface WidgetData {
   customTitle?: string | null;
   isLive?: boolean;
   transparency?: number;
+  annotation?: DrawingConfig;
   config: WidgetConfig;
 }
 
@@ -481,7 +488,6 @@ export type DockItem =
   | { type: 'folder'; folder: DockFolder };
 
 export interface DashboardSettings {
-  defaultWidgetTransparency?: number;
   quickAccessWidgets?: WidgetType[];
 }
 
@@ -491,6 +497,7 @@ export interface Dashboard {
   background: string;
   thumbnailUrl?: string;
   widgets: WidgetData[];
+  globalStyle?: GlobalStyle;
   createdAt: number;
   isDefault?: boolean;
   order?: number;
@@ -571,10 +578,45 @@ export interface LunchCountGlobalConfig {
 export interface BackgroundPreset {
   id: string;
   url: string;
-  thumbnailUrl?: string;
   label: string;
+  thumbnailUrl?: string;
   active: boolean; // Whether it shows up for users
   accessLevel: AccessLevel; // Who can see it
   betaUsers: string[]; // Specific users if beta
   createdAt: number;
 }
+
+// --- GLOBAL STYLING TYPES ---
+
+export type GlobalFontFamily =
+  | 'sans'
+  | 'serif'
+  | 'mono'
+  | 'handwritten'
+  | 'rounded'
+  | 'fun'
+  | 'comic'
+  | 'slab'
+  | 'retro'
+  | 'marker'
+  | 'cursive';
+
+export interface GlobalStyle {
+  fontFamily: GlobalFontFamily;
+  windowTransparency: number; // 0 to 1
+  windowBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  dockTransparency: number; // 0 to 1
+  dockBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
+  dockTextColor: string; // hex color
+  dockTextShadow: boolean;
+}
+
+export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
+  fontFamily: 'sans',
+  windowTransparency: 0.8,
+  windowBorderRadius: '2xl',
+  dockTransparency: 0.4,
+  dockBorderRadius: 'full',
+  dockTextColor: '#334155', // Slate 700 (dark grey)
+  dockTextShadow: false,
+};

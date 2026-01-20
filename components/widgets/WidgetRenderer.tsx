@@ -1,46 +1,24 @@
-import React from 'react';
-import { WidgetData, DrawingConfig, WidgetConfig } from '@/types';
-import { DraggableWindow } from '../common/DraggableWindow';
-import { useAuth } from '@/context/useAuth';
-import { useDashboard } from '@/context/useDashboard';
-import { useLiveSession } from '@/hooks/useLiveSession';
-import { LiveControl } from './LiveControl';
-import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimeToolWidget } from './TimeToolWidget';
-import { TrafficLightWidget } from './TrafficLightWidget';
-import { TextWidget, TextSettings } from './TextWidget';
-import { SoundWidget, SoundSettings } from './SoundWidget';
-import { WebcamWidget, WebcamSettings } from './WebcamWidget';
-import { EmbedWidget, EmbedSettings } from './EmbedWidget';
-import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
-import { RandomWidget } from './random/RandomWidget';
-import { RandomSettings } from './random/RandomSettings';
-import { DiceWidget, DiceSettings } from './DiceWidget';
-import { DrawingWidget, DrawingSettings } from './DrawingWidget';
-import { QRWidget, QRSettings } from './QRWidget';
-import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
-import { WorkSymbolsWidget } from './WorkSymbolsWidget';
-import { PollWidget } from './PollWidget';
-import { WeatherWidget, WeatherSettings } from './WeatherWidget';
-import { ScheduleWidget } from './ScheduleWidget';
-import { CalendarWidget, CalendarSettings } from './CalendarWidget';
-import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
-import ClassesWidget from './ClassesWidget';
+import React, { memo } from 'react';
 import {
-  InstructionalRoutinesWidget,
-  InstructionalRoutinesSettings,
-} from './InstructionalRoutinesWidget';
-import { MiniAppWidget } from './MiniAppWidget';
-import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
-import { StickerBookWidget } from './stickers/StickerBookWidget';
+  WidgetData,
+  DrawingConfig,
+  WidgetConfig,
+  LiveSession,
+  LiveStudent,
+  GlobalStyle,
+  WidgetType,
+} from '@/types';
+import { DraggableWindow } from '../common/DraggableWindow';
+import { LiveControl } from './LiveControl';
 import { StickerItemWidget } from './stickers/StickerItemWidget';
-import { StickerLibraryWidget } from './StickerLibraryWidget';
-import { SeatingChartWidget } from './SeatingChartWidget';
-import { SeatingChartSettings } from './SeatingChartSettings';
 import { getTitle } from '@/utils/widgetHelpers';
 import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
 import { useWindowSize } from '@/hooks/useWindowSize';
+import {
+  WIDGET_COMPONENTS,
+  WIDGET_SETTINGS_COMPONENTS,
+} from './WidgetRegistry';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
@@ -55,36 +33,64 @@ const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
   materials: { w: 340, h: 340 },
 };
 
-export const WidgetRenderer: React.FC<{
+interface WidgetRendererProps {
   widget: WidgetData;
   isStudentView?: boolean;
-}> = ({ widget, isStudentView = false }) => {
-  const { user } = useAuth();
-  const { activeDashboard } = useDashboard();
+  // Session Props
+  session: LiveSession | null;
+  isLive: boolean;
+  students: LiveStudent[];
+  updateSessionConfig: (config: WidgetConfig) => Promise<void>;
+  updateSessionBackground: (background: string) => Promise<void>;
+  startSession: (
+    widgetId: string,
+    widgetType: WidgetType,
+    config?: WidgetConfig,
+    background?: string
+  ) => Promise<void>;
+  endSession: () => Promise<void>;
+  removeStudent: (studentId: string) => Promise<void>;
+  toggleFreezeStudent: (
+    studentId: string,
+    currentStatus: 'active' | 'frozen' | 'disconnected'
+  ) => Promise<void>;
+  toggleGlobalFreeze: (freeze: boolean) => Promise<void>;
+  // Dashboard Actions
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  globalStyle: GlobalStyle;
+  dashboardBackground?: string;
+}
+
+const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
+  widget,
+  isStudentView = false,
+  session,
+  isLive,
+  students,
+  updateSessionConfig,
+  updateSessionBackground,
+  startSession,
+  endSession,
+  removeStudent,
+  toggleFreezeStudent,
+  toggleGlobalFreeze,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  addToast,
+  globalStyle,
+  dashboardBackground,
+}) => {
   const windowSize = useWindowSize();
-
-  // Initialize the hook (only active if user exists)
-  const {
-    session,
-    students,
-    startSession,
-    updateSessionConfig,
-    updateSessionBackground,
-    endSession,
-    removeStudent,
-    toggleFreezeStudent,
-    toggleGlobalFreeze,
-  } = useLiveSession(user?.uid, 'teacher');
-
-  const dashboardBackground = activeDashboard?.background;
-
-  // Logic to determine if THIS widget is the live one
-  const isThisWidgetLive =
-    session?.isActive && session?.activeWidgetId === widget.id;
 
   const handleToggleLive = async () => {
     try {
-      if (isThisWidgetLive) {
+      if (isLive) {
         await endSession();
       } else {
         await startSession(
@@ -102,7 +108,7 @@ export const WidgetRenderer: React.FC<{
   // Sync config changes to session when live
   const configJson = JSON.stringify(widget.config);
   React.useEffect(() => {
-    if (!isThisWidgetLive) {
+    if (!isLive) {
       return undefined;
     }
 
@@ -111,155 +117,51 @@ export const WidgetRenderer: React.FC<{
         try {
           await updateSessionConfig(JSON.parse(configJson) as WidgetConfig);
         } catch (error) {
-          // Log the error so failures are visible during development and debugging
-          // while avoiding disruption to the UI.
-
           console.error('Failed to update live session config', error);
         }
       })();
-    }, LIVE_SESSION_UPDATE_DEBOUNCE_MS); // Debounce updates to reduce write frequency under rapid changes
+    }, LIVE_SESSION_UPDATE_DEBOUNCE_MS);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [configJson, isThisWidgetLive, updateSessionConfig]);
+  }, [configJson, isLive, updateSessionConfig]);
 
   // Sync background changes to session when live
   React.useEffect(() => {
-    if (!isThisWidgetLive || !activeDashboard?.background) {
+    if (!isLive || !dashboardBackground) {
       return;
     }
-    void updateSessionBackground(activeDashboard.background);
-  }, [activeDashboard?.background, isThisWidgetLive, updateSessionBackground]);
+    void updateSessionBackground(dashboardBackground);
+  }, [dashboardBackground, isLive, updateSessionBackground]);
 
   if (widget.type === 'sticker') {
     return <StickerItemWidget widget={widget} />;
   }
 
+  const WidgetComponent = WIDGET_COMPONENTS[widget.type];
+  const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
+
   const getWidgetContent = () => {
-    switch (widget.type) {
-      case 'clock':
-        return <ClockWidget widget={widget} />;
-      case 'time-tool':
-        return <TimeToolWidget widget={widget} />;
-      case 'traffic':
-        return <TrafficLightWidget widget={widget} />;
-      case 'text':
-        return <TextWidget widget={widget} />;
-      case 'checklist':
-        return <ChecklistWidget widget={widget} />;
-      case 'random':
-        return <RandomWidget widget={widget} />;
-      case 'dice':
-        return <DiceWidget widget={widget} />;
-      case 'sound':
-        return <SoundWidget widget={widget} />;
-      case 'webcam':
-        return <WebcamWidget widget={widget} />;
-      case 'embed':
-        return <EmbedWidget widget={widget} />;
-      case 'drawing':
-        return <DrawingWidget widget={widget} isStudentView={isStudentView} />;
-      case 'qr':
-        return <QRWidget widget={widget} />;
-      case 'scoreboard':
-        return <ScoreboardWidget widget={widget} />;
-      case 'workSymbols':
-        return <WorkSymbolsWidget widget={widget} />;
-      case 'poll':
-        return <PollWidget widget={widget} />;
-      case 'weather':
-        return <WeatherWidget widget={widget} />;
-      case 'schedule':
-        return <ScheduleWidget widget={widget} />;
-      case 'calendar':
-        return <CalendarWidget widget={widget} />;
-      case 'lunchCount':
-        return <LunchCountWidget widget={widget} />;
-      case 'classes':
-        return <ClassesWidget widget={widget} />;
-      case 'instructionalRoutines':
-        return <InstructionalRoutinesWidget widget={widget} />;
-      case 'miniApp':
-        return <MiniAppWidget widget={widget} />;
-      case 'materials':
-        return <MaterialsWidget widget={widget} />;
-      case 'stickers':
-        return <StickerBookWidget widget={widget} />;
-      case 'sticker-library':
-        return <StickerLibraryWidget widget={widget} />;
-      case 'seating-chart':
-        return <SeatingChartWidget widget={widget} />;
-      default:
-        return (
-          <div className="p-4 text-center text-slate-400 text-sm">
-            Widget under construction
-          </div>
-        );
+    if (WidgetComponent) {
+      return <WidgetComponent widget={widget} isStudentView={isStudentView} />;
     }
+    return (
+      <div className="p-4 text-center text-slate-400 text-sm">
+        Widget under construction
+      </div>
+    );
   };
 
   const getWidgetSettings = () => {
-    switch (widget.type) {
-      case 'clock':
-        return <ClockSettings widget={widget} />;
-      case 'text':
-        return <TextSettings widget={widget} />;
-      case 'checklist':
-        return <ChecklistSettings widget={widget} />;
-      case 'random':
-        return <RandomSettings widget={widget} />;
-      case 'dice':
-        return <DiceSettings widget={widget} />;
-      case 'sound':
-        return <SoundSettings widget={widget} />;
-      case 'embed':
-        return <EmbedSettings widget={widget} />;
-      case 'drawing':
-        return <DrawingSettings widget={widget} />;
-      case 'qr':
-        return <QRSettings widget={widget} />;
-      case 'scoreboard':
-        return <ScoreboardSettings widget={widget} />;
-      case 'webcam':
-        return <WebcamSettings widget={widget} />;
-      case 'calendar':
-        return <CalendarSettings widget={widget} />;
-      case 'weather':
-        return <WeatherSettings widget={widget} />;
-      case 'lunchCount':
-        return <LunchCountSettings widget={widget} />;
-      case 'instructionalRoutines':
-        return <InstructionalRoutinesSettings widget={widget} />;
-      case 'materials':
-        return <MaterialsSettings widget={widget} />;
-      case 'miniApp':
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Manage apps in the main view.
-          </div>
-        );
-      case 'stickers':
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Manage stickers in the main view.
-          </div>
-        );
-      case 'sticker-library':
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Upload and manage your custom stickers.
-          </div>
-        );
-      case 'seating-chart':
-        return <SeatingChartSettings widget={widget} />;
-      default:
-        return (
-          <div className="text-slate-500 italic text-sm">
-            Standard settings available.
-          </div>
-        );
+    if (SettingsComponent) {
+      return <SettingsComponent widget={widget} />;
     }
+    return (
+      <div className="text-slate-500 italic text-sm">
+        Standard settings available.
+      </div>
+    );
   };
 
   const isDrawingOverlay =
@@ -274,9 +176,6 @@ export const WidgetRenderer: React.FC<{
   const content = getWidgetContent();
 
   const baseDim = WIDGET_BASE_DIMENSIONS[widget.type];
-  // Account for sidebar (top-6, left-6) and dock (bottom-6) spacing
-  // Horizontal: 1.5rem left + 1.5rem right = 3rem total (48px)
-  // Vertical: 4.5rem top (for sidebar and spacing) + 4.5rem bottom (for dock and spacing) = 9rem total (144px)
   const effectiveWidth = widget.maximized ? windowSize.width : widget.w;
   const effectiveHeight = widget.maximized ? windowSize.height : widget.h;
 
@@ -313,9 +212,15 @@ export const WidgetRenderer: React.FC<{
       settings={getWidgetSettings()}
       style={customStyle}
       skipCloseConfirmation={widget.type === 'classes'}
+      updateWidget={updateWidget}
+      removeWidget={removeWidget}
+      duplicateWidget={duplicateWidget}
+      bringToFront={bringToFront}
+      addToast={addToast}
+      globalStyle={globalStyle}
       headerActions={
         <LiveControl
-          isLive={isThisWidgetLive ?? false}
+          isLive={isLive}
           studentCount={students.length}
           students={students}
           code={session?.code}
@@ -343,3 +248,5 @@ export const WidgetRenderer: React.FC<{
     </DraggableWindow>
   );
 };
+
+export const WidgetRenderer = memo(WidgetRendererComponent);

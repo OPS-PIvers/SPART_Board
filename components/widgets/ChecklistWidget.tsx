@@ -1,6 +1,12 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { ChecklistConfig, ChecklistItem, WidgetData } from '../../types';
+import {
+  ChecklistConfig,
+  ChecklistItem,
+  WidgetData,
+  DEFAULT_GLOBAL_STYLE,
+  InstructionalRoutinesConfig,
+} from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
@@ -9,12 +15,15 @@ import {
   Type,
   Users,
   RefreshCw,
+  BookOpen,
 } from 'lucide-react';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, rosters, activeRosterId } = useDashboard();
+  const { updateWidget, rosters, activeRosterId, activeDashboard } =
+    useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -116,7 +125,9 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group">
+    <div
+      className={`h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
+    >
       {/* Notebook Margin Line */}
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 
@@ -189,7 +200,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard, addToast } = useDashboard();
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -222,11 +233,63 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, items: newItems } });
   };
 
+  // Nexus Connection: Import from Instructional Routines
+  const importFromRoutine = () => {
+    const routineWidget = activeDashboard?.widgets.find(
+      (w) => w.type === 'instructionalRoutines'
+    );
+
+    if (!routineWidget) {
+      addToast('No Instructional Routines widget found!', 'error');
+      return;
+    }
+
+    const routineConfig = routineWidget.config as InstructionalRoutinesConfig;
+    const steps = routineConfig.customSteps;
+
+    if (!steps || steps.length === 0) {
+      addToast('Active routine has no steps to import.', 'info');
+      return;
+    }
+
+    const newItems: ChecklistItem[] = steps.map((step) => ({
+      id: crypto.randomUUID(),
+      text: step.text,
+      completed: false,
+    }));
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        mode: 'manual',
+        items: newItems,
+      },
+    });
+    setLocalText(newItems.map((i) => i.text).join('\n'));
+    addToast('Imported steps from Routine!', 'success');
+  };
+
   return (
     <div className="space-y-6">
+      {/* Nexus Connection: Routine Import */}
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between">
+        <div className="flex items-center gap-2 text-indigo-900">
+          <BookOpen className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Import Routine
+          </span>
+        </div>
+        <button
+          onClick={importFromRoutine}
+          className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
+        >
+          <RefreshCw className="w-3 h-3" /> Sync
+        </button>
+      </div>
+
       {/* Mode Toggle */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           List Source
         </label>
         <div className="flex bg-slate-100 p-1 rounded-xl">
@@ -234,7 +297,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             onClick={() =>
               updateWidget(widget.id, { config: { ...config, mode: 'manual' } })
             }
-            className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            className={`flex-1 py-2 text-[10px]  rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
           >
             CUSTOM TASKS
           </button>
@@ -242,7 +305,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             onClick={() =>
               updateWidget(widget.id, { config: { ...config, mode: 'roster' } })
             }
-            className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            className={`flex-1 py-2 text-[10px]  rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
           >
             CLASS ROSTER
           </button>
@@ -251,14 +314,14 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'manual' && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <ListPlus className="w-3 h-3" /> Task List (One per line)
           </label>
           <textarea
             value={localText}
             onChange={(e) => handleBulkChange(e.target.value)}
             placeholder="Enter tasks here..."
-            className="w-full h-40 p-3 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+            className="w-full h-40 p-3 text-xs  bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
           />
         </div>
       )}
@@ -277,7 +340,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           {rosterMode === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
                   First Names
                 </label>
                 <textarea
@@ -292,7 +355,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
                   Last Names
                 </label>
                 <textarea
@@ -312,7 +375,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Text Scale
         </label>
         <div className="flex items-center gap-4 px-2">
@@ -332,7 +395,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             }
             className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
           />
-          <span className="w-10 text-center font-mono font-bold text-slate-700 text-xs">
+          <span className="w-10 text-center font-mono  text-slate-700 text-xs">
             {scaleMultiplier}x
           </span>
         </div>

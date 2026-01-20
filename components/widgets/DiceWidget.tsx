@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, DiceConfig } from '../../types';
+import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
 
 // Singleton-like Audio Manager for Dice
@@ -41,10 +41,11 @@ const playRollSound = () => {
   }
 };
 
-const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
-  value,
-  isRolling,
-}) => {
+const DiceFace: React.FC<{
+  value: number;
+  isRolling: boolean;
+  size: number;
+}> = ({ value, isRolling, size }) => {
   const dotPositions: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -57,17 +58,27 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
   return (
     <div
       className={`
-                  relative w-24 h-24 bg-white/70 rounded-2xl shadow-lg border-2 border-white/30
+                  relative bg-white/70 rounded-2xl shadow-lg border-2 border-white/30
                   flex items-center justify-center
                   transition-all duration-300
                   ${isRolling ? 'scale-110 rotate-12 blur-[1px]' : 'scale-100 rotate-0'}
                 `}
+      style={{ width: `${size}px`, height: `${size}px` }}
     >
-      <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-1">
+      <div
+        className="grid grid-cols-3 grid-rows-3 w-full h-full gap-1"
+        style={{ padding: `${size * 0.15}px` }}
+      >
         {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="flex items-center justify-center">
             {dotPositions[value]?.includes(i) && (
-              <div className="w-3 h-3 bg-slate-800 rounded-full shadow-sm" />
+              <div
+                className="bg-slate-800 rounded-full shadow-sm"
+                style={{
+                  width: `${size * 0.15}px`,
+                  height: `${size * 0.15}px`,
+                }}
+              />
             )}
           </div>
         ))}
@@ -77,9 +88,25 @@ const DiceFace: React.FC<{ value: number; isRolling: boolean }> = ({
 };
 
 export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as DiceConfig;
   const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = config.count ?? 1;
+
+  // Calculate dice size based on widget dimensions and count
+  const diceSize = useMemo(() => {
+    const availableW = widget.w - 40;
+    const availableH = widget.h - 120; // Account for roll button and padding
+
+    // Approximate size based on count (single row vs wrap)
+    if (diceCount === 1) {
+      return Math.min(availableW, availableH, 160);
+    }
+    const maxW = availableW / Math.min(diceCount, 3) - 16;
+    const maxH = availableH / Math.ceil(diceCount / 3) - 16;
+    return Math.min(maxW, maxH, 120);
+  }, [widget.w, widget.h, diceCount]);
 
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
   const [isRolling, setIsRolling] = useState(false);
@@ -117,7 +144,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <div className="h-full flex flex-col items-center justify-center p-4 gap-6">
       <div className="flex flex-wrap justify-center gap-4">
         {values.map((v, i) => (
-          <DiceFace key={i} value={v} isRolling={isRolling} />
+          <DiceFace key={i} value={v} isRolling={isRolling} size={diceSize} />
         ))}
       </div>
 
@@ -125,7 +152,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={roll}
         disabled={isRolling}
         className={`
-          flex items-center gap-2 px-8 py-3 rounded-full font-black uppercase tracking-widest transition-all
+          flex items-center gap-2 px-8 py-3 rounded-full  uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
           ${
             isRolling
               ? 'bg-slate-100 text-slate-400'
@@ -148,7 +175,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
           <Hash className="w-3 h-3" /> Number of Dice
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -169,8 +196,8 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 }
               `}
             >
-              <span className="text-xl font-black">{n}</span>
-              <span className="text-[8px] font-black uppercase">
+              <span className="text-xl ">{n}</span>
+              <span className="text-[8px]  uppercase">
                 {n === 1 ? 'Dice' : 'Dice'}
               </span>
             </button>
@@ -181,11 +208,11 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
         <div className="flex items-center gap-3 text-purple-700 mb-2">
           <Dices className="w-5 h-5" />
-          <span className="text-xs font-bold uppercase tracking-wider">
+          <span className="text-xs  uppercase tracking-wider">
             Instructions
           </span>
         </div>
-        <p className="text-[10px] text-purple-600 leading-relaxed font-medium">
+        <p className="text-[10px] text-purple-600 leading-relaxed ">
           Select between 1 and 3 dice for your classroom activities. The dice
           will scale to fit the window as you add more.
         </p>

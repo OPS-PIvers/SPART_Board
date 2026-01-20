@@ -91,20 +91,20 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
       <div className="flex justify-between items-center mb-3">
         <button
           onClick={onBack}
-          className="text-xs text-slate-500 hover:text-blue-600 font-bold uppercase tracking-wider"
+          className="text-xs text-slate-500 hover:text-blue-600  uppercase tracking-wider"
         >
           &larr; Back
         </button>
         <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
           <input
-            className="font-bold border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0"
+            className=" border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0"
             placeholder="Class Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <button
             onClick={handleSave}
-            className="bg-green-600 text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs font-bold hover:bg-green-700 shadow-sm transition-colors"
+            className="bg-green-600 text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs  hover:bg-green-700 shadow-sm transition-colors"
           >
             <Save size={14} /> Save
           </button>
@@ -112,7 +112,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
       </div>
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         <div className="flex flex-col h-full">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+          <label className="text-[10px]  text-slate-500 uppercase tracking-widest mb-1">
             First Name (Smart Paste)
           </label>
           <textarea
@@ -124,7 +124,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
           />
         </div>
         <div className="flex flex-col h-full">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+          <label className="text-[10px]  text-slate-500 uppercase tracking-widest mb-1">
             Last Name
           </label>
           <textarea
@@ -232,7 +232,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-slate-700 text-white text-xs  hover:bg-slate-600 transition-colors"
                 >
                   Cancel
                 </button>
@@ -243,7 +243,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                       setConfirmDeleteId(null);
                     }
                   }}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs  hover:bg-red-700 transition-colors"
                   title="Confirm deletion"
                 >
                   Delete
@@ -257,13 +257,13 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 setEditingId(null);
                 setView('edit');
               }}
-              className="flex-1 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm font-bold shadow-sm"
+              className="flex-1 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm  shadow-sm"
             >
               <Plus size={16} /> Create New Class
             </button>
             <button
               onClick={handleFetchClassLink}
-              className="bg-white text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm font-bold shadow-sm transition-colors"
+              className="bg-white text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
               title="Sync from ClassLink"
             >
               <RefreshCw
@@ -303,10 +303,8 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                     />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-slate-800 truncate">
-                      {r.name}
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium">
+                    <div className=" text-slate-800 truncate">{r.name}</div>
+                    <div className="text-xs text-slate-500 ">
                       {r.students.length} Students
                     </div>
                   </div>
@@ -350,20 +348,18 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           <div className="flex justify-between items-center mb-3">
             <button
               onClick={() => setView('list')}
-              className="text-xs text-slate-500 hover:text-blue-600 font-bold uppercase tracking-wider"
+              className="text-xs text-slate-500 hover:text-blue-600  uppercase tracking-wider"
             >
               &larr; Cancel
             </button>
-            <h3 className="font-bold text-slate-800 text-sm">
-              ClassLink Rosters
-            </h3>
+            <h3 className=" text-slate-800 text-sm">ClassLink Rosters</h3>
             <div className="w-10"></div>
           </div>
 
           {classLinkLoading ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3">
               <RefreshCw size={32} className="animate-spin text-blue-500" />
-              <p className="text-sm font-medium">Connecting to ClassLink...</p>
+              <p className="text-sm ">Connecting to ClassLink...</p>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto space-y-2 pr-1">
@@ -378,16 +374,14 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                     className="p-3 border border-slate-200 rounded-lg bg-white flex justify-between items-center hover:shadow-md transition-shadow"
                   >
                     <div>
-                      <div className="font-bold text-slate-800">
-                        {cls.title}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium">
+                      <div className=" text-slate-800">{cls.title}</div>
+                      <div className="text-xs text-slate-500 ">
                         {classLinkStudents[cls.sourcedId]?.length || 0} Students
                       </div>
                     </div>
                     <button
                       onClick={() => importClassLinkClass(cls)}
-                      className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1"
+                      className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs  hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1"
                     >
                       <ExternalLink size={14} /> Import
                     </button>

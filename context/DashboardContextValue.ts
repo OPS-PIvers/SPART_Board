@@ -8,6 +8,7 @@ import {
   Student,
   GradeFilter,
   DockItem,
+  GlobalStyle,
 } from '../types';
 
 export interface DashboardContextValue {
@@ -33,16 +34,25 @@ export interface DashboardContextValue {
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;
+  clearAllWidgets: () => void;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
   moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
   setBackground: (bg: string) => void;
+  setGlobalStyle: (style: Partial<GlobalStyle>) => void;
   toggleToolVisibility: (type: WidgetType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: WidgetType[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   clearAllStickers: () => void;
+
+  // Sharing system
+  shareDashboard: (dashboard: Dashboard) => Promise<string>;
+  loadSharedDashboard: (shareId: string) => Promise<Dashboard | null>;
+  pendingShareId: string | null;
+  clearPendingShare: () => void;
+
   // Roster system
   rosters: ClassRoster[];
   activeRosterId: string | null;
@@ -50,6 +60,7 @@ export interface DashboardContextValue {
   updateRoster: (id: string, updates: Partial<ClassRoster>) => Promise<void>;
   deleteRoster: (id: string) => Promise<void>;
   setActiveRoster: (id: string | null) => void;
+
   // Folder system
   addFolder: (name: string) => void;
   createFolderWithItems: (name: string, items: WidgetType[]) => void;
