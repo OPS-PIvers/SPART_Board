@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  Layout,
   Save,
   Plus,
   X,
@@ -643,179 +642,144 @@ export const Sidebar: React.FC = () => {
               setActiveSection('main');
             }}
           />
-          <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300">
+          <div className="relative w-full max-w-72 h-full bg-white shadow-2xl flex flex-col p-0 animate-in slide-in-from-left duration-300 border-r border-slate-200">
             {/* Header */}
-            <div className="p-6 border-b border-slate-100 bg-white z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {activeSection !== 'main' && (
-                    <button
-                      onClick={() => setActiveSection('main')}
-                      className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
-                      title="Back to Main Menu"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                    </button>
-                  )}
-                  <div className="flex items-center gap-2 text-brand-blue-primary">
-                    <Layout className="w-6 h-6" />
-                    <span className="font-black text-xl tracking-tight uppercase">
-                      {activeSection === 'main'
-                        ? 'School Boards'
-                        : activeSection}
-                    </span>
+            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200 shrink-0 bg-white z-10">
+              <div className="flex items-center gap-2">
+                {activeSection !== 'main' ? (
+                  <button
+                    onClick={() => setActiveSection('main')}
+                    className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-500"
+                    title="Back"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <div className="w-6 h-6 bg-brand-blue-primary rounded flex items-center justify-center">
+                    <LayoutGrid className="w-4 h-4 text-white" />
                   </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    setActiveSection('main');
-                  }}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-slate-500" />
-                </button>
+                )}
+                <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500">
+                  {activeSection === 'main'
+                    ? 'Classroom Manager'
+                    : activeSection.replace('-', ' ')}
+                </span>
               </div>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setActiveSection('main');
+                }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Content Area with Sliding Sections */}
-            <div className="flex-1 relative overflow-hidden bg-slate-50/30">
+            {/* Content Area */}
+            <div className="flex-1 relative overflow-hidden bg-white">
               {/* MAIN MENU */}
-              <div
-                className={`absolute inset-0 p-6 flex flex-col gap-4 transition-all duration-300 ease-in-out ${
+              <nav
+                className={`absolute inset-0 pt-4 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out ${
                   activeSection === 'main'
                     ? 'translate-x-0 opacity-100 visible'
                     : '-translate-x-full opacity-0 invisible'
                 }`}
               >
-                <button
-                  onClick={() => setActiveSection('boards')}
-                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <SquareSquare className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
-                      Boards
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Manage and switch between your boards
-                    </p>
-                  </div>
-                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
-                </button>
+                <div className="px-3 mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] px-3">
+                    Workspace
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <button
+                    onClick={() => setActiveSection('boards')}
+                    className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <SquareSquare className="w-4 h-4 text-slate-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <span className="flex-grow">Boards</span>
+                    <span className="text-[10px] bg-brand-blue-lighter text-brand-blue-primary px-1.5 py-0.5 rounded font-bold">
+                      {dashboards.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveSection('backgrounds')}
+                    className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <Paintbrush className="w-4 h-4 text-slate-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <span>Backgrounds</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveSection('widgets')}
+                    className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <LayoutGrid className="w-4 h-4 text-slate-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <span>Widgets</span>
+                  </button>
+                </div>
 
-                <button
-                  onClick={() => setActiveSection('backgrounds')}
-                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <Paintbrush className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
-                      Backgrounds
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Customize your board&apos;s appearance
-                    </p>
-                  </div>
-                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
-                </button>
+                <div className="my-4 border-t border-slate-100"></div>
 
-                <button
-                  onClick={() => setActiveSection('widgets')}
-                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <LayoutGrid className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
-                      Widgets
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Add tools and interactives to your board
-                    </p>
-                  </div>
-                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
-                </button>
-
-                <button
-                  onClick={() => setActiveSection('style')}
-                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <Palette className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
-                      Global Style
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Control fonts, transparency, and more
-                    </p>
-                  </div>
-                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
-                </button>
-
-                <button
-                  onClick={() => setActiveSection('settings')}
-                  className="group relative flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-brand-blue-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="p-4 rounded-xl bg-brand-blue-lighter text-brand-blue-primary group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
-                    <Settings className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-slate-800 uppercase tracking-tight">
-                      Settings
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Account and application preferences
-                    </p>
-                  </div>
-                  <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
-                </button>
-              </div>
+                <div className="px-3 mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] px-3">
+                    Configuration
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <button
+                    onClick={() => setActiveSection('style')}
+                    className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <Palette className="w-4 h-4 text-slate-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <span>Global Style</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveSection('settings')}
+                    className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <Settings className="w-4 h-4 text-slate-400 group-hover:text-brand-blue-primary transition-colors" />
+                    <span>General Settings</span>
+                  </button>
+                </div>
+              </nav>
 
               {/* BOARDS SECTION */}
               <div
-                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                className={`absolute inset-0 p-4 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
                   activeSection === 'boards'
                     ? 'translate-x-0 opacity-100 visible'
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
                       setNewDashboardName('');
                       setShowNewDashboardModal(true);
                     }}
-                    className="flex flex-col items-center justify-center gap-2 p-4 bg-brand-blue-primary text-white rounded-2xl shadow-md hover:bg-brand-blue-dark transition-all"
+                    className="flex flex-col items-center justify-center gap-1.5 p-3 bg-brand-blue-primary text-white rounded-xl shadow-sm hover:bg-brand-blue-dark transition-all"
                   >
-                    <Plus className="w-6 h-6" />
-                    <span className="text-xs font-black uppercase tracking-wider">
+                    <Plus className="w-4 h-4" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
                       New Board
                     </span>
                   </button>
                   <button
                     onClick={handleImport}
-                    className="flex flex-col items-center justify-center gap-2 p-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
+                    className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
                   >
-                    <Download className="w-6 h-6" />
-                    <span className="text-xs font-black uppercase tracking-wider">
+                    <Download className="w-4 h-4" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
                       Import
                     </span>
                   </button>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                     My Boards
                   </h3>
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 gap-2">
                     <DndContext
                       sensors={sensors}
                       collisionDetection={closestCenter}
@@ -848,16 +812,16 @@ export const Sidebar: React.FC = () => {
 
               {/* BACKGROUNDS SECTION */}
               <div
-                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                className={`absolute inset-0 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
                   activeSection === 'backgrounds'
                     ? 'translate-x-0 opacity-100 visible'
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
-                <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-black uppercase tracking-widest">
+                <div className="flex bg-slate-100 p-0.5 rounded-lg text-[9px] font-bold uppercase tracking-widest">
                   <button
                     onClick={() => setDesignTab('presets')}
-                    className={`flex-1 py-2 rounded-lg transition-all ${
+                    className={`flex-1 py-1.5 rounded-md transition-all ${
                       designTab === 'presets'
                         ? 'bg-white shadow-sm text-brand-blue-primary'
                         : 'text-slate-500'
@@ -867,7 +831,7 @@ export const Sidebar: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setDesignTab('colors')}
-                    className={`flex-1 py-2 rounded-lg transition-all ${
+                    className={`flex-1 py-1.5 rounded-md transition-all ${
                       designTab === 'colors'
                         ? 'bg-white shadow-sm text-brand-blue-primary'
                         : 'text-slate-500'
@@ -877,7 +841,7 @@ export const Sidebar: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setDesignTab('gradients')}
-                    className={`flex-1 py-2 rounded-lg transition-all ${
+                    className={`flex-1 py-1.5 rounded-md transition-all ${
                       designTab === 'gradients'
                         ? 'bg-white shadow-sm text-brand-blue-primary'
                         : 'text-slate-500'
@@ -888,18 +852,18 @@ export const Sidebar: React.FC = () => {
                 </div>
 
                 {designTab === 'presets' && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="aspect-video rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
+                      className="aspect-video rounded-lg border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary hover:bg-slate-50 transition-all disabled:opacity-50"
                     >
                       {uploading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <>
-                          <Upload className="w-6 h-6 mb-2" />
-                          <span className="text-[10px] font-black uppercase">
+                          <Upload className="w-5 h-5 mb-1" />
+                          <span className="text-[9px] font-bold uppercase">
                             Upload
                           </span>
                         </>
@@ -909,10 +873,10 @@ export const Sidebar: React.FC = () => {
                       <button
                         key={bg.id}
                         onClick={() => setBackground(bg.id)}
-                        className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${
+                        className={`group relative aspect-video rounded-lg overflow-hidden border transition-all ${
                           activeDashboard?.background === bg.id
                             ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
-                            : 'border-transparent'
+                            : 'border-slate-200'
                         }`}
                       >
                         <img
@@ -921,7 +885,7 @@ export const Sidebar: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="text-white text-[10px] font-black uppercase px-2 text-center">
+                          <span className="text-white text-[8px] font-bold uppercase px-1 text-center">
                             {bg.label}
                           </span>
                         </div>
@@ -931,19 +895,19 @@ export const Sidebar: React.FC = () => {
                 )}
 
                 {designTab === 'colors' && (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     {colors.map((bg) => (
                       <button
                         key={bg.id}
                         onClick={() => setBackground(bg.id)}
-                        className={`aspect-square rounded-xl border-2 transition-all relative ${bg.id} ${
+                        className={`aspect-square rounded-lg border transition-all relative ${bg.id} ${
                           activeDashboard?.background === bg.id
                             ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
-                            : 'border-slate-100'
+                            : 'border-slate-200'
                         }`}
                       >
                         {bg.label === 'Dot Grid' && (
-                          <Grid className="w-6 h-6 absolute inset-0 m-auto text-slate-300" />
+                          <Grid className="w-4 h-4 absolute inset-0 m-auto text-slate-300" />
                         )}
                       </button>
                     ))}
@@ -951,19 +915,19 @@ export const Sidebar: React.FC = () => {
                 )}
 
                 {designTab === 'gradients' && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {gradients.map((bg) => (
                       <button
                         key={bg.id}
                         onClick={() => setBackground(bg.id)}
-                        className={`aspect-video rounded-xl border-2 transition-all relative ${
+                        className={`aspect-video rounded-lg border transition-all relative ${
                           activeDashboard?.background === bg.id
                             ? 'border-brand-blue-primary ring-2 ring-brand-blue-lighter'
-                            : 'border-transparent'
+                            : 'border-slate-200'
                         }`}
                       >
-                        <div className={`w-full h-full rounded-lg ${bg.id}`} />
-                        <div className="absolute bottom-2 left-2 text-[10px] font-black uppercase text-white drop-shadow-md">
+                        <div className={`w-full h-full rounded-md ${bg.id}`} />
+                        <div className="absolute bottom-1.5 left-1.5 text-[8px] font-bold uppercase text-white drop-shadow-md">
                           {bg.label}
                         </div>
                       </button>
@@ -974,29 +938,29 @@ export const Sidebar: React.FC = () => {
 
               {/* WIDGETS SECTION */}
               <div
-                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                className={`absolute inset-0 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
                   activeSection === 'widgets'
                     ? 'translate-x-0 opacity-100 visible'
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
                 {/* Grade Level Filter */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Filter className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Grade Filter
                     </span>
                   </div>
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-5 gap-1">
                     {GRADE_FILTER_OPTIONS.map((option) => (
                       <button
                         key={option.value}
                         onClick={() => setGradeFilter(option.value)}
-                        className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                        className={`py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${
                           gradeFilter === option.value
                             ? 'bg-brand-blue-primary text-white shadow-sm'
-                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                            : 'bg-white text-slate-500 hover:bg-slate-100'
                         }`}
                       >
                         {option.label}
@@ -1005,27 +969,27 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Available Widgets
                   </h3>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setAllToolsVisibility(true)}
-                      className="text-[10px] font-black text-brand-blue-primary uppercase tracking-wider"
+                      className="text-[9px] font-bold text-brand-blue-primary uppercase"
                     >
                       All
                     </button>
                     <button
                       onClick={() => setAllToolsVisibility(false)}
-                      className="text-[10px] font-black text-slate-400 uppercase tracking-wider"
+                      className="text-[9px] font-bold text-slate-400 uppercase"
                     >
                       None
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {filteredTools.map((tool) => {
                     const permission = featurePermissions.find(
                       (p) => p.widgetType === tool.type
@@ -1041,27 +1005,27 @@ export const Sidebar: React.FC = () => {
                       <button
                         key={tool.type}
                         onClick={() => toggleToolVisibility(tool.type)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 ${
+                        className={`w-full flex items-center justify-between p-2.5 rounded-lg transition-all border ${
                           isActive
-                            ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
+                            ? 'bg-white border-brand-blue-primary text-slate-900 shadow-sm'
                             : 'bg-white border-slate-100 text-slate-500 opacity-60'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5">
                           <div
-                            className={`p-2 rounded-lg ${isActive ? tool.color : 'bg-slate-100'} text-white`}
+                            className={`p-1.5 rounded-md ${isActive ? tool.color : 'bg-slate-100'} text-white`}
                           >
-                            <tool.icon className="w-5 h-5" />
+                            <tool.icon className="w-4 h-4" />
                           </div>
                           <div className="text-left">
-                            <div className="text-xs font-black uppercase tracking-tight">
+                            <div className="text-[11px] font-bold uppercase tracking-tight">
                               {displayLabel}
                             </div>
                             <div className="flex gap-1 mt-0.5">
                               {gradeLevels.map((level) => (
                                 <span
                                   key={level}
-                                  className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 uppercase"
+                                  className="text-[7px] font-bold px-1 py-0.5 rounded bg-slate-50 text-slate-400 uppercase"
                                 >
                                   {level}
                                 </span>
@@ -1070,7 +1034,7 @@ export const Sidebar: React.FC = () => {
                           </div>
                         </div>
                         {isActive && (
-                          <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                          <CheckSquare className="w-4 h-4 text-brand-blue-primary" />
                         )}
                       </button>
                     );
@@ -1087,9 +1051,9 @@ export const Sidebar: React.FC = () => {
                 }`}
               >
                 {/* TABS & MOBILE PREVIEW */}
-                <div className="bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm flex flex-col">
+                <div className="bg-white border-b border-slate-100 sticky top-0 z-20 flex flex-col">
                   {/* Mobile Preview only */}
-                  <div className="lg:hidden p-6 pb-0">
+                  <div className="lg:hidden p-4 pb-0">
                     <StylePreview
                       pendingStyle={pendingStyle}
                       background={activeDashboard?.background}
@@ -1097,14 +1061,14 @@ export const Sidebar: React.FC = () => {
                   </div>
 
                   {/* Sub-tabs */}
-                  <div className="p-6">
-                    <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-black uppercase tracking-widest">
+                  <div className="p-4">
+                    <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold uppercase tracking-widest">
                       <button
                         onClick={() => setStyleTab('window')}
-                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                        className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-2 transition-all ${
                           styleTab === 'window'
                             ? 'bg-white shadow-sm text-brand-blue-primary'
-                            : 'text-slate-500 hover:text-slate-700'
+                            : 'text-slate-500'
                         }`}
                       >
                         <Maximize className="w-3.5 h-3.5" /> Window
@@ -1112,10 +1076,10 @@ export const Sidebar: React.FC = () => {
 
                       <button
                         onClick={() => setStyleTab('dock')}
-                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                        className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-2 transition-all ${
                           styleTab === 'dock'
                             ? 'bg-white shadow-sm text-brand-blue-primary'
-                            : 'text-slate-500 hover:text-slate-700'
+                            : 'text-slate-500'
                         }`}
                       >
                         <Minimize className="w-3.5 h-3.5 rotate-90" /> Dock
@@ -1124,32 +1088,29 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-48">
+                <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-40">
                   {/* Global Font Family - Always visible */}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                        Global Typography
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center px-1">
+                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Typography
                       </h3>
                       <button
                         onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
-                        className="text-[10px] font-black uppercase text-brand-blue-primary hover:underline flex items-center gap-1"
+                        className="text-[9px] font-bold uppercase text-brand-blue-primary"
                       >
-                        {isFontMenuOpen ? 'Close Menu' : 'Change Font'}
-                        <ChevronRight
-                          className={`w-3 h-3 transition-transform duration-300 ${isFontMenuOpen ? 'rotate-90' : 'rotate-0'}`}
-                        />
+                        {isFontMenuOpen ? 'Close' : 'Change'}
                       </button>
                     </div>
 
                     <div className="relative">
-                      {/* Selected Font (Always Visible) */}
+                      {/* Selected Font */}
                       <button
                         onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
-                        className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border-2 bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm`}
+                        className="w-full flex items-center justify-between p-3 rounded-lg border bg-white border-slate-200 text-slate-800"
                       >
                         <span
-                          className={`text-base font-bold font-${pendingStyle.fontFamily}`}
+                          className={`text-sm font-bold font-${pendingStyle.fontFamily}`}
                         >
                           {
                             FONT_OPTIONS.find(
@@ -1158,19 +1119,17 @@ export const Sidebar: React.FC = () => {
                           }
                         </span>
                         <ChevronRight
-                          className={`w-4 h-4 transition-transform duration-300 ${isFontMenuOpen ? 'rotate-90' : 'rotate-0'}`}
+                          className={`w-4 h-4 transition-transform ${isFontMenuOpen ? 'rotate-90' : ''}`}
                         />
                       </button>
 
                       {/* Collapsible Font List */}
                       <div
-                        className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                          isFontMenuOpen
-                            ? 'max-h-[500px] opacity-100 mt-2 visible'
-                            : 'max-h-0 opacity-0 invisible'
+                        className={`overflow-hidden transition-all duration-300 ${
+                          isFontMenuOpen ? 'max-h-96 mt-2' : 'max-h-0'
                         }`}
                       >
-                        <div className="grid grid-cols-1 gap-2 p-1 bg-slate-100/50 rounded-2xl border border-slate-200">
+                        <div className="grid grid-cols-1 gap-1 p-1 bg-slate-50 rounded-xl border border-slate-200">
                           {FONT_OPTIONS.map((f) => (
                             <button
                               key={f.id}
@@ -1181,17 +1140,17 @@ export const Sidebar: React.FC = () => {
                                 });
                                 setIsFontMenuOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                              className={`w-full flex items-center justify-between p-2.5 rounded-md transition-all ${
                                 pendingStyle.fontFamily === f.id
-                                  ? 'bg-brand-blue-primary text-white shadow-md'
+                                  ? 'bg-brand-blue-primary text-white shadow-sm'
                                   : 'bg-white hover:bg-slate-50 text-slate-600'
                               }`}
                             >
-                              <span className={`text-sm font-bold ${f.font}`}>
+                              <span className={`text-xs font-bold ${f.font}`}>
                                 {f.label}
                               </span>
                               {pendingStyle.fontFamily === f.id && (
-                                <CheckSquare className="w-4 h-4 text-white" />
+                                <CheckSquare className="w-3.5 h-3.5 text-white" />
                               )}
                             </button>
                           ))}
@@ -1201,14 +1160,14 @@ export const Sidebar: React.FC = () => {
                   </div>
 
                   {styleTab === 'window' ? (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-300">
                       {/* Window Transparency */}
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                            Window Transparency
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center px-1">
+                          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Transparency
                           </h3>
-                          <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                          <span className="text-[10px] font-mono font-bold text-brand-blue-primary">
                             {Math.round(pendingStyle.windowTransparency * 100)}%
                           </span>
                         </div>
@@ -1224,16 +1183,16 @@ export const Sidebar: React.FC = () => {
                               windowTransparency: parseFloat(e.target.value),
                             })
                           }
-                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                          className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-brand-blue-primary"
                         />
                       </div>
 
                       {/* Window Corners */}
-                      <div className="space-y-4">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                          Window Corners
+                      <div className="space-y-3">
+                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                          Corners
                         </h3>
-                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                        <div className="flex bg-slate-100 p-0.5 rounded-lg">
                           {[
                             { id: 'none', label: 'Square' },
                             { id: 'lg', label: 'Soft' },
@@ -1249,10 +1208,10 @@ export const Sidebar: React.FC = () => {
                                     r.id as GlobalStyle['windowBorderRadius'],
                                 })
                               }
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                              className={`flex-1 py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${
                                 pendingStyle.windowBorderRadius === r.id
                                   ? 'bg-white shadow-sm text-brand-blue-primary'
-                                  : 'text-slate-500 hover:text-slate-700'
+                                  : 'text-slate-500'
                               }`}
                             >
                               {r.label}
@@ -1262,14 +1221,14 @@ export const Sidebar: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                       {/* Dock Transparency */}
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                            Dock Transparency
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center px-1">
+                          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Transparency
                           </h3>
-                          <span className="text-xs font-mono font-bold text-brand-blue-primary">
+                          <span className="text-[10px] font-mono font-bold text-brand-blue-primary">
                             {Math.round(pendingStyle.dockTransparency * 100)}%
                           </span>
                         </div>
@@ -1285,16 +1244,16 @@ export const Sidebar: React.FC = () => {
                               dockTransparency: parseFloat(e.target.value),
                             })
                           }
-                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue-primary"
+                          className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-brand-blue-primary"
                         />
                       </div>
 
                       {/* Dock Corners */}
-                      <div className="space-y-4">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                          Dock Corners
+                      <div className="space-y-3">
+                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                          Corners
                         </h3>
-                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                        <div className="flex bg-slate-100 p-0.5 rounded-lg">
                           {[
                             { id: 'none', label: 'Square' },
                             { id: 'lg', label: 'Soft' },
@@ -1310,10 +1269,10 @@ export const Sidebar: React.FC = () => {
                                     r.id as GlobalStyle['dockBorderRadius'],
                                 })
                               }
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                              className={`flex-1 py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${
                                 pendingStyle.dockBorderRadius === r.id
                                   ? 'bg-white shadow-sm text-brand-blue-primary'
-                                  : 'text-slate-500 hover:text-slate-700'
+                                  : 'text-slate-500'
                               }`}
                             >
                               {r.label}
@@ -1323,12 +1282,12 @@ export const Sidebar: React.FC = () => {
                       </div>
 
                       {/* Dock Text Style */}
-                      <div className="space-y-4">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                          Dock Text Style
+                      <div className="space-y-3">
+                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                          Dock Text
                         </h3>
-                        <div className="flex flex-col gap-4">
-                          <div className="flex items-center gap-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100">
                             <input
                               type="color"
                               value={pendingStyle.dockTextColor}
@@ -1338,9 +1297,9 @@ export const Sidebar: React.FC = () => {
                                   dockTextColor: e.target.value,
                                 })
                               }
-                              className="w-10 h-10 rounded-lg border-2 border-slate-200 bg-white cursor-pointer"
+                              className="w-8 h-8 rounded-md border border-slate-200 bg-white cursor-pointer"
                             />
-                            <span className="text-xs font-bold text-slate-600 uppercase">
+                            <span className="text-[11px] font-bold text-slate-600 uppercase">
                               Text Color
                             </span>
                           </div>
@@ -1352,17 +1311,17 @@ export const Sidebar: React.FC = () => {
                                 dockTextShadow: !pendingStyle.dockTextShadow,
                               })
                             }
-                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                            className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
                               pendingStyle.dockTextShadow
                                 ? 'bg-white border-brand-blue-primary text-brand-blue-dark shadow-sm'
                                 : 'bg-white border-slate-100 text-slate-500'
                             }`}
                           >
-                            <span className="text-xs font-black uppercase tracking-wider">
-                              Enable Text Shadow
+                            <span className="text-[11px] font-bold uppercase tracking-wider">
+                              Text Shadow
                             </span>
                             {pendingStyle.dockTextShadow && (
-                              <CheckSquare className="w-5 h-5 text-brand-blue-primary" />
+                              <CheckSquare className="w-4 h-4 text-brand-blue-primary" />
                             )}
                           </button>
                         </div>
@@ -1371,16 +1330,16 @@ export const Sidebar: React.FC = () => {
                   )}
                 </div>
 
-                {/* ACTION BUTTONS - Fixed at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 z-20 flex flex-col gap-3">
+                {/* ACTION BUTTONS */}
+                <div className="mt-auto p-4 bg-white border-t border-slate-100 flex gap-2">
                   <button
                     onClick={() => {
                       setGlobalStyle(pendingStyle);
                       addToast('Global style applied', 'success');
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-blue-primary text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-sm hover:bg-brand-blue-dark transition-all"
                   >
-                    <Save className="w-4 h-4" /> Save Changes
+                    <Save className="w-3.5 h-3.5" /> Save
                   </button>
 
                   <button
@@ -1391,34 +1350,34 @@ export const Sidebar: React.FC = () => {
                         );
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all"
+                    className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
                   >
-                    Discard Changes
+                    Discard
                   </button>
                 </div>
               </div>
 
               {/* SETTINGS SECTION */}
               <div
-                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                className={`absolute inset-0 p-4 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
                   activeSection === 'settings'
                     ? 'translate-x-0 opacity-100 visible'
                     : 'translate-x-full opacity-0 invisible'
                 }`}
               >
                 <div className="space-y-6">
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="text-xs font-black text-slate-700 uppercase tracking-tight block">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div className="flex justify-between items-center mb-3 px-1">
+                      <label className="text-[10px] font-bold text-slate-700 uppercase tracking-tight block">
                         Quick Access Widgets
                       </label>
-                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[9px] font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-full">
                         {activeDashboard?.settings?.quickAccessWidgets
                           ?.length ?? 0}
                         /2
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mb-3 font-medium">
+                    <p className="text-[9px] text-slate-400 mb-4 px-1 leading-relaxed">
                       Select up to 2 widgets to appear when the dock is
                       minimized.
                     </p>
@@ -1453,17 +1412,17 @@ export const Sidebar: React.FC = () => {
                                 });
                               }}
                               disabled={disabled}
-                              className={`w-full aspect-square flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+                              className={`w-full aspect-square flex flex-col items-center justify-center p-1.5 rounded-lg transition-all ${
                                 isSelected
-                                  ? 'bg-brand-blue-primary text-white shadow-md scale-105'
+                                  ? 'bg-brand-blue-primary text-white shadow-sm scale-105'
                                   : disabled
-                                    ? 'bg-slate-50 text-slate-300 cursor-not-allowed opacity-50'
-                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                                    ? 'bg-white text-slate-200 cursor-not-allowed opacity-50'
+                                    : 'bg-white text-slate-400 border border-slate-100 hover:border-brand-blue-lighter hover:text-brand-blue-primary'
                               }`}
                             >
-                              <tool.icon className="w-5 h-5" />
+                              <tool.icon className="w-4 h-4" />
                             </button>
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-xl border border-white/10 scale-95 group-hover:scale-100">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[8px] font-bold uppercase tracking-widest rounded-md opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-lg scale-95 group-hover:scale-100">
                               {tool.label}
                               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
                             </div>
@@ -1473,20 +1432,20 @@ export const Sidebar: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 pt-4">
+                  <div className="flex flex-col gap-2 pt-2">
                     <button
                       onClick={() => {
                         saveCurrentDashboard();
                         addToast('Settings saved successfully', 'success');
                       }}
-                      className="w-full py-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-blue-lighter hover:bg-brand-blue-dark transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-brand-blue-primary text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-sm hover:bg-brand-blue-dark transition-all flex items-center justify-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       Save all changes
                     </button>
                     <button
                       onClick={() => setActiveSection('main')}
-                      className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                      className="w-full py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
                     >
                       Cancel
                     </button>
@@ -1495,43 +1454,43 @@ export const Sidebar: React.FC = () => {
               </div>
             </div>
 
-            {/* Footer with user profile and sign out */}
-            <div className="border-t border-slate-100 bg-white p-4">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative flex-shrink-0">
-                    {user?.photoURL ? (
-                      <img
-                        src={user.photoURL}
-                        alt=""
-                        className="w-10 h-10 rounded-full border-2 border-brand-blue-lighter shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-brand-blue-primary flex items-center justify-center text-sm font-black text-white shadow-sm">
-                        {user?.displayName?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">
-                      {user?.displayName}
+            {/* Footer */}
+            <footer className="mt-auto border-t border-slate-200 bg-slate-50/50">
+              <div className="px-4 py-3 flex items-center gap-3">
+                <div className="relative flex-shrink-0">
+                  {user?.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user?.displayName ?? ''}
+                      className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-brand-blue-primary flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
+                      {user?.displayName?.charAt(0).toUpperCase()}
                     </div>
-                    <div className="text-[10px] text-slate-400 font-medium truncate">
-                      {user?.email}
-                    </div>
-                  </div>
+                  )}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+                </div>
+                <div className="flex flex-col min-w-0 flex-grow">
+                  <span className="text-[11px] font-bold text-slate-900 truncate">
+                    {user?.displayName}
+                  </span>
+                  <span className="text-[9px] text-slate-500 truncate">
+                    {user?.email}
+                  </span>
                 </div>
                 <button
                   onClick={signOut}
-                  className="p-2 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl transition-all"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
                   title="Sign Out"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
-
-              <div className="text-center">
+              <div className="px-4 pb-3 flex justify-between items-center">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                  v2.0.4-stable
+                </span>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -1539,11 +1498,8 @@ export const Sidebar: React.FC = () => {
                   accept="image/*"
                   onChange={(e) => void handleFileUpload(e)}
                 />
-                <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">
-                  SpartBoard v2.0
-                </span>
               </div>
-            </div>
+            </footer>
           </div>
 
           {/* Attached Style Preview for Desktop */}
