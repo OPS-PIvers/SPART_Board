@@ -12,6 +12,7 @@ interface StudentProviderProps {
 // --- MOCK AUTH ---
 const mockAuth: AuthContextType = {
   user: null,
+  googleAccessToken: null,
   loading: false,
   isAdmin: null,
   featurePermissions: [],

@@ -22,7 +22,11 @@ import {
   Minimize,
   ArrowLeft,
   Palette,
+<<<<<<< HEAD
   Trash2,
+=======
+  Image as ImageIcon,
+>>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
 } from 'lucide-react';
 import {
   DndContext,
@@ -42,7 +46,11 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
+<<<<<<< HEAD
 import { useBackgrounds } from '../../hooks/useBackgrounds';
+=======
+import { useGoogleDrive } from '../../hooks/useGoogleDrive';
+>>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
 import {
   Dashboard,
   GlobalFontFamily,
@@ -53,7 +61,11 @@ import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 import { GlassCard } from '../common/GlassCard';
+<<<<<<< HEAD
 import { SortableDashboardItem } from './SortableDashboardItem';
+=======
+import { Database, CloudUpload, CloudDownload } from 'lucide-react';
+>>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
 
 interface DashboardData {
   name: string;
@@ -194,10 +206,24 @@ type MenuSection =
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+<<<<<<< HEAD
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
+=======
+  const [activeSection, setActiveSection] = useState<
+    | 'main'
+    | 'boards'
+    | 'backgrounds'
+    | 'widgets'
+    | 'style'
+    | 'settings'
+    | 'drive'
+  >('main');
+>>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { user, signOut, isAdmin, featurePermissions } = useAuth();
+  const { user, signInWithGoogle, signOut, isAdmin, featurePermissions } =
+    useAuth();
+  const { driveService, isConnected: isDriveConnected } = useGoogleDrive();
   const { uploadBackgroundImage } = useStorage();
   const {
     dashboards,
@@ -222,6 +248,106 @@ export const Sidebar: React.FC = () => {
     addToast,
     shareDashboard,
   } = useDashboard();
+
+  const [loadingDrive, setLoadingDrive] = useState(false);
+  const [driveFiles, setDriveFiles] = useState<
+    { id: string; name: string; thumbnailLink?: string; mimeType?: string }[]
+  >([]);
+
+  const loadDriveFiles = async () => {
+    if (!driveService) return;
+    try {
+      setLoadingDrive(true);
+      const files = await driveService.listFiles(
+        "name contains '.spart' and trashed = false"
+      );
+      setDriveFiles(files.map((f) => ({ id: f.id, name: f.name })));
+    } catch (error) {
+      console.error('Error loading Drive files:', error);
+      addToast('Failed to load files from Google Drive', 'error');
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  const handleExportToDrive = async () => {
+    if (!driveService || !activeDashboard) return;
+    try {
+      setLoadingDrive(true);
+      await driveService.exportDashboard(activeDashboard);
+      addToast(
+        `Board "${activeDashboard.name}" exported to Google Drive`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Export to Drive failed:', error);
+      addToast('Failed to export to Google Drive', 'error');
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  const handleImportFromDrive = async (fileId: string, fileName: string) => {
+    if (!driveService) return;
+    try {
+      setLoadingDrive(true);
+      const dashboard = await driveService.importDashboard(fileId);
+      const baseName = fileName.replace('.spart', '');
+      createNewDashboard(`Drive: ${baseName}`, dashboard);
+      addToast(`Board "${baseName}" imported from Google Drive`, 'success');
+    } catch (error) {
+      console.error('Import from Drive failed:', error);
+      addToast('Failed to import from Google Drive', 'error');
+    } finally {
+      setLoadingDrive(false);
+      setActiveSection('boards');
+    }
+  };
+
+  const loadDriveBackgrounds = async () => {
+    if (!driveService) return;
+    try {
+      setLoadingDrive(true);
+      const images = await driveService.getBackgroundImages();
+      setDriveFiles(
+        images.map((f) => ({
+          id: f.id,
+          name: f.name,
+          thumbnailLink: f.thumbnailLink,
+          mimeType: f.mimeType,
+        }))
+      );
+      setShowDriveBackgroundPicker(true);
+    } catch (error) {
+      console.error('Error loading Drive images:', error);
+      addToast('Failed to load images from Google Drive', 'error');
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  const handleDriveBackgroundSelect = async (file: {
+    id: string;
+    name: string;
+    mimeType: string;
+  }) => {
+    if (!driveService || !user) return;
+
+    setUploading(true);
+    setShowDriveBackgroundPicker(false);
+    try {
+      const blob = await driveService.downloadFile(file.id);
+      const imageFile = new File([blob], file.name, { type: file.mimeType });
+      const downloadURL = await uploadBackgroundImage(user.uid, imageFile);
+      setBackground(downloadURL);
+      addToast('Background imported from Google Drive', 'success');
+    } catch (error) {
+      console.error('Drive import failed:', error);
+      addToast('Failed to import background from Drive', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -319,6 +445,8 @@ export const Sidebar: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
+  const [showDriveBackgroundPicker, setShowDriveBackgroundPicker] =
+    useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
   const [editingDashboard, setEditingDashboard] = useState<{
     id: string;
@@ -662,7 +790,9 @@ export const Sidebar: React.FC = () => {
                     <span className="font-black text-xl tracking-tight uppercase">
                       {activeSection === 'main'
                         ? 'School Boards'
-                        : activeSection}
+                        : activeSection === 'drive'
+                          ? 'Google Drive'
+                          : activeSection}
                     </span>
                   </div>
                 </div>
@@ -777,6 +907,122 @@ export const Sidebar: React.FC = () => {
                   </div>
                   <ChevronRight className="w-6 h-6 ml-auto text-slate-300 group-hover:text-brand-blue-primary transition-colors" />
                 </button>
+              </div>
+
+              {/* DRIVE SECTION */}
+              <div
+                className={`absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${
+                  activeSection === 'drive'
+                    ? 'translate-x-0 opacity-100 visible'
+                    : 'translate-x-full opacity-0 invisible'
+                }`}
+              >
+                {!isDriveConnected ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white border border-slate-200 rounded-3xl shadow-sm">
+                    <Database className="w-16 h-16 text-slate-200 mb-4" />
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">
+                      Not Connected
+                    </h3>
+                    <p className="text-sm text-slate-500 font-medium mb-6">
+                      Sign in with Google to enable cloud storage features like
+                      syncing boards and picking backgrounds from Drive.
+                    </p>
+                    <button
+                      onClick={() => {
+                        void signInWithGoogle().then(() => {
+                          addToast('Google Drive access authorized', 'success');
+                          void loadDriveFiles();
+                        });
+                      }}
+                      className="px-6 py-3 bg-brand-blue-primary text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-brand-blue-dark transition-all shadow-lg shadow-brand-blue-lighter"
+                    >
+                      Authorize Drive Access
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                      <div className="flex items-center gap-3 text-brand-blue-primary mb-2">
+                        <CloudUpload className="w-6 h-6" />
+                        <h4 className="font-black text-sm uppercase tracking-widest">
+                          Export Active Board
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Save your current board &ldquo;{activeDashboard?.name}
+                        &rdquo; as a file in Google Drive. You can import it
+                        later or on another device.
+                      </p>
+                      <button
+                        onClick={() => void handleExportToDrive()}
+                        disabled={loadingDrive}
+                        className="w-full py-4 bg-brand-blue-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-blue-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {loadingDrive ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CloudUpload className="w-4 h-4" />
+                        )}
+                        Export to Drive
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                          Import from Drive
+                        </h3>
+                        <button
+                          onClick={() => void loadDriveFiles()}
+                          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                          title="Refresh"
+                        >
+                          <Plus className="w-4 h-4 rotate-45" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {loadingDrive ? (
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
+                          </div>
+                        ) : driveFiles.length > 0 ? (
+                          driveFiles.map((file) => (
+                            <button
+                              key={file.id}
+                              onClick={() =>
+                                void handleImportFromDrive(file.id, file.name)
+                              }
+                              className="w-full flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl hover:border-brand-blue-primary hover:shadow-md transition-all text-left group"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 rounded-lg text-slate-400 group-hover:bg-brand-blue-lighter group-hover:text-brand-blue-primary transition-colors">
+                                  <CloudDownload className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-sm font-bold text-slate-700 truncate">
+                                    {file.name.replace('.spart', '')}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-medium">
+                                    School Board File
+                                  </div>
+                                </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-blue-primary" />
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-center py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl">
+                            <Database className="w-12 h-12 text-slate-200 mx-auto mb-2" />
+                            <p className="text-xs text-slate-400 font-medium">
+                              No board files found in Drive
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* BOARDS SECTION */}
@@ -901,6 +1147,22 @@ export const Sidebar: React.FC = () => {
                           <Upload className="w-6 h-6 mb-2" />
                           <span className="text-[10px] font-black uppercase">
                             Upload
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => void loadDriveBackgrounds()}
+                      disabled={!isDriveConnected || loadingDrive}
+                      className="aspect-video rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary hover:bg-brand-blue-lighter transition-all disabled:opacity-50"
+                    >
+                      {loadingDrive ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Database className="w-6 h-6 mb-2" />
+                          <span className="text-[10px] font-black uppercase">
+                            Google Drive
                           </span>
                         </>
                       )}
@@ -1522,13 +1784,29 @@ export const Sidebar: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={signOut}
-                  className="p-2 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl transition-all"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setActiveSection('drive');
+                      void loadDriveFiles();
+                    }}
+                    className={`p-2 rounded-xl transition-all ${
+                      activeSection === 'drive'
+                        ? 'bg-brand-blue-primary text-white shadow-md'
+                        : 'text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter'
+                    }`}
+                    title="Google Drive"
+                  >
+                    <Database className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={signOut}
+                    className="p-2 text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter rounded-xl transition-all"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="text-center">
@@ -1566,6 +1844,74 @@ export const Sidebar: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {showDriveBackgroundPicker && (
+        <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+              <div>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">
+                  Select from Google Drive
+                </h3>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1">
+                  Images from your drive
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDriveBackgroundPicker(false)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30 custom-scrollbar">
+              {driveFiles.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {driveFiles.map((file) => (
+                    <button
+                      key={file.id}
+                      onClick={() => {
+                        // Ensure mimeType is string, defaulting to empty string if undefined
+                        const safeFile = {
+                          id: file.id,
+                          name: file.name,
+                          mimeType: file.mimeType ?? 'application/octet-stream',
+                        };
+                        void handleDriveBackgroundSelect(safeFile);
+                      }}
+                      className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-slate-200 hover:border-brand-blue-primary hover:shadow-xl transition-all text-left shadow-sm"
+                    >
+                      {file.thumbnailLink ? (
+                        <img
+                          src={file.thumbnailLink.replace('=s220', '=s400')}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-slate-200" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                        <p className="text-white text-[10px] font-black uppercase tracking-wider truncate">
+                          {file.name}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center text-slate-400">
+                  <Database className="w-16 h-16 mb-4 opacity-10" />
+                  <p className="font-black uppercase tracking-widest text-xs">
+                    No images found in your Google Drive
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </>
