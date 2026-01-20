@@ -446,7 +446,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </div>
               <div
                 onMouseDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
+                className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5 z-[60]"
               >
                 <div className="w-2 h-2 border-r-2 border-b-2 border-slate-300 rounded-br-[2px]" />
               </div>
@@ -517,7 +517,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </div>
               <div
                 onMouseDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
+                className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5 z-[60]"
               >
                 <div className="w-2 h-2 border-r-2 border-b-2 border-slate-400 rounded-br-[2px]" />
               </div>
