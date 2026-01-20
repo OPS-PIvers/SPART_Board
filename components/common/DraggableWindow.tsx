@@ -16,6 +16,7 @@ import {
   Highlighter,
 } from 'lucide-react';
 import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
