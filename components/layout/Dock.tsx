@@ -42,6 +42,8 @@ import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
 import { DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
+import { WidgetLibrary } from './dock/WidgetLibrary';
+import { RenameFolderModal } from './dock/RenameFolderModal';
 
 /**
  * Custom Label Component for consistent readability
@@ -609,124 +611,6 @@ const FolderItem = ({
         </button>
       </div>
     </div>
-  );
-};
-
-const RenameFolderModal = ({
-  name,
-  title = 'Rename Folder',
-  onClose,
-  onSave,
-}: {
-  name: string;
-  title?: string;
-  onClose: () => void;
-  onSave: (newName: string) => void;
-}) => {
-  const [val, setVal] = useState(name);
-  return createPortal(
-    <div className="fixed inset-0 z-critical flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <GlassCard className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-        <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">
-          {title}
-        </h3>
-        <input
-          type="text"
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          autoFocus
-          placeholder="Folder name..."
-          className="w-full px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-brand-blue-primary text-sm font-bold mb-6"
-          onKeyDown={(e) => e.key === 'Enter' && onSave(val)}
-        />
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave(val)}
-            className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-white bg-brand-blue-primary rounded-xl hover:bg-brand-blue-dark shadow-lg shadow-brand-blue-primary/20 transition-all"
-          >
-            Save
-          </button>
-        </div>
-      </GlassCard>
-    </div>,
-    document.body
-  );
-};
-
-// Widget Library Component for Edit Mode
-const WidgetLibrary = ({
-  onToggle,
-  visibleTools,
-  canAccess,
-  onClose,
-}: {
-  onToggle: (type: WidgetType) => void;
-  visibleTools: WidgetType[];
-  canAccess: (type: WidgetType) => boolean;
-  onClose: () => void;
-}) => {
-  return createPortal(
-    <GlassCard className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-modal">
-      <div className="bg-white/50 px-6 py-4 border-b border-white/30 flex justify-between items-center shrink-0 backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="w-5 h-5 text-brand-blue-primary" />
-          <h3 className="font-black text-sm uppercase tracking-wider text-slate-800">
-            Widget Library
-          </h3>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-slate-200/50 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5 text-slate-500" />
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {TOOLS.map((tool) => {
-            if (!canAccess(tool.type)) return null;
-            const isActive = visibleTools.includes(tool.type);
-            return (
-              <button
-                key={tool.type}
-                onClick={() => onToggle(tool.type)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all group active:scale-95 border-2 ${
-                  isActive
-                    ? 'bg-white/80 border-brand-blue-primary shadow-md'
-                    : 'bg-white/20 border-transparent opacity-40 grayscale hover:opacity-60 hover:grayscale-0'
-                }`}
-              >
-                <div
-                  className={`${tool.color} p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform relative`}
-                >
-                  <tool.icon className="w-6 h-6" />
-                  {isActive && (
-                    <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
-                      <Plus className="w-2.5 h-2.5 rotate-45" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-[10px] font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
-                  {tool.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="bg-slate-50/50 px-6 py-3 border-t border-white/30 text-center backdrop-blur-xl">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Tap a widget to add or remove it from your dock
-        </p>
-      </div>
-    </GlassCard>,
-    document.body
   );
 };
 
