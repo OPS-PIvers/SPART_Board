@@ -5,7 +5,9 @@ import {
   X,
   RefreshCw,
   RotateCw,
-  Maximize2,
+  Layers,
+  Check,
+  Trash2,
 } from 'lucide-react';
 import { WidgetData, StickerConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
@@ -25,6 +27,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showLayerControls, setShowLayerControls] = useState(false);
 
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +35,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     if (!isDragging) {
       setIsSelected(false);
       setIsEditing(false);
+      setShowLayerControls(false);
     }
   });
 
@@ -48,6 +52,8 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     e.stopPropagation();
 
     setIsSelected(true);
+    // Reset layer controls if selecting a different widget (though this component unmounts/remounts usually)
+    // or if just clicking to focus.
     bringToFront(widget.id);
 
     const startX = e.clientX;
@@ -106,24 +112,31 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    const rect = nodeRef.current?.getBoundingClientRect();
-    if (!rect) return;
 
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const startDist = Math.hypot(e.clientX - centerX, e.clientY - centerY);
     const startW = widget.w;
     const startH = widget.h;
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    // Rotation in radians
+    const rad = (rotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
 
     const onMouseMove = (ev: MouseEvent) => {
-      const currentDist = Math.hypot(
-        ev.clientX - centerX,
-        ev.clientY - centerY
-      );
-      const scale = currentDist / startDist;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+
+      // Project screen delta onto local axes
+      // For 0 deg (cos=1, sin=0): localDx = dx, localDy = dy.
+      // For 90 deg (cos=0, sin=1): localDx = dy, localDy = -dx.
+
+      const localDx = dx * cos + dy * sin;
+      const localDy = -dx * sin + dy * cos;
+
       updateWidget(widget.id, {
-        w: Math.max(50, startW * scale),
-        h: Math.max(50, startH * scale),
+        w: Math.max(50, startW + localDx),
+        h: Math.max(50, startH + localDy),
       });
     };
 
@@ -157,64 +170,91 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
         {/* Selected Overlay/Border */}
         {(isSelected || isEditing) && (
-          <div className="absolute inset-0 border-2 border-blue-400/50 rounded-lg pointer-events-none" />
+          <div
+            className={`absolute inset-0 border-2 rounded-lg pointer-events-none ${isEditing ? 'border-dashed border-blue-400' : 'border-blue-400/50'}`}
+          />
         )}
 
         {/* Menu */}
-        {isSelected && !isDragging && !isEditing && (
+        {isSelected && !isDragging && (
           <div
-            className="sticker-control absolute -top-14 left-1/2 -translate-x-1/2 flex gap-1 bg-white/90 backdrop-blur-xl shadow-xl rounded-full p-1.5 z-[9999]"
+            className="sticker-control absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/90 backdrop-blur-xl shadow-xl rounded-full p-1.5 z-[9999]"
             style={{ transform: `rotate(${-rotation}deg)` }} // Counter-rotate menu
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => moveWidgetLayer(widget.id, 'up')}
-              className="p-1.5 hover:bg-slate-100 rounded-full text-slate-700"
-              title="Move Up Layer"
-            >
-              <ArrowUp size={16} />
-            </button>
-            <button
-              onClick={() => moveWidgetLayer(widget.id, 'down')}
-              className="p-1.5 hover:bg-slate-100 rounded-full text-slate-700"
-              title="Move Down Layer"
-            >
-              <ArrowDown size={16} />
-            </button>
-            <div className="w-px bg-slate-200 mx-1" />
-            <button
-              onClick={() => setIsEditing(true)}
-              className="p-1.5 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-full"
-              title="Resize & Rotate"
-            >
-              <RefreshCw size={16} />
-            </button>
-            <button
-              onClick={() => removeWidget(widget.id)}
-              className="p-1.5 hover:bg-red-50 text-red-500 rounded-full"
-              title="Remove"
-            >
-              <X size={16} />
-            </button>
+            {isEditing ? (
+              <button
+                onClick={() => setIsEditing(false)}
+                className="p-1.5 bg-green-100 text-green-600 rounded-full hover:bg-green-200"
+                title="Done Editing"
+              >
+                <Check size={16} />
+              </button>
+            ) : (
+              <>
+                {/* Resize / Rotate */}
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="p-1.5 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-full"
+                  title="Resize / Rotate"
+                >
+                  <RefreshCw size={16} />
+                </button>
+
+                <div className="w-px bg-slate-200 mx-1" />
+
+                {/* Layer Controls */}
+                {showLayerControls ? (
+                  <>
+                    <button
+                      onClick={() => moveWidgetLayer(widget.id, 'up')}
+                      className="p-1.5 hover:bg-slate-100 rounded-full text-slate-700"
+                      title="Move Forward"
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                    <button
+                      onClick={() => moveWidgetLayer(widget.id, 'down')}
+                      className="p-1.5 hover:bg-slate-100 rounded-full text-slate-700"
+                      title="Move Backward"
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+                    <button
+                      onClick={() => setShowLayerControls(false)}
+                      className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowLayerControls(true)}
+                    className="p-1.5 hover:bg-slate-100 rounded-full text-slate-700"
+                    title="Layers"
+                  >
+                    <Layers size={16} />
+                  </button>
+                )}
+
+                <div className="w-px bg-slate-200 mx-1" />
+
+                {/* Delete */}
+                <button
+                  onClick={() => removeWidget(widget.id)}
+                  className="p-1.5 hover:bg-red-50 text-red-500 rounded-full"
+                  title="Remove"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </>
+            )}
           </div>
         )}
 
         {/* Edit Controls */}
         {isEditing && (
           <>
-            {/* Close Edit Mode */}
-            <div
-              className="sticker-control absolute -top-14 left-1/2 -translate-x-1/2"
-              style={{ transform: `rotate(${-rotation}deg)` }}
-            >
-              <button
-                onClick={() => setIsEditing(false)}
-                className="p-1.5 bg-white/90 backdrop-blur shadow rounded-full hover:bg-slate-100 text-slate-700"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
             {/* Rotate Handle */}
             <div
               className="sticker-control absolute -top-8 left-1/2 -translate-x-1/2 cursor-grab active:cursor-grabbing"
@@ -226,12 +266,12 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
               <div className="h-4 w-0.5 bg-blue-400 mx-auto" />
             </div>
 
-            {/* Resize Handles (Corners) */}
+            {/* Resize Handle (Corner) */}
             <div
-              className="sticker-control absolute -bottom-3 -right-3 cursor-nwse-resize p-1.5 bg-white shadow rounded-full text-blue-600 border border-blue-100"
+              className="sticker-control absolute -bottom-0 -right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-0.5"
               onMouseDown={handleResizeStart}
             >
-              <Maximize2 size={14} />
+              <div className="w-3 h-3 border-r-2 border-b-2 border-blue-500 bg-white/50 rounded-br-[2px]" />
             </div>
           </>
         )}
