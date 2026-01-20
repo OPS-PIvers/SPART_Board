@@ -4,6 +4,7 @@ import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { RotateCcw, Plus, Trash2, Download, Type } from 'lucide-react';
 import { Button } from '../common/Button';
+import { MagicInput } from '../common/MagicInput';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -185,6 +186,13 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
   };
 
+  const handleMagicGenerate = (items: string[]) => {
+    const newOptions = items.map((label) => ({ label, votes: 0 }));
+    updateWidget(widget.id, {
+      config: { ...config, options: [...options, ...newOptions] } as PollConfig,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Question Edit */}
@@ -205,6 +213,14 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Options List */}
       <div>
+        <div className="mb-4">
+          <MagicInput
+            onGenerate={handleMagicGenerate}
+            context={`Generate poll options for the question: "${localQuestion}".`}
+            buttonLabel="Magic Options"
+            placeholder="e.g. 'Ice cream flavors', 'Debate topics'"
+          />
+        </div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
           Options
         </label>

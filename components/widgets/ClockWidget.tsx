@@ -24,8 +24,6 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     fontFamily = 'global',
     clockStyle = 'modern',
     glow = false,
-    clockStyle = 'modern',
-    glow = false,
   } = widget.config as ClockConfig;
 
   // Calculate scaled font size

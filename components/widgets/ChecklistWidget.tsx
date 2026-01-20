@@ -7,6 +7,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
+import { MagicInput } from '../common/MagicInput';
 import {
   CheckSquare,
   Square,
@@ -231,6 +232,18 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, items: newItems } });
   };
 
+  const handleMagicGenerate = (generatedItems: string[]) => {
+    const newItems: ChecklistItem[] = generatedItems.map((text, idx) => ({
+      id: `magic-${Date.now()}-${idx}`,
+      text,
+      completed: false,
+    }));
+
+    const allItems = [...items, ...newItems];
+    updateWidget(widget.id, { config: { ...config, items: allItems } });
+    setLocalText(allItems.map((i) => i.text).join('\n'));
+  };
+
   return (
     <div className="space-y-6">
       {/* Mode Toggle */}
@@ -260,6 +273,14 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'manual' && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="mb-4">
+            <MagicInput
+              onGenerate={handleMagicGenerate}
+              context="Generate a checklist for a classroom activity. Keep items short and actionable."
+              buttonLabel="Magic Checklist"
+              placeholder="e.g. 'Morning Routine', 'Field Trip Prep'"
+            />
+          </div>
           <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <ListPlus className="w-3 h-3" /> Task List (One per line)
           </label>

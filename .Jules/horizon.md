@@ -1,0 +1,1 @@
+## 2026-01-20 - Magic Lists **Insight:** Users face "Dead Ends" when populating lists in Checklists and Polls, requiring manual brainstorming and typing. **Concept:** "Magic List" - AI-powered generation of checklist items and poll options from a simple prompt.
