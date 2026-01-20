@@ -37,10 +37,98 @@ const ToastContainer: React.FC = () => {
 };
 
 export const DashboardView: React.FC = () => {
-  const { activeDashboard, dashboards, addWidget } = useDashboard();
+  const { activeDashboard, dashboards, addWidget, loadDashboard } =
+    useDashboard();
   const [prevIndex, setPrevIndex] = React.useState<number>(-1);
   const [animationClass, setAnimationClass] =
     React.useState<string>('animate-fade-in');
+  const [isMinimized, setIsMinimized] = React.useState(false);
+
+  // Gesture Tracking
+  const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
+  const gestureCurrent = React.useRef<{ x: number; y: number } | null>(null);
+  const isFourFingerGesture = React.useRef(false);
+
+  const currentIndex = useMemo(() => {
+    if (!activeDashboard) return -1;
+    return dashboards.findIndex((d) => d.id === activeDashboard.id);
+  }, [activeDashboard, dashboards]);
+
+  React.useEffect(() => {
+    setIsMinimized(false);
+  }, [activeDashboard?.id]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 4) {
+      isFourFingerGesture.current = true;
+      gestureStart.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+      gestureCurrent.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    } else {
+      isFourFingerGesture.current = false;
+      gestureStart.current = null;
+      gestureCurrent.current = null;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isFourFingerGesture.current && gestureStart.current) {
+      gestureCurrent.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (
+      isFourFingerGesture.current &&
+      gestureStart.current &&
+      gestureCurrent.current
+    ) {
+      const deltaX = gestureCurrent.current.x - gestureStart.current.x;
+      const deltaY = gestureCurrent.current.y - gestureStart.current.y;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      const THRESHOLD = 100; // px
+
+      // Determine dominant direction
+      if (absY > absX && absY > THRESHOLD) {
+        // Vertical Swipe
+        if (deltaY > 0) {
+          // Swipe Down -> Minimize
+          setIsMinimized(true);
+        } else {
+          // Swipe Up -> Restore
+          setIsMinimized(false);
+        }
+      } else if (absX > absY && absX > THRESHOLD) {
+        // Horizontal Swipe
+        if (deltaX < 0) {
+          // Swipe Left -> Next Board
+          if (currentIndex < dashboards.length - 1) {
+            loadDashboard(dashboards[currentIndex + 1].id);
+          }
+        } else {
+          // Swipe Right -> Prev Board
+          if (currentIndex > 0) {
+            loadDashboard(dashboards[currentIndex - 1].id);
+          }
+        }
+      }
+
+      // Reset
+      isFourFingerGesture.current = false;
+      gestureStart.current = null;
+      gestureCurrent.current = null;
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     if (
@@ -119,11 +207,6 @@ export const DashboardView: React.FC = () => {
     }
   };
 
-  const currentIndex = useMemo(() => {
-    if (!activeDashboard) return -1;
-    return dashboards.findIndex((d) => d.id === activeDashboard.id);
-  }, [activeDashboard, dashboards]);
-
   React.useEffect(() => {
     if (currentIndex !== -1 && prevIndex !== -1 && currentIndex !== prevIndex) {
       if (currentIndex > prevIndex) {
@@ -185,6 +268,9 @@ export const DashboardView: React.FC = () => {
       onClick={(e) => e.stopPropagation()}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Background Overlay for Depth (especially for images) */}
       <div className="absolute inset-0 bg-black/10 pointer-events-none" />
@@ -192,7 +278,12 @@ export const DashboardView: React.FC = () => {
       {/* Dynamic Widget Surface */}
       <div
         key={activeDashboard.id}
-        className={`relative w-full h-full ${animationClass}`}
+        className={`relative w-full h-full ${animationClass} transition-all duration-500 ease-in-out`}
+        style={{
+          transform: isMinimized ? 'translateY(100vh) scale(0.8)' : 'none',
+          opacity: isMinimized ? 0 : 1,
+          pointerEvents: isMinimized ? 'none' : 'auto',
+        }}
       >
         {activeDashboard.widgets.map((widget) => (
           <WidgetRenderer key={widget.id} widget={widget} />
