@@ -1,26 +1,33 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, TextConfig } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
+import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { STICKY_NOTE_COLORS } from '../../config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 import { sanitizeHtml } from '../../utils/security';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as TextConfig;
-  const { content = '', bgColor = '#fef9c3', fontSize = 18 } = config;
+  const {
+    content = '',
+    bgColor = STICKY_NOTE_COLORS.yellow,
+    fontSize = 18,
+  } = config;
+
+  // Scale the base font size with window dimensions
+  const scaledFontSize = useScaledFont(
+    widget.w,
+    widget.h,
+    fontSize / 100, // Use the manual size as a percentage factor
+    12,
+    200
+  );
 
   return (
     <div
-      className="h-full w-full p-4 font-handwritten outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative"
-      contentEditable
-      onBlur={(e) =>
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            content: sanitizeHtml(e.currentTarget.innerHTML),
-          } as TextConfig,
-        })
-      }
+      className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
     >
       {/* Background color overlay */}
       <div
@@ -28,9 +35,19 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         style={{ backgroundColor: bgColor }}
       />
       <div
-        className="relative z-10 h-full w-full"
-        style={{ fontSize: `${fontSize}px` }}
+        className="relative z-10 h-full w-full outline-none"
+        style={{ fontSize: `${scaledFontSize}px` }}
+        contentEditable
+        suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: content }}
+        onBlur={(e) =>
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              content: sanitizeHtml(e.currentTarget.innerHTML),
+            } as TextConfig,
+          })
+        }
       />
     </div>
   );
@@ -39,7 +56,14 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const colors = ['#fef9c3', '#dcfce7', '#dbeafe', '#fce7f3', '#f3f4f6'];
+
+  const colors = [
+    { hex: STICKY_NOTE_COLORS.yellow, label: 'yellow' },
+    { hex: STICKY_NOTE_COLORS.green, label: 'green' },
+    { hex: STICKY_NOTE_COLORS.blue, label: 'blue' },
+    { hex: STICKY_NOTE_COLORS.pink, label: 'pink' },
+    { hex: STICKY_NOTE_COLORS.gray, label: 'gray' },
+  ];
 
   const templates = [
     {
@@ -77,7 +101,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Templates
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -88,36 +112,35 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="flex items-center gap-2 p-2 bg-white/50 border border-white/30 rounded-lg text-left hover:bg-white/70 transition-all"
             >
               <t.icon className="w-3 h-3 text-indigo-600" />
-              <span className="text-[9px] font-bold text-slate-800">
-                {t.name}
-              </span>
+              <span className="text-[9px]  text-slate-800">{t.name}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Background Color
         </label>
         <div className="flex gap-2">
           {colors.map((c) => (
             <button
-              key={c}
+              key={c.hex}
+              aria-label={`Select ${c.label} background`}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...config, bgColor: c } as TextConfig,
+                  config: { ...config, bgColor: c.hex } as TextConfig,
                 })
               }
-              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
-              style={{ backgroundColor: c }}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c.hex ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
+              style={{ backgroundColor: c.hex }}
             />
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
           Font Size
         </label>
         <div className="flex items-center gap-4">
@@ -136,7 +159,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             }
             className="flex-1 accent-blue-600"
           />
-          <span className="w-8 text-center font-mono font-bold text-slate-700 text-xs">
+          <span className="w-8 text-center font-mono  text-slate-700 text-xs">
             {config.fontSize}
           </span>
         </div>

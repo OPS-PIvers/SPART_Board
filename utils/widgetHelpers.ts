@@ -1,4 +1,5 @@
 import { WidgetData, WidgetType, WidgetConfig } from '../types';
+import { STICKY_NOTE_COLORS } from '../config/colors';
 
 export const getTitle = (widget: WidgetData): string => {
   if (widget.customTitle) return widget.customTitle;
@@ -35,7 +36,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     traffic: {},
     text: {
       content: 'Double click to edit...',
-      bgColor: '#fef9c3',
+      bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },
     checklist: { items: [] },

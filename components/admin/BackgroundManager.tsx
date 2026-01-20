@@ -310,7 +310,7 @@ export const BackgroundManager: React.FC = () => {
       {/* Message Toast */}
       {message && (
         <div
-          className={`fixed top-6 right-6 z-[10001] px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top ${
+          className={`fixed top-6 right-6 z-toast px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top ${
             message.type === 'success'
               ? 'bg-green-500 text-white'
               : 'bg-red-500 text-white'

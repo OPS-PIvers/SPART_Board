@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   collection,
   onSnapshot,
@@ -20,6 +26,8 @@ import {
   GradeFilter,
   DockItem,
   DockFolder,
+  GlobalStyle,
+  DEFAULT_GLOBAL_STYLE,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -168,16 +176,31 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { user } = useAuth();
   const {
-    loadDashboards: _loadDashboards,
     saveDashboard,
     saveDashboards,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
+    shareDashboard,
+    loadSharedDashboard,
   } = useFirestore(user?.uid ?? null);
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+  const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const path = window.location.pathname;
+    if (path.startsWith('/share/')) {
+      return path.split('/share/')[1] || null;
+    }
+    return null;
+  });
+
+  const clearPendingShare = useCallback(() => {
+    setPendingShareId(null);
+    window.history.replaceState(null, '', '/');
+  }, []);
+
   const [activeId, setActiveId] = useState<string | null>(null);
-  const activeIdRef = React.useRef(activeId);
+  const activeIdRef = useRef(activeId);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [visibleTools, setVisibleTools] = useState<WidgetType[]>(() => {
     const saved = localStorage.getItem('classroom_visible_tools');
@@ -224,10 +247,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       : 'all';
   });
 
-  const handleSetGradeFilter = (filter: GradeFilter) => {
+  const handleSetGradeFilter = useCallback((filter: GradeFilter) => {
     setGradeFilter(filter);
     localStorage.setItem('spartboard_gradeFilter', filter);
-  };
+  }, []);
 
   // --- ROSTER STATE ---
   const [rosters, setRosters] = useState<ClassRoster[]>([]);
@@ -501,51 +524,56 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
-  const toggleToolVisibility = (type: WidgetType) => {
-    setVisibleTools((prev) => {
-      const next = prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type];
-      localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
-      return next;
-    });
+  const toggleToolVisibility = useCallback(
+    (type: WidgetType) => {
+      setVisibleTools((prev) => {
+        const next = prev.includes(type)
+          ? prev.filter((t) => t !== type)
+          : [...prev, type];
+        localStorage.setItem('classroom_visible_tools', JSON.stringify(next));
+        return next;
+      });
 
-    setDockItems((prev) => {
-      const isVisible = visibleTools.includes(type);
-      let next: DockItem[];
+      setDockItems((prev) => {
+        const isVisible = visibleTools.includes(type);
+        let next: DockItem[];
 
-      if (isVisible) {
-        // Remove from dockItems (search globally in tools and folders)
-        next = prev
-          .map((item) => {
-            if (item.type === 'folder') {
-              return {
-                ...item,
-                folder: {
-                  ...item.folder,
-                  items: item.folder.items.filter((t) => t !== type),
-                },
-              };
-            }
-            return item;
-          })
-          .filter((item) => !(item.type === 'tool' && item.toolType === type));
-      } else {
-        // Add to dockItems (if not already present)
-        const exists = prev.some(
-          (item) =>
-            (item.type === 'tool' && item.toolType === type) ||
-            (item.type === 'folder' && item.folder.items.includes(type))
-        );
-        next = exists ? prev : [...prev, { type: 'tool', toolType: type }];
-      }
+        if (isVisible) {
+          // Remove from dockItems (search globally in tools and folders)
+          next = prev
+            .map((item) => {
+              if (item.type === 'folder') {
+                return {
+                  ...item,
+                  folder: {
+                    ...item.folder,
+                    items: item.folder.items.filter((t) => t !== type),
+                  },
+                };
+              }
+              return item;
+            })
+            .filter(
+              (item) => !(item.type === 'tool' && item.toolType === type)
+            );
+        } else {
+          // Add to dockItems (if not already present)
+          const exists = prev.some(
+            (item) =>
+              (item.type === 'tool' && item.toolType === type) ||
+              (item.type === 'folder' && item.folder.items.includes(type))
+          );
+          next = exists ? prev : [...prev, { type: 'tool', toolType: type }];
+        }
 
-      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-      return next;
-    });
-  };
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+    },
+    [visibleTools]
+  );
 
-  const setAllToolsVisibility = (visible: boolean) => {
+  const setAllToolsVisibility = useCallback((visible: boolean) => {
     const nextTools = visible ? TOOLS.map((t) => t.type) : [];
     setVisibleTools(nextTools);
     localStorage.setItem('classroom_visible_tools', JSON.stringify(nextTools));
@@ -553,104 +581,134 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const nextDock = visible ? migrateToDockItems(nextTools) : [];
     setDockItems(nextDock);
     localStorage.setItem('classroom_dock_items', JSON.stringify(nextDock));
-  };
+  }, []);
 
-  const reorderTools = (tools: WidgetType[]) => {
+  const reorderTools = useCallback((tools: WidgetType[]) => {
     setVisibleTools(tools);
     localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
-    // When reordering tools globally, we should ideally reflect this in dockItems
-    // but only for top-level tools. For now, we'll let Dock handle its own reordering.
-  };
+  }, []);
 
-  const reorderDockItems = (items: DockItem[]) => {
+  const reorderDockItems = useCallback((items: DockItem[]) => {
     setDockItems(items);
     localStorage.setItem('classroom_dock_items', JSON.stringify(items));
-  };
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const addToast = useCallback(
+    (message: string, type: Toast['type'] = 'info') => {
+      const id = crypto.randomUUID();
+      setToasts((prev) => [...prev, { id, message, type }]);
+      setTimeout(() => {
+        removeToast(id);
+      }, 3000);
+    },
+    [removeToast]
+  );
 
   // --- FOLDER ACTIONS ---
-  const addFolder = (name: string) => {
-    const newFolder: DockFolder = {
-      id: crypto.randomUUID(),
-      name,
-      items: [],
-    };
-    const next = [...dockItems, { type: 'folder' as const, folder: newFolder }];
-    setDockItems(next);
-    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-    addToast(`Folder "${name}" created`);
-  };
+  const addFolder = useCallback(
+    (name: string) => {
+      const newFolder: DockFolder = {
+        id: crypto.randomUUID(),
+        name,
+        items: [],
+      };
+      setDockItems((prev) => {
+        const next = [...prev, { type: 'folder' as const, folder: newFolder }];
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+      addToast(`Folder "${name}" created`);
+    },
+    [addToast]
+  );
 
-  const createFolderWithItems = (name: string, items: WidgetType[]) => {
-    // 1. Remove items from their current locations
-    let currentItems = [...dockItems];
-    items.forEach((type) => {
-      currentItems = currentItems
-        .map((item) => {
-          if (item.type === 'folder') {
-            return {
-              ...item,
-              folder: {
-                ...item.folder,
-                items: item.folder.items.filter((t) => t !== type),
-              },
-            };
-          }
-          return item;
-        })
-        .filter((item) => !(item.type === 'tool' && item.toolType === type));
+  const createFolderWithItems = useCallback(
+    (name: string, items: WidgetType[]) => {
+      setDockItems((prev) => {
+        // 1. Remove items from their current locations
+        let currentItems = [...prev];
+        items.forEach((type) => {
+          currentItems = currentItems
+            .map((item) => {
+              if (item.type === 'folder') {
+                return {
+                  ...item,
+                  folder: {
+                    ...item.folder,
+                    items: item.folder.items.filter((t) => t !== type),
+                  },
+                };
+              }
+              return item;
+            })
+            .filter(
+              (item) => !(item.type === 'tool' && item.toolType === type)
+            );
+        });
+
+        // 2. Create new folder with items
+        const newFolder: DockFolder = {
+          id: crypto.randomUUID(),
+          name,
+          items,
+        };
+
+        // 3. Add to dock
+        const next = [
+          ...currentItems,
+          { type: 'folder' as const, folder: newFolder },
+        ];
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+      addToast('Group created');
+    },
+    [addToast]
+  );
+
+  const renameFolder = useCallback((id: string, name: string) => {
+    setDockItems((prev) => {
+      const next = prev.map((item) =>
+        item.type === 'folder' && item.folder.id === id
+          ? { ...item, folder: { ...item.folder, name } }
+          : item
+      );
+      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+      return next;
     });
+  }, []);
 
-    // 2. Create new folder with items
-    const newFolder: DockFolder = {
-      id: crypto.randomUUID(),
-      name,
-      items,
-    };
+  const deleteFolder = useCallback(
+    (id: string) => {
+      setDockItems((prev) => {
+        const folder = prev.find(
+          (item) => item.type === 'folder' && item.folder.id === id
+        );
+        if (!folder || folder.type !== 'folder') return prev;
 
-    // 3. Add to dock (at the end? or replace the position of the first item?)
-    // For now, append to end.
-    const next = [
-      ...currentItems,
-      { type: 'folder' as const, folder: newFolder },
-    ];
+        // Move items back to root dock
+        const folderItems: DockItem[] = folder.folder.items.map((type) => ({
+          type: 'tool',
+          toolType: type,
+        }));
 
-    setDockItems(next);
-    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-    addToast('Group created');
-  };
+        const next = prev
+          .filter((item) => !(item.type === 'folder' && item.folder.id === id))
+          .concat(folderItems);
 
-  const renameFolder = (id: string, name: string) => {
-    const next = dockItems.map((item) =>
-      item.type === 'folder' && item.folder.id === id
-        ? { ...item, folder: { ...item.folder, name } }
-        : item
-    );
-    setDockItems(next);
-    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-  };
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+      addToast('Folder removed');
+    },
+    [addToast]
+  );
 
-  const deleteFolder = (id: string) => {
-    const folder = dockItems.find(
-      (item) => item.type === 'folder' && item.folder.id === id
-    );
-    if (!folder || folder.type !== 'folder') return;
-
-    // Move items back to root dock
-    const folderItems: DockItem[] = folder.folder.items.map((type) => ({
-      type: 'tool',
-      toolType: type,
-    }));
-
-    const next = dockItems
-      .filter((item) => !(item.type === 'folder' && item.folder.id === id))
-      .concat(folderItems);
-
-    setDockItems(next);
-    localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-    addToast('Folder removed');
-  };
-
-  const addItemToFolder = (folderId: string, type: WidgetType) => {
+  const addItemToFolder = useCallback((folderId: string, type: WidgetType) => {
     setDockItems((prev) => {
       // 1. Remove the tool from wherever it was (top-level or another folder)
       const cleaned = prev
@@ -684,118 +742,114 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('classroom_dock_items', JSON.stringify(next));
       return next;
     });
-  };
+  }, []);
 
-  const removeItemFromFolder = (folderId: string, type: WidgetType) => {
-    setDockItems((prev) => {
-      const next = prev.map((item) =>
-        item.type === 'folder' && item.folder.id === folderId
-          ? {
-              ...item,
-              folder: {
-                ...item.folder,
-                items: item.folder.items.filter((t) => t !== type),
-              },
-            }
-          : item
-      );
-      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const moveItemOutOfFolder = (
-    folderId: string,
-    type: WidgetType,
-    index: number
-  ) => {
-    setDockItems((prev) => {
-      // Remove from folder
-      const cleaned = prev.map((item) =>
-        item.type === 'folder' && item.folder.id === folderId
-          ? {
-              ...item,
-              folder: {
-                ...item.folder,
-                items: item.folder.items.filter((t) => t !== type),
-              },
-            }
-          : item
-      );
-
-      // Insert at root level at specified index
-      const next = [...cleaned];
-      next.splice(index, 0, { type: 'tool', toolType: type });
-
-      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const reorderFolderItems = (folderId: string, newItems: WidgetType[]) => {
-    setDockItems((prev) => {
-      const next = prev.map((item) =>
-        item.type === 'folder' && item.folder.id === folderId
-          ? {
-              ...item,
-              folder: {
-                ...item.folder,
-                items: newItems,
-              },
-            }
-          : item
-      );
-      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const addToast = (message: string, type: Toast['type'] = 'info') => {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 3000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const createNewDashboard = (name: string, data?: Dashboard) => {
-    if (!user) {
-      addToast('Must be signed in to create dashboard', 'error');
-      return;
-    }
-
-    const maxOrder = dashboards.reduce(
-      (max, db) => Math.max(max, db.order ?? 0),
-      0
-    );
-
-    const newDb: Dashboard = data
-      ? { ...data, id: crypto.randomUUID(), name, order: maxOrder + 1 }
-      : {
-          id: crypto.randomUUID(),
-          name,
-          background: 'bg-slate-800',
-          widgets: [],
-          createdAt: Date.now(),
-          order: maxOrder + 1,
-        };
-
-    saveDashboard(newDb)
-      .then(() => {
-        setActiveId(newDb.id);
-        addToast(`Dashboard "${name}" ready`);
-      })
-      .catch((err) => {
-        console.error('Failed to create dashboard:', err);
-        addToast('Failed to create dashboard', 'error');
+  const removeItemFromFolder = useCallback(
+    (folderId: string, type: WidgetType) => {
+      setDockItems((prev) => {
+        const next = prev.map((item) =>
+          item.type === 'folder' && item.folder.id === folderId
+            ? {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: item.folder.items.filter((t) => t !== type),
+                },
+              }
+            : item
+        );
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
       });
-  };
+    },
+    []
+  );
 
-  const saveCurrentDashboard = () => {
+  const moveItemOutOfFolder = useCallback(
+    (folderId: string, type: WidgetType, index: number) => {
+      setDockItems((prev) => {
+        // Remove from folder
+        const cleaned = prev.map((item) =>
+          item.type === 'folder' && item.folder.id === folderId
+            ? {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: item.folder.items.filter((t) => t !== type),
+                },
+              }
+            : item
+        );
+
+        // Insert at root level at specified index
+        const next = [...cleaned];
+        next.splice(index, 0, { type: 'tool', toolType: type });
+
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+    },
+    []
+  );
+
+  const reorderFolderItems = useCallback(
+    (folderId: string, newItems: WidgetType[]) => {
+      setDockItems((prev) => {
+        const next = prev.map((item) =>
+          item.type === 'folder' && item.folder.id === folderId
+            ? {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: newItems,
+                },
+              }
+            : item
+        );
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+    },
+    []
+  );
+
+  const createNewDashboard = useCallback(
+    (name: string, data?: Dashboard) => {
+      if (!user) {
+        addToast('Must be signed in to create dashboard', 'error');
+        return;
+      }
+
+      const maxOrder = dashboards.reduce(
+        (max, db) => Math.max(max, db.order ?? 0),
+        0
+      );
+
+      const newDb: Dashboard = data
+        ? { ...data, id: crypto.randomUUID(), name, order: maxOrder + 1 }
+        : {
+            id: crypto.randomUUID(),
+            name,
+            background: 'bg-slate-800',
+            widgets: [],
+            createdAt: Date.now(),
+            order: maxOrder + 1,
+          };
+
+      saveDashboard(newDb)
+        .then(() => {
+          setActiveId(newDb.id);
+          addToast(`Dashboard "${name}" ready`);
+        })
+        .catch((err) => {
+          console.error('Failed to create dashboard:', err);
+          addToast('Failed to create dashboard', 'error');
+        });
+    },
+    [user, dashboards, saveDashboard, addToast]
+  );
+
+  const saveCurrentDashboard = useCallback(() => {
     if (!user) {
       addToast('Must be signed in to save', 'error');
       return;
@@ -812,248 +866,277 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           addToast('Save failed', 'error');
         });
     }
-  };
+  }, [user, dashboards, activeId, saveDashboard, addToast]);
 
-  const deleteDashboard = (id: string) => {
-    if (!user) {
-      addToast('Must be signed in to delete', 'error');
-      return;
-    }
-
-    deleteDashboardFirestore(id)
-      .then(() => {
-        if (activeId === id) {
-          const filtered = dashboards.filter((d) => d.id !== id);
-          setActiveId(filtered.length > 0 ? filtered[0].id : null);
-        }
-        addToast('Dashboard removed');
-      })
-      .catch((err) => {
-        console.error('Delete failed:', err);
-        addToast('Delete failed', 'error');
-      });
-  };
-
-  const duplicateDashboard = (id: string) => {
-    if (!user) {
-      addToast('Must be signed in to duplicate', 'error');
-      return;
-    }
-
-    const dashboard = dashboards.find((d) => d.id === id);
-    if (!dashboard) return;
-
-    const maxOrder = dashboards.reduce(
-      (max, db) => Math.max(max, db.order ?? 0),
-      0
-    );
-
-    const duplicated: Dashboard = {
-      ...dashboard,
-      id: crypto.randomUUID(),
-      name: `${dashboard.name} (Copy)`,
-      isDefault: false,
-      createdAt: Date.now(),
-      order: maxOrder + 1,
-    };
-
-    saveDashboard(duplicated)
-      .then(() => {
-        addToast(`Board "${dashboard.name}" duplicated`);
-      })
-      .catch((err) => {
-        console.error('Duplicate failed:', err);
-        addToast('Duplicate failed', 'error');
-      });
-  };
-
-  const renameDashboard = (id: string, name: string) => {
-    if (!user) {
-      addToast('Must be signed in to rename', 'error');
-      return;
-    }
-
-    const dashboard = dashboards.find((d) => d.id === id);
-    if (!dashboard) return;
-
-    const updated = { ...dashboard, name };
-
-    // Update local state immediately
-    setDashboards((prev) => prev.map((d) => (d.id === id ? updated : d)));
-
-    if (activeId === id) {
-      lastLocalUpdateAt.current = Date.now();
-    }
-
-    saveDashboard(updated)
-      .then(() => {
-        addToast('Dashboard renamed');
-      })
-      .catch((err) => {
-        console.error('Rename failed:', err);
-        addToast('Rename failed', 'error');
-        // Revert
-        setDashboards((prev) => prev.map((d) => (d.id === id ? dashboard : d)));
-      });
-  };
-
-  const reorderDashboards = (ids: string[]) => {
-    if (!user) return;
-
-    const updatedDashboards: Dashboard[] = [];
-    ids.forEach((id, index) => {
-      const db = dashboards.find((d) => d.id === id);
-      if (db) {
-        updatedDashboards.push({ ...db, order: index });
+  const deleteDashboard = useCallback(
+    (id: string) => {
+      if (!user) {
+        addToast('Must be signed in to delete', 'error');
+        return;
       }
-    });
 
-    // Update local state
-    setDashboards((prev) => {
-      const next = [...prev];
-      updatedDashboards.forEach((updated) => {
-        const index = next.findIndex((d) => d.id === updated.id);
-        if (index >= 0) next[index] = updated;
+      deleteDashboardFirestore(id)
+        .then(() => {
+          if (activeId === id) {
+            const filtered = dashboards.filter((d) => d.id !== id);
+            setActiveId(filtered.length > 0 ? filtered[0].id : null);
+          }
+          addToast('Dashboard removed');
+        })
+        .catch((err) => {
+          console.error('Delete failed:', err);
+          addToast('Delete failed', 'error');
+        });
+    },
+    [user, activeId, dashboards, deleteDashboardFirestore, addToast]
+  );
+
+  const duplicateDashboard = useCallback(
+    (id: string) => {
+      if (!user) {
+        addToast('Must be signed in to duplicate', 'error');
+        return;
+      }
+
+      const dashboard = dashboards.find((d) => d.id === id);
+      if (!dashboard) return;
+
+      const maxOrder = dashboards.reduce(
+        (max, db) => Math.max(max, db.order ?? 0),
+        0
+      );
+
+      const duplicated: Dashboard = {
+        ...dashboard,
+        id: crypto.randomUUID(),
+        name: `${dashboard.name} (Copy)`,
+        isDefault: false,
+        createdAt: Date.now(),
+        order: maxOrder + 1,
+      };
+
+      saveDashboard(duplicated)
+        .then(() => {
+          addToast(`Board "${dashboard.name}" duplicated`);
+        })
+        .catch((err) => {
+          console.error('Duplicate failed:', err);
+          addToast('Duplicate failed', 'error');
+        });
+    },
+    [user, dashboards, saveDashboard, addToast]
+  );
+
+  const renameDashboard = useCallback(
+    (id: string, name: string) => {
+      if (!user) {
+        addToast('Must be signed in to rename', 'error');
+        return;
+      }
+
+      const dashboard = dashboards.find((d) => d.id === id);
+      if (!dashboard) return;
+
+      const updated = { ...dashboard, name };
+
+      // Update local state immediately
+      setDashboards((prev) => prev.map((d) => (d.id === id ? updated : d)));
+
+      if (activeId === id) {
+        lastLocalUpdateAt.current = Date.now();
+      }
+
+      saveDashboard(updated)
+        .then(() => {
+          addToast('Dashboard renamed');
+        })
+        .catch((err) => {
+          console.error('Rename failed:', err);
+          addToast('Rename failed', 'error');
+          // Revert
+          setDashboards((prev) =>
+            prev.map((d) => (d.id === id ? dashboard : d))
+          );
+        });
+    },
+    [user, dashboards, activeId, saveDashboard, addToast]
+  );
+
+  const reorderDashboards = useCallback(
+    (ids: string[]) => {
+      if (!user) return;
+
+      const updatedDashboards: Dashboard[] = [];
+      ids.forEach((id, index) => {
+        const db = dashboards.find((d) => d.id === id);
+        if (db) {
+          updatedDashboards.push({ ...db, order: index });
+        }
       });
-      return next.sort((a, b) => {
-        const orderA = a.order ?? 0;
-        const orderB = b.order ?? 0;
-        if (orderA !== orderB) return orderA - orderB;
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return (b.createdAt || 0) - (a.createdAt || 0);
+
+      // Update local state
+      setDashboards((prev) => {
+        const next = [...prev];
+        updatedDashboards.forEach((updated) => {
+          const index = next.findIndex((d) => d.id === updated.id);
+          if (index >= 0) next[index] = updated;
+        });
+        return next.sort((a, b) => {
+          const orderA = a.order ?? 0;
+          const orderB = b.order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
+          if (a.isDefault && !b.isDefault) return -1;
+          if (!a.isDefault && b.isDefault) return 1;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
       });
-    });
 
-    // Save to Firestore
-    void saveDashboards(updatedDashboards).catch((err) => {
-      console.error('Failed to save reordered dashboards:', err);
-    });
-  };
+      // Save to Firestore
+      void saveDashboards(updatedDashboards).catch((err) => {
+        console.error('Failed to save reordered dashboards:', err);
+      });
+    },
+    [user, dashboards, saveDashboards]
+  );
 
-  const setDefaultDashboard = (id: string) => {
-    if (!user) return;
+  const setDefaultDashboard = useCallback(
+    (id: string) => {
+      if (!user) return;
 
-    const updatedDashboards = dashboards.map((db) => ({
-      ...db,
-      isDefault: db.id === id,
-    }));
+      const updatedDashboards = dashboards.map((db) => ({
+        ...db,
+        isDefault: db.id === id,
+      }));
 
-    // Update local state
-    setDashboards(
-      [...updatedDashboards].sort((a, b) => {
-        const orderA = a.order ?? 0;
-        const orderB = b.order ?? 0;
-        if (orderA !== orderB) return orderA - orderB;
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      })
-    );
+      // Update local state
+      setDashboards(
+        [...updatedDashboards].sort((a, b) => {
+          const orderA = a.order ?? 0;
+          const orderB = b.order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
+          if (a.isDefault && !b.isDefault) return -1;
+          if (!a.isDefault && b.isDefault) return 1;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        })
+      );
 
-    // Save to Firestore
-    void saveDashboards(updatedDashboards).catch((err) => {
-      console.error('Failed to save default dashboard status:', err);
-    });
+      // Save to Firestore
+      void saveDashboards(updatedDashboards).catch((err) => {
+        console.error('Failed to save default dashboard status:', err);
+      });
 
-    addToast('Default board updated');
-  };
+      addToast('Default board updated');
+    },
+    [user, dashboards, saveDashboards, addToast]
+  );
 
-  const loadDashboard = (id: string) => {
-    setActiveId(id);
-    addToast('Board loaded');
-  };
+  const loadDashboard = useCallback(
+    (id: string) => {
+      setActiveId(id);
+      addToast('Board loaded');
+    },
+    [addToast]
+  );
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
-  const addWidget = (type: WidgetType, initialData?: Partial<WidgetData>) => {
-    if (!activeId) return;
-    lastLocalUpdateAt.current = Date.now();
+  const addWidget = useCallback(
+    (type: WidgetType, initialData?: Partial<WidgetData>) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
 
-    setDashboards((prev) =>
-      prev.map((d) => {
-        if (d.id !== activeId) return d;
-        const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
-        const defaultTransparency =
-          d.settings?.defaultWidgetTransparency ?? 0.2;
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
 
-        const defaultPosition = {
-          x: 150 + d.widgets.length * 20,
-          y: 150 + d.widgets.length * 20,
-        };
+          const defaultPosition = {
+            x: 150 + d.widgets.length * 20,
+            y: 150 + d.widgets.length * 20,
+          };
 
-        const defaults = WIDGET_DEFAULTS[type] || {};
+          const defaults = WIDGET_DEFAULTS[type] || {};
 
-        const newWidget: WidgetData = {
-          id: crypto.randomUUID(),
-          type,
-          x: initialData?.x ?? defaultPosition.x,
-          y: initialData?.y ?? defaultPosition.y,
-          w: initialData?.w ?? defaults.w ?? 200,
-          h: initialData?.h ?? defaults.h ?? 200,
-          flipped: false,
-          z: maxZ + 1,
-          transparency: initialData?.transparency ?? defaultTransparency,
-          ...defaults,
-          ...initialData,
-          config: {
-            ...(defaults.config ?? {}),
-            ...(initialData?.config ?? {}),
-          },
-        } as WidgetData;
-        return { ...d, widgets: [...d.widgets, newWidget] };
-      })
-    );
-  };
+          const newWidget: WidgetData = {
+            id: crypto.randomUUID(),
+            type,
+            x: initialData?.x ?? defaultPosition.x,
+            y: initialData?.y ?? defaultPosition.y,
+            w: initialData?.w ?? defaults.w ?? 200,
+            h: initialData?.h ?? defaults.h ?? 200,
+            flipped: false,
+            z: maxZ + 1,
+            ...defaults,
+            ...initialData,
+            config: {
+              ...(defaults.config ?? {}),
+              ...(initialData?.config ?? {}),
+            },
+          } as WidgetData;
+          return { ...d, widgets: [...d.widgets, newWidget] };
+        })
+      );
+    },
+    [activeId]
+  );
 
-  const removeWidget = (id: string) => {
-    if (!activeId) return;
-    lastLocalUpdateAt.current = Date.now();
-    setDashboards((prev) =>
-      prev.map((d) =>
-        d.id === activeId
-          ? { ...d, widgets: d.widgets.filter((w) => w.id !== id) }
-          : d
-      )
-    );
-  };
+  const removeWidget = useCallback(
+    (id: string) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+      setDashboards((prev) =>
+        prev.map((d) =>
+          d.id === activeId
+            ? { ...d, widgets: d.widgets.filter((w) => w.id !== id) }
+            : d
+        )
+      );
+    },
+    [activeId]
+  );
 
-  const duplicateWidget = (id: string) => {
-    if (!activeId) return;
-    lastLocalUpdateAt.current = Date.now();
-    setDashboards((prev) =>
-      prev.map((d) => {
-        if (d.id !== activeId) return d;
-        const target = d.widgets.find((w) => w.id === id);
-        if (!target) return d;
+  const duplicateWidget = useCallback(
+    (id: string) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          const target = d.widgets.find((w) => w.id === id);
+          if (!target) return d;
 
-        const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
-        const duplicated: WidgetData = {
-          ...target,
-          id: crypto.randomUUID(),
-          x: target.x + 20,
-          y: target.y + 20,
-          z: maxZ + 1,
-          config: JSON.parse(JSON.stringify(target.config)) as WidgetConfig,
-        };
-        return { ...d, widgets: [...d.widgets, duplicated] };
-      })
-    );
-  };
+          const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+          const duplicated: WidgetData = {
+            ...target,
+            id: crypto.randomUUID(),
+            x: target.x + 20,
+            y: target.y + 20,
+            z: maxZ + 1,
+            config: JSON.parse(JSON.stringify(target.config)) as WidgetConfig,
+          };
+          return { ...d, widgets: [...d.widgets, duplicated] };
+        })
+      );
+    },
+    [activeId]
+  );
 
-  const removeWidgets = (ids: string[]) => {
-    if (!activeId) return;
-    lastLocalUpdateAt.current = Date.now();
-    setDashboards((prev) =>
-      prev.map((d) =>
-        d.id === activeId
-          ? { ...d, widgets: d.widgets.filter((w) => !ids.includes(w.id)) }
-          : d
-      )
-    );
-  };
+  const removeWidgets = useCallback(
+    (ids: string[]) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+      setDashboards((prev) =>
+        prev.map((d) =>
+          d.id === activeId
+            ? { ...d, widgets: d.widgets.filter((w) => !ids.includes(w.id)) }
+            : d
+        )
+      );
+    },
+    [activeId]
+  );
 
-  const clearAllStickers = () => {
+  const clearAllStickers = useCallback(() => {
     if (!activeDashboard) return;
     const stickerWidgetIds = activeDashboard.widgets
       .filter((w) => w.type === 'sticker')
@@ -1061,15 +1144,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     if (stickerWidgetIds.length > 0) {
       removeWidgets(stickerWidgetIds);
     }
-  };
+  }, [activeDashboard, removeWidgets]);
+
+  const clearAllWidgets = useCallback(() => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
+    );
+    addToast('All windows cleared');
+  }, [activeId, addToast]);
 
   const updateWidget = useCallback(
     (id: string, updates: Partial<WidgetData>) => {
-      if (!activeId) return;
+      if (!activeIdRef.current) return;
       lastLocalUpdateAt.current = Date.now();
       setDashboards((prev) =>
         prev.map((d) => {
-          if (d.id !== activeId) return d;
+          if (d.id !== activeIdRef.current) return d;
           return {
             ...d,
             widgets: d.widgets.map((w) =>
@@ -1087,14 +1179,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
     },
-    [activeId]
+    []
   );
 
-  const bringToFront = (id: string) => {
-    if (!activeId) return;
+  const bringToFront = useCallback((id: string) => {
+    if (!activeIdRef.current) return;
 
     setDashboards((prev) => {
-      const active = prev.find((d) => d.id === activeId);
+      const active = prev.find((d) => d.id === activeIdRef.current);
       if (!active) return prev;
 
       const maxZ = active.widgets.reduce((max, w) => Math.max(max, w.z), 0);
@@ -1103,7 +1195,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (target && target.z < maxZ) {
         lastLocalUpdateAt.current = Date.now();
         return prev.map((d) => {
-          if (d.id !== activeId) return d;
+          if (d.id !== activeIdRef.current) return d;
           return {
             ...d,
             widgets: d.widgets.map((w) =>
@@ -1114,131 +1206,221 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return prev;
     });
-  };
+  }, []);
 
-  const moveWidgetLayer = (id: string, direction: 'up' | 'down') => {
-    if (!activeId) return;
+  const moveWidgetLayer = useCallback(
+    (id: string, direction: 'up' | 'down') => {
+      if (!activeIdRef.current) return;
 
-    setDashboards((prev) => {
-      const active = prev.find((d) => d.id === activeId);
-      if (!active) return prev;
+      setDashboards((prev) => {
+        const active = prev.find((d) => d.id === activeIdRef.current);
+        if (!active) return prev;
 
-      // Deep copy widgets to avoid mutation and prepare for sort/modify
-      const widgets = active.widgets.map((w) => ({ ...w }));
+        // Deep copy widgets to avoid mutation and prepare for sort/modify
+        const widgets = active.widgets.map((w) => ({ ...w }));
 
-      // Sort by Z
-      widgets.sort((a, b) => a.z - b.z);
+        // Sort by Z
+        widgets.sort((a, b) => a.z - b.z);
 
-      // Normalize Zs to ensure contiguous 0..N-1
-      widgets.forEach((w, i) => {
-        w.z = i;
+        // Normalize Zs to ensure contiguous 0..N-1
+        widgets.forEach((w, i) => {
+          w.z = i;
+        });
+
+        const idx = widgets.findIndex((w) => w.id === id);
+        if (idx === -1) return prev;
+
+        if (direction === 'up') {
+          if (idx < widgets.length - 1) {
+            // Swap with next
+            widgets[idx].z = idx + 1;
+            widgets[idx + 1].z = idx;
+            lastLocalUpdateAt.current = Date.now();
+          } else {
+            return prev;
+          }
+        } else {
+          // down
+          if (idx > 0) {
+            // Swap with prev
+            widgets[idx].z = idx - 1;
+            widgets[idx - 1].z = idx;
+            lastLocalUpdateAt.current = Date.now();
+          } else {
+            return prev;
+          }
+        }
+
+        return prev.map((d) =>
+          d.id === activeIdRef.current ? { ...d, widgets } : d
+        );
       });
+    },
+    []
+  );
 
-      const idx = widgets.findIndex((w) => w.id === id);
-      if (idx === -1) return prev;
-
-      if (direction === 'up') {
-        if (idx < widgets.length - 1) {
-          // Swap with next
-          widgets[idx].z = idx + 1;
-          widgets[idx + 1].z = idx;
-          lastLocalUpdateAt.current = Date.now();
-        } else {
-          return prev;
-        }
-      } else {
-        // down
-        if (idx > 0) {
-          // Swap with prev
-          widgets[idx].z = idx - 1;
-          widgets[idx - 1].z = idx;
-          lastLocalUpdateAt.current = Date.now();
-        } else {
-          return prev;
-        }
-      }
-
-      return prev.map((d) => (d.id === activeId ? { ...d, widgets } : d));
-    });
-  };
-
-  const setBackground = (bg: string) => {
-    if (!activeId) return;
-    lastLocalUpdateAt.current = Date.now();
-    setDashboards((prev) =>
-      prev.map((d) => (d.id === activeId ? { ...d, background: bg } : d))
-    );
-  };
-
-  const updateDashboardSettings = (updates: Partial<Dashboard['settings']>) => {
-    if (!activeId) return;
+  const setBackground = useCallback((bg: string) => {
+    if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
     setDashboards((prev) =>
       prev.map((d) =>
-        d.id === activeId
+        d.id === activeIdRef.current ? { ...d, background: bg } : d
+      )
+    );
+  }, []);
+
+  const updateDashboardSettings = useCallback(
+    (updates: Partial<Dashboard['settings']>) => {
+      if (!activeIdRef.current) return;
+      lastLocalUpdateAt.current = Date.now();
+      setDashboards((prev) =>
+        prev.map((d) =>
+          d.id === activeIdRef.current
+            ? {
+                ...d,
+                settings: {
+                  ...(d.settings ?? {}),
+                  ...updates,
+                },
+              }
+            : d
+        )
+      );
+    },
+    []
+  );
+
+  const setGlobalStyle = useCallback((style: Partial<GlobalStyle>) => {
+    if (!activeIdRef.current) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeIdRef.current
           ? {
               ...d,
-              settings: {
-                ...(d.settings ?? {}),
-                ...updates,
+              globalStyle: {
+                ...(d.globalStyle ?? DEFAULT_GLOBAL_STYLE),
+                ...style,
               },
             }
           : d
       )
     );
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      dashboards,
+      activeDashboard,
+      toasts,
+      visibleTools,
+      dockItems,
+      loading,
+      gradeFilter,
+      setGradeFilter: handleSetGradeFilter,
+      addToast,
+      removeToast,
+      createNewDashboard,
+      saveCurrentDashboard,
+      deleteDashboard,
+      duplicateDashboard,
+      renameDashboard,
+      loadDashboard,
+      reorderDashboards,
+      setDefaultDashboard,
+      addWidget,
+      removeWidget,
+      duplicateWidget,
+      removeWidgets,
+      updateWidget,
+      bringToFront,
+      moveWidgetLayer,
+      setBackground,
+      updateDashboardSettings,
+      setGlobalStyle,
+      toggleToolVisibility,
+      setAllToolsVisibility,
+      reorderTools,
+      reorderDockItems,
+      clearAllStickers,
+      clearAllWidgets,
+      rosters,
+      activeRosterId,
+      addRoster,
+      updateRoster,
+      deleteRoster,
+      setActiveRoster,
+      addFolder,
+      createFolderWithItems,
+      renameFolder,
+      deleteFolder,
+      addItemToFolder,
+      removeItemFromFolder,
+      moveItemOutOfFolder,
+      reorderFolderItems,
+      shareDashboard,
+      loadSharedDashboard,
+      pendingShareId,
+      clearPendingShare,
+    }),
+    [
+      dashboards,
+      activeDashboard,
+      toasts,
+      visibleTools,
+      dockItems,
+      loading,
+      gradeFilter,
+      handleSetGradeFilter,
+      addToast,
+      removeToast,
+      createNewDashboard,
+      saveCurrentDashboard,
+      deleteDashboard,
+      duplicateDashboard,
+      renameDashboard,
+      loadDashboard,
+      reorderDashboards,
+      setDefaultDashboard,
+      addWidget,
+      removeWidget,
+      duplicateWidget,
+      removeWidgets,
+      updateWidget,
+      bringToFront,
+      moveWidgetLayer,
+      setBackground,
+      updateDashboardSettings,
+      setGlobalStyle,
+      toggleToolVisibility,
+      setAllToolsVisibility,
+      reorderTools,
+      reorderDockItems,
+      clearAllStickers,
+      clearAllWidgets,
+      rosters,
+      activeRosterId,
+      addRoster,
+      updateRoster,
+      deleteRoster,
+      setActiveRoster,
+      addFolder,
+      createFolderWithItems,
+      renameFolder,
+      deleteFolder,
+      addItemToFolder,
+      removeItemFromFolder,
+      moveItemOutOfFolder,
+      reorderFolderItems,
+      shareDashboard,
+      loadSharedDashboard,
+      pendingShareId,
+      clearPendingShare,
+    ]
+  );
 
   return (
-    <DashboardContext.Provider
-      value={{
-        dashboards,
-        activeDashboard,
-        toasts,
-        visibleTools,
-        dockItems,
-        loading,
-        gradeFilter,
-        setGradeFilter: handleSetGradeFilter,
-        addToast,
-        removeToast,
-        createNewDashboard,
-        saveCurrentDashboard,
-        deleteDashboard,
-        duplicateDashboard,
-        renameDashboard,
-        loadDashboard,
-        reorderDashboards,
-        setDefaultDashboard,
-        addWidget,
-        removeWidget,
-        duplicateWidget,
-        removeWidgets,
-        updateWidget,
-        bringToFront,
-        moveWidgetLayer,
-        setBackground,
-        updateDashboardSettings,
-        toggleToolVisibility,
-        setAllToolsVisibility,
-        reorderTools,
-        reorderDockItems,
-        clearAllStickers,
-        rosters,
-        activeRosterId,
-        addRoster,
-        updateRoster,
-        deleteRoster,
-        setActiveRoster,
-        addFolder,
-        createFolderWithItems,
-        renameFolder,
-        deleteFolder,
-        addItemToFolder,
-        removeItemFromFolder,
-        moveItemOutOfFolder,
-        reorderFolderItems,
-      }}
-    >
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );

@@ -2,8 +2,10 @@ import { useCallback, useMemo } from 'react';
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
+  addDoc,
   deleteDoc,
   onSnapshot,
   query,
@@ -98,7 +100,52 @@ class MockDashboardStore {
   }
 }
 
+class MockSharedStore {
+  private static instance: MockSharedStore;
+  private shared: Map<string, Dashboard> = new Map();
+
+  private constructor() {
+    // Private constructor for singleton
+  }
+
+  static getInstance(): MockSharedStore {
+    if (!MockSharedStore.instance) {
+      MockSharedStore.instance = new MockSharedStore();
+    }
+    return MockSharedStore.instance;
+  }
+
+  add(dashboard: Dashboard): string {
+    const id = 'share-' + Date.now();
+    const data = { ...dashboard, id };
+    this.shared.set(id, data);
+    try {
+      sessionStorage.setItem('mock_shared_' + id, JSON.stringify(data));
+    } catch (e) {
+      console.error('Failed to save mock share to storage', e);
+    }
+    return id;
+  }
+
+  get(id: string): Dashboard | undefined {
+    if (this.shared.has(id)) return this.shared.get(id);
+    try {
+      const item = sessionStorage.getItem('mock_shared_' + id);
+      if (item) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const data = JSON.parse(item);
+        this.shared.set(id, data as Dashboard);
+        return data as Dashboard;
+      }
+    } catch (e) {
+      console.error('Failed to load mock share from storage', e);
+    }
+    return undefined;
+  }
+}
+
 const mockStore = MockDashboardStore.getInstance();
+const mockSharedStore = MockSharedStore.getInstance();
 
 export const useFirestore = (userId: string | null) => {
   const dashboardsRef = useMemo(
@@ -203,11 +250,50 @@ export const useFirestore = (userId: string | null) => {
     [dashboardsRef]
   );
 
+  const shareDashboard = useCallback(
+    async (dashboard: Dashboard): Promise<string> => {
+      if (isAuthBypass) {
+        return mockSharedStore.add(dashboard);
+      }
+
+      const shareRef = collection(db, 'shared_boards');
+      // We exclude the ID when creating a new shared document
+      const { id: _id, ...data } = dashboard;
+
+      const docRef = await addDoc(shareRef, {
+        ...data,
+        sharedAt: Date.now(),
+        originalAuthor: userId,
+      });
+      return docRef.id;
+    },
+    [userId]
+  );
+
+  const loadSharedDashboard = useCallback(
+    async (shareId: string): Promise<Dashboard | null> => {
+      if (isAuthBypass) {
+        return mockSharedStore.get(shareId) ?? null;
+      }
+
+      const docRef = doc(db, 'shared_boards', shareId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        return { ...data, id: snap.id } as Dashboard;
+      }
+      return null;
+    },
+    []
+  );
+
   return {
     loadDashboards,
     saveDashboard,
     saveDashboards,
     deleteDashboard,
     subscribeToDashboards,
+    shareDashboard,
+    loadSharedDashboard,
   };
 };

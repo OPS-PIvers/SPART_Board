@@ -19,7 +19,7 @@ import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { Button } from '../common/Button';
-import { WIDGET_PALETTE } from '../../config/colors';
+import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -54,7 +54,7 @@ export const DrawingWidget: React.FC<{
   const config = widget.config as DrawingConfig;
   const {
     mode = 'window',
-    color = '#1e293b',
+    color = STANDARD_COLORS.slate,
     width = 4,
     paths = [],
     customColors = WIDGET_PALETTE.slice(0, 5),
@@ -323,9 +323,7 @@ export const DrawingWidget: React.FC<{
         <div className="h-full flex items-center justify-center bg-slate-50">
           <div className="text-center space-y-2">
             <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-500 font-medium">
-              Preparing overlay mode...
-            </p>
+            <p className="text-xs text-slate-500 ">Preparing overlay mode...</p>
           </div>
         </div>
       );
@@ -356,7 +354,7 @@ export const DrawingWidget: React.FC<{
               >
                 <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
                   <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                  <span className="text-[10px]  uppercase tracking-widest text-slate-700">
                     Annotating
                   </span>
                 </div>
@@ -429,7 +427,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
           <Palette className="w-3 h-3" /> Color Presets
         </label>
         <div className="flex gap-2 px-2">
@@ -452,7 +450,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
           <Pencil className="w-3 h-3" /> Brush Thickness
         </label>
         <div className="flex items-center gap-4 px-2">
@@ -472,14 +470,14 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             }
             className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
           />
-          <span className="w-10 text-center font-mono font-bold text-slate-700 text-sm">
+          <span className="w-10 text-center font-mono  text-slate-700 text-sm">
             {width}px
           </span>
         </div>
       </div>
 
       <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-        <h4 className="text-[10px] font-black text-indigo-700 uppercase mb-2">
+        <h4 className="text-[10px]  text-indigo-700 uppercase mb-2">
           Modes Guide
         </h4>
         <div className="space-y-3">
@@ -487,7 +485,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             <div className="w-5 h-5 bg-white rounded-md flex items-center justify-center shadow-sm shrink-0">
               <Minimize className="w-3 h-3 text-indigo-600" />
             </div>
-            <p className="text-[9px] text-indigo-600 font-medium">
+            <p className="text-[9px] text-indigo-600 ">
               <b>Window:</b> Standard canvas inside the widget box. Best for
               quick sketches and notes.
             </p>
@@ -496,7 +494,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
             <div className="w-5 h-5 bg-indigo-600 rounded-md flex items-center justify-center shadow-sm shrink-0">
               <Maximize className="w-3 h-3 text-white" />
             </div>
-            <p className="text-[9px] text-indigo-600 font-medium">
+            <p className="text-[9px] text-indigo-600 ">
               <b>Overlay:</b> Hides the window and moves the toolbar to the top
               of your screen. Perfect for drawing over other content!
             </p>

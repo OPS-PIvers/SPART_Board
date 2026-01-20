@@ -5,7 +5,9 @@ import {
   ScoreboardConfig,
   ScoreboardTeam,
   RandomConfig,
+  DEFAULT_GLOBAL_STYLE,
 } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
 import { Plus, Minus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
 import { Button } from '../common/Button';
 
@@ -23,7 +25,7 @@ const TEAM_COLORS = [
   'bg-pink-500',
   'bg-indigo-500',
   'bg-orange-500',
-  'bg-teal-600', // Changed from 500 to 600 per review
+  'bg-teal-600',
   'bg-cyan-500',
 ];
 
@@ -96,7 +98,8 @@ const getStyles = (colorClass: string) => {
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScoreboardConfig;
 
   // Auto-migration: If no teams array, convert legacy A/B to teams
@@ -133,10 +136,13 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
+  const scoreFontSize = useScaledFont(widget.w, widget.h, 0.5, 24, 120);
+
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto">
+    <div
+      className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily}`}
+    >
       {teams.map((team) => {
-        // Parse color base for backgrounds
         const colorClass = team.color ?? 'bg-blue-500';
         const styles = getStyles(colorClass);
 
@@ -152,6 +158,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
             <div
               className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
+              style={{ fontSize: `${scoreFontSize}px`, lineHeight: 1 }}
             >
               {team.score}
             </div>
@@ -206,7 +213,6 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     const randomConfig = randomWidget.config as RandomConfig;
     const lastResult = randomConfig.lastResult;
 
-    // Check if result is groups (array of objects with names array)
     if (
       Array.isArray(lastResult) &&
       lastResult.length > 0 &&

@@ -1,6 +1,11 @@
 import React from 'react';
-import { WidgetData, MaterialsConfig } from '../../../types';
+import {
+  WidgetData,
+  MaterialsConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
+import { useScaledFont } from '../../../hooks/useScaledFont';
 import { MATERIAL_ITEMS } from './constants';
 import { MaterialsSettings } from './Settings';
 
@@ -9,7 +14,8 @@ export { MaterialsSettings };
 export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as MaterialsConfig;
   const selectedItems = React.useMemo(
     () => new Set(config.selectedItems || []),
@@ -41,10 +47,12 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
     [selectedItems]
   );
 
+  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 9, 14);
+
   if (displayItems.length === 0) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none">
-        <p className="text-sm font-medium mb-1">No materials selected</p>
+        <p className="text-sm  mb-1">No materials selected</p>
         <p className="text-xs opacity-70">
           Open settings to choose class materials
         </p>
@@ -53,7 +61,9 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
   }
 
   return (
-    <div className="h-full w-full bg-transparent p-3 overflow-y-auto custom-scrollbar select-none">
+    <div
+      className={`h-full w-full bg-transparent p-3 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
+    >
       <div className="flex flex-wrap gap-2 h-full content-start justify-center">
         {displayItems.map((item) => {
           const isActive = activeItems.has(item.id);
@@ -75,16 +85,15 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
                 }`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
-              <span className="text-[10px] md:text-xs font-black uppercase tracking-wide text-center leading-tight">
+              <span
+                className=" uppercase tracking-wide text-center leading-tight"
+                style={{ fontSize: `${labelSize}px` }}
+              >
                 {item.label}
               </span>
             </button>
           );
         })}
-        {/* Spacer elements to keep flex items aligned left/center correctly if last row is not full?
-            Justify-center centers them. The prompt says "grid", but flexbox grid.
-            If we want them to look like a grid but center aligned, this is fine.
-        */}
       </div>
     </div>
   );
