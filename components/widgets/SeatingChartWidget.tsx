@@ -5,10 +5,13 @@ import {
   Armchair,
   LayoutGrid,
   RotateCw,
+  RotateCcw,
   Trash2,
   Monitor,
+  Maximize2,
   Dice5,
   User,
+  Copy,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 
@@ -53,6 +56,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [dragState, setDragState] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [resizeState, setResizeState] = useState<{
+    id: string;
+    width: number;
+    height: number;
+  } | null>(null);
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null); // Furniture ID
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -127,6 +140,27 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
+  const duplicateFurniture = (id: string) => {
+    const item = furniture.find((f) => f.id === id);
+    if (!item) return;
+
+    const newItem: FurnitureItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      x: item.x + 20,
+      y: item.y + 20,
+    };
+
+    // Snap new position to grid to be safe
+    newItem.x = Math.round(newItem.x / gridSize) * gridSize;
+    newItem.y = Math.round(newItem.y / gridSize) * gridSize;
+
+    updateWidget(widget.id, {
+      config: { ...config, furniture: [...furniture, newItem] },
+    });
+    setSelectedId(newItem.id);
+  };
+
   const removeFurniture = (id: string) => {
     const next = furniture.filter((f) => f.id !== id);
     // Remove assignments for this furniture
@@ -152,11 +186,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     if (!item) return;
 
     setSelectedId(id);
+
     // Calculate offset from item top-left
     const startX = e.clientX;
     const startY = e.clientY;
     const origX = item.x;
     const origY = item.y;
+    const currentPos = { x: origX, y: origY };
+
+    // Set initial drag state
+    setDragState({ id, x: origX, y: origY });
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
@@ -169,12 +208,63 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       newX = Math.round(newX / gridSize) * gridSize;
       newY = Math.round(newY / gridSize) * gridSize;
 
-      updateFurniture(id, { x: newX, y: newY });
+      currentPos.x = newX;
+      currentPos.y = newY;
+      setDragState({ id, x: newX, y: newY });
     };
 
     const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+
+      updateFurniture(id, { x: currentPos.x, y: currentPos.y });
+      setDragState(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
+
+  const handleResizeStart = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const item = furniture.find((f) => f.id === id);
+    if (!item) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = item.width;
+    const startH = item.height;
+    const currentSize = { w: startW, h: startH };
+
+    setResizeState({ id, width: startW, height: startH });
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      let newW = startW + dx;
+      let newH = startH + dy;
+
+      // Snap to grid
+      newW = Math.round(newW / gridSize) * gridSize;
+      newH = Math.round(newH / gridSize) * gridSize;
+
+      // Min size constraint
+      if (newW < gridSize) newW = gridSize;
+      if (newH < gridSize) newH = gridSize;
+
+      currentSize.w = newW;
+      currentSize.h = newH;
+      setResizeState({ id, width: newW, height: newH });
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+
+      updateFurniture(id, { width: currentSize.w, height: currentSize.h });
+      setResizeState(null);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -398,6 +488,12 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         >
           {furniture.map((item) => {
             const assigned = getAssignedStudents(item.id);
+            const displayX = dragState?.id === item.id ? dragState.x : item.x;
+            const displayY = dragState?.id === item.id ? dragState.y : item.y;
+            const displayW =
+              resizeState?.id === item.id ? resizeState.width : item.width;
+            const displayH =
+              resizeState?.id === item.id ? resizeState.height : item.height;
 
             return (
               <div
@@ -409,41 +505,81 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 }}
                 onDrop={(e) => handleStudentDrop(e, item.id)}
                 style={{
-                  left: item.x,
-                  top: item.y,
-                  width: item.width,
-                  height: item.height,
+                  left: displayX,
+                  top: displayY,
+                  width: displayW,
+                  height: displayH,
                   transform: `rotate(${item.rotation}deg)`,
                 }}
                 className={`${getFurnitureStyle(item)} ${mode === 'setup' ? 'cursor-move' : ''}`}
               >
-                {/* Rotation Handle (only in Setup & Selected) */}
+                {/* Resize Handle */}
                 {mode === 'setup' && selectedId === item.id && (
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-1 bg-white shadow-md rounded-full p-1 border border-slate-200 z-50">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateFurniture(item.id, {
-                          rotation: (item.rotation + 45) % 360,
-                        });
-                      }}
-                      className="p-1 hover:bg-slate-100 rounded-full text-slate-600"
-                      title="Rotate"
-                    >
-                      <RotateCw className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFurniture(item.id);
-                      }}
-                      className="p-1 hover:bg-red-50 rounded-full text-red-500"
-                      title="Remove"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                  <div
+                    onPointerDown={(e) => handleResizeStart(e, item.id)}
+                    className="absolute -bottom-2 -right-2 w-6 h-6 flex items-center justify-center cursor-nwse-resize z-50 bg-white shadow rounded-full border border-slate-200 hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors"
+                  >
+                    <Maximize2 className="w-3 h-3 rotate-90" />
                   </div>
                 )}
+
+                {/* Floating Menu */}
+                {mode === 'setup' &&
+                  selectedId === item.id &&
+                  !dragState &&
+                  !resizeState && (
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateFurniture(item.id, {
+                            rotation: (item.rotation - 45 + 360) % 360,
+                          });
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                        title="Rotate Left"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateFurniture(item.id, {
+                            rotation: (item.rotation + 45) % 360,
+                          });
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                        title="Rotate Right"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+
+                      <div className="w-px h-4 bg-slate-200 mx-0.5" />
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          duplicateFurniture(item.id);
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFurniture(item.id);
+                        }}
+                        className="p-1.5 hover:bg-red-50 rounded-full text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                 {/* Content */}
                 <div className="flex flex-col items-center justify-center p-1 w-full h-full overflow-hidden pointer-events-none">
