@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { playTimerAlert, resumeAudio, getAudioCtx } from '../../utils/timeToolAudio';
+import {
+  playTimerAlert,
+  resumeAudio,
+  getAudioCtx,
+} from '../../utils/timeToolAudio';
 
 describe('timeToolAudio', () => {
   let ctx: any;
@@ -13,9 +19,15 @@ describe('timeToolAudio', () => {
         currentTime = 100;
         destination = {};
         // Initial stub methods, will be overridden by spies on the instance
-        createOscillator() { return {}; }
-        createGain() { return {}; }
-        resume() { return Promise.resolve(); }
+        createOscillator() {
+          return {};
+        }
+        createGain() {
+          return {};
+        }
+        resume() {
+          return Promise.resolve();
+        }
       };
     }
 

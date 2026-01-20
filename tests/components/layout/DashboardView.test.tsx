@@ -2,11 +2,21 @@ import { render, fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardView } from '../../../components/layout/DashboardView';
 import { useDashboard } from '../../../context/useDashboard';
+import { useAuth } from '../../../context/useAuth';
+import { useLiveSession } from '../../../hooks/useLiveSession';
 import { Dashboard } from '../../../types';
 
 // Mock context
 vi.mock('../../../context/useDashboard', () => ({
   useDashboard: vi.fn(),
+}));
+
+vi.mock('../../../context/useAuth', () => ({
+  useAuth: vi.fn(),
+}));
+
+vi.mock('../../../hooks/useLiveSession', () => ({
+  useLiveSession: vi.fn(),
 }));
 
 // Mock child components
@@ -49,6 +59,20 @@ describe('DashboardView Gestures & Navigation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: { uid: 'teacher-1' },
+    });
+    (useLiveSession as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      session: null,
+      students: [],
+      startSession: vi.fn(),
+      updateSessionConfig: vi.fn(),
+      updateSessionBackground: vi.fn(),
+      endSession: vi.fn(),
+      removeStudent: vi.fn(),
+      toggleFreezeStudent: vi.fn(),
+      toggleGlobalFreeze: vi.fn(),
+    });
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: mockDashboards[1], // Start at middle board
       dashboards: mockDashboards,
@@ -56,6 +80,11 @@ describe('DashboardView Gestures & Navigation', () => {
       addWidget: mockAddWidget,
       loadDashboard: mockLoadDashboard,
       removeToast: vi.fn(),
+      updateWidget: vi.fn(),
+      removeWidget: vi.fn(),
+      duplicateWidget: vi.fn(),
+      bringToFront: vi.fn(),
+      addToast: vi.fn(),
     });
   });
 
