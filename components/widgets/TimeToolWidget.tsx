@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TimeToolConfig, WidgetData } from '../../types';
+import {
+  TimeToolConfig,
+  WidgetData,
+  WorkSymbolsConfig,
+  WidgetConfig,
+} from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
@@ -10,7 +15,7 @@ interface Props {
 }
 
 export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
   const [showSoundPicker, setShowSoundPicker] = useState(false);
 
@@ -86,6 +91,27 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
           if (next === 0) {
             handleStop(0);
             playTimerAlert(sound);
+
+            // Auto-switch voice level if configured
+            if (
+              config.timerEndVoiceLevel !== undefined &&
+              config.timerEndVoiceLevel !== null &&
+              activeDashboard
+            ) {
+              const wsWidget = activeDashboard.widgets.find(
+                (w) => w.type === 'workSymbols'
+              );
+              if (wsWidget) {
+                const newConfig = {
+                  ...(wsWidget.config || {}),
+                  voiceLevel: config.timerEndVoiceLevel,
+                } as unknown as WorkSymbolsConfig;
+
+                updateWidget(wsWidget.id, {
+                  config: newConfig as unknown as WidgetConfig,
+                });
+              }
+            }
           }
         } else {
           next = base + delta;
@@ -103,6 +129,9 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     config.mode,
     config.selectedSound,
     handleStop,
+    activeDashboard,
+    config.timerEndVoiceLevel,
+    updateWidget,
   ]);
 
   const formatTime = (totalSeconds: number) => {
@@ -352,6 +381,74 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
+  const { updateWidget, activeDashboard } = useDashboard();
+  const config = widget.config as TimeToolConfig;
+  const { timerEndVoiceLevel } = config;
+
+  const hasWorkSymbols = activeDashboard?.widgets.some(
+    (w) => w.type === 'workSymbols'
+  );
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Timer Completion Action
+        </label>
+
+        {!hasWorkSymbols ? (
+          <div className="text-xs text-amber-500 bg-amber-50 p-2 rounded-lg border border-amber-100 flex items-center gap-2">
+            <span>
+              ⚠️ Add a &quot;Work Symbols&quot; widget to use this feature.
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-500 mb-2">
+              Automatically set Voice Level when timer ends:
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndVoiceLevel: null },
+                  })
+                }
+                className={`p-2 rounded-lg text-[10px] font-bold uppercase border-2 transition-colors ${
+                  timerEndVoiceLevel === null ||
+                  timerEndVoiceLevel === undefined
+                    ? 'border-slate-400 bg-slate-100 text-slate-600'
+                    : 'border-slate-100 text-slate-400 hover:border-slate-200'
+                }`}
+              >
+                No Change
+              </button>
+              {[0, 1, 2, 3, 4].map((level) => (
+                <button
+                  key={level}
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      config: { ...config, timerEndVoiceLevel: level },
+                    })
+                  }
+                  className={`p-2 rounded-lg text-[10px] font-bold uppercase border-2 transition-colors ${
+                    timerEndVoiceLevel === level
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-600'
+                      : 'border-slate-100 text-slate-400 hover:border-slate-200'
+                  }`}
+                >
+                  Level {level}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

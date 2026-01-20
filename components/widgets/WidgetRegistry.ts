@@ -23,7 +23,7 @@
 import React from 'react';
 import { WidgetData, WidgetType } from '@/types';
 import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimeToolWidget } from './TimeToolWidget';
+import { TimeToolWidget, TimeToolSettings } from './TimeToolWidget';
 import { TrafficLightWidget } from './TrafficLightWidget';
 import { TextWidget, TextSettings } from './TextWidget';
 import { SoundWidget, SoundSettings } from './SoundWidget';
@@ -119,7 +119,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   miniApp: MiniAppSettings,
   stickers: StickerSettings,
   'sticker-library': StickerLibrarySettings,
-  'time-tool': DefaultSettings,
+  'time-tool': TimeToolSettings,
   traffic: DefaultSettings,
   workSymbols: DefaultSettings,
   schedule: DefaultSettings,
