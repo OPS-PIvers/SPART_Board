@@ -48,6 +48,7 @@ export const DashboardView: React.FC = () => {
   const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
   const gestureCurrent = React.useRef<{ x: number; y: number } | null>(null);
   const isFourFingerGesture = React.useRef(false);
+  const MIN_SWIPE_DISTANCE_PX = 100;
 
   const currentIndex = useMemo(() => {
     if (!activeDashboard) return -1;
@@ -56,10 +57,41 @@ export const DashboardView: React.FC = () => {
 
   React.useEffect(() => {
     setIsMinimized(false);
-  }, [activeDashboard?.id]);
+  }, [activeDashboard?.id, currentIndex]);
+
+  // Keyboard Navigation
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt + M: Toggle minimize
+      if (e.altKey && (e.key === 'm' || e.key === 'M')) {
+        e.preventDefault();
+        setIsMinimized((prev) => !prev);
+        return;
+      }
+
+      // Alt + Left/Right: Navigate boards
+      if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (currentIndex > 0) {
+          loadDashboard(dashboards[currentIndex - 1].id);
+        }
+      } else if (e.altKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (currentIndex < dashboards.length - 1) {
+          loadDashboard(dashboards[currentIndex + 1].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, dashboards, loadDashboard]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 4) {
+      // e.preventDefault(); // Note: Calling preventDefault here might block scrolling/zooming if not careful, but for 4-finger gestures it's usually safe to claim.
+      // However, React synthetic events might complain if we call it asynchronously or late.
+      // For now, we just track.
       isFourFingerGesture.current = true;
       gestureStart.current = {
         x: e.touches[0].clientX,
@@ -78,6 +110,15 @@ export const DashboardView: React.FC = () => {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (isFourFingerGesture.current && gestureStart.current) {
+      // Verify we still have 4 fingers
+      if (e.touches.length !== 4) {
+        isFourFingerGesture.current = false;
+        gestureStart.current = null;
+        gestureCurrent.current = null;
+        return;
+      }
+
+      e.preventDefault(); // Prevent native browser gestures (like back/forward) when using 4 fingers
       gestureCurrent.current = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
@@ -96,10 +137,8 @@ export const DashboardView: React.FC = () => {
       const absX = Math.abs(deltaX);
       const absY = Math.abs(deltaY);
 
-      const THRESHOLD = 100; // px
-
       // Determine dominant direction
-      if (absY > absX && absY > THRESHOLD) {
+      if (absY > absX && absY > MIN_SWIPE_DISTANCE_PX) {
         // Vertical Swipe
         if (deltaY > 0) {
           // Swipe Down -> Minimize
@@ -108,7 +147,7 @@ export const DashboardView: React.FC = () => {
           // Swipe Up -> Restore
           setIsMinimized(false);
         }
-      } else if (absX > absY && absX > THRESHOLD) {
+      } else if (absX > absY && absX > MIN_SWIPE_DISTANCE_PX) {
         // Horizontal Swipe
         if (deltaX < 0) {
           // Swipe Left -> Next Board
@@ -280,7 +319,8 @@ export const DashboardView: React.FC = () => {
         key={activeDashboard.id}
         className={`relative w-full h-full ${animationClass} transition-all duration-500 ease-in-out`}
         style={{
-          transform: isMinimized ? 'translateY(100vh) scale(0.8)' : 'none',
+          transform: isMinimized ? 'translateY(80vh)' : 'none',
+          transformOrigin: 'bottom center',
           opacity: isMinimized ? 0 : 1,
           pointerEvents: isMinimized ? 'none' : 'auto',
         }}
