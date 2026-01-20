@@ -9,7 +9,7 @@ export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as SeatingChartConfig;
-  const { rosterMode = 'class' } = config;
+  const { rosterMode = 'class', names = '' } = config;
 
   const handleClearAssignments = () => {
     if (confirm('Clear all student assignments?')) {
@@ -37,6 +37,24 @@ export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
           })
         }
       />
+
+      {rosterMode === 'custom' && (
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+            Custom Roster
+          </label>
+          <textarea
+            value={names}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, names: e.target.value },
+              })
+            }
+            placeholder="Enter student names (one per line)..."
+            className="w-full h-40 p-3 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue-primary resize-none font-sans"
+          />
+        </div>
+      )}
 
       <div className="space-y-3">
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">

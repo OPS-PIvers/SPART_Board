@@ -81,9 +81,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         `${s.firstName} ${s.lastName}`.trim()
       );
     }
-    // TODO: Implement custom roster text area in settings if needed
+
+    if (rosterMode === 'custom' && config.names) {
+      return config.names
+        .split('\n')
+        .map((n) => n.trim())
+        .filter((n) => n !== '');
+    }
+
     return [];
-  }, [activeRoster, rosterMode]);
+  }, [activeRoster, rosterMode, config.names]);
 
   // Determine unassigned students
   const assignedStudentNames = new Set(Object.keys(assignments));

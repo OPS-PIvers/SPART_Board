@@ -368,6 +368,7 @@ export interface SeatingChartConfig {
   assignments: Record<string, string>; // studentId -> furnitureId
   gridSize: number;
   rosterMode?: 'class' | 'custom';
+  names?: string; // Line separated names for custom roster
 }
 
 // Union of all widget configs

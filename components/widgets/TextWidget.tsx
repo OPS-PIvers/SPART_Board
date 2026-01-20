@@ -44,7 +44,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           updateWidget(widget.id, {
             config: {
               ...config,
-              content: e.currentTarget.innerHTML,
+              content: sanitizeHtml(e.currentTarget.innerHTML),
             } as TextConfig,
           })
         }
