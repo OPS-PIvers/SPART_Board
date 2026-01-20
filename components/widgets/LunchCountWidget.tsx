@@ -123,11 +123,11 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             <div>
               <h3
                 id="report-modal-title"
-                className="font-black text-lg uppercase tracking-tight"
+                className=" text-lg uppercase tracking-tight"
               >
                 Submit Lunch Report
               </h3>
-              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">
+              <p className="text-white/70 text-[10px]  uppercase tracking-widest">
                 Review and add notes
               </p>
             </div>
@@ -145,46 +145,42 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <span className="text-[10px]  text-slate-400 uppercase tracking-widest">
                 Date
               </span>
-              <p className="text-sm font-bold text-slate-700">{data.date}</p>
+              <p className="text-sm  text-slate-700">{data.date}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <span className="text-[10px]  text-slate-400 uppercase tracking-widest">
                 Staff Name
               </span>
-              <p className="text-sm font-bold text-slate-700">
-                {data.staffName}
-              </p>
+              <p className="text-sm  text-slate-700">{data.staffName}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-2xl border border-orange-100">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-orange-600 uppercase">
+                <span className="text-[10px]  text-orange-600 uppercase">
                   Hot Lunch
                 </span>
-                <span className="text-[11px] font-bold text-orange-800 line-clamp-1">
+                <span className="text-[11px]  text-orange-800 line-clamp-1">
                   {data.hotLunchName}
                 </span>
               </div>
-              <span className="text-2xl font-black text-orange-600">
-                {data.hotLunch}
-              </span>
+              <span className="text-2xl  text-orange-600">{data.hotLunch}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-emerald-600 uppercase">
+                <span className="text-[10px]  text-emerald-600 uppercase">
                   Bento Box
                 </span>
-                <span className="text-[11px] font-bold text-emerald-800 line-clamp-1">
+                <span className="text-[11px]  text-emerald-800 line-clamp-1">
                   {data.bentoBoxName}
                 </span>
               </div>
-              <span className="text-2xl font-black text-emerald-600">
+              <span className="text-2xl  text-emerald-600">
                 {data.bentoBox}
               </span>
             </div>
@@ -194,11 +190,11 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
                 <div>
                   <label
                     htmlFor="extra-pizza-input"
-                    className="text-[10px] font-black text-purple-600 uppercase block mb-1"
+                    className="text-[10px]  text-purple-600 uppercase block mb-1"
                   >
                     Extra Pizza Slices
                   </label>
-                  <p className="text-[9px] text-purple-400 font-bold uppercase">
+                  <p className="text-[9px] text-purple-400  uppercase">
                     Optional
                   </p>
                 </div>
@@ -213,7 +209,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
                     )
                   }
                   placeholder="0"
-                  className="w-20 p-2 text-center text-lg font-black bg-white border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400/20"
+                  className="w-20 p-2 text-center text-lg  bg-white border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400/20"
                 />
               </div>
             )}
@@ -222,7 +218,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           <div className="space-y-2">
             <label
               htmlFor="report-notes"
-              className="text-[10px] font-black text-slate-400 uppercase tracking-widest"
+              className="text-[10px]  text-slate-400 uppercase tracking-widest"
             >
               Additional Notes
             </label>
@@ -231,7 +227,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Gluten Free, Field Trips, etc..."
-              className="w-full h-24 p-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-brand-blue-primary/20 focus:border-brand-blue-primary transition-all resize-none"
+              className="w-full h-24 p-4 text-sm  bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-brand-blue-primary/20 focus:border-brand-blue-primary transition-all resize-none"
             />
           </div>
 
@@ -239,7 +235,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             <Button
               onClick={onClose}
               variant="secondary"
-              className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest"
+              className="flex-1 py-4 rounded-2xl  uppercase tracking-widest"
               disabled={isSubmitting}
             >
               Cancel
@@ -249,7 +245,7 @@ const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
                 void onSubmit(notes, extraPizza === '' ? 0 : extraPizza)
               }
               variant="success"
-              className="flex-[2] py-4 rounded-2xl font-black uppercase tracking-widest"
+              className="flex-[2] py-4 rounded-2xl  uppercase tracking-widest"
               isLoading={isSubmitting}
               icon={<Send className="w-4 h-4" />}
             >
@@ -622,7 +618,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         {activeRoster && rosterMode === 'class' && (
           <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 animate-in fade-in slide-in-from-top-1 ml-auto">
             <Box className="w-2 h-2 text-orange-500" />
-            <span className="text-[8px] font-black uppercase text-orange-600 tracking-wider">
+            <span className="text-[8px]  uppercase text-orange-600 tracking-wider">
               {activeRoster.name}
             </span>
           </div>
@@ -639,14 +635,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             className="bg-orange-50 border-2 border-dashed border-orange-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
           >
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[9px] font-black uppercase text-orange-400 tracking-tighter">
+              <span className="text-[9px]  uppercase text-orange-400 tracking-tighter">
                 Hot Lunch
               </span>
-              <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+              <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full ">
                 {Object.values(assignments).filter((v) => v === 'hot').length}
               </span>
             </div>
-            <div className="text-[10px] font-bold text-orange-800 leading-tight mb-3 line-clamp-2 italic">
+            <div className="text-[10px]  text-orange-800 leading-tight mb-3 line-clamp-2 italic">
               {menuDisplay.hot}
             </div>
             <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
@@ -660,7 +656,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
-                    className="px-2 py-1 bg-white border border-orange-100 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing"
+                    className="px-2 py-1 bg-white border border-orange-100 rounded-lg text-[9px]  shadow-sm cursor-grab active:cursor-grabbing"
                   >
                     {name}
                   </div>
@@ -675,14 +671,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             className="bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
           >
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[9px] font-black uppercase text-emerald-400 tracking-tighter">
+              <span className="text-[9px]  uppercase text-emerald-400 tracking-tighter">
                 Bento Box
               </span>
-              <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+              <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full ">
                 {Object.values(assignments).filter((v) => v === 'bento').length}
               </span>
             </div>
-            <div className="text-[10px] font-bold text-emerald-800 leading-tight mb-3 line-clamp-2 italic">
+            <div className="text-[10px]  text-emerald-800 leading-tight mb-3 line-clamp-2 italic">
               {menuDisplay.bento}
             </div>
             <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
@@ -696,7 +692,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
-                    className="px-2 py-1 bg-white border border-emerald-100 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing"
+                    className="px-2 py-1 bg-white border border-emerald-100 rounded-lg text-[9px]  shadow-sm cursor-grab active:cursor-grabbing"
                   >
                     {name}
                   </div>
@@ -711,14 +707,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             className="bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
           >
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[9px] font-black uppercase text-blue-400 tracking-tighter">
+              <span className="text-[9px]  uppercase text-blue-400 tracking-tighter">
                 Home Lunch
               </span>
-              <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+              <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full ">
                 {Object.values(assignments).filter((v) => v === 'home').length}
               </span>
             </div>
-            <div className="text-[10px] font-bold text-blue-800 leading-tight mb-3 italic">
+            <div className="text-[10px]  text-blue-800 leading-tight mb-3 italic">
               Packing from home
             </div>
             <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
@@ -732,7 +728,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
-                    className="px-2 py-1 bg-white border border-blue-100 rounded-lg text-[9px] font-bold shadow-sm cursor-grab active:cursor-grabbing"
+                    className="px-2 py-1 bg-white border border-blue-100 rounded-lg text-[9px]  shadow-sm cursor-grab active:cursor-grabbing"
                   >
                     {name}
                   </div>
@@ -747,7 +743,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           onDrop={(e) => handleDrop(e, null)}
           className="flex-1 bg-white/50 border border-white/30 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
         >
-          <div className="text-[10px] font-black uppercase text-slate-600 mb-4 tracking-widest text-center">
+          <div className="text-[10px]  uppercase text-slate-600 mb-4 tracking-widest text-center">
             Drag Your Name to Your Choice
           </div>
           <div className="flex flex-wrap justify-center gap-2">
@@ -760,7 +756,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   onDragStart={(e) =>
                     e.dataTransfer.setData('studentName', name)
                   }
-                  className="px-4 py-2 bg-white/80 border-b-2 border-slate-200 rounded-xl text-xs font-black shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
+                  className="px-4 py-2 bg-white/80 border-b-2 border-slate-200 rounded-xl text-xs  shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
                 >
                   {name}
                 </div>
@@ -788,14 +784,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           )}
           {syncError && (
             <div
-              className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black px-1 rounded-full border border-white"
+              className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px]  px-1 rounded-full border border-white"
               title={syncError}
             >
               !
             </div>
           )}
         </button>
-        <div className="text-[8px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+        <div className="text-[8px]  text-slate-400 uppercase flex items-center gap-1.5">
           <span>Last Sync</span>
           {config.lastSyncDate && (
             <span className="text-slate-500">
@@ -850,7 +846,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+            <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
               <School className="w-3 h-3" /> School Site
             </label>
             <select
@@ -865,7 +861,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                   },
                 })
               }
-              className="w-full p-2.5 text-xs font-bold border border-slate-200 rounded-xl outline-none bg-white"
+              className="w-full p-2.5 text-xs  border border-slate-200 rounded-xl outline-none bg-white"
             >
               {SCHOOL_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
@@ -877,7 +873,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
 
           <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-indigo-700 uppercase tracking-wider">
+              <span className="text-[10px]  text-indigo-700 uppercase tracking-wider">
                 Manual Mode
               </span>
               <button
@@ -903,7 +899,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                       config: { ...config, manualHotLunch: e.target.value },
                     })
                   }
-                  className="w-full p-2 text-[10px] font-bold border border-indigo-200 rounded-lg outline-none"
+                  className="w-full p-2 text-[10px]  border border-indigo-200 rounded-lg outline-none"
                 />
                 <input
                   placeholder="Bento Box Name"
@@ -913,7 +909,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                       config: { ...config, manualBentoBox: e.target.value },
                     })
                   }
-                  className="w-full p-2 text-[10px] font-bold border border-indigo-200 rounded-lg outline-none"
+                  className="w-full p-2 text-[10px]  border border-indigo-200 rounded-lg outline-none"
                 />
               </div>
             )}
@@ -923,7 +919,7 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
         <div>
           {rosterMode === 'custom' ? (
             <>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+              <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
                 <Users className="w-3 h-3" /> Custom Roster
               </label>
               <textarea
@@ -940,13 +936,13 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                   })
                 }
                 placeholder="Enter one student per line..."
-                className="w-full h-[240px] p-3 text-xs font-bold bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
+                className="w-full h-[240px] p-3 text-xs  bg-white border border-slate-200 rounded-2xl outline-none resize-none leading-relaxed"
               />
             </>
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-center gap-3">
               <Users className="w-8 h-8 text-slate-300" />
-              <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+              <div className="text-[10px]  uppercase text-slate-400 tracking-widest">
                 Using Active Class Roster
               </div>
             </div>

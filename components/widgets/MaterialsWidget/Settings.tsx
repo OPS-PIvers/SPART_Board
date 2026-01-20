@@ -56,12 +56,12 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="flex flex-col gap-4 p-1">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-slate-500 uppercase">
+        <label className="text-xs  text-slate-500 uppercase">
           Available Materials
         </label>
         <button
           onClick={toggleAll}
-          className="text-xs text-blue-500 font-medium hover:underline"
+          className="text-xs text-blue-500  hover:underline"
         >
           {isAllSelected ? 'Deselect All' : 'Select All'}
         </button>
@@ -95,7 +95,7 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
                 }`}
               />
               <span
-                className={`text-sm font-medium truncate ${
+                className={`text-sm  truncate ${
                   isSelected ? 'text-slate-900' : 'text-slate-500'
                 }`}
               >

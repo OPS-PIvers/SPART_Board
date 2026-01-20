@@ -29,7 +29,7 @@ export const QRSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as QRConfig;
   return (
     <div className="space-y-4">
-      <label className="text-xs font-bold text-slate-500 uppercase">
+      <label className="text-xs  text-slate-500 uppercase">
         Destination URL
       </label>
       <input

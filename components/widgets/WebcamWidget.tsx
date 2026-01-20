@@ -105,10 +105,10 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
       {error ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white/50 gap-4">
           <Camera className="w-12 h-12 opacity-20" />
-          <p className="text-sm font-medium">{error}</p>
+          <p className="text-sm ">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs  hover:bg-blue-700 transition-colors"
           >
             Retry Camera
           </button>
@@ -164,7 +164,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
       {showGallery && (
         <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center justify-between p-4 border-b border-white/20 shrink-0">
-            <h3 className="text-white font-black uppercase tracking-widest text-xs">
+            <h3 className="text-white  uppercase tracking-widest text-xs">
               Photo Gallery
             </h3>
             <div className="flex items-center gap-2">

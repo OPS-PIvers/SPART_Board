@@ -38,31 +38,32 @@ import { ToolMetadata, WidgetType, WidgetData, DockFolder } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
-import { isLightBackground } from '../../utils/styleUtils';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
+import { DEFAULT_GLOBAL_STYLE } from '../../types';
 
 /**
  * Custom Label Component for consistent readability
- * Adjusts text color based on background brightness.
+ * Adjusts text color based on background brightness or global settings.
  */
-const DockLabel = ({
-  children,
-  isLight,
-}: {
-  children: React.ReactNode;
-  isLight: boolean;
-}) => (
-  <span
-    className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 ${
-      isLight
-        ? 'text-slate-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]'
-        : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
-    }`}
-  >
-    {children}
-  </span>
-);
+const DockLabel = ({ children }: { children: React.ReactNode }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
+  return (
+    <span
+      className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily}`}
+      style={{
+        color: globalStyle.dockTextColor,
+        textShadow: globalStyle.dockTextShadow
+          ? '0 1px 3px rgba(0,0,0,0.9)'
+          : 'none',
+      }}
+    >
+      {children}
+    </span>
+  );
+};
 
 // Tool Item with Popover Logic
 const ToolDockItem = ({
@@ -75,7 +76,6 @@ const ToolDockItem = ({
   onRemoveFromDock,
   isEditMode,
   onLongPress,
-  isLight,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -86,7 +86,6 @@ const ToolDockItem = ({
   onRemoveFromDock: () => void;
   isEditMode: boolean;
   onLongPress: () => void;
-  isLight: boolean;
 }) => {
   const {
     attributes,
@@ -289,7 +288,7 @@ const ToolDockItem = ({
               </div>
             )}
           </div>
-          <DockLabel isLight={isLight}>{tool.label}</DockLabel>
+          <DockLabel>{tool.label}</DockLabel>
         </button>
       </div>
     </div>
@@ -422,7 +421,6 @@ const FolderItem = ({
   isEditMode,
   onLongPress,
   minimizedWidgetsByType,
-  isLight,
   onRemoveItem,
   onReorder,
 }: {
@@ -433,7 +431,6 @@ const FolderItem = ({
   isEditMode: boolean;
   onLongPress: () => void;
   minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
-  isLight: boolean;
   onRemoveItem: (folderId: string, type: WidgetType) => void;
   onReorder: (folderId: string, newItems: WidgetType[]) => void;
 }) => {
@@ -607,7 +604,7 @@ const FolderItem = ({
               </div>
             )}
           </div>
-          <DockLabel isLight={isLight}>{folder.name}</DockLabel>
+          <DockLabel>{folder.name}</DockLabel>
         </button>
       </div>
     </div>
@@ -786,7 +783,7 @@ export const Dock: React.FC = () => {
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
 
-  const isLight = isLightBackground(activeDashboard?.background);
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -1063,7 +1060,17 @@ export const Dock: React.FC = () => {
             )}
 
             {/* Expanded Toolbar with integrated minimize button */}
-            <GlassCard className="relative z-10 px-4 py-3 rounded-[2rem] flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300">
+            <GlassCard
+              transparency={globalStyle.dockTransparency}
+              cornerRadius={
+                globalStyle.dockBorderRadius === 'full'
+                  ? 'full'
+                  : globalStyle.dockBorderRadius === 'none'
+                    ? 'none'
+                    : globalStyle.dockBorderRadius
+              }
+              className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300"
+            >
               {dockItems.length > 0 ? (
                 <>
                   <DndContext
@@ -1107,7 +1114,6 @@ export const Dock: React.FC = () => {
                               }}
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
-                              isLight={isLight}
                             />
                           );
                         } else {
@@ -1121,7 +1127,6 @@ export const Dock: React.FC = () => {
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
                               minimizedWidgetsByType={minimizedWidgetsByType}
-                              isLight={isLight}
                               onRemoveItem={(folderId, type) =>
                                 moveItemOutOfFolder(
                                   folderId,
@@ -1196,7 +1201,7 @@ export const Dock: React.FC = () => {
                         <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <DockLabel isLight={isLight}>Live</DockLabel>
+                        <DockLabel>Live</DockLabel>
                       </button>
 
                       {/* LIVE POPOVER */}
@@ -1256,9 +1261,7 @@ export const Dock: React.FC = () => {
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel isLight={isLight}>
-                      {classToolMetadata.label}
-                    </DockLabel>
+                    <DockLabel>{classToolMetadata.label}</DockLabel>
                   </button>
 
                   {/* Separator and Minimize Button */}
@@ -1272,7 +1275,7 @@ export const Dock: React.FC = () => {
                     <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <DockLabel isLight={isLight}>Hide</DockLabel>
+                    <DockLabel>Hide</DockLabel>
                   </button>
                 </>
               ) : (
@@ -1297,7 +1300,16 @@ export const Dock: React.FC = () => {
             )}
             <button
               onClick={() => setIsExpanded(true)}
-              className="w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white rounded-full active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40"
+              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300 ${
+                globalStyle.dockBorderRadius === 'none'
+                  ? 'rounded-none'
+                  : globalStyle.dockBorderRadius === 'full'
+                    ? 'rounded-full'
+                    : `rounded-${globalStyle.dockBorderRadius}`
+              }`}
+              style={{
+                backgroundColor: `rgba(45, 63, 137, ${globalStyle.dockTransparency + 0.4})`, // Slightly more opaque than expanded
+              }}
               title="Open Tools"
             >
               <LayoutGrid className="w-6 h-6" />
