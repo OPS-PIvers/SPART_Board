@@ -122,6 +122,11 @@ export interface RoutineStep {
   text: string;
   icon?: string;
   color?: string;
+  attachedWidget?: {
+    type: WidgetType;
+    label: string;
+    config: WidgetConfig;
+  };
 }
 
 // Widget-specific config types
@@ -311,6 +316,7 @@ export interface TimeToolConfig {
   isRunning: boolean;
   startTime?: number | null; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
+  timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
 }
 
 export interface StickerLibraryConfig {

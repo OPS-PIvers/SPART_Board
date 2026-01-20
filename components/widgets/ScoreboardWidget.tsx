@@ -25,7 +25,7 @@ const TEAM_COLORS = [
   'bg-pink-500',
   'bg-indigo-500',
   'bg-orange-500',
-  'bg-teal-600', // Changed from 500 to 600 per review
+  'bg-teal-600',
   'bg-cyan-500',
 ];
 
@@ -136,7 +136,6 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  // Re-integrated dynamic font scaling for the grid layout
   const scoreFontSize = useScaledFont(widget.w, widget.h, 0.5, 24, 120);
 
   return (
@@ -144,10 +143,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily}`}
     >
       {teams.map((team) => {
-        // Parse color base for backgrounds
-
         const colorClass = team.color ?? 'bg-blue-500';
-
         const styles = getStyles(colorClass);
 
         return (
@@ -160,14 +156,12 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             >
               {team.name}
             </div>
-
             <div
               className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
               style={{ fontSize: `${scoreFontSize}px`, lineHeight: 1 }}
             >
               {team.score}
             </div>
-
             <div className="flex gap-2 opacity-100 transition-opacity">
               <button
                 onClick={() => updateScore(team.id, -1)}
@@ -175,7 +169,6 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 <Minus className="w-4 h-4" />
               </button>
-
               <button
                 onClick={() => updateScore(team.id, 1)}
                 className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
@@ -186,11 +179,9 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         );
       })}
-
       {teams.length === 0 && (
         <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2">
           <Trophy className="w-8 h-8 opacity-20" />
-
           <span className="text-xs font-bold uppercase tracking-widest">
             No Teams
           </span>
@@ -222,7 +213,6 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     const randomConfig = randomWidget.config as RandomConfig;
     const lastResult = randomConfig.lastResult;
 
-    // Check if result is groups (array of objects with names array)
     if (
       Array.isArray(lastResult) &&
       lastResult.length > 0 &&
@@ -291,7 +281,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 text-indigo-900">
             <Users className="w-4 h-4" />
-            <span className="text-xs  uppercase tracking-wider">
+            <span className="text-xs font-black uppercase tracking-wider">
               Import from Randomizer
             </span>
           </div>
@@ -309,7 +299,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
           </Button>
         </div>
         {!randomWidget && (
-          <div className="text-[10px] text-indigo-400 ">
+          <div className="text-[10px] text-indigo-400 font-medium">
             Tip: Add a Randomizer widget and create groups to import them here.
           </div>
         )}
@@ -317,12 +307,12 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <label className="text-[10px]  text-slate-400 uppercase tracking-widest block">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
             Teams ({teams.length})
           </label>
           <button
             onClick={resetScores}
-            className="text-[10px]  text-red-500 hover:text-red-600 underline"
+            className="text-[10px] font-bold text-red-500 hover:text-red-600 underline"
           >
             Reset Scores
           </button>
@@ -340,7 +330,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
               <input
                 value={team.name}
                 onChange={(e) => updateTeamName(team.id, e.target.value)}
-                className="flex-1 text-xs  text-slate-700 bg-transparent outline-none"
+                className="flex-1 text-xs font-bold text-slate-700 bg-transparent outline-none"
                 placeholder="Team Name"
               />
               <div className="text-xs font-mono text-slate-400 w-8 text-right">
