@@ -11,8 +11,7 @@ import {
   ChevronRight,
   Copy,
 } from 'lucide-react';
-import { WidgetData, WidgetType, DEFAULT_GLOBAL_STYLE } from '@/types';
-import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, WidgetType, GlobalStyle } from '@/types';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -30,6 +29,12 @@ interface DraggableWindowProps {
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  globalStyle: GlobalStyle;
 }
 
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
@@ -40,17 +45,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   style,
   skipCloseConfirmation = false,
   headerActions,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  addToast,
+  globalStyle,
 }) => {
-  const {
-    updateWidget,
-    removeWidget,
-    duplicateWidget,
-    bringToFront,
-    addToast,
-    activeDashboard,
-  } = useDashboard();
-  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-
   const [isDragging, setIsDragging] = useState(false);
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

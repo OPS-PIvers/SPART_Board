@@ -1,10 +1,14 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
+import { useLiveSession } from '../../hooks/useLiveSession';
 import { Sidebar } from './Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { DEFAULT_GLOBAL_STYLE } from '../../types';
+import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
+
+const EMPTY_STUDENTS: LiveStudent[] = [];
 
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
@@ -37,8 +41,31 @@ const ToastContainer: React.FC = () => {
 };
 
 export const DashboardView: React.FC = () => {
-  const { activeDashboard, dashboards, addWidget, loadDashboard } =
-    useDashboard();
+  const { user } = useAuth();
+  const {
+    activeDashboard,
+    dashboards,
+    addWidget,
+    updateWidget,
+    removeWidget,
+    duplicateWidget,
+    bringToFront,
+    addToast,
+    loadDashboard,
+  } = useDashboard();
+
+  const {
+    session,
+    students,
+    startSession,
+    updateSessionConfig,
+    updateSessionBackground,
+    endSession,
+    removeStudent,
+    toggleFreezeStudent,
+    toggleGlobalFreeze,
+  } = useLiveSession(user?.uid, 'teacher');
+
   const [prevIndex, setPrevIndex] = React.useState<number>(-1);
   const [animationClass, setAnimationClass] =
     React.useState<string>('animate-fade-in');
@@ -325,9 +352,34 @@ export const DashboardView: React.FC = () => {
           pointerEvents: isMinimized ? 'none' : 'auto',
         }}
       >
-        {activeDashboard.widgets.map((widget) => (
-          <WidgetRenderer key={widget.id} widget={widget} />
-        ))}
+        {activeDashboard.widgets.map((widget) => {
+          const isLive =
+            session?.isActive && session?.activeWidgetId === widget.id;
+          return (
+            <WidgetRenderer
+              key={widget.id}
+              widget={widget}
+              isStudentView={false}
+              session={session}
+              isLive={isLive ?? false}
+              students={isLive ? students : EMPTY_STUDENTS}
+              updateSessionConfig={updateSessionConfig}
+              updateSessionBackground={updateSessionBackground}
+              startSession={startSession}
+              endSession={endSession}
+              removeStudent={removeStudent}
+              toggleFreezeStudent={toggleFreezeStudent}
+              toggleGlobalFreeze={toggleGlobalFreeze}
+              updateWidget={updateWidget}
+              removeWidget={removeWidget}
+              duplicateWidget={duplicateWidget}
+              bringToFront={bringToFront}
+              addToast={addToast}
+              globalStyle={globalStyle}
+              dashboardBackground={activeDashboard.background}
+            />
+          );
+        })}
       </div>
 
       <Sidebar />
