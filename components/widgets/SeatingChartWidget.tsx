@@ -55,6 +55,13 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null); // Furniture ID
 
+  // Local state for dragging optimization
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragPosition, setDragPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null
@@ -152,11 +159,18 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     if (!item) return;
 
     setSelectedId(id);
+    setDraggingId(id);
+    setDragPosition({ x: item.x, y: item.y });
+
     // Calculate offset from item top-left
     const startX = e.clientX;
     const startY = e.clientY;
     const origX = item.x;
     const origY = item.y;
+
+    // Use ref to access latest values in callbacks without re-binding listeners
+    let finalX = origX;
+    let finalY = origY;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
@@ -169,12 +183,18 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       newX = Math.round(newX / gridSize) * gridSize;
       newY = Math.round(newY / gridSize) * gridSize;
 
-      updateFurniture(id, { x: newX, y: newY });
+      finalX = newX;
+      finalY = newY;
+      setDragPosition({ x: newX, y: newY });
     };
 
     const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+
+      setDraggingId(null);
+      setDragPosition(null);
+      updateFurniture(id, { x: finalX, y: finalY });
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -398,6 +418,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         >
           {furniture.map((item) => {
             const assigned = getAssignedStudents(item.id);
+            const isDragging = draggingId === item.id && dragPosition;
+            const x = isDragging ? dragPosition.x : item.x;
+            const y = isDragging ? dragPosition.y : item.y;
 
             return (
               <div
@@ -409,8 +432,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 }}
                 onDrop={(e) => handleStudentDrop(e, item.id)}
                 style={{
-                  left: item.x,
-                  top: item.y,
+                  left: x,
+                  top: y,
                   width: item.width,
                   height: item.height,
                   transform: `rotate(${item.rotation}deg)`,
