@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
-import { RotateCcw, Plus, Trash2, Download, Type } from 'lucide-react';
+import {
+  RotateCcw,
+  Plus,
+  Trash2,
+  Download,
+  Type,
+  Users,
+  RefreshCw,
+} from 'lucide-react';
 import { Button } from '../common/Button';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
@@ -111,9 +119,14 @@ const OptionInput: React.FC<OptionInputProps> = ({ label, index, onSave }) => {
 };
 
 export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, addToast } = useDashboard();
+  const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const config = (widget.config || {}) as PollConfig;
   const { question = 'Vote Now!', options = [] } = config;
+
+  const activeRoster = useMemo(
+    () => rosters.find((r) => r.id === activeRosterId),
+    [rosters, activeRosterId]
+  );
 
   // Question local state
   // Using key={question} on input allows removing the useEffect sync
@@ -125,6 +138,30 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         config: { ...config, question: localQuestion } as PollConfig,
       });
     }
+  };
+
+  const importFromRoster = () => {
+    if (!activeRoster) {
+      addToast('No active class roster selected!', 'error');
+      return;
+    }
+
+    if (
+      options.length > 0 &&
+      !confirm('This will replace current options. Continue?')
+    ) {
+      return;
+    }
+
+    const newOptions = activeRoster.students.map((s) => ({
+      label: `${s.firstName} ${s.lastName}`.trim(),
+      votes: 0,
+    }));
+
+    updateWidget(widget.id, {
+      config: { ...config, options: newOptions } as PollConfig,
+    });
+    addToast(`Imported ${newOptions.length} students!`, 'success');
   };
 
   const handleExport = () => {
@@ -187,6 +224,37 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="space-y-6">
+      {/* Import Section */}
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Import from Class
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromRoster}
+            disabled={!activeRoster}
+            title={
+              !activeRoster
+                ? 'Select a class in the Classes widget'
+                : `Import ${activeRoster.name}`
+            }
+            icon={<RefreshCw className="w-3 h-3" />}
+          >
+            Import Class
+          </Button>
+        </div>
+        {!activeRoster && (
+          <div className="text-[10px] text-indigo-400 font-medium">
+            Tip: Select a class in the Classes widget to import student names.
+          </div>
+        )}
+      </div>
+
       {/* Question Edit */}
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
