@@ -62,6 +62,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Global weather data
+    match /global_weather/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Sessions - Teacher owns it, Students can join
     match /sessions/{userId} {
       // Only authenticated users (including anonymous) can read sessions
