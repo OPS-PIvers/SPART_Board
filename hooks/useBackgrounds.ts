@@ -120,6 +120,7 @@ export const useBackgrounds = () => {
     return managedBackgrounds.map((bg) => ({
       id: bg.url,
       label: bg.label,
+      thumbnailUrl: bg.thumbnailUrl,
     }));
   }, [managedBackgrounds]);
 
