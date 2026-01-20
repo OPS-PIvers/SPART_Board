@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { SoundWidget } from './SoundWidget';
 import { WidgetData, SoundConfig } from '../../types';
 
@@ -47,14 +47,24 @@ describe('SoundWidget', () => {
     } as WidgetData;
   };
 
-  it('renders thermometer view by default', () => {
+  it('renders thermometer view by default', async () => {
     render(<SoundWidget widget={createWidget()} />);
     // Check for the level label
     expect(screen.getByText(/Silence/i)).toBeInTheDocument();
+
+    // Wait for async effects to flush
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
   });
 
-  it('renders speedometer view when configured', () => {
+  it('renders speedometer view when configured', async () => {
     render(<SoundWidget widget={createWidget({ visual: 'speedometer' })} />);
     expect(screen.getByText(/Silence/i)).toBeInTheDocument();
+
+    // Wait for async effects to flush
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
   });
 });
