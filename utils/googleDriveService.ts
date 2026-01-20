@@ -54,11 +54,7 @@ export class GoogleDriveService {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Drive API Error:', errorBody);
-      throw new Error(
-        `Failed to list Drive files: ${response.status} ${response.statusText} - ${errorBody}`
-      );
+      throw new Error(`Failed to list Drive files: ${response.statusText}`);
     }
 
     const data = (await response.json()) as DriveFileListResponse;
@@ -66,40 +62,29 @@ export class GoogleDriveService {
   }
 
   /**
-   * Search for a folder by name within a parent folder.
+   * Search for the "School Boards" folder or create it.
    */
-  async getOrCreateFolder(
-    folderName: string,
-    parentId?: string
-  ): Promise<string> {
-    let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-    if (parentId) {
-      query += ` and '${parentId}' in parents`;
-    }
-
-    const folders = await this.listFiles(query);
+  async getOrCreateAppFolder(): Promise<string> {
+    const folders = await this.listFiles(
+      "name = 'School Boards' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    );
 
     if (folders.length > 0) {
       return folders[0].id;
     }
 
     // Create folder
-    const body: { name: string; mimeType: string; parents?: string[] } = {
-      name: folderName,
-      mimeType: 'application/vnd.google-apps.folder',
-    };
-    if (parentId) {
-      body.parents = [parentId];
-    }
-
     const response = await fetch(`${DRIVE_API_URL}/files`, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        name: 'School Boards',
+        mimeType: 'application/vnd.google-apps.folder',
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create folder ${folderName} in Drive`);
+      throw new Error('Failed to create app folder in Drive');
     }
 
     const folder = (await response.json()) as DriveFileCreateResponse;
@@ -107,32 +92,16 @@ export class GoogleDriveService {
   }
 
   /**
-   * Get the main app folder.
-   */
-  async getAppFolder(): Promise<string> {
-    return this.getOrCreateFolder('School Boards');
-  }
-
-  /**
-   * Get a specific subfolder path (e.g., "Assets/Backgrounds")
-   */
-  async getFolderPath(path: string): Promise<string> {
-    const parts = path.split('/').filter(Boolean);
-    let parentId = await this.getAppFolder();
-
-    for (const part of parts) {
-      parentId = await this.getOrCreateFolder(part, parentId);
-    }
-
-    return parentId;
-  }
-
-  /**
    * Export a dashboard to Google Drive as a .spart file.
    */
   async exportDashboard(dashboard: Dashboard): Promise<string> {
-    const folderId = await this.getFolderPath('Dashboards');
+    const folderId = await this.getOrCreateAppFolder();
     const fileName = `${dashboard.name}.spart`;
+
+    // Check if file exists to update or create
+    const existingFiles = await this.listFiles(
+      `name = '${fileName}' and '${folderId}' in parents and trashed = false`
+    );
 
     const metadata = {
       name: fileName,
@@ -142,47 +111,11 @@ export class GoogleDriveService {
 
     const fileContent = JSON.stringify(dashboard, null, 2);
 
-    // If we already have a driveFileId, try to update it directly
-    if (dashboard.driveFileId) {
-      try {
-        // Update content
-        const uploadResponse = await fetch(
-          `${UPLOAD_API_URL}/files/${dashboard.driveFileId}?uploadType=media`,
-          {
-            method: 'PATCH',
-            headers: {
-              ...this.headers,
-              'Content-Type': 'application/json',
-            },
-            body: fileContent,
-          }
-        );
-
-        if (uploadResponse.ok) {
-          return dashboard.driveFileId;
-        }
-
-        // If 404, the file might have been deleted from Drive, fallback to search/create
-        if (uploadResponse.status !== 404) {
-          const errorBody = await uploadResponse.text();
-          console.error('Drive API Error (Update Content):', errorBody);
-          throw new Error('Failed to update dashboard in Drive');
-        }
-      } catch (e) {
-        console.warn('Direct Drive update failed, falling back to search:', e);
-      }
-    }
-
-    // Fallback: Check if file exists by name to update or create
-    const existingFiles = await this.listFiles(
-      `name = '${fileName}' and '${folderId}' in parents and trashed = false`
-    );
-
     if (existingFiles.length > 0) {
       // Update existing
       const fileId = existingFiles[0].id;
 
-      // Update metadata (name might have changed)
+      // Update metadata
       await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
         method: 'PATCH',
         headers: this.headers,
@@ -202,15 +135,12 @@ export class GoogleDriveService {
         }
       );
 
-      if (!uploadResponse.ok) {
-        const errorBody = await uploadResponse.text();
-        console.error('Drive API Error (Update Content):', errorBody);
+      if (!uploadResponse.ok)
         throw new Error('Failed to update dashboard in Drive');
-      }
-
       return fileId;
     } else {
       // Create new
+      // Simple upload (multipart would be better but this is easier for now)
       // First create metadata
       const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
         method: 'POST',
@@ -218,12 +148,8 @@ export class GoogleDriveService {
         body: JSON.stringify(metadata),
       });
 
-      if (!createResponse.ok) {
-        const errorBody = await createResponse.text();
-        console.error('Drive API Error (Create Metadata):', errorBody);
+      if (!createResponse.ok)
         throw new Error('Failed to create dashboard metadata in Drive');
-      }
-
       const file = (await createResponse.json()) as DriveFileCreateResponse;
 
       // Then upload content
@@ -239,110 +165,9 @@ export class GoogleDriveService {
         }
       );
 
-      if (!uploadResponse.ok) {
-        const errorBody = await uploadResponse.text();
-        console.error('Drive API Error (Upload Content):', errorBody);
+      if (!uploadResponse.ok)
         throw new Error('Failed to upload dashboard content to Drive');
-      }
-
       return file.id;
-    }
-  }
-
-  /**
-   * Upload a general file to a specific Drive folder path.
-   */
-  async uploadFile(
-    file: File | Blob,
-    fileName: string,
-    folderPath: string = 'Misc'
-  ): Promise<DriveFile> {
-    const folderId = await this.getFolderPath(folderPath);
-
-    const metadata = {
-      name: fileName,
-      parents: [folderId],
-    };
-
-    // Create metadata
-    const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify(metadata),
-    });
-
-    if (!createResponse.ok) {
-      throw new Error('Failed to create file metadata in Drive');
-    }
-
-    const driveFile = (await createResponse.json()) as DriveFile;
-
-    // Upload content
-    const uploadResponse = await fetch(
-      `${UPLOAD_API_URL}/files/${driveFile.id}?uploadType=media`,
-      {
-        method: 'PATCH',
-        headers: {
-          ...this.headers,
-          'Content-Type': file.type || 'application/octet-stream',
-        },
-        body: file,
-      }
-    );
-
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload file content to Drive');
-    }
-
-    // Get full file details (including links)
-    const detailResponse = await fetch(
-      `${DRIVE_API_URL}/files/${driveFile.id}?fields=id,name,mimeType,webViewLink,webContentLink,thumbnailLink`,
-      {
-        headers: this.headers,
-      }
-    );
-
-    return (await detailResponse.json()) as DriveFile;
-  }
-
-  /**
-   * Make a file public (anyone with the link can view).
-   */
-  async makePublic(fileId: string): Promise<void> {
-    const response = await fetch(
-      `${DRIVE_API_URL}/files/${fileId}/permissions`,
-      {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({
-          role: 'reader',
-          type: 'anyone',
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Failed to make file public:', error);
-      throw new Error('Failed to make file public in Drive');
-    }
-  }
-
-  /**
-   * Delete a file from Google Drive.
-   */
-  async deleteFile(fileId: string): Promise<void> {
-    const response = await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
-
-    if (!response.ok && response.status !== 404) {
-      const error = await response.text();
-      console.error('Failed to delete Drive file:', error);
-      throw new Error('Failed to delete file from Google Drive');
     }
   }
 
