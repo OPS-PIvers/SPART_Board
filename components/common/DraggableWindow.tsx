@@ -10,12 +10,18 @@ import {
   Minimize2,
   ChevronRight,
   Copy,
+  Eraser,
+  Undo2,
+  Trash2,
+  Highlighter,
 } from 'lucide-react';
-import { WidgetData, WidgetType, DEFAULT_GLOBAL_STYLE } from '@/types';
+import { WidgetData, WidgetType, DEFAULT_GLOBAL_STYLE, Path } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { AnnotationCanvas } from './AnnotationCanvas';
+import { WIDGET_PALETTE } from '@/config/colors';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -58,6 +64,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
+
+  // Annotation state
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [annotationColor, setAnnotationColor] = useState(
+    widget.annotation?.color ?? WIDGET_PALETTE[0]
+  );
+  const [annotationWidth, _setAnnotationWidth] = useState(
+    widget.annotation?.width ?? 4
+  );
+
   const windowRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
@@ -128,6 +144,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       'button, input, textarea, select, canvas, [role="button"], .resize-handle, [draggable="true"], [data-no-drag="true"]'
     );
     if (isInteractive) return;
+
+    // Don't drag if annotating
+    if (isAnnotating) return;
 
     setIsDragging(true);
     document.body.classList.add('is-dragging-widget');
@@ -328,6 +347,101 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   />
                 )}
                 {children}
+
+                {isAnnotating && (
+                  <>
+                    <AnnotationCanvas
+                      className="absolute inset-0 z-40 pointer-events-auto"
+                      paths={widget.annotation?.paths ?? []}
+                      color={annotationColor}
+                      width={annotationWidth}
+                      canvasWidth={isMaximized ? window.innerWidth : widget.w}
+                      canvasHeight={isMaximized ? window.innerHeight : widget.h}
+                      onPathsChange={(newPaths: Path[]) => {
+                        updateWidget(widget.id, {
+                          annotation: {
+                            mode: 'window',
+                            paths: newPaths,
+                            color: annotationColor,
+                            width: annotationWidth,
+                          },
+                        });
+                      }}
+                    />
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1 bg-white/90 backdrop-blur shadow-lg rounded-full border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200">
+                      <div className="flex items-center gap-1 px-1">
+                        {WIDGET_PALETTE.slice(0, 5).map((c) => (
+                          <button
+                            key={c}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAnnotationColor(c);
+                            }}
+                            className={`w-5 h-5 rounded-full border border-slate-100 transition-transform ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      </div>
+                      <div className="w-px h-4 bg-slate-300 mx-1" />
+                      <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setAnnotationColor('eraser');
+                         }}
+                         className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+                         title="Eraser"
+                      >
+                        <Eraser className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const paths = widget.annotation?.paths ?? [];
+                          if (paths.length > 0) {
+                            updateWidget(widget.id, {
+                              annotation: {
+                                ...widget.annotation,
+                                mode: 'window',
+                                paths: paths.slice(0, -1),
+                              },
+                            });
+                          }
+                        }}
+                        className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                        title="Undo"
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateWidget(widget.id, {
+                            annotation: {
+                              mode: 'window',
+                              paths: [],
+                              color: annotationColor,
+                              width: annotationWidth,
+                            },
+                          });
+                        }}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Clear All"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-px h-4 bg-slate-300 mx-1" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAnnotating(false);
+                        }}
+                        className="px-2 py-0.5 text-[10px] font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
+                      >
+                        DONE
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               <div
                 onMouseDown={handleResizeStart}
@@ -490,6 +604,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     <Camera className="w-3.5 h-3.5" />
                   </button>
                 )}
+                <button
+                  onClick={() => {
+                    setIsAnnotating(!isAnnotating);
+                    setShowTools(false);
+                  }}
+                  className={`p-1.5 hover:bg-slate-800/10 rounded-full transition-all ${isAnnotating ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                  title="Annotate"
+                >
+                  <Highlighter className="w-3.5 h-3.5" />
+                </button>
                 <button
                   onClick={() => duplicateWidget(widget.id)}
                   className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"

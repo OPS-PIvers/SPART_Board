@@ -445,6 +445,7 @@ export interface WidgetData {
   customTitle?: string | null;
   isLive?: boolean;
   transparency?: number;
+  annotation?: DrawingConfig;
   config: WidgetConfig;
 }
 
