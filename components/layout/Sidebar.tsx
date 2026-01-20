@@ -292,6 +292,31 @@ export const Sidebar: React.FC = () => {
     }
   };
 
+  const { user, signOut, isAdmin, featurePermissions } = useAuth();
+  const { uploadBackgroundImage } = useStorage();
+  const {
+    dashboards,
+    activeDashboard,
+    visibleTools,
+    gradeFilter,
+    setGradeFilter,
+    toggleToolVisibility,
+    setAllToolsVisibility,
+    createNewDashboard,
+    loadDashboard,
+    deleteDashboard,
+    duplicateDashboard,
+    renameDashboard,
+    reorderDashboards,
+    setDefaultDashboard,
+    saveCurrentDashboard,
+    setBackground,
+    updateDashboardSettings,
+    setGlobalStyle,
+    clearAllWidgets,
+    addToast,
+    shareDashboard,
+  } = useDashboard();
   const [isBoardSwitcherExpanded, setIsBoardSwitcherExpanded] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -328,17 +353,17 @@ export const Sidebar: React.FC = () => {
 
   const { presets, colors, gradients } = useBackgrounds();
 
-  const handleShare = (db?: Dashboard) => {
+  const handleShare = async (db?: Dashboard) => {
     const target = db ?? activeDashboard;
     if (!target) return;
     try {
-      const data = JSON.stringify(target);
-      void navigator.clipboard.writeText(data);
-      addToast('Board data copied to clipboard!', 'success');
-    } catch (error) {
-      console.error('Failed to share board:', error);
-      const message = error instanceof Error ? error.message : 'Share failed';
-      addToast(message, 'error');
+      const shareId = await shareDashboard(target);
+      const url = `${window.location.origin}/share/${shareId}`;
+      await navigator.clipboard.writeText(url);
+      addToast('Board link copied to clipboard!', 'success');
+    } catch (err) {
+      console.error('Share failed:', err);
+      addToast('Failed to generate share link', 'error');
     }
   };
 
