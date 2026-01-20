@@ -51,6 +51,8 @@ import { MiniAppWidget } from './MiniAppWidget';
 import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
 import { StickerBookWidget } from './stickers/StickerBookWidget';
 import { StickerLibraryWidget } from './StickerLibraryWidget';
+import { SeatingChartWidget } from './SeatingChartWidget';
+import { SeatingChartSettings } from './SeatingChartSettings';
 import {
   DefaultSettings,
   MiniAppSettings,
@@ -94,6 +96,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   materials: MaterialsWidget,
   stickers: StickerBookWidget,
   'sticker-library': StickerLibraryWidget,
+  'seating-chart': SeatingChartWidget,
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -120,6 +123,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   stickers: StickerSettings,
   'sticker-library': StickerLibrarySettings,
   'time-tool': TimeToolSettings,
+  'seating-chart': SeatingChartSettings,
   traffic: DefaultSettings,
   workSymbols: DefaultSettings,
   schedule: DefaultSettings,

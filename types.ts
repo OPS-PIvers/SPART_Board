@@ -24,7 +24,8 @@ export type WidgetType =
   | 'materials'
   | 'stickers'
   | 'sticker'
-  | 'sticker-library';
+  | 'sticker-library'
+  | 'seating-chart';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -351,6 +352,24 @@ export interface StickerConfig {
 
 export type StickerBookConfig = Record<string, never>;
 
+export interface FurnitureItem {
+  id: string;
+  type: 'desk' | 'table-rect' | 'table-round' | 'rug' | 'teacher-desk';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  label?: string;
+}
+
+export interface SeatingChartConfig {
+  furniture: FurnitureItem[];
+  assignments: Record<string, string>; // studentId -> furnitureId
+  gridSize: number;
+  rosterMode?: 'class' | 'custom';
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -379,7 +398,8 @@ export type WidgetConfig =
   | MaterialsConfig
   | StickerBookConfig
   | StickerLibraryConfig
-  | StickerConfig;
+  | StickerConfig
+  | SeatingChartConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -434,7 +454,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                   ? StickerLibraryConfig
                                                   : T extends 'sticker'
                                                     ? StickerConfig
-                                                    : never;
+                                                    : T extends 'seating-chart'
+                                                      ? SeatingChartConfig
+                                                      : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;
@@ -451,6 +473,7 @@ export interface WidgetData {
   customTitle?: string | null;
   isLive?: boolean;
   transparency?: number;
+  annotation?: DrawingConfig;
   config: WidgetConfig;
 }
 

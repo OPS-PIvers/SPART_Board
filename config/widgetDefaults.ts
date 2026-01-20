@@ -161,4 +161,14 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 200,
     config: { url: '', rotation: 0, size: 150 },
   },
+  'seating-chart': {
+    w: 600,
+    h: 500,
+    config: {
+      furniture: [],
+      assignments: {},
+      gridSize: 20,
+      rosterMode: 'class',
+    },
+  },
 };
