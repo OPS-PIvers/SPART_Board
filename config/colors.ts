@@ -37,3 +37,11 @@ export const PASTEL_PALETTE = [
   '#f472b6', // pink-400
   '#2DD4BF', // teal-400
 ];
+
+export const STICKY_NOTE_COLORS = {
+  yellow: '#fef9c3', // yellow-100
+  green: '#dcfce7', // green-100
+  blue: '#dbeafe', // blue-100
+  pink: '#fce7f3', // pink-100
+  gray: '#f3f4f6', // gray-100
+} as const;
