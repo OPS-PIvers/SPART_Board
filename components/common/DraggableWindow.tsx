@@ -43,6 +43,21 @@ interface DraggableWindowProps {
   globalStyle: GlobalStyle;
 }
 
+const ResizeHandleIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="10"
+    height="10"
+    viewBox="0 0 10 10"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path d="M8 2L2 8" stroke="currentColor" strokeLinecap="round" />
+    <path d="M8 5.5L5.5 8" stroke="currentColor" strokeLinecap="round" />
+    <path d="M8 9L9 8" stroke="currentColor" strokeLinecap="round" />
+  </svg>
+);
+
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   widget,
   children,
@@ -446,9 +461,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </div>
               <div
                 onMouseDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5 z-[60]"
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60]"
               >
-                <div className="w-2 h-2 border-r-2 border-b-2 border-slate-300 rounded-br-[2px]" />
+                <ResizeHandleIcon className="text-slate-400/80" />
               </div>
             </div>
 
@@ -517,9 +532,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               </div>
               <div
                 onMouseDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5 z-[60]"
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60]"
               >
-                <div className="w-2 h-2 border-r-2 border-b-2 border-slate-400 rounded-br-[2px]" />
+                <ResizeHandleIcon className="text-slate-500/80" />
               </div>
             </div>
           </div>
