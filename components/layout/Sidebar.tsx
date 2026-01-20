@@ -3,6 +3,7 @@ import {
   Layout,
   Save,
   Plus,
+  Trash2,
   X,
   Menu,
   Download,
@@ -22,11 +23,10 @@ import {
   Minimize,
   ArrowLeft,
   Palette,
-<<<<<<< HEAD
-  Trash2,
-=======
   Image as ImageIcon,
->>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
+  Database,
+  CloudUpload,
+  CloudDownload,
 } from 'lucide-react';
 import {
   DndContext,
@@ -46,11 +46,8 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useStorage } from '../../hooks/useStorage';
-<<<<<<< HEAD
 import { useBackgrounds } from '../../hooks/useBackgrounds';
-=======
 import { useGoogleDrive } from '../../hooks/useGoogleDrive';
->>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
 import {
   Dashboard,
   GlobalFontFamily,
@@ -61,11 +58,7 @@ import { TOOLS } from '../../config/tools';
 import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 import { GlassCard } from '../common/GlassCard';
-<<<<<<< HEAD
 import { SortableDashboardItem } from './SortableDashboardItem';
-=======
-import { Database, CloudUpload, CloudDownload } from 'lucide-react';
->>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
 
 interface DashboardData {
   name: string;
@@ -202,23 +195,12 @@ type MenuSection =
   | 'backgrounds'
   | 'widgets'
   | 'style'
-  | 'settings';
+  | 'settings'
+  | 'drive';
 
 export const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-<<<<<<< HEAD
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
-=======
-  const [activeSection, setActiveSection] = useState<
-    | 'main'
-    | 'boards'
-    | 'backgrounds'
-    | 'widgets'
-    | 'style'
-    | 'settings'
-    | 'drive'
-  >('main');
->>>>>>> ce00373 (Feat: Implement Google Drive integration for backgrounds and board persistence)
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { user, signInWithGoogle, signOut, isAdmin, featurePermissions } =
