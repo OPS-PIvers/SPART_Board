@@ -4,7 +4,6 @@ import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
-import { STICKY_NOTE_COLORS } from '../../config/colors';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -28,15 +27,6 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div
       className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
-      contentEditable
-      onBlur={(e) =>
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            content: e.currentTarget.innerHTML,
-          } as TextConfig,
-        })
-      }
     >
       {/* Background color overlay */}
       <div
@@ -44,9 +34,19 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         style={{ backgroundColor: bgColor }}
       />
       <div
-        className="relative z-10 h-full w-full"
+        className="relative z-10 h-full w-full outline-none"
         style={{ fontSize: `${scaledFontSize}px` }}
+        contentEditable
+        suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: content }}
+        onBlur={(e) =>
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              content: e.currentTarget.innerHTML,
+            } as TextConfig,
+          })
+        }
       />
     </div>
   );
@@ -55,7 +55,14 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as TextConfig;
-  const colors = Object.values(STICKY_NOTE_COLORS);
+
+  const colors = [
+    { hex: STICKY_NOTE_COLORS.yellow, label: 'yellow' },
+    { hex: STICKY_NOTE_COLORS.green, label: 'green' },
+    { hex: STICKY_NOTE_COLORS.blue, label: 'blue' },
+    { hex: STICKY_NOTE_COLORS.pink, label: 'pink' },
+    { hex: STICKY_NOTE_COLORS.gray, label: 'gray' },
+  ];
 
   const templates = [
     {
@@ -115,14 +122,15 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="flex gap-2">
           {colors.map((c) => (
             <button
-              key={c}
+              key={c.hex}
+              aria-label={`Select ${c.label} background`}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...config, bgColor: c } as TextConfig,
+                  config: { ...config, bgColor: c.hex } as TextConfig,
                 })
               }
-              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
-              style={{ backgroundColor: c }}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${config.bgColor === c.hex ? 'border-blue-600 scale-110 shadow-md' : 'border-transparent'}`}
+              style={{ backgroundColor: c.hex }}
             />
           ))}
         </div>
