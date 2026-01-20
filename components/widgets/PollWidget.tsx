@@ -119,11 +119,13 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     const csvRows = options
       .map((o) => `"${o.label.replace(/"/g, '""')}",${o.votes}`)
       .join('\n');
-    const csvContent =
-      'data:text/csv;charset=utf-8,' + encodeURIComponent(csvHeader + csvRows);
+    const csvContent = csvHeader + csvRows;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
-    link.setAttribute('href', csvContent);
+    link.setAttribute('href', url);
     link.setAttribute(
       'download',
       `Poll_Results_${new Date().toISOString().split('T')[0]}.csv`
@@ -131,6 +133,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     addToast('Results exported to CSV', 'success');
   };
