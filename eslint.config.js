@@ -19,6 +19,7 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       'scripts',
+      'functions/lib',
     ],
   },
   js.configs.recommended,
