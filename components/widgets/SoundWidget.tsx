@@ -405,7 +405,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <input
               type="checkbox"
               className="sr-only peer"
-              checked={autoTrafficLight || false}
+              checked={autoTrafficLight ?? false}
               onChange={(e) =>
                 updateWidget(widget.id, {
                   config: { ...config, autoTrafficLight: e.target.checked },
