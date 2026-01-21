@@ -22,6 +22,7 @@ vi.mock('lucide-react', () => ({
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Download: () => <div />,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -67,6 +68,8 @@ describe('ChecklistSettings Nexus Connection', () => {
     (useDashboard as unknown as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
       addToast: mockAddToast,
+      rosters: [],
+      activeRosterId: null,
       activeDashboard: {
         widgets: [mockWidget, mockRoutineWidget],
       },
@@ -101,6 +104,8 @@ describe('ChecklistSettings Nexus Connection', () => {
     (useDashboard as unknown as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
       addToast: mockAddToast,
+      rosters: [],
+      activeRosterId: null,
       activeDashboard: {
         widgets: [mockWidget], // No routine widget
       },
@@ -127,6 +132,8 @@ describe('ChecklistSettings Nexus Connection', () => {
     (useDashboard as unknown as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
       addToast: mockAddToast,
+      rosters: [],
+      activeRosterId: null,
       activeDashboard: {
         widgets: [mockWidget, emptyRoutineWidget],
       },
