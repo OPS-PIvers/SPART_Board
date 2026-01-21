@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, Suspense } from 'react';
 import {
   WidgetData,
   DrawingConfig,
@@ -21,6 +21,12 @@ import {
 } from './WidgetRegistry';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
+
+const LoadingFallback = () => (
+  <div className="w-full h-full flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 // Define base dimensions for scalable widgets
 const WIDGET_BASE_DIMENSIONS: Record<string, { w: number; h: number }> = {
@@ -144,7 +150,11 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const getWidgetContent = () => {
     if (WidgetComponent) {
-      return <WidgetComponent widget={widget} isStudentView={isStudentView} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <WidgetComponent widget={widget} isStudentView={isStudentView} />
+        </Suspense>
+      );
     }
     return (
       <div className="p-4 text-center text-slate-400 text-sm">
@@ -155,7 +165,11 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const getWidgetSettings = () => {
     if (SettingsComponent) {
-      return <SettingsComponent widget={widget} />;
+      return (
+        <Suspense fallback={<div className="p-4 text-center text-slate-400">Loading...</div>}>
+          <SettingsComponent widget={widget} />
+        </Suspense>
+      );
     }
     return (
       <div className="text-slate-500 italic text-sm">

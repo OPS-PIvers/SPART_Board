@@ -22,43 +22,6 @@
 
 import React from 'react';
 import { WidgetData, WidgetType } from '@/types';
-import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimeToolWidget, TimeToolSettings } from './TimeToolWidget';
-import { TrafficLightWidget } from './TrafficLightWidget';
-import { TextWidget, TextSettings } from './TextWidget';
-import { SoundWidget, SoundSettings } from './SoundWidget';
-import { WebcamWidget, WebcamSettings } from './WebcamWidget';
-import { EmbedWidget, EmbedSettings } from './EmbedWidget';
-import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
-import { RandomWidget } from './random/RandomWidget';
-import { RandomSettings } from './random/RandomSettings';
-import { DiceWidget, DiceSettings } from './DiceWidget';
-import { DrawingWidget, DrawingSettings } from './DrawingWidget';
-import { QRWidget, QRSettings } from './QRWidget';
-import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
-import { WorkSymbolsWidget } from './WorkSymbolsWidget';
-import { PollWidget, PollSettings } from './PollWidget';
-import { WeatherWidget, WeatherSettings } from './WeatherWidget';
-import { ScheduleWidget } from './ScheduleWidget';
-import { CalendarWidget, CalendarSettings } from './CalendarWidget';
-import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
-import ClassesWidget from './ClassesWidget';
-import {
-  InstructionalRoutinesWidget,
-  InstructionalRoutinesSettings,
-} from './InstructionalRoutinesWidget';
-import { MiniAppWidget } from './MiniAppWidget';
-import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
-import { StickerBookWidget } from './stickers/StickerBookWidget';
-import { StickerLibraryWidget } from './StickerLibraryWidget';
-import { SeatingChartWidget } from './SeatingChartWidget';
-import { SeatingChartSettings } from './SeatingChartSettings';
-import {
-  DefaultSettings,
-  MiniAppSettings,
-  StickerSettings,
-  StickerLibrarySettings,
-} from './FallbackSettings';
 
 // Component type definitions to ensure type safety
 type WidgetComponent = React.ComponentType<{
@@ -69,6 +32,241 @@ type WidgetComponent = React.ComponentType<{
 type SettingsComponent = React.ComponentType<{
   widget: WidgetData;
 }>;
+
+// Helper to lazy load named exports
+function lazyNamed<T extends React.ComponentType<unknown>>(
+  factory: () => Promise<Record<string, unknown>>,
+  name: string
+) {
+  return React.lazy(() =>
+    factory().then((module) => ({
+      default: module[name] as T,
+    }))
+  );
+}
+
+// Lazy loaded components
+const ClockWidget = lazyNamed<WidgetComponent>(
+  () => import('./ClockWidget'),
+  'ClockWidget'
+);
+const ClockSettings = lazyNamed<SettingsComponent>(
+  () => import('./ClockWidget'),
+  'ClockSettings'
+);
+
+const TimeToolWidget = lazyNamed<WidgetComponent>(
+  () => import('./TimeToolWidget'),
+  'TimeToolWidget'
+);
+const TimeToolSettings = lazyNamed<SettingsComponent>(
+  () => import('./TimeToolWidget'),
+  'TimeToolSettings'
+);
+
+const TrafficLightWidget = lazyNamed<WidgetComponent>(
+  () => import('./TrafficLightWidget'),
+  'TrafficLightWidget'
+);
+
+const TextWidget = lazyNamed<WidgetComponent>(
+  () => import('./TextWidget'),
+  'TextWidget'
+);
+const TextSettings = lazyNamed<SettingsComponent>(
+  () => import('./TextWidget'),
+  'TextSettings'
+);
+
+const SoundWidget = lazyNamed<WidgetComponent>(
+  () => import('./SoundWidget'),
+  'SoundWidget'
+);
+const SoundSettings = lazyNamed<SettingsComponent>(
+  () => import('./SoundWidget'),
+  'SoundSettings'
+);
+
+const WebcamWidget = lazyNamed<WidgetComponent>(
+  () => import('./WebcamWidget'),
+  'WebcamWidget'
+);
+const WebcamSettings = lazyNamed<SettingsComponent>(
+  () => import('./WebcamWidget'),
+  'WebcamSettings'
+);
+
+const EmbedWidget = lazyNamed<WidgetComponent>(
+  () => import('./EmbedWidget'),
+  'EmbedWidget'
+);
+const EmbedSettings = lazyNamed<SettingsComponent>(
+  () => import('./EmbedWidget'),
+  'EmbedSettings'
+);
+
+const ChecklistWidget = lazyNamed<WidgetComponent>(
+  () => import('./ChecklistWidget'),
+  'ChecklistWidget'
+);
+const ChecklistSettings = lazyNamed<SettingsComponent>(
+  () => import('./ChecklistWidget'),
+  'ChecklistSettings'
+);
+
+const RandomWidget = lazyNamed<WidgetComponent>(
+  () => import('./random/RandomWidget'),
+  'RandomWidget'
+);
+const RandomSettings = lazyNamed<SettingsComponent>(
+  () => import('./random/RandomSettings'),
+  'RandomSettings'
+);
+
+const DiceWidget = lazyNamed<WidgetComponent>(
+  () => import('./DiceWidget'),
+  'DiceWidget'
+);
+const DiceSettings = lazyNamed<SettingsComponent>(
+  () => import('./DiceWidget'),
+  'DiceSettings'
+);
+
+const DrawingWidget = lazyNamed<WidgetComponent>(
+  () => import('./DrawingWidget'),
+  'DrawingWidget'
+);
+const DrawingSettings = lazyNamed<SettingsComponent>(
+  () => import('./DrawingWidget'),
+  'DrawingSettings'
+);
+
+const QRWidget = lazyNamed<WidgetComponent>(
+  () => import('./QRWidget'),
+  'QRWidget'
+);
+const QRSettings = lazyNamed<SettingsComponent>(
+  () => import('./QRWidget'),
+  'QRSettings'
+);
+
+const ScoreboardWidget = lazyNamed<WidgetComponent>(
+  () => import('./ScoreboardWidget'),
+  'ScoreboardWidget'
+);
+const ScoreboardSettings = lazyNamed<SettingsComponent>(
+  () => import('./ScoreboardWidget'),
+  'ScoreboardSettings'
+);
+
+const WorkSymbolsWidget = lazyNamed<WidgetComponent>(
+  () => import('./WorkSymbolsWidget'),
+  'WorkSymbolsWidget'
+);
+
+const PollWidget = lazyNamed<WidgetComponent>(
+  () => import('./PollWidget'),
+  'PollWidget'
+);
+const PollSettings = lazyNamed<SettingsComponent>(
+  () => import('./PollWidget'),
+  'PollSettings'
+);
+
+const WeatherWidget = lazyNamed<WidgetComponent>(
+  () => import('./WeatherWidget'),
+  'WeatherWidget'
+);
+const WeatherSettings = lazyNamed<SettingsComponent>(
+  () => import('./WeatherWidget'),
+  'WeatherSettings'
+);
+
+const ScheduleWidget = lazyNamed<WidgetComponent>(
+  () => import('./ScheduleWidget'),
+  'ScheduleWidget'
+);
+
+const CalendarWidget = lazyNamed<WidgetComponent>(
+  () => import('./CalendarWidget'),
+  'CalendarWidget'
+);
+const CalendarSettings = lazyNamed<SettingsComponent>(
+  () => import('./CalendarWidget'),
+  'CalendarSettings'
+);
+
+const LunchCountWidget = lazyNamed<WidgetComponent>(
+  () => import('./LunchCountWidget'),
+  'LunchCountWidget'
+);
+const LunchCountSettings = lazyNamed<SettingsComponent>(
+  () => import('./LunchCountWidget'),
+  'LunchCountSettings'
+);
+
+// ClassesWidget is a default export
+const ClassesWidget = React.lazy(() => import('./ClassesWidget'));
+
+const InstructionalRoutinesWidget = lazyNamed<WidgetComponent>(
+  () => import('./InstructionalRoutinesWidget'),
+  'InstructionalRoutinesWidget'
+);
+const InstructionalRoutinesSettings = lazyNamed<SettingsComponent>(
+  () => import('./InstructionalRoutinesWidget'),
+  'InstructionalRoutinesSettings'
+);
+
+const MiniAppWidget = lazyNamed<WidgetComponent>(
+  () => import('./MiniAppWidget'),
+  'MiniAppWidget'
+);
+
+const MaterialsWidget = lazyNamed<WidgetComponent>(
+  () => import('./MaterialsWidget'),
+  'MaterialsWidget'
+);
+const MaterialsSettings = lazyNamed<SettingsComponent>(
+  () => import('./MaterialsWidget'),
+  'MaterialsSettings'
+);
+
+const StickerBookWidget = lazyNamed<WidgetComponent>(
+  () => import('./stickers/StickerBookWidget'),
+  'StickerBookWidget'
+);
+
+const StickerLibraryWidget = lazyNamed<WidgetComponent>(
+  () => import('./StickerLibraryWidget'),
+  'StickerLibraryWidget'
+);
+
+const SeatingChartWidget = lazyNamed<WidgetComponent>(
+  () => import('./SeatingChartWidget'),
+  'SeatingChartWidget'
+);
+const SeatingChartSettings = lazyNamed<SettingsComponent>(
+  () => import('./SeatingChartSettings'),
+  'SeatingChartSettings'
+);
+
+// Fallback Settings
+const DefaultSettings = lazyNamed<SettingsComponent>(
+  () => import('./FallbackSettings'),
+  'DefaultSettings'
+);
+const MiniAppSettings = lazyNamed<SettingsComponent>(
+  () => import('./FallbackSettings'),
+  'MiniAppSettings'
+);
+const StickerSettings = lazyNamed<SettingsComponent>(
+  () => import('./FallbackSettings'),
+  'StickerSettings'
+);
+const StickerLibrarySettings = lazyNamed<SettingsComponent>(
+  () => import('./FallbackSettings'),
+  'StickerLibrarySettings'
+);
 
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   clock: ClockWidget,
