@@ -94,7 +94,9 @@ describe('ChecklistWidget', () => {
   it('renders empty state message when no items', () => {
     render(<ChecklistWidget widget={mockWidget} />);
     expect(screen.getByText('No Tasks')).toBeInTheDocument();
-    expect(screen.getByText('Flip to add your class tasks.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Flip to add your class tasks.')
+    ).toBeInTheDocument();
   });
 
   it('renders items in manual mode', () => {
