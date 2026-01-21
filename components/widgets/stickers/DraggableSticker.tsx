@@ -52,8 +52,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     e.stopPropagation();
 
     setIsSelected(true);
-    // Reset layer controls if selecting a different widget (though this component unmounts/remounts usually)
-    // or if just clicking to focus.
+    // Select and bring this sticker to the front on click or drag start.
     bringToFront(widget.id);
 
     const startX = e.clientX;
@@ -268,7 +267,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
             {/* Resize Handle (Corner) */}
             <div
-              className="sticker-control absolute -bottom-0 -right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-0.5"
+              className="sticker-control absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-0.5"
               onMouseDown={handleResizeStart}
             >
               <div className="w-3 h-3 border-r-2 border-b-2 border-blue-500 bg-white/50 rounded-br-[2px]" />
