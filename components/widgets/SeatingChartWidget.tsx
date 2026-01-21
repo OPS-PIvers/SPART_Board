@@ -656,7 +656,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   selectedId === item.id &&
                   !dragState &&
                   !resizeState && (
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                    <div
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-200"
+                    >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -731,9 +734,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       {assigned.map((name) => (
                         <div
                           key={name}
-                          className="bg-white/90 px-1.5 py-1 rounded text-[10px] font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto"
+                          className={`bg-white/90 px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-[10px]'}`}
                         >
-                          {name}
+                          <span className="truncate">{name}</span>
                           {mode === 'assign' && (
                             <button
                               onClick={(e) => {
