@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DraggableSticker } from './DraggableSticker';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { WidgetData } from '@/types';
 
 // Mock dependencies
 const mockUpdateWidget = vi.fn();
@@ -23,7 +24,7 @@ vi.mock('@/hooks/useClickOutside', () => ({
 }));
 
 describe('DraggableSticker', () => {
-  const mockWidget = {
+  const mockWidget: WidgetData = {
     id: 'sticker-1',
     type: 'sticker',
     x: 100,
@@ -31,11 +32,11 @@ describe('DraggableSticker', () => {
     w: 200,
     h: 200,
     z: 1,
+    flipped: false,
     config: {
       url: 'test.png',
       rotation: 0,
     },
-    lastModified: 1234567890,
   };
 
   beforeEach(() => {
