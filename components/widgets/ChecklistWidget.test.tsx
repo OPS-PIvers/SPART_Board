@@ -143,4 +143,50 @@ describe('ChecklistSettings Nexus Connection', () => {
     );
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
+
+  it('shows info if Instructional Routine has no steps', () => {
+    const widget: WidgetData = {
+      id: 'checklist-id',
+      type: 'checklist',
+      config: { items: [], mode: 'manual' } as ChecklistConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const emptyRoutinesWidget: WidgetData = {
+      id: 'routines-id',
+      type: 'instructionalRoutines' as WidgetType,
+      config: {
+        customSteps: [],
+      } as InstructionalRoutinesConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        widgets: [emptyRoutinesWidget],
+      },
+    });
+
+    render(<ChecklistSettings widget={widget} />);
+
+    const importButton = screen.getByText('Import Steps');
+    fireEvent.click(importButton);
+
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Routine has no steps to import.',
+      'info'
+    );
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
 });
