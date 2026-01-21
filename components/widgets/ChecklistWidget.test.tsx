@@ -3,11 +3,11 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { ChecklistSettings, ChecklistWidget } from './ChecklistWidget';
 import { useDashboard } from '../../context/useDashboard';
+import { DashboardContextValue } from '../../context/DashboardContextValue';
 import {
   InstructionalRoutinesConfig,
   WidgetData,
   ChecklistConfig,
-  DashboardContextValue,
 } from '../../types';
 
 // Mock dependencies
@@ -70,14 +70,18 @@ const defaultContext: Partial<DashboardContextValue> = {
   activeDashboard: {
     id: 'dashboard-1',
     name: 'Test Dashboard',
+    background: 'bg-slate-100',
     widgets: [mockWidget, mockRoutineWidget],
     globalStyle: {
-      fontFamily: 'lexend',
-      colorTheme: 'blue',
-      backgroundImage: '',
+      fontFamily: 'sans',
+      windowTransparency: 0,
+      windowBorderRadius: 'md',
+      dockTransparency: 0,
+      dockBorderRadius: 'md',
+      dockTextColor: '#000000',
+      dockTextShadow: false,
     },
     createdAt: Date.now(),
-    lastModified: Date.now(),
   },
 };
 
@@ -102,7 +106,7 @@ describe('ChecklistWidget', () => {
           { id: '1', text: 'Task 1', completed: false },
           { id: '2', text: 'Task 2', completed: true },
         ],
-      },
+      } as ChecklistConfig,
     };
     render(<ChecklistWidget widget={itemsWidget} />);
 
@@ -119,7 +123,7 @@ describe('ChecklistWidget', () => {
       config: {
         ...mockWidget.config,
         items: [{ id: '1', text: 'Task 1', completed: false }],
-      },
+      } as ChecklistConfig,
     };
     render(<ChecklistWidget widget={itemsWidget} />);
 
@@ -141,7 +145,7 @@ describe('ChecklistWidget', () => {
           { id: '1', text: 'Task 1', completed: true },
           { id: '2', text: 'Task 2', completed: true },
         ],
-      },
+      } as ChecklistConfig,
     };
     render(<ChecklistWidget widget={itemsWidget} />);
 
