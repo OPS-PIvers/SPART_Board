@@ -79,7 +79,7 @@ export async function generateMiniAppCode(
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: [
         {
           role: 'user',
@@ -135,6 +135,102 @@ export async function generateMiniAppCode(
 
     let errorMessage =
       'Failed to generate app. Please try again with a different prompt.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    } else if (typeof error === 'string') {
+      errorMessage += ` Underlying error: ${error}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+export interface GeneratedPoll {
+  question: string;
+  options: string[];
+}
+
+/**
+ * Generates a poll question and options based on a topic using Gemini.
+ *
+ * @param topic - The topic or subject for the poll.
+ * @returns A promise resolving to the generated question and options.
+ * @throws Error if the API key is missing or generation fails.
+ */
+export async function generatePoll(topic: string): Promise<GeneratedPoll> {
+  if (!client) {
+    throw new Error(
+      'Gemini API Key is missing or invalid (VITE_GEMINI_API_KEY)'
+    );
+  }
+
+  const systemPrompt = `
+    You are an expert teacher. Create a multiple-choice poll question based on the user's topic.
+
+    Requirements:
+    1.  **Educational:** The question should be appropriate for a classroom setting.
+    2.  **Clear:** The question should be concise and easy to read.
+    3.  **Options:** Provide exactly 4 distinct options. One correct answer (if applicable) and 3 distractors, or 4 valid opinions.
+    4.  **Format:** Return a JSON object with two fields: "question" (string) and "options" (array of 4 strings).
+
+    Response Format:
+    Return ONLY raw JSON. No markdown formatting.
+    Example:
+    {
+      "question": "What is the capital of France?",
+      "options": ["London", "Berlin", "Paris", "Madrid"]
+    }
+  `;
+
+  try {
+    const response = await client.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: systemPrompt + '\n\nTopic: ' + topic,
+            },
+          ],
+        },
+      ],
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const responseText = response.text;
+
+    if (!responseText) {
+      throw new Error('Empty response from AI');
+    }
+
+    let jsonString = responseText;
+    if (typeof jsonString !== 'string') {
+      jsonString = String(jsonString);
+    }
+
+    const parsed = JSON.parse(jsonString) as GeneratedPoll;
+
+    if (
+      !parsed.question ||
+      !Array.isArray(parsed.options) ||
+      parsed.options.length === 0
+    ) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    // Ensure options are strings
+    parsed.options = parsed.options.map((o) => String(o));
+
+    return parsed;
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage =
+      'Failed to generate poll. Please try again with a different topic.';
 
     if (error instanceof Error) {
       errorMessage += ` Underlying error: ${error.message}`;
