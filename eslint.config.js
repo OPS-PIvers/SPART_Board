@@ -5,6 +5,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default tseslint.config(
   {
@@ -14,13 +15,29 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       'scripts',
-      'functions',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
+    files: ['functions/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+      parserOptions: {
+        project: 'functions/tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      // Disable react rules if they leak, but explicit configuration above should isolate them.
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['functions/**'],
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
