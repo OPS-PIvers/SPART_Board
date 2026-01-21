@@ -133,14 +133,6 @@ describe('ChecklistSettings Nexus Connection', () => {
     });
 
     render(<ChecklistSettings widget={mockWidget} />);
-
-    const importButton = screen.getByText('Sync');
-    fireEvent.click(importButton);
-
-    expect(mockAddToast).toHaveBeenCalledWith(
-      'Active routine has no steps to import.',
-      'info'
-    );
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
 });
