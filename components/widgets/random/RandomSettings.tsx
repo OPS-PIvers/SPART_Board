@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { WidgetData, RandomConfig } from '../../../types';
 import { RosterModeControl } from '../../common/RosterModeControl';
+import { Toggle } from '../../common/Toggle';
 import {
   Users,
   UserPlus,
@@ -128,18 +129,15 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
         </div>
-        <button
-          onClick={() =>
+        <Toggle
+          checked={soundEnabled}
+          onChange={() =>
             updateWidget(widget.id, {
               config: { ...config, soundEnabled: !soundEnabled },
             })
           }
-          className={`w-12 h-6 rounded-full relative transition-colors ${soundEnabled ? 'bg-brand-blue-primary' : 'bg-slate-300'}`}
-        >
-          <div
-            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`}
-          />
-        </button>
+          size="md"
+        />
       </div>
 
       <div>

@@ -9,6 +9,7 @@ import {
 } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import { Button } from '../common/Button';
+import { Toggle } from '../common/Toggle';
 import {
   Users,
   RefreshCw,
@@ -876,18 +877,16 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
               <span className="text-[10px]  text-indigo-700 uppercase tracking-wider">
                 Manual Mode
               </span>
-              <button
-                onClick={() =>
+              <Toggle
+                checked={isManualMode}
+                onChange={() =>
                   updateWidget(widget.id, {
                     config: { ...config, isManualMode: !isManualMode },
                   })
                 }
-                className={`w-10 h-5 rounded-full transition-colors relative ${isManualMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
-              >
-                <div
-                  className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isManualMode ? 'right-1' : 'left-1'}`}
-                />
-              </button>
+                size="sm"
+                activeColor="bg-indigo-600"
+              />
             </div>
             {isManualMode && (
               <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
