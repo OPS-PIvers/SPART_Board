@@ -7,8 +7,8 @@ describe('MagicInput', () => {
   it('renders correctly', () => {
     render(
       <MagicInput
-        onGenerate={async () => 'success'}
-        onSuccess={() => {}}
+        onGenerate={() => Promise.resolve('success')}
+        onSuccess={vi.fn()}
         placeholder="Type here"
       />
     );
