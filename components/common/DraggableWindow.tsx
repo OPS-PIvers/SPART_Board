@@ -51,6 +51,7 @@ const ResizeHandleIcon = ({ className }: { className?: string }) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
+    aria-hidden="true"
   >
     <path d="M8 2L2 8" stroke="currentColor" strokeLinecap="round" />
     <path d="M8 5.5L5.5 8" stroke="currentColor" strokeLinecap="round" />
