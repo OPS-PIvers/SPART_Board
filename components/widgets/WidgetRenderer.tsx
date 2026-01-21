@@ -147,7 +147,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       return (
         <Suspense
           fallback={
-            <div className="h-full w-full flex items-center justify-center text-slate-400">
+            <div
+              className="h-full w-full flex items-center justify-center text-slate-400"
+              role="status"
+              aria-live="polite"
+              aria-label="Loading widget..."
+            >
               Loading...
             </div>
           }
@@ -168,7 +173,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       return (
         <Suspense
           fallback={
-            <div className="p-4 text-center text-slate-400 text-sm">
+            <div
+              className="p-4 text-center text-slate-400 text-sm"
+              role="status"
+              aria-live="polite"
+              aria-label="Loading settings..."
+            >
               Loading settings...
             </div>
           }
