@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { SoundWidget } from './SoundWidget';
-import { WidgetData, SoundConfig } from '../../types';
+import { WidgetData, SoundConfig, Dashboard } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
 // Mock useDashboard
@@ -11,7 +11,7 @@ vi.mock('../../context/useDashboard', () => ({
 
 describe('SoundWidget', () => {
   let mockUpdateWidget: Mock;
-  let mockActiveDashboard: any;
+  let mockActiveDashboard: Partial<Dashboard>;
   let mockGetByteFrequencyData: Mock;
 
   beforeEach(() => {
@@ -22,11 +22,11 @@ describe('SoundWidget', () => {
 
     (useDashboard as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
-      activeDashboard: mockActiveDashboard,
+      activeDashboard: mockActiveDashboard as Dashboard,
     });
 
     mockGetByteFrequencyData = vi.fn((array: Uint8Array) => {
-        array.fill(0); // Default silence
+      array.fill(0); // Default silence
     });
 
     // Mock AudioContext
@@ -101,35 +101,35 @@ describe('SoundWidget', () => {
   it('triggers traffic light to RED when volume is high', async () => {
     // Setup dashboard with a Traffic Light widget
     mockActiveDashboard.widgets = [
-        {
-            id: 'traffic-1',
-            type: 'traffic',
-            config: { active: 'green' }
-        }
+      {
+        id: 'traffic-1',
+        type: 'traffic',
+        config: { active: 'green' },
+      } as unknown as WidgetData,
     ];
 
     // Configure Sound Widget with automation enabled
     const widget = createWidget({
-        autoTrafficLight: true,
-        trafficLightThreshold: 4 // Outside (Red)
+      autoTrafficLight: true,
+      trafficLightThreshold: 4, // Outside (Red)
     });
 
     // Mock high volume
     mockGetByteFrequencyData.mockImplementation((array: Uint8Array) => {
-        array.fill(255); // Max volume
+      array.fill(255); // Max volume
     });
 
     render(<SoundWidget widget={widget} />);
 
     // 1. Flush microtasks (getUserMedia promise)
     await act(async () => {
-        await Promise.resolve();
+      await Promise.resolve();
     });
 
     // 2. Advance time for requestAnimationFrame to run loop and update state
     // Note: React state updates from rAF might need act wrapping
-    await act(async () => {
-       vi.advanceTimersByTime(100);
+    act(() => {
+      vi.advanceTimersByTime(100);
     });
 
     // At this point, SoundWidget state 'volume' should be 100.
@@ -137,38 +137,38 @@ describe('SoundWidget', () => {
     // The useEffect watching 'level' should have fired and set the timeout (1000ms).
 
     // 3. Advance time to trigger debounce timeout
-    await act(async () => {
-        vi.advanceTimersByTime(1000);
+    act(() => {
+      vi.advanceTimersByTime(1000);
     });
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('traffic-1', {
-        config: { active: 'red' }
+      config: { active: 'red' },
     });
   });
 
   it('does NOT trigger traffic light if automation is disabled', async () => {
     mockActiveDashboard.widgets = [
-        {
-            id: 'traffic-1',
-            type: 'traffic',
-            config: { active: 'green' }
-        }
+      {
+        id: 'traffic-1',
+        type: 'traffic',
+        config: { active: 'green' },
+      } as unknown as WidgetData,
     ];
 
     const widget = createWidget({
-        autoTrafficLight: false, // Disabled
-        trafficLightThreshold: 4
+      autoTrafficLight: false, // Disabled
+      trafficLightThreshold: 4,
     });
 
     mockGetByteFrequencyData.mockImplementation((array: Uint8Array) => {
-        array.fill(255);
+      array.fill(255);
     });
 
     render(<SoundWidget widget={widget} />);
 
     await act(async () => {
-       await Promise.resolve();
-       vi.advanceTimersByTime(1200);
+      await Promise.resolve();
+      vi.advanceTimersByTime(1200);
     });
 
     expect(mockUpdateWidget).not.toHaveBeenCalled();
@@ -176,37 +176,37 @@ describe('SoundWidget', () => {
 
   it('triggers traffic light back to GREEN when volume is low', async () => {
     mockActiveDashboard.widgets = [
-        {
-            id: 'traffic-1',
-            type: 'traffic',
-            config: { active: 'red' } // Currently Red
-        }
+      {
+        id: 'traffic-1',
+        type: 'traffic',
+        config: { active: 'red' }, // Currently Red
+      } as unknown as WidgetData,
     ];
 
     const widget = createWidget({
-        autoTrafficLight: true,
-        trafficLightThreshold: 4
+      autoTrafficLight: true,
+      trafficLightThreshold: 4,
     });
 
     // Mock LOW volume (Silence)
     mockGetByteFrequencyData.mockImplementation((array: Uint8Array) => {
-        array.fill(0);
+      array.fill(0);
     });
 
     render(<SoundWidget widget={widget} />);
 
     await act(async () => {
-       await Promise.resolve();
-       vi.advanceTimersByTime(100);
+      await Promise.resolve();
+      vi.advanceTimersByTime(100);
     });
 
-    await act(async () => {
-        vi.advanceTimersByTime(1000);
+    act(() => {
+      vi.advanceTimersByTime(1000);
     });
 
     // Should switch to Green because it's below threshold
     expect(mockUpdateWidget).toHaveBeenCalledWith('traffic-1', {
-        config: { active: 'green' }
+      config: { active: 'green' },
     });
   });
 });
