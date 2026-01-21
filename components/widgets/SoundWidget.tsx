@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, SoundConfig } from '../../types';
-import { Thermometer, Gauge, Activity, Citrus } from 'lucide-react';
+import {
+  WidgetData,
+  SoundConfig,
+  TrafficConfig,
+  WidgetConfig,
+} from '../../types';
+import { Thermometer, Gauge, Activity, Citrus, Zap } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 
 // Poster Colors Mapping
@@ -174,6 +179,7 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
 // --- Main Widget ---
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { updateWidget, activeDashboard } = useDashboard();
   const [volume, setVolume] = useState(0);
   const [history, setHistory] = useState<number[]>(new Array(50).fill(0));
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -185,8 +191,12 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     webkitAudioContext: typeof AudioContext;
   }
 
-  const { sensitivity = 1, visual = 'thermometer' } =
-    widget.config as SoundConfig;
+  const {
+    sensitivity = 1,
+    visual = 'thermometer',
+    autoTrafficLight,
+    trafficLightThreshold = 4,
+  } = widget.config as SoundConfig;
 
   useEffect(() => {
     const startAudio = async () => {
@@ -233,6 +243,41 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const level = getLevelData(volume);
 
+  // Nexus Connection: Auto Traffic Light
+  useEffect(() => {
+    if (!autoTrafficLight || !activeDashboard) return;
+
+    // Find the first traffic light widget
+    const trafficLight = activeDashboard.widgets.find(
+      (w) => w.type === 'traffic'
+    );
+    if (!trafficLight) return;
+
+    const levelIndex = POSTER_LEVELS.indexOf(level);
+    const thresholdIndex = trafficLightThreshold ?? 4;
+
+    // Stable Delay: Only act if the level holds for 1s
+    const timer = setTimeout(() => {
+      const trafficConfig = trafficLight.config as TrafficConfig;
+      const desiredState = levelIndex >= thresholdIndex ? 'red' : 'green';
+
+      // Only update if state is different to avoid spamming Firestore
+      if (trafficConfig.active !== desiredState) {
+        updateWidget(trafficLight.id, {
+          config: { ...trafficConfig, active: desiredState } as WidgetConfig,
+        });
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [
+    level,
+    autoTrafficLight,
+    trafficLightThreshold,
+    activeDashboard,
+    updateWidget,
+  ]);
+
   return (
     <div className="flex flex-col h-full p-4 gap-3 bg-transparent">
       <div className="flex-1 min-h-0 relative">
@@ -272,9 +317,18 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 };
 
 export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as SoundConfig;
-  const { sensitivity = 1, visual = 'thermometer' } = config;
+  const {
+    sensitivity = 1,
+    visual = 'thermometer',
+    autoTrafficLight,
+    trafficLightThreshold = 4,
+  } = config;
+
+  const hasTrafficLight = activeDashboard?.widgets.some(
+    (w) => w.type === 'traffic'
+  );
 
   const modes = [
     { id: 'thermometer', icon: Thermometer, label: 'Meter' },
@@ -328,6 +382,74 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Nexus Connection: Traffic Light */}
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-3">
+        <div className="flex items-center gap-2 text-indigo-900">
+          <Zap className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Auto-Control Traffic Light
+          </span>
+        </div>
+
+        {!hasTrafficLight && (
+          <div className="text-[10px] text-indigo-400 font-medium bg-white/50 p-2 rounded-lg">
+            Tip: Add a Traffic Light widget to use this feature.
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-indigo-800">Enable Automation</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={autoTrafficLight || false}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: { ...config, autoTrafficLight: e.target.checked },
+                })
+              }
+              disabled={!hasTrafficLight}
+            />
+            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        {autoTrafficLight && (
+          <div className="animate-in fade-in slide-in-from-top-1">
+            <label className="text-[10px] text-indigo-400 uppercase tracking-widest mb-1.5 block">
+              Trigger Red Light At:
+            </label>
+            <div className="grid grid-cols-1 gap-1">
+              {POSTER_LEVELS.slice(1).map((lvl, i) => (
+                <button
+                  key={i}
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        trafficLightThreshold: i + 1, // POSTER_LEVELS index (1-based relative to slice, so i+1 matches real index)
+                      },
+                    })
+                  }
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                    trafficLightThreshold === i + 1
+                      ? 'bg-white border-indigo-200 text-indigo-700 shadow-sm'
+                      : 'border-transparent hover:bg-white/50 text-indigo-900/60'
+                  }`}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: lvl.color }}
+                  />
+                  {lvl.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -188,6 +188,8 @@ export interface DiceConfig {
 export interface SoundConfig {
   sensitivity: number;
   visual: 'thermometer' | 'speedometer' | 'line' | 'balls';
+  autoTrafficLight?: boolean;
+  trafficLightThreshold?: number;
 }
 
 export interface DrawingConfig {
