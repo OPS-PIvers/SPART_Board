@@ -22,43 +22,199 @@
 
 import React from 'react';
 import { WidgetData, WidgetType } from '@/types';
-import { ClockWidget, ClockSettings } from './ClockWidget';
-import { TimeToolWidget, TimeToolSettings } from './TimeToolWidget';
-import { TrafficLightWidget } from './TrafficLightWidget';
-import { TextWidget, TextSettings } from './TextWidget';
-import { SoundWidget, SoundSettings } from './SoundWidget';
-import { WebcamWidget, WebcamSettings } from './WebcamWidget';
-import { EmbedWidget, EmbedSettings } from './EmbedWidget';
-import { ChecklistWidget, ChecklistSettings } from './ChecklistWidget';
-import { RandomWidget } from './random/RandomWidget';
-import { RandomSettings } from './random/RandomSettings';
-import { DiceWidget, DiceSettings } from './DiceWidget';
-import { DrawingWidget, DrawingSettings } from './DrawingWidget';
-import { QRWidget, QRSettings } from './QRWidget';
-import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
-import { WorkSymbolsWidget } from './WorkSymbolsWidget';
-import { PollWidget, PollSettings } from './PollWidget';
-import { WeatherWidget, WeatherSettings } from './WeatherWidget';
-import { ScheduleWidget } from './ScheduleWidget';
-import { CalendarWidget, CalendarSettings } from './CalendarWidget';
-import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
-import ClassesWidget from './ClassesWidget';
-import {
-  InstructionalRoutinesWidget,
-  InstructionalRoutinesSettings,
-} from './InstructionalRoutinesWidget';
-import { MiniAppWidget } from './MiniAppWidget';
-import { MaterialsWidget, MaterialsSettings } from './MaterialsWidget';
-import { StickerBookWidget } from './stickers/StickerBookWidget';
-import { StickerLibraryWidget } from './StickerLibraryWidget';
-import { SeatingChartWidget } from './SeatingChartWidget';
-import { SeatingChartSettings } from './SeatingChartSettings';
-import {
-  DefaultSettings,
-  MiniAppSettings,
-  StickerSettings,
-  StickerLibrarySettings,
-} from './FallbackSettings';
+
+// Helper for named exports
+
+function lazyNamed(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  importFactory: () => Promise<any>,
+  importName: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): React.LazyExoticComponent<React.ComponentType<any>> {
+  return React.lazy(
+    () =>
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      importFactory().then((module) => ({ default: module[importName] }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) as React.LazyExoticComponent<React.ComponentType<any>>;
+}
+
+// Widget Imports
+const ClockWidget = lazyNamed(() => import('./ClockWidget'), 'ClockWidget');
+const ClockSettings = lazyNamed(() => import('./ClockWidget'), 'ClockSettings');
+
+const TimeToolWidget = lazyNamed(
+  () => import('./TimeToolWidget'),
+  'TimeToolWidget'
+);
+const TimeToolSettings = lazyNamed(
+  () => import('./TimeToolWidget'),
+  'TimeToolSettings'
+);
+
+const TrafficLightWidget = lazyNamed(
+  () => import('./TrafficLightWidget'),
+  'TrafficLightWidget'
+);
+
+const TextWidget = lazyNamed(() => import('./TextWidget'), 'TextWidget');
+const TextSettings = lazyNamed(() => import('./TextWidget'), 'TextSettings');
+
+const SoundWidget = lazyNamed(() => import('./SoundWidget'), 'SoundWidget');
+const SoundSettings = lazyNamed(() => import('./SoundWidget'), 'SoundSettings');
+
+const WebcamWidget = lazyNamed(() => import('./WebcamWidget'), 'WebcamWidget');
+const WebcamSettings = lazyNamed(
+  () => import('./WebcamWidget'),
+  'WebcamSettings'
+);
+
+const EmbedWidget = lazyNamed(() => import('./EmbedWidget'), 'EmbedWidget');
+const EmbedSettings = lazyNamed(() => import('./EmbedWidget'), 'EmbedSettings');
+
+const ChecklistWidget = lazyNamed(
+  () => import('./ChecklistWidget'),
+  'ChecklistWidget'
+);
+const ChecklistSettings = lazyNamed(
+  () => import('./ChecklistWidget'),
+  'ChecklistSettings'
+);
+
+const RandomWidget = lazyNamed(
+  () => import('./random/RandomWidget'),
+  'RandomWidget'
+);
+const RandomSettings = lazyNamed(
+  () => import('./random/RandomSettings'),
+  'RandomSettings'
+);
+
+const DiceWidget = lazyNamed(() => import('./DiceWidget'), 'DiceWidget');
+const DiceSettings = lazyNamed(() => import('./DiceWidget'), 'DiceSettings');
+
+const DrawingWidget = lazyNamed(
+  () => import('./DrawingWidget'),
+  'DrawingWidget'
+);
+const DrawingSettings = lazyNamed(
+  () => import('./DrawingWidget'),
+  'DrawingSettings'
+);
+
+const QRWidget = lazyNamed(() => import('./QRWidget'), 'QRWidget');
+const QRSettings = lazyNamed(() => import('./QRWidget'), 'QRSettings');
+
+const ScoreboardWidget = lazyNamed(
+  () => import('./ScoreboardWidget'),
+  'ScoreboardWidget'
+);
+const ScoreboardSettings = lazyNamed(
+  () => import('./ScoreboardWidget'),
+  'ScoreboardSettings'
+);
+
+const WorkSymbolsWidget = lazyNamed(
+  () => import('./WorkSymbolsWidget'),
+  'WorkSymbolsWidget'
+);
+
+const PollWidget = lazyNamed(() => import('./PollWidget'), 'PollWidget');
+const PollSettings = lazyNamed(() => import('./PollWidget'), 'PollSettings');
+
+const WeatherWidget = lazyNamed(
+  () => import('./WeatherWidget'),
+  'WeatherWidget'
+);
+const WeatherSettings = lazyNamed(
+  () => import('./WeatherWidget'),
+  'WeatherSettings'
+);
+
+const ScheduleWidget = lazyNamed(
+  () => import('./ScheduleWidget'),
+  'ScheduleWidget'
+);
+
+const CalendarWidget = lazyNamed(
+  () => import('./CalendarWidget'),
+  'CalendarWidget'
+);
+const CalendarSettings = lazyNamed(
+  () => import('./CalendarWidget'),
+  'CalendarSettings'
+);
+
+const LunchCountWidget = lazyNamed(
+  () => import('./LunchCountWidget'),
+  'LunchCountWidget'
+);
+const LunchCountSettings = lazyNamed(
+  () => import('./LunchCountWidget'),
+  'LunchCountSettings'
+);
+
+const ClassesWidget = React.lazy(() => import('./ClassesWidget'));
+
+const InstructionalRoutinesWidget = lazyNamed(
+  () => import('./InstructionalRoutinesWidget'),
+  'InstructionalRoutinesWidget'
+);
+const InstructionalRoutinesSettings = lazyNamed(
+  () => import('./InstructionalRoutinesWidget'),
+  'InstructionalRoutinesSettings'
+);
+
+const MiniAppWidget = lazyNamed(
+  () => import('./MiniAppWidget'),
+  'MiniAppWidget'
+);
+
+const MaterialsWidget = lazyNamed(
+  () => import('./MaterialsWidget'),
+  'MaterialsWidget'
+);
+const MaterialsSettings = lazyNamed(
+  () => import('./MaterialsWidget'),
+  'MaterialsSettings'
+);
+
+const StickerBookWidget = lazyNamed(
+  () => import('./stickers/StickerBookWidget'),
+  'StickerBookWidget'
+);
+
+const StickerLibraryWidget = lazyNamed(
+  () => import('./StickerLibraryWidget'),
+  'StickerLibraryWidget'
+);
+
+const SeatingChartWidget = lazyNamed(
+  () => import('./SeatingChartWidget'),
+  'SeatingChartWidget'
+);
+const SeatingChartSettings = lazyNamed(
+  () => import('./SeatingChartSettings'),
+  'SeatingChartSettings'
+);
+
+// Fallback Settings
+const DefaultSettings = lazyNamed(
+  () => import('./FallbackSettings'),
+  'DefaultSettings'
+);
+const MiniAppSettings = lazyNamed(
+  () => import('./FallbackSettings'),
+  'MiniAppSettings'
+);
+const StickerSettings = lazyNamed(
+  () => import('./FallbackSettings'),
+  'StickerSettings'
+);
+const StickerLibrarySettings = lazyNamed(
+  () => import('./FallbackSettings'),
+  'StickerLibrarySettings'
+);
 
 // Component type definitions to ensure type safety
 type WidgetComponent = React.ComponentType<{
@@ -70,62 +226,69 @@ type SettingsComponent = React.ComponentType<{
   widget: WidgetData;
 }>;
 
+// We cast the lazy components to WidgetComponent because LazyExoticComponent
+// is compatible with ComponentType in usage.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const asWidget = (C: any): WidgetComponent => C as WidgetComponent;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const asSettings = (C: any): SettingsComponent => C as SettingsComponent;
+
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
-  clock: ClockWidget,
-  'time-tool': TimeToolWidget,
-  traffic: TrafficLightWidget,
-  text: TextWidget,
-  checklist: ChecklistWidget,
-  random: RandomWidget,
-  dice: DiceWidget,
-  sound: SoundWidget,
-  webcam: WebcamWidget,
-  embed: EmbedWidget,
-  drawing: DrawingWidget,
-  qr: QRWidget,
-  scoreboard: ScoreboardWidget,
-  workSymbols: WorkSymbolsWidget,
-  poll: PollWidget,
-  weather: WeatherWidget,
-  schedule: ScheduleWidget,
-  calendar: CalendarWidget,
-  lunchCount: LunchCountWidget,
-  classes: ClassesWidget,
-  instructionalRoutines: InstructionalRoutinesWidget,
-  miniApp: MiniAppWidget,
-  materials: MaterialsWidget,
-  stickers: StickerBookWidget,
-  'sticker-library': StickerLibraryWidget,
-  'seating-chart': SeatingChartWidget,
+  clock: asWidget(ClockWidget),
+  'time-tool': asWidget(TimeToolWidget),
+  traffic: asWidget(TrafficLightWidget),
+  text: asWidget(TextWidget),
+  checklist: asWidget(ChecklistWidget),
+  random: asWidget(RandomWidget),
+  dice: asWidget(DiceWidget),
+  sound: asWidget(SoundWidget),
+  webcam: asWidget(WebcamWidget),
+  embed: asWidget(EmbedWidget),
+  drawing: asWidget(DrawingWidget),
+  qr: asWidget(QRWidget),
+  scoreboard: asWidget(ScoreboardWidget),
+  workSymbols: asWidget(WorkSymbolsWidget),
+  poll: asWidget(PollWidget),
+  weather: asWidget(WeatherWidget),
+  schedule: asWidget(ScheduleWidget),
+  calendar: asWidget(CalendarWidget),
+  lunchCount: asWidget(LunchCountWidget),
+  classes: asWidget(ClassesWidget),
+  instructionalRoutines: asWidget(InstructionalRoutinesWidget),
+  miniApp: asWidget(MiniAppWidget),
+  materials: asWidget(MaterialsWidget),
+  stickers: asWidget(StickerBookWidget),
+  'sticker-library': asWidget(StickerLibraryWidget),
+  'seating-chart': asWidget(SeatingChartWidget),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {
-  clock: ClockSettings,
-  text: TextSettings,
-  checklist: ChecklistSettings,
-  random: RandomSettings,
-  dice: DiceSettings,
-  sound: SoundSettings,
-  embed: EmbedSettings,
-  drawing: DrawingSettings,
-  qr: QRSettings,
-  scoreboard: ScoreboardSettings,
-  webcam: WebcamSettings,
-  calendar: CalendarSettings,
-  weather: WeatherSettings,
-  lunchCount: LunchCountSettings,
-  poll: PollSettings,
-  instructionalRoutines: InstructionalRoutinesSettings,
-  materials: MaterialsSettings,
-  miniApp: MiniAppSettings,
-  stickers: StickerSettings,
-  'sticker-library': StickerLibrarySettings,
-  'time-tool': TimeToolSettings,
-  'seating-chart': SeatingChartSettings,
-  traffic: DefaultSettings,
-  workSymbols: DefaultSettings,
-  schedule: DefaultSettings,
-  classes: DefaultSettings,
+  clock: asSettings(ClockSettings),
+  text: asSettings(TextSettings),
+  checklist: asSettings(ChecklistSettings),
+  random: asSettings(RandomSettings),
+  dice: asSettings(DiceSettings),
+  sound: asSettings(SoundSettings),
+  embed: asSettings(EmbedSettings),
+  drawing: asSettings(DrawingSettings),
+  qr: asSettings(QRSettings),
+  scoreboard: asSettings(ScoreboardSettings),
+  webcam: asSettings(WebcamSettings),
+  calendar: asSettings(CalendarSettings),
+  weather: asSettings(WeatherSettings),
+  lunchCount: asSettings(LunchCountSettings),
+  poll: asSettings(PollSettings),
+  instructionalRoutines: asSettings(InstructionalRoutinesSettings),
+  materials: asSettings(MaterialsSettings),
+  miniApp: asSettings(MiniAppSettings),
+  stickers: asSettings(StickerSettings),
+  'sticker-library': asSettings(StickerLibrarySettings),
+  'time-tool': asSettings(TimeToolSettings),
+  'seating-chart': asSettings(SeatingChartSettings),
+  traffic: asSettings(DefaultSettings),
+  workSymbols: asSettings(DefaultSettings),
+  schedule: asSettings(DefaultSettings),
+  classes: asSettings(DefaultSettings),
 };
