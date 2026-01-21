@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, Suspense } from 'react';
 import {
   WidgetData,
   DrawingConfig,
@@ -144,7 +144,17 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const getWidgetContent = () => {
     if (WidgetComponent) {
-      return <WidgetComponent widget={widget} isStudentView={isStudentView} />;
+      return (
+        <Suspense
+          fallback={
+            <div className="h-full w-full flex items-center justify-center text-slate-400">
+              Loading...
+            </div>
+          }
+        >
+          <WidgetComponent widget={widget} isStudentView={isStudentView} />
+        </Suspense>
+      );
     }
     return (
       <div className="p-4 text-center text-slate-400 text-sm">
@@ -155,7 +165,17 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const getWidgetSettings = () => {
     if (SettingsComponent) {
-      return <SettingsComponent widget={widget} />;
+      return (
+        <Suspense
+          fallback={
+            <div className="p-4 text-center text-slate-400 text-sm">
+              Loading settings...
+            </div>
+          }
+        >
+          <SettingsComponent widget={widget} />
+        </Suspense>
+      );
     }
     return (
       <div className="text-slate-500 italic text-sm">
