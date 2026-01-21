@@ -11,3 +11,9 @@
 **Source:** Instructional Routines Widget (Steps)
 **Destination:** Checklist Widget (Items)
 **Value:** Allows teachers to instantly convert a classroom routine (like Think-Pair-Share) into a trackable checklist for students to follow.
+
+## 2026-01-21 - [Auto-Traffic Control]
+
+**Source:** Sound Widget (Noise Meter)
+**Destination:** Traffic Light Widget
+**Value:** Automatically switches Traffic Light to Red when noise level exceeds a threshold, acting as an unbiased classroom monitor.

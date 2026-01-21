@@ -1,17 +1,41 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { SoundWidget } from './SoundWidget';
 import { WidgetData, SoundConfig } from '../../types';
+import { useDashboard } from '../../context/useDashboard';
+
+// Mock useDashboard
+vi.mock('../../context/useDashboard', () => ({
+  useDashboard: vi.fn(),
+}));
 
 describe('SoundWidget', () => {
+  let mockUpdateWidget: Mock;
+  let mockActiveDashboard: any;
+  let mockGetByteFrequencyData: Mock;
+
   beforeEach(() => {
+    mockUpdateWidget = vi.fn();
+    mockActiveDashboard = {
+      widgets: [],
+    };
+
+    (useDashboard as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      activeDashboard: mockActiveDashboard,
+    });
+
+    mockGetByteFrequencyData = vi.fn((array: Uint8Array) => {
+        array.fill(0); // Default silence
+    });
+
     // Mock AudioContext
     window.AudioContext = class {
       createMediaStreamSource = vi.fn().mockReturnValue({ connect: vi.fn() });
       createAnalyser = vi.fn().mockReturnValue({
         connect: vi.fn(),
         frequencyBinCount: 128,
-        getByteFrequencyData: vi.fn(),
+        getByteFrequencyData: mockGetByteFrequencyData,
       });
     } as unknown as typeof AudioContext;
 
@@ -24,10 +48,13 @@ describe('SoundWidget', () => {
       },
       writable: true,
     });
+
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   const createWidget = (config: Partial<SoundConfig> = {}): WidgetData => {
@@ -49,22 +76,137 @@ describe('SoundWidget', () => {
 
   it('renders thermometer view by default', async () => {
     render(<SoundWidget widget={createWidget()} />);
-    // Check for the level label
+
+    // Initial render should show Silence (level 0)
     expect(screen.getByText(/Silence/i)).toBeInTheDocument();
 
-    // Wait for async effects to flush
+    // Flush promises and timers
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await Promise.resolve(); // Flush microtasks
+      vi.advanceTimersByTime(100);
     });
   });
 
   it('renders speedometer view when configured', async () => {
     render(<SoundWidget widget={createWidget({ visual: 'speedometer' })} />);
+
     expect(screen.getByText(/Silence/i)).toBeInTheDocument();
 
-    // Wait for async effects to flush
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await Promise.resolve();
+      vi.advanceTimersByTime(100);
+    });
+  });
+
+  it('triggers traffic light to RED when volume is high', async () => {
+    // Setup dashboard with a Traffic Light widget
+    mockActiveDashboard.widgets = [
+        {
+            id: 'traffic-1',
+            type: 'traffic',
+            config: { active: 'green' }
+        }
+    ];
+
+    // Configure Sound Widget with automation enabled
+    const widget = createWidget({
+        autoTrafficLight: true,
+        trafficLightThreshold: 4 // Outside (Red)
+    });
+
+    // Mock high volume
+    mockGetByteFrequencyData.mockImplementation((array: Uint8Array) => {
+        array.fill(255); // Max volume
+    });
+
+    render(<SoundWidget widget={widget} />);
+
+    // 1. Flush microtasks (getUserMedia promise)
+    await act(async () => {
+        await Promise.resolve();
+    });
+
+    // 2. Advance time for requestAnimationFrame to run loop and update state
+    // Note: React state updates from rAF might need act wrapping
+    await act(async () => {
+       vi.advanceTimersByTime(100);
+    });
+
+    // At this point, SoundWidget state 'volume' should be 100.
+    // 'level' should be 'Outside' (Red).
+    // The useEffect watching 'level' should have fired and set the timeout (1000ms).
+
+    // 3. Advance time to trigger debounce timeout
+    await act(async () => {
+        vi.advanceTimersByTime(1000);
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('traffic-1', {
+        config: { active: 'red' }
+    });
+  });
+
+  it('does NOT trigger traffic light if automation is disabled', async () => {
+    mockActiveDashboard.widgets = [
+        {
+            id: 'traffic-1',
+            type: 'traffic',
+            config: { active: 'green' }
+        }
+    ];
+
+    const widget = createWidget({
+        autoTrafficLight: false, // Disabled
+        trafficLightThreshold: 4
+    });
+
+    mockGetByteFrequencyData.mockImplementation((array: Uint8Array) => {
+        array.fill(255);
+    });
+
+    render(<SoundWidget widget={widget} />);
+
+    await act(async () => {
+       await Promise.resolve();
+       vi.advanceTimersByTime(1200);
+    });
+
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  it('triggers traffic light back to GREEN when volume is low', async () => {
+    mockActiveDashboard.widgets = [
+        {
+            id: 'traffic-1',
+            type: 'traffic',
+            config: { active: 'red' } // Currently Red
+        }
+    ];
+
+    const widget = createWidget({
+        autoTrafficLight: true,
+        trafficLightThreshold: 4
+    });
+
+    // Mock LOW volume (Silence)
+    mockGetByteFrequencyData.mockImplementation((array: Uint8Array) => {
+        array.fill(0);
+    });
+
+    render(<SoundWidget widget={widget} />);
+
+    await act(async () => {
+       await Promise.resolve();
+       vi.advanceTimersByTime(100);
+    });
+
+    await act(async () => {
+        vi.advanceTimersByTime(1000);
+    });
+
+    // Should switch to Green because it's below threshold
+    expect(mockUpdateWidget).toHaveBeenCalledWith('traffic-1', {
+        config: { active: 'green' }
     });
   });
 });
