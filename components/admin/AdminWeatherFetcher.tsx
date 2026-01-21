@@ -35,6 +35,7 @@ interface OpenWeatherData {
   name: string;
   main: {
     temp: number;
+    feels_like: number;
   };
   weather: [{ main: string }, ...{ main: string }[]];
 }
@@ -43,6 +44,7 @@ interface EarthNetworksResponse {
   o?: {
     t: number;
     ic: number;
+    fl?: number;
   };
 }
 
@@ -61,6 +63,7 @@ export const AdminWeatherFetcher: React.FC = () => {
     const fetchWeather = async () => {
       try {
         let temp = 72;
+        let feelsLike = 72;
         let condition = 'sunny';
         let locationName = STATION_CONFIG.name;
 
@@ -104,6 +107,7 @@ export const AdminWeatherFetcher: React.FC = () => {
 
           if (data?.o) {
             temp = data.o.t;
+            feelsLike = data.o.fl ?? data.o.t;
             condition = EARTH_NETWORKS_ICONS.SNOW.includes(data.o.ic)
               ? 'snowy'
               : EARTH_NETWORKS_ICONS.CLOUDY.includes(data.o.ic)
@@ -136,6 +140,7 @@ export const AdminWeatherFetcher: React.FC = () => {
           const data = (await res.json()) as OpenWeatherData;
           if (Number(data.cod) === 200) {
             temp = data.main.temp;
+            feelsLike = data.main.feels_like;
             condition = data.weather[0].main.toLowerCase();
             locationName = data.name;
           } else {
@@ -146,6 +151,7 @@ export const AdminWeatherFetcher: React.FC = () => {
         // Write to Firestore
         await setDoc(doc(db, 'global_weather', 'current'), {
           temp,
+          feelsLike,
           condition,
           locationName,
           updatedAt: Date.now(),
@@ -153,7 +159,7 @@ export const AdminWeatherFetcher: React.FC = () => {
         });
 
         console.warn(
-          `[AdminWeatherFetcher] Updated weather: ${temp}° ${condition}`
+          `[AdminWeatherFetcher] Updated weather: ${temp}° (Feels like ${feelsLike}°) ${condition}`
         );
       } catch (err) {
         console.error('[AdminWeatherFetcher] Failed to fetch:', err);

@@ -86,7 +86,11 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 350,
     config: { voiceLevel: null, workMode: null },
   },
-  weather: { w: 250, h: 280, config: { temp: 72, condition: 'sunny' } },
+  weather: {
+    w: 250,
+    h: 280,
+    config: { temp: 72, condition: 'sunny', isAuto: true },
+  },
   schedule: {
     w: 300,
     h: 350,

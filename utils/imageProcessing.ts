@@ -1,3 +1,5 @@
+import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
+
 /**
  * Trims transparent whitespace from an image Data URL.
  * Returns a Promise that resolves to a new Data URL.
@@ -82,10 +84,39 @@ export const trimImageWhitespace = (dataUrl: string): Promise<string> => {
 };
 
 /**
+ * Removes the background from an image using professional AI-based segmentation.
+ * Falls back to flood fill if the library fails or isn't supported.
+ */
+export const removeBackground = async (dataUrl: string): Promise<string> => {
+  try {
+    // We use the library for high-quality background removal
+    const blob = await imglyRemoveBackground(dataUrl, {
+      progress: (key, current, total) => {
+        console.warn(`Background removal progress: ${key} ${current}/${total}`);
+      },
+    });
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error(
+      'Failed to remove background with @imgly/background-removal, falling back to flood fill',
+      error
+    );
+    return removeBackgroundFloodFill(dataUrl);
+  }
+};
+
+/**
  * Removes the background from an image using flood fill from corners.
  * Assumes the corners represent the background color.
+ * (Fallback method)
  */
-export const removeBackground = (
+export const removeBackgroundFloodFill = (
   dataUrl: string,
   tolerance = 20
 ): Promise<string> => {

@@ -255,6 +255,8 @@ export interface WeatherConfig {
   lastSync?: number | null;
   city?: string;
   source?: 'openweather' | 'earth_networks';
+  feelsLike?: number;
+  showFeelsLike?: boolean;
 }
 
 export interface WeatherTemperatureRange {
@@ -272,6 +274,7 @@ export interface WeatherGlobalConfig {
   temperatureRanges: WeatherTemperatureRange[];
   source?: 'openweather' | 'earth_networks';
   city?: string;
+  showFeelsLike?: boolean;
 }
 
 export interface ScheduleConfig {
