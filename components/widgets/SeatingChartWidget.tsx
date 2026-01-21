@@ -5,10 +5,14 @@ import {
   Armchair,
   LayoutGrid,
   RotateCw,
+  RotateCcw,
   Trash2,
   Monitor,
+  Maximize2,
   Dice5,
   User,
+  Copy,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 
@@ -53,6 +57,17 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [bulkCount, setBulkCount] = useState<number>(1);
+  const [dragState, setDragState] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [resizeState, setResizeState] = useState<{
+    id: string;
+    width: number;
+    height: number;
+  } | null>(null);
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null); // Furniture ID
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -104,20 +119,42 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const def = FURNITURE_TYPES.find((t) => t.type === type);
     if (!def) return;
 
-    const newItem: FurnitureItem = {
-      id: crypto.randomUUID(),
-      type,
-      x: widget.w / 2 - def.w / 2, // Center
-      y: widget.h / 2 - def.h / 2,
-      width: def.w,
-      height: def.h,
-      rotation: 0,
-    };
+    const newItems: FurnitureItem[] = [];
+    const count = Math.max(1, Math.min(50, bulkCount));
+
+    for (let i = 0; i < count; i++) {
+      const offset = i * 10;
+      newItems.push({
+        id: crypto.randomUUID(),
+        type,
+        x: widget.w / 2 - def.w / 2 + offset, // Offset slightly so they aren't perfectly stacked
+        y: widget.h / 2 - def.h / 2 + offset,
+        width: def.w,
+        height: def.h,
+        rotation: 0,
+      });
+    }
 
     updateWidget(widget.id, {
-      config: { ...config, furniture: [...furniture, newItem] },
+      config: { ...config, furniture: [...furniture, ...newItems] },
     });
-    setSelectedId(newItem.id);
+
+    if (newItems.length === 1) {
+      setSelectedId(newItems[0].id);
+    }
+  };
+
+  const clearAllFurniture = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to remove all furniture and assignments?'
+      )
+    ) {
+      updateWidget(widget.id, {
+        config: { ...config, furniture: [], assignments: {} },
+      });
+      setSelectedId(null);
+    }
   };
 
   const updateFurniture = (id: string, updates: Partial<FurnitureItem>) => {
@@ -125,6 +162,27 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: { ...config, furniture: next },
     });
+  };
+
+  const duplicateFurniture = (id: string) => {
+    const item = furniture.find((f) => f.id === id);
+    if (!item) return;
+
+    const newItem: FurnitureItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      x: item.x + 20,
+      y: item.y + 20,
+    };
+
+    // Snap new position to grid to be safe
+    newItem.x = Math.round(newItem.x / gridSize) * gridSize;
+    newItem.y = Math.round(newItem.y / gridSize) * gridSize;
+
+    updateWidget(widget.id, {
+      config: { ...config, furniture: [...furniture, newItem] },
+    });
+    setSelectedId(newItem.id);
   };
 
   const removeFurniture = (id: string) => {
@@ -152,11 +210,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     if (!item) return;
 
     setSelectedId(id);
+
     // Calculate offset from item top-left
     const startX = e.clientX;
     const startY = e.clientY;
     const origX = item.x;
     const origY = item.y;
+    const currentPos = { x: origX, y: origY };
+
+    // Set initial drag state
+    setDragState({ id, x: origX, y: origY });
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
@@ -169,12 +232,63 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       newX = Math.round(newX / gridSize) * gridSize;
       newY = Math.round(newY / gridSize) * gridSize;
 
-      updateFurniture(id, { x: newX, y: newY });
+      currentPos.x = newX;
+      currentPos.y = newY;
+      setDragState({ id, x: newX, y: newY });
     };
 
     const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+
+      updateFurniture(id, { x: currentPos.x, y: currentPos.y });
+      setDragState(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
+
+  const handleResizeStart = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const item = furniture.find((f) => f.id === id);
+    if (!item) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = item.width;
+    const startH = item.height;
+    const currentSize = { w: startW, h: startH };
+
+    setResizeState({ id, width: startW, height: startH });
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      let newW = startW + dx;
+      let newH = startH + dy;
+
+      // Snap to grid
+      newW = Math.round(newW / gridSize) * gridSize;
+      newH = Math.round(newH / gridSize) * gridSize;
+
+      // Min size constraint
+      if (newW < gridSize) newW = gridSize;
+      if (newH < gridSize) newH = gridSize;
+
+      currentSize.w = newW;
+      currentSize.h = newH;
+      setResizeState({ id, width: newW, height: newH });
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+
+      updateFurniture(id, { width: currentSize.w, height: currentSize.h });
+      setResizeState(null);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -209,6 +323,70 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: { ...config, assignments: next },
     });
+  };
+
+  const addAllRandomly = () => {
+    const targetFurniture = furniture.filter(
+      (f) => f.type === 'desk' || f.type.startsWith('table')
+    );
+
+    if (targetFurniture.length === 0) {
+      addToast('No desks or tables available!', 'error');
+      return;
+    }
+
+    const unassigned = [...unassignedStudents];
+    if (unassigned.length === 0) {
+      addToast('All students are already assigned!', 'info');
+      return;
+    }
+
+    // Shuffle students
+    for (let i = unassigned.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [unassigned[i], unassigned[j]] = [unassigned[j], unassigned[i]];
+    }
+
+    // Find empty target furniture
+    const occupiedIds = new Set(Object.values(assignments));
+    const emptySpots = targetFurniture
+      .filter((f) => !occupiedIds.has(f.id))
+      .map((f) => f.id);
+
+    if (emptySpots.length === 0) {
+      addToast('No empty spots available!', 'error');
+      return;
+    }
+
+    // Shuffle empty spots too for true randomness
+    for (let i = emptySpots.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [emptySpots[i], emptySpots[j]] = [emptySpots[j], emptySpots[i]];
+    }
+
+    const nextAssignments = { ...assignments };
+    let count = 0;
+    while (unassigned.length > 0 && emptySpots.length > 0) {
+      const student = unassigned.pop();
+      const spotId = emptySpots.pop();
+      if (student && spotId) {
+        nextAssignments[student] = spotId;
+        count++;
+      }
+    }
+
+    updateWidget(widget.id, {
+      config: { ...config, assignments: nextAssignments },
+    });
+
+    if (unassigned.length > 0) {
+      addToast(
+        `Assigned ${count} students. ${unassigned.length} still need spots.`,
+        'info'
+      );
+    } else {
+      addToast(`Randomly assigned ${count} students!`, 'success');
+    }
   };
 
   // --- INTERACT LOGIC ---
@@ -337,19 +515,47 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         {(mode === 'setup' || mode === 'assign') && (
           <div className="w-48 bg-white border-r border-slate-200 flex flex-col overflow-hidden shrink-0 animate-in slide-in-from-left-4 duration-200">
             {mode === 'setup' && (
-              <div className="p-3 grid grid-cols-2 gap-2">
-                {FURNITURE_TYPES.map((t) => (
+              <div className="flex flex-col h-full">
+                <div className="p-3 border-b border-slate-100">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    Bulk Add Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={bulkCount}
+                    onChange={(e) =>
+                      setBulkCount(parseInt(e.target.value) || 1)
+                    }
+                    className="w-full p-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                  />
+                </div>
+
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {FURNITURE_TYPES.map((t) => (
+                    <button
+                      key={t.type}
+                      onClick={() => addFurniture(t.type)}
+                      className="flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors aspect-square"
+                    >
+                      <t.icon className="w-6 h-6 text-slate-600" />
+                      <span className="text-[10px] font-bold text-slate-500">
+                        {t.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-auto p-3 border-t border-slate-100">
                   <button
-                    key={t.type}
-                    onClick={() => addFurniture(t.type)}
-                    className="flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors aspect-square"
+                    onClick={clearAllFurniture}
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition-colors text-[10px] font-black uppercase tracking-wider"
                   >
-                    <t.icon className="w-6 h-6 text-slate-600" />
-                    <span className="text-[10px] font-bold text-slate-500">
-                      {t.label}
-                    </span>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear All
                   </button>
-                ))}
+                </div>
               </div>
             )}
 
@@ -358,6 +564,17 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="p-2 border-b border-slate-100 bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">
                   Unassigned Students
                 </div>
+
+                <div className="p-2 border-b border-slate-100">
+                  <button
+                    onClick={addAllRandomly}
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 rounded-lg transition-colors text-[10px] font-black uppercase tracking-wider"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Add All Random
+                  </button>
+                </div>
+
                 <div className="flex-1 overflow-y-auto p-2 space-y-2">
                   {unassignedStudents.length === 0 ? (
                     <div className="text-center text-xs text-slate-400 py-4 italic">
@@ -398,52 +615,102 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         >
           {furniture.map((item) => {
             const assigned = getAssignedStudents(item.id);
+            const displayX = dragState?.id === item.id ? dragState.x : item.x;
+            const displayY = dragState?.id === item.id ? dragState.y : item.y;
+            const displayW =
+              resizeState?.id === item.id ? resizeState.width : item.width;
+            const displayH =
+              resizeState?.id === item.id ? resizeState.height : item.height;
 
             return (
               <div
                 key={item.id}
                 onPointerDown={(e) => handlePointerDown(e, item.id)}
+                onClick={(e) => e.stopPropagation()}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
                 }}
                 onDrop={(e) => handleStudentDrop(e, item.id)}
                 style={{
-                  left: item.x,
-                  top: item.y,
-                  width: item.width,
-                  height: item.height,
+                  left: displayX,
+                  top: displayY,
+                  width: displayW,
+                  height: displayH,
                   transform: `rotate(${item.rotation}deg)`,
                 }}
                 className={`${getFurnitureStyle(item)} ${mode === 'setup' ? 'cursor-move' : ''}`}
               >
-                {/* Rotation Handle (only in Setup & Selected) */}
+                {/* Resize Handle */}
                 {mode === 'setup' && selectedId === item.id && (
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-1 bg-white shadow-md rounded-full p-1 border border-slate-200 z-50">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateFurniture(item.id, {
-                          rotation: (item.rotation + 45) % 360,
-                        });
-                      }}
-                      className="p-1 hover:bg-slate-100 rounded-full text-slate-600"
-                      title="Rotate"
-                    >
-                      <RotateCw className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFurniture(item.id);
-                      }}
-                      className="p-1 hover:bg-red-50 rounded-full text-red-500"
-                      title="Remove"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                  <div
+                    onPointerDown={(e) => handleResizeStart(e, item.id)}
+                    className="absolute -bottom-2 -right-2 w-6 h-6 flex items-center justify-center cursor-nwse-resize z-50 bg-white shadow rounded-full border border-slate-200 hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors"
+                  >
+                    <Maximize2 className="w-3 h-3 rotate-90" />
                   </div>
                 )}
+
+                {/* Floating Menu */}
+                {mode === 'setup' &&
+                  selectedId === item.id &&
+                  !dragState &&
+                  !resizeState && (
+                    <div
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-200"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateFurniture(item.id, {
+                            rotation: (item.rotation - 45 + 360) % 360,
+                          });
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                        title="Rotate Left"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateFurniture(item.id, {
+                            rotation: (item.rotation + 45) % 360,
+                          });
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                        title="Rotate Right"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+
+                      <div className="w-px h-4 bg-slate-200 mx-0.5" />
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          duplicateFurniture(item.id);
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFurniture(item.id);
+                        }}
+                        className="p-1.5 hover:bg-red-50 rounded-full text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                 {/* Content */}
                 <div className="flex flex-col items-center justify-center p-1 w-full h-full overflow-hidden pointer-events-none">
@@ -463,13 +730,13 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
                   {/* Assigned Students */}
                   {assigned.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-center gap-1 w-full h-full overflow-hidden">
+                    <div className="flex flex-col items-center justify-center gap-1 w-full h-full overflow-hidden">
                       {assigned.map((name) => (
                         <div
                           key={name}
-                          className="bg-white/90 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-sm border border-slate-100 truncate max-w-full pointer-events-auto"
+                          className={`bg-white/90 px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-[10px]'}`}
                         >
-                          {name}
+                          <span className="truncate">{name}</span>
                           {mode === 'assign' && (
                             <button
                               onClick={(e) => {

@@ -19,3 +19,13 @@
 
 **Drift:** Found hardcoded pastel hex values for the TextWidget (Sticky Note) scattered across components, defaults, and helpers.
 **Fix:** Centralized these values into `STICKY_NOTE_COLORS` in `config/colors.ts` and refactored dependent files to use the single source of truth.
+
+## 2026-02-14 - [Toggle Switch]
+
+**Drift:** Found multiple hardcoded implementations of toggle switches (e.g., in `LunchCountWidget` and `RandomSettings`) with inconsistent sizing and styling.
+**Fix:** Created a standardized `Toggle` component in `components/common/Toggle.tsx` and refactored widgets to use it.
+
+## 2026-02-14 - [Auth Bypass Config]
+
+**Conflict:** The `isAuthBypass` flag in `config/firebase.ts` was hardcoded to `false`, contradicting the documentation that it should be controlled by `VITE_AUTH_BYPASS`.
+**Fix:** Updated `config/firebase.ts` to respect the environment variable.

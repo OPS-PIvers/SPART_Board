@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import { describe, it, expect, vi } from 'vitest';
-import { generateMiniAppCode } from '../../utils/ai';
+import { generateMiniAppCode, generatePoll } from '../../utils/ai';
 
 // Mock the GoogleGenAI client
 vi.mock('@google/genai', () => {
@@ -15,12 +16,23 @@ vi.mock('@google/genai', () => {
       }
       models = {
         generateContent: vi.fn().mockImplementation(async (params: any) => {
-          if (
-            params.contents[0].parts[0].text &&
-            params.contents[0].parts[0].text.includes('FAIL')
-          ) {
+          const promptText = params.contents[0].parts[0].text;
+
+          if (promptText && promptText.includes('FAIL')) {
             throw new Error('Simulated API Failure');
           }
+
+          // Check if this is a Poll request
+          if (promptText && promptText.includes('Topic:')) {
+            return {
+              text: JSON.stringify({
+                question: 'Mock Poll Question?',
+                options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
+              }),
+            };
+          }
+
+          // Default to Mini App response
           return {
             text: JSON.stringify({
               title: 'Mock App',
@@ -59,6 +71,37 @@ describe('generateMiniAppCode', () => {
         return;
       }
       expect(e.message).toContain('Failed to generate app');
+      expect(e.message).toContain('Simulated API Failure');
+    }
+  });
+});
+
+describe('generatePoll', () => {
+  it('generates poll successfully when API Key is present', async () => {
+    try {
+      const result = await generatePoll('Photosynthesis');
+      expect(result).toEqual({
+        question: 'Mock Poll Question?',
+        options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
+      });
+    } catch (e: any) {
+      expect(e.message).toBe(
+        'Gemini API Key is missing or invalid (VITE_GEMINI_API_KEY)'
+      );
+    }
+  });
+
+  it('throws formatted error on failure', async () => {
+    try {
+      await generatePoll('FAIL');
+    } catch (e: any) {
+      if (
+        e.message ===
+        'Gemini API Key is missing or invalid (VITE_GEMINI_API_KEY)'
+      ) {
+        return;
+      }
+      expect(e.message).toContain('Failed to generate poll');
       expect(e.message).toContain('Simulated API Failure');
     }
   });

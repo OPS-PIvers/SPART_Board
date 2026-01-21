@@ -37,6 +37,11 @@ service firebase.storage {
       allow read: if canReadAdminBackground(backgroundId);
       allow write: if isAdmin();
     }
+
+    match /admin_weather/{rangeId}/{fileName} {
+      allow read: if true; // Weather images are public
+      allow write: if isAdmin();
+    }
     
     // Default deny for everything else
     match /{allPaths=**} {

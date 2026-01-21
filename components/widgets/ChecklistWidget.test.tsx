@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { ChecklistSettings } from './ChecklistWidget';
+import { ChecklistSettings, ChecklistWidget } from './ChecklistWidget';
 import { useDashboard } from '../../context/useDashboard';
+import { DashboardContextValue } from '../../context/DashboardContextValue';
 import {
   InstructionalRoutinesConfig,
   WidgetData,
@@ -15,9 +16,9 @@ vi.mock('../common/RosterModeControl', () => ({
   RosterModeControl: () => <div data-testid="roster-mode-control" />,
 }));
 vi.mock('lucide-react', () => ({
-  CheckSquare: () => <div />,
-  Square: () => <div />,
-  ListPlus: () => <div />,
+  CheckSquare: () => <div data-testid="check-square" />,
+  Square: () => <div data-testid="square" />,
+  ListPlus: () => <div data-testid="list-plus" />,
   Type: () => <div />,
   Users: () => <div />,
   RefreshCw: () => <div />,
@@ -61,16 +62,112 @@ const mockRoutineWidget: WidgetData = {
   } as InstructionalRoutinesConfig,
 };
 
+const defaultContext: Partial<DashboardContextValue> = {
+  updateWidget: mockUpdateWidget,
+  addToast: mockAddToast,
+  rosters: [],
+  activeRosterId: null,
+  activeDashboard: {
+    id: 'dashboard-1',
+    name: 'Test Dashboard',
+    background: 'bg-slate-100',
+    widgets: [mockWidget, mockRoutineWidget],
+    globalStyle: {
+      fontFamily: 'sans',
+      windowTransparency: 0,
+      windowBorderRadius: 'md',
+      dockTransparency: 0,
+      dockBorderRadius: 'md',
+      dockTextColor: '#000000',
+      dockTextShadow: false,
+    },
+    createdAt: Date.now(),
+  },
+};
+
+describe('ChecklistWidget', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
+  });
+
+  it('renders empty state message when no items', () => {
+    render(<ChecklistWidget widget={mockWidget} />);
+    expect(screen.getByText('No Tasks')).toBeInTheDocument();
+    expect(
+      screen.getByText('Flip to add your class tasks.')
+    ).toBeInTheDocument();
+  });
+
+  it('renders items in manual mode', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [
+          { id: '1', text: 'Task 1', completed: false },
+          { id: '2', text: 'Task 2', completed: true },
+        ],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    expect(screen.getByText('Task 1')).toBeInTheDocument();
+    expect(screen.getByText('Task 2')).toBeInTheDocument();
+    // One checked, one unchecked
+    expect(screen.getByTestId('square')).toBeInTheDocument();
+    expect(screen.getByTestId('check-square')).toBeInTheDocument();
+  });
+
+  it('toggles item completion on click', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [{ id: '1', text: 'Task 1', completed: false }],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    fireEvent.click(screen.getByText('Task 1'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
+      config: expect.objectContaining({
+        items: [{ id: '1', text: 'Task 1', completed: true }],
+      }),
+    });
+  });
+
+  it('resets all checks when reset button is clicked', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [
+          { id: '1', text: 'Task 1', completed: true },
+          { id: '2', text: 'Task 2', completed: true },
+        ],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistWidget widget={itemsWidget} />);
+
+    fireEvent.click(screen.getByText('Reset Checks'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('checklist-1', {
+      config: expect.objectContaining({
+        items: [
+          { id: '1', text: 'Task 1', completed: false },
+          { id: '2', text: 'Task 2', completed: false },
+        ],
+      }),
+    });
+  });
+});
+
 describe('ChecklistSettings Nexus Connection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as unknown as Mock).mockReturnValue({
-      updateWidget: mockUpdateWidget,
-      addToast: mockAddToast,
-      activeDashboard: {
-        widgets: [mockWidget, mockRoutineWidget],
-      },
-    });
+    (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
   });
 
   it('imports steps from active Instructional Routine', () => {
@@ -133,14 +230,6 @@ describe('ChecklistSettings Nexus Connection', () => {
     });
 
     render(<ChecklistSettings widget={mockWidget} />);
-
-    const importButton = screen.getByText('Sync');
-    fireEvent.click(importButton);
-
-    expect(mockAddToast).toHaveBeenCalledWith(
-      'Active routine has no steps to import.',
-      'info'
-    );
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
 });

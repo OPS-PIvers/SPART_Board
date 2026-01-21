@@ -661,16 +661,17 @@ export const FeaturePermissionsManager: React.FC = () => {
                                 min="5"
                                 max="1440"
                                 value={config.updateFrequencyMinutes ?? 15}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
                                   updatePermission(tool.type, {
                                     config: {
                                       ...config,
-                                      updateFrequencyMinutes: parseInt(
-                                        e.target.value
-                                      ),
+                                      updateFrequencyMinutes: isNaN(val)
+                                        ? 15
+                                        : val,
                                     },
-                                  })
-                                }
+                                  });
+                                }}
                                 className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
                               />
                             </div>
@@ -696,41 +697,124 @@ export const FeaturePermissionsManager: React.FC = () => {
                                       className="bg-white border border-slate-200 rounded-lg p-2 space-y-2"
                                     >
                                       <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          placeholder="Min"
-                                          value={range.min}
+                                        <select
+                                          value={range.type ?? 'range'}
                                           onChange={(e) =>
                                             updateWeatherRange(
                                               tool.type,
                                               range.id,
                                               {
-                                                min: parseInt(e.target.value),
+                                                type: e.target
+                                                  .value as WeatherTemperatureRange['type'],
                                               }
                                             )
                                           }
-                                          className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
-                                          title="Min Temp"
-                                        />
-                                        <span className="text-slate-400 text-xs">
-                                          -
-                                        </span>
-                                        <input
-                                          type="number"
-                                          placeholder="Max"
-                                          value={range.max}
-                                          onChange={(e) =>
-                                            updateWeatherRange(
-                                              tool.type,
-                                              range.id,
-                                              {
-                                                max: parseInt(e.target.value),
-                                              }
-                                            )
-                                          }
-                                          className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
-                                          title="Max Temp"
-                                        />
+                                          className="text-[10px] font-bold border border-slate-200 rounded px-1 py-1"
+                                        >
+                                          <option value="range">Range</option>
+                                          <option value="above">Above</option>
+                                          <option value="below">Below</option>
+                                        </select>
+
+                                        {(range.type === 'range' ||
+                                          !range.type) && (
+                                          <>
+                                            <input
+                                              type="number"
+                                              placeholder="Min"
+                                              value={range.min}
+                                              onChange={(e) => {
+                                                const val = parseFloat(
+                                                  e.target.value
+                                                );
+                                                updateWeatherRange(
+                                                  tool.type,
+                                                  range.id,
+                                                  {
+                                                    min: isNaN(val) ? 0 : val,
+                                                  }
+                                                );
+                                              }}
+                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                              title="Min Temp"
+                                            />
+                                            <span className="text-slate-400 text-xs">
+                                              -
+                                            </span>
+                                            <input
+                                              type="number"
+                                              placeholder="Max"
+                                              value={range.max}
+                                              onChange={(e) => {
+                                                const val = parseFloat(
+                                                  e.target.value
+                                                );
+                                                updateWeatherRange(
+                                                  tool.type,
+                                                  range.id,
+                                                  {
+                                                    max: isNaN(val) ? 0 : val,
+                                                  }
+                                                );
+                                              }}
+                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                              title="Max Temp"
+                                            />
+                                          </>
+                                        )}
+
+                                        {range.type === 'above' && (
+                                          <div className="flex items-center gap-2 flex-1">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                              Above
+                                            </span>
+                                            <input
+                                              type="number"
+                                              placeholder="Temp"
+                                              value={range.min}
+                                              onChange={(e) => {
+                                                const val = parseFloat(
+                                                  e.target.value
+                                                );
+                                                updateWeatherRange(
+                                                  tool.type,
+                                                  range.id,
+                                                  {
+                                                    min: isNaN(val) ? 0 : val,
+                                                  }
+                                                );
+                                              }}
+                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                            />
+                                          </div>
+                                        )}
+
+                                        {range.type === 'below' && (
+                                          <div className="flex items-center gap-2 flex-1">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                              Below
+                                            </span>
+                                            <input
+                                              type="number"
+                                              placeholder="Temp"
+                                              value={range.max}
+                                              onChange={(e) => {
+                                                const val = parseFloat(
+                                                  e.target.value
+                                                );
+                                                updateWeatherRange(
+                                                  tool.type,
+                                                  range.id,
+                                                  {
+                                                    max: isNaN(val) ? 0 : val,
+                                                  }
+                                                );
+                                              }}
+                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                            />
+                                          </div>
+                                        )}
+
                                         <div className="flex-1" />
                                         <button
                                           onClick={() =>
