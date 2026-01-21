@@ -79,7 +79,7 @@ export async function generateMiniAppCode(
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
@@ -185,7 +185,7 @@ export async function generatePoll(topic: string): Promise<GeneratedPoll> {
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',

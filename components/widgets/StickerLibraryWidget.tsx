@@ -3,6 +3,7 @@ import { useDashboard } from '@/context/useDashboard';
 import { useStorage } from '@/hooks/useStorage';
 import { WidgetData, StickerLibraryConfig } from '@/types';
 import { Plus, Trash2, Eraser, Loader2 } from 'lucide-react';
+import { removeBackground, trimImageWhitespace } from '@/utils/imageProcessing';
 
 interface Props {
   widget: WidgetData;
@@ -10,8 +11,11 @@ interface Props {
 
 export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
   const { updateWidget, addWidget, clearAllStickers } = useDashboard();
-  const { uploadFile, uploading } = useStorage();
+  const { uploadFile, uploading: storageUploading } = useStorage();
+  const [processing, setProcessing] = React.useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploading = storageUploading || processing;
 
   if (widget.type !== 'sticker-library') {
     return null;
@@ -25,14 +29,43 @@ export const StickerLibraryWidget: React.FC<Props> = ({ widget }) => {
     const file = e.target.files?.[0];
     if (!file || !widget.id) return;
 
-    const url = (await uploadFile(
-      `stickers/${Date.now()}_${file.name}`,
-      file
-    )) as string | null;
-    if (url) {
-      updateWidget(widget.id, {
-        config: { ...config, uploadedUrls: [...urls, url] },
+    setProcessing(true);
+    try {
+      // Convert to Data URL for processing
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
+
+      // Remove background and trim whitespace
+      const noBg = await removeBackground(dataUrl);
+      const trimmed = await trimImageWhitespace(noBg);
+
+      // Convert back to Blob for upload
+      const response = await fetch(trimmed);
+      const blob = await response.blob();
+      const processedFile = new File(
+        [blob],
+        file.name.replace(/\.[^/.]+$/, '') + '.png',
+        { type: 'image/png' }
+      );
+
+      const url = (await uploadFile(
+        `stickers/${Date.now()}_${processedFile.name}`,
+        processedFile
+      )) as string | null;
+
+      if (url) {
+        updateWidget(widget.id, {
+          config: { ...config, uploadedUrls: [...urls, url] },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to process/upload sticker:', error);
+    } finally {
+      setProcessing(false);
     }
   };
 
