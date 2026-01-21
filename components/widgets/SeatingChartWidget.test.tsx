@@ -16,7 +16,7 @@ const mockDashboardContext: Partial<DashboardContextValue> = {
   addToast: vi.fn(),
 };
 
-describe('SeatingChartWidget Performance', () => {
+describe('SeatingChartWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useDashboard).mockReturnValue(
@@ -132,5 +132,57 @@ describe('SeatingChartWidget Performance', () => {
     const newFurniture = updates.config.furniture[0];
     expect(newFurniture.x).toBe(120);
     expect(newFurniture.y).toBe(120);
+  });
+
+  it('should select an item on click and not deselect it immediately', () => {
+    const widget = createWidget();
+    const { container } = render(<SeatingChartWidget widget={widget} />);
+
+    // 1. Switch to Setup mode
+    const setupButton = screen.getByText('Setup');
+    fireEvent.click(setupButton);
+
+    // 2. Find the furniture item
+    const furnitureItem = container.querySelector(
+      'div[style*="left: 100px"][style*="top: 100px"]'
+    );
+    expect(furnitureItem).toBeTruthy();
+    if (!furnitureItem) throw new Error('Furniture item not found');
+
+    // 3. Click the item (PointerDown + PointerUp + Click)
+    fireEvent.pointerDown(furnitureItem);
+    fireEvent.pointerUp(window);
+    fireEvent.click(furnitureItem);
+
+    // 4. Verify selection (the item should have a ring class or the floating menu should be visible)
+    expect(furnitureItem.className).toContain('ring-2');
+    expect(screen.getByTitle('Rotate Left')).toBeTruthy();
+  });
+
+  it('should deselect an item when clicking the canvas', () => {
+    const widget = createWidget();
+    const { container } = render(<SeatingChartWidget widget={widget} />);
+
+    // 1. Switch to Setup mode
+    fireEvent.click(screen.getByText('Setup'));
+
+    // 2. Find the furniture item and canvas
+    const furnitureItem = container.querySelector('div[style*="left: 100px"]');
+    const canvas = container.querySelector('.flex-1.relative.bg-slate-50');
+
+    if (!furnitureItem || !canvas) throw new Error('Elements not found');
+
+    // 3. Select the item
+    fireEvent.pointerDown(furnitureItem);
+    fireEvent.pointerUp(window);
+    fireEvent.click(furnitureItem);
+    expect(furnitureItem.className).toContain('ring-2');
+
+    // 4. Click the canvas
+    fireEvent.click(canvas);
+
+    // 5. Verify deselection
+    expect(furnitureItem.className).not.toContain('ring-2');
+    expect(screen.queryByTitle('Rotate Left')).toBeNull();
   });
 });

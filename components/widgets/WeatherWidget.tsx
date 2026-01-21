@@ -301,9 +301,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   let displayImage = <span className="text-2xl">{clothing.icon}</span>;
 
   if (globalConfig?.temperatureRanges) {
-    const match = globalConfig.temperatureRanges.find(
-      (r) => temp >= r.min && temp <= r.max
-    );
+    const match = globalConfig.temperatureRanges.find((r) => {
+      if (r.type === 'above') return temp > r.min;
+      if (r.type === 'below') return temp < r.max;
+      return temp >= r.min && temp <= r.max;
+    });
     if (match) {
       displayMessage = match.message;
       if (match.imageUrl) {

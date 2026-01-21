@@ -261,6 +261,7 @@ export interface WeatherTemperatureRange {
   id: string;
   min: number;
   max: number;
+  type?: 'range' | 'above' | 'below';
   message: string;
   imageUrl?: string;
 }

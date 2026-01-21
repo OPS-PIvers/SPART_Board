@@ -499,6 +499,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
               <div
                 key={item.id}
                 onPointerDown={(e) => handlePointerDown(e, item.id)}
+                onClick={(e) => e.stopPropagation()}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
