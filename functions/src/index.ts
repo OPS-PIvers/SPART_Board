@@ -67,7 +67,7 @@ export const getClassLinkRosterV1 = functions
     ],
     memory: '256MB',
   })
-  .https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  .https.onCall(async (data: unknown, context: functions.https.CallableContext) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         'unauthenticated',

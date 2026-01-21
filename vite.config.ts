@@ -24,11 +24,10 @@ export default defineConfig({
             'firebase/firestore',
             'firebase/storage',
           ],
-          'ui-vendor': [
+          'dnd-kit': [
             '@dnd-kit/core',
             '@dnd-kit/sortable',
             '@dnd-kit/utilities',
-            'lucide-react',
           ],
         },
       },
