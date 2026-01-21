@@ -10,6 +10,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
+import { Toggle } from '../common/Toggle';
 import {
   Sun,
   Cloud,
@@ -90,6 +91,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     lastSync = null,
     source = 'openweather',
     city = '',
+    showFeelsLike: localShowFeelsLike,
   } = config;
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -100,6 +102,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const globalConfig = weatherPermission?.config as
     | WeatherGlobalConfig
     | undefined;
+
+  // Use local config if set, otherwise fallback to global config
+  const showFeelsLike =
+    localShowFeelsLike ?? globalConfig?.showFeelsLike ?? false;
 
   const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
     | string
@@ -375,20 +381,19 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="font-black text-slate-800 tabular-nums leading-none"
               style={{ fontSize: `${tempFontSize}px` }}
             >
-              {globalConfig?.showFeelsLike && feelsLike !== undefined
+              {showFeelsLike && feelsLike !== undefined
                 ? Math.round(feelsLike)
                 : Math.round(temp)}
               °
             </div>
-            {globalConfig?.showFeelsLike ? (
+            {showFeelsLike ? (
               // If showing Feels Like as main, show regular temp as sub-text
               <div className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-wider">
                 Actual {Math.round(temp)}°
               </div>
             ) : (
               // Standard view: Regular temp as main, Feels Like as sub-text
-              feelsLike !== undefined &&
-              Math.round(feelsLike) !== Math.round(temp) && (
+              feelsLike !== undefined && (
                 <div className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-wider">
                   Feels like {Math.round(feelsLike)}°
                 </div>
@@ -453,6 +458,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     city = '',
     locationName: _locationName = 'Classroom',
     source = 'openweather',
+    showFeelsLike: localShowFeelsLike,
   } = config;
 
   // We should also access global config to hide controls if forced by admin proxy
@@ -463,6 +469,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
   const globalConfig = weatherPermission?.config as
     | WeatherGlobalConfig
     | undefined;
+
+  const showFeelsLike =
+    localShowFeelsLike ?? globalConfig?.showFeelsLike ?? false;
 
   const isAdminProxy = globalConfig?.fetchingStrategy === 'admin_proxy';
 
@@ -661,6 +670,26 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">
+            Prioritize Feels Like
+          </span>
+          <span className="text-[9px] text-slate-400 leading-tight">
+            Swap prominence between actual and feels-like temperature.
+          </span>
+        </div>
+        <Toggle
+          size="sm"
+          checked={showFeelsLike}
+          onChange={(checked) =>
+            updateWidget(widget.id, {
+              config: { ...config, showFeelsLike: checked },
+            })
+          }
+        />
+      </div>
+
       <div className="flex bg-slate-100 p-1 rounded-xl">
         <button
           onClick={() =>

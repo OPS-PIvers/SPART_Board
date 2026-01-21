@@ -256,6 +256,7 @@ export interface WeatherConfig {
   city?: string;
   source?: 'openweather' | 'earth_networks';
   feelsLike?: number;
+  showFeelsLike?: boolean;
 }
 
 export interface WeatherTemperatureRange {
