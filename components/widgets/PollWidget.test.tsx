@@ -1,7 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PollSettings } from './PollWidget';
 import { useDashboard } from '../../context/useDashboard';
-import { vi, describe, it, expect, Mock } from 'vitest';
+import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
+import { WidgetData } from '../../types';
+import { GeneratedPoll } from '../../utils/ai';
 
 // Mock useDashboard
 vi.mock('../../context/useDashboard', () => ({
@@ -14,7 +16,7 @@ vi.mock('../common/MagicInput', () => ({
     onSuccess,
     buttonLabel,
   }: {
-    onSuccess: (data: any) => void;
+    onSuccess: (data: GeneratedPoll) => void;
     buttonLabel: string;
   }) => (
     <button
@@ -45,8 +47,8 @@ describe('PollSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('updates widget config when magic poll is generated', async () => {
-    const mockWidget = {
+  it('updates widget config when magic poll is generated', () => {
+    const mockWidget: WidgetData = {
       id: 'poll-1',
       type: 'poll',
       w: 2,
@@ -54,6 +56,7 @@ describe('PollSettings', () => {
       x: 0,
       y: 0,
       z: 1,
+      flipped: false,
       config: {
         question: 'Original Question',
         options: [],
