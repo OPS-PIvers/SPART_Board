@@ -82,7 +82,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
           const classFactor = Math.max(1, totalNames / 15);
           const fontSize = Math.max(
             5,
-            14 / (nameFactor * 0.4 + classFactor * 0.6)
+            20 / (nameFactor * 0.4 + classFactor * 0.6)
           );
 
           return (
@@ -94,17 +94,16 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
                 strokeWidth="1"
               />
               {/* Radial Label Group */}
-              <g transform={`rotate(${midAngle}, ${centerX}, ${centerY})`}>
+              <g transform={`rotate(${midAngle - 90}, ${centerX}, ${centerY})`}>
                 <text
-                  x={centerX + radius * 0.85}
+                  x={centerX + radius * 0.55}
                   y={centerY}
                   fill="white"
                   fontSize={fontSize}
                   fontWeight="700"
-                  textAnchor="end"
+                  textAnchor="middle"
                   alignmentBaseline="middle"
                   className="select-none pointer-events-none drop-shadow-sm uppercase tracking-tighter"
-                  transform={`rotate(90, ${centerX + radius * 0.85}, ${centerY})`}
                 >
                   {name}
                 </text>
