@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
@@ -30,6 +30,7 @@ interface OpenWeatherData {
   name: string;
   main: {
     temp: number;
+    feels_like: number;
   };
   weather: [{ main: string }, ...{ main: string }[]];
 }
@@ -38,11 +39,13 @@ interface EarthNetworksResponse {
   o?: {
     t: number;
     ic: number;
+    fl?: number;
   };
 }
 
 interface GlobalWeatherData {
   temp: number;
+  feelsLike?: number;
   condition: string;
   locationName: string;
   updatedAt: number;
@@ -80,6 +83,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as WeatherConfig;
   const {
     temp = 72,
+    feelsLike,
     condition = 'sunny',
     isAuto = false,
     locationName = 'Classroom',
@@ -101,6 +105,34 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     | string
     | undefined;
 
+  // Initial Admin Proxy Fetch
+  useEffect(() => {
+    if (!isAuto || globalConfig?.fetchingStrategy !== 'admin_proxy') return;
+
+    const fetchInitial = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'global_weather', 'current'));
+        if (snap.exists()) {
+          const data = snap.data() as GlobalWeatherData;
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              temp: data.temp,
+              feelsLike: data.feelsLike,
+              condition: data.condition,
+              locationName: data.locationName,
+              lastSync: data.updatedAt,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch initial global weather:', err);
+      }
+    };
+
+    void fetchInitial();
+  }, [isAuto, globalConfig?.fetchingStrategy, widget.id, config, updateWidget]);
+
   // Admin Proxy Subscription
   useEffect(() => {
     if (!isAuto) return;
@@ -114,6 +146,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           // Avoid infinite loop: check if data actually changed significantly
           if (
             Math.round(data.temp) !== Math.round(temp) ||
+            data.feelsLike !== feelsLike ||
             data.condition !== condition ||
             data.updatedAt !== lastSync
           ) {
@@ -121,6 +154,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               config: {
                 ...config,
                 temp: data.temp,
+                feelsLike: data.feelsLike,
                 condition: data.condition,
                 locationName: data.locationName,
                 lastSync: data.updatedAt,
@@ -141,6 +175,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     widget.id,
     updateWidget,
     temp,
+    feelsLike,
     condition,
     lastSync,
     config,
@@ -202,6 +237,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           config: {
             ...config,
             temp: data.o.t,
+            feelsLike: data.o.fl ?? data.o.t,
             condition: EARTH_NETWORKS_ICONS.SNOW.includes(data.o.ic)
               ? 'snowy'
               : EARTH_NETWORKS_ICONS.CLOUDY.includes(data.o.ic)
@@ -232,6 +268,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           config: {
             ...config,
             temp: data.main.temp,
+            feelsLike: data.main.feels_like,
             condition: data.weather[0].main.toLowerCase(),
             locationName: data.name,
             lastSync: Date.now(),
@@ -333,11 +370,30 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         <div className="flex items-center gap-4">
           {getIcon()}
-          <div
-            className="font-black text-slate-800 tabular-nums leading-none"
-            style={{ fontSize: `${tempFontSize}px` }}
-          >
-            {Math.round(temp)}°
+          <div className="flex flex-col">
+            <div
+              className="font-black text-slate-800 tabular-nums leading-none"
+              style={{ fontSize: `${tempFontSize}px` }}
+            >
+              {globalConfig?.showFeelsLike && feelsLike !== undefined
+                ? Math.round(feelsLike)
+                : Math.round(temp)}
+              °
+            </div>
+            {globalConfig?.showFeelsLike ? (
+              // If showing Feels Like as main, show regular temp as sub-text
+              <div className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-wider">
+                Actual {Math.round(temp)}°
+              </div>
+            ) : (
+              // Standard view: Regular temp as main, Feels Like as sub-text
+              feelsLike !== undefined &&
+              Math.round(feelsLike) !== Math.round(temp) && (
+                <div className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-wider">
+                  Feels like {Math.round(feelsLike)}°
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -501,6 +557,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         config: {
           ...config,
           temp: obs.t,
+          feelsLike: obs.fl ?? obs.t,
           condition: newCondition,
           locationName: STATION_CONFIG.name,
           lastSync: Date.now(),
@@ -552,6 +609,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           ...config,
 
           temp: data.main.temp,
+          feelsLike: data.main.feels_like,
 
           condition: data.weather[0].main.toLowerCase(),
 

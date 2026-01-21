@@ -676,6 +676,28 @@ export const FeaturePermissionsManager: React.FC = () => {
                               />
                             </div>
 
+                            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                Show &quot;Feels Like&quot; Temperature
+                              </span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={config.showFeelsLike ?? false}
+                                  onChange={(e) =>
+                                    updatePermission(tool.type, {
+                                      config: {
+                                        ...config,
+                                        showFeelsLike: e.target.checked,
+                                      },
+                                    })
+                                  }
+                                  className="sr-only peer"
+                                />
+                                <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-blue-primary"></div>
+                              </label>
+                            </div>
+
                             <div>
                               <div className="flex items-center justify-between mb-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase block">
