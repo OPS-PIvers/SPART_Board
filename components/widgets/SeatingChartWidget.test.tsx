@@ -1,17 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SeatingChartWidget } from './SeatingChartWidget';
 import { useDashboard } from '../../context/useDashboard';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
+import { DashboardContextValue } from '../../context/DashboardContextValue';
 
 vi.mock('../../context/useDashboard');
 
 const mockUpdateWidget = vi.fn();
 
-const mockDashboardContext = {
+const mockDashboardContext: Partial<DashboardContextValue> = {
   updateWidget: mockUpdateWidget,
   rosters: [],
   activeRosterId: null,
@@ -21,9 +19,10 @@ const mockDashboardContext = {
 describe('SeatingChartWidget Performance', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
+    vi.mocked(useDashboard).mockReturnValue(
+      mockDashboardContext as DashboardContextValue
     );
+
     // Mock PointerEvent since JSDOM doesn't fully support it
     class MockPointerEvent extends Event {
       clientX: number;
@@ -36,7 +35,9 @@ describe('SeatingChartWidget Performance', () => {
         this.pointerId = props.pointerId ?? 1;
       }
     }
-    window.PointerEvent = MockPointerEvent as any;
+    // Using unknown first to safely cast to the incompatible window type if needed,
+    // though typically this is accepted if shapes align.
+    window.PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
   });
 
   afterEach(() => {
@@ -79,7 +80,6 @@ describe('SeatingChartWidget Performance', () => {
     fireEvent.click(setupButton);
 
     // 2. Find the furniture item
-    // We look for the element with the correct position style
     const furnitureItem = container.querySelector(
       'div[style*="left: 100px"][style*="top: 100px"]'
     );
@@ -96,7 +96,6 @@ describe('SeatingChartWidget Performance', () => {
     });
 
     // 4. Move (PointerMove)
-    // We dispatch this on window as the component attaches listener to window
     fireEvent(
       window,
       new PointerEvent('pointermove', {
@@ -121,12 +120,16 @@ describe('SeatingChartWidget Performance', () => {
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
 
     // Check arguments
-    const lastCall = mockUpdateWidget.mock.lastCall;
-    const [id, updates] = lastCall as [string, any];
+    const lastCall = (mockUpdateWidget as Mock).mock.lastCall as [
+      string,
+      { config: SeatingChartConfig },
+    ];
+    expect(lastCall).toBeDefined();
+
+    const [id, updates] = lastCall;
     expect(id).toBe('test-widget-id');
+
     const newFurniture = updates.config.furniture[0];
-    // Moved by 20px (100 -> 120). Start 100. New 120.
-    // Logic: dx = 20, dy = 20. newX = 100 + 20 = 120. Snap to grid (20) -> 120.
     expect(newFurniture.x).toBe(120);
     expect(newFurniture.y).toBe(120);
   });
