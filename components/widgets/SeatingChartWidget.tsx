@@ -12,6 +12,7 @@ import {
   Dice5,
   User,
   Copy,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 
@@ -56,6 +57,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [bulkCount, setBulkCount] = useState<number>(1);
   const [dragState, setDragState] = useState<{
     id: string;
     x: number;
@@ -117,20 +119,42 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const def = FURNITURE_TYPES.find((t) => t.type === type);
     if (!def) return;
 
-    const newItem: FurnitureItem = {
-      id: crypto.randomUUID(),
-      type,
-      x: widget.w / 2 - def.w / 2, // Center
-      y: widget.h / 2 - def.h / 2,
-      width: def.w,
-      height: def.h,
-      rotation: 0,
-    };
+    const newItems: FurnitureItem[] = [];
+    const count = Math.max(1, Math.min(50, bulkCount));
+
+    for (let i = 0; i < count; i++) {
+      const offset = i * 10;
+      newItems.push({
+        id: crypto.randomUUID(),
+        type,
+        x: widget.w / 2 - def.w / 2 + offset, // Offset slightly so they aren't perfectly stacked
+        y: widget.h / 2 - def.h / 2 + offset,
+        width: def.w,
+        height: def.h,
+        rotation: 0,
+      });
+    }
 
     updateWidget(widget.id, {
-      config: { ...config, furniture: [...furniture, newItem] },
+      config: { ...config, furniture: [...furniture, ...newItems] },
     });
-    setSelectedId(newItem.id);
+
+    if (newItems.length === 1) {
+      setSelectedId(newItems[0].id);
+    }
+  };
+
+  const clearAllFurniture = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to remove all furniture and assignments?'
+      )
+    ) {
+      updateWidget(widget.id, {
+        config: { ...config, furniture: [], assignments: {} },
+      });
+      setSelectedId(null);
+    }
   };
 
   const updateFurniture = (id: string, updates: Partial<FurnitureItem>) => {
@@ -301,6 +325,70 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
+  const addAllRandomly = () => {
+    const targetFurniture = furniture.filter(
+      (f) => f.type === 'desk' || f.type.startsWith('table')
+    );
+
+    if (targetFurniture.length === 0) {
+      addToast('No desks or tables available!', 'error');
+      return;
+    }
+
+    const unassigned = [...unassignedStudents];
+    if (unassigned.length === 0) {
+      addToast('All students are already assigned!', 'info');
+      return;
+    }
+
+    // Shuffle students
+    for (let i = unassigned.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [unassigned[i], unassigned[j]] = [unassigned[j], unassigned[i]];
+    }
+
+    // Find empty target furniture
+    const occupiedIds = new Set(Object.values(assignments));
+    const emptySpots = targetFurniture
+      .filter((f) => !occupiedIds.has(f.id))
+      .map((f) => f.id);
+
+    if (emptySpots.length === 0) {
+      addToast('No empty spots available!', 'error');
+      return;
+    }
+
+    // Shuffle empty spots too for true randomness
+    for (let i = emptySpots.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [emptySpots[i], emptySpots[j]] = [emptySpots[j], emptySpots[i]];
+    }
+
+    const nextAssignments = { ...assignments };
+    let count = 0;
+    while (unassigned.length > 0 && emptySpots.length > 0) {
+      const student = unassigned.pop();
+      const spotId = emptySpots.pop();
+      if (student && spotId) {
+        nextAssignments[student] = spotId;
+        count++;
+      }
+    }
+
+    updateWidget(widget.id, {
+      config: { ...config, assignments: nextAssignments },
+    });
+
+    if (unassigned.length > 0) {
+      addToast(
+        `Assigned ${count} students. ${unassigned.length} still need spots.`,
+        'info'
+      );
+    } else {
+      addToast(`Randomly assigned ${count} students!`, 'success');
+    }
+  };
+
   // --- INTERACT LOGIC ---
 
   const pickRandom = () => {
@@ -427,19 +515,47 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         {(mode === 'setup' || mode === 'assign') && (
           <div className="w-48 bg-white border-r border-slate-200 flex flex-col overflow-hidden shrink-0 animate-in slide-in-from-left-4 duration-200">
             {mode === 'setup' && (
-              <div className="p-3 grid grid-cols-2 gap-2">
-                {FURNITURE_TYPES.map((t) => (
+              <div className="flex flex-col h-full">
+                <div className="p-3 border-b border-slate-100">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    Bulk Add Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={bulkCount}
+                    onChange={(e) =>
+                      setBulkCount(parseInt(e.target.value) || 1)
+                    }
+                    className="w-full p-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                  />
+                </div>
+
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {FURNITURE_TYPES.map((t) => (
+                    <button
+                      key={t.type}
+                      onClick={() => addFurniture(t.type)}
+                      className="flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors aspect-square"
+                    >
+                      <t.icon className="w-6 h-6 text-slate-600" />
+                      <span className="text-[10px] font-bold text-slate-500">
+                        {t.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-auto p-3 border-t border-slate-100">
                   <button
-                    key={t.type}
-                    onClick={() => addFurniture(t.type)}
-                    className="flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors aspect-square"
+                    onClick={clearAllFurniture}
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition-colors text-[10px] font-black uppercase tracking-wider"
                   >
-                    <t.icon className="w-6 h-6 text-slate-600" />
-                    <span className="text-[10px] font-bold text-slate-500">
-                      {t.label}
-                    </span>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear All
                   </button>
-                ))}
+                </div>
               </div>
             )}
 
@@ -448,6 +564,17 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="p-2 border-b border-slate-100 bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">
                   Unassigned Students
                 </div>
+
+                <div className="p-2 border-b border-slate-100">
+                  <button
+                    onClick={addAllRandomly}
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 rounded-lg transition-colors text-[10px] font-black uppercase tracking-wider"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Add All Random
+                  </button>
+                </div>
+
                 <div className="flex-1 overflow-y-auto p-2 space-y-2">
                   {unassignedStudents.length === 0 ? (
                     <div className="text-center text-xs text-slate-400 py-4 italic">
@@ -600,11 +727,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
                   {/* Assigned Students */}
                   {assigned.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-center gap-1 w-full h-full overflow-hidden">
+                    <div className="flex flex-col items-center justify-center gap-1 w-full h-full overflow-hidden">
                       {assigned.map((name) => (
                         <div
                           key={name}
-                          className="bg-white/90 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-sm border border-slate-100 truncate max-w-full pointer-events-auto"
+                          className="bg-white/90 px-1.5 py-1 rounded text-[10px] font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto"
                         >
                           {name}
                           {mode === 'assign' && (

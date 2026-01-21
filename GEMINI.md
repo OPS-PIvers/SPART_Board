@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**School Boards** is an interactive, widget-based classroom management application built with **React 19**, **TypeScript**, and **Vite**. It leverages **Firebase** for backend services (Authentication, Firestore, Storage) and features a drag-and-drop interface for various classroom tools (timers, polls, noise meters, etc.).
+**School Boards** is an interactive, widget-based classroom management application built with **React 19**, **TypeScript**, and **Vite**. It leverages **Firebase** for backend services (Authentication, Firestore, Storage) and features a drag-and-drop interface for various classroom tools (timers, polls, noise meters, etc.). The development environment includes access to the **Firebase CLI** for rule and index deployment.
 
 **Key Technologies:**
 
@@ -39,10 +39,12 @@
 
 ### Architecture Patterns
 
+- **Lazy Loading:** To optimize initial bundle size, all widgets and their settings panels are lazily loaded via `React.lazy` and managed in `components/widgets/WidgetRegistry.ts`.
 - **State Management:** Centralized via React Context (`DashboardContext`, `AuthContext`).
 - **Widget System:** Plugin-based. New widgets are added to `components/widgets/`, registered in `types.ts` (`WidgetType`) and `config/tools.ts` (`TOOLS`), and mapped in `WidgetRenderer.tsx`.
 - **Grade Level Filtering:** Widgets are categorized by grade levels (K-2, 3-5, 6-8, 9-12) in `config/widgetGradeLevels.ts`.
 - **Feature Permissions:** Access to widgets can be toggled and restricted to admins or beta users via the `FeaturePermission` system and managed in `AdminSettings`.
+- **Weather Logic:** Admins can configure custom temperature ranges (Above, Below, or Range) in `FeaturePermissionsManager.tsx`, which the `WeatherWidget` uses to display conditional messages and images.
 - **CORS Proxy Logic:** Certain widgets (e.g., `WeatherWidget`, `LunchCountWidget`) use a multi-proxy fallback mechanism to bypass cross-origin restrictions for third-party APIs.
 - **Data Persistence:**
   - **Primary:** Firestore (real-time sync).
@@ -90,6 +92,11 @@ The following slash commands are available to streamline the development workflo
 - **Unit Tests:** `pnpm test`
 - **E2E Tests:** `pnpm run test:e2e`
 - **Coverage:** `pnpm run test:coverage`
+- **Firebase CLI:** `pnpm firebase [command]` (e.g., `pnpm firebase deploy --only storage`)
+
+### Firebase Management
+
+The agent has access to the Firebase CLI via `pnpm firebase`. This allows for deploying security rules (`firestore.rules`, `storage.rules`) and indexes directly from the environment.
 
 ### Code Quality & Standards
 
@@ -125,3 +132,10 @@ VITE_FIREBASE_APP_ID=...
 VITE_GEMINI_API_KEY=...
 VITE_OPENWEATHER_API_KEY=...
 ```
+
+## Recent Technical Improvements
+
+- **Seating Chart Widget:** Fixed click propagation issues where furniture items would deselect immediately upon being clicked. Added unit tests for selection/deselection logic.
+- **Weather Widget:** Enhanced admin configuration to support conditional ranges (Above, Below, and Between) with custom imagery.
+- **Security:** Hardened Storage and Firestore rules; fixed "NaN" validation issues in admin configuration panels.
+- **Performance:** Implemented lazy loading for all widget components to improve initial load performance.
