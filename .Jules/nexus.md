@@ -17,3 +17,9 @@
 **Source:** Sound Widget (Noise Meter)
 **Destination:** Traffic Light Widget
 **Value:** Automatically switches Traffic Light to Red when noise level exceeds a threshold, acting as an unbiased classroom monitor.
+
+## 2025-02-24 - [Supply Run]
+
+**Source:** Materials Widget (Active Items)
+**Destination:** Checklist Widget (Items)
+**Value:** Allows students or teachers to instantly import the list of required materials into a checklist for packing up or preparation.

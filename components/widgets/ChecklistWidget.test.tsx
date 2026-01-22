@@ -15,15 +15,30 @@ vi.mock('../../context/useDashboard');
 vi.mock('../common/RosterModeControl', () => ({
   RosterModeControl: () => <div data-testid="roster-mode-control" />,
 }));
-vi.mock('lucide-react', () => ({
-  CheckSquare: () => <div data-testid="check-square" />,
-  Square: () => <div data-testid="square" />,
-  ListPlus: () => <div data-testid="list-plus" />,
-  Type: () => <div />,
-  Users: () => <div />,
-  RefreshCw: () => <div />,
-  BookOpen: () => <div />,
-}));
+vi.mock('lucide-react', () => {
+  const MockIcon = () => <div />;
+  return {
+    CheckSquare: () => <div data-testid="check-square" />,
+    Square: () => <div data-testid="square" />,
+    ListPlus: () => <div data-testid="list-plus" />,
+    Type: MockIcon,
+    Users: MockIcon,
+    RefreshCw: MockIcon,
+    BookOpen: MockIcon,
+    Backpack: MockIcon,
+    Laptop: MockIcon,
+    Pencil: MockIcon,
+    Book: MockIcon,
+    FileText: MockIcon,
+    Smartphone: MockIcon,
+    Tablet: MockIcon,
+    Headphones: MockIcon,
+    Scissors: MockIcon,
+    Highlighter: MockIcon,
+    Calculator: MockIcon,
+    Droplet: MockIcon,
+  };
+});
 
 const mockUpdateWidget = vi.fn();
 const mockAddToast = vi.fn();

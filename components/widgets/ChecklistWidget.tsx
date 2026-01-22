@@ -16,7 +16,10 @@ import {
   Users,
   RefreshCw,
   BookOpen,
+  Backpack,
 } from 'lucide-react';
+import { MATERIAL_ITEMS } from './MaterialsWidget/constants';
+import { MaterialsConfig } from '../../types';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -269,22 +272,82 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     addToast('Imported steps from Routine!', 'success');
   };
 
+  // Nexus Connection: Import from Materials
+  const importFromMaterials = () => {
+    const materialsWidget = activeDashboard?.widgets.find(
+      (w) => w.type === 'materials'
+    );
+
+    if (!materialsWidget) {
+      addToast('No Materials widget found!', 'error');
+      return;
+    }
+
+    const matConfig = materialsWidget.config as MaterialsConfig;
+    const activeIds = new Set(matConfig.activeItems || []);
+
+    if (activeIds.size === 0) {
+      addToast('No active materials selected.', 'info');
+      return;
+    }
+
+    const newItems: ChecklistItem[] = [];
+    activeIds.forEach((id) => {
+      const def = MATERIAL_ITEMS.find((m) => m.id === id);
+      if (def) {
+        newItems.push({
+          id: crypto.randomUUID(),
+          text: `Bring ${def.label}`,
+          completed: false,
+        });
+      }
+    });
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        mode: 'manual',
+        items: newItems,
+      },
+    });
+    setLocalText(newItems.map((i) => i.text).join('\n'));
+    addToast(`Imported ${newItems.length} materials!`, 'success');
+  };
+
   return (
     <div className="space-y-6">
-      {/* Nexus Connection: Routine Import */}
-      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between">
-        <div className="flex items-center gap-2 text-indigo-900">
-          <BookOpen className="w-4 h-4" />
-          <span className="text-xs font-black uppercase tracking-wider">
-            Import Routine
-          </span>
+      <div className="grid grid-cols-2 gap-3">
+        {/* Nexus Connection: Routine Import */}
+        <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col items-center justify-center gap-2 text-center">
+          <div className="flex items-center gap-2 text-indigo-900 mb-1">
+            <BookOpen className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-wider">
+              Routine
+            </span>
+          </div>
+          <button
+            onClick={importFromRoutine}
+            className="w-full bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center justify-center gap-1"
+          >
+            <RefreshCw className="w-3 h-3" /> Sync
+          </button>
         </div>
-        <button
-          onClick={importFromRoutine}
-          className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-        >
-          <RefreshCw className="w-3 h-3" /> Sync
-        </button>
+
+        {/* Nexus Connection: Materials Import */}
+        <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col items-center justify-center gap-2 text-center">
+          <div className="flex items-center gap-2 text-amber-900 mb-1">
+            <Backpack className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-wider">
+              Supplies
+            </span>
+          </div>
+          <button
+            onClick={importFromMaterials}
+            className="w-full bg-white text-amber-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-amber-100 hover:bg-amber-50 transition-colors flex items-center justify-center gap-1"
+          >
+            <RefreshCw className="w-3 h-3" /> Sync Supplies
+          </button>
+        </div>
       </div>
 
       {/* Mode Toggle */}
