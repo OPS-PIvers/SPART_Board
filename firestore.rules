@@ -84,7 +84,8 @@ service cloud.firestore {
     // Authors and admins can update or delete.
     match /shared_boards/{shareId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.originalAuthor == request.auth.uid;
       allow update, delete: if request.auth != null &&
         (get(resource.data, 'originalAuthor', null) == request.auth.uid || isAdmin());
     }
