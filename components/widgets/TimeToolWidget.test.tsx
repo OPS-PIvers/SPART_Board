@@ -1,14 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { TimeToolWidget, TimeToolSettings } from './TimeToolWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { DashboardContextValue } from '../../context/DashboardContextValue';
-import {
-  WidgetData,
-  TimeToolConfig,
-  TrafficConfig,
-} from '../../types';
+import { WidgetData, TimeToolConfig, TrafficConfig } from '../../types';
 
 // Mock dependencies
 vi.mock('../../context/useDashboard');
@@ -89,7 +85,6 @@ describe('TimeToolWidget Nexus Connection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
@@ -100,17 +95,17 @@ describe('TimeToolWidget Nexus Connection', () => {
     render(<TimeToolWidget widget={mockTimeWidget} />);
 
     const startButton = screen.getByText('START');
-    await act(async () => {
-      fireEvent.click(startButton);
-    });
+    fireEvent.click(startButton);
 
     // Should update TimeTool to running
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'timetool-1',
-      expect.objectContaining({
-        config: expect.objectContaining({ isRunning: true }),
-      })
-    );
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'timetool-1',
+        expect.objectContaining({
+          config: expect.objectContaining({ isRunning: true }),
+        })
+      );
+    });
 
     // Should update Traffic Light to Green
     expect(mockUpdateWidget).toHaveBeenCalledWith(
@@ -121,17 +116,19 @@ describe('TimeToolWidget Nexus Connection', () => {
     );
   });
 
-  it('sets Traffic Light to YELLOW when timer is paused by user', async () => {
+  it('sets Traffic Light to YELLOW when timer is paused by user', () => {
     const runningWidget = {
       ...mockTimeWidget,
-      config: { ...mockTimeWidget.config, isRunning: true, startTime: Date.now() },
+      config: {
+        ...mockTimeWidget.config,
+        isRunning: true,
+        startTime: Date.now(),
+      } as TimeToolConfig,
     };
     render(<TimeToolWidget widget={runningWidget} />);
 
     const pauseButton = screen.getByText('PAUSE');
-    await act(async () => {
-      fireEvent.click(pauseButton);
-    });
+    fireEvent.click(pauseButton);
 
     // Should update TimeTool to stopped
     expect(mockUpdateWidget).toHaveBeenCalledWith(
@@ -150,16 +147,14 @@ describe('TimeToolWidget Nexus Connection', () => {
     );
   });
 
-  it('sets Traffic Light to NONE when timer is reset', async () => {
+  it('sets Traffic Light to NONE when timer is reset', () => {
     render(<TimeToolWidget widget={mockTimeWidget} />);
 
     const resetButton = screen.getByTestId('reset-icon').closest('button');
     expect(resetButton).toBeInTheDocument();
 
     if (resetButton) {
-        await act(async () => {
-            fireEvent.click(resetButton);
-        });
+      fireEvent.click(resetButton);
     }
 
     // Should update Traffic Light to None
@@ -171,7 +166,8 @@ describe('TimeToolWidget Nexus Connection', () => {
     );
   });
 
-  it('sets Traffic Light to RED when timer finishes', async () => {
+  it('sets Traffic Light to RED when timer finishes', () => {
+    vi.useFakeTimers();
     // Start with 0.1s left
     const nearEndWidget = {
       ...mockTimeWidget,
@@ -187,7 +183,7 @@ describe('TimeToolWidget Nexus Connection', () => {
     render(<TimeToolWidget widget={nearEndWidget} />);
 
     // Fast forward time
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(200);
     });
 
@@ -220,15 +216,15 @@ describe('TimeToolWidget Nexus Connection', () => {
     render(<TimeToolWidget widget={disabledWidget} />);
 
     const startButton = screen.getByText('START');
-    await act(async () => {
-      fireEvent.click(startButton);
-    });
+    fireEvent.click(startButton);
 
     // Should update TimeTool
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'timetool-1',
-      expect.anything()
-    );
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'timetool-1',
+        expect.anything()
+      );
+    });
 
     // Should NOT update Traffic Light
     expect(mockUpdateWidget).not.toHaveBeenCalledWith(
@@ -259,13 +255,16 @@ describe('TimeToolSettings Nexus Connection', () => {
     });
 
     render(<TimeToolSettings widget={mockTimeWidget} />);
-    expect(screen.getByText(/Add a "Traffic Light" widget/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Add a "Traffic Light" widget/)
+    ).toBeInTheDocument();
   });
 
   it('toggles autoTrafficLight setting', () => {
     render(<TimeToolSettings widget={mockTimeWidget} />);
 
-    const toggleButton = screen.getByText('Auto-Control Lights').nextSibling as HTMLElement;
+    const toggleButton = screen.getByText('Auto-Control Lights')
+      .nextSibling as HTMLElement;
     fireEvent.click(toggleButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith(

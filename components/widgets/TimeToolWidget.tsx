@@ -4,7 +4,6 @@ import {
   WidgetData,
   WorkSymbolsConfig,
   WidgetConfig,
-  TrafficConfig,
 } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
