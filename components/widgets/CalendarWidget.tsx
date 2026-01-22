@@ -18,7 +18,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
             className="group relative flex gap-3 p-3 bg-white/50 rounded-2xl border border-white/30 transition-all hover:bg-white/70"
           >
             <div className="flex flex-col items-center justify-center min-w-[50px] py-1 border-r border-rose-200">
-              <span className="text-[8px]  uppercase text-rose-400">Day</span>
+              <span className="text-xxxs  uppercase text-rose-400">Day</span>
               <span className="text-sm  text-rose-600">{event.date}</span>
             </div>
             <div className="flex items-center">
@@ -31,7 +31,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
         {events.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 opacity-20">
             <CalendarIcon className="w-8 h-8 mb-2" />
-            <p className="text-[10px]  uppercase tracking-widest">No Events</p>
+            <p className="text-xxs  uppercase tracking-widest">No Events</p>
           </div>
         )}
       </div>
@@ -63,7 +63,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-4">
       <button
         onClick={addEvent}
-        className="w-full py-3 bg-rose-600 text-white rounded-xl  text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
+        className="w-full py-3 bg-rose-600 text-white rounded-xl  text-xxs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
       >
         <Plus className="w-4 h-4" /> Add Event
       </button>
@@ -72,7 +72,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
         {events.map((event, i: number) => (
           <div
             key={i}
-            className="flex items-center justify-between p-2 bg-slate-50 rounded-lg text-[10px]"
+            className="flex items-center justify-between p-2 bg-slate-50 rounded-lg text-xxs"
           >
             <span className="">
               {event.date}: {event.title}

@@ -146,7 +146,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           aria-label={`View ${studentCount} connected student${studentCount !== 1 ? 's' : ''} and session controls`}
           className="w-7 h-7 bg-slate-950/40 hover:bg-slate-950/60 text-white rounded-full flex items-center justify-center transition-all"
         >
-          <span className="text-[10px] ">{studentCount}</span>
+          <span className="text-xxs ">{studentCount}</span>
         </button>
       )}
     </div>
@@ -194,13 +194,13 @@ export const LiveControl: React.FC<LiveControlProps> = ({
           {/* SESSION INFO */}
           {code && (
             <div className="p-3 bg-indigo-50 border-b border-indigo-100 flex flex-col items-center gap-1">
-              <div className="text-[10px]  text-indigo-400 uppercase tracking-wider">
+              <div className="text-xxs  text-indigo-400 uppercase tracking-wider">
                 Join Code
               </div>
               <div className="text-2xl  text-indigo-600 font-mono tracking-widest">
                 {code}
               </div>
-              <div className="text-[10px] text-indigo-400">
+              <div className="text-xxs text-indigo-400">
                 {joinUrl?.replace(/^https?:\/\//, '')}
               </div>
             </div>
@@ -264,7 +264,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                   ? 'Unfreeze all students'
                   : 'Freeze all students'
               }
-              className="w-full flex items-center justify-center gap-2 py-2 bg-blue-100 text-blue-700 rounded-lg text-[10px]  uppercase hover:bg-blue-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-50"
+              className="w-full flex items-center justify-center gap-2 py-2 bg-blue-100 text-blue-700 rounded-lg text-xxs  uppercase hover:bg-blue-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-50"
             >
               <Snowflake size={12} /> Freeze / Unfreeze All
             </button>

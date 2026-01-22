@@ -93,7 +93,7 @@ export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
             >
               {db.name}
             </div>
-            <div className="text-[10px] text-slate-400 font-medium">
+            <div className="text-xxs text-slate-400 font-medium">
               {new Date(db.createdAt).toLocaleDateString()}
             </div>
           </div>

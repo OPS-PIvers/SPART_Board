@@ -370,7 +370,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       className={`flex flex-col items-center justify-between h-full p-4 gap-2 relative font-${globalStyle.fontFamily}`}
     >
       <div className="flex flex-col items-center justify-center gap-2">
-        <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
+        <div className="text-xxs font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
           <MapPin className="w-2.5 h-2.5" /> {locationName}
         </div>
 
@@ -388,13 +388,13 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
             {showFeelsLike ? (
               // If showing Feels Like as main, show regular temp as sub-text
-              <div className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-wider">
+              <div className="text-xxs font-black text-slate-400 mt-1 uppercase tracking-wider">
                 Actual {Math.round(temp)}°
               </div>
             ) : (
               // Standard view: Regular temp as main, Feels Like as sub-text
               feelsLike !== undefined && (
-                <div className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-wider">
+                <div className="text-xxs font-black text-slate-400 mt-1 uppercase tracking-wider">
                   Feels like {Math.round(feelsLike)}°
                 </div>
               )
@@ -402,7 +402,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         </div>
 
-        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
+        <div className="text-xxs font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
           Instruction
         </div>
 
@@ -428,7 +428,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <RefreshCw className="w-3.5 h-3.5" />
             )}
           </button>
-          <div className="text-[8px]  text-slate-300 uppercase flex items-center gap-1.5">
+          <div className="text-xxxs  text-slate-300 uppercase flex items-center gap-1.5">
             <span>Last Sync</span>
             {lastSync && (
               <span className="text-slate-400">
@@ -672,10 +672,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">
+          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
             Prioritize Feels Like
           </span>
-          <span className="text-[9px] text-slate-400 leading-tight">
+          <span className="text-xxs text-slate-400 leading-tight">
             Swap prominence between actual and feels-like temperature.
           </span>
         </div>
@@ -697,7 +697,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, isAuto: false },
             })
           }
-          className={`flex-1 py-1.5 text-[10px]  rounded-lg transition-all ${!isAuto ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+          className={`flex-1 py-1.5 text-xxs  rounded-lg transition-all ${!isAuto ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
         >
           MANUAL
         </button>
@@ -707,7 +707,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
               config: { ...config, isAuto: true },
             })
           }
-          className={`flex-1 py-1.5 text-[10px]  rounded-lg transition-all ${isAuto ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+          className={`flex-1 py-1.5 text-xxs  rounded-lg transition-all ${isAuto ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
         >
           AUTOMATIC
         </button>
@@ -716,7 +716,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       {!isAuto ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
           <div>
-            <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+            <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
               <Thermometer className="w-3 h-3" /> Temperature (°F)
             </label>
             <div className="flex items-center gap-4 px-2">
@@ -744,7 +744,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           </div>
 
           <div>
-            <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+            <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
               <Palette className="w-3 h-3" /> Condition
             </label>
             <div className="grid grid-cols-5 gap-2">
@@ -769,7 +769,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {isAdminProxy ? (
             <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-              <p className="text-[10px]  text-blue-800 leading-tight flex items-center gap-2">
+              <p className="text-xxs  text-blue-800 leading-tight flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 Weather is managed by your administrator.
               </p>
@@ -784,7 +784,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                       config: { ...config, source: 'openweather' },
                     })
                   }
-                  className={`flex-1 py-1.5 text-[9px]  uppercase rounded-lg transition-all ${source === 'openweather' || !source ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                  className={`flex-1 py-1.5 text-xxs  uppercase rounded-lg transition-all ${source === 'openweather' || !source ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
                 >
                   OpenWeather
                 </button>
@@ -794,7 +794,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                       config: { ...config, source: 'earth_networks' },
                     })
                   }
-                  className={`flex-1 py-1.5 text-[9px]  uppercase rounded-lg transition-all ${source === 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+                  className={`flex-1 py-1.5 text-xxs  uppercase rounded-lg transition-all ${source === 'earth_networks' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
                 >
                   School Station
                 </button>
@@ -805,7 +805,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-[10px]  text-indigo-900 uppercase">
+                      <span className="text-xxs  text-indigo-900 uppercase">
                         Station Feed Ready
                       </span>
                     </div>
@@ -820,7 +820,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   <button
                     onClick={fetchEarthNetworksWeather}
                     disabled={loading}
-                    className="w-full py-3 bg-indigo-600 text-white rounded-xl  text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-md shadow-indigo-200"
+                    className="w-full py-3 bg-indigo-600 text-white rounded-xl  text-xxs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-md shadow-indigo-200"
                   >
                     <RefreshCw
                       className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
@@ -833,7 +833,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   {!hasApiKey && (
                     <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl items-start">
                       <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[10px]  text-amber-800 leading-tight">
+                      <p className="text-xxs  text-amber-800 leading-tight">
                         Weather service is not configured. Please contact your
                         administrator to set up the API key.
                       </p>
@@ -841,7 +841,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   )}
 
                   <div>
-                    <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                    <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
                       <MapPin className="w-3 h-3" /> City / Zip
                     </label>
                     <div className="flex gap-2">
@@ -873,7 +873,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-slate-100" />
                     </div>
-                    <div className="relative flex justify-center text-[8px]  text-slate-300 uppercase">
+                    <div className="relative flex justify-center text-xxxs  text-slate-300 uppercase">
                       <span className="bg-white px-2">OR</span>
                     </div>
                   </div>
@@ -881,7 +881,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   <button
                     onClick={syncByLocation}
                     disabled={loading || !hasApiKey}
-                    className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl  text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                    className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl  text-xxs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                   >
                     <MapPin className="w-4 h-4" /> Use Current Location
                   </button>

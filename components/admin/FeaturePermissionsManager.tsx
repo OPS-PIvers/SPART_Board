@@ -450,7 +450,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                         return (
                           <>
                             <div>
-                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Google Sheet ID
                               </label>
                               <input
@@ -472,11 +472,11 @@ export const FeaturePermissionsManager: React.FC = () => {
                                 placeholder="Spreadsheet ID from URL"
                               />
                               {isIdMalformed && (
-                                <p className="text-[9px] text-red-600 font-bold mt-1">
+                                <p className="text-xxs text-red-600 font-bold mt-1">
                                   Warning: Enter only the ID, not the full URL.
                                 </p>
                               )}
-                              <p className="text-[9px] text-slate-400 mt-1">
+                              <p className="text-xxs text-slate-400 mt-1">
                                 Found in the URL:
                                 docs.google.com/spreadsheets/d/<b>[ID]</b>/edit
                                 <br />
@@ -487,7 +487,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                               </p>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Submission URL (Apps Script)
                               </label>
                               <input
@@ -509,7 +509,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                 placeholder="https://script.google.com/macros/s/.../exec"
                               />
                               {isUrlMalformed && (
-                                <p className="text-[9px] text-red-600 font-bold mt-1">
+                                <p className="text-xxs text-red-600 font-bold mt-1">
                                   Warning: URL must start with https://
                                 </p>
                               )}
@@ -532,7 +532,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                         return (
                           <>
                             <div>
-                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Fetching Strategy
                               </label>
                               <div className="flex bg-white rounded-lg border border-slate-200 p-1">
@@ -545,7 +545,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                       },
                                     })
                                   }
-                                  className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                  className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
                                     config.fetchingStrategy === 'client' ||
                                     !config.fetchingStrategy
                                       ? 'bg-brand-blue-primary text-white shadow-sm'
@@ -563,7 +563,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                       },
                                     })
                                   }
-                                  className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                  className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
                                     config.fetchingStrategy === 'admin_proxy'
                                       ? 'bg-brand-blue-primary text-white shadow-sm'
                                       : 'text-slate-500 hover:bg-slate-50'
@@ -572,7 +572,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                   Admin Proxy
                                 </button>
                               </div>
-                              <p className="text-[9px] text-slate-400 mt-1">
+                              <p className="text-xxs text-slate-400 mt-1">
                                 <strong>Client:</strong> Each user fetches data
                                 directly (higher API usage).
                                 <br />
@@ -585,7 +585,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                             {config.fetchingStrategy === 'admin_proxy' && (
                               <div className="space-y-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
                                 <div>
-                                  <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                  <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                     Data Source
                                   </label>
                                   <div className="flex bg-white rounded-lg border border-slate-200 p-1">
@@ -598,7 +598,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                           },
                                         })
                                       }
-                                      className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                      className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
                                         config.source === 'openweather' ||
                                         !config.source
                                           ? 'bg-brand-blue-primary text-white shadow-sm'
@@ -616,7 +616,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                           },
                                         })
                                       }
-                                      className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${
+                                      className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
                                         config.source === 'earth_networks'
                                           ? 'bg-brand-blue-primary text-white shadow-sm'
                                           : 'text-slate-500 hover:bg-slate-50'
@@ -630,7 +630,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                 {(config.source === 'openweather' ||
                                   !config.source) && (
                                   <div>
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                    <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                       City (Optional)
                                     </label>
                                     <input
@@ -653,7 +653,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                             )}
 
                             <div>
-                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Update Frequency (Minutes)
                               </label>
                               <input
@@ -677,7 +677,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                             </div>
 
                             <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase">
+                              <span className="text-xxs font-bold text-slate-500 uppercase">
                                 Show &quot;Feels Like&quot; Temperature
                               </span>
                               <label className="relative inline-flex items-center cursor-pointer">
@@ -700,12 +700,12 @@ export const FeaturePermissionsManager: React.FC = () => {
 
                             <div>
                               <div className="flex items-center justify-between mb-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase block">
+                                <label className="text-xxs font-bold text-slate-500 uppercase block">
                                   Temperature Ranges
                                 </label>
                                 <button
                                   onClick={() => addWeatherRange(tool.type)}
-                                  className="text-[9px] font-bold text-brand-blue-primary hover:text-brand-blue-dark flex items-center gap-1"
+                                  className="text-xxs font-bold text-brand-blue-primary hover:text-brand-blue-dark flex items-center gap-1"
                                 >
                                   <Plus className="w-3 h-3" /> Add Range
                                 </button>
@@ -731,7 +731,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                               }
                                             )
                                           }
-                                          className="text-[10px] font-bold border border-slate-200 rounded px-1 py-1"
+                                          className="text-xxs font-bold border border-slate-200 rounded px-1 py-1"
                                         >
                                           <option value="range">Range</option>
                                           <option value="above">Above</option>
@@ -787,7 +787,7 @@ export const FeaturePermissionsManager: React.FC = () => {
 
                                         {range.type === 'above' && (
                                           <div className="flex items-center gap-2 flex-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                            <span className="text-xxs font-bold text-slate-400 uppercase">
                                               Above
                                             </span>
                                             <input
@@ -813,7 +813,7 @@ export const FeaturePermissionsManager: React.FC = () => {
 
                                         {range.type === 'below' && (
                                           <div className="flex items-center gap-2 flex-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                            <span className="text-xxs font-bold text-slate-400 uppercase">
                                               Below
                                             </span>
                                             <input
@@ -903,7 +903,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                             ) : (
                                               <Upload className="w-3.5 h-3.5 text-slate-500" />
                                             )}
-                                            <span className="text-[10px] font-bold text-slate-600 uppercase">
+                                            <span className="text-xxs font-bold text-slate-600 uppercase">
                                               {range.imageUrl
                                                 ? 'Change Image'
                                                 : 'Upload Image'}
@@ -1003,7 +1003,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                       <button
                         key={level}
                         onClick={() => toggleGradeLevel(tool.type, level)}
-                        className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
+                        className={`py-1.5 rounded-md text-xxs font-bold border transition-all ${
                           isSelected
                             ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                             : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -1015,7 +1015,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                   })}
                   <button
                     onClick={() => toggleAllGradeLevels(tool.type)}
-                    className={`py-1.5 rounded-md text-[10px] font-bold border transition-all ${
+                    className={`py-1.5 rounded-md text-xxs font-bold border transition-all ${
                       isAllSelected
                         ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                         : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'

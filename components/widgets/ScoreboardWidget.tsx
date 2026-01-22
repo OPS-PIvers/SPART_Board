@@ -152,7 +152,7 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
           >
             <div
-              className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+              className={`text-xxs font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
             >
               {team.name}
             </div>
@@ -299,7 +299,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
           </Button>
         </div>
         {!randomWidget && (
-          <div className="text-[10px] text-indigo-400 font-medium">
+          <div className="text-xxs text-indigo-400 font-medium">
             Tip: Add a Randomizer widget and create groups to import them here.
           </div>
         )}
@@ -307,12 +307,12 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+          <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
             Teams ({teams.length})
           </label>
           <button
             onClick={resetScores}
-            className="text-[10px] font-bold text-red-500 hover:text-red-600 underline"
+            className="text-xxs font-bold text-red-500 hover:text-red-600 underline"
           >
             Reset Scores
           </button>

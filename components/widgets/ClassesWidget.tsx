@@ -112,7 +112,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
       </div>
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         <div className="flex flex-col h-full">
-          <label className="text-[10px]  text-slate-500 uppercase tracking-widest mb-1">
+          <label className="text-xxs  text-slate-500 uppercase tracking-widest mb-1">
             First Name (Smart Paste)
           </label>
           <textarea
@@ -124,7 +124,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
           />
         </div>
         <div className="flex flex-col h-full">
-          <label className="text-[10px]  text-slate-500 uppercase tracking-widest mb-1">
+          <label className="text-xxs  text-slate-500 uppercase tracking-widest mb-1">
             Last Name
           </label>
           <textarea
@@ -134,7 +134,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
           />
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-slate-400 text-center italic">
+      <div className="mt-2 text-xxs text-slate-400 text-center italic">
         Tip: Paste a full list of names into &quot;First Name&quot; to
         auto-split them.
       </div>

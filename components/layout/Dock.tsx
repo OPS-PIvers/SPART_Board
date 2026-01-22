@@ -55,7 +55,7 @@ const DockLabel = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <span
-      className={`text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily}`}
+      className={`text-xxs font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily}`}
       style={{
         color: globalStyle.dockTextColor,
         textShadow: globalStyle.dockTextShadow
@@ -184,10 +184,10 @@ const ToolDockItem = ({
             className="w-56 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
           >
             <div className="bg-white/50 px-3 py-2 border-b border-white/30 flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <span className="text-xxs font-black uppercase text-slate-600 tracking-wider">
                 Restorable
               </span>
-              <span className="bg-white/60 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              <span className="bg-white/60 text-slate-700 text-xxs font-bold px-1.5 py-0.5 rounded-full">
                 {minimizedWidgets.length}
               </span>
             </div>
@@ -228,7 +228,7 @@ const ToolDockItem = ({
                   onAdd();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-[10px] font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-xxs font-bold rounded-lg transition-colors"
               >
                 <Plus className="w-3 h-3" />
                 <span>Create</span>
@@ -238,7 +238,7 @@ const ToolDockItem = ({
                   onDeleteAll();
                   setShowPopover(false);
                 }}
-                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-[10px] font-bold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-0.5 px-1 py-1.5 bg-white/50 hover:bg-red-50/80 text-slate-700 hover:text-red-700 text-xxs font-bold rounded-lg transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Clear</span>
@@ -286,7 +286,7 @@ const ToolDockItem = ({
           >
             <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
             {minimizedWidgets.length > 0 && (
-              <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+              <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-xxs font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                 {minimizedWidgets.length}
               </div>
             )}
@@ -382,7 +382,7 @@ const SortableFolderWidget = ({
           </div>
 
           {minimizedCount > 0 && (
-            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-xxs font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
               {minimizedCount}
             </div>
           )}
@@ -408,7 +408,7 @@ const SortableFolderWidget = ({
           </div>
         )}
       </div>
-      <span className="text-[8px] font-bold uppercase text-slate-600 truncate w-full text-center">
+      <span className="text-xxxs font-bold uppercase text-slate-600 truncate w-full text-center">
         {tool.label}
       </span>
     </div>
@@ -509,7 +509,7 @@ const FolderItem = ({
             className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-popover"
           >
             <div className="flex justify-between items-center mb-3">
-              <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
+              <h4 className="text-xxs font-black uppercase text-slate-500 tracking-widest">
                 {folder.name}
               </h4>
               <button
@@ -517,7 +517,7 @@ const FolderItem = ({
                   onRename(folder.id);
                   setShowPopover(false);
                 }}
-                className="text-[8px] font-black uppercase tracking-widest text-brand-blue-primary hover:underline"
+                className="text-xxxs font-black uppercase tracking-widest text-brand-blue-primary hover:underline"
               >
                 Rename
               </button>
@@ -551,7 +551,7 @@ const FolderItem = ({
                     );
                   })}
                   {folder.items.length === 0 && (
-                    <div className="col-span-3 py-4 text-center text-[10px] text-slate-400 italic">
+                    <div className="col-span-3 py-4 text-center text-xxs text-slate-400 italic">
                       Drag items here to add them
                     </div>
                   )}
@@ -632,7 +632,7 @@ const QuickAccessButton = ({
       >
         <tool.icon className="w-6 h-6" />
       </button>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-2xl border border-white/10 scale-90 group-hover:scale-100">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-slate-800 text-white text-xxs font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-modal shadow-2xl border border-white/10 scale-90 group-hover:scale-100">
         {tool.label}
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
       </div>
@@ -870,7 +870,7 @@ export const Dock: React.FC = () => {
                 <div className="p-1 bg-brand-blue-primary text-white rounded-full group-hover:rotate-90 transition-transform duration-300">
                   <Plus className="w-3 h-3" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                <span className="text-xxs font-black uppercase tracking-widest text-slate-700">
                   Add Widgets
                 </span>
               </button>
@@ -881,7 +881,7 @@ export const Dock: React.FC = () => {
                 <div className="p-1 bg-slate-100 text-slate-500 rounded-full group-hover:bg-slate-200 transition-colors">
                   <FolderPlus className="w-3 h-3" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                <span className="text-xxs font-black uppercase tracking-widest text-slate-700">
                   Add Folder
                 </span>
               </button>
@@ -1115,10 +1115,10 @@ export const Dock: React.FC = () => {
                               <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
                                 {session.code}
                               </div>
-                              <div className="text-[10px] text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
+                              <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
                                 {getJoinUrl()}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-2">
+                              <div className="text-xxs text-slate-500 mt-2">
                                 Provide this code to your students.
                               </div>
                             </div>
@@ -1167,7 +1167,7 @@ export const Dock: React.FC = () => {
                   </button>
                 </>
               ) : (
-                <div className="px-6 py-2 text-[10px] font-black uppercase text-slate-400 italic">
+                <div className="px-6 py-2 text-xxs font-black uppercase text-slate-400 italic">
                   No apps selected in settings
                 </div>
               )}

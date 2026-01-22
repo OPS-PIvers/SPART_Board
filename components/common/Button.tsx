@@ -45,8 +45,8 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizeStyles: Record<ButtonSize, string> = {
-    sm: 'px-3 py-1.5 text-[10px] font-black uppercase tracking-widest',
-    md: 'px-4 py-2 text-[10px] font-black uppercase tracking-widest',
+    sm: 'px-3 py-1.5 text-xxs font-black uppercase tracking-widest',
+    md: 'px-4 py-2 text-xxs font-black uppercase tracking-widest',
     lg: 'px-6 py-4 text-xs font-black uppercase tracking-widest',
     icon: 'p-2',
   };

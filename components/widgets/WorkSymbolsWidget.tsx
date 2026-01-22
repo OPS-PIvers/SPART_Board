@@ -260,7 +260,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="flex-1">
               <h3 className=" text-slate-800 leading-tight">{routine.label}</h3>
               {routine.hint && (
-                <p className="text-[10px] text-slate-500">{routine.hint}</p>
+                <p className="text-xxs text-slate-500">{routine.hint}</p>
               )}
             </div>
           </div>
@@ -268,7 +268,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
           {/* Steps / Drag Zone */}
           <div className="flex-1 p-3 overflow-y-auto bg-slate-100">
             <div className="space-y-3">
-              <div className="text-[10px]  text-slate-400 uppercase tracking-wider text-center mb-2">
+              <div className="text-xxs  text-slate-400 uppercase tracking-wider text-center mb-2">
                 Drag icons to whiteboard
               </div>
               {routine.steps.map((step, idx) => {
@@ -353,7 +353,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                     <IconComponent size={20} />
                   </div>
                   <span
-                    className={`text-[10px]  text-center leading-tight ${
+                    className={`text-xxs  text-center leading-tight ${
                       isActive ? 'text-blue-700' : 'text-gray-500'
                     }`}
                   >
@@ -427,7 +427,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Voice Level Thermometer */}
 
       <div className="flex-1 flex flex-col gap-1.5 h-full">
-        <label className="text-[9px]  uppercase text-slate-500 tracking-widest pl-1 mb-1">
+        <label className="text-xxs  uppercase text-slate-500 tracking-widest pl-1 mb-1">
           Voice Level
         </label>
         {voices.map((v) => (
@@ -469,7 +469,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Working Mode Section */}
       <div className="w-28 flex flex-col gap-2 h-full border-l border-white/20 pl-3">
         {' '}
-        <label className="text-[9px]  uppercase text-slate-500 tracking-widest mb-1">
+        <label className="text-xxs  uppercase text-slate-500 tracking-widest mb-1">
           Working...
         </label>
         {modes.map((m) => (

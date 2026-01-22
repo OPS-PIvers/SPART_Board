@@ -340,7 +340,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
           Sensitivity
         </label>
         <input
@@ -359,7 +359,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div>
-        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
           Visual Mode
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -378,7 +378,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               }`}
             >
               <m.icon className="w-4 h-4" />
-              <span className="text-[10px]  uppercase">{m.label}</span>
+              <span className="text-xxs  uppercase">{m.label}</span>
             </button>
           ))}
         </div>
@@ -394,7 +394,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
 
         {!hasTrafficLight && (
-          <div className="text-[10px] text-indigo-400 font-medium bg-white/50 p-2 rounded-lg">
+          <div className="text-xxs text-indigo-400 font-medium bg-white/50 p-2 rounded-lg">
             Tip: Add a Traffic Light widget to use this feature.
           </div>
         )}
@@ -419,7 +419,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         {autoTrafficLight && (
           <div className="animate-in fade-in slide-in-from-top-1">
-            <label className="text-[10px] text-indigo-400 uppercase tracking-widest mb-1.5 block">
+            <label className="text-xxs text-indigo-400 uppercase tracking-widest mb-1.5 block">
               Trigger Red Light At:
             </label>
             <div className="grid grid-cols-1 gap-1">

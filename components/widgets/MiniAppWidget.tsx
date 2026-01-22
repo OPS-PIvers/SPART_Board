@@ -145,7 +145,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
       </div>
       <div className="flex-1 min-w-0">
         <h4 className=" text-slate-700 text-sm truncate">{app.title}</h4>
-        <div className="text-[10px] text-slate-400 font-mono">
+        <div className="text-xxs text-slate-400 font-mono">
           {(app.html.length / 1024).toFixed(1)} KB
         </div>
       </div>
@@ -387,7 +387,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px]  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-xxs  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
           >
             <LayoutGrid className="w-3 h-3" /> Library
           </button>
@@ -473,7 +473,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+              <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
                 App Title
               </label>
               <input
@@ -496,7 +496,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
           </div>
           <div className="flex-1 flex flex-col min-h-[300px]">
-            <label className="block text-[10px]  uppercase text-slate-400 tracking-widest mb-1">
+            <label className="block text-xxs  uppercase text-slate-400 tracking-widest mb-1">
               HTML Code
             </label>
             <textarea
@@ -538,14 +538,14 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={handleExport}
-              className="text-[10px]  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-xxs  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Download className="w-3 h-3" /> Export
             </button>
-            <span className="text-slate-300 text-[10px]">•</span>
+            <span className="text-slate-300 text-xxs">•</span>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-[10px]  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-xxs  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Upload className="w-3 h-3" /> Import
             </button>
@@ -602,7 +602,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-white/30 border-t border-white/20 text-[9px] text-slate-500 text-center  uppercase tracking-widest shrink-0 rounded-b-2xl">
+      <div className="p-3 bg-white/30 border-t border-white/20 text-xxs text-slate-500 text-center  uppercase tracking-widest shrink-0 rounded-b-2xl">
         Drag to reorder • Runs Locally
       </div>
     </div>

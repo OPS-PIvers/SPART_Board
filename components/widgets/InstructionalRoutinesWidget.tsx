@@ -167,7 +167,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   if (!selectedRoutineId || !selectedRoutine) {
     return (
       <div className="flex flex-col h-full bg-brand-gray-lightest p-4">
-        <div className="text-[10px]  uppercase text-slate-400 tracking-widest mb-3">
+        <div className="text-xxs  uppercase text-slate-400 tracking-widest mb-3">
           Library ({gradeFilter.toUpperCase()})
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
@@ -232,7 +232,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           >
             {selectedRoutine.name}
           </h2>
-          <span className="text-[10px]  text-brand-blue-light uppercase tracking-widest">
+          <span className="text-xxs  text-brand-blue-light uppercase tracking-widest">
             {selectedRoutine.grades} Protocol
           </span>
         </div>
@@ -344,13 +344,13 @@ export const InstructionalRoutinesSettings: React.FC<{
             config: { ...config, selectedRoutineId: null },
           })
         }
-        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-[10px]  uppercase tracking-widest hover:bg-brand-blue-light/20 transition-colors"
+        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-xxs  uppercase tracking-widest hover:bg-brand-blue-light/20 transition-colors"
       >
         Switch Routine Template
       </button>
 
       <div className="space-y-3">
-        <label className="text-[10px]  uppercase text-slate-400 tracking-[0.2em] block mb-2">
+        <label className="text-xxs  uppercase text-slate-400 tracking-[0.2em] block mb-2">
           Step Editor
         </label>
         {customSteps.map((step, i) => (
@@ -394,7 +394,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                       : null}
                   </span>
                 )}
-                <span className="text-[8px]  text-slate-400 uppercase">
+                <span className="text-xxxs  text-slate-400 uppercase">
                   Step {i + 1}
                 </span>
               </div>
@@ -412,7 +412,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                 className="w-full text-[11px]  bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
               />
               <div className="flex items-center gap-2">
-                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                <span className="text-xxxs font-bold text-slate-400 uppercase">
                   Attached Tool:
                 </span>
                 <select
@@ -453,7 +453,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                       config: { ...config, customSteps: next },
                     });
                   }}
-                  className="text-[10px] bg-slate-50 border border-slate-200 rounded p-1"
+                  className="text-xxs bg-slate-50 border border-slate-200 rounded p-1"
                 >
                   {QUICK_TOOLS.map((t) => (
                     <option key={t.label} value={t.label}>
@@ -490,14 +490,14 @@ export const InstructionalRoutinesSettings: React.FC<{
               },
             })
           }
-          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-[10px]  uppercase"
+          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-xxs  uppercase"
         >
           <Plus className="w-4 h-4" /> Add Next Step
         </button>
       </div>
 
       <div className="bg-slate-50 p-4 rounded-2xl">
-        <label className="text-[10px]  uppercase text-slate-400 tracking-widest mb-3 block">
+        <label className="text-xxs  uppercase text-slate-400 tracking-widest mb-3 block">
           Text Zoom
         </label>
         <input

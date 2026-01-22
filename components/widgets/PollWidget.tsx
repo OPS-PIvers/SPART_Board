@@ -91,7 +91,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
       <button
         onClick={handleReset}
-        className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
+        className="mt-4 flex items-center justify-center gap-2 py-2 text-xxs font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
       >
         <RotateCcw className="w-3 h-3" /> Reset Poll
       </button>
@@ -251,7 +251,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </Button>
         </div>
         {!activeRoster && (
-          <div className="text-[10px] text-indigo-400 font-medium">
+          <div className="text-xxs text-indigo-400 font-medium">
             Tip: Select a class in the Classes widget to import student names.
           </div>
         )}
@@ -259,7 +259,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Magic Generator */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
           Magic Generator
         </label>
         <MagicInput<GeneratedPoll>
@@ -286,7 +286,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Question Edit */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Question
         </label>
         <input
@@ -302,7 +302,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Options List */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-2 block">
           Options
         </label>
         <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
@@ -334,7 +334,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Actions */}
       <div className="pt-4 border-t border-slate-100">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Actions
         </label>
         <div className="grid grid-cols-2 gap-3">
