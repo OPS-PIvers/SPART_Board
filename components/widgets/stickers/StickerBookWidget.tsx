@@ -4,6 +4,7 @@ import { WidgetData, StickerBookConfig } from '@/types';
 import { trimImageWhitespace, removeBackground } from '@/utils/imageProcessing';
 import { useDashboard } from '@/context/useDashboard';
 import { useStorage } from '@/hooks/useStorage';
+import { useAuth } from '@/context/useAuth';
 
 const DEFAULT_STICKERS = [
   // Star
@@ -24,7 +25,8 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, clearAllStickers } = useDashboard();
-  const { uploadFile, uploading: storageUploading } = useStorage();
+  const { user } = useAuth();
+  const { uploadSticker, uploading: storageUploading } = useStorage();
   const [processing, setProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +39,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 
   const processFile = useCallback(
     async (file: File) => {
-      if (!file.type.startsWith('image/')) return;
+      if (!file.type.startsWith('image/') || !user) return;
 
       setProcessing(true);
       try {
@@ -61,10 +63,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
           { type: 'image/png' }
         );
 
-        const url = (await uploadFile(
-          `stickers/${Date.now()}_${processedFile.name}`,
-          processedFile
-        )) as string | null;
+        const url = (await uploadSticker(user.uid, processedFile)) as
+          | string
+          | null;
 
         if (url) {
           updateWidget(widget.id, {
@@ -80,7 +81,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         setProcessing(false);
       }
     },
-    [config, customStickers, updateWidget, uploadFile, widget.id]
+    [config, customStickers, updateWidget, uploadSticker, widget.id, user]
   );
 
   // Handle global paste events when this widget is mounted

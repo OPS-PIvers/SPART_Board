@@ -33,6 +33,14 @@ export const useStorage = () => {
     );
   };
 
+  const uploadSticker = async (userId: string, file: File): Promise<string> => {
+    const timestamp = Date.now();
+    return uploadFile(
+      `users/${userId}/stickers/${timestamp}-${file.name}`,
+      file
+    );
+  };
+
   const uploadScreenshot = async (
     userId: string,
     blob: Blob
@@ -82,6 +90,7 @@ export const useStorage = () => {
     uploading,
     uploadFile,
     uploadBackgroundImage,
+    uploadSticker,
     uploadScreenshot,
     deleteFile,
     uploadAdminBackground,
