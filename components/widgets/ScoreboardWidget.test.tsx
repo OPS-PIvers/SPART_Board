@@ -20,6 +20,8 @@ const mockDashboardContext = {
   activeDashboard: {
     widgets: [],
   },
+  rosters: [],
+  activeRosterId: null,
 };
 
 describe('ScoreboardWidget', () => {
@@ -94,6 +96,64 @@ describe('ScoreboardSettings', () => {
     vi.clearAllMocks();
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       mockDashboardContext
+    );
+  });
+
+  it('imports roster from classes', () => {
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: { teams: [] } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const mockRoster = {
+      id: 'roster-1',
+      name: 'Class 1A',
+      students: [
+        { id: 's1', firstName: 'John', lastName: 'Doe' },
+        { id: 's2', firstName: 'Jane', lastName: 'Smith' },
+      ],
+      createdAt: 12345,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      rosters: [mockRoster],
+      activeRosterId: 'roster-1',
+    });
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    // Since there are multiple buttons with similar text, we might target by icon or specific text
+    // "Import Class" button
+    const buttons = screen.getAllByRole('button');
+    const importButton = buttons.find((btn) =>
+      btn.textContent?.includes('Import Class')
+    );
+
+    if (!importButton) throw new Error('Import Class button not found');
+    fireEvent.click(importButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'John Doe', id: 's1' }),
+            expect.objectContaining({ name: 'Jane Smith', id: 's2' }),
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Imported 2 students'),
+      'success'
     );
   });
 

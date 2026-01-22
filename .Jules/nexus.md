@@ -17,3 +17,9 @@
 **Source:** Sound Widget (Noise Meter)
 **Destination:** Traffic Light Widget
 **Value:** Automatically switches Traffic Light to Red when noise level exceeds a threshold, acting as an unbiased classroom monitor.
+
+## 2025-05-23 - [Roster Scoreboard]
+
+**Source:** Classes Widget (Roster)
+**Destination:** Scoreboard Widget
+**Value:** Instantly creates a scoreboard team/player for every student in the active class, enabling rapid participation tracking.
