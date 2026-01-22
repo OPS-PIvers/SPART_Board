@@ -210,7 +210,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               checked={config.autoProgress ?? false}
               onChange={(checked) =>
                 updateWidget(widget.id, {
-                  config: { ...config, autoProgress: checked } as ScheduleConfig,
+                  config: {
+                    ...config,
+                    autoProgress: checked,
+                  } as ScheduleConfig,
                 })
               }
             />
