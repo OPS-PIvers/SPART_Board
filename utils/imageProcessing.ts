@@ -103,7 +103,7 @@ export const removeBackground = async (dataUrl: string): Promise<string> => {
   try {
     // High-quality background removal using library
     const blob = await imglyRemoveBackground(dataUrl, {
-      progress: (key: string, current: number, total: number) => {
+      progress: (key, current, total) => {
         if (current === total) {
           // Final progress log
           console.warn(`Background removal complete: ${key}`);
