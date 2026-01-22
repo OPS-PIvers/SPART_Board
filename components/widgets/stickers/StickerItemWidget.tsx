@@ -58,6 +58,7 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
     return colors[color] ?? colors.blue;
   };
 
+  // Catalyst-style stickers (with icons and labels in a white card)
   if (config.icon) {
     const IconComponent =
       (Icons as unknown as Record<string, React.ElementType>)[config.icon] ??
@@ -91,31 +92,19 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
     );
   }
 
+  // Floating image stickers (no background or container)
   return (
     <DraggableSticker widget={widget}>
-      <div className="w-full h-full flex flex-col items-center justify-center rounded-3xl border-[6px] border-white bg-white shadow-2xl p-2">
+      <div className="w-full h-full flex items-center justify-center group/img">
         {config.url ? (
-          <div className="w-full flex-1 flex items-center justify-center overflow-hidden">
-            <img
-              src={config.url}
-              alt="Sticker"
-              className="max-w-full max-h-full object-contain pointer-events-none"
-              style={{
-                filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.1))',
-              }}
-            />
-          </div>
+          <img
+            src={config.url}
+            alt="Sticker"
+            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-lg transition-transform group-hover/img:scale-105"
+          />
         ) : (
-          <div className="w-full flex-1 flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
+          <div className="w-full h-full flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
             <span className="text-xs text-pink-500 font-bold">No Image</span>
-          </div>
-        )}
-
-        {config.label && (
-          <div className="w-full pt-1.5 pb-0.5 text-center">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 block truncate px-1">
-              {config.label}
-            </span>
           </div>
         )}
       </div>
