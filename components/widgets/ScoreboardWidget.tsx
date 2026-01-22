@@ -194,7 +194,8 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, activeDashboard, addToast } = useDashboard();
+  const { updateWidget, activeDashboard, addToast, rosters, activeRosterId } =
+    useDashboard();
   const config = widget.config as ScoreboardConfig;
   const teams = config.teams ?? [];
 
@@ -235,6 +236,39 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     } else {
       addToast('Randomizer needs to have generated groups first.', 'info');
     }
+  };
+
+  const importFromClass = () => {
+    const activeRoster = rosters.find((r) => r.id === activeRosterId);
+
+    if (!activeRoster) {
+      addToast('No active class roster selected!', 'error');
+      return;
+    }
+
+    if (teams.length > 0) {
+      if (
+        !confirm(
+          'This will replace current teams with your class roster. Continue?'
+        )
+      ) {
+        return;
+      }
+    }
+
+    const newTeams: ScoreboardTeam[] = activeRoster.students.map(
+      (student, index) => ({
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`.trim(),
+        score: 0,
+        color: TEAM_COLORS[index % TEAM_COLORS.length],
+      })
+    );
+
+    updateWidget(widget.id, {
+      config: { ...config, teams: newTeams },
+    });
+    addToast(`Imported ${newTeams.length} students!`, 'success');
   };
 
   const addTeam = () => {
@@ -301,6 +335,36 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         {!randomWidget && (
           <div className="text-[10px] text-indigo-400 font-medium">
             Tip: Add a Randomizer widget and create groups to import them here.
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import from Class
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromClass}
+            disabled={!activeRosterId}
+            title={
+              !activeRosterId
+                ? 'Select a class in the Classes widget'
+                : 'Import Roster'
+            }
+            icon={<RefreshCw className="w-3 h-3" />}
+          >
+            Import Class
+          </Button>
+        </div>
+        {!activeRosterId && (
+          <div className="text-[10px] text-indigo-400 font-medium">
+            Tip: Select a class in the Classes widget to import student names.
           </div>
         )}
       </div>

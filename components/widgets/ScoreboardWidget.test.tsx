@@ -185,4 +185,54 @@ describe('ScoreboardSettings', () => {
       })
     );
   });
+
+  it('imports roster from classes', () => {
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: { teams: [] } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      rosters: [
+        {
+          id: 'roster-1',
+          name: 'Class A',
+          students: [
+            { id: 's1', firstName: 'Alice', lastName: 'A' },
+            { id: 's2', firstName: 'Bob', lastName: 'B' },
+          ],
+        },
+      ],
+      activeRosterId: 'roster-1',
+    });
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const importButton = screen.getByText('Import Class');
+    fireEvent.click(importButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Alice A' }),
+            expect.objectContaining({ name: 'Bob B' }),
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Imported 2 students'),
+      'success'
+    );
+  });
 });
