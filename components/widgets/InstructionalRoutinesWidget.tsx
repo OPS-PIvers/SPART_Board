@@ -34,6 +34,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { WIDGET_DEFAULTS } from '../../config/widgetDefaults';
+import { BLOOMS_DATA } from '../../config/bloomsData';
 
 const QUICK_TOOLS: {
   label: string;
@@ -566,6 +567,39 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       selectedRoutine.icon
     ] ?? Icons.HelpCircle;
 
+  const launchBloomsResource = (type: 'keyWords' | 'questionStarters') => {
+    const title =
+      type === 'keyWords' ? "Bloom's Key Words" : "Bloom's Sentence Starters";
+
+    let content = `<h3 style="font-weight: 900; margin-bottom: 0.5em; text-transform: uppercase; color: #1e293b;">${title}</h3>`;
+
+    if (type === 'keyWords') {
+      BLOOMS_DATA.keyWords.forEach((levelGroup) => {
+        content += `<h4 style="font-weight: 800; margin-top: 1em; margin-bottom: 0.25em; color: #2d3f89; font-size: 0.9em;">${levelGroup.level}</h4><ul style="padding-left: 1.2em; list-style-type: disc; color: #475569; font-size: 0.85em;">`;
+        levelGroup.words.forEach((item) => {
+          content += `<li>${item}</li>`;
+        });
+        content += `</ul>`;
+      });
+    } else {
+      BLOOMS_DATA.questionStarters.forEach((levelGroup) => {
+        content += `<h4 style="font-weight: 800; margin-top: 1em; margin-bottom: 0.25em; color: #2d3f89; font-size: 0.9em;">${levelGroup.level}</h4><ul style="padding-left: 1.2em; list-style-type: disc; color: #475569; font-size: 0.85em;">`;
+        levelGroup.starters.forEach((item) => {
+          content += `<li>${item}</li>`;
+        });
+        content += `</ul>`;
+      });
+    }
+
+    addWidget('text', {
+      config: {
+        content,
+        bgColor: '#ffffff',
+        fontSize: 16,
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden relative">
       <div className="flex items-center gap-3 mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
@@ -602,6 +636,24 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           <RoutineIcon className="w-8 h-8" />
         </div>
       </div>
+
+      {selectedRoutine.id === 'blooms-analysis' && (
+        <div className="flex gap-3 mb-4 shrink-0 px-1">
+          <button
+            onClick={() => launchBloomsResource('keyWords')}
+            className="flex-1 py-3 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center gap-2"
+          >
+            <Icons.Key size={14} /> Key Words
+          </button>
+          <button
+            onClick={() => launchBloomsResource('questionStarters')}
+            className="flex-1 py-3 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center gap-2"
+          >
+            <Icons.MessageSquare size={14} /> Sentence Starters
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <ul className="space-y-8">
           {customSteps.map((step, i) => {
