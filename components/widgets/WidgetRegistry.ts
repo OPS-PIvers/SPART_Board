@@ -131,7 +131,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./InstructionalRoutinesWidget'),
     'InstructionalRoutinesSettings'
   ),
-  materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
+  materials: lazyNamed(
+    () => import('./MaterialsWidget/Settings'),
+    'MaterialsSettings'
+  ),
   miniApp: MiniAppSettings,
   stickers: StickerSettings,
   'sticker-library': StickerLibrarySettings,

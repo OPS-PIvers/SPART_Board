@@ -7,9 +7,6 @@ import {
 import { useDashboard } from '../../../context/useDashboard';
 import { useScaledFont } from '../../../hooks/useScaledFont';
 import { MATERIAL_ITEMS } from './constants';
-import { MaterialsSettings } from './Settings';
-
-export { MaterialsSettings };
 
 export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
