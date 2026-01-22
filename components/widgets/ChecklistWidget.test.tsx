@@ -8,6 +8,7 @@ import {
   InstructionalRoutinesConfig,
   WidgetData,
   ChecklistConfig,
+  MaterialsConfig,
 } from '../../types';
 
 // Mock dependencies
@@ -77,6 +78,21 @@ const mockRoutineWidget: WidgetData = {
   } as InstructionalRoutinesConfig,
 };
 
+const mockMaterialsWidget: WidgetData = {
+  id: 'materials-1',
+  type: 'materials',
+  x: 0,
+  y: 0,
+  w: 4,
+  h: 4,
+  z: 1,
+  flipped: false,
+  config: {
+    activeItems: ['pencil', 'notebook'],
+    selectedItems: ['pencil', 'notebook'],
+  } as MaterialsConfig,
+};
+
 const defaultContext: Partial<DashboardContextValue> = {
   updateWidget: mockUpdateWidget,
   addToast: mockAddToast,
@@ -86,7 +102,7 @@ const defaultContext: Partial<DashboardContextValue> = {
     id: 'dashboard-1',
     name: 'Test Dashboard',
     background: 'bg-slate-100',
-    widgets: [mockWidget, mockRoutineWidget],
+    widgets: [mockWidget, mockRoutineWidget, mockMaterialsWidget],
     globalStyle: {
       fontFamily: 'sans',
       windowTransparency: 0,
@@ -245,6 +261,87 @@ describe('ChecklistSettings Nexus Connection', () => {
     });
 
     render(<ChecklistSettings widget={mockWidget} />);
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  // --- New Tests for Materials Nexus ---
+
+  it('imports active items from Materials Widget', () => {
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    const syncSuppliesButton = screen.getByText('Sync Supplies');
+    fireEvent.click(syncSuppliesButton);
+
+    // Expect successful import from mockMaterialsWidget (pencil, notebook)
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Imported 2 materials!',
+      'success'
+    );
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'checklist-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          mode: 'manual',
+          items: expect.arrayContaining([
+            expect.objectContaining({
+              text: 'Bring Pencil',
+              completed: false,
+            }),
+            expect.objectContaining({
+              text: 'Bring Notebook',
+              completed: false,
+            }),
+          ]),
+        }),
+      })
+    );
+  });
+
+  it('shows error if no Materials Widget exists', () => {
+    (useDashboard as unknown as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      activeDashboard: {
+        widgets: [mockWidget], // No materials widget
+      },
+    });
+
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    const syncSuppliesButton = screen.getByText('Sync Supplies');
+    fireEvent.click(syncSuppliesButton);
+
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'No Materials widget found!',
+      'error'
+    );
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  it('shows info if Materials Widget has no active items', () => {
+    const emptyMaterialsWidget = {
+      ...mockMaterialsWidget,
+      config: { activeItems: [] } as MaterialsConfig,
+    };
+
+    (useDashboard as unknown as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      activeDashboard: {
+        widgets: [mockWidget, emptyMaterialsWidget],
+      },
+    });
+
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    const syncSuppliesButton = screen.getByText('Sync Supplies');
+    fireEvent.click(syncSuppliesButton);
+
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'No active materials selected.',
+      'info'
+    );
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
 });
