@@ -8,7 +8,15 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
-import { Plus, Minus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import {
+  Plus,
+  Minus,
+  Trash2,
+  Users,
+  RefreshCw,
+  Trophy,
+  Download,
+} from 'lucide-react';
 import { Button } from '../common/Button';
 
 const DEFAULT_TEAMS: ScoreboardTeam[] = [
@@ -275,6 +283,30 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  const handleExport = () => {
+    const csvHeader = 'Team,Score\n';
+    const csvRows = teams
+      .map((t) => `"${t.name.replace(/"/g, '""')}",${t.score}`)
+      .join('\n');
+    const csvContent = csvHeader + csvRows;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `Scoreboard_Results_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    addToast('Scores exported to CSV', 'success');
+  };
+
   return (
     <div className="space-y-6">
       <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
@@ -353,6 +385,19 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
           icon={<Plus className="w-4 h-4" />}
         >
           Add Team
+        </Button>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Actions
+        </label>
+        <Button
+          onClick={handleExport}
+          icon={<Download className="w-3.5 h-3.5" />}
+          className="w-full"
+        >
+          Export CSV
         </Button>
       </div>
     </div>
