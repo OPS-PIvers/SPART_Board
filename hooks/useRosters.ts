@@ -162,6 +162,9 @@ export const useRosters = (user: User | null) => {
     const rostersRef = collection(db, 'users', user.uid, 'rosters');
     const q = query(rostersRef, orderBy('name'));
 
+    // Track the current subscription to allow fallback cleanup
+    let innerUnsubscribe: (() => void) | null = null;
+
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -176,7 +179,7 @@ export const useRosters = (user: User | null) => {
         console.error('Roster subscription error:', error);
         // Fallback if index isn't created yet: try without orderBy
         if (error.code === 'failed-precondition') {
-          onSnapshot(rostersRef, (innerSnapshot) => {
+          innerUnsubscribe = onSnapshot(rostersRef, (innerSnapshot) => {
             const innerLoaded: ClassRoster[] = [];
             innerSnapshot.forEach((doc) => {
               const validated = validateRoster(doc.id, doc.data());
@@ -188,7 +191,11 @@ export const useRosters = (user: User | null) => {
         }
       }
     );
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribe();
+      if (innerUnsubscribe) innerUnsubscribe();
+    };
   }, [user]);
 
   // --- ROSTER ACTIONS ---
