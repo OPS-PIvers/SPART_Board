@@ -359,6 +359,8 @@ export interface CatalystConfig {
 export interface CatalystInstructionConfig {
   routineId: string;
   stepIndex: number;
+  title?: string;
+  instructions?: string;
 }
 
 export interface CatalystVisualConfig {

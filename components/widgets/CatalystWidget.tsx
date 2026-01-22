@@ -53,7 +53,12 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     addWidget('catalyst-instruction' as WidgetType, {
       x: widget.x + widget.w + 20,
       y: widget.y,
-      config: { routineId: routine.id, stepIndex: 0 },
+      config: {
+        routineId: routine.id,
+        title: routine.title,
+        instructions: routine.instructions,
+        stepIndex: 0,
+      },
     });
   };
 

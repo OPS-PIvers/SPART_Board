@@ -41,7 +41,15 @@ export const CATALYST_ROUTINES: CatalystRoutine[] = [
     associatedWidgets: [
       {
         type: 'time-tool',
-        config: { mode: 'timer', duration: 60, isRunning: true },
+        config: {
+          mode: 'timer',
+          duration: 60,
+          isRunning: true,
+          visualType: 'digital',
+          theme: 'light',
+          elapsedTime: 60,
+          selectedSound: 'Gong',
+        },
       },
     ],
   },
