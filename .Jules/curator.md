@@ -27,3 +27,12 @@
 - A clean package.json tells a story of a well-maintained project.
 
 ## Journal Entries
+
+## 2025-02-12 - [Security & Maintenance]
+
+**Fix:** `tar` vulnerability
+**Reason:** Remedied race condition in `tar` <=7.5.3 by updating override to `^7.5.4`.
+
+**Blocker:** `firebase-admin` (functions)
+**Reason:** Major version mismatch (v12 vs v13 in root). Skipping update to avoid breaking changes in backend functions without comprehensive integration tests.
+**Plan:** Schedule migration of functions to `firebase-admin` v13.
