@@ -180,12 +180,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       (snapshot) => {
         const permissions: GlobalFeaturePermission[] = [];
         snapshot.forEach((doc) => {
-          permissions.push(doc.data() as GlobalFeaturePermission);
+          const data = doc.data() as GlobalFeaturePermission;
+          // Ensure featureId is preserved
+          if (!data.featureId) data.featureId = doc.id as GlobalFeature;
+          permissions.push(data);
         });
         setGlobalPermissions(permissions);
       },
       (error) => {
-        console.error('Error loading global permissions:', error);
+        // Only log if we are still authenticated to avoid noise during sign-out
+        if (auth.currentUser) {
+          console.error('Error loading global permissions:', error);
+        }
       }
     );
 

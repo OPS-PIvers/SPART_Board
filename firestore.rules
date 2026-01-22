@@ -47,7 +47,7 @@ service cloud.firestore {
     }
 
     // Global permissions - all authenticated users can read, only admins can write
-    match /global_permissions/{featureId=**} {
+    match /global_permissions/{featureId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
