@@ -366,6 +366,9 @@ export interface CatalystInstructionConfig {
 export interface CatalystVisualConfig {
   routineId: string;
   stepIndex: number;
+  title?: string;
+  icon?: string;
+  category?: string;
 }
 
 export interface StickerConfig {

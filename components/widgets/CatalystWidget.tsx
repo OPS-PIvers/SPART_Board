@@ -67,9 +67,15 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     addWidget('catalyst-visual' as WidgetType, {
       x: 100,
       y: 100,
-      w: 600,
-      h: 400,
-      config: { routineId: routine.id, stepIndex: 0 },
+      w: 350,
+      h: 350,
+      config: {
+        routineId: routine.id,
+        title: routine.title,
+        icon: routine.icon,
+        category: routine.category,
+        stepIndex: 0,
+      },
     });
 
     // 2. Spawn Associated Tools
