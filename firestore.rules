@@ -83,7 +83,7 @@ service cloud.firestore {
     // Shared boards - Anyone can read, only authenticated users can create. 
     // Authors and admins can update or delete.
     match /shared_boards/{shareId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && 
         (resource.data.originalAuthor == request.auth.uid || isAdmin());
