@@ -214,44 +214,50 @@ export const generateWithAI = onCall(
 
     try {
       console.log(`AI Gen starting for type: ${data.type}`);
-      const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-3-flash-preview',
-        generationConfig: { responseMimeType: 'application/json' },
-      });
+      const genAI = new GoogleGenAI({ apiKey });
+
+      let systemPrompt = '';
+      let userPrompt = '';
 
       if (data.type === 'mini-app') {
-        const systemPrompt = `
+        systemPrompt = `
           You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request.
           Requirements:
           1. Single File (embedded CSS/JS).
           2. Use Tailwind CDN.
           3. Return JSON: { "title": "...", "html": "..." }
         `;
-
-        const result = await model.generateContent(
-          systemPrompt + '\n\nUser Request: ' + data.prompt
-        );
-        const response = await result.response;
-        const text = response.text();
-        console.log('AI Generation successful (mini-app)');
-        return JSON.parse(text);
+        userPrompt = `User Request: ${data.prompt}`;
       } else if (data.type === 'poll') {
-        const systemPrompt = `
+        systemPrompt = `
           You are an expert teacher. Create a 4-option multiple choice poll JSON:
           { "question": "...", "options": ["...", "...", "...", "..."] }
         `;
-
-        const result = await model.generateContent(
-          systemPrompt + '\n\nTopic: ' + data.prompt
-        );
-        const response = await result.response;
-        const text = response.text();
-        console.log('AI Generation successful (poll)');
-        return JSON.parse(text);
+        userPrompt = `Topic: ${data.prompt}`;
+      } else {
+        throw new HttpsError('invalid-argument', 'Invalid generation type');
       }
 
-      throw new HttpsError('invalid-argument', 'Invalid generation type');
+      const response = await genAI.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
+          },
+        ],
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error('Empty response from AI');
+      }
+
+      console.log('AI Generation successful');
+      return JSON.parse(text);
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
       const msg =
