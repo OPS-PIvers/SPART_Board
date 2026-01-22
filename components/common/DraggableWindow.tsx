@@ -88,12 +88,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
   // This prevents downloading and rendering the settings chunk for every widget on load.
-  useEffect(() => {
-    if (widget.flipped && !shouldRenderSettings) {
-      setShouldRenderSettings(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.flipped]);
+  // We update state during render to ensure it's available immediately in the same paint frame.
+  if (widget.flipped && !shouldRenderSettings) {
+    setShouldRenderSettings(true);
+  }
 
   // Annotation state
   const [isAnnotating, setIsAnnotating] = useState(false);
