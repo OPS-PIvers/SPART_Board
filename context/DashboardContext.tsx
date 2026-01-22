@@ -115,7 +115,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // --- ROSTER LOGIC ---
-  const rosterLogic = useRosters(user);
+  const {
+    rosters,
+    activeRosterId,
+    addRoster,
+    updateRoster,
+    deleteRoster,
+    setActiveRoster,
+  } = useRosters(user);
 
   // Refs to prevent race conditions
   const lastLocalUpdateAt = useRef<number>(0);
@@ -1092,7 +1099,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDockItems,
       clearAllStickers,
       clearAllWidgets,
-      ...rosterLogic,
+      rosters,
+      activeRosterId,
+      addRoster,
+      updateRoster,
+      deleteRoster,
+      setActiveRoster,
       addFolder,
       createFolderWithItems,
       renameFolder,
@@ -1141,7 +1153,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDockItems,
       clearAllStickers,
       clearAllWidgets,
-      rosterLogic,
+      rosters,
+      activeRosterId,
+      addRoster,
+      updateRoster,
+      deleteRoster,
+      setActiveRoster,
       addFolder,
       createFolderWithItems,
       renameFolder,
