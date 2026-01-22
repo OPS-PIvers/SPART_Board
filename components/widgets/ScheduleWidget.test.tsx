@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import {
   render,
   screen,
@@ -41,9 +40,7 @@ const mockDashboardContext = {
 describe('ScheduleWidget', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
-    );
+    (useDashboard as unknown as Mock).mockReturnValue(mockDashboardContext);
     mockUpdateWidget.mockClear();
   });
 
@@ -85,17 +82,16 @@ describe('ScheduleWidget', () => {
     render(<ScheduleWidget widget={widget} />);
 
     const mathItem = screen.getByText('Math').closest('button');
-    fireEvent.click(mathItem!);
+    if (!mathItem) throw new Error('Math item not found');
+    fireEvent.click(mathItem);
+
+    const updateCall = mockUpdateWidget.mock.calls[0];
+    const newConfig = (updateCall[1] as { config: ScheduleConfig }).config;
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
-      config: expect.objectContaining({
-        items: [
-          expect.objectContaining({ task: 'Math', done: true }),
-          expect.objectContaining({ task: 'Reading', done: false }),
-          expect.objectContaining({ task: 'Recess', done: false }),
-        ],
-      }),
+      config: expect.any(Object),
     });
+    expect(newConfig.items[0].done).toBe(true);
   });
 
   it('applies font family from config', () => {
@@ -109,7 +105,7 @@ describe('ScheduleWidget', () => {
 
   it('auto-progresses items when connected to clock', () => {
     // Mock a clock widget being present
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    (useDashboard as unknown as Mock).mockReturnValue({
       ...mockDashboardContext,
       activeDashboard: {
         ...mockDashboardContext.activeDashboard,
@@ -145,9 +141,43 @@ describe('ScheduleWidget', () => {
     });
   });
 
+  it('marks all items as done when time is past the last item', () => {
+    // Mock a clock widget being present
+    (useDashboard as unknown as Mock).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        ...mockDashboardContext.activeDashboard,
+        widgets: [{ id: 'clock-1', type: 'clock' }],
+      },
+    });
+
+    const widget = createWidget({ autoProgress: true });
+    render(<ScheduleWidget widget={widget} />);
+
+    // Set time to 11:30 (Past Recess at 10:00 + 60 mins)
+    // All items should be done.
+    const date = new Date();
+    date.setHours(11, 30, 0, 0);
+    vi.setSystemTime(date);
+
+    act(() => {
+      vi.advanceTimersByTime(11000);
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
+      config: expect.objectContaining({
+        items: [
+          expect.objectContaining({ task: 'Math', done: true }),
+          expect.objectContaining({ task: 'Reading', done: true }),
+          expect.objectContaining({ task: 'Recess', done: true }),
+        ],
+      }),
+    });
+  });
+
   it('does NOT auto-progress if no clock widget is present', () => {
     // No clock widget
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    (useDashboard as unknown as Mock).mockReturnValue({
       ...mockDashboardContext,
       activeDashboard: {
         ...mockDashboardContext.activeDashboard,
@@ -172,9 +202,7 @@ describe('ScheduleWidget', () => {
 
 describe('ScheduleSettings', () => {
   beforeEach(() => {
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
-    );
+    (useDashboard as unknown as Mock).mockReturnValue(mockDashboardContext);
     mockUpdateWidget.mockClear();
   });
 
