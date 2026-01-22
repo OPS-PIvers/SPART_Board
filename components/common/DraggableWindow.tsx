@@ -81,6 +81,17 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(widget.customTitle ?? title);
+  const [shouldRenderSettings, setShouldRenderSettings] = useState(
+    widget.flipped
+  );
+
+  // OPTIMIZATION: Lazy initialization of settings
+  // We only set this to true once the widget is flipped for the first time.
+  // This prevents downloading and rendering the settings chunk for every widget on load.
+  // We update state during render to ensure it's available immediately in the same paint frame.
+  if (widget.flipped && !shouldRenderSettings) {
+    setShouldRenderSettings(true);
+  }
 
   // Annotation state
   const [isAnnotating, setIsAnnotating] = useState(false);
@@ -522,7 +533,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </div>
                 </div>
 
-                {settings && (
+                {shouldRenderSettings && settings && (
                   <div className="border-t border-slate-200 pt-6">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                       Widget Options
