@@ -1080,6 +1080,53 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [activeId]
   );
 
+  const addWidgets = useCallback(
+    (widgets: { type: WidgetType; config?: Partial<WidgetConfig> }[]) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+
+          let maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+
+          const newWidgets: WidgetData[] = widgets.map((item, i) => {
+            const defaults = WIDGET_DEFAULTS[item.type] || {};
+            // Grid Layout Logic
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+
+            // Base position with simple grid
+            const x = 50 + col * 350;
+            const y = 80 + row * 300;
+
+            maxZ++;
+
+            return {
+              id: crypto.randomUUID(),
+              type: item.type,
+              x,
+              y,
+              w: defaults.w ?? 300,
+              h: defaults.h ?? 250,
+              flipped: false,
+              z: maxZ,
+              ...defaults,
+              config: {
+                ...(defaults.config ?? {}),
+                ...(item.config ?? {}),
+              },
+            } as WidgetData;
+          });
+
+          return { ...d, widgets: [...d.widgets, ...newWidgets] };
+        })
+      );
+    },
+    [activeId]
+  );
+
   const removeWidget = useCallback(
     (id: string) => {
       if (!activeId) return;
@@ -1329,6 +1376,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDashboards,
       setDefaultDashboard,
       addWidget,
+      addWidgets,
       removeWidget,
       duplicateWidget,
       removeWidgets,
@@ -1383,6 +1431,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDashboards,
       setDefaultDashboard,
       addWidget,
+      addWidgets,
       removeWidget,
       duplicateWidget,
       removeWidgets,

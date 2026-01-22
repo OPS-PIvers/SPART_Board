@@ -241,3 +241,101 @@ export async function generatePoll(topic: string): Promise<GeneratedPoll> {
     throw new Error(errorMessage);
   }
 }
+
+export interface GeneratedWidget {
+  type: string;
+  config?: Record<string, unknown>;
+}
+
+export interface GeneratedLayout {
+  widgets: GeneratedWidget[];
+}
+
+/**
+ * Generates a dashboard layout based on a lesson topic using Gemini.
+ *
+ * @param topic - The lesson topic or description.
+ * @returns A promise resolving to the generated list of widgets.
+ */
+export async function generateDashboardLayout(
+  topic: string
+): Promise<GeneratedLayout> {
+  if (!client) {
+    throw new Error(
+      'Gemini API Key is missing or invalid (VITE_GEMINI_API_KEY)'
+    );
+  }
+
+  const systemPrompt = `
+    You are an expert classroom designer. Create a dashboard layout of widgets for a lesson on the given topic.
+
+    Available Widgets & Config Schemas:
+    - 'text': { content: string, fontSize: number (12-64), bgColor: string (hex) }
+    - 'time-tool': { mode: 'timer' | 'stopwatch', duration: number (seconds), isRunning: boolean }
+    - 'poll': { question: string, options: Array<{ label: string, votes: 0 }> }
+    - 'sound': { sensitivity: number (1-100), visual: 'thermometer' | 'speedometer' | 'balls' }
+    - 'traffic': { active: 'red' | 'yellow' | 'green' }
+    - 'checklist': { items: Array<{ id: string, text: string, completed: boolean }> }
+    - 'embed': { url: string (must be YouTube embed URL) }
+    - 'workSymbols': { voiceLevel: number (0-4), workMode: 'individual' | 'partner' | 'group' }
+
+    Requirements:
+    1.  Select 3-6 widgets that best fit the lesson topic.
+    2.  Configure them with relevant content (e.g., specific poll question, timer duration).
+    3.  Return a JSON object with a "widgets" array.
+    4.  Do NOT include placement (x, y, w, h). The system will arrange them.
+
+    Response Format:
+    Return ONLY raw JSON. No markdown formatting.
+    Example:
+    {
+      "widgets": [
+        { "type": "text", "config": { "content": "Welcome! Please sit quietly.", "fontSize": 24, "bgColor": "#ffffff" } },
+        { "type": "time-tool", "config": { "mode": "timer", "duration": 300, "isRunning": false } }
+      ]
+    }
+  `;
+
+  try {
+    const response = await client.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: systemPrompt + '\n\nTopic: ' + topic,
+            },
+          ],
+        },
+      ],
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const responseText = response.text;
+    if (!responseText) throw new Error('Empty response from AI');
+
+    let jsonString = responseText;
+    if (typeof jsonString !== 'string') jsonString = String(jsonString);
+
+    const parsed = JSON.parse(jsonString) as GeneratedLayout;
+
+    if (!parsed.widgets || !Array.isArray(parsed.widgets)) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+    let errorMessage =
+      'Failed to generate layout. Please try again with a different topic.';
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    } else if (typeof error === 'string') {
+      errorMessage += ` Underlying error: ${error}`;
+    }
+    throw new Error(errorMessage);
+  }
+}
