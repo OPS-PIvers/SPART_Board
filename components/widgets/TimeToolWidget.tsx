@@ -4,6 +4,7 @@ import {
   WidgetData,
   WorkSymbolsConfig,
   WidgetConfig,
+  TrafficConfig,
 } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
@@ -35,6 +36,25 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     displayTimeRef.current = displayTime;
   }, [displayTime]);
 
+  // Nexus Connection: Traffic Light Sync
+  const setTrafficLight = React.useCallback(
+    (color: 'red' | 'yellow' | 'green' | 'none') => {
+      if (!activeDashboard) return;
+      const trafficWidget = activeDashboard.widgets.find(
+        (w) => w.type === 'traffic'
+      );
+      if (trafficWidget) {
+        updateWidget(trafficWidget.id, {
+          config: {
+            ...(trafficWidget.config || {}),
+            active: color,
+          } as unknown as WidgetConfig,
+        });
+      }
+    },
+    [activeDashboard, updateWidget]
+  );
+
   const handleStop = React.useCallback(
     (finalTime?: number) => {
       updateWidget(widget.id, {
@@ -51,6 +71,8 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   const handleStart = async () => {
     await resumeAudio();
+    if (config.autoTrafficLight) setTrafficLight('green');
+
     updateWidget(widget.id, {
       config: {
         ...config,
@@ -64,6 +86,8 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   const handleReset = () => {
     const resetTime = config.mode === 'timer' ? config.duration : 0;
+    if (config.autoTrafficLight) setTrafficLight('none');
+
     updateWidget(widget.id, {
       config: {
         ...config,
@@ -91,6 +115,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
           if (next === 0) {
             handleStop(0);
             playTimerAlert(sound);
+            if (config.autoTrafficLight) setTrafficLight('red');
 
             // Auto-switch voice level if configured
             if (
@@ -131,6 +156,8 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     handleStop,
     activeDashboard,
     config.timerEndVoiceLevel,
+    config.autoTrafficLight,
+    setTrafficLight,
     updateWidget,
   ]);
 
@@ -328,7 +355,10 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         <button
           onClick={
             config.isRunning
-              ? () => handleStop(runningDisplayTime)
+              ? () => {
+                  handleStop(runningDisplayTime);
+                  if (config.autoTrafficLight) setTrafficLight('yellow');
+                }
               : handleStart
           }
           className={`flex-[3] py-4 rounded-2xl  text-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${config.isRunning ? 'bg-slate-800 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'}`}
@@ -395,8 +425,50 @@ export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
     (w) => w.type === 'workSymbols'
   );
 
+  const hasTrafficLight = activeDashboard?.widgets.some(
+    (w) => w.type === 'traffic'
+  );
+
   return (
     <div className="space-y-4">
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Traffic Light Sync
+        </label>
+        {!hasTrafficLight ? (
+          <div className="text-xs text-amber-500 bg-amber-50 p-2 rounded-lg border border-amber-100 flex items-center gap-2">
+            <span>
+              ⚠️ Add a &quot;Traffic Light&quot; widget to use this feature.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between bg-slate-100 p-2 rounded-lg">
+            <span className="text-xs text-slate-600 font-medium">
+              Auto-Control Lights
+            </span>
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    autoTrafficLight: !config.autoTrafficLight,
+                  },
+                })
+              }
+              className={`relative w-10 h-5 rounded-full transition-colors ${
+                config.autoTrafficLight ? 'bg-indigo-500' : 'bg-slate-300'
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                  config.autoTrafficLight ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        )}
+      </div>
+
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Timer Completion Action

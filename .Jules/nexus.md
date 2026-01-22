@@ -17,3 +17,9 @@
 **Source:** Sound Widget (Noise Meter)
 **Destination:** Traffic Light Widget
 **Value:** Automatically switches Traffic Light to Red when noise level exceeds a threshold, acting as an unbiased classroom monitor.
+
+## 2026-02-26 - [Traffic Light Sync]
+
+**Source:** Time Tool Widget (Timer)
+**Destination:** Traffic Light Widget
+**Value:** Automatically switches Traffic Light to Green/Yellow/Red based on Timer state (Start/Pause/End), providing visual reinforcement of time limits.
