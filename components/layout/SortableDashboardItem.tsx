@@ -14,7 +14,6 @@ interface SortableDashboardItemProps {
   onSetDefault: (id: string) => void;
   onDuplicate: (id: string) => void;
   onShare: (db: Dashboard) => void;
-  canShare?: boolean;
 }
 
 export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
@@ -26,7 +25,6 @@ export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
   onSetDefault,
   onDuplicate,
   onShare,
-  canShare = true,
 }) => {
   const {
     attributes,
@@ -139,18 +137,16 @@ export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
             >
               <Copy className="w-3.5 h-3.5" />
             </button>
-            {canShare && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShare(db);
-                }}
-                className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
-                title="Share"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(db);
+              }}
+              className="p-1.5 text-slate-400 hover:text-brand-blue-primary hover:bg-brand-blue-lighter rounded-lg transition-all"
+              title="Share"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div className="relative">

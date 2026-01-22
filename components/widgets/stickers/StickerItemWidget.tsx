@@ -58,7 +58,6 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
     return colors[color] ?? colors.blue;
   };
 
-  // Catalyst-style stickers (with icons and labels in a white card)
   if (config.icon) {
     const IconComponent =
       (Icons as unknown as Record<string, React.ElementType>)[config.icon] ??
@@ -68,46 +67,35 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
     return (
       <DraggableSticker widget={widget}>
         <div
-          className={`w-full h-full flex flex-col items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl relative p-2`}
+          className={`w-full h-full flex items-center justify-center rounded-3xl border-[6px] ${theme.border} bg-white ${theme.shadow} shadow-2xl`}
         >
-          {/* Icon Container */}
-          <div
-            className={`rounded-2xl ${theme.bg} ${theme.text} w-full flex-1 flex items-center justify-center transition-all overflow-hidden`}
-          >
-            <IconComponent className="w-[70%] h-[70%]" strokeWidth={2.5} />
+          <div className={`p-4 rounded-2xl ${theme.bg} ${theme.text}`}>
+            <IconComponent
+              className="w-[60%] h-[60%] mx-auto"
+              strokeWidth={3}
+            />
           </div>
-
-          {/* Label Area (Outside the icon bg, but inside the white card) */}
-          {config.label && (
-            <div className="w-full pt-1.5 pb-0.5 text-center">
-              <span
-                className={`text-[11px] font-black uppercase tracking-wider ${theme.text} block truncate px-1`}
-              >
-                {config.label}
-              </span>
-            </div>
-          )}
         </div>
       </DraggableSticker>
     );
   }
 
-  // Floating image stickers (no background or container)
   return (
     <DraggableSticker widget={widget}>
-      <div className="w-full h-full flex items-center justify-center group/img">
-        {config.url ? (
-          <img
-            src={config.url}
-            alt="Sticker"
-            className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-lg transition-transform group-hover/img:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
-            <span className="text-xs text-pink-500 font-bold">No Image</span>
-          </div>
-        )}
-      </div>
+      {config.url ? (
+        <img
+          src={config.url}
+          alt="Sticker"
+          className="w-full h-full object-contain pointer-events-none"
+          style={{
+            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.15))',
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-pink-100/50 rounded-lg border-2 border-dashed border-pink-300">
+          <span className="text-xs text-pink-500 ">No Image</span>
+        </div>
+      )}
     </DraggableSticker>
   );
 };

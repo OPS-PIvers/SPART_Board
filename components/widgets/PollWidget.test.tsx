@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PollSettings } from './PollWidget';
 import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
 import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
 import { WidgetData } from '../../types';
 import { GeneratedPoll } from '../../utils/ai';
@@ -9,11 +8,6 @@ import { GeneratedPoll } from '../../utils/ai';
 // Mock useDashboard
 vi.mock('../../context/useDashboard', () => ({
   useDashboard: vi.fn(),
-}));
-
-// Mock useAuth
-vi.mock('../../context/useAuth', () => ({
-  useAuth: vi.fn(),
 }));
 
 // Mock MagicInput to simulate interaction
@@ -42,7 +36,6 @@ vi.mock('../common/MagicInput', () => ({
 describe('PollSettings', () => {
   const mockUpdateWidget = vi.fn();
   const mockAddToast = vi.fn();
-  const mockCanAccessFeature = vi.fn(() => true);
 
   beforeEach(() => {
     (useDashboard as Mock).mockReturnValue({
@@ -51,11 +44,9 @@ describe('PollSettings', () => {
       rosters: [],
       activeRosterId: null,
     });
-    (useAuth as Mock).mockReturnValue({
-      canAccessFeature: mockCanAccessFeature,
-    });
     vi.clearAllMocks();
   });
+
   it('updates widget config when magic poll is generated', () => {
     const mockWidget: WidgetData = {
       id: 'poll-1',

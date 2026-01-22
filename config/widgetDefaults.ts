@@ -170,19 +170,4 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
       rosterMode: 'class',
     },
   },
-  catalyst: {
-    w: 320,
-    h: 400,
-    config: { activeTab: 'attention' },
-  },
-  'catalyst-instruction': {
-    w: 280,
-    h: 350,
-    config: { routineId: '', stepIndex: 0 },
-  },
-  'catalyst-visual': {
-    w: 600,
-    h: 400,
-    config: { routineId: '', stepIndex: 0 },
-  },
 };

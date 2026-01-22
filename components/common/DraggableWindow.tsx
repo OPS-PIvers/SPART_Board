@@ -597,20 +597,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       <Settings className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (skipCloseConfirmation) {
-                          removeWidget(widget.id);
-                        } else {
-                          setShowConfirm(true);
-                          setShowTools(false);
-                        }
-                      }}
-                      className="p-1 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
-                      title="Close"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                    <button
                       onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
                       className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all ${
                         isToolbarExpanded ? 'rotate-180' : ''
@@ -682,6 +668,20 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   title="Minimize"
                 >
                   <Minus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (skipCloseConfirmation) {
+                      removeWidget(widget.id);
+                    } else {
+                      setShowConfirm(true);
+                      setShowTools(false);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
+                  title="Close"
+                >
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

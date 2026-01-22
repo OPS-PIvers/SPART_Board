@@ -5,12 +5,10 @@ import {
   ArrowLeft,
   Shield,
   Image as ImageIcon,
-  Zap,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
-import { GlobalPermissionsManager } from './GlobalPermissionsManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -44,9 +42,9 @@ const TabButton: React.FC<{
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds'
-  >('features');
+  const [activeTab, setActiveTab] = useState<'features' | 'backgrounds'>(
+    'features'
+  );
 
   // Close modal on Escape key press
   React.useEffect(() => {
@@ -100,14 +98,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               label="Feature Permissions"
             />
             <TabButton
-              id="tab-global"
-              controls="panel-global"
-              isActive={activeTab === 'global'}
-              onClick={() => setActiveTab('global')}
-              icon={<Zap className="w-4 h-4" />}
-              label="Global Settings"
-            />
-            <TabButton
               id="tab-backgrounds"
               controls="panel-backgrounds"
               isActive={activeTab === 'backgrounds'}
@@ -129,33 +119,15 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
             >
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-slate-800 mb-2">
-                  Widget Permissions
+                  Feature Permissions
                 </h3>
                 <p className="text-slate-600">
-                  Control individual widget availability and access levels.
+                  Control widget availability and access levels for different
+                  user groups. Set features to admin-only (alpha testing),
+                  specific users (beta testing), or public access.
                 </p>
               </div>
               <FeaturePermissionsManager />
-            </div>
-          )}
-
-          {activeTab === 'global' && (
-            <div
-              id="panel-global"
-              role="tabpanel"
-              aria-labelledby="tab-global"
-              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-            >
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-2">
-                  Global App Settings
-                </h3>
-                <p className="text-slate-600">
-                  Manage app-wide features like Gemini AI, Live Sessions, and
-                  Board Sharing.
-                </p>
-              </div>
-              <GlobalPermissionsManager />
             </div>
           )}
 

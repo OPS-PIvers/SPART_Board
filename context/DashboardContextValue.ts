@@ -19,7 +19,6 @@ export interface DashboardContextValue {
   visibleTools: WidgetType[];
   dockItems: DockItem[];
   loading: boolean;
-  isSaving: boolean;
   gradeFilter: GradeFilter;
   setGradeFilter: (filter: GradeFilter) => void;
   addToast: (message: string, type?: Toast['type']) => void;

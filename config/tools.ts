@@ -22,7 +22,6 @@ import {
   Backpack,
   Sticker,
   Armchair,
-  Rocket,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -101,11 +100,5 @@ export const TOOLS: ToolMetadata[] = [
     icon: Armchair,
     label: 'Seating',
     color: 'bg-teal-500',
-  },
-  {
-    type: 'catalyst',
-    icon: Rocket,
-    label: 'Catalyst',
-    color: 'bg-blue-600',
   },
 ];

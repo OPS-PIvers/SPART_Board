@@ -24,10 +24,7 @@ export type WidgetType =
   | 'materials'
   | 'stickers'
   | 'sticker'
-  | 'seating-chart'
-  | 'catalyst'
-  | 'catalyst-instruction'
-  | 'catalyst-visual';
+  | 'seating-chart';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -130,7 +127,6 @@ export interface RoutineStep {
     label: string;
     config: WidgetConfig;
   };
-  label?: string;
 }
 
 // Widget-specific config types
@@ -347,30 +343,10 @@ export interface MaterialsConfig {
   activeItems: string[];
 }
 
-export interface CatalystConfig {
-  activeTab: 'attention' | 'engage' | 'setup' | 'support';
-}
-
-export interface CatalystInstructionConfig {
-  routineId: string;
-  stepIndex: number;
-  title?: string;
-  instructions?: string;
-}
-
-export interface CatalystVisualConfig {
-  routineId: string;
-  stepIndex: number;
-  title?: string;
-  icon?: string;
-  category?: string;
-}
-
 export interface StickerConfig {
   url?: string;
   icon?: string;
   color?: string;
-  label?: string;
   rotation?: number;
   size?: number;
 }
@@ -426,10 +402,7 @@ export type WidgetConfig =
   | MaterialsConfig
   | StickerBookConfig
   | StickerConfig
-  | SeatingChartConfig
-  | CatalystConfig
-  | CatalystInstructionConfig
-  | CatalystVisualConfig;
+  | SeatingChartConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -484,14 +457,7 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                   ? StickerConfig
                                                   : T extends 'seating-chart'
                                                     ? SeatingChartConfig
-                                                    : T extends 'catalyst'
-                                                      ? CatalystConfig
-                                                      : T extends 'catalyst-instruction'
-                                                        ? CatalystInstructionConfig
-                                                        : T extends 'catalyst-visual'
-                                                          ? CatalystVisualConfig
-                                                          : never;
-
+                                                    : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;
@@ -553,24 +519,6 @@ export interface ToolMetadata {
 }
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
-
-export type GlobalFeature =
-  | 'live-session'
-  | 'gemini-functions'
-  | 'dashboard-sharing'
-  | 'dashboard-import';
-
-export interface GlobalFeaturePermission {
-  featureId: GlobalFeature;
-  accessLevel: AccessLevel;
-  betaUsers: string[];
-  enabled: boolean;
-  config?: Record<string, unknown>;
-}
-
-export interface AppSettings {
-  geminiDailyLimit: number;
-}
 
 /**
  * Grade level categories for widget relevance filtering.

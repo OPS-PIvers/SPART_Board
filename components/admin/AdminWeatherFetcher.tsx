@@ -79,9 +79,9 @@ export const AdminWeatherFetcher: React.FC = () => {
 
           const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
           const proxies = [
-            (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
             (u: string) =>
               `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+            (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
           ];
 
           let data: EarthNetworksResponse | null = null;

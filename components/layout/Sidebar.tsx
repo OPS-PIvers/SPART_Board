@@ -22,8 +22,6 @@ import {
   ArrowLeft,
   Palette,
   Trash2,
-  Cloud,
-  CloudCheck,
 } from 'lucide-react';
 import {
   DndContext,
@@ -198,14 +196,12 @@ export const Sidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { user, signOut, isAdmin, featurePermissions, canAccessFeature } =
-    useAuth();
+  const { user, signOut, isAdmin, featurePermissions } = useAuth();
   const { uploadBackgroundImage } = useStorage();
   const {
     dashboards,
     activeDashboard,
     visibleTools,
-    isSaving,
     gradeFilter,
     setGradeFilter,
     toggleToolVisibility,
@@ -333,10 +329,6 @@ export const Sidebar: React.FC = () => {
   const { presets, colors, gradients } = useBackgrounds();
 
   const handleShare = async (db?: Dashboard) => {
-    if (!canAccessFeature('dashboard-sharing')) {
-      addToast('Board sharing is currently disabled', 'error');
-      return;
-    }
     const target = db ?? activeDashboard;
     if (!target) return;
     try {
@@ -672,23 +664,6 @@ export const Sidebar: React.FC = () => {
                     ? 'Classroom Manager'
                     : activeSection.replace('-', ' ')}
                 </span>
-                <div
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${
-                    isSaving
-                      ? 'bg-amber-50 text-amber-600 animate-pulse'
-                      : 'bg-emerald-50 text-emerald-600'
-                  }`}
-                  title={isSaving ? 'Saving to Cloud...' : 'All Changes Saved'}
-                >
-                  {isSaving ? (
-                    <Cloud className="w-3 h-3 animate-bounce" />
-                  ) : (
-                    <CloudCheck className="w-3 h-3" />
-                  )}
-                  <span className="text-[8px] font-black uppercase tracking-tighter">
-                    {isSaving ? 'Syncing' : 'Cloud'}
-                  </span>
-                </div>
               </div>
               <button
                 onClick={() => {
@@ -789,17 +764,15 @@ export const Sidebar: React.FC = () => {
                       New Board
                     </span>
                   </button>
-                  {canAccessFeature('dashboard-import') && (
-                    <button
-                      onClick={handleImport}
-                      className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">
-                        Import
-                      </span>
-                    </button>
-                  )}
+                  <button
+                    onClick={handleImport}
+                    className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                      Import
+                    </span>
+                  </button>
                 </div>
 
                 <div className="space-y-4">
@@ -829,7 +802,6 @@ export const Sidebar: React.FC = () => {
                             onSetDefault={setDefaultDashboard}
                             onDuplicate={duplicateDashboard}
                             onShare={handleShare}
-                            canShare={canAccessFeature('dashboard-sharing')}
                           />
                         ))}
                       </SortableContext>

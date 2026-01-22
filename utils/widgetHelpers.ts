@@ -89,9 +89,6 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       assignments: {},
       gridSize: 20,
     },
-    catalyst: { activeTab: 'attention' },
-    'catalyst-instruction': { routineId: '', stepIndex: 0 },
-    'catalyst-visual': { routineId: '', stepIndex: 0 },
   };
 
   return defaults[type];

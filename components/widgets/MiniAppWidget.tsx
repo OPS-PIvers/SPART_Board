@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDashboard } from '@/context/useDashboard';
-import { WidgetData, MiniAppItem, MiniAppConfig } from '@/types';
+import { useDashboard } from '../../context/useDashboard';
+import { WidgetData, MiniAppConfig, MiniAppItem } from '../../types';
 import {
   Plus,
   Play,
@@ -17,7 +17,7 @@ import {
   Sparkles,
   Loader2,
 } from 'lucide-react';
-import { generateMiniAppCode } from '@/utils/ai';
+import { generateMiniAppCode } from '../../utils/ai';
 import {
   DndContext,
   closestCenter,
@@ -35,7 +35,6 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useAuth } from '@/context/useAuth';
 
 // --- CONSTANTS ---
 const STORAGE_KEY = 'spartboard_miniapps_library';
@@ -183,11 +182,11 @@ const SortableItem: React.FC<SortableItemProps> = ({
 // --- MAIN WIDGET COMPONENT ---
 export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast } = useDashboard();
-  const { canAccessFeature } = useAuth();
   const config = widget.config as MiniAppConfig;
-  const { activeApp } = config;
+  const activeApp = config.activeApp;
 
-  const [library, setLibrary] = useState<MiniAppItem[]>(getLocalLibrary());
+  // Local state for the library view
+  const [library, setLibrary] = useState<MiniAppItem[]>([]);
   const [view, setView] = useState<'list' | 'editor'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -485,18 +484,16 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            {canAccessFeature('gemini-functions') && (
-              <div className="pt-6">
-                <button
-                  onClick={() => setShowPromptInput(true)}
-                  className="h-[46px] px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
-                  title="Generate with AI"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span className="hidden sm:inline">Magic</span>
-                </button>
-              </div>
-            )}
+            <div className="pt-6">
+              <button
+                onClick={() => setShowPromptInput(true)}
+                className="h-[46px] px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
+                title="Generate with AI"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Magic</span>
+              </button>
+            </div>
           </div>
           <div className="flex-1 flex flex-col min-h-[300px]">
             <label className="block text-[10px]  uppercase text-slate-400 tracking-widest mb-1">
