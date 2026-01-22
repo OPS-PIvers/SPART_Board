@@ -300,12 +300,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsSaving(hasPendingWrites);
 
         setDashboards((prev) => {
-          // If Firestore says we have pending local writes, OR if we have very recent local changes
-          // that haven't even been sent to Firestore yet (debouncing), keep our local version
-          // of the active dashboard to prevent the UI from jumping or reverting.
           const now = Date.now();
           const isRecentlyUpdatedLocally =
-            now - lastLocalUpdateAt.current < 3000;
+            now - lastLocalUpdateAt.current < 5000;
 
           if (hasPendingWrites || isRecentlyUpdatedLocally) {
             return migratedDashboards.map((db) => {
@@ -313,8 +310,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 const currentActive = prev.find(
                   (p) => p.id === activeIdRef.current
                 );
-                // Only keep local if it actually exists in our current state
-                return currentActive ?? db;
+                if (currentActive) {
+                  // SURGICAL MERGE: Keep server-side metadata (name, background, settings, style)
+                  // but preserve local widget positions and configurations to prevent reverts.
+                  return {
+                    ...db, // Get latest metadata from server
+                    widgets: currentActive.widgets, // Preserve local widget state
+                  };
+                }
               }
               return db;
             });
