@@ -26,40 +26,6 @@ interface Routine {
 }
 
 const ROUTINE_DB: Record<string, Routine[]> = {
-  Catalyst: [
-    {
-      id: 'do-now',
-      label: 'Do Now / Bell Ringer',
-      icon: 'Zap',
-      steps: [
-        { icon: 'Lightbulb', label: 'Recall & Think', color: 'amber' },
-        { icon: 'Pencil', label: 'Draft Response', color: 'blue' },
-      ],
-    },
-    {
-      id: 'direct-inst',
-      label: 'Direct Instruction',
-      icon: 'Monitor',
-      steps: [
-        { icon: 'Eye', label: 'Eyes on Facilitator', color: 'blue' },
-        { icon: 'Ear', label: 'Active Listening', color: 'indigo' },
-      ],
-    },
-    {
-      id: 'cfu',
-      label: 'Check for Understanding',
-      icon: 'CheckCircle',
-      steps: [
-        { icon: 'Hand', label: 'Visual Signal / Show Me', color: 'amber' },
-      ],
-    },
-    {
-      id: 'exit-ticket',
-      label: 'Exit Ticket',
-      icon: 'LogOut',
-      steps: [{ icon: 'Pencil', label: 'Final Reflection', color: 'green' }],
-    },
-  ],
   Blooms: [
     {
       id: 'b1',
@@ -197,7 +163,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     null
   );
   const [activeCategory, setActiveCategory] =
-    useState<keyof typeof ROUTINE_DB>('Catalyst');
+    useState<keyof typeof ROUTINE_DB>('Blooms');
 
   // Helper to get current routine object
   const getCurrentRoutine = () => {
@@ -228,10 +194,15 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const onDragStart = (e: React.DragEvent, icon: string, color: string) => {
+  const onDragStart = (
+    e: React.DragEvent,
+    icon: string,
+    color: string,
+    label?: string
+  ) => {
     e.dataTransfer.setData(
       'application/spart-sticker',
-      JSON.stringify({ icon, color })
+      JSON.stringify({ icon, color, label })
     );
     e.dataTransfer.effectAllowed = 'copy';
   };
@@ -283,7 +254,9 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     key={idx}
                     draggable
-                    onDragStart={(e) => onDragStart(e, step.icon, step.color)}
+                    onDragStart={(e) =>
+                      onDragStart(e, step.icon, step.color, step.label)
+                    }
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 bg-white cursor-grab active:cursor-grabbing hover:shadow-md transition-all group`}
                   >
                     <div

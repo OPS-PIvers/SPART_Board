@@ -22,9 +22,6 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.3)
-      '@google/genai':
-        specifier: ^1.37.0
-        version: 1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.11.4)(zod@3.25.76))
       '@imgly/background-removal':
         specifier: ^1.7.0
         version: 1.7.0(onnxruntime-web@1.21.0)
@@ -811,15 +808,6 @@ packages:
   '@google-cloud/storage@7.18.0':
     resolution: {integrity: sha512-r3ZwDMiz4nwW6R922Z1pwpePxyRwE5GdevYX63hRmAQUkUQJcBH/79EnQPDv5cOv1mFBgevdNWQfi3tie3dHrQ==}
     engines: {node: '>=14'}
-
-  '@google/genai@1.37.0':
-    resolution: {integrity: sha512-of85LwNqretPhBHHEljUY05OSsQVUPyw5n1RdNkUpKR36kgHq7CVVEGY4GplVbFaqbdT3DXfLSv5B/Avbe5vXw==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      '@modelcontextprotocol/sdk': ^1.25.2
-    peerDependenciesMeta:
-      '@modelcontextprotocol/sdk':
-        optional: true
 
   '@googleapis/sqladmin@35.0.0':
     resolution: {integrity: sha512-L9HaDhGBv7ElppWw3Sr+L2fbP+9pnP61bu1ZmfgoztSMMhtihQ3FGb175V1qx1zshiyCorspl0OiunA80G3Xjw==}
@@ -5856,18 +5844,6 @@ snapshots:
       - encoding
       - supports-color
     optional: true
-
-  '@google/genai@1.37.0(@modelcontextprotocol/sdk@1.25.2(hono@4.11.4)(zod@3.25.76))':
-    dependencies:
-      google-auth-library: 10.5.0
-      protobufjs: 7.5.4
-      ws: 8.19.0
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.2(hono@4.11.4)(zod@3.25.76)
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
 
   '@googleapis/sqladmin@35.0.0':
     dependencies:

@@ -133,6 +133,20 @@ VITE_GEMINI_API_KEY=...
 VITE_OPENWEATHER_API_KEY=...
 ```
 
+## AI Model Requirements
+
+- **Primary Model:** `gemini-3-flash-preview`
+- **Status:** This model is **REQUIRED** for all AI generation tasks (mini-apps, polls, etc.). Older models (e.g., gemini-1.5-flash) are considered deprecated for this project and should not be used.
+
+## Usage Limits
+
+To manage costs and prevent abuse, AI features have the following usage limits:
+
+- **Admins:** Unlimited usage.
+- **Non-Admins:** 20 generations per day (resetting at midnight UTC).
+- **Enforcement:** Limits are enforced server-side via Cloud Functions and tracked in the `ai_usage` Firestore collection.
+- **Error Message:** Users who exceed the limit will see a clear error message: "Daily AI usage limit reached (20 generations). Please try again tomorrow."
+
 ## Recent Technical Improvements
 
 - **Seating Chart Widget:** Fixed click propagation issues where furniture items would deselect immediately upon being clicked. Added unit tests for selection/deselection logic.
