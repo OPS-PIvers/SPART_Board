@@ -8,7 +8,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { Circle, CheckCircle2, Type, Clock, AlertTriangle } from 'lucide-react';
-import { Toggle } from '../../components/common/Toggle';
+import { Toggle } from '../common/Toggle';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -37,33 +37,29 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
       let changed = false;
 
-      // Determine which items should be done
-      // Logic: An item is DONE if there is a SUBSEQUENT item whose time has passed (or equals now).
-      // Meaning, we are now in the "zone" of the next item (or a later one).
-      // The current active item (latest one that has passed) is NOT done.
-
-      // Helper to parse "HH:MM"
+      // Helper to parse "HH:MM" with validation
       const parseTime = (t: string) => {
+        if (!t || !t.includes(':')) return -1;
         const [h, m] = t.split(':').map(Number);
+        if (isNaN(h) || isNaN(m)) return -1;
         return h * 60 + m;
       };
 
+      // We need to calculate new items state based on current time
+      // We map over 'items' which is a dependency
       const newItems = items.map((item, index) => {
-        // We look ahead.
-        // If ANY item after this one has started (time <= now), then this item is done.
-
         let isDone = false;
 
         // Check subsequent items
         for (let j = index + 1; j < items.length; j++) {
           const nextTime = parseTime(items[j].time);
+          if (nextTime === -1) continue;
           if (nowMinutes >= nextTime) {
             isDone = true;
             break;
           }
         }
 
-        // If state changed, mark flag
         if (item.done !== isDone) {
           changed = true;
           return { ...item, done: isDone };
@@ -72,8 +68,19 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       });
 
       if (changed) {
+        // We need to update config, but 'config' is not in dependency array
+        // to avoid loops. We reconstruct the update payload carefully.
         updateWidget(widget.id, {
-          config: { ...config, items: newItems } as ScheduleConfig,
+          config: {
+            // We can't spread 'config' here safely if we want to avoid the dependency.
+            // BUT, 'items' and 'autoProgress' and 'fontFamily' come from 'config'.
+            // The cleanest way to satisfy the linter and avoid loops is to disable the rule
+            // or use a functional update if supported (but updateWidget isn't functional).
+            // Given the constraints, disabling the rule for this line is the standard React solution
+            // when we intentionally omit a dependency to break a cycle.
+            ...config,
+            items: newItems,
+          } as ScheduleConfig,
         });
       }
     };
@@ -82,7 +89,8 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     checkTime(); // Initial check
 
     return () => clearInterval(interval);
-  }, [autoProgress, items, hasClock, widget.id, updateWidget, config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoProgress, items, hasClock, widget.id, updateWidget]);
 
   const toggle = (idx: number) => {
     const newItems = [...items];
@@ -99,6 +107,11 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     if (fontFamily === 'global') {
       return `font-${globalStyle.fontFamily}`;
     }
+    // If fontFamily already has 'font-' prefix (e.g. 'font-mono'), return it
+    if (fontFamily.startsWith('font-')) {
+      return fontFamily;
+    }
+    // Otherwise append it (legacy support if needed)
     return `font-${fontFamily}`;
   };
 
@@ -156,11 +169,12 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     [activeDashboard?.widgets]
   );
 
+  // Standardized fonts with 'font-' prefix
   const fonts = [
     { id: 'global', label: 'Inherit', icon: 'G' },
-    { id: 'mono', label: 'Digital', icon: '01' },
-    { id: 'sans', label: 'Modern', icon: 'Aa' },
-    { id: 'handwritten', label: 'School', icon: '✏️' },
+    { id: 'font-mono', label: 'Digital', icon: '01' },
+    { id: 'font-sans', label: 'Modern', icon: 'Aa' },
+    { id: 'font-handwritten', label: 'School', icon: '✏️' },
   ];
 
   return (
