@@ -211,18 +211,52 @@ export const generateWithAI = functionsV1
 
     const db = admin.firestore();
 
-    // 1. Check if user is an admin
+    // 1. Check global feature permission for gemini-functions
+    const globalPermDoc = await db
+      .collection('global_permissions')
+      .doc('gemini-functions')
+      .get();
+    const globalPerm = globalPermDoc.exists ? globalPermDoc.data() : null;
+
+    // 2. Check if user is an admin
     const adminDoc = await db
       .collection('admins')
       .doc(email.toLowerCase())
       .get();
     const isAdmin = adminDoc.exists;
 
-    // 2. If not admin, check and increment daily usage
+    // 3. Validate access
+    if (globalPerm && !globalPerm.enabled) {
+      throw new functionsV1.https.HttpsError(
+        'permission-denied',
+        'Gemini functions are currently disabled by an administrator.'
+      );
+    }
+
     if (!isAdmin) {
+      if (globalPerm) {
+        const { accessLevel, betaUsers = [] } = globalPerm;
+        if (accessLevel === 'admin') {
+          throw new functionsV1.https.HttpsError(
+            'permission-denied',
+            'Gemini functions are currently restricted to administrators.'
+          );
+        }
+        if (
+          accessLevel === 'beta' &&
+          !betaUsers.includes(email.toLowerCase())
+        ) {
+          throw new functionsV1.https.HttpsError(
+            'permission-denied',
+            'You do not have access to Gemini beta functions.'
+          );
+        }
+      }
+
+      // 4. Check and increment daily usage
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       const usageRef = db.collection('ai_usage').doc(`${uid}_${today}`);
-      const DAILY_LIMIT = 20;
+      const DAILY_LIMIT = globalPerm?.config?.dailyLimit || 20;
 
       try {
         await db.runTransaction(async (transaction) => {
@@ -253,8 +287,6 @@ export const generateWithAI = functionsV1
           throw error;
         }
         console.error('Usage tracking error:', error);
-        // We continue anyway if it's just a tracking error to not block the user,
-        // unless we want to be strict. Let's be strict for now to ensure the limit works.
         throw new functionsV1.https.HttpsError(
           'internal',
           'Failed to verify AI usage limits.'

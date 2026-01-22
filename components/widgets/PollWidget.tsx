@@ -14,6 +14,7 @@ import {
 import { Button } from '../common/Button';
 import { MagicInput } from '../common/MagicInput';
 import { generatePoll, GeneratedPoll } from '../../utils/ai';
+import { useAuth } from '../../context/useAuth';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -122,6 +123,7 @@ const OptionInput: React.FC<OptionInputProps> = ({ label, index, onSave }) => {
 
 export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
+  const { canAccessFeature } = useAuth();
   const config = (widget.config || {}) as PollConfig;
   const { question = 'Vote Now!', options = [] } = config;
 
@@ -258,31 +260,33 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       {/* Magic Generator */}
-      <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-          Magic Generator
-        </label>
-        <MagicInput<GeneratedPoll>
-          onGenerate={generatePoll}
-          onSuccess={(result) => {
-            const newOptions = result.options.map((opt) => ({
-              label: opt,
-              votes: 0,
-            }));
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                question: result.question,
-                options: newOptions,
-              } as PollConfig,
-            });
-            setLocalQuestion(result.question);
-            addToast('Poll generated magically!', 'success');
-          }}
-          placeholder="e.g. Photosynthesis, Civil War, 3rd Grade Math..."
-          buttonLabel="Magic Poll"
-        />
-      </div>
+      {canAccessFeature('gemini-functions') && (
+        <div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+            Magic Generator
+          </label>
+          <MagicInput<GeneratedPoll>
+            onGenerate={generatePoll}
+            onSuccess={(result) => {
+              const newOptions = result.options.map((opt) => ({
+                label: opt,
+                votes: 0,
+              }));
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  question: result.question,
+                  options: newOptions,
+                } as PollConfig,
+              });
+              setLocalQuestion(result.question);
+              addToast('Poll generated magically!', 'success');
+            }}
+            placeholder="e.g. Photosynthesis, Civil War, 3rd Grade Math..."
+            buttonLabel="Magic Poll"
+          />
+        </div>
+      )}
 
       {/* Question Edit */}
       <div>

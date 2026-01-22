@@ -554,6 +554,24 @@ export interface ToolMetadata {
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
 
+export type GlobalFeature =
+  | 'live-session'
+  | 'gemini-functions'
+  | 'dashboard-sharing'
+  | 'dashboard-import';
+
+export interface GlobalFeaturePermission {
+  featureId: GlobalFeature;
+  accessLevel: AccessLevel;
+  betaUsers: string[];
+  enabled: boolean;
+  config?: Record<string, unknown>;
+}
+
+export interface AppSettings {
+  geminiDailyLimit: number;
+}
+
 /**
  * Grade level categories for widget relevance filtering.
  * Used to help teachers discover age-appropriate widgets without restricting access.

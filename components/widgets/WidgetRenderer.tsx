@@ -15,6 +15,7 @@ import { getTitle } from '@/utils/widgetHelpers';
 import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
 import { useWindowSize } from '@/hooks/useWindowSize';
+import { useAuth } from '@/context/useAuth';
 import {
   WIDGET_COMPONENTS,
   WIDGET_SETTINGS_COMPONENTS,
@@ -93,6 +94,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   dashboardBackground,
 }) => {
   const windowSize = useWindowSize();
+  const { canAccessFeature } = useAuth();
 
   const handleToggleLive = async () => {
     try {
@@ -233,29 +235,31 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       addToast={addToast}
       globalStyle={globalStyle}
       headerActions={
-        <LiveControl
-          isLive={isLive}
-          studentCount={students.length}
-          students={students}
-          code={session?.code}
-          joinUrl={getJoinUrl()}
-          onToggleLive={handleToggleLive}
-          onFreezeStudent={(id, status) => {
-            void toggleFreezeStudent(id, status).catch((err) =>
-              console.error('Failed to freeze student:', err)
-            );
-          }}
-          onRemoveStudent={(id) => {
-            void removeStudent(id).catch((err) =>
-              console.error('Failed to remove student:', err)
-            );
-          }}
-          onFreezeAll={() => {
-            void toggleGlobalFreeze(!session?.frozen).catch((err) =>
-              console.error('Failed to toggle global freeze:', err)
-            );
-          }}
-        />
+        (isLive || canAccessFeature('live-session')) && (
+          <LiveControl
+            isLive={isLive}
+            studentCount={students.length}
+            students={students}
+            code={session?.code}
+            joinUrl={getJoinUrl()}
+            onToggleLive={handleToggleLive}
+            onFreezeStudent={(id, status) => {
+              void toggleFreezeStudent(id, status).catch((err) =>
+                console.error('Failed to freeze student:', err)
+              );
+            }}
+            onRemoveStudent={(id) => {
+              void removeStudent(id).catch((err) =>
+                console.error('Failed to remove student:', err)
+              );
+            }}
+            onFreezeAll={() => {
+              void toggleGlobalFreeze(!session?.frozen).catch((err) =>
+                console.error('Failed to toggle global freeze:', err)
+              );
+            }}
+          />
+        )
       }
     >
       {finalContent}
