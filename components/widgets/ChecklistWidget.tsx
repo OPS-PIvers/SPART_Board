@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -8,15 +8,8 @@ import {
   InstructionalRoutinesConfig,
 } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
-import {
-  CheckSquare,
-  Square,
-  ListPlus,
-  Type,
-  Users,
-  RefreshCw,
-  BookOpen,
-} from 'lucide-react';
+import { ListPlus, Type, Users, RefreshCw, BookOpen } from 'lucide-react';
+import { ChecklistItemView } from './ChecklistItemView';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -86,6 +79,16 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  // Performance Optimization: Stable callback to prevent re-renders of all items
+  const toggleItemRef = useRef(toggleItem);
+  React.useEffect(() => {
+    toggleItemRef.current = toggleItem;
+  });
+
+  const stableToggleItem = useCallback((id: string) => {
+    toggleItemRef.current(id);
+  }, []);
+
   const resetToday = () => {
     if (mode === 'manual') {
       const reset = items.map((i) => ({ ...i, completed: false }));
@@ -145,40 +148,14 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             const id = isManual ? item.id : item;
 
             return (
-              <li
+              <ChecklistItemView
                 key={id}
-                onClick={() => toggleItem(id)}
-                className="group/item flex items-start gap-3 cursor-pointer select-none"
-              >
-                <div
-                  className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
-                  style={{ height: `${dynamicFontSize * 1.2}px` }}
-                >
-                  {isCompleted ? (
-                    <CheckSquare
-                      className="text-green-500 fill-green-50"
-                      style={{
-                        width: `${dynamicFontSize}px`,
-                        height: `${dynamicFontSize}px`,
-                      }}
-                    />
-                  ) : (
-                    <Square
-                      className="text-slate-300"
-                      style={{
-                        width: `${dynamicFontSize}px`,
-                        height: `${dynamicFontSize}px`,
-                      }}
-                    />
-                  )}
-                </div>
-                <span
-                  className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
-                  style={{ fontSize: `${dynamicFontSize}px` }}
-                >
-                  {label}
-                </span>
-              </li>
+                id={id}
+                label={label}
+                isCompleted={isCompleted}
+                dynamicFontSize={dynamicFontSize}
+                onToggle={stableToggleItem}
+              />
             );
           })}
         </ul>
