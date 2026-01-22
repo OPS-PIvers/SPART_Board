@@ -7,8 +7,9 @@ import {
   WidgetConfig,
 } from '../../types';
 import {
-  CATALYST_ACTIONS,
-  CatalystAction,
+  CATALYST_ROUTINES,
+  CatalystRoutine,
+  RoutineCategory,
 } from '../../config/catalystRoutines';
 import * as Icons from 'lucide-react';
 import { LayoutGrid, Brain, Settings2, HelpCircle } from 'lucide-react';
@@ -18,22 +19,27 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, addWidget } = useDashboard();
   const config = widget.config as CatalystConfig;
-  const activeTab = config.activeTab || 'attention';
+  const activeTab =
+    (config.activeTab as unknown as RoutineCategory) || 'Get Attention';
 
-  const categories = [
-    { id: 'attention', label: 'Attention', icon: LayoutGrid },
-    { id: 'engage', label: 'Engage', icon: Brain },
-    { id: 'setup', label: 'Set Up', icon: Settings2 },
-    { id: 'support', label: 'Support', icon: HelpCircle },
-  ] as const;
+  const categories: {
+    id: RoutineCategory;
+    label: string;
+    icon: React.ElementType;
+  }[] = [
+    { id: 'Get Attention', label: 'Attention', icon: LayoutGrid },
+    { id: 'Engage', label: 'Engage', icon: Brain },
+    { id: 'Set Up', label: 'Set Up', icon: Settings2 },
+    { id: 'Support', label: 'Support', icon: HelpCircle },
+  ];
 
-  const filteredActions = CATALYST_ACTIONS.filter(
-    (a) => a.category === activeTab
+  const filteredRoutines = CATALYST_ROUTINES.filter(
+    (r) => r.category === activeTab
   );
 
-  const spawnAssociatedTools = (action: CatalystAction) => {
-    if (action.associatedTools) {
-      action.associatedTools.forEach((tool, index) => {
+  const spawnAssociatedTools = (routine: CatalystRoutine) => {
+    if (routine.associatedWidgets) {
+      routine.associatedWidgets.forEach((tool, index) => {
         addWidget(tool.type, {
           x: widget.x + (index + 1) * 40,
           y: widget.y + (index + 1) * 40,
@@ -43,35 +49,26 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const handleTeacherMode = (action: CatalystAction) => {
+  const handleTeacherMode = (routine: CatalystRoutine) => {
     addWidget('catalyst-instruction' as WidgetType, {
       x: widget.x + widget.w + 20,
       y: widget.y,
-      config: { routineId: action.id, stepIndex: 0 },
+      config: { routineId: routine.id, stepIndex: 0 },
     });
   };
 
-  const handleGoMode = (action: CatalystAction) => {
-    // 1. Spawn Action Widget (if any)
-    if (action.actionWidget) {
-      addWidget(action.actionWidget.type, {
-        x: widget.x,
-        y: widget.y - 250,
-        config: action.actionWidget.config as WidgetConfig,
-      });
-    }
-
-    // 2. Spawn Visual Anchor
+  const handleGoMode = (routine: CatalystRoutine) => {
+    // 1. Spawn Visual Anchor
     addWidget('catalyst-visual' as WidgetType, {
       x: 100,
       y: 100,
       w: 600,
       h: 400,
-      config: { routineId: action.id, stepIndex: 0 },
+      config: { routineId: routine.id, stepIndex: 0 },
     });
 
-    // 3. Spawn Associated Tools
-    spawnAssociatedTools(action);
+    // 2. Spawn Associated Tools
+    spawnAssociatedTools(routine);
   };
 
   return (
@@ -86,7 +83,10 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
               key={cat.id}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...config, activeTab: cat.id },
+                  config: {
+                    ...config,
+                    activeTab: cat.id as CatalystConfig['activeTab'],
+                  },
                 })
               }
               className={`flex-1 flex flex-col items-center gap-1 py-3 px-1 transition-all ${
@@ -106,36 +106,39 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-        {filteredActions.map((action) => {
+        {filteredRoutines.map((routine) => {
           const ActionIcon =
             (Icons as unknown as Record<string, React.ElementType>)[
-              action.icon
+              routine.icon
             ] ?? Icons.Zap;
           return (
             <div
-              key={action.id}
+              key={routine.id}
               className="group bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all shadow-sm"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={`p-2 rounded-xl bg-${action.color}-100 text-${action.color}-600 shadow-sm`}
-                >
+              <div className="flex items-center gap-3 mb-1">
+                <div className="p-2 rounded-xl bg-blue-100 text-blue-600 shadow-sm">
                   <ActionIcon size={20} />
                 </div>
-                <span className="font-black text-sm text-slate-700">
-                  {action.label}
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-black text-sm text-slate-700 leading-tight">
+                    {routine.title}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {routine.shortDesc}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-4">
                 <button
-                  onClick={() => handleTeacherMode(action)}
+                  onClick={() => handleTeacherMode(routine)}
                   className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
                 >
-                  Teacher Mode
+                  Guide
                 </button>
                 <button
-                  onClick={() => handleGoMode(action)}
+                  onClick={() => handleGoMode(routine)}
                   className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                 >
                   Go Mode

@@ -1,133 +1,68 @@
 import { WidgetType, WidgetConfig } from '../types';
 
-export interface CatalystAction {
-  id: string;
-  label: string;
-  icon: string;
-  color: string;
-  category: 'attention' | 'engage' | 'setup' | 'support';
-  teacherInstructions: string[];
-  actionWidget?: {
-    type: WidgetType;
-    config: Partial<WidgetConfig>;
-  };
-  associatedTools?: {
-    type: WidgetType;
-    config?: Partial<WidgetConfig>;
-  }[];
-}
+export type RoutineCategory = 'Get Attention' | 'Engage' | 'Set Up' | 'Support';
 
 export interface CatalystRoutine {
   id: string;
-  name: string;
-  actions: CatalystAction[];
+  title: string;
+  category: RoutineCategory;
+  icon: string; // Lucide icon name
+  shortDesc: string;
+  instructions: string; // The guide for the teacher
+  associatedWidgets?: { type: WidgetType; config?: WidgetConfig }[]; // What opens in "Go Mode"
 }
 
-export const CATALYST_ACTIONS: CatalystAction[] = [
-  // --- GET ATTENTION ---
+export const CATALYST_ROUTINES: CatalystRoutine[] = [
   {
-    id: 'chimes',
-    label: 'Chimes',
-    icon: 'Music',
-    color: 'blue',
-    category: 'attention',
-    teacherInstructions: [
-      'Wait for a natural pause in activity.',
-      'Ring the chimes once clearly.',
-      'Wait for eyes on you before speaking.',
-    ],
-    associatedTools: [
-      { type: 'sound', config: { sensitivity: 50, visual: 'balls' } },
-    ],
+    id: 'signal-silence',
+    title: 'Signal for Silence',
+    category: 'Get Attention',
+    icon: 'Hand',
+    shortDesc: 'Standard hand-raise protocol',
+    instructions: `1. Raise your hand.\n2. Wait for 100% compliance.\n3. Do not speak until the room is silent.\n4. Praise the first students who noticed.`,
+    associatedWidgets: [{ type: 'traffic', config: { active: 'red' } }],
   },
   {
-    id: 'countdown',
-    label: 'Countdown',
-    icon: 'Timer',
-    color: 'amber',
-    category: 'attention',
-    teacherInstructions: [
-      'Raise a hand with 5 fingers.',
-      'Count down slowly: 5... 4... 3... 2... 1...',
-      'Maintain silence once you reach zero.',
-    ],
-    actionWidget: {
-      type: 'time-tool',
-      config: { mode: 'timer', duration: 5, isRunning: true },
-    },
+    id: 'call-response',
+    title: 'Call & Response',
+    category: 'Get Attention',
+    icon: 'Megaphone',
+    shortDesc: '"Class Class" -> "Yes Yes"',
+    instructions: `1. Teacher says: "Class Class!" (vary tone)\n2. Students reply: "Yes Yes!" (matching tone)\n3. Hands fold, eyes on teacher.`,
+    associatedWidgets: [],
   },
-
-  // --- ENGAGE ---
   {
     id: 'think-pair-share',
-    label: 'Think-Pair-Share',
-    icon: 'Brain',
-    color: 'indigo',
-    category: 'engage',
-    teacherInstructions: [
-      'Pose a high-level question.',
-      'Think: 30 seconds of silent wait time.',
-      'Pair: Turn to a neighbor.',
-      'Share: Randomly call on 3 pairs.',
-    ],
-    associatedTools: [{ type: 'random', config: { mode: 'spinner' } }],
-  },
-  {
-    id: 'quick-poll',
-    label: 'Quick Poll',
-    icon: 'BarChart3',
-    color: 'green',
-    category: 'engage',
-    teacherInstructions: [
-      'State the question clearly.',
-      'Give 10 seconds to decide.',
-      'Open the poll for responses.',
-    ],
-    actionWidget: {
-      type: 'poll',
-      config: {
-        question: 'Check for understanding?',
-        options: [
-          { label: 'Got it!', votes: 0 },
-          { label: 'Need help', votes: 0 },
-        ],
+    title: 'Think Pair Share',
+    category: 'Engage',
+    icon: 'Users',
+    shortDesc: 'Rapid peer discussion',
+    instructions: `1. **Think:** Give students 30s of silence to process.\n2. **Pair:** Turn to elbow partner.\n3. **Share:** Partner A speaks first (30s), then Partner B.`,
+    associatedWidgets: [
+      {
+        type: 'time-tool',
+        config: { mode: 'timer', duration: 60, isRunning: true },
       },
-    },
-  },
-
-  // --- SET UP ---
-  {
-    id: 'materials-ready',
-    label: 'Materials Ready',
-    icon: 'Package',
-    color: 'slate',
-    category: 'setup',
-    teacherInstructions: [
-      'List required materials on the board.',
-      'Set a 2-minute timer for collection.',
-      'Scan the room for readiness.',
-    ],
-    associatedTools: [
-      { type: 'materials' },
-      { type: 'time-tool', config: { mode: 'timer', duration: 120 } },
     ],
   },
-
-  // --- SUPPORT ---
   {
-    id: 'voice-levels',
-    label: 'Voice Levels',
-    icon: 'Volume2',
-    color: 'purple',
-    category: 'support',
-    teacherInstructions: [
-      'Refer to the Voice Level chart.',
-      'Model the expected level.',
-      'Start the noise meter to monitor.',
-    ],
-    associatedTools: [
-      { type: 'workSymbols', config: { voiceLevel: 1 } },
-      { type: 'sound', config: { sensitivity: 40, visual: 'thermometer' } },
+    id: 'todo-list',
+    title: 'Create To-Do List',
+    category: 'Set Up',
+    icon: 'ListTodo',
+    shortDesc: 'Set expectations for work time',
+    instructions: `1. Define the "Must Do" items.\n2. Define the "May Do" items.\n3. ask students to repeat the first step.`,
+    associatedWidgets: [{ type: 'checklist' }],
+  },
+  {
+    id: 'brain-break',
+    title: 'Brain Break',
+    category: 'Support',
+    icon: 'Zap',
+    shortDesc: 'Quick energy reset',
+    instructions: `1. Stand up.\n2. Cross-crawl (touch opposite elbow to knee).\n3. 10 repetitions.\n4. Deep breath. Sit down.`,
+    associatedWidgets: [
+      { type: 'sound', config: { sensitivity: 50, visual: 'balls' } },
     ],
   },
 ];

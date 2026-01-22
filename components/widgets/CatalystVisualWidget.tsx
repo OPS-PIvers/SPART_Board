@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CatalystVisualConfig } from '../../types';
-import { CATALYST_ACTIONS } from '../../config/catalystRoutines';
+import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
 import * as Icons from 'lucide-react';
 import { RotateCcw } from 'lucide-react';
 
@@ -10,9 +10,9 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as CatalystVisualConfig;
-  const action = CATALYST_ACTIONS.find((a) => a.id === config.routineId);
+  const routine = CATALYST_ROUTINES.find((r) => r.id === config.routineId);
 
-  if (!action)
+  if (!routine)
     return (
       <div className="p-4 text-center text-red-500 font-bold">
         Routine not found
@@ -20,26 +20,26 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
     );
 
   const RoutineIcon =
-    (Icons as unknown as Record<string, React.ElementType>)[action.icon] ??
+    (Icons as unknown as Record<string, React.ElementType>)[routine.icon] ??
     Icons.Zap;
 
   return (
     <div className="flex flex-col h-full bg-white rounded-[3rem] overflow-hidden shadow-2xl border-[12px] border-slate-50 relative group">
       {/* Background Accent */}
-      <div className={`absolute inset-0 bg-${action.color}-50 opacity-30`} />
+      <div className={`absolute inset-0 bg-blue-50 opacity-30`} />
 
       <div className="relative flex-1 flex flex-col items-center justify-center p-8 text-center gap-6">
         <div
-          className={`p-10 rounded-[2.5rem] bg-${action.color}-100 text-${action.color}-600 shadow-inner ring-4 ring-white`}
+          className={`p-10 rounded-[2.5rem] bg-blue-100 text-blue-600 shadow-inner ring-4 ring-white`}
         >
           <RoutineIcon size={120} strokeWidth={2.5} />
         </div>
 
         <div className="space-y-2">
           <h2
-            className={`text-5xl font-black text-${action.color}-700 uppercase tracking-tighter`}
+            className={`text-5xl font-black text-blue-700 uppercase tracking-tighter`}
           >
-            {action.label}
+            {routine.title}
           </h2>
           <div className="flex items-center justify-center gap-2">
             <div className="h-1.5 w-12 rounded-full bg-slate-200" />

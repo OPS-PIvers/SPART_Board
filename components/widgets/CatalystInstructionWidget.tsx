@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CatalystInstructionConfig } from '../../types';
-import { CATALYST_ACTIONS } from '../../config/catalystRoutines';
+import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Circle } from 'lucide-react';
 
@@ -10,9 +10,9 @@ export const CatalystInstructionWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as CatalystInstructionConfig;
-  const action = CATALYST_ACTIONS.find((a) => a.id === config.routineId);
+  const routine = CATALYST_ROUTINES.find((r) => r.id === config.routineId);
 
-  if (!action)
+  if (!routine)
     return (
       <div className="p-4 text-center text-red-500 font-bold">
         Routine not found
@@ -20,27 +20,29 @@ export const CatalystInstructionWidget: React.FC<{ widget: WidgetData }> = ({
     );
 
   const RoutineIcon =
-    (Icons as unknown as Record<string, React.ElementType>)[action.icon] ??
+    (Icons as unknown as Record<string, React.ElementType>)[routine.icon] ??
     Icons.Zap;
+  const steps = routine.instructions
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   return (
     <div className="flex flex-col h-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
       <div className="p-4 bg-slate-800/50 flex items-center gap-3 border-b border-slate-700">
-        <div
-          className={`p-1.5 rounded-lg bg-${action.color}-500 text-white shadow-lg`}
-        >
+        <div className={`p-1.5 rounded-lg bg-blue-500 text-white shadow-lg`}>
           <RoutineIcon size={16} />
         </div>
         <div className="flex flex-col">
           <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none">
             Teacher Guide
           </span>
-          <span className="text-xs font-black text-white">{action.label}</span>
+          <span className="text-xs font-black text-white">{routine.title}</span>
         </div>
       </div>
 
       <div className="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar bg-gradient-to-b from-slate-900 to-slate-950">
-        {action.teacherInstructions.map((step, index) => {
+        {steps.map((step, index) => {
           const isDone = index < config.stepIndex;
           const isCurrent = index === config.stepIndex;
 
@@ -84,7 +86,7 @@ export const CatalystInstructionWidget: React.FC<{ widget: WidgetData }> = ({
         })}
       </div>
 
-      {config.stepIndex >= action.teacherInstructions.length && (
+      {config.stepIndex >= steps.length && (
         <div className="p-4 bg-emerald-500/10 border-t border-emerald-500/20 animate-in fade-in slide-in-from-bottom-2">
           <button
             onClick={() =>
