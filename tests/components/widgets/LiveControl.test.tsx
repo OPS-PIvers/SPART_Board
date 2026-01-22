@@ -33,13 +33,15 @@ describe('LiveControl', () => {
   });
 
   it('renders cast button without dark background when not live', () => {
-    const { props } = renderLiveControl({ isLive: false });
+    renderLiveControl({ isLive: false });
     const button = screen.getByLabelText('Start live session');
     expect(button.className).not.toContain('bg-slate-950/40');
     expect(button.className).toContain('hover:bg-slate-800/10');
 
     // Menu button should not be visible
-    expect(screen.queryByLabelText(/connected student/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/connected student/)
+    ).not.toBeInTheDocument();
   });
 
   it('renders cast button with red background when live', () => {
@@ -124,7 +126,9 @@ describe('LiveControl', () => {
     fireEvent.click(screen.getByLabelText(/connected students/));
 
     // Accessible name is set via aria-label to "Freeze all students" (or "Unfreeze...")
-    const freezeAllBtn = screen.getByRole('button', { name: /Freeze all students/i });
+    const freezeAllBtn = screen.getByRole('button', {
+      name: /Freeze all students/i,
+    });
     fireEvent.click(freezeAllBtn);
 
     expect(props.onFreezeAll).toHaveBeenCalledTimes(1);
