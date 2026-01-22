@@ -199,6 +199,69 @@ export const generateWithAI = functionsV1
       );
     }
 
+    const uid = context.auth.uid;
+    const email = context.auth.token.email;
+
+    if (!email) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'User must have an email associated with their account.'
+      );
+    }
+
+    const db = admin.firestore();
+
+    // 1. Check if user is an admin
+    const adminDoc = await db
+      .collection('admins')
+      .doc(email.toLowerCase())
+      .get();
+    const isAdmin = adminDoc.exists;
+
+    // 2. If not admin, check and increment daily usage
+    if (!isAdmin) {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const usageRef = db.collection('ai_usage').doc(`${uid}_${today}`);
+      const DAILY_LIMIT = 20;
+
+      try {
+        await db.runTransaction(async (transaction) => {
+          const usageDoc = await transaction.get(usageRef);
+          const currentUsage = usageDoc.exists
+            ? usageDoc.data()?.count || 0
+            : 0;
+
+          if (currentUsage >= DAILY_LIMIT) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              `Daily AI usage limit reached (${DAILY_LIMIT} generations). Please try again tomorrow.`
+            );
+          }
+
+          transaction.set(
+            usageRef,
+            {
+              count: currentUsage + 1,
+              email: email,
+              lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        });
+      } catch (error) {
+        if (error instanceof functionsV1.https.HttpsError) {
+          throw error;
+        }
+        console.error('Usage tracking error:', error);
+        // We continue anyway if it's just a tracking error to not block the user,
+        // unless we want to be strict. Let's be strict for now to ensure the limit works.
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          'Failed to verify AI usage limits.'
+        );
+      }
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error('CRITICAL: GEMINI_API_KEY is missing');
