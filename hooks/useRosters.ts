@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   collection,
   onSnapshot,
@@ -248,12 +248,22 @@ export const useRosters = (user: User | null) => {
     [user, activeRosterId, setActiveRoster]
   );
 
-  return {
-    rosters,
-    activeRosterId,
-    addRoster,
-    updateRoster,
-    deleteRoster,
-    setActiveRoster,
-  };
+  return useMemo(
+    () => ({
+      rosters,
+      activeRosterId,
+      addRoster,
+      updateRoster,
+      deleteRoster,
+      setActiveRoster,
+    }),
+    [
+      rosters,
+      activeRosterId,
+      addRoster,
+      updateRoster,
+      deleteRoster,
+      setActiveRoster,
+    ]
+  );
 };
