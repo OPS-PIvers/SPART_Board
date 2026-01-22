@@ -234,7 +234,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [user, subscribeToDashboards, migrated, saveDashboard]);
 
-
   // Auto-save to Firestore with debouncing
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedDataRef = useRef<string>('');
@@ -1142,12 +1141,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDockItems,
       clearAllStickers,
       clearAllWidgets,
-      rosterLogic.rosters,
-      rosterLogic.activeRosterId,
-      rosterLogic.addRoster,
-      rosterLogic.updateRoster,
-      rosterLogic.deleteRoster,
-      rosterLogic.setActiveRoster,
+      rosterLogic,
       addFolder,
       createFolderWithItems,
       renameFolder,
