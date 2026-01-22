@@ -491,6 +491,7 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                         : T extends 'catalyst-visual'
                                                           ? CatalystVisualConfig
                                                           : never;
+
 export interface WidgetData {
   id: string;
   type: WidgetType;
