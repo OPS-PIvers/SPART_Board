@@ -99,7 +99,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     if (fontFamily === 'global') {
       return `font-${globalStyle.fontFamily}`;
     }
-    return fontFamily;
+    return `font-${fontFamily}`;
   };
 
   return (
@@ -158,9 +158,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   const fonts = [
     { id: 'global', label: 'Inherit', icon: 'G' },
-    { id: 'font-mono', label: 'Digital', icon: '01' },
-    { id: 'font-sans', label: 'Modern', icon: 'Aa' },
-    { id: 'font-handwritten', label: 'School', icon: '✏️' },
+    { id: 'mono', label: 'Digital', icon: '01' },
+    { id: 'sans', label: 'Modern', icon: 'Aa' },
+    { id: 'handwritten', label: 'School', icon: '✏️' },
   ];
 
   return (
@@ -176,7 +176,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               key={f.id}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...config, fontFamily: f.id },
+                  config: { ...config, fontFamily: f.id } as ScheduleConfig,
                 })
               }
               className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
@@ -210,7 +210,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               checked={config.autoProgress ?? false}
               onChange={(checked) =>
                 updateWidget(widget.id, {
-                  config: { ...config, autoProgress: checked },
+                  config: { ...config, autoProgress: checked } as ScheduleConfig,
                 })
               }
             />

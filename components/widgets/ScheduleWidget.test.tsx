@@ -99,7 +99,7 @@ describe('ScheduleWidget', () => {
   });
 
   it('applies font family from config', () => {
-    const widget = createWidget({ fontFamily: 'font-mono' });
+    const widget = createWidget({ fontFamily: 'mono' });
     const { container } = render(<ScheduleWidget widget={widget} />);
 
     // The container should have the font class
