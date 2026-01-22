@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
+import { GoogleGenAI } from '@google/genai';
 
 admin.initializeApp();
 
@@ -201,5 +202,115 @@ export const getClassLinkRosterV1 = functions
           `Failed to fetch data from ClassLink: ${genericError.message}`
         );
       }
+    }
+  );
+
+export const generateWithAI = functions
+  .runWith({
+    secrets: ['GEMINI_API_KEY'],
+    memory: '256MB',
+  })
+  .https.onCall(
+    async (data: { type: 'mini-app' | 'poll'; prompt: string }, context) => {
+      if (!context.auth) {
+        throw new functions.https.HttpsError(
+          'unauthenticated',
+          'The function must be called while authenticated.'
+        );
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new functions.https.HttpsError(
+          'internal',
+          'Gemini API Key is missing on the server.'
+        );
+      }
+
+      const client = new GoogleGenAI({ apiKey });
+
+      if (data.type === 'mini-app') {
+        const systemPrompt = `
+        You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request.
+
+        Requirements:
+        1.  **Single File:** All CSS and JS must be embedded in <style> and <script> tags.
+        2.  **Design:** Use a modern, clean design. You SHOULD use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>.
+        3.  **Functionality:** It must be fully functional and interactive.
+        4.  **Format:** Return a JSON object with two fields: "title" (a short name for the app) and "html" (the complete HTML code).
+        5.  **Responsiveness:** It should fit in a small widget container (responsive, often small).
+        6.  **No External Assets:** Do not link to external images unless using placeholders.
+        7.  **Safety:** Do not include malicious code.
+
+        Response Format:
+        Return ONLY raw JSON. No markdown formatting.
+        Example:
+        {
+          "title": "My App",
+          "html": "<!DOCTYPE html>..."
+        }
+      `;
+
+        try {
+          const response = await client.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: systemPrompt + '\n\nUser Request: ' + data.prompt },
+                ],
+              },
+            ],
+            config: { responseMimeType: 'application/json' },
+          });
+          return JSON.parse(response.text || '{}');
+        } catch (error: unknown) {
+          const msg =
+            error instanceof Error ? error.message : 'AI Generation failed';
+          throw new functions.https.HttpsError('internal', msg);
+        }
+      } else if (data.type === 'poll') {
+        const systemPrompt = `
+        You are an expert teacher. Create a multiple-choice poll question based on the user's topic.
+
+        Requirements:
+        1.  **Educational:** The question should be appropriate for a classroom setting.
+        2.  **Clear:** The question should be concise and easy to read.
+        3.  **Options:** Provide exactly 4 distinct options. One correct answer (if applicable) and 3 distractors, or 4 valid opinions.
+        4.  **Format:** Return a JSON object with two fields: "question" (string) and "options" (array of 4 strings).
+
+        Response Format:
+        Return ONLY raw JSON. No markdown formatting.
+        Example:
+        {
+          "question": "What is the capital of France?",
+          "options": ["London", "Berlin", "Paris", "Madrid"]
+        }
+      `;
+
+        try {
+          const response = await client.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: systemPrompt + '\n\nTopic: ' + data.prompt }],
+              },
+            ],
+            config: { responseMimeType: 'application/json' },
+          });
+          return JSON.parse(response.text || '{}');
+        } catch (error: unknown) {
+          const msg =
+            error instanceof Error ? error.message : 'AI Generation failed';
+          throw new functions.https.HttpsError('internal', msg);
+        }
+      }
+
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        'Invalid generation type'
+      );
     }
   );
