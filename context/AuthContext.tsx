@@ -181,16 +181,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const permissions: GlobalFeaturePermission[] = [];
         snapshot.forEach((doc) => {
           const data = doc.data() as GlobalFeaturePermission;
-          // Ensure featureId is preserved
           if (!data.featureId) data.featureId = doc.id as GlobalFeature;
           permissions.push(data);
         });
         setGlobalPermissions(permissions);
       },
       (error) => {
-        // Only log if we are still authenticated to avoid noise during sign-out
+        // Log error with more context to help debugging if it persists
         if (auth.currentUser) {
-          console.error('Error loading global permissions:', error);
+          console.error(
+            `[AuthContext] Firestore Error (${error.code}):`,
+            error.message
+          );
         }
       }
     );
