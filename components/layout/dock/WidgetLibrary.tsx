@@ -59,7 +59,7 @@ export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
+                <span className="text-xxs font-black uppercase text-slate-700 tracking-tight text-center leading-tight">
                   {tool.label}
                 </span>
               </button>
@@ -68,7 +68,7 @@ export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
         </div>
       </div>
       <div className="bg-slate-50/50 px-6 py-3 border-t border-white/30 text-center backdrop-blur-xl">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <p className="text-xxs font-bold text-slate-400 uppercase tracking-widest">
           Tap a widget to add or remove it from your dock
         </p>
       </div>

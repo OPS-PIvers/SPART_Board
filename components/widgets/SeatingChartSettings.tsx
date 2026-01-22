@@ -40,7 +40,7 @@ export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
 
       {rosterMode === 'custom' && (
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+          <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
             Custom Roster
           </label>
           <textarea
@@ -57,7 +57,7 @@ export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       <div className="space-y-3">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
           Actions
         </label>
 

@@ -452,7 +452,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           e.stopPropagation();
                           setIsAnnotating(false);
                         }}
-                        className="px-2 py-0.5 text-[10px] font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
+                        className="px-2 py-0.5 text-xxs font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
                       >
                         DONE
                       </button>
@@ -479,7 +479,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </span>
                 <button
                   onClick={() => updateWidget(widget.id, { flipped: false })}
-                  className="p-1 bg-slate-700 text-white rounded-md hover:bg-slate-800 transition-colors flex items-center gap-1 text-[10px] font-bold px-2"
+                  className="p-1 bg-slate-700 text-white rounded-md hover:bg-slate-800 transition-colors flex items-center gap-1 text-xxs font-bold px-2"
                 >
                   DONE
                 </button>
@@ -487,7 +487,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               <div className="flex-1 p-4 overflow-y-auto">
                 <div className="mb-4 flex flex-col gap-2 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                       Transparency{' '}
                       {widget.transparency === undefined ? '(Global)' : ''}
                     </span>
@@ -496,7 +496,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         onClick={() =>
                           updateWidget(widget.id, { transparency: undefined })
                         }
-                        className="text-[9px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                        className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
                       >
                         Reset to Global
                       </button>
@@ -516,7 +516,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       }
                       className="flex-1 accent-indigo-600 h-1.5"
                     />
-                    <span className="text-[10px] font-mono font-bold text-slate-600 w-8 text-right">
+                    <span className="text-xxs font-mono font-bold text-slate-600 w-8 text-right">
                       {Math.round(transparency * 100)}%
                     </span>
                   </div>
@@ -569,7 +569,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     }
                     e.stopPropagation();
                   }}
-                  className="text-[10px] font-bold text-slate-800 bg-white/50 border border-white/50 rounded-full px-3 py-1 outline-none w-32 shadow-sm"
+                  className="text-xxs font-bold text-slate-800 bg-white/50 border border-white/50 rounded-full px-3 py-1 outline-none w-32 shadow-sm"
                 />
               ) : (
                 <div className="flex items-center gap-1">
@@ -580,7 +580,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       setIsEditingTitle(true);
                     }}
                   >
-                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate max-w-[100px]">
+                    <span className="text-xxs font-bold text-slate-700 uppercase tracking-wider truncate max-w-[100px]">
                       {widget.customTitle ?? title}
                     </span>
                     <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />

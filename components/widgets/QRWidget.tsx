@@ -17,7 +17,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           className="w-full h-auto max-w-[180px] mix-blend-multiply"
         />
       </div>
-      <div className="text-[10px] font-mono text-slate-400 break-all text-center max-w-full overflow-hidden px-2">
+      <div className="text-xxs font-mono text-slate-400 break-all text-center max-w-full overflow-hidden px-2">
         {url}
       </div>
     </div>

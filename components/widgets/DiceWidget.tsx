@@ -175,7 +175,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
+        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
           <Hash className="w-3 h-3" /> Number of Dice
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -197,7 +197,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               `}
             >
               <span className="text-xl ">{n}</span>
-              <span className="text-[8px]  uppercase">
+              <span className="text-xxxs  uppercase">
                 {n === 1 ? 'Dice' : 'Dice'}
               </span>
             </button>
@@ -212,7 +212,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             Instructions
           </span>
         </div>
-        <p className="text-[10px] text-purple-600 leading-relaxed ">
+        <p className="text-xxs text-purple-600 leading-relaxed ">
           Select between 1 and 3 dice for your classroom activities. The dice
           will scale to fit the window as you add more.
         </p>

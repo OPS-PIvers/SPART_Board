@@ -105,7 +105,7 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
           );
         })}
       </div>
-      <p className="text-[10px] text-slate-400 leading-tight">
+      <p className="text-xxs text-slate-400 leading-tight">
         Selected materials will appear on the widget face. Tap them to toggle
         visibility for students.
       </p>
