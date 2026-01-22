@@ -85,8 +85,8 @@ service cloud.firestore {
     match /shared_boards/{shareId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && 
-        (resource.data.originalAuthor == request.auth.uid || isAdmin());
+      allow update, delete: if request.auth != null &&
+        (get(resource.data, 'originalAuthor', null) == request.auth.uid || isAdmin());
     }
 
     // Sessions - Teacher owns it, Students can join
