@@ -237,6 +237,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [migrated, setMigrated] = useState(false);
 
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>(() => {
@@ -278,68 +279,79 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const timer = setTimeout(() => setLoading(true), 0);
 
     // Real-time subscription to Firestore
-    const unsubscribe = subscribeToDashboards((updatedDashboards) => {
-      // Sort dashboards: default first, then by order, then by createdAt
-      const sortedDashboards = [...updatedDashboards].sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
-        const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
-        if (orderA !== orderB) return orderA - orderB;
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      });
+    const unsubscribe = subscribeToDashboards(
+      (updatedDashboards, hasPendingWrites) => {
+        // Sort dashboards: default first, then by order, then by createdAt
+        const sortedDashboards = [...updatedDashboards].sort((a, b) => {
+          if (a.isDefault && !b.isDefault) return -1;
+          if (!a.isDefault && b.isDefault) return 1;
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
 
-      const migratedDashboards = sortedDashboards.map((db) => ({
-        ...db,
-        widgets: db.widgets.map(migrateWidget),
-      }));
+        const migratedDashboards = sortedDashboards.map((db) => ({
+          ...db,
+          widgets: db.widgets.map(migrateWidget),
+        }));
 
-      setDashboards((prev) => {
-        // If we have very recent local changes, keep our local version of the active dashboard
-        const now = Date.now();
-        if (now - lastLocalUpdateAt.current < 3000) {
-          return migratedDashboards.map((db) => {
-            if (db.id === activeIdRef.current) {
-              const currentActive = prev.find(
-                (p) => p.id === activeIdRef.current
-              );
-              return currentActive ?? db;
-            }
-            return db;
+        // Update saving status based on Firestore metadata
+        setIsSaving(hasPendingWrites);
+
+        setDashboards((prev) => {
+          // If Firestore says we have pending local writes, OR if we have very recent local changes
+          // that haven't even been sent to Firestore yet (debouncing), keep our local version
+          // of the active dashboard to prevent the UI from jumping or reverting.
+          const now = Date.now();
+          const isRecentlyUpdatedLocally =
+            now - lastLocalUpdateAt.current < 3000;
+
+          if (hasPendingWrites || isRecentlyUpdatedLocally) {
+            return migratedDashboards.map((db) => {
+              if (db.id === activeIdRef.current) {
+                const currentActive = prev.find(
+                  (p) => p.id === activeIdRef.current
+                );
+                // Only keep local if it actually exists in our current state
+                return currentActive ?? db;
+              }
+              return db;
+            });
+          }
+          return migratedDashboards;
+        });
+
+        if (migratedDashboards.length > 0 && !activeIdRef.current) {
+          // Try to load default dashboard first
+          const defaultDb = migratedDashboards.find((d) => d.isDefault);
+          setActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
+        }
+
+        // Create default dashboard if none exist
+        if (updatedDashboards.length === 0 && !migrated) {
+          const defaultDb: Dashboard = {
+            id: crypto.randomUUID(),
+            name: 'My First Board',
+            background: 'bg-slate-900',
+            widgets: [],
+            createdAt: Date.now(),
+          };
+          void saveDashboard(defaultDb).then(() => {
+            setToasts((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                message: 'Welcome! Board created',
+                type: 'info' as const,
+              },
+            ]);
           });
         }
-        return migratedDashboards;
-      });
 
-      if (migratedDashboards.length > 0 && !activeIdRef.current) {
-        // Try to load default dashboard first
-        const defaultDb = migratedDashboards.find((d) => d.isDefault);
-        setActiveId(defaultDb ? defaultDb.id : migratedDashboards[0].id);
+        setLoading(false);
       }
-
-      // Create default dashboard if none exist
-      if (updatedDashboards.length === 0 && !migrated) {
-        const defaultDb: Dashboard = {
-          id: crypto.randomUUID(),
-          name: 'My First Board',
-          background: 'bg-slate-900',
-          widgets: [],
-          createdAt: Date.now(),
-        };
-        void saveDashboard(defaultDb).then(() => {
-          setToasts((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              message: 'Welcome! Board created',
-              type: 'info' as const,
-            },
-          ]);
-        });
-      }
-
-      setLoading(false);
-    });
+    );
 
     // Migrate localStorage data on first sign-in
     const localData = localStorage.getItem('classroom_dashboards');
@@ -489,6 +501,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // Auto-save to Firestore with debouncing
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedDataRef = useRef<string>('');
+  const lastWidgetCountRef = useRef<number>(0);
 
   useEffect(() => {
     if (!user || loading || !activeId) return;
@@ -504,24 +517,55 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (currentData === lastSavedDataRef.current) return;
 
+    // Detect structural changes (adding/removing widgets) for more aggressive saving
+    const isStructuralChange =
+      active.widgets.length !== lastWidgetCountRef.current;
+    const debounceMs = isStructuralChange ? 200 : 800; // 200ms for add/remove, 800ms for config/moving
+
+    setTimeout(() => setIsSaving(true), 0);
     saveTimerRef.current = setTimeout(() => {
       lastSavedDataRef.current = currentData;
-      saveDashboard(active).catch((err) => {
-        console.error('Auto-save failed:', err);
-        setToasts((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            message: 'Failed to sync changes',
-            type: 'error' as const,
-          },
-        ]);
-      });
-    }, 500); // 500ms debounce to balance responsiveness and write frequency
+      lastWidgetCountRef.current = active.widgets.length;
+      saveDashboard(active)
+        .then(() => {
+          // If Firestore is fast, we might want to clear isSaving here,
+          // but onSnapshot will also handle it via hasPendingWrites.
+          // We'll keep it true for a bit longer if hasPendingWrites is still true.
+        })
+        .catch((err) => {
+          console.error('Auto-save failed:', err);
+          setIsSaving(false);
+          setToasts((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              message: 'Failed to sync changes',
+              type: 'error' as const,
+            },
+          ]);
+        });
+    }, debounceMs);
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
+  }, [dashboards, activeId, user, loading, saveDashboard]);
+
+  // Flush pending saves on page refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (saveTimerRef.current && user && !loading && activeId) {
+        const active = dashboards.find((d) => d.id === activeId);
+        if (active) {
+          // Note: We can't reliably await this in beforeunload,
+          // but we can try to trigger it.
+          void saveDashboard(active);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
   const toggleToolVisibility = useCallback(
@@ -1316,6 +1360,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       visibleTools,
       dockItems,
       loading,
+      isSaving,
       gradeFilter,
       setGradeFilter: handleSetGradeFilter,
       addToast,
@@ -1370,6 +1415,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       visibleTools,
       dockItems,
       loading,
+      isSaving,
       gradeFilter,
       handleSetGradeFilter,
       addToast,

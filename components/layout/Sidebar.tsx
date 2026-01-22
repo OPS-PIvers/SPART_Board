@@ -22,6 +22,8 @@ import {
   ArrowLeft,
   Palette,
   Trash2,
+  Cloud,
+  CloudCheck,
 } from 'lucide-react';
 import {
   DndContext,
@@ -203,6 +205,7 @@ export const Sidebar: React.FC = () => {
     dashboards,
     activeDashboard,
     visibleTools,
+    isSaving,
     gradeFilter,
     setGradeFilter,
     toggleToolVisibility,
@@ -669,6 +672,23 @@ export const Sidebar: React.FC = () => {
                     ? 'Classroom Manager'
                     : activeSection.replace('-', ' ')}
                 </span>
+                <div
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${
+                    isSaving
+                      ? 'bg-amber-50 text-amber-600 animate-pulse'
+                      : 'bg-emerald-50 text-emerald-600'
+                  }`}
+                  title={isSaving ? 'Saving to Cloud...' : 'All Changes Saved'}
+                >
+                  {isSaving ? (
+                    <Cloud className="w-3 h-3 animate-bounce" />
+                  ) : (
+                    <CloudCheck className="w-3 h-3" />
+                  )}
+                  <span className="text-[8px] font-black uppercase tracking-tighter">
+                    {isSaving ? 'Syncing' : 'Cloud'}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={() => {
