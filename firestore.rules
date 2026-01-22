@@ -87,7 +87,7 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.resource.data.originalAuthor == request.auth.uid;
       allow update, delete: if request.auth != null &&
-        (get(resource.data, 'originalAuthor', null) == request.auth.uid || isAdmin());
+        (resource.data.get('originalAuthor', null) == request.auth.uid || isAdmin());
     }
 
     // Sessions - Teacher owns it, Students can join
