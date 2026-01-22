@@ -17,12 +17,14 @@
     "@google-cloud/functions-framework": "^5.0.0",
     "@google/genai": "^1.37.0",
     "axios": "^1.7.9",
+    "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^7.0.3",
     "oauth-1.0a": "^2.2.6"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/crypto-js": "^4.2.2",
     "firebase-functions-test": "^3.1.0",
     "typescript": "^5.8.2"

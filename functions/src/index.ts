@@ -1,4 +1,5 @@
-import * as functions from 'firebase-functions/v1';
+import * as functionsV1 from 'firebase-functions/v1';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
@@ -57,7 +58,8 @@ function getOAuthHeaders(
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
-export const getClassLinkRosterV1 = functions
+// Keep ClassLink on v1 for now as it's working
+export const getClassLinkRosterV1 = functionsV1
   .runWith({
     secrets: [
       'CLASSLINK_CLIENT_ID',
@@ -67,9 +69,9 @@ export const getClassLinkRosterV1 = functions
     memory: '256MB',
   })
   .https.onCall(
-    async (data: unknown, context: functions.https.CallableContext) => {
+    async (data: unknown, context: functionsV1.https.CallableContext) => {
       if (!context.auth) {
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'unauthenticated',
           'The function must be called while authenticated.'
         );
@@ -77,7 +79,7 @@ export const getClassLinkRosterV1 = functions
 
       const userEmail = context.auth.token.email;
       if (!userEmail) {
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'invalid-argument',
           'User must have an email associated with their account.'
         );
@@ -88,7 +90,7 @@ export const getClassLinkRosterV1 = functions
       const tenantUrl = process.env.CLASSLINK_TENANT_URL;
 
       if (!clientId || !clientSecret || !tenantUrl) {
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'internal',
           'ClassLink configuration is missing on the server.'
         );
@@ -170,12 +172,12 @@ export const getClassLinkRosterV1 = functions
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
           const axiosError = error as AxiosError;
-          throw new functions.https.HttpsError(
+          throw new functionsV1.https.HttpsError(
             'internal',
             `Failed to fetch data from ClassLink: ${axiosError.message}`
           );
         }
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'internal',
           'Failed to fetch data from ClassLink'
         );
@@ -183,99 +185,78 @@ export const getClassLinkRosterV1 = functions
     }
   );
 
-export const generateWithAI = functions
-  .runWith({
+// Move generateWithAI to v2 for better CORS and scaling
+export const generateWithAI = onCall(
+  {
     secrets: ['GEMINI_API_KEY'],
-    memory: '256MB',
-  })
-  .https.onCall(
-    async (data: { type: 'mini-app' | 'poll'; prompt: string }, context) => {
-      if (!context.auth) {
-        throw new functions.https.HttpsError(
-          'unauthenticated',
-          'The function must be called while authenticated.'
-        );
-      }
-
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        console.error('GEMINI_API_KEY is missing in environment');
-        throw new functions.https.HttpsError(
-          'internal',
-          'Gemini API Key is missing on the server.'
-        );
-      }
-
-      try {
-        const genAI = new GoogleGenAI(apiKey);
-        // Correct model name and initialization as per SDK standards
-        const model = genAI.getGenerativeModel({
-          model: 'gemini-3-flash-preview',
-          generationConfig: { responseMimeType: 'application/json' },
-        });
-
-        if (data.type === 'mini-app') {
-          const systemPrompt = `
-          You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request.
-
-          Requirements:
-          1.  **Single File:** All CSS and JS must be embedded in <style> and <script> tags.
-          2.  **Design:** Use a modern, clean design. You SHOULD use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>.
-          3.  **Functionality:** It must be fully functional and interactive.
-          4.  **Format:** Return a JSON object with two fields: "title" (a short name for the app) and "html" (the complete HTML code).
-          5.  **Responsiveness:** It should fit in a small widget container (responsive, often small).
-          6.  **No External Assets:** Do not link to external images unless using placeholders.
-          7.  **Safety:** Do not include malicious code.
-
-          Response Format:
-          Return ONLY raw JSON. No markdown formatting.
-          Example:
-          {
-            "title": "My App",
-            "html": "<!DOCTYPE html>..."
-          }
-        `;
-
-          const result = await model.generateContent(
-            systemPrompt + '\n\nUser Request: ' + data.prompt
-          );
-          const response = await result.response;
-          return JSON.parse(response.text());
-        } else if (data.type === 'poll') {
-          const systemPrompt = `
-          You are an expert teacher. Create a multiple-choice poll question based on the user's topic.
-
-          Requirements:
-          1.  **Educational:** The question should be appropriate for a classroom setting.
-          2.  **Clear:** The question should be concise and easy to read.
-          3.  **Options:** Provide exactly 4 distinct options. One correct answer (if applicable) and 3 distractors, or 4 valid opinions.
-          4.  **Format:** Return a JSON object with two fields: "question" (string) and "options" (array of 4 strings).
-
-          Response Format:
-          Return ONLY raw JSON. No markdown formatting.
-          Example:
-          {
-            "question": "What is the capital of France?",
-            "options": ["London", "Berlin", "Paris", "Madrid"]
-          }
-        `;
-
-          const result = await model.generateContent(
-            systemPrompt + '\n\nTopic: ' + data.prompt
-          );
-          const response = await result.response;
-          return JSON.parse(response.text());
-        }
-
-        throw new functions.https.HttpsError(
-          'invalid-argument',
-          'Invalid generation type'
-        );
-      } catch (error: unknown) {
-        console.error('AI Generation Error:', error);
-        const msg =
-          error instanceof Error ? error.message : 'AI Generation failed';
-        throw new functions.https.HttpsError('internal', msg);
-      }
+    memory: '256MiB',
+    cors: true, // Explicitly enable CORS
+  },
+  async (request) => {
+    // In v2, context.auth is in request.auth
+    if (!request.auth) {
+      throw new HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
     }
-  );
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('CRITICAL: GEMINI_API_KEY is missing');
+      throw new HttpsError(
+        'internal',
+        'Gemini API Key is missing on the server.'
+      );
+    }
+
+    const data = request.data as { type: 'mini-app' | 'poll'; prompt: string };
+
+    try {
+      console.log(`AI Gen starting for type: ${data.type}`);
+      const genAI = new GoogleGenAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-3-flash-preview',
+        generationConfig: { responseMimeType: 'application/json' },
+      });
+
+      if (data.type === 'mini-app') {
+        const systemPrompt = `
+          You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request.
+          Requirements:
+          1. Single File (embedded CSS/JS).
+          2. Use Tailwind CDN.
+          3. Return JSON: { "title": "...", "html": "..." }
+        `;
+
+        const result = await model.generateContent(
+          systemPrompt + '\n\nUser Request: ' + data.prompt
+        );
+        const response = await result.response;
+        const text = response.text();
+        console.log('AI Generation successful (mini-app)');
+        return JSON.parse(text);
+      } else if (data.type === 'poll') {
+        const systemPrompt = `
+          You are an expert teacher. Create a 4-option multiple choice poll JSON:
+          { "question": "...", "options": ["...", "...", "...", "..."] }
+        `;
+
+        const result = await model.generateContent(
+          systemPrompt + '\n\nTopic: ' + data.prompt
+        );
+        const response = await result.response;
+        const text = response.text();
+        console.log('AI Generation successful (poll)');
+        return JSON.parse(text);
+      }
+
+      throw new HttpsError('invalid-argument', 'Invalid generation type');
+    } catch (error: unknown) {
+      console.error('AI Generation Error Details:', error);
+      const msg =
+        error instanceof Error ? error.message : 'AI Generation failed';
+      throw new HttpsError('internal', msg);
+    }
+  }
+);
