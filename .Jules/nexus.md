@@ -20,6 +20,6 @@
 
 ## 2024-05-23 - [Schedule Auto-Progress]
 
-**Source:** Schedule Widget
-**Destination:** Clock Widget
+**Source:** Clock Widget
+**Destination:** Schedule Widget
 **Value:** Automatically marks schedule items as done based on the current time if a Clock widget is present.
