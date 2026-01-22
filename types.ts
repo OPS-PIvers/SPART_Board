@@ -282,7 +282,7 @@ export interface WeatherGlobalConfig {
 
 export interface ScheduleConfig {
   items: ScheduleItem[];
-  fontFamily?: GlobalFontFamily | 'global';
+  fontFamily?: string;
   autoProgress?: boolean;
 }
 
