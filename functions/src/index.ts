@@ -185,17 +185,15 @@ export const getClassLinkRosterV1 = functionsV1
     }
   );
 
-// Move generateWithAI to v2 for better CORS and scaling
-export const generateWithAI = onCall(
-  {
+// Use v1 for generateWithAI to match the client SDK's expected URL format and ensure reliable CORS
+export const generateWithAI = functionsV1
+  .runWith({
     secrets: ['GEMINI_API_KEY'],
-    memory: '256MiB',
-    cors: true, // Explicitly enable CORS
-  },
-  async (request) => {
-    // In v2, context.auth is in request.auth
-    if (!request.auth) {
-      throw new HttpsError(
+    memory: '512MB',
+  })
+  .https.onCall(async (data: any, context) => {
+    if (!context.auth) {
+      throw new functionsV1.https.HttpsError(
         'unauthenticated',
         'The function must be called while authenticated.'
       );
@@ -204,13 +202,11 @@ export const generateWithAI = onCall(
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error('CRITICAL: GEMINI_API_KEY is missing');
-      throw new HttpsError(
+      throw new functionsV1.https.HttpsError(
         'internal',
         'Gemini API Key is missing on the server.'
       );
     }
-
-    const data = request.data as { type: 'mini-app' | 'poll'; prompt: string };
 
     try {
       console.log(`AI Gen starting for type: ${data.type}`);
@@ -235,7 +231,10 @@ export const generateWithAI = onCall(
         `;
         userPrompt = `Topic: ${data.prompt}`;
       } else {
-        throw new HttpsError('invalid-argument', 'Invalid generation type');
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Invalid generation type'
+        );
       }
 
       const response = await genAI.models.generateContent({
@@ -252,6 +251,7 @@ export const generateWithAI = onCall(
       });
 
       const text = response.text;
+
       if (!text) {
         throw new Error('Empty response from AI');
       }
@@ -262,7 +262,6 @@ export const generateWithAI = onCall(
       console.error('AI Generation Error Details:', error);
       const msg =
         error instanceof Error ? error.message : 'AI Generation failed';
-      throw new HttpsError('internal', msg);
+      throw new functionsV1.https.HttpsError('internal', msg);
     }
-  }
-);
+  });
