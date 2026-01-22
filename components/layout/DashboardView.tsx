@@ -225,16 +225,6 @@ export const DashboardView: React.FC = () => {
         const x = e.clientX - w / 2;
         const y = e.clientY - h / 2;
 
-        const { icon, color, label } = JSON.parse(spartStickerData) as {
-          icon: string;
-          color: string;
-          label?: string;
-        };
-        const w = 150;
-        const h = 150;
-        const x = e.clientX - w / 2;
-        const y = e.clientY - h / 2;
-
         addWidget('sticker', {
           x,
           y,
@@ -242,7 +232,6 @@ export const DashboardView: React.FC = () => {
           h,
           config: { icon, color, label, rotation: 0 },
         });
-      } catch (err) {
       } catch (err) {
         console.error('Failed to parse spart-sticker data', err);
       }

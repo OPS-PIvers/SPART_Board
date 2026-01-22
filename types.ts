@@ -25,7 +25,10 @@ export type WidgetType =
   | 'stickers'
   | 'sticker'
   | 'sticker-library'
-  | 'seating-chart';
+  | 'seating-chart'
+  | 'catalyst'
+  | 'catalyst-instruction'
+  | 'catalyst-visual';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -349,6 +352,20 @@ export interface MaterialsConfig {
   activeItems: string[];
 }
 
+export interface CatalystConfig {
+  activeTab: 'attention' | 'engage' | 'setup' | 'support';
+}
+
+export interface CatalystInstructionConfig {
+  routineId: string;
+  stepIndex: number;
+}
+
+export interface CatalystVisualConfig {
+  routineId: string;
+  stepIndex: number;
+}
+
 export interface StickerConfig {
   url?: string;
   icon?: string;
@@ -408,7 +425,10 @@ export type WidgetConfig =
   | StickerBookConfig
   | StickerLibraryConfig
   | StickerConfig
-  | SeatingChartConfig;
+  | SeatingChartConfig
+  | CatalystConfig
+  | CatalystInstructionConfig
+  | CatalystVisualConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -465,7 +485,13 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                     ? StickerConfig
                                                     : T extends 'seating-chart'
                                                       ? SeatingChartConfig
-                                                      : never;
+                                                      : T extends 'catalyst'
+                                                        ? CatalystConfig
+                                                        : T extends 'catalyst-instruction'
+                                                          ? CatalystInstructionConfig
+                                                          : T extends 'catalyst-visual'
+                                                            ? CatalystVisualConfig
+                                                            : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;

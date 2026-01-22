@@ -61,6 +61,9 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   'sticker-library': ALL_GRADE_LEVELS,
   sticker: [],
   'seating-chart': ALL_GRADE_LEVELS,
+  catalyst: ALL_GRADE_LEVELS,
+  'catalyst-instruction': [],
+  'catalyst-visual': [],
 };
 
 /**

@@ -101,6 +101,15 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SeatingChartWidget'),
     'SeatingChartWidget'
   ),
+  catalyst: lazyNamed(() => import('./CatalystWidget'), 'CatalystWidget'),
+  'catalyst-instruction': lazyNamed(
+    () => import('./CatalystInstructionWidget'),
+    'CatalystInstructionWidget'
+  ),
+  'catalyst-visual': lazyNamed(
+    () => import('./CatalystVisualWidget'),
+    'CatalystVisualWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -139,6 +148,15 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   'seating-chart': lazyNamed(
     () => import('./SeatingChartSettings'),
     'SeatingChartSettings'
+  ),
+  catalyst: lazyNamed(() => import('./CatalystWidget'), 'CatalystSettings'),
+  'catalyst-instruction': lazyNamed(
+    () => import('./CatalystInstructionWidget'),
+    'CatalystInstructionSettings'
+  ),
+  'catalyst-visual': lazyNamed(
+    () => import('./CatalystVisualWidget'),
+    'CatalystVisualSettings'
   ),
   traffic: DefaultSettings,
   workSymbols: DefaultSettings,

@@ -191,7 +191,8 @@ const IconPicker: React.FC<{
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter, addWidget, clearAllStickers } = useDashboard();
+  const { updateWidget, gradeFilter, addWidget, clearAllStickers } =
+    useDashboard();
   const { isAdmin } = useAuth();
   const {
     routines: cloudRoutines,
@@ -551,8 +552,6 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       </button>
                     </>
                   )}
-                </div>
-              </div>
                 </div>
               </div>
             );

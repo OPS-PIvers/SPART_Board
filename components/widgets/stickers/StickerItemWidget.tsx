@@ -120,6 +120,5 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
         )}
       </div>
     </DraggableSticker>
-    </DraggableSticker>
   );
 };
