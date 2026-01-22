@@ -146,6 +146,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   traffic: DefaultSettings,
   workSymbols: DefaultSettings,
-  schedule: DefaultSettings,
+  schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
 };

@@ -282,6 +282,8 @@ export interface WeatherGlobalConfig {
 
 export interface ScheduleConfig {
   items: ScheduleItem[];
+  fontFamily?: GlobalFontFamily;
+  autoProgress?: boolean;
 }
 
 export interface CalendarConfig {
