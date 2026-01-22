@@ -1,7 +1,9 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, Trash2, Loader2 } from 'lucide-react';
-import { WidgetData } from '@/types';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Upload, Trash2, Loader2, Eraser, MousePointer2 } from 'lucide-react';
+import { WidgetData, StickerBookConfig } from '@/types';
 import { trimImageWhitespace, removeBackground } from '@/utils/imageProcessing';
+import { useDashboard } from '@/context/useDashboard';
+import { useStorage } from '@/hooks/useStorage';
 
 const DEFAULT_STICKERS = [
   // Star
@@ -19,48 +21,105 @@ const DEFAULT_STICKERS = [
 ];
 
 export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
-  widget: _widget,
+  widget,
 }) => {
-  const [customStickers, setCustomStickers] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('custom_stickers');
-      return saved ? (JSON.parse(saved) as string[]) : [];
-    } catch (e) {
-      console.error(e);
-      return [];
-    }
-  });
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { updateWidget, clearAllStickers } = useDashboard();
+  const { uploadFile, uploading: storageUploading } = useStorage();
+  const [processing, setProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
+  const uploading = storageUploading || processing;
+  const config = widget.config as StickerBookConfig;
+  const customStickers = React.useMemo(
+    () => config.uploadedUrls ?? [],
+    [config.uploadedUrls]
+  );
 
-    setIsProcessing(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const result = ev.target?.result as string;
-        try {
-          // Remove background first (simple corner flood fill), then trim
-          const noBg = await removeBackground(result);
-          const trimmed = await trimImageWhitespace(noBg);
-          setCustomStickers((prev) => {
-            const next = [...prev, trimmed];
-            localStorage.setItem('custom_stickers', JSON.stringify(next));
-            return next;
+  const processFile = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith('image/')) return;
+
+      setProcessing(true);
+      try {
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Remove background and trim whitespace
+        const noBg = await removeBackground(dataUrl);
+        const trimmed = await trimImageWhitespace(noBg);
+
+        // Convert back to Blob for upload
+        const response = await fetch(trimmed);
+        const blob = await response.blob();
+        const processedFile = new File(
+          [blob],
+          file.name.replace(/\.[^/.]+$/, '') + '.png',
+          { type: 'image/png' }
+        );
+
+        const url = (await uploadFile(
+          `stickers/${Date.now()}_${processedFile.name}`,
+          processedFile
+        )) as string | null;
+
+        if (url) {
+          updateWidget(widget.id, {
+            config: {
+              ...config,
+              uploadedUrls: [...customStickers, url],
+            },
           });
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setIsProcessing(false);
         }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error(err);
-      setIsProcessing(false);
-    }
-  }, []);
+      } catch (err) {
+        console.error('Failed to process/upload sticker:', err);
+      } finally {
+        setProcessing(false);
+      }
+    },
+    [config, customStickers, updateWidget, uploadFile, widget.id]
+  );
+
+  // Handle global paste events when this widget is mounted
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            // Create a pseudo-filename if it's from a screenshot
+            const namedFile = new File(
+              [file],
+              `pasted-image-${Date.now()}.png`,
+              { type: file.type }
+            );
+            void processFile(namedFile);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [processFile]);
 
   const handleDragStart = (e: React.DragEvent, url: string) => {
     const img = e.currentTarget.querySelector('img');
@@ -95,34 +154,75 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const removeCustomSticker = (index: number) => {
-    const next = customStickers.filter((_, i) => i !== index);
-    setCustomStickers(next);
-    localStorage.setItem('custom_stickers', JSON.stringify(next));
+    const next = [...customStickers];
+    next.splice(index, 1);
+    updateWidget(widget.id, {
+      config: { ...config, uploadedUrls: next },
+    });
   };
 
   return (
     <div className="h-full flex flex-col bg-white">
       <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-        <span className=" text-slate-700">Sticker Collection</span>
-        <label
-          className={`flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs  cursor-pointer hover:bg-blue-100 transition-colors ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
-        >
-          <Upload size={14} />
-          {isProcessing ? 'Processing...' : 'Upload'}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleUpload}
-            disabled={isProcessing}
-          />
-        </label>
+        <span className="text-slate-700">Sticker Collection</span>
+        <div className="flex gap-2">
+          <button
+            onClick={clearAllStickers}
+            className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-2.5 py-1.5 rounded-full hover:bg-red-100 transition-colors uppercase font-bold tracking-wider"
+            title="Clear all stickers from board"
+          >
+            <Eraser size={12} />
+            Clear Board
+          </button>
+          <label
+            className={`flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs cursor-pointer hover:bg-blue-100 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            {uploading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Upload size={14} />
+            )}
+            {uploading ? 'Processing...' : 'Upload'}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleUpload}
+              disabled={uploading}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        {/* Drop/Paste Zone - Integrated and obvious */}
+        <div
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className={`mb-6 p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center gap-2 transition-all hover:bg-blue-50 hover:border-blue-200 group ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {uploading ? (
+            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+          ) : (
+            <div className="flex items-center gap-3">
+              <Upload className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight">
+                  Click, Drag, or Paste
+                </p>
+                <p className="text-[9px] text-slate-400">
+                  to add custom stickers
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Defaults */}
         <div className="mb-6">
-          <h4 className="text-xs  text-slate-400 uppercase tracking-wider mb-3">
+          <h4 className="text-xs text-slate-400 uppercase tracking-wider mb-3">
             Essentials
           </h4>
           <div className="grid grid-cols-4 gap-4">
@@ -147,7 +247,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         {/* Custom */}
         {customStickers.length > 0 && (
           <div>
-            <h4 className="text-xs  text-slate-400 uppercase tracking-wider mb-3">
+            <h4 className="text-xs text-slate-400 uppercase tracking-wider mb-3">
               My Stickers
             </h4>
             <div className="grid grid-cols-4 gap-4">
@@ -176,32 +276,13 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
         )}
+      </div>
 
-        {customStickers.length === 0 && (
-          <label
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            className={`text-center p-8 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
-          >
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleUpload}
-              disabled={isProcessing}
-            />
-            {isProcessing ? (
-              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
-            ) : (
-              <Upload className="w-8 h-8 text-slate-300" />
-            )}
-            <p className="text-slate-400 text-sm  uppercase tracking-tight">
-              {isProcessing
-                ? 'Processing...'
-                : 'Upload or drag images to create custom stickers!'}
-            </p>
-          </label>
-        )}
+      <div className="px-4 py-2 bg-slate-50 border-t flex items-center gap-2">
+        <MousePointer2 size={12} className="text-slate-400" />
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center flex-1">
+          Drag stickers from library to the board
+        </span>
       </div>
     </div>
   );

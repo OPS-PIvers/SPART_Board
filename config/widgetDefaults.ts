@@ -153,11 +153,6 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
   stickers: {
     w: 600,
     h: 500,
-    config: {},
-  },
-  'sticker-library': {
-    w: 300,
-    h: 400,
     config: { uploadedUrls: [] },
   },
   sticker: {

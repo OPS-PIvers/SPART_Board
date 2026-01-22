@@ -24,7 +24,6 @@ export type WidgetType =
   | 'materials'
   | 'stickers'
   | 'sticker'
-  | 'sticker-library'
   | 'seating-chart';
 
 // --- ROSTER SYSTEM TYPES ---
@@ -326,10 +325,6 @@ export interface TimeToolConfig {
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
 }
 
-export interface StickerLibraryConfig {
-  uploadedUrls: string[];
-}
-
 // 1. Define the Data Model for a Mini App
 export interface MiniAppItem {
   id: string;
@@ -356,7 +351,9 @@ export interface StickerConfig {
   size?: number;
 }
 
-export type StickerBookConfig = Record<string, never>;
+export interface StickerBookConfig {
+  uploadedUrls?: string[];
+}
 
 export interface FurnitureItem {
   id: string;
@@ -404,7 +401,6 @@ export type WidgetConfig =
   | MiniAppConfig
   | MaterialsConfig
   | StickerBookConfig
-  | StickerLibraryConfig
   | StickerConfig
   | SeatingChartConfig;
 
@@ -457,13 +453,11 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                               ? MaterialsConfig
                                               : T extends 'stickers'
                                                 ? StickerBookConfig
-                                                : T extends 'sticker-library'
-                                                  ? StickerLibraryConfig
-                                                  : T extends 'sticker'
-                                                    ? StickerConfig
-                                                    : T extends 'seating-chart'
-                                                      ? SeatingChartConfig
-                                                      : never;
+                                                : T extends 'sticker'
+                                                  ? StickerConfig
+                                                  : T extends 'seating-chart'
+                                                    ? SeatingChartConfig
+                                                    : never;
 export interface WidgetData {
   id: string;
   type: WidgetType;

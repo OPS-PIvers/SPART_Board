@@ -16,15 +16,3 @@ export const MiniAppSettings: React.FC<{ widget: WidgetData }> = () => (
     Manage apps in the main view.
   </div>
 );
-
-export const StickerSettings: React.FC<{ widget: WidgetData }> = () => (
-  <div className="text-slate-500 italic text-sm">
-    Manage stickers in the main view.
-  </div>
-);
-
-export const StickerLibrarySettings: React.FC<{ widget: WidgetData }> = () => (
-  <div className="text-slate-500 italic text-sm">
-    Upload and manage your custom stickers.
-  </div>
-);
