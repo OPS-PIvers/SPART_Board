@@ -9,7 +9,6 @@ import { isConfigured } from './config/firebase';
 import { StudentApp } from './components/student/StudentApp';
 import { StudentProvider } from './components/student/StudentContexts';
 import { AdminWeatherFetcher } from './components/admin/AdminWeatherFetcher';
-import { DatabaseInitializer } from './components/admin/DatabaseInitializer';
 
 const AuthenticatedApp: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -21,7 +20,6 @@ const AuthenticatedApp: React.FC = () => {
   return (
     <DashboardProvider>
       {isAdmin && <AdminWeatherFetcher />}
-      {isAdmin && <DatabaseInitializer />}
       <DashboardView />
       <UpdateNotification />
     </DashboardProvider>
