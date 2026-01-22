@@ -140,7 +140,7 @@ To add a new widget, you must follow these exact steps to maintain strict type s
 
 ### Environment
 
-- **Local:** Create `.env.local` with `VITE_FIREBASE_*` keys, `VITE_GEMINI_API_KEY`, and `VITE_OPENWEATHER_API_KEY`.
+- **Local:** Create `.env.local` with `VITE_FIREBASE_*` keys, `GEMINI_API_KEY`, and `VITE_OPENWEATHER_API_KEY`.
 - **Secrets:** Never commit `.env` files.
 
 ---

@@ -47,14 +47,6 @@ const MiniAppSettings = lazyNamed(
   () => import('./FallbackSettings'),
   'MiniAppSettings'
 );
-const StickerSettings = lazyNamed(
-  () => import('./FallbackSettings'),
-  'StickerSettings'
-);
-const StickerLibrarySettings = lazyNamed(
-  () => import('./FallbackSettings'),
-  'StickerLibrarySettings'
-);
 
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   clock: lazyNamed(() => import('./ClockWidget'), 'ClockWidget'),
@@ -92,10 +84,6 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   stickers: lazyNamed(
     () => import('./stickers/StickerBookWidget'),
     'StickerBookWidget'
-  ),
-  'sticker-library': lazyNamed(
-    () => import('./StickerLibraryWidget'),
-    'StickerLibraryWidget'
   ),
   'seating-chart': lazyNamed(
     () => import('./SeatingChartWidget'),
@@ -142,8 +130,6 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
   miniApp: MiniAppSettings,
-  stickers: StickerSettings,
-  'sticker-library': StickerLibrarySettings,
   'time-tool': lazyNamed(() => import('./TimeToolWidget'), 'TimeToolSettings'),
   'seating-chart': lazyNamed(
     () => import('./SeatingChartSettings'),

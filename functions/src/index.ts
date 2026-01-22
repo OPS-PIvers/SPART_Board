@@ -1,8 +1,10 @@
-import * as functions from 'firebase-functions/v1';
+import * as functionsV1 from 'firebase-functions/v1';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
+import { GoogleGenAI } from '@google/genai';
 
 admin.initializeApp();
 
@@ -28,7 +30,6 @@ interface ClassLinkStudent {
 
 /**
  * Generates OAuth 1.0 Headers for ClassLink
- * Robust version that separates base URL and query parameters
  */
 function getOAuthHeaders(
   baseUrl: string,
@@ -51,14 +52,14 @@ function getOAuthHeaders(
   const request_data = {
     url: baseUrl,
     method: method,
-    data: params, // Pass params here so the library encodes them for the signature
+    data: params,
   };
 
   return oauth.toHeader(oauth.authorize(request_data));
 }
 
-// Version: 1.1.1 - Improved OAuth signature and logging
-export const getClassLinkRosterV1 = functions
+// Keep ClassLink on v1 for now as it's working
+export const getClassLinkRosterV1 = functionsV1
   .runWith({
     secrets: [
       'CLASSLINK_CLIENT_ID',
@@ -68,9 +69,9 @@ export const getClassLinkRosterV1 = functions
     memory: '256MB',
   })
   .https.onCall(
-    async (data: unknown, context: functions.https.CallableContext) => {
+    async (data: unknown, context: functionsV1.https.CallableContext) => {
       if (!context.auth) {
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'unauthenticated',
           'The function must be called while authenticated.'
         );
@@ -78,7 +79,7 @@ export const getClassLinkRosterV1 = functions
 
       const userEmail = context.auth.token.email;
       if (!userEmail) {
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'invalid-argument',
           'User must have an email associated with their account.'
         );
@@ -89,19 +90,15 @@ export const getClassLinkRosterV1 = functions
       const tenantUrl = process.env.CLASSLINK_TENANT_URL;
 
       if (!clientId || !clientSecret || !tenantUrl) {
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'internal',
           'ClassLink configuration is missing on the server.'
         );
       }
 
       const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
-      console.log(
-        `[ClassLink] Fetching for: ${userEmail} at ${cleanTenantUrl}`
-      );
 
       try {
-        // Step 1: Find the user by email
         const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
         const userParams = { filter: `email='${userEmail}'` };
 
@@ -124,14 +121,11 @@ export const getClassLinkRosterV1 = functions
         const users = userResponse.data.users;
 
         if (!users || users.length === 0) {
-          console.warn(`[ClassLink] No user found for email: ${userEmail}`);
           return { classes: [], studentsByClass: {} };
         }
 
         const teacherSourcedId = users[0].sourcedId;
-        console.log(`[ClassLink] Found teacher: ${teacherSourcedId}`);
 
-        // Step 2: Get classes for this teacher
         const classesUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users/${teacherSourcedId}/classes`;
         const classesHeaders = getOAuthHeaders(
           classesUrl,
@@ -146,9 +140,7 @@ export const getClassLinkRosterV1 = functions
           { headers: { ...classesHeaders } }
         );
         const classes = classesResponse.data.classes;
-        console.log(`[ClassLink] Found ${classes.length} classes`);
 
-        // Step 3: Get students for each class
         const studentsByClass: Record<string, ClassLinkStudent[]> = {};
 
         await Promise.all(
@@ -168,10 +160,6 @@ export const getClassLinkRosterV1 = functions
               studentsByClass[cls.sourcedId] =
                 studentsResponse.data.users ?? [];
             } catch (err) {
-              console.error(
-                `[ClassLink] Error fetching students for class ${cls.sourcedId}:`,
-                err
-              );
               studentsByClass[cls.sourcedId] = [];
             }
           })
@@ -184,22 +172,191 @@ export const getClassLinkRosterV1 = functions
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
           const axiosError = error as AxiosError;
-          const status = axiosError.response?.status;
-          console.error(
-            `[ClassLink] API Error (${status}):`,
-            axiosError.response?.data ?? axiosError.message
-          );
-          throw new functions.https.HttpsError(
+          throw new functionsV1.https.HttpsError(
             'internal',
-            `Failed to fetch data from ClassLink (${status}): ${axiosError.message}`
+            `Failed to fetch data from ClassLink: ${axiosError.message}`
           );
         }
-        const genericError = error as Error;
-        console.error('[ClassLink] Generic Error:', genericError.message);
-        throw new functions.https.HttpsError(
+        throw new functionsV1.https.HttpsError(
           'internal',
-          `Failed to fetch data from ClassLink: ${genericError.message}`
+          'Failed to fetch data from ClassLink'
         );
       }
     }
   );
+
+// Use v1 for generateWithAI to match the client SDK's expected URL format and ensure reliable CORS
+export const generateWithAI = functionsV1
+  .runWith({
+    secrets: ['GEMINI_API_KEY'],
+    memory: '512MB',
+  })
+  .https.onCall(async (data: any, context) => {
+    if (!context.auth) {
+      throw new functionsV1.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+
+    const uid = context.auth.uid;
+    const email = context.auth.token.email;
+
+    if (!email) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'User must have an email associated with their account.'
+      );
+    }
+
+    const db = admin.firestore();
+
+    // 1. Check global feature permission for gemini-functions
+    const globalPermDoc = await db
+      .collection('global_permissions')
+      .doc('gemini-functions')
+      .get();
+    const globalPerm = globalPermDoc.exists ? globalPermDoc.data() : null;
+
+    // 2. Check if user is an admin
+    const adminDoc = await db
+      .collection('admins')
+      .doc(email.toLowerCase())
+      .get();
+    const isAdmin = adminDoc.exists;
+
+    // 3. Validate access
+    if (globalPerm && !globalPerm.enabled) {
+      throw new functionsV1.https.HttpsError(
+        'permission-denied',
+        'Gemini functions are currently disabled by an administrator.'
+      );
+    }
+
+    if (!isAdmin) {
+      if (globalPerm) {
+        const { accessLevel, betaUsers = [] } = globalPerm;
+        if (accessLevel === 'admin') {
+          throw new functionsV1.https.HttpsError(
+            'permission-denied',
+            'Gemini functions are currently restricted to administrators.'
+          );
+        }
+        if (
+          accessLevel === 'beta' &&
+          !betaUsers.includes(email.toLowerCase())
+        ) {
+          throw new functionsV1.https.HttpsError(
+            'permission-denied',
+            'You do not have access to Gemini beta functions.'
+          );
+        }
+      }
+
+      // 4. Check and increment daily usage
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const usageRef = db.collection('ai_usage').doc(`${uid}_${today}`);
+      const DAILY_LIMIT = globalPerm?.config?.dailyLimit || 20;
+
+      try {
+        await db.runTransaction(async (transaction) => {
+          const usageDoc = await transaction.get(usageRef);
+          const currentUsage = usageDoc.exists
+            ? usageDoc.data()?.count || 0
+            : 0;
+
+          if (currentUsage >= DAILY_LIMIT) {
+            throw new functionsV1.https.HttpsError(
+              'resource-exhausted',
+              `Daily AI usage limit reached (${DAILY_LIMIT} generations). Please try again tomorrow.`
+            );
+          }
+
+          transaction.set(
+            usageRef,
+            {
+              count: currentUsage + 1,
+              email: email,
+              lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        });
+      } catch (error) {
+        if (error instanceof functionsV1.https.HttpsError) {
+          throw error;
+        }
+        console.error('Usage tracking error:', error);
+        throw new functionsV1.https.HttpsError(
+          'internal',
+          'Failed to verify AI usage limits.'
+        );
+      }
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('CRITICAL: GEMINI_API_KEY is missing');
+      throw new functionsV1.https.HttpsError(
+        'internal',
+        'Gemini API Key is missing on the server.'
+      );
+    }
+
+    try {
+      console.log(`AI Gen starting for type: ${data.type}`);
+      const genAI = new GoogleGenAI({ apiKey });
+
+      let systemPrompt = '';
+      let userPrompt = '';
+
+      if (data.type === 'mini-app') {
+        systemPrompt = `
+          You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request.
+          Requirements:
+          1. Single File (embedded CSS/JS).
+          2. Use Tailwind CDN.
+          3. Return JSON: { "title": "...", "html": "..." }
+        `;
+        userPrompt = `User Request: ${data.prompt}`;
+      } else if (data.type === 'poll') {
+        systemPrompt = `
+          You are an expert teacher. Create a 4-option multiple choice poll JSON:
+          { "question": "...", "options": ["...", "...", "...", "..."] }
+        `;
+        userPrompt = `Topic: ${data.prompt}`;
+      } else {
+        throw new functionsV1.https.HttpsError(
+          'invalid-argument',
+          'Invalid generation type'
+        );
+      }
+
+      const response = await genAI.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
+          },
+        ],
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const text = response.text;
+
+      if (!text) {
+        throw new Error('Empty response from AI');
+      }
+
+      console.log('AI Generation successful');
+      return JSON.parse(text);
+    } catch (error: unknown) {
+      console.error('AI Generation Error Details:', error);
+      const msg =
+        error instanceof Error ? error.message : 'AI Generation failed';
+      throw new functionsV1.https.HttpsError('internal', msg);
+    }
+  });

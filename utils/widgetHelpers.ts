@@ -12,7 +12,6 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'classes') return 'Class Roster';
   if (widget.type === 'time-tool') return 'Timer';
   if (widget.type === 'miniApp') return 'App Manager';
-  if (widget.type === 'sticker-library') return 'Sticker Library';
   if (widget.type === 'sticker') return 'Sticker';
   if (widget.type === 'seating-chart') return 'Seating Chart';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
@@ -83,8 +82,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
       selectedItems: [],
       activeItems: [],
     },
-    stickers: {},
-    'sticker-library': { uploadedUrls: [] },
+    stickers: { uploadedUrls: [] },
     sticker: { url: '', rotation: 0, size: 150 },
     'seating-chart': {
       furniture: [],

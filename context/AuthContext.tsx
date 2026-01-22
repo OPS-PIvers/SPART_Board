@@ -7,7 +7,12 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isAuthBypass } from '../config/firebase';
-import { FeaturePermission, WidgetType } from '../types';
+import {
+  FeaturePermission,
+  WidgetType,
+  GlobalFeaturePermission,
+  GlobalFeature,
+} from '../types';
 import { AuthContext } from './AuthContextValue';
 
 /**
@@ -118,6 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [featurePermissions, setFeaturePermissions] = useState<
     FeaturePermission[]
   >([]);
+  const [globalPermissions, setGlobalPermissions] = useState<
+    GlobalFeaturePermission[]
+  >([]);
 
   // Check if user is admin
   useEffect(() => {
@@ -167,7 +175,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     );
 
-    return unsubscribe;
+    const globalUnsubscribe = onSnapshot(
+      collection(db, 'global_permissions'),
+      (snapshot) => {
+        const permissions: GlobalFeaturePermission[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data() as GlobalFeaturePermission;
+          if (!data.featureId) data.featureId = doc.id as GlobalFeature;
+          permissions.push(data);
+        });
+        setGlobalPermissions(permissions);
+      },
+      (error) => {
+        // Log error with more context to help debugging if it persists
+        if (auth.currentUser) {
+          console.error(
+            `[AuthContext] Firestore Error (${error.code}):`,
+            error.message
+          );
+        }
+      }
+    );
+
+    return () => {
+      unsubscribe();
+      globalUnsubscribe();
+    };
   }, [user]);
 
   // Auth state listener
@@ -221,6 +254,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [user, featurePermissions, isAdmin]
   );
 
+  const canAccessFeature = useCallback(
+    (featureId: GlobalFeature): boolean => {
+      if (isAuthBypass) return true;
+      if (!user) return false;
+
+      const permission = globalPermissions.find(
+        (p) => p.featureId === featureId
+      );
+
+      if (!permission) return true;
+      if (!permission.enabled) return false;
+      if (isAdmin) return true;
+
+      switch (permission.accessLevel) {
+        case 'admin':
+          return false;
+        case 'beta':
+          return permission.betaUsers.includes(user.email ?? '');
+        case 'public':
+          return true;
+        default:
+          return false;
+      }
+    },
+    [user, globalPermissions, isAdmin]
+  );
+
   const signInWithGoogle = async () => {
     if (isAuthBypass) {
       console.warn('Bypassing Google Sign In');
@@ -259,7 +319,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         isAdmin,
         featurePermissions,
+        globalPermissions,
         canAccessWidget,
+        canAccessFeature,
         signInWithGoogle,
         signOut,
       }}

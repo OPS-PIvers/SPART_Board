@@ -15,7 +15,9 @@ const mockAuth: AuthContextType = {
   loading: false,
   isAdmin: null,
   featurePermissions: [],
+  globalPermissions: [],
   canAccessWidget: () => true, // Allow everything in student view
+  canAccessFeature: () => true,
   signInWithGoogle: async () => {
     // No-op
   },
@@ -36,6 +38,7 @@ const mockDashboard: DashboardContextValue = {
   toasts: [],
   visibleTools: [],
   loading: false,
+  isSaving: false,
   gradeFilter: 'all',
   setGradeFilter: () => {
     // No-op
