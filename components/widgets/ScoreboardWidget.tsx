@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -8,92 +8,14 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
-import { Plus, Minus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
 import { Button } from '../common/Button';
+import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
 
 const DEFAULT_TEAMS: ScoreboardTeam[] = [
   { id: 'team-a', name: 'Team A', score: 0, color: 'bg-blue-500' },
   { id: 'team-b', name: 'Team B', score: 0, color: 'bg-red-500' },
 ];
-
-const TEAM_COLORS = [
-  'bg-blue-500',
-  'bg-red-500',
-  'bg-green-500',
-  'bg-yellow-500',
-  'bg-purple-500',
-  'bg-pink-500',
-  'bg-indigo-500',
-  'bg-orange-500',
-  'bg-teal-600',
-  'bg-cyan-500',
-];
-
-const COLOR_STYLES: Record<
-  string,
-  { label: string; score: string; button: string }
-> = {
-  'bg-blue-500': {
-    label: 'text-blue-600',
-    score: 'text-blue-700',
-    button: 'text-blue-700',
-  },
-  'bg-red-500': {
-    label: 'text-red-600',
-    score: 'text-red-700',
-    button: 'text-red-700',
-  },
-  'bg-green-500': {
-    label: 'text-green-600',
-    score: 'text-green-700',
-    button: 'text-green-700',
-  },
-  'bg-yellow-500': {
-    label: 'text-yellow-600',
-    score: 'text-yellow-700',
-    button: 'text-yellow-700',
-  },
-  'bg-purple-500': {
-    label: 'text-purple-600',
-    score: 'text-purple-700',
-    button: 'text-purple-700',
-  },
-  'bg-pink-500': {
-    label: 'text-pink-600',
-    score: 'text-pink-700',
-    button: 'text-pink-700',
-  },
-  'bg-indigo-500': {
-    label: 'text-indigo-600',
-    score: 'text-indigo-700',
-    button: 'text-indigo-700',
-  },
-  'bg-orange-500': {
-    label: 'text-orange-600',
-    score: 'text-orange-700',
-    button: 'text-orange-700',
-  },
-  'bg-teal-600': {
-    label: 'text-teal-600',
-    score: 'text-teal-700',
-    button: 'text-teal-700',
-  },
-  'bg-cyan-500': {
-    label: 'text-cyan-600',
-    score: 'text-cyan-700',
-    button: 'text-cyan-700',
-  },
-};
-
-const getStyles = (colorClass: string) => {
-  return (
-    COLOR_STYLES[colorClass] ?? {
-      label: 'text-slate-600',
-      score: 'text-slate-700',
-      button: 'text-slate-700',
-    }
-  );
-};
 
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -127,14 +49,25 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 
   const teams = config.teams ?? DEFAULT_TEAMS;
 
-  const updateScore = (teamId: string, delta: number) => {
-    const newTeams = teams.map((t) =>
-      t.id === teamId ? { ...t, score: Math.max(0, t.score + delta) } : t
-    );
-    updateWidget(widget.id, {
-      config: { ...config, teams: newTeams },
-    });
-  };
+  // Keep a ref to the latest config to ensure handleUpdateScore is stable
+  const configRef = useRef(config);
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  const handleUpdateScore = useCallback(
+    (teamId: string, delta: number) => {
+      const currentConfig = configRef.current;
+      const currentTeams = currentConfig.teams ?? DEFAULT_TEAMS;
+      const newTeams = currentTeams.map((t) =>
+        t.id === teamId ? { ...t, score: Math.max(0, t.score + delta) } : t
+      );
+      updateWidget(widget.id, {
+        config: { ...currentConfig, teams: newTeams },
+      });
+    },
+    [widget.id, updateWidget]
+  );
 
   const scoreFontSize = useScaledFont(widget.w, widget.h, 0.5, 24, 120);
 
@@ -142,43 +75,14 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     <div
       className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily}`}
     >
-      {teams.map((team) => {
-        const colorClass = team.color ?? 'bg-blue-500';
-        const styles = getStyles(colorClass);
-
-        return (
-          <div
-            key={team.id}
-            className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
-          >
-            <div
-              className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
-            >
-              {team.name}
-            </div>
-            <div
-              className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
-              style={{ fontSize: `${scoreFontSize}px`, lineHeight: 1 }}
-            >
-              {team.score}
-            </div>
-            <div className="flex gap-2 opacity-100 transition-opacity">
-              <button
-                onClick={() => updateScore(team.id, -1)}
-                className={`p-1.5 bg-white/40 ${styles.button} rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => updateScore(team.id, 1)}
-                className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        );
-      })}
+      {teams.map((team) => (
+        <ScoreboardItem
+          key={team.id}
+          team={team}
+          onUpdateScore={handleUpdateScore}
+          scoreFontSize={scoreFontSize}
+        />
+      ))}
       {teams.length === 0 && (
         <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2">
           <Trophy className="w-8 h-8 opacity-20" />
