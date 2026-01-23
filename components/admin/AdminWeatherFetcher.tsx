@@ -60,6 +60,8 @@ export const AdminWeatherFetcher: React.FC = () => {
     // Only run if admin proxy is enabled
     if (config?.fetchingStrategy !== 'admin_proxy') return;
 
+    const abortController = new AbortController();
+
     const fetchWeather = async () => {
       try {
         let temp = 72;
@@ -87,7 +89,9 @@ export const AdminWeatherFetcher: React.FC = () => {
           let data: EarthNetworksResponse | null = null;
           for (const getProxyUrl of proxies) {
             try {
-              const res = await fetch(getProxyUrl(url));
+              const res = await fetch(getProxyUrl(url), {
+                signal: abortController.signal,
+              });
               if (!res.ok) continue;
               const text = await res.text();
               const trimmed = text.trim();
@@ -100,8 +104,11 @@ export const AdminWeatherFetcher: React.FC = () => {
               }
               data = JSON.parse(trimmed) as EarthNetworksResponse;
               if (data && data.o) break;
-            } catch (_) {
-              /* try next */
+            } catch (innerErr) {
+              if (innerErr instanceof Error && innerErr.name === 'AbortError') {
+                return;
+              }
+              /* try next proxy */
             }
           }
 
@@ -135,7 +142,8 @@ export const AdminWeatherFetcher: React.FC = () => {
               : `lat=${STATION_CONFIG.lat}&lon=${STATION_CONFIG.lon}`;
 
           const res = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${apiKey}&units=imperial`
+            `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${apiKey}&units=imperial`,
+            { signal: abortController.signal }
           );
           const data = (await res.json()) as OpenWeatherData;
           if (Number(data.cod) === 200) {
@@ -162,6 +170,7 @@ export const AdminWeatherFetcher: React.FC = () => {
           `[AdminWeatherFetcher] Updated weather: ${temp}° (Feels like ${feelsLike}°) ${condition}`
         );
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         console.error('[AdminWeatherFetcher] Failed to fetch:', err);
       }
     };
@@ -171,9 +180,17 @@ export const AdminWeatherFetcher: React.FC = () => {
 
     // Interval
     const frequency = Math.max(5, config.updateFrequencyMinutes ?? 15);
-    const intervalId = setInterval(fetchWeather, frequency * 60 * 1000);
+    const intervalId = setInterval(
+      () => {
+        void fetchWeather();
+      },
+      frequency * 60 * 1000
+    );
 
-    return () => clearInterval(intervalId);
+    return () => {
+      abortController.abort();
+      clearInterval(intervalId);
+    };
   }, [
     config?.fetchingStrategy,
     config?.updateFrequencyMinutes,

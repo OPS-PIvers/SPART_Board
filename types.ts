@@ -337,6 +337,7 @@ export interface MiniAppItem {
   title: string;
   html: string;
   createdAt: number;
+  order?: number;
 }
 
 // 2. Define the Widget Configuration
