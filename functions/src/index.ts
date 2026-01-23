@@ -1,5 +1,4 @@
 import * as functionsV1 from 'firebase-functions/v1';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
@@ -26,6 +25,22 @@ interface ClassLinkStudent {
   givenName: string;
   familyName: string;
   email: string;
+}
+
+interface AIData {
+  type: 'mini-app' | 'poll';
+  prompt: string;
+}
+
+interface GlobalPermConfig {
+  dailyLimit?: number;
+}
+
+interface GlobalPermission {
+  enabled: boolean;
+  accessLevel: 'admin' | 'beta' | 'all';
+  betaUsers?: string[];
+  config?: GlobalPermConfig;
 }
 
 /**
@@ -159,7 +174,7 @@ export const getClassLinkRosterV1 = functionsV1
               }>(studentsUrl, { headers: { ...studentsHeaders } });
               studentsByClass[cls.sourcedId] =
                 studentsResponse.data.users ?? [];
-            } catch (err) {
+            } catch {
               studentsByClass[cls.sourcedId] = [];
             }
           })
@@ -191,7 +206,7 @@ export const generateWithAI = functionsV1
     secrets: ['GEMINI_API_KEY'],
     memory: '512MB',
   })
-  .https.onCall(async (data: any, context) => {
+  .https.onCall(async (data: AIData, context) => {
     if (!context.auth) {
       throw new functionsV1.https.HttpsError(
         'unauthenticated',
@@ -216,7 +231,9 @@ export const generateWithAI = functionsV1
       .collection('global_permissions')
       .doc('gemini-functions')
       .get();
-    const globalPerm = globalPermDoc.exists ? globalPermDoc.data() : null;
+    const globalPerm = globalPermDoc.exists
+      ? (globalPermDoc.data() as GlobalPermission)
+      : null;
 
     // 2. Check if user is an admin
     const adminDoc = await db
@@ -262,7 +279,7 @@ export const generateWithAI = functionsV1
         await db.runTransaction(async (transaction) => {
           const usageDoc = await transaction.get(usageRef);
           const currentUsage = usageDoc.exists
-            ? usageDoc.data()?.count || 0
+            ? (usageDoc.data()?.count as number) || 0
             : 0;
 
           if (currentUsage >= DAILY_LIMIT) {
@@ -332,27 +349,23 @@ export const generateWithAI = functionsV1
         );
       }
 
-      const response = await genAI.models.generateContent({
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
+      const model = genAI.getGenerativeModel({
         model: 'gemini-3-flash-preview',
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
-          },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
       });
-
-      const text = response.text;
+      const result: any = await (model as any).generateContent(
+        systemPrompt + '\n\n' + userPrompt
+      );
+      const response = await result.response;
+      const text = response.text() as string;
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
 
       if (!text) {
         throw new Error('Empty response from AI');
       }
 
       console.log('AI Generation successful');
-      return JSON.parse(text);
+      return JSON.parse(text) as Record<string, unknown>;
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
       const msg =
