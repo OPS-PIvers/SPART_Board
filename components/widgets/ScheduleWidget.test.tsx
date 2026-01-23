@@ -201,7 +201,8 @@ describe('ScheduleSettings', () => {
   it('renders settings controls', () => {
     render(<ScheduleSettings widget={createWidget()} />);
 
-    expect(screen.getByText(/display options/i)).toBeInTheDocument();
-    expect(screen.getByText(/auto-progress/i)).toBeInTheDocument();
+    expect(screen.getByText(/typography/i)).toBeInTheDocument();
+    expect(screen.getByText(/automation/i)).toBeInTheDocument();
+    expect(screen.getByText(/connect to clock/i)).toBeInTheDocument();
   });
 });
