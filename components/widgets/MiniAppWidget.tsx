@@ -50,34 +50,6 @@ import { db } from '@/config/firebase';
 
 // --- CONSTANTS ---
 const STORAGE_KEY = 'spartboard_miniapps_library';
-const DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
-<html>
-<style>
-  body { 
-    font-family: system-ui, -apple-system, sans-serif; 
-    padding: 24px; 
-    text-align: center; 
-    background: #f8fafc;
-    color: #1e293b;
-  }
-  .card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    display: inline-block;
-  }
-</style>
-<body>
-  <div class="card">
-    <h1>Hello Class! 👋</h1>
-    <p>This is your new mini-app.</p>
-    <button onclick="alert('It works!')" style="padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      Click Me
-    </button>
-  </div>
-</body>
-</html>`;
 
 // --- SORTABLE ITEM COMPONENT ---
 interface SortableItemProps {
@@ -257,7 +229,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const handleCreate = () => {
     setEditingId(null);
     setEditTitle('');
-    setEditCode(DEFAULT_HTML_TEMPLATE);
+    setEditCode('');
     setView('editor');
     setShowPromptInput(false);
     setPrompt('');
@@ -551,6 +523,9 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               spellCheck={false}
               placeholder="Paste your HTML, CSS, and JS here..."
             />
+            <p className="mt-2 text-xxs text-slate-400 italic">
+              Paste your HTML, CSS, and JS code directly into the editor above.
+            </p>
           </div>
         </div>
 
