@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -17,6 +17,55 @@ import {
   RefreshCw,
   BookOpen,
 } from 'lucide-react';
+
+interface ChecklistRowProps {
+  id: string;
+  label: string;
+  isCompleted: boolean;
+  dynamicFontSize: number;
+  onToggle: (id: string) => void;
+}
+
+const ChecklistRow = React.memo<ChecklistRowProps>(
+  ({ id, label, isCompleted, dynamicFontSize, onToggle }) => {
+    return (
+      <li
+        onClick={() => onToggle(id)}
+        className="group/item flex items-start gap-3 cursor-pointer select-none"
+      >
+        <div
+          className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
+          style={{ height: `${dynamicFontSize * 1.2}px` }}
+        >
+          {isCompleted ? (
+            <CheckSquare
+              className="text-green-500 fill-green-50"
+              style={{
+                width: `${dynamicFontSize}px`,
+                height: `${dynamicFontSize}px`,
+              }}
+            />
+          ) : (
+            <Square
+              className="text-slate-300"
+              style={{
+                width: `${dynamicFontSize}px`,
+                height: `${dynamicFontSize}px`,
+              }}
+            />
+          )}
+        </div>
+        <span
+          className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
+          style={{ fontSize: `${dynamicFontSize}px` }}
+        >
+          {label}
+        </span>
+      </li>
+    );
+  }
+);
+ChecklistRow.displayName = 'ChecklistRow';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -67,24 +116,52 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     return combined;
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
 
-  const toggleItem = (idOrName: string) => {
-    if (mode === 'manual') {
-      const newItems = items.map((item) =>
-        item.id === idOrName ? { ...item, completed: !item.completed } : item
-      );
-      updateWidget(widget.id, {
-        config: { ...config, items: newItems } as ChecklistConfig,
-      });
-    } else {
-      const isCompleted = completedNames.includes(idOrName);
-      const nextCompleted = isCompleted
-        ? completedNames.filter((n) => n !== idOrName)
-        : [...completedNames, idOrName];
-      updateWidget(widget.id, {
-        config: { ...config, completedNames: nextCompleted } as ChecklistConfig,
-      });
-    }
-  };
+  // Use refs to keep callback stable so we don't break memoization of children
+  // This allows toggleItem to be stable across renders even when state changes
+  const latestState = useRef({
+    items,
+    completedNames,
+    config,
+    widgetId: widget.id,
+    mode,
+  });
+
+  useEffect(() => {
+    latestState.current = {
+      items,
+      completedNames,
+      config,
+      widgetId: widget.id,
+      mode,
+    };
+  }, [items, completedNames, config, widget.id, mode]);
+
+  const toggleItem = useCallback(
+    (idOrName: string) => {
+      const { items, completedNames, config, widgetId, mode } =
+        latestState.current;
+      if (mode === 'manual') {
+        const newItems = items.map((item) =>
+          item.id === idOrName ? { ...item, completed: !item.completed } : item
+        );
+        updateWidget(widgetId, {
+          config: { ...config, items: newItems } as ChecklistConfig,
+        });
+      } else {
+        const isCompleted = completedNames.includes(idOrName);
+        const nextCompleted = isCompleted
+          ? completedNames.filter((n) => n !== idOrName)
+          : [...completedNames, idOrName];
+        updateWidget(widgetId, {
+          config: {
+            ...config,
+            completedNames: nextCompleted,
+          } as ChecklistConfig,
+        });
+      }
+    },
+    [updateWidget]
+  );
 
   const resetToday = () => {
     if (mode === 'manual') {
@@ -145,40 +222,14 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             const id = isManual ? item.id : item;
 
             return (
-              <li
+              <ChecklistRow
                 key={id}
-                onClick={() => toggleItem(id)}
-                className="group/item flex items-start gap-3 cursor-pointer select-none"
-              >
-                <div
-                  className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
-                  style={{ height: `${dynamicFontSize * 1.2}px` }}
-                >
-                  {isCompleted ? (
-                    <CheckSquare
-                      className="text-green-500 fill-green-50"
-                      style={{
-                        width: `${dynamicFontSize}px`,
-                        height: `${dynamicFontSize}px`,
-                      }}
-                    />
-                  ) : (
-                    <Square
-                      className="text-slate-300"
-                      style={{
-                        width: `${dynamicFontSize}px`,
-                        height: `${dynamicFontSize}px`,
-                      }}
-                    />
-                  )}
-                </div>
-                <span
-                  className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
-                  style={{ fontSize: `${dynamicFontSize}px` }}
-                >
-                  {label}
-                </span>
-              </li>
+                id={id}
+                label={label}
+                isCompleted={isCompleted}
+                dynamicFontSize={dynamicFontSize}
+                onToggle={toggleItem}
+              />
             );
           })}
         </ul>
