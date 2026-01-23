@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useRef, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import {
@@ -9,6 +9,51 @@ import {
 } from '../../types';
 import { Circle, CheckCircle2, Type, Clock, AlertTriangle } from 'lucide-react';
 import { Toggle } from '../common/Toggle';
+
+interface ScheduleRowProps {
+  item: ScheduleItem;
+  index: number;
+  onToggle: (idx: number) => void;
+  timeSize: number;
+  taskSize: number;
+}
+
+const ScheduleRow = React.memo<ScheduleRowProps>(
+  ({ item, index, onToggle, timeSize, taskSize }) => {
+    return (
+      <button
+        onClick={() => onToggle(index)}
+        className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+          item.done
+            ? 'bg-white/30 border-white/20 opacity-60'
+            : 'bg-white/50 border-white/30'
+        }`}
+      >
+        {item.done ? (
+          <CheckCircle2 className="w-5 h-5 text-green-500" />
+        ) : (
+          <Circle className="w-5 h-5 text-indigo-300" />
+        )}
+        <div className="flex flex-col items-start">
+          <span
+            className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+            style={{ fontSize: `${timeSize}px` }}
+          >
+            {item.time}
+          </span>
+          <span
+            className={`font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+            style={{ fontSize: `${taskSize}px` }}
+          >
+            {item.task}
+          </span>
+        </div>
+      </button>
+    );
+  }
+);
+
+ScheduleRow.displayName = 'ScheduleRow';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -25,14 +70,32 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     [activeDashboard?.widgets]
   );
 
-  // Use refs to access latest state inside interval without dependency cycle
-  const itemsRef = useRef(items);
+  // Stable callback pattern: Store full config in ref to ensure
+  // we preserve all properties during updates while keeping handler stable.
   const configRef = useRef(config);
+  const itemsRef = useRef(items);
 
+  // Update refs when config or items change
   useEffect(() => {
-    itemsRef.current = items;
     configRef.current = config;
-  }, [items, config]);
+    itemsRef.current = items;
+  }, [config, items]);
+
+  const toggle = useCallback(
+    (idx: number) => {
+      const currentConfig = configRef.current;
+      const currentItems = itemsRef.current;
+      const newItems = [...currentItems];
+      if (newItems[idx]) {
+        newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+
+        updateWidget(widget.id, {
+          config: { ...currentConfig, items: newItems } as ScheduleConfig,
+        });
+      }
+    },
+    [updateWidget, widget.id]
+  );
 
   // Logic for Auto-Progress
   useEffect(() => {
@@ -59,54 +122,11 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       const newItems = currentItems.map((item, index) => {
         let isDone = false;
 
-        // Special case: Last item logic
-        // If it's the last item, we can't look at "next item" to see if it started.
-        // We could define logic: last item is done if time > last item time + some duration?
-        // Or simply: last item stays active until user manually checks it.
-        // Copilot review suggests we should mark last item done if "time passes".
-        // A common interpretation: if current time > item time, it has "started".
-        // But the previous logic was: "item is done if NEXT item has started".
-        // Let's refine:
-        // Item[i] is DONE if Now >= Item[i+1].time.
-        // What about the LAST item?
-        // If we want the last item to auto-complete, we need a criteria.
-        // E.g. "End of day"? Or maybe just simple: "Item is done if Now >= Item.time"?
-        // No, that would mark it done as soon as it starts. That's wrong. "Math (08:00)" shouldn't be done AT 08:00.
-        // It should be done when the NEXT thing starts.
-        // For the LAST item, it effectively never "auto-completes" unless we have an end time.
-        // However, the test request says "verify the last schedule item can be automatically marked as done".
-        // This implies we need logic for it.
-        // Let's assume for now that if we are significantly past the start time (e.g. 1 hour?) or if we just want to support manual completion for the last one.
-        // Wait, the review said: "Consider adding a test that sets the time to after 10:00 and verifies that all items including "Recess" are marked as done."
-        // If Recess is at 10:00, and it's 10:30, should Recess be done?
-        // Only if it's considered "passed".
-        // If the requirement is "mark items done when time passes", usually means "when the slot is over".
-        // Without an end time, we can't know when it's over.
-        // BUT, if the user explicitly requested "depending on what time the clock says, the appropriate schedule items are crossed off",
-        // maybe they mean "Current active item is NOT crossed off, previous ones ARE".
-        // So if it is 10:30, and Recess was at 10:00, Recess is the *current* item (assuming no later items). So it should contain to be ACTIVE (not done).
-        // If I mark it done, then nothing is active.
-        // Let's look at the previous logic:
-        // `if (nowMinutes >= nextTime) { isDone = true; }`
-        // This means "Item i is done if Item i+1 has started".
-        // This leaves Item i as "Active" during the interval [Item i time, Item i+1 time).
-        // For the last item, it stays active forever (until midnight).
-        // If Copilot reviewer wants it done, maybe they assume a fixed duration?
-        // Or maybe I should check if I missed something.
-        // Actually, if I look at the test I wrote: `expect(task: 'Recess', done: true)` at 10:30.
-        // If Recess is the last item, what makes it done?
-        // Maybe an implicit 1 hour duration?
-        // Let's add a fallback duration of 60 minutes for the last item.
-        // Or, assume if `now > item.time + 60`, it's done.
-
         let nextTime = -1;
         if (index < currentItems.length - 1) {
           nextTime = parseTime(currentItems[index + 1].time);
         } else {
           // Last item: assume 60 mins duration for auto-complete?
-          // Or just leave it active?
-          // If I want to satisfy the test "all items marked as done", I need a condition.
-          // Let's treat the last item as having a 60 min slot.
           const myTime = parseTime(item.time);
           if (myTime !== -1) nextTime = myTime + 60;
         }
@@ -137,15 +157,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
     return () => clearInterval(interval);
   }, [autoProgress, hasClock, widget.id, updateWidget]);
-  // removed items and config from deps, using refs
-
-  const toggle = (idx: number) => {
-    const newItems = [...items];
-    newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
-    updateWidget(widget.id, {
-      config: { ...config, items: newItems } as ScheduleConfig,
-    });
-  };
 
   const taskSize = useScaledFont(widget.w, widget.h, 0.35, 14, 24);
   const timeSize = useScaledFont(widget.w, widget.h, 0.2, 10, 14);
@@ -166,37 +177,14 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     >
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
-          <button
+          <ScheduleRow
             key={i}
-            onClick={() => {
-              toggle(i);
-            }}
-            className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${
-              item.done
-                ? 'bg-white/30 border-white/20 opacity-60'
-                : 'bg-white/50 border-white/30'
-            }`}
-          >
-            {item.done ? (
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-            ) : (
-              <Circle className="w-5 h-5 text-indigo-300" />
-            )}
-            <div className="flex flex-col items-start">
-              <span
-                className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-                style={{ fontSize: `${timeSize}px` }}
-              >
-                {item.time}
-              </span>
-              <span
-                className={`font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-                style={{ fontSize: `${taskSize}px` }}
-              >
-                {item.task}
-              </span>
-            </div>
-          </button>
+            index={i}
+            item={item}
+            onToggle={toggle}
+            timeSize={timeSize}
+            taskSize={taskSize}
+          />
         ))}
       </div>
     </div>
@@ -225,7 +213,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-6">
       {/* Typography */}
       <div>
-        <label className="text-[10px] text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Typography
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -245,7 +233,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               }`}
             >
               <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
-              <span className="text-[8px] uppercase text-slate-600">
+              <span className="text-xxxs uppercase text-slate-600">
                 {f.label}
               </span>
             </button>
@@ -255,7 +243,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Automation */}
       <div>
-        <label className="text-[10px] text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Clock className="w-3 h-3" /> Automation
         </label>
 
