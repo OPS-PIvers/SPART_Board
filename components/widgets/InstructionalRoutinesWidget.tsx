@@ -228,11 +228,38 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Mathematical Scaling
   const dynamicFontSize = useMemo(() => {
-    // Adjusted divisor to 24 to provide better scaling for typical content density
-    // Reduced min size to 8px to ensure content fits in smaller windows
-    const baseSize = Math.min(widget.w / 24, widget.h / 24);
+    if (!selectedRoutineId) {
+      // Library view scaling
+      const baseSize = Math.min(widget.w / 24, widget.h / 24);
+      return Math.max(8, baseSize * scaleMultiplier);
+    }
+
+    // Routine view scaling: Estimate total vertical "ems" to fit without scrolling
+    // Padding (3em) + Header area (~4.5em)
+    let totalVerticalEms = 7.5;
+
+    // Bloom's specific buttons (~4em)
+    if (selectedRoutineId === 'blooms-analysis') {
+      totalVerticalEms += 4;
+    }
+
+    // Steps: each step is roughly 3.5em including its gap (1.5em)
+    // We use a slightly more conservative estimate to ensure it fits
+    const stepCount = customSteps.length || 1;
+    totalVerticalEms += stepCount * 4.2;
+
+    const heightFactor = widget.h / totalVerticalEms;
+    const widthFactor = widget.w / 22; // Estimate horizontal capacity
+
+    const baseSize = Math.min(widthFactor, heightFactor);
     return Math.max(8, baseSize * scaleMultiplier);
-  }, [widget.w, widget.h, scaleMultiplier]);
+  }, [
+    widget.w,
+    widget.h,
+    scaleMultiplier,
+    selectedRoutineId,
+    customSteps.length,
+  ]);
 
   const displayedRoutines = useMemo(() => {
     const filtered = ROUTINES.filter(
