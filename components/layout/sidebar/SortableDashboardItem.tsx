@@ -2,8 +2,8 @@ import React from 'react';
 import { GripVertical, Star, Pencil, Copy, Share2, Trash2 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Dashboard } from '../../types';
-import { Z_INDEX } from '../../config/zIndex';
+import { Dashboard } from '../../../types';
+import { Z_INDEX } from '../../../config/zIndex';
 
 interface SortableDashboardItemProps {
   db: Dashboard;
