@@ -1,12 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import {
-  render,
-  screen,
-  fireEvent,
-  act,
-  cleanup,
-} from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ScheduleWidget, ScheduleSettings } from './ScheduleWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
@@ -95,7 +89,7 @@ describe('ScheduleWidget', () => {
   });
 
   it('applies font family from config', () => {
-    const widget = createWidget({ fontFamily: 'font-mono' });
+    const widget = createWidget({ fontFamily: 'mono' });
     const { container } = render(<ScheduleWidget widget={widget} />);
 
     // The container should have the font class
@@ -113,22 +107,17 @@ describe('ScheduleWidget', () => {
       },
     });
 
-    const widget = createWidget({ autoProgress: true });
-    render(<ScheduleWidget widget={widget} />);
-
-    // Set time to 09:30
-    // Should make 08:00 (Math) done, because 09:00 (Reading) has started.
-    // 09:00 (Reading) should be active (not done).
-    // 10:00 (Recess) should be future (not done).
-
+    // Set time BEFORE render to 09:30
     const date = new Date();
     date.setHours(9, 30, 0, 0);
     vi.setSystemTime(date);
 
-    // Fast forward time to trigger interval
-    act(() => {
-      vi.advanceTimersByTime(11000); // 11s
-    });
+    const widget = createWidget({ autoProgress: true });
+    render(<ScheduleWidget widget={widget} />);
+
+    // Should make 08:00 (Math) done, because 09:00 (Reading) has started.
+    // 09:00 (Reading) should be active (not done).
+    // 10:00 (Recess) should be future (not done).
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
       config: expect.objectContaining({
@@ -151,18 +140,13 @@ describe('ScheduleWidget', () => {
       },
     });
 
-    const widget = createWidget({ autoProgress: true });
-    render(<ScheduleWidget widget={widget} />);
-
-    // Set time to 11:30 (Past Recess at 10:00 + 60 mins)
-    // All items should be done.
+    // Set time BEFORE render to 11:30 (Past Recess at 10:00 + 60 mins)
     const date = new Date();
     date.setHours(11, 30, 0, 0);
     vi.setSystemTime(date);
 
-    act(() => {
-      vi.advanceTimersByTime(11000);
-    });
+    const widget = createWidget({ autoProgress: true });
+    render(<ScheduleWidget widget={widget} />);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
       config: expect.objectContaining({
@@ -185,16 +169,13 @@ describe('ScheduleWidget', () => {
       },
     });
 
-    const widget = createWidget({ autoProgress: true });
-    render(<ScheduleWidget widget={widget} />);
-
+    // Set time BEFORE render
     const date = new Date();
     date.setHours(9, 30, 0, 0);
     vi.setSystemTime(date);
 
-    act(() => {
-      vi.advanceTimersByTime(11000);
-    });
+    const widget = createWidget({ autoProgress: true });
+    render(<ScheduleWidget widget={widget} />);
 
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
@@ -220,7 +201,7 @@ describe('ScheduleSettings', () => {
   it('renders settings controls', () => {
     render(<ScheduleSettings widget={createWidget()} />);
 
-    expect(screen.getByText(/typography/i)).toBeInTheDocument();
-    expect(screen.getByText(/connect to clock/i)).toBeInTheDocument();
+    expect(screen.getByText(/display options/i)).toBeInTheDocument();
+    expect(screen.getByText(/auto-progress/i)).toBeInTheDocument();
   });
 });
