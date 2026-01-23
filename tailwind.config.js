@@ -90,6 +90,10 @@ export default {
         marker: ['"Permanent Marker"', 'cursive'],
         cursive: ['"Dancing Script"', 'cursive'],
       },
+      fontSize: {
+        xxs: ['10px', '14px'],
+        xxxs: ['8px', '10px'],
+      },
       colors: {
         brand: {
           blue: {

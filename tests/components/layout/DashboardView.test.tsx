@@ -20,7 +20,7 @@ vi.mock('../../../hooks/useLiveSession', () => ({
 }));
 
 // Mock child components
-vi.mock('../../../components/layout/Sidebar', () => ({
+vi.mock('../../../components/layout/sidebar/Sidebar', () => ({
   Sidebar: () => <div data-testid="sidebar">Sidebar</div>,
 }));
 vi.mock('../../../components/layout/Dock', () => ({

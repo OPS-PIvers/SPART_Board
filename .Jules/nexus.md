@@ -17,3 +17,9 @@
 **Source:** Sound Widget (Noise Meter)
 **Destination:** Traffic Light Widget
 **Value:** Automatically switches Traffic Light to Red when noise level exceeds a threshold, acting as an unbiased classroom monitor.
+
+## 2024-05-23 - [Schedule Auto-Progress]
+
+**Source:** Clock Widget
+**Destination:** Schedule Widget
+**Value:** Automatically marks schedule items as done based on the current time if a Clock widget is present.

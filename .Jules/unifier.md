@@ -29,3 +29,8 @@
 
 **Conflict:** The `isAuthBypass` flag in `config/firebase.ts` was hardcoded to `false`, contradicting the documentation that it should be controlled by `VITE_AUTH_BYPASS`.
 **Fix:** Updated `config/firebase.ts` to respect the environment variable.
+
+## 2026-02-14 - [Micro Typography]
+
+**Drift:** Widespread use of hardcoded pixel values for small text (e.g., `text-[10px]`, `text-[9px]`, `text-[8px]`) creating visual inconsistency and maintenance debt.
+**Fix:** Standardized on new `xxs` (10px) and `xxxs` (8px) font size tokens in `tailwind.config.js` and refactored over 30 components to use them.

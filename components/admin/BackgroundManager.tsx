@@ -383,7 +383,7 @@ export const BackgroundManager: React.FC = () => {
                     </button>
                   </div>
                   <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[9px] font-black uppercase text-white">
+                    <span className="text-xxs font-black uppercase text-white">
                       Active
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -458,7 +458,7 @@ export const BackgroundManager: React.FC = () => {
 
                   {/* Access Level */}
                   <div className="mb-2 shrink-0">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">
+                    <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-1 block">
                       Access Level
                     </label>
                     <div className="flex gap-1">
@@ -471,7 +471,7 @@ export const BackgroundManager: React.FC = () => {
                                 accessLevel: level,
                               })
                             }
-                            className={`flex-1 py-1 rounded-[4px] text-[8px] font-black uppercase flex items-center justify-center gap-1 transition-all ${
+                            className={`flex-1 py-1 rounded-[4px] text-xxxs font-black uppercase flex items-center justify-center gap-1 transition-all ${
                               preset.accessLevel === level
                                 ? getAccessLevelColor(level)
                                 : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-100'
@@ -490,14 +490,14 @@ export const BackgroundManager: React.FC = () => {
                   <div className="flex-1 min-h-0 flex flex-col">
                     {preset.accessLevel === 'beta' && (
                       <div className="flex flex-col h-full">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block shrink-0">
+                        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-1 block shrink-0">
                           Beta Users
                         </label>
                         <div className="flex-1 overflow-y-auto space-y-0.5 mb-1.5">
                           {preset.betaUsers.map((email) => (
                             <div
                               key={email}
-                              className="flex items-center justify-between p-0.5 px-1.5 bg-blue-50/50 rounded text-[9px] border border-blue-100/50"
+                              className="flex items-center justify-between p-0.5 px-1.5 bg-blue-50/50 rounded text-xxs border border-blue-100/50"
                             >
                               <span className="text-slate-700 truncate mr-2">
                                 {email}
@@ -530,7 +530,7 @@ export const BackgroundManager: React.FC = () => {
                             name="betaEmail"
                             type="email"
                             placeholder="Add email..."
-                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-[9px] focus:outline-none focus:ring-1 focus:ring-brand-blue-primary"
+                            className="flex-1 px-2 py-1 border border-slate-200 rounded text-xxs focus:outline-none focus:ring-1 focus:ring-brand-blue-primary"
                           />
                           <button
                             type="submit"

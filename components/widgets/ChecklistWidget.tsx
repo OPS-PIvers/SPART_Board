@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -17,6 +17,55 @@ import {
   RefreshCw,
   BookOpen,
 } from 'lucide-react';
+
+interface ChecklistRowProps {
+  id: string;
+  label: string;
+  isCompleted: boolean;
+  dynamicFontSize: number;
+  onToggle: (id: string) => void;
+}
+
+const ChecklistRow = React.memo<ChecklistRowProps>(
+  ({ id, label, isCompleted, dynamicFontSize, onToggle }) => {
+    return (
+      <li
+        onClick={() => onToggle(id)}
+        className="group/item flex items-start gap-3 cursor-pointer select-none"
+      >
+        <div
+          className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
+          style={{ height: `${dynamicFontSize * 1.2}px` }}
+        >
+          {isCompleted ? (
+            <CheckSquare
+              className="text-green-500 fill-green-50"
+              style={{
+                width: `${dynamicFontSize}px`,
+                height: `${dynamicFontSize}px`,
+              }}
+            />
+          ) : (
+            <Square
+              className="text-slate-300"
+              style={{
+                width: `${dynamicFontSize}px`,
+                height: `${dynamicFontSize}px`,
+              }}
+            />
+          )}
+        </div>
+        <span
+          className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
+          style={{ fontSize: `${dynamicFontSize}px` }}
+        >
+          {label}
+        </span>
+      </li>
+    );
+  }
+);
+ChecklistRow.displayName = 'ChecklistRow';
 
 export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -67,24 +116,52 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     return combined;
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
 
-  const toggleItem = (idOrName: string) => {
-    if (mode === 'manual') {
-      const newItems = items.map((item) =>
-        item.id === idOrName ? { ...item, completed: !item.completed } : item
-      );
-      updateWidget(widget.id, {
-        config: { ...config, items: newItems } as ChecklistConfig,
-      });
-    } else {
-      const isCompleted = completedNames.includes(idOrName);
-      const nextCompleted = isCompleted
-        ? completedNames.filter((n) => n !== idOrName)
-        : [...completedNames, idOrName];
-      updateWidget(widget.id, {
-        config: { ...config, completedNames: nextCompleted } as ChecklistConfig,
-      });
-    }
-  };
+  // Use refs to keep callback stable so we don't break memoization of children
+  // This allows toggleItem to be stable across renders even when state changes
+  const latestState = useRef({
+    items,
+    completedNames,
+    config,
+    widgetId: widget.id,
+    mode,
+  });
+
+  useEffect(() => {
+    latestState.current = {
+      items,
+      completedNames,
+      config,
+      widgetId: widget.id,
+      mode,
+    };
+  }, [items, completedNames, config, widget.id, mode]);
+
+  const toggleItem = useCallback(
+    (idOrName: string) => {
+      const { items, completedNames, config, widgetId, mode } =
+        latestState.current;
+      if (mode === 'manual') {
+        const newItems = items.map((item) =>
+          item.id === idOrName ? { ...item, completed: !item.completed } : item
+        );
+        updateWidget(widgetId, {
+          config: { ...config, items: newItems } as ChecklistConfig,
+        });
+      } else {
+        const isCompleted = completedNames.includes(idOrName);
+        const nextCompleted = isCompleted
+          ? completedNames.filter((n) => n !== idOrName)
+          : [...completedNames, idOrName];
+        updateWidget(widgetId, {
+          config: {
+            ...config,
+            completedNames: nextCompleted,
+          } as ChecklistConfig,
+        });
+      }
+    },
+    [updateWidget]
+  );
 
   const resetToday = () => {
     if (mode === 'manual') {
@@ -145,40 +222,14 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             const id = isManual ? item.id : item;
 
             return (
-              <li
+              <ChecklistRow
                 key={id}
-                onClick={() => toggleItem(id)}
-                className="group/item flex items-start gap-3 cursor-pointer select-none"
-              >
-                <div
-                  className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
-                  style={{ height: `${dynamicFontSize * 1.2}px` }}
-                >
-                  {isCompleted ? (
-                    <CheckSquare
-                      className="text-green-500 fill-green-50"
-                      style={{
-                        width: `${dynamicFontSize}px`,
-                        height: `${dynamicFontSize}px`,
-                      }}
-                    />
-                  ) : (
-                    <Square
-                      className="text-slate-300"
-                      style={{
-                        width: `${dynamicFontSize}px`,
-                        height: `${dynamicFontSize}px`,
-                      }}
-                    />
-                  )}
-                </div>
-                <span
-                  className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
-                  style={{ fontSize: `${dynamicFontSize}px` }}
-                >
-                  {label}
-                </span>
-              </li>
+                id={id}
+                label={label}
+                isCompleted={isCompleted}
+                dynamicFontSize={dynamicFontSize}
+                onToggle={toggleItem}
+              />
             );
           })}
         </ul>
@@ -188,7 +239,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={resetToday}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-[10px] font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-xxs font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
         >
           <RefreshCw className="w-3 h-3" /> Reset Checks
         </button>
@@ -281,7 +332,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
         <button
           onClick={importFromRoutine}
-          className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
+          className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
         >
           <RefreshCw className="w-3 h-3" /> Sync
         </button>
@@ -289,7 +340,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Mode Toggle */}
       <div>
-        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
           List Source
         </label>
         <div className="flex bg-slate-100 p-1 rounded-xl">
@@ -297,7 +348,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             onClick={() =>
               updateWidget(widget.id, { config: { ...config, mode: 'manual' } })
             }
-            className={`flex-1 py-2 text-[10px]  rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            className={`flex-1 py-2 text-xxs  rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
           >
             CUSTOM TASKS
           </button>
@@ -305,7 +356,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             onClick={() =>
               updateWidget(widget.id, { config: { ...config, mode: 'roster' } })
             }
-            className={`flex-1 py-2 text-[10px]  rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
+            className={`flex-1 py-2 text-xxs  rounded-lg transition-all ${mode === 'roster' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}
           >
             CLASS ROSTER
           </button>
@@ -314,7 +365,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'manual' && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-          <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
             <ListPlus className="w-3 h-3" /> Task List (One per line)
           </label>
           <textarea
@@ -340,7 +391,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           {rosterMode === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
+                <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block">
                   First Names
                 </label>
                 <textarea
@@ -355,7 +406,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
                 />
               </div>
               <div>
-                <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-2 block">
+                <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block">
                   Last Names
                 </label>
                 <textarea
@@ -375,7 +426,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       <div>
-        <label className="text-[10px]  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Text Scale
         </label>
         <div className="flex items-center gap-4 px-2">

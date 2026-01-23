@@ -149,7 +149,7 @@ const IconPicker: React.FC<{
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 z-[100] bg-white border border-slate-200 shadow-2xl rounded-2xl p-3 w-64 animate-in zoom-in-95 duration-200">
           <div className="flex justify-between items-center mb-2 px-1">
-            <span className="text-[10px] font-black uppercase text-slate-400">
+            <span className="text-xxs font-black uppercase text-slate-400">
               Select Icon
             </span>
             <button
@@ -228,9 +228,38 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Mathematical Scaling
   const dynamicFontSize = useMemo(() => {
-    const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    return Math.max(12, baseSize * scaleMultiplier);
-  }, [widget.w, widget.h, scaleMultiplier]);
+    if (!selectedRoutineId) {
+      // Library view scaling
+      const baseSize = Math.min(widget.w / 24, widget.h / 24);
+      return Math.max(8, baseSize * scaleMultiplier);
+    }
+
+    // Routine view scaling: Estimate total vertical "ems" to fit without scrolling
+    // Padding (3em) + Header area (~4.5em)
+    let totalVerticalEms = 7.5;
+
+    // Bloom's specific buttons (~4em)
+    if (selectedRoutineId === 'blooms-analysis') {
+      totalVerticalEms += 4;
+    }
+
+    // Steps: each step is roughly 3.5em including its gap (1.5em)
+    // We use a slightly more conservative estimate to ensure it fits
+    const stepCount = customSteps.length || 1;
+    totalVerticalEms += stepCount * 4.2;
+
+    const heightFactor = widget.h / totalVerticalEms;
+    const widthFactor = widget.w / 22; // Estimate horizontal capacity
+
+    const baseSize = Math.min(widthFactor, heightFactor);
+    return Math.max(8, baseSize * scaleMultiplier);
+  }, [
+    widget.w,
+    widget.h,
+    scaleMultiplier,
+    selectedRoutineId,
+    customSteps.length,
+  ]);
 
   const displayedRoutines = useMemo(() => {
     const filtered = ROUTINES.filter(
@@ -306,7 +335,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           <button
             onClick={handleSave}
             disabled={!routine.name}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xxs font-black uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50"
           >
             <Save size={14} />
             Save to Library
@@ -316,7 +345,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[8px] font-black uppercase text-slate-400 ml-1">
+              <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
                 Routine Name
               </label>
               <input
@@ -333,7 +362,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               />
             </div>
             <div className="space-y-1 text-left">
-              <label className="text-[8px] font-black uppercase text-slate-400 ml-1">
+              <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
                 Main Icon
               </label>
               <IconPicker
@@ -349,7 +378,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
 
           <div className="space-y-3 pt-4 border-t">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
+            <label className="text-xxs font-black uppercase text-slate-400 tracking-widest block mb-2">
               Default Steps
             </label>
             {routine.steps.map((step, i) => (
@@ -454,7 +483,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   steps: nextSteps,
                 } as InstructionalRoutine);
               }}
-              className="w-full py-2 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-blue-400 hover:text-blue-600 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
+              className="w-full py-2 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-blue-400 hover:text-blue-600 transition-all flex items-center justify-center gap-2 text-xxs font-black uppercase"
             >
               <PlusCircle size={14} /> Add Template Step
             </button>
@@ -468,14 +497,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     return (
       <div className="flex flex-col h-full bg-brand-gray-lightest p-4 overflow-hidden">
         <div className="flex justify-between items-center mb-3 shrink-0">
-          <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          <div className="text-xxs font-black uppercase text-slate-400 tracking-widest">
             Library ({gradeFilter.toUpperCase()})
           </div>
           <div className="flex items-center gap-3">
             {isAdmin && (
               <button
                 onClick={() => setIsManagingLibrary(true)}
-                className="flex items-center gap-1 text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
+                className="flex items-center gap-1 text-xxs font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
                 title="Manage global routine library"
               >
                 <Settings size={12} />
@@ -484,7 +513,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             )}
             <button
               onClick={clearAllStickers}
-              className="flex items-center gap-1 text-[10px] font-black uppercase text-red-500 hover:text-red-600 transition-colors"
+              className="flex items-center gap-1 text-xxs font-black uppercase text-red-500 hover:text-red-600 transition-colors"
               title="Remove all stickers from board"
             >
               <Trash2 size={12} />
@@ -601,61 +630,84 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden relative">
-      <div className="flex items-center gap-3 mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
+    <div
+      className="flex flex-col h-full bg-white animate-in fade-in duration-200 overflow-hidden relative"
+      style={{
+        fontSize: `${dynamicFontSize}px`,
+        padding: '1.5em',
+      }}
+    >
+      <div
+        className="flex items-center shrink-0 border-b border-brand-blue-lighter"
+        style={{ gap: '1em', marginBottom: '1.5em', paddingBottom: '1em' }}
+      >
         <button
           onClick={() =>
             updateWidget(widget.id, {
               config: { ...config, selectedRoutineId: null },
             })
           }
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          className="rounded-full transition-colors hover:bg-slate-100"
+          style={{ padding: '0.5em' }}
           title="Back to Library"
         >
-          <ArrowLeft size={20} className="text-slate-600" />
+          <ArrowLeft size={dynamicFontSize * 1.5} className="text-slate-600" />
         </button>
         <div className="flex-1">
           <h2
-            className=" text-brand-blue-primary leading-tight"
-            style={{ fontSize: `${dynamicFontSize * 1.4}px` }}
+            className="text-brand-blue-primary leading-tight font-bold"
+            style={{ fontSize: '1.4em' }}
           >
             {selectedRoutine.name}
           </h2>
-          <span className="text-[10px]  text-brand-blue-light uppercase tracking-widest">
+          <span
+            className="text-brand-blue-light uppercase tracking-widest block mt-[0.2em]"
+            style={{ fontSize: '0.6em' }}
+          >
             {selectedRoutine.grades} Protocol
           </span>
         </div>
         <button
           onClick={clearAllStickers}
-          className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
+          className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
+          style={{ padding: '0.6em' }}
           title="Clear all stickers from board"
         >
-          <Trash2 size={18} />
+          <Trash2 size={dynamicFontSize * 1.25} />
         </button>
-        <div className="p-4 bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm">
-          <RoutineIcon className="w-8 h-8" />
+        <div
+          className="bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm flex items-center justify-center"
+          style={{ padding: '1em' }}
+        >
+          <RoutineIcon style={{ width: '2em', height: '2em' }} />
         </div>
       </div>
 
       {selectedRoutine.id === 'blooms-analysis' && (
-        <div className="flex gap-3 mb-4 shrink-0 px-1">
+        <div
+          className="flex shrink-0 px-1"
+          style={{ gap: '1em', marginBottom: '1em' }}
+        >
           <button
             onClick={() => launchBloomsResource('keyWords')}
-            className="flex-1 py-3 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center gap-2"
+            className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
+            style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
           >
-            <Icons.Key size={14} /> Key Words
+            <Icons.Key size={dynamicFontSize * 1.2} /> Key Words
           </button>
           <button
             onClick={() => launchBloomsResource('questionStarters')}
-            className="flex-1 py-3 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center gap-2"
+            className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
+            style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
           >
-            <Icons.MessageSquare size={14} /> Sentence Starters
+            <Icons.MessageSquare size={dynamicFontSize * 1.2} /> Sentence
+            Starters
           </button>
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <ul className="space-y-8">
+        <ul className="flex flex-col" style={{ gap: '1.5em' }}>
           {customSteps.map((step, i) => {
             const StepIcon = step.icon
               ? (Icons as unknown as Record<string, React.ElementType>)[
@@ -665,19 +717,27 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             return (
               <li
                 key={step.id}
-                className="flex gap-4 items-start animate-in slide-in-from-left duration-300 group"
+                className="flex items-start animate-in slide-in-from-left duration-300 group"
+                style={{ gap: '1em' }}
               >
                 <span
-                  className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center  shrink-0 shadow-lg"
-                  style={{ fontSize: `${dynamicFontSize * 0.8}px` }}
+                  className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                  style={{
+                    width: '2.5em',
+                    height: '2.5em',
+                    fontSize: '0.8em',
+                  }}
                 >
                   {i + 1}
                 </span>
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 flex flex-col" style={{ gap: '0.5em' }}>
+                  <div
+                    className="flex items-start justify-between"
+                    style={{ gap: '1em' }}
+                  >
                     <p
                       className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                      style={{ fontSize: `${dynamicFontSize}px` }}
+                      style={{ fontSize: '1em' }}
                     >
                       {step.text}
                     </p>
@@ -693,22 +753,39 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             step.label
                           )
                         }
-                        className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
+                        className={`rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
+                        style={{ padding: '0.5em', gap: '0.25em' }}
                         title="Drag to whiteboard"
                       >
                         <div
-                          className={`p-1.5 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                          className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                          style={{ padding: '0.4em' }}
                         >
-                          <StepIcon size={18} strokeWidth={2.5} />
+                          <StepIcon
+                            size={dynamicFontSize * 1.5}
+                            strokeWidth={2.5}
+                          />
                         </div>
                         {step.label && (
-                          <span className="text-[8px] font-black uppercase text-slate-500 text-center leading-none">
+                          <span
+                            className="font-black uppercase text-slate-500 text-center leading-none"
+                            style={{ fontSize: '0.5em' }}
+                          >
                             {step.label}
                           </span>
                         )}
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
-                          <Grab size={8} className="text-slate-300" />
-                          <span className="text-[6px] font-black uppercase text-slate-400">
+                        <div
+                          className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
+                          style={{ gap: '0.1em' }}
+                        >
+                          <Grab
+                            size={dynamicFontSize * 0.5}
+                            className="text-slate-300"
+                          />
+                          <span
+                            className="font-black uppercase text-slate-400"
+                            style={{ fontSize: '0.4em' }}
+                          >
                             Drag
                           </span>
                         </div>
@@ -722,9 +799,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           config: step.attachedWidget?.config,
                         })
                       }
-                      className="self-start px-3 py-1.5 bg-brand-blue-light/10 text-brand-blue-primary rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:bg-brand-blue-light/20 transition-colors"
+                      className="self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors"
+                      style={{
+                        padding: '0.5em 1em',
+                        gap: '0.5em',
+                        fontSize: '0.8em',
+                      }}
                     >
-                      <Rocket size={12} />
+                      <Rocket size={dynamicFontSize} />
                       Launch {step.attachedWidget.label}
                     </button>
                   )}
@@ -765,13 +847,13 @@ export const InstructionalRoutinesSettings: React.FC<{
             config: { ...config, selectedRoutineId: null },
           })
         }
-        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-[10px]  uppercase tracking-widest hover:bg-brand-blue-light/20 transition-colors"
+        className="w-full py-2.5 bg-brand-blue-lighter text-brand-blue-primary rounded-xl text-xxs  uppercase tracking-widest hover:bg-brand-blue-light/20 transition-colors"
       >
         Switch Routine Template
       </button>
 
       <div className="space-y-3">
-        <label className="text-[10px]  uppercase text-slate-400 tracking-[0.2em] block mb-2">
+        <label className="text-xxs  uppercase text-slate-400 tracking-[0.2em] block mb-2">
           Step Editor
         </label>
         {customSteps.map((step, i) => (
@@ -808,7 +890,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                       });
                     }}
                   />
-                  <span className="text-[8px] font-bold text-slate-400 uppercase">
+                  <span className="text-xxxs font-bold text-slate-400 uppercase">
                     Step {i + 1}
                   </span>
                 </div>
@@ -816,7 +898,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                 {isAdmin && (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
                     <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                      <span className="text-[7px] font-black uppercase text-slate-400">
+                      <span className="text-xxxs font-black uppercase text-slate-400">
                         Label:
                       </span>
                       <input
@@ -850,7 +932,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                 className="w-full text-[11px]  bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
               />
               <div className="flex items-center gap-2">
-                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                <span className="text-xxxs font-bold text-slate-400 uppercase">
                   Attached Tool:
                 </span>
                 <select
@@ -891,7 +973,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                       config: { ...config, customSteps: next },
                     });
                   }}
-                  className="text-[10px] bg-slate-50 border border-slate-200 rounded p-1"
+                  className="text-xxs bg-slate-50 border border-slate-200 rounded p-1"
                 >
                   {QUICK_TOOLS.map((t) => (
                     <option key={t.label} value={t.label}>
@@ -928,14 +1010,14 @@ export const InstructionalRoutinesSettings: React.FC<{
               },
             })
           }
-          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-[10px]  uppercase"
+          className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-brand-blue-primary hover:text-brand-blue-primary transition-all flex items-center justify-center gap-2 text-xxs  uppercase"
         >
           <Plus className="w-4 h-4" /> Add Next Step
         </button>
       </div>
 
       <div className="bg-slate-50 p-4 rounded-2xl">
-        <label className="text-[10px]  uppercase text-slate-400 tracking-widest mb-3 block">
+        <label className="text-xxs  uppercase text-slate-400 tracking-widest mb-3 block">
           Text Zoom
         </label>
         <input

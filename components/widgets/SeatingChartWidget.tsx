@@ -517,7 +517,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             {mode === 'setup' && (
               <div className="flex flex-col h-full">
                 <div className="p-3 border-b border-slate-100">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block mb-2">
                     Bulk Add Quantity
                   </label>
                   <input
@@ -540,7 +540,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       className="flex flex-col items-center justify-center gap-1 p-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors aspect-square"
                     >
                       <t.icon className="w-6 h-6 text-slate-600" />
-                      <span className="text-[10px] font-bold text-slate-500">
+                      <span className="text-xxs font-bold text-slate-500">
                         {t.label}
                       </span>
                     </button>
@@ -550,7 +550,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="mt-auto p-3 border-t border-slate-100">
                   <button
                     onClick={clearAllFurniture}
-                    className="w-full flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition-colors text-[10px] font-black uppercase tracking-wider"
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     Clear All
@@ -561,14 +561,14 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
             {mode === 'assign' && (
               <div className="flex flex-col h-full">
-                <div className="p-2 border-b border-slate-100 bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">
+                <div className="p-2 border-b border-slate-100 bg-slate-50 text-xxs font-black uppercase text-slate-400 tracking-widest text-center">
                   Unassigned Students
                 </div>
 
                 <div className="p-2 border-b border-slate-100">
                   <button
                     onClick={addAllRandomly}
-                    className="w-full flex items-center justify-center gap-2 p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 rounded-lg transition-colors text-[10px] font-black uppercase tracking-wider"
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     Add All Random
@@ -734,7 +734,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       {assigned.map((name) => (
                         <div
                           key={name}
-                          className={`bg-white/90 px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-[10px]'}`}
+                          className={`bg-white/90 px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-xxs'}`}
                         >
                           <span className="truncate">{name}</span>
                           {mode === 'assign' && (

@@ -190,7 +190,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 config: { ...config, visualType: 'digital' },
               })
             }
-            className={`relative z-10 flex-1 py-1 text-[10px]  uppercase transition-colors ${!isVisual ? 'text-white' : 'text-slate-400'}`}
+            className={`relative z-10 flex-1 py-1 text-xxs  uppercase transition-colors ${!isVisual ? 'text-white' : 'text-slate-400'}`}
           >
             Digital
           </button>
@@ -200,7 +200,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 config: { ...config, visualType: 'visual' },
               })
             }
-            className={`relative z-10 flex-1 py-1 text-[10px]  uppercase transition-colors ${isVisual ? 'text-white' : 'text-slate-400'}`}
+            className={`relative z-10 flex-1 py-1 text-xxs  uppercase transition-colors ${isVisual ? 'text-white' : 'text-slate-400'}`}
           >
             Visual
           </button>
@@ -234,7 +234,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             });
             setRunningDisplayTime(600);
           }}
-          className={`pb-2 text-[10px]  uppercase tracking-widest transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
+          className={`pb-2 text-xxs  uppercase tracking-widest transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
         >
           Timer
         </button>
@@ -251,7 +251,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             });
             setRunningDisplayTime(0);
           }}
-          className={`pb-2 text-[10px]  uppercase tracking-widest transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
+          className={`pb-2 text-xxs  uppercase tracking-widest transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
         >
           Stopwatch
         </button>
@@ -314,7 +314,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
               <button
                 key={s}
                 onClick={() => setTime(s)}
-                className="px-3 py-1 text-[10px]  bg-slate-400/10 rounded-lg hover:bg-slate-400/20 transition-colors"
+                className="px-3 py-1 text-xxs  bg-slate-400/10 rounded-lg hover:bg-slate-400/20 transition-colors"
               >
                 {s >= 60 ? `${s / 60}m` : `${s}s`}
               </button>
@@ -358,7 +358,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             className="flex items-center gap-2 text-slate-400 hover:text-blue-500 transition-colors"
           >
             <Bell size={14} />
-            <span className="text-[9px]  uppercase tracking-widest">
+            <span className="text-xxs  uppercase tracking-widest">
               {config.selectedSound}
             </span>
           </button>
@@ -373,7 +373,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                     });
                     setShowSoundPicker(false);
                   }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-[10px]  uppercase transition-colors ${config.selectedSound === s ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xxs  uppercase transition-colors ${config.selectedSound === s ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                 >
                   {s}
                 </button>
@@ -398,7 +398,7 @@ export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Timer Completion Action
         </label>
 
@@ -420,7 +420,7 @@ export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
                     config: { ...config, timerEndVoiceLevel: null },
                   })
                 }
-                className={`p-2 rounded-lg text-[10px] font-bold uppercase border-2 transition-colors ${
+                className={`p-2 rounded-lg text-xxs font-bold uppercase border-2 transition-colors ${
                   timerEndVoiceLevel === null ||
                   timerEndVoiceLevel === undefined
                     ? 'border-slate-400 bg-slate-100 text-slate-600'
@@ -437,7 +437,7 @@ export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
                       config: { ...config, timerEndVoiceLevel: level },
                     })
                   }
-                  className={`p-2 rounded-lg text-[10px] font-bold uppercase border-2 transition-colors ${
+                  className={`p-2 rounded-lg text-xxs font-bold uppercase border-2 transition-colors ${
                     timerEndVoiceLevel === level
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-600'
                       : 'border-slate-100 text-slate-400 hover:border-slate-200'

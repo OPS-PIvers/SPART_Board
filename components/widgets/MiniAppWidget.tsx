@@ -36,64 +36,20 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '@/context/useAuth';
+import {
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  writeBatch,
+} from 'firebase/firestore';
+import { db } from '@/config/firebase';
 
 // --- CONSTANTS ---
 const STORAGE_KEY = 'spartboard_miniapps_library';
-const DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
-<html>
-<style>
-  body { 
-    font-family: system-ui, -apple-system, sans-serif; 
-    padding: 24px; 
-    text-align: center; 
-    background: #f8fafc;
-    color: #1e293b;
-  }
-  .card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    display: inline-block;
-  }
-</style>
-<body>
-  <div class="card">
-    <h1>Hello Class! 👋</h1>
-    <p>This is your new mini-app.</p>
-    <button onclick="alert('It works!')" style="padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      Click Me
-    </button>
-  </div>
-</body>
-</html>`;
-
-const MAX_HTML_SIZE = 512 * 1024; // 512KB limit per app
-
-// --- STORAGE HELPERS ---
-
-const getLocalLibrary = (): MiniAppItem[] => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as MiniAppItem[]) : [];
-  } catch (e) {
-    console.error('Failed to load mini-apps', e);
-    return [];
-  }
-};
-
-const saveLocalLibrary = (
-  apps: MiniAppItem[],
-  onError?: (msg: string) => void
-) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
-  } catch (e) {
-    console.error('Failed to save mini-apps', e);
-    if (onError)
-      onError('Storage full! Please delete some apps or export your library.');
-  }
-};
 
 // --- SORTABLE ITEM COMPONENT ---
 interface SortableItemProps {
@@ -146,7 +102,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
       </div>
       <div className="flex-1 min-w-0">
         <h4 className=" text-slate-700 text-sm truncate">{app.title}</h4>
-        <div className="text-[10px] text-slate-400 font-mono">
+        <div className="text-xxs text-slate-400 font-mono">
           {(app.html.length / 1024).toFixed(1)} KB
         </div>
       </div>
@@ -183,11 +139,11 @@ const SortableItem: React.FC<SortableItemProps> = ({
 // --- MAIN WIDGET COMPONENT ---
 export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast } = useDashboard();
-  const { canAccessFeature } = useAuth();
+  const { canAccessFeature, user } = useAuth();
   const config = widget.config as MiniAppConfig;
   const { activeApp } = config;
 
-  const [library, setLibrary] = useState<MiniAppItem[]>(getLocalLibrary());
+  const [library, setLibrary] = useState<MiniAppItem[]>([]);
   const [view, setView] = useState<'list' | 'editor'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -209,10 +165,52 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     })
   );
 
-  // Load library on mount
+  // Firestore Sync & Migration
   useEffect(() => {
-    setLibrary(getLocalLibrary());
-  }, []);
+    if (!user) return;
+
+    const appsRef = collection(db, 'users', user.uid, 'miniapps');
+    const q = query(
+      appsRef,
+      orderBy('order', 'asc'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const apps = snapshot.docs.map(
+        (d) => ({ ...d.data(), id: d.id }) as MiniAppItem
+      );
+      setLibrary(apps);
+
+      // Migration check: if Firestore is empty but localStorage has data
+      if (apps.length === 0) {
+        const local = localStorage.getItem(STORAGE_KEY);
+        if (local) {
+          try {
+            const parsed = JSON.parse(local) as MiniAppItem[];
+            if (parsed.length > 0) {
+              console.warn(
+                '[MiniAppWidget] Migrating local apps to Firestore...'
+              );
+              const batch = writeBatch(db);
+              parsed.forEach((app, index) => {
+                const docRef = doc(appsRef, app.id);
+                batch.set(docRef, { ...app, order: index });
+              });
+              void batch.commit().then(() => {
+                localStorage.removeItem(STORAGE_KEY);
+                addToast('Migrated local apps to cloud', 'success');
+              });
+            }
+          } catch (e) {
+            console.error('[MiniAppWidget] Migration failed', e);
+          }
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, addToast]);
 
   // --- HANDLERS ---
 
@@ -231,7 +229,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const handleCreate = () => {
     setEditingId(null);
     setEditTitle('');
-    setEditCode(DEFAULT_HTML_TEMPLATE);
+    setEditCode('');
     setView('editor');
     setShowPromptInput(false);
     setPrompt('');
@@ -267,51 +265,73 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this app from your local library?')) {
-      const updated = library.filter((a) => a.id !== id);
-      setLibrary(updated);
-      saveLocalLibrary(updated, (msg) => addToast(msg, 'error'));
+  const handleDelete = async (id: string) => {
+    if (!user) return;
+    if (confirm('Delete this app from your library?')) {
+      try {
+        await deleteDoc(doc(db, 'users', user.uid, 'miniapps', id));
+        addToast('App deleted', 'info');
+      } catch (err) {
+        console.error(err);
+        addToast('Delete failed', 'error');
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!user) return;
     if (!editTitle.trim()) {
       addToast('Please enter a title', 'error');
       return;
     }
 
-    let updatedLibrary;
-    if (editingId) {
-      updatedLibrary = library.map((app) =>
-        app.id === editingId
-          ? { ...app, title: editTitle, html: editCode }
-          : app
-      );
-    } else {
-      const newApp: MiniAppItem = {
-        id: crypto.randomUUID() as string,
+    try {
+      const id = editingId ?? (crypto.randomUUID() as string);
+      const appsRef = collection(db, 'users', user.uid, 'miniapps');
+      const docRef = doc(appsRef, id);
+
+      const appData: MiniAppItem = {
+        id,
         title: editTitle,
         html: editCode,
-        createdAt: Date.now(),
+        createdAt: editingId
+          ? (library.find((a) => a.id === editingId)?.createdAt ?? Date.now())
+          : Date.now(),
+        order: editingId
+          ? (library.find((a) => a.id === editingId)?.order ?? 0)
+          : library.length > 0
+            ? Math.min(...library.map((a) => a.order ?? 0)) - 1
+            : 0,
       };
-      updatedLibrary = [newApp, ...library];
-    }
 
-    setLibrary(updatedLibrary);
-    saveLocalLibrary(updatedLibrary);
-    setView('list');
-    addToast('App saved to library', 'success');
+      await setDoc(docRef, appData);
+      setView('list');
+      addToast('App saved to cloud', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Save failed', 'error');
+    }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = library.findIndex((a) => a.id === active.id);
-      const newIndex = library.findIndex((a) => a.id === over.id);
-      const reordered = arrayMove(library, oldIndex, newIndex);
-      setLibrary(reordered);
-      saveLocalLibrary(reordered);
+    if (!user || !over || active.id === over.id) return;
+
+    const oldIndex = library.findIndex((a) => a.id === active.id);
+    const newIndex = library.findIndex((a) => a.id === over.id);
+    const reordered = arrayMove(library, oldIndex, newIndex);
+
+    const batch = writeBatch(db);
+    reordered.forEach((app, index) => {
+      const docRef = doc(db, 'users', user.uid, 'miniapps', app.id);
+      batch.set(docRef, { ...app, order: index });
+    });
+
+    try {
+      await batch.commit();
+    } catch (err) {
+      console.error('Failed to save reorder', err);
+      addToast('Failed to save order', 'error');
     }
   };
 
@@ -330,52 +350,46 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const imported = JSON.parse(event.target?.result as string) as unknown;
         if (!Array.isArray(imported)) throw new Error('Invalid format');
 
-        // Merge strategy: Add imported items to the top, preserve existing
-        // Generate new IDs to avoid conflicts
-        const newItems = imported
-          .map((item: unknown) => {
-            if (typeof item !== 'object' || item === null) return null;
-            const i = item as Record<string, unknown>;
+        const batch = writeBatch(db);
+        const appsRef = collection(db, 'users', user.uid, 'miniapps');
 
-            // Basic validation
-            if (typeof i.html !== 'string') return null;
-            if (i.html.length > MAX_HTML_SIZE) return null;
+        let count = 0;
+        imported.forEach((item: unknown, index) => {
+          if (typeof item !== 'object' || item === null) return;
+          const i = item as Record<string, unknown>;
+          if (typeof i.html !== 'string') return;
 
-            return {
-              id: crypto.randomUUID() as string,
-              title:
-                typeof i.title === 'string' && i.title
-                  ? i.title.slice(0, 100)
-                  : 'Untitled App',
-              html: i.html,
-              createdAt: Date.now(),
-            };
-          })
-          .filter((item): item is MiniAppItem => item !== null);
+          const id = crypto.randomUUID() as string;
+          const appData: MiniAppItem = {
+            id,
+            title:
+              typeof i.title === 'string' && i.title
+                ? i.title.slice(0, 100)
+                : 'Untitled App',
+            html: i.html,
+            createdAt: Date.now(),
+            order: index - imported.length, // Put at start
+          };
+          batch.set(doc(appsRef, id), appData);
+          count++;
+        });
 
-        if (newItems.length === 0) {
-          throw new Error('No valid mini-apps found in file');
+        if (count > 0) {
+          await batch.commit();
+          addToast(`Imported ${count} apps`, 'success');
         }
-
-        const merged = [...newItems, ...library];
-        setLibrary(merged);
-        saveLocalLibrary(merged, (msg) => addToast(msg, 'error'));
-        addToast(`Imported ${newItems.length} apps`, 'success');
       } catch (err) {
         console.error(err);
         addToast('Failed to import: Invalid JSON file', 'error');
       }
-    };
-    reader.onerror = () => {
-      addToast('Failed to read file', 'error');
     };
     reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -388,7 +402,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-[10px]  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-xxs  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30"
           >
             <LayoutGrid className="w-3 h-3" /> Library
           </button>
@@ -396,7 +410,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <iframe
           srcDoc={activeApp.html}
           className="flex-1 w-full border-none"
-          sandbox="allow-scripts allow-forms allow-popups allow-modals"
+          sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"
           title={activeApp.title}
         />
       </div>
@@ -474,7 +488,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+              <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
                 App Title
               </label>
               <input
@@ -499,7 +513,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             )}
           </div>
           <div className="flex-1 flex flex-col min-h-[300px]">
-            <label className="block text-[10px]  uppercase text-slate-400 tracking-widest mb-1">
+            <label className="block text-xxs  uppercase text-slate-400 tracking-widest mb-1">
               HTML Code
             </label>
             <textarea
@@ -509,6 +523,9 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               spellCheck={false}
               placeholder="Paste your HTML, CSS, and JS here..."
             />
+            <p className="mt-2 text-xxs text-slate-400 italic">
+              Paste your HTML, CSS, and JS code directly into the editor above.
+            </p>
           </div>
         </div>
 
@@ -541,14 +558,14 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={handleExport}
-              className="text-[10px]  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-xxs  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Download className="w-3 h-3" /> Export
             </button>
-            <span className="text-slate-300 text-[10px]">•</span>
+            <span className="text-slate-300 text-xxs">•</span>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-[10px]  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              className="text-xxs  text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
             >
               <Upload className="w-3 h-3" /> Import
             </button>
@@ -605,7 +622,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-white/30 border-t border-white/20 text-[9px] text-slate-500 text-center  uppercase tracking-widest shrink-0 rounded-b-2xl">
+      <div className="p-3 bg-white/30 border-t border-white/20 text-xxs text-slate-500 text-center  uppercase tracking-widest shrink-0 rounded-b-2xl">
         Drag to reorder • Runs Locally
       </div>
     </div>

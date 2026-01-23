@@ -87,7 +87,7 @@ const ClassRosterMenu: React.FC<Props> = ({
           Quick Select
         </span>
 
-        <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full">
+        <span className="text-xxs bg-slate-200 px-2 py-0.5 rounded-full">
           {rosters.length}
         </span>
       </div>

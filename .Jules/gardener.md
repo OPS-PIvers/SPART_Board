@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-05-30 - Extract Roster Logic from DashboardContext
+
+**Weed:** `DashboardContext.tsx` was over 1400 lines (God Object), mixing global app state with specific Roster management logic (including a mock implementation).
+**Root Cause:** Roster features were added directly to the main context provider, coupling distinct domains.
+**Plan:** Extracted all roster-related state, effects, and the `MockRosterStore` singleton into a dedicated `useRosters` hook.
+
 ## 2025-05-27 - Refactor Dock and Extract Modals
 
 **Weed:** `Dock.tsx` was over 700 lines and contained multiple internal modal components (`WidgetLibrary`, `RenameFolderModal`).

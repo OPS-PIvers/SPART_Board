@@ -282,6 +282,8 @@ export interface WeatherGlobalConfig {
 
 export interface ScheduleConfig {
   items: ScheduleItem[];
+  fontFamily?: string;
+  autoProgress?: boolean;
 }
 
 export interface CalendarConfig {
@@ -335,6 +337,7 @@ export interface MiniAppItem {
   title: string;
   html: string;
   createdAt: number;
+  order?: number;
 }
 
 // 2. Define the Widget Configuration
