@@ -23,7 +23,13 @@ vi.mock('lucide-react', () => ({
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Download: () => <div data-testid="download-icon" />,
 }));
+
+const mockCreateObjectURL = vi.fn();
+const mockRevokeObjectURL = vi.fn();
+global.URL.createObjectURL = mockCreateObjectURL;
+global.URL.revokeObjectURL = mockRevokeObjectURL;
 
 const mockUpdateWidget = vi.fn();
 const mockAddToast = vi.fn();
@@ -231,5 +237,77 @@ describe('ChecklistSettings Nexus Connection', () => {
 
     render(<ChecklistSettings widget={mockWidget} />);
     expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChecklistSettings Export CSV', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
+  });
+
+  it('exports manual list to CSV', () => {
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        mode: 'manual',
+        items: [
+          { id: '1', text: 'Task 1', completed: false },
+          { id: '2', text: 'Task 2', completed: true },
+        ],
+      } as ChecklistConfig,
+    };
+    render(<ChecklistSettings widget={itemsWidget} />);
+
+    fireEvent.click(screen.getByText('Export CSV'));
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    const blob = mockCreateObjectURL.mock.calls[0][0] as Blob;
+    expect(blob).toBeInstanceOf(Blob);
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Checklist exported to CSV',
+      'success'
+    );
+  });
+
+  it('exports roster list to CSV', () => {
+    const rosterContext = {
+      ...defaultContext,
+      activeRosterId: 'roster-1',
+      rosters: [
+        {
+          id: 'roster-1',
+          name: 'Test Class',
+          students: [
+            { id: 's1', firstName: 'John', lastName: 'Doe' },
+            { id: 's2', firstName: 'Jane', lastName: 'Smith' },
+          ],
+        },
+      ],
+    };
+    (useDashboard as unknown as Mock).mockReturnValue(rosterContext);
+
+    const rosterWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        mode: 'roster',
+        rosterMode: 'class',
+        completedNames: ['John Doe'],
+      } as ChecklistConfig,
+    };
+
+    render(<ChecklistSettings widget={rosterWidget} />);
+
+    fireEvent.click(screen.getByText('Export CSV'));
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    const blob = mockCreateObjectURL.mock.calls[0][0] as Blob;
+    expect(blob).toBeInstanceOf(Blob);
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Checklist exported to CSV',
+      'success'
+    );
   });
 });
