@@ -7,6 +7,20 @@ import { GoogleGenAI } from '@google/genai';
 
 admin.initializeApp();
 
+interface GeminiAI {
+  getGenerativeModel: (args: unknown) => GeminiModel;
+}
+
+interface GeminiModel {
+  generateContent: (args: unknown) => Promise<GeminiResult>;
+}
+
+interface GeminiResult {
+  response: {
+    text: () => string;
+  };
+}
+
 interface ClassLinkUser {
   sourcedId: string;
   email: string;
@@ -322,7 +336,7 @@ export const generateWithAI = functionsV1
 
     try {
       console.log(`AI Gen starting for type: ${data.type}`);
-      const genAI = new GoogleGenAI({ apiKey });
+      const genAI = new GoogleGenAI(apiKey) as unknown as GeminiAI;
 
       let systemPrompt = '';
       let userPrompt = '';
@@ -349,16 +363,23 @@ export const generateWithAI = functionsV1
         );
       }
 
-      /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
       const model = genAI.getGenerativeModel({
         model: 'gemini-3-flash-preview',
       });
-      const result: any = await (model as any).generateContent(
-        systemPrompt + '\n\n' + userPrompt
-      );
-      const response = await result.response;
-      const text = response.text() as string;
-      /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
+
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const text = result.response.text();
 
       if (!text) {
         throw new Error('Empty response from AI');
