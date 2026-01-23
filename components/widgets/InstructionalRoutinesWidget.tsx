@@ -228,8 +228,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Mathematical Scaling
   const dynamicFontSize = useMemo(() => {
-    const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    return Math.max(12, baseSize * scaleMultiplier);
+    // Adjusted divisor to 24 to provide better scaling for typical content density
+    // Reduced min size to 8px to ensure content fits in smaller windows
+    const baseSize = Math.min(widget.w / 24, widget.h / 24);
+    return Math.max(8, baseSize * scaleMultiplier);
   }, [widget.w, widget.h, scaleMultiplier]);
 
   const displayedRoutines = useMemo(() => {
@@ -601,61 +603,84 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden relative">
-      <div className="flex items-center gap-3 mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
+    <div
+      className="flex flex-col h-full bg-white animate-in fade-in duration-200 overflow-hidden relative"
+      style={{
+        fontSize: `${dynamicFontSize}px`,
+        padding: '1.5em',
+      }}
+    >
+      <div
+        className="flex items-center shrink-0 border-b border-brand-blue-lighter"
+        style={{ gap: '1em', marginBottom: '1.5em', paddingBottom: '1em' }}
+      >
         <button
           onClick={() =>
             updateWidget(widget.id, {
               config: { ...config, selectedRoutineId: null },
             })
           }
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          className="rounded-full transition-colors hover:bg-slate-100"
+          style={{ padding: '0.5em' }}
           title="Back to Library"
         >
-          <ArrowLeft size={20} className="text-slate-600" />
+          <ArrowLeft size={dynamicFontSize * 1.5} className="text-slate-600" />
         </button>
         <div className="flex-1">
           <h2
-            className=" text-brand-blue-primary leading-tight"
-            style={{ fontSize: `${dynamicFontSize * 1.4}px` }}
+            className="text-brand-blue-primary leading-tight font-bold"
+            style={{ fontSize: '1.4em' }}
           >
             {selectedRoutine.name}
           </h2>
-          <span className="text-[10px]  text-brand-blue-light uppercase tracking-widest">
+          <span
+            className="text-brand-blue-light uppercase tracking-widest block mt-[0.2em]"
+            style={{ fontSize: '0.6em' }}
+          >
             {selectedRoutine.grades} Protocol
           </span>
         </div>
         <button
           onClick={clearAllStickers}
-          className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
+          className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
+          style={{ padding: '0.6em' }}
           title="Clear all stickers from board"
         >
-          <Trash2 size={18} />
+          <Trash2 size={dynamicFontSize * 1.25} />
         </button>
-        <div className="p-4 bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm">
-          <RoutineIcon className="w-8 h-8" />
+        <div
+          className="bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm flex items-center justify-center"
+          style={{ padding: '1em' }}
+        >
+          <RoutineIcon style={{ width: '2em', height: '2em' }} />
         </div>
       </div>
 
       {selectedRoutine.id === 'blooms-analysis' && (
-        <div className="flex gap-3 mb-4 shrink-0 px-1">
+        <div
+          className="flex shrink-0 px-1"
+          style={{ gap: '1em', marginBottom: '1em' }}
+        >
           <button
             onClick={() => launchBloomsResource('keyWords')}
-            className="flex-1 py-3 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center gap-2"
+            className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
+            style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
           >
-            <Icons.Key size={14} /> Key Words
+            <Icons.Key size={dynamicFontSize * 1.2} /> Key Words
           </button>
           <button
             onClick={() => launchBloomsResource('questionStarters')}
-            className="flex-1 py-3 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center gap-2"
+            className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
+            style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
           >
-            <Icons.MessageSquare size={14} /> Sentence Starters
+            <Icons.MessageSquare size={dynamicFontSize * 1.2} /> Sentence
+            Starters
           </button>
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <ul className="space-y-8">
+        <ul className="flex flex-col" style={{ gap: '1.5em' }}>
           {customSteps.map((step, i) => {
             const StepIcon = step.icon
               ? (Icons as unknown as Record<string, React.ElementType>)[
@@ -665,19 +690,27 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             return (
               <li
                 key={step.id}
-                className="flex gap-4 items-start animate-in slide-in-from-left duration-300 group"
+                className="flex items-start animate-in slide-in-from-left duration-300 group"
+                style={{ gap: '1em' }}
               >
                 <span
-                  className="w-8 h-8 bg-brand-blue-primary text-white rounded-xl flex items-center justify-center  shrink-0 shadow-lg"
-                  style={{ fontSize: `${dynamicFontSize * 0.8}px` }}
+                  className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                  style={{
+                    width: '2.5em',
+                    height: '2.5em',
+                    fontSize: '0.8em',
+                  }}
                 >
                   {i + 1}
                 </span>
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 flex flex-col" style={{ gap: '0.5em' }}>
+                  <div
+                    className="flex items-start justify-between"
+                    style={{ gap: '1em' }}
+                  >
                     <p
                       className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                      style={{ fontSize: `${dynamicFontSize}px` }}
+                      style={{ fontSize: '1em' }}
                     >
                       {step.text}
                     </p>
@@ -693,22 +726,39 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             step.label
                           )
                         }
-                        className={`p-2 rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center gap-1 group/sticker`}
+                        className={`rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
+                        style={{ padding: '0.5em', gap: '0.25em' }}
                         title="Drag to whiteboard"
                       >
                         <div
-                          className={`p-1.5 rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                          className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                          style={{ padding: '0.4em' }}
                         >
-                          <StepIcon size={18} strokeWidth={2.5} />
+                          <StepIcon
+                            size={dynamicFontSize * 1.5}
+                            strokeWidth={2.5}
+                          />
                         </div>
                         {step.label && (
-                          <span className="text-[8px] font-black uppercase text-slate-500 text-center leading-none">
+                          <span
+                            className="font-black uppercase text-slate-500 text-center leading-none"
+                            style={{ fontSize: '0.5em' }}
+                          >
                             {step.label}
                           </span>
                         )}
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover/sticker:opacity-100 transition-opacity">
-                          <Grab size={8} className="text-slate-300" />
-                          <span className="text-[6px] font-black uppercase text-slate-400">
+                        <div
+                          className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
+                          style={{ gap: '0.1em' }}
+                        >
+                          <Grab
+                            size={dynamicFontSize * 0.5}
+                            className="text-slate-300"
+                          />
+                          <span
+                            className="font-black uppercase text-slate-400"
+                            style={{ fontSize: '0.4em' }}
+                          >
                             Drag
                           </span>
                         </div>
@@ -722,9 +772,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           config: step.attachedWidget?.config,
                         })
                       }
-                      className="self-start px-3 py-1.5 bg-brand-blue-light/10 text-brand-blue-primary rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:bg-brand-blue-light/20 transition-colors"
+                      className="self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors"
+                      style={{
+                        padding: '0.5em 1em',
+                        gap: '0.5em',
+                        fontSize: '0.8em',
+                      }}
                     >
-                      <Rocket size={12} />
+                      <Rocket size={dynamicFontSize} />
                       Launch {step.attachedWidget.label}
                     </button>
                   )}
