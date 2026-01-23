@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { WIDGET_DEFAULTS } from '../../config/widgetDefaults';
 import { BLOOMS_DATA } from '../../config/bloomsData';
+import { Button } from '../../common/Button';
 
 const QUICK_TOOLS: {
   label: string;
@@ -291,26 +292,28 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     return (
       <div className="flex flex-col h-full bg-slate-50 p-4 overflow-y-auto custom-scrollbar">
         <div className="flex items-center gap-2 mb-4">
-          <button
+          <Button
             onClick={() => {
               setIsManagingLibrary(false);
               setEditingRoutine(null);
             }}
-            className="p-1 hover:bg-slate-200 rounded-full"
-          >
-            <ArrowLeft size={18} />
-          </button>
+            variant="ghost"
+            size="icon"
+            shape="pill"
+            icon={<ArrowLeft size={18} />}
+          />
           <h3 className="font-black text-xs uppercase tracking-widest text-slate-500 flex-1">
             {editingRoutine ? 'Edit Routine Template' : 'Add New Routine'}
           </h3>
-          <button
+          <Button
             onClick={handleSave}
             disabled={!routine.name}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50"
+            variant="primary"
+            size="sm"
+            icon={<Save size={14} />}
           >
-            <Save size={14} />
             Save to Library
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">
@@ -482,14 +485,15 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 Manage
               </button>
             )}
-            <button
+            <Button
               onClick={clearAllStickers}
-              className="flex items-center gap-1 text-[10px] font-black uppercase text-red-500 hover:text-red-600 transition-colors"
+              variant="ghost-danger"
+              size="sm"
               title="Remove all stickers from board"
+              icon={<Trash2 size={12} />}
             >
-              <Trash2 size={12} />
               Clear Board
-            </button>
+            </Button>
           </div>
         </div>
         <div className="flex-1 grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
@@ -603,17 +607,19 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="flex flex-col h-full bg-white p-6 animate-in fade-in duration-200 overflow-hidden relative">
       <div className="flex items-center gap-3 mb-6 shrink-0 border-b border-brand-blue-lighter pb-4">
-        <button
+        <Button
           onClick={() =>
             updateWidget(widget.id, {
               config: { ...config, selectedRoutineId: null },
             })
           }
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          variant="ghost"
+          size="icon"
+          shape="pill"
           title="Back to Library"
-        >
-          <ArrowLeft size={20} className="text-slate-600" />
-        </button>
+          className="text-slate-600"
+          icon={<ArrowLeft size={20} />}
+        />
         <div className="flex-1">
           <h2
             className=" text-brand-blue-primary leading-tight"
@@ -625,13 +631,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             {selectedRoutine.grades} Protocol
           </span>
         </div>
-        <button
+        <Button
           onClick={clearAllStickers}
-          className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
+          variant="danger"
+          size="icon"
           title="Clear all stickers from board"
-        >
-          <Trash2 size={18} />
-        </button>
+          icon={<Trash2 size={18} />}
+        />
         <div className="p-4 bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm">
           <RoutineIcon className="w-8 h-8" />
         </div>
