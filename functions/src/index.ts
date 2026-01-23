@@ -336,7 +336,7 @@ export const generateWithAI = functionsV1
 
     try {
       console.log(`AI Gen starting for type: ${data.type}`);
-      const genAI = new GoogleGenAI(apiKey) as unknown as GeminiAI;
+      const genAI = new GoogleGenAI({ apiKey }) as unknown as GeminiAI;
 
       let systemPrompt = '';
       let userPrompt = '';
