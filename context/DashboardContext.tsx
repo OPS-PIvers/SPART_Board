@@ -410,6 +410,70 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [removeToast]
   );
 
+  // Handle shared dashboard loading
+  useEffect(() => {
+    if (!pendingShareId || !user) return;
+
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        const sharedDb = await loadSharedDashboard(pendingShareId);
+
+        if (!mounted) return;
+
+        if (sharedDb) {
+          const maxOrder = dashboards.reduce(
+            (max, db) => Math.max(max, db.order ?? 0),
+            0
+          );
+
+          const newDb: Dashboard = {
+            ...sharedDb,
+            id: crypto.randomUUID(),
+            name: `${sharedDb.name} (Copy)`,
+            isDefault: false,
+            createdAt: Date.now(),
+            order: maxOrder + 1,
+          };
+
+          await saveDashboard(newDb);
+
+          if (mounted) {
+            setActiveId(newDb.id);
+            addToast('Board imported successfully', 'success');
+            clearPendingShare();
+          }
+        } else {
+          if (mounted) {
+            addToast('Shared board not found', 'error');
+            clearPendingShare();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load shared dashboard:', err);
+        if (mounted) {
+          addToast('Failed to load shared board', 'error');
+          clearPendingShare();
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    pendingShareId,
+    user,
+    loadSharedDashboard,
+    saveDashboard,
+    dashboards,
+    addToast,
+    clearPendingShare,
+  ]);
+
   // --- FOLDER ACTIONS ---
   const addFolder = useCallback(
     (name: string) => {
