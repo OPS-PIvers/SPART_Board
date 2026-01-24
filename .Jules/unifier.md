@@ -37,5 +37,5 @@
 
 ## 2026-02-15 - [Toggle Switches]
 
-**Drift:** Found manually implemented toggle switches using raw HTML/CSS in `FeaturePermissionsManager`, `BackgroundManager`, and `SoundWidget`, ignoring the existing `Toggle` component.
+**Drift:** Found manually implemented toggle switches using raw HTML/CSS in `FeaturePermissionsManager`, `GlobalPermissionsManager`, `BackgroundManager`, and `SoundWidget`, ignoring the existing `Toggle` component.
 **Fix:** Refactored all instances to use `components/common/Toggle.tsx`, adding an `xs` size variant to the component to support smaller UI contexts.
