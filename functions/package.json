@@ -29,5 +29,11 @@
     "firebase-functions-test": "^3.1.0",
     "typescript": "^5.8.2"
   },
+  "pnpm": {
+    "overrides": {
+      "lodash": "^4.17.23",
+      "body-parser": "^2.2.1"
+    }
+  },
   "private": true
 }
