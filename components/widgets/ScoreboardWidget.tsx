@@ -8,7 +8,15 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
-import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Users,
+  RefreshCw,
+  Trophy,
+  Download,
+  RotateCcw,
+} from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
 
@@ -179,6 +187,30 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  const handleExport = () => {
+    const csvHeader = 'Team Name,Score\n';
+    const csvRows = teams
+      .map((t) => `"${t.name.replace(/"/g, '""')}",${t.score}`)
+      .join('\n');
+    const csvContent = csvHeader + csvRows;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `Scoreboard_Results_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    addToast('Scores exported to CSV', 'success');
+  };
+
   return (
     <div className="space-y-6">
       <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
@@ -214,12 +246,6 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
           <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
             Teams ({teams.length})
           </label>
-          <button
-            onClick={resetScores}
-            className="text-xxs font-bold text-red-500 hover:text-red-600 underline"
-          >
-            Reset Scores
-          </button>
         </div>
 
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
@@ -258,6 +284,27 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         >
           Add Team
         </Button>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Actions
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="secondary"
+            onClick={resetScores}
+            icon={<RotateCcw className="w-3.5 h-3.5" />}
+          >
+            Reset
+          </Button>
+          <Button
+            onClick={handleExport}
+            icon={<Download className="w-3.5 h-3.5" />}
+          >
+            Export CSV
+          </Button>
+        </div>
       </div>
     </div>
   );

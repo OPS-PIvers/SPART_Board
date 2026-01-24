@@ -177,6 +177,106 @@ describe('ScoreboardWidget', () => {
       })
     );
   });
+
+  it('exports scores to CSV', () => {
+    // Mock URL.createObjectURL and URL.revokeObjectURL
+    const mockCreateObjectURL = vi.fn(() => 'mock-url');
+    const mockRevokeObjectURL = vi.fn();
+    const originalURL = global.URL;
+    global.URL = {
+      ...originalURL,
+      createObjectURL: mockCreateObjectURL,
+      revokeObjectURL: mockRevokeObjectURL,
+    } as unknown as typeof URL;
+
+    // Mock Link Element
+    const mockLink = {
+      href: '',
+      download: '',
+      setAttribute: vi.fn(),
+      click: vi.fn(),
+      style: {},
+    } as unknown as HTMLAnchorElement;
+
+    // Carefully spy on document.createElement
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation((tagName, options) => {
+        if (tagName === 'a') {
+          return mockLink;
+        }
+        return originalCreateElement(tagName, options);
+      });
+
+    // Carefully spy on body.appendChild
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    const appendChildSpy = vi
+      .spyOn(document.body, 'appendChild')
+      .mockImplementation((node) => {
+        if (node === mockLink) {
+          return mockLink;
+        }
+        return originalAppendChild(node);
+      });
+
+    // Carefully spy on body.removeChild
+    const originalRemoveChild = document.body.removeChild.bind(document.body);
+    const removeChildSpy = vi
+      .spyOn(document.body, 'removeChild')
+      .mockImplementation((node) => {
+        if (node === mockLink) {
+          return mockLink;
+        }
+        return originalRemoveChild(node);
+      });
+
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: {
+        teams: [
+          { id: '1', name: 'Alpha', score: 10, color: 'bg-blue-500' },
+          { id: '2', name: 'Beta', score: 20, color: 'bg-red-500' },
+        ],
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const exportButton = screen.getByText('Export CSV');
+    fireEvent.click(exportButton);
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    const blob = mockCreateObjectURL.mock.calls[0][0] as Blob;
+    expect(blob).toBeInstanceOf(Blob);
+
+    expect(mockLink.setAttribute).toHaveBeenCalledWith('href', 'mock-url');
+    expect(mockLink.setAttribute).toHaveBeenCalledWith(
+      'download',
+      expect.stringContaining('Scoreboard_Results_')
+    );
+    expect(appendChildSpy).toHaveBeenCalledWith(mockLink);
+    expect(mockLink.click).toHaveBeenCalled();
+    expect(removeChildSpy).toHaveBeenCalledWith(mockLink);
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith('mock-url');
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Scores exported to CSV',
+      'success'
+    );
+
+    // Cleanup
+    global.URL = originalURL;
+    createElementSpy.mockRestore();
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
+  });
 });
 
 describe('ScoreboardSettings', () => {
