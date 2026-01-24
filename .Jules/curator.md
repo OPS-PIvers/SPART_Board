@@ -32,6 +32,6 @@
 
 **Vulnerability Pattern:** `body-parser` (DoS) and `lodash` (Prototype Pollution) in nested dependencies of `functions/`.
 **Fix:** Added `pnpm.overrides` in `functions/package.json` to force `body-parser` >= 2.2.1 and `lodash` >= 4.17.23.
-**Note:** Verified existence of `lodash@4.17.23` and `body-parser@2.2.1` in the registry and successfully installed.
+**Note:** Verified existence of `lodash@4.17.23` and `body-parser@>=2.2.1` in the registry (resolved to `body-parser@2.2.2` in `functions/pnpm-lock.yaml`) and successfully installed.
 **Upgrade:** Updated `@playwright/test` (1.57.0 -> 1.58.0) and `globals` (17.0.0 -> 17.1.0) in root.
 **Verification:** All tests passed. `functions/` build successful.
