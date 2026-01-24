@@ -53,5 +53,9 @@ describe('Toggle Component', () => {
     rerender(<Toggle checked={false} onChange={vi.fn()} size="md" />);
     button = screen.getByRole('switch');
     expect(button).toHaveClass('w-12'); // md width
+
+    rerender(<Toggle checked={false} onChange={vi.fn()} size="xs" />);
+    button = screen.getByRole('switch');
+    expect(button).toHaveClass('w-8'); // xs width
   });
 });

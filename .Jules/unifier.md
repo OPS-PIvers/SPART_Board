@@ -34,3 +34,8 @@
 
 **Drift:** Widespread use of hardcoded pixel values for small text (e.g., `text-[10px]`, `text-[9px]`, `text-[8px]`) creating visual inconsistency and maintenance debt.
 **Fix:** Standardized on new `xxs` (10px) and `xxxs` (8px) font size tokens in `tailwind.config.js` and refactored over 30 components to use them.
+
+## 2026-02-15 - [Toggle Switches]
+
+**Drift:** Found manually implemented toggle switches using raw HTML/CSS in `FeaturePermissionsManager`, `BackgroundManager`, and `SoundWidget`, ignoring the existing `Toggle` component.
+**Fix:** Refactored all instances to use `components/common/Toggle.tsx`, adding an `xs` size variant to the component to support smaller UI contexts.
