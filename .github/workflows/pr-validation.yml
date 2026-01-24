@@ -7,9 +7,9 @@ on:
       - dev-*
 
 jobs:
-  validate:
+  lint-and-format:
     runs-on: ubuntu-latest
-    name: Code Quality Checks
+    name: Lint & Format Checks
 
     steps:
       - name: Checkout repository
@@ -32,8 +32,37 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install functions dependencies (for linting)
+      - name: Install functions dependencies
         working-directory: functions
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linter
+        run: pnpm run lint
+
+      - name: Check code formatting
+        run: pnpm run format:check
+
+  client-validation:
+    runs-on: ubuntu-latest
+    name: Client Validation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run unit tests
@@ -51,12 +80,6 @@ jobs:
 
       - name: Run type check
         run: pnpm run type-check
-
-      - name: Run linter
-        run: pnpm run lint
-
-      - name: Check code formatting
-        run: pnpm run format:check
 
       - name: Build project
         run: pnpm run build
@@ -82,7 +105,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.name,
-              body: '✅ All validation checks passed! Code quality looks good.'
+              body: '✅ Client validation checks passed!'
             })
 
       - name: Add PR Comment on Failure
@@ -96,12 +119,12 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ Validation checks failed. Please review the workflow logs and fix the issues before merging.'
+              body: '❌ Client validation failed. Please review the workflow logs.'
             })
 
-  validate-functions:
+  functions-validation:
     runs-on: ubuntu-latest
-    name: Functions Check
+    name: Functions Validation
 
     steps:
       - name: Checkout repository
