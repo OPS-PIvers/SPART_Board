@@ -20,10 +20,14 @@ vi.mock('../context/useAuth', () => ({
 
 const mockLoadSharedDashboard = vi.fn();
 const mockSaveDashboard = vi.fn().mockResolvedValue(undefined);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockSubscribeToDashboards = vi.fn((cb: any) => {
+
+type SubscribeCallback = (
+  dashboards: Dashboard[],
+  hasPendingWrites: boolean
+) => void;
+
+const mockSubscribeToDashboards = vi.fn((cb: SubscribeCallback) => {
   // Immediate callback with empty list to simulate loaded state
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   cb([], false);
   return () => {
     // no-op
@@ -126,7 +130,9 @@ describe('DashboardContext Sharing Logic', () => {
     });
 
     // Verify URL cleanup
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(window.history.replaceState).toHaveBeenCalledWith(null, '', '/');
+    await waitFor(() => {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(window.history.replaceState).toHaveBeenCalledWith(null, '', '/');
+    });
   });
 });
