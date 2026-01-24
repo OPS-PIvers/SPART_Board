@@ -10,6 +10,7 @@ import {
   Cast,
   FolderPlus,
   X,
+  Wand2,
 } from 'lucide-react';
 import {
   DndContext,
@@ -44,6 +45,7 @@ import { DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
 import { WidgetLibrary } from './dock/WidgetLibrary';
 import { RenameFolderModal } from './dock/RenameFolderModal';
+import { MagicLayoutModal } from './dock/MagicLayoutModal';
 
 /**
  * Custom Label Component for consistent readability
@@ -667,6 +669,7 @@ export const Dock: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [showMagicModal, setShowMagicModal] = useState(false);
 
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
@@ -864,6 +867,17 @@ export const Dock: React.FC = () => {
           {!showLibrary && (
             <>
               <button
+                onClick={() => setShowMagicModal(true)}
+                className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-indigo-200 text-indigo-600 rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
+              >
+                <div className="p-1 bg-indigo-100 text-indigo-500 rounded-full group-hover:bg-indigo-200 transition-colors">
+                  <Wand2 className="w-3 h-3" />
+                </div>
+                <span className="text-xxs font-black uppercase tracking-widest text-slate-700">
+                  Magic
+                </span>
+              </button>
+              <button
                 onClick={() => setShowLibrary(true)}
                 className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-brand-blue-light text-brand-blue-primary rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
               >
@@ -894,6 +908,10 @@ export const Dock: React.FC = () => {
             Done
           </button>
         </div>
+      )}
+
+      {showMagicModal && (
+        <MagicLayoutModal onClose={() => setShowMagicModal(false)} />
       )}
 
       {showCreateFolderModal && (

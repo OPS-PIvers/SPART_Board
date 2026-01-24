@@ -882,6 +882,56 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [activeId]
   );
 
+  const addWidgets = useCallback(
+    (widgetsToAdd: { type: WidgetType; config?: WidgetConfig }[]) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          let maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+
+          const START_X = 50;
+          const START_Y = 80;
+          const COL_WIDTH = 300 + 50; // Width + Gap
+
+          const newWidgets = widgetsToAdd.map((item, index) => {
+            const defaults = WIDGET_DEFAULTS[item.type] || {};
+            maxZ++;
+
+            // 3-Column Grid Layout
+            const col = index % 3;
+            const row = Math.floor(index / 3);
+
+            // Adjust height based on previous rows if we wanted to be fancy,
+            // but for now, we use a fixed row height assumption or just let them overlap slightly if huge.
+            const ROW_HEIGHT = 350;
+
+            return {
+              id: crypto.randomUUID(),
+              type: item.type,
+              x: START_X + col * COL_WIDTH,
+              y: START_Y + row * ROW_HEIGHT,
+              w: defaults.w ?? 200,
+              h: defaults.h ?? 200,
+              flipped: false,
+              z: maxZ,
+              ...defaults,
+              config: {
+                ...(defaults.config ?? {}),
+                ...(item.config ?? {}),
+              },
+            } as WidgetData;
+          });
+
+          return { ...d, widgets: [...d.widgets, ...newWidgets] };
+        })
+      );
+    },
+    [activeId]
+  );
+
   const removeWidget = useCallback(
     (id: string) => {
       if (!activeId) return;
@@ -1132,6 +1182,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDashboards,
       setDefaultDashboard,
       addWidget,
+      addWidgets,
       removeWidget,
       duplicateWidget,
       removeWidgets,
@@ -1187,6 +1238,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDashboards,
       setDefaultDashboard,
       addWidget,
+      addWidgets,
       removeWidget,
       duplicateWidget,
       removeWidgets,

@@ -3,6 +3,7 @@ import {
   Dashboard,
   WidgetData,
   WidgetType,
+  WidgetConfig,
   Toast,
   ClassRoster,
   Student,
@@ -32,6 +33,7 @@ export interface DashboardContextValue {
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
   addWidget: (type: WidgetType, initialData?: Partial<WidgetData>) => void;
+  addWidgets: (widgets: { type: WidgetType; config?: WidgetConfig }[]) => void;
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;

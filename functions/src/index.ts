@@ -42,7 +42,7 @@ interface ClassLinkStudent {
 }
 
 interface AIData {
-  type: 'mini-app' | 'poll';
+  type: 'mini-app' | 'poll' | 'dashboard-layout';
   prompt: string;
 }
 
@@ -356,6 +356,37 @@ export const generateWithAI = functionsV1
           { "question": "...", "options": ["...", "...", "...", "..."] }
         `;
         userPrompt = `Topic: ${data.prompt}`;
+      } else if (data.type === 'dashboard-layout') {
+        systemPrompt = `
+          You are an expert teacher's assistant. Your goal is to generate a layout of widgets for a classroom dashboard based on a lesson description.
+
+          Available Widgets (type):
+          - 'clock': { format24: boolean, showSeconds: boolean }
+          - 'time-tool': { mode: 'timer'|'stopwatch', duration: number (seconds), isRunning: boolean }
+          - 'traffic': { active: 'red'|'yellow'|'green'|null }
+          - 'text': { content: string, fontSize: number, bgColor: string }
+          - 'checklist': { items: { id: string, text: string, completed: boolean }[], title: string }
+          - 'schedule': { items: { time: string, task: string }[], autoProgress: boolean }
+          - 'poll': { question: string, options: { label: string, votes: 0 }[] }
+          - 'sound': { sensitivity: number, visual: 'thermometer'|'speedometer'|'balls' }
+          - 'random': { mode: 'spinner'|'cards', groupSize: number }
+          - 'instructionalRoutines': { customSteps: { id: string, text: string }[] }
+          - 'embed': { url: string, mode: 'video' }
+          - 'sticker': { url: string }
+
+          Return a JSON object with a "widgets" array. Each item in the array must have:
+          - "type": One of the available widget types.
+          - "config": The configuration object for that widget.
+
+          Example:
+          {
+            "widgets": [
+              { "type": "clock", "config": { "format24": false, "showSeconds": true } },
+              { "type": "text", "config": { "content": "Welcome!", "fontSize": 24, "bgColor": "bg-yellow-200" } }
+            ]
+          }
+        `;
+        userPrompt = `Lesson Description: ${data.prompt}`;
       } else {
         throw new functionsV1.https.HttpsError(
           'invalid-argument',

@@ -1,5 +1,6 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/config/firebase';
+import { WidgetType, WidgetConfig } from '../types';
 
 export interface GeneratedMiniApp {
   /** The generated HTML code for the mini-app, including embedded CSS and JS */
@@ -8,11 +9,17 @@ export interface GeneratedMiniApp {
   title: string;
 }
 
+export interface GeneratedWidget {
+  type: WidgetType;
+  config: WidgetConfig;
+}
+
 interface AIResponseData {
   html?: string;
   title?: string;
   question?: string;
   options?: string[];
+  widgets?: GeneratedWidget[];
 }
 
 /**
@@ -47,6 +54,47 @@ export async function generateMiniAppCode(
 
     let errorMessage =
       'Failed to generate app. Please try again with a different prompt.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+/**
+ * Generates a dashboard layout based on a natural language description using a Firebase Function proxy.
+ *
+ * @param description - The lesson description or activity plan.
+ * @returns A promise resolving to an array of widget configurations.
+ * @throws Error if generation fails.
+ */
+export async function generateDashboardLayout(
+  description: string
+): Promise<GeneratedWidget[]> {
+  try {
+    const generateWithAI = httpsCallable<
+      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
+      AIResponseData
+    >(functions, 'generateWithAI');
+
+    const result = await generateWithAI({
+      type: 'dashboard-layout',
+      prompt: description,
+    });
+    const data = result.data;
+
+    if (!data.widgets || !Array.isArray(data.widgets)) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    return data.widgets;
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage =
+      'Failed to generate layout. Please try again with a different description.';
 
     if (error instanceof Error) {
       errorMessage += ` Underlying error: ${error.message}`;

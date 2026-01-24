@@ -4,7 +4,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import { describe, it, expect, vi } from 'vitest';
-import { generateMiniAppCode, generatePoll } from '../../utils/ai';
+import {
+  generateMiniAppCode,
+  generatePoll,
+  generateDashboardLayout,
+} from '../../utils/ai';
 
 // Mock Firebase Functions
 vi.mock('firebase/functions', () => {
@@ -21,6 +25,14 @@ vi.mock('firebase/functions', () => {
             data: {
               question: 'Mock Poll Question?',
               options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
+            },
+          };
+        }
+
+        if (data.type === 'dashboard-layout') {
+          return {
+            data: {
+              widgets: [{ type: 'clock', config: {} }],
             },
           };
         }
@@ -55,6 +67,22 @@ describe('generateMiniAppCode', () => {
       await generateMiniAppCode('FAIL');
     } catch (e: any) {
       expect(e.message).toContain('Failed to generate app');
+      expect(e.message).toContain('Simulated API Failure');
+    }
+  });
+});
+
+describe('generateDashboardLayout', () => {
+  it('generates layout successfully', async () => {
+    const result = await generateDashboardLayout('Test lesson');
+    expect(result).toEqual([{ type: 'clock', config: {} }]);
+  });
+
+  it('throws formatted error on failure', async () => {
+    try {
+      await generateDashboardLayout('FAIL');
+    } catch (e: any) {
+      expect(e.message).toContain('Failed to generate layout');
       expect(e.message).toContain('Simulated API Failure');
     }
   });

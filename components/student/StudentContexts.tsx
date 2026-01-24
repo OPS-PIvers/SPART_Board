@@ -76,6 +76,9 @@ const mockDashboard: DashboardContextValue = {
   addWidget: () => {
     /* mock */
   },
+  addWidgets: () => {
+    /* mock */
+  },
   removeWidget: () => {
     // No-op
   },
