@@ -7,3 +7,8 @@
 
 **Insight:** Teachers often want to use polls for quick "Checks for Understanding" (CFUs), but the friction of typing out a question and 4 distractors during a live lesson is too high. This leads to them either skipping the check or using less effective verbal questions.
 **Concept:** **Magic Poll Generator**. A "Sparkle" button in the Poll Settings that uses AI to instantly generate a relevant question and plausible options from a simple topic (e.g., "Photosynthesis" or "Civil War Causes"). This reduces creation time from 2 minutes to 5 seconds, making data-driven instruction effortless.
+
+## 2024-05-25 - Smart Paste
+
+**Insight:** Teachers frequently copy content (links, lists, images) from other tabs but face friction manually creating and configuring the corresponding widgets on the board.
+**Concept:** **Smart Paste**. A "Magic Wand" for the clipboard. Pressing Ctrl+V on the dashboard intelligently detects the content type (URL, List, Image) and instantly spawns the correct widget (Embed, Checklist, Sticker) with the content pre-loaded.

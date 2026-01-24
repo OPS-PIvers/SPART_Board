@@ -7,6 +7,7 @@ import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
+import { detectWidgetType } from '../../utils/smartPaste';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -85,6 +86,46 @@ export const DashboardView: React.FC = () => {
   React.useEffect(() => {
     setIsMinimized(false);
   }, [activeDashboard?.id, currentIndex]);
+
+  // Smart Paste Handler
+  React.useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Ignore if typing in an input, textarea, or contentEditable element
+      const active = document.activeElement;
+      const isInput =
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.getAttribute('contenteditable') === 'true');
+
+      if (isInput) return;
+
+      const text = e.clipboardData?.getData('text');
+      if (!text) return;
+
+      const result = detectWidgetType(text);
+      if (result) {
+        e.preventDefault();
+
+        // Place in center of viewport
+        const w = 300; // default width approximation
+        const h = 300; // default height approximation
+        const x = window.innerWidth / 2 - w / 2;
+        const y = window.innerHeight / 2 - h / 2;
+
+        addWidget(result.type, {
+          x,
+          y,
+          config: result.config,
+        });
+
+        addToast(`✨ Smart Paste: Created ${result.type} widget!`, 'success');
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [addWidget, addToast]);
 
   // Keyboard Navigation
   React.useEffect(() => {
