@@ -1,6 +1,5 @@
 import React, { forwardRef } from 'react';
-import { useDashboard } from '../../context/useDashboard';
-import { DEFAULT_GLOBAL_STYLE } from '../../types';
+import { DEFAULT_GLOBAL_STYLE, GlobalStyle } from '../../types';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -8,6 +7,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   gradientOverlay?: boolean;
   transparency?: number;
   cornerRadius?: string;
+  globalStyle?: GlobalStyle;
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -18,13 +18,13 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       gradientOverlay = true,
       transparency: propTransparency,
       cornerRadius: propCornerRadius,
+      globalStyle: propGlobalStyle,
       style,
       ...props
     },
     ref
   ) => {
-    const { activeDashboard } = useDashboard();
-    const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+    const globalStyle = propGlobalStyle ?? DEFAULT_GLOBAL_STYLE;
 
     // Determine values, prioritizing props over global settings
     const finalTransparency =

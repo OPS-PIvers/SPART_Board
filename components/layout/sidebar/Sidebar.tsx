@@ -275,6 +275,7 @@ export const Sidebar: React.FC = () => {
   return (
     <>
       <GlassCard
+        globalStyle={activeDashboard?.globalStyle}
         data-screenshot="exclude"
         className="fixed top-6 left-6 z-dock flex items-center gap-2 p-2 rounded-full transition-all"
       >
