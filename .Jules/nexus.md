@@ -23,3 +23,9 @@
 **Source:** Clock Widget
 **Destination:** Schedule Widget
 **Value:** Automatically marks schedule items as done based on the current time if a Clock widget is present.
+
+## 2025-05-27 - [Supply Check]
+
+**Source:** Materials Widget (Active Items)
+**Destination:** Checklist Widget (Items)
+**Value:** Instantly converts the active class supplies list into a student checklist, ensuring everyone has the required materials ready.

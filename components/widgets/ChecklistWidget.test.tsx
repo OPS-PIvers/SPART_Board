@@ -8,6 +8,7 @@ import {
   InstructionalRoutinesConfig,
   WidgetData,
   ChecklistConfig,
+  MaterialsConfig,
 } from '../../types';
 
 // Mock dependencies
@@ -15,6 +16,15 @@ vi.mock('../../context/useDashboard');
 vi.mock('../common/RosterModeControl', () => ({
   RosterModeControl: () => <div data-testid="roster-mode-control" />,
 }));
+
+// Mock Material Items to avoid Lucide dependency issues
+vi.mock('./MaterialsWidget/constants', () => ({
+  MATERIAL_ITEMS: [
+    { id: 'pencil', label: 'Pencil' },
+    { id: 'notebook', label: 'Notebook' },
+  ],
+}));
+
 vi.mock('lucide-react', () => ({
   CheckSquare: () => <div data-testid="check-square" />,
   Square: () => <div data-testid="square" />,
@@ -23,6 +33,7 @@ vi.mock('lucide-react', () => ({
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Backpack: () => <div />,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -62,6 +73,21 @@ const mockRoutineWidget: WidgetData = {
   } as InstructionalRoutinesConfig,
 };
 
+const mockMaterialsWidget: WidgetData = {
+  id: 'materials-1',
+  type: 'materials',
+  x: 0,
+  y: 0,
+  w: 4,
+  h: 4,
+  z: 1,
+  flipped: false,
+  config: {
+    selectedItems: ['pencil', 'notebook'],
+    activeItems: ['pencil', 'notebook'],
+  } as MaterialsConfig,
+};
+
 const defaultContext: Partial<DashboardContextValue> = {
   updateWidget: mockUpdateWidget,
   addToast: mockAddToast,
@@ -71,7 +97,7 @@ const defaultContext: Partial<DashboardContextValue> = {
     id: 'dashboard-1',
     name: 'Test Dashboard',
     background: 'bg-slate-100',
-    widgets: [mockWidget, mockRoutineWidget],
+    widgets: [mockWidget, mockRoutineWidget, mockMaterialsWidget],
     globalStyle: {
       fontFamily: 'sans',
       windowTransparency: 0,
@@ -173,8 +199,10 @@ describe('ChecklistSettings Nexus Connection', () => {
   it('imports steps from active Instructional Routine', () => {
     render(<ChecklistSettings widget={mockWidget} />);
 
-    const importButton = screen.getByText('Sync');
-    fireEvent.click(importButton);
+    // Need to differentiate buttons since we have two "Sync" buttons
+    const importButtons = screen.getAllByText('Sync');
+    // First one should be routine (order in DOM)
+    fireEvent.click(importButtons[0]);
 
     expect(mockAddToast).toHaveBeenCalledWith(
       'Imported steps from Routine!',
@@ -194,6 +222,31 @@ describe('ChecklistSettings Nexus Connection', () => {
     );
   });
 
+  it('imports supplies from active Materials Widget', () => {
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    // Second "Sync" button is for Materials
+    const importButtons = screen.getAllByText('Sync');
+    fireEvent.click(importButtons[1]);
+
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Imported supplies from Materials!',
+      'success'
+    );
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'checklist-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          mode: 'manual',
+          items: expect.arrayContaining([
+            expect.objectContaining({ text: 'Pencil', completed: false }),
+            expect.objectContaining({ text: 'Notebook', completed: false }),
+          ]),
+        }),
+      })
+    );
+  });
+
   it('shows error if no Instructional Routine widget exists', () => {
     (useDashboard as unknown as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
@@ -205,8 +258,8 @@ describe('ChecklistSettings Nexus Connection', () => {
 
     render(<ChecklistSettings widget={mockWidget} />);
 
-    const importButton = screen.getByText('Sync');
-    fireEvent.click(importButton);
+    const importButtons = screen.getAllByText('Sync');
+    fireEvent.click(importButtons[0]);
 
     expect(mockAddToast).toHaveBeenCalledWith(
       'No Instructional Routines widget found!',

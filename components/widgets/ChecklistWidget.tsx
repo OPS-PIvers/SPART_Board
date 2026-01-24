@@ -6,8 +6,10 @@ import {
   WidgetData,
   DEFAULT_GLOBAL_STYLE,
   InstructionalRoutinesConfig,
+  MaterialsConfig,
 } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
+import { MATERIAL_ITEMS } from './MaterialsWidget/constants';
 import {
   CheckSquare,
   Square,
@@ -16,6 +18,7 @@ import {
   Users,
   RefreshCw,
   BookOpen,
+  Backpack,
 } from 'lucide-react';
 
 interface ChecklistRowProps {
@@ -320,22 +323,84 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     addToast('Imported steps from Routine!', 'success');
   };
 
+  // Nexus Connection: Import from Materials
+  const importFromMaterials = () => {
+    const materialsWidget = activeDashboard?.widgets.find(
+      (w) => w.type === 'materials'
+    );
+
+    if (!materialsWidget) {
+      addToast('No Materials widget found!', 'error');
+      return;
+    }
+
+    const materialsConfig = materialsWidget.config as MaterialsConfig;
+    const activeItems = materialsConfig.activeItems;
+
+    if (!activeItems || activeItems.length === 0) {
+      addToast('No active materials to import.', 'info');
+      return;
+    }
+
+    const newItems: ChecklistItem[] = activeItems
+      .map((id) => {
+        const material = MATERIAL_ITEMS.find((m) => m.id === id);
+        return material
+          ? {
+              id: crypto.randomUUID(),
+              text: material.label,
+              completed: false,
+            }
+          : null;
+      })
+      .filter((item): item is ChecklistItem => item !== null);
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        mode: 'manual',
+        items: newItems,
+      },
+    });
+    setLocalText(newItems.map((i) => i.text).join('\n'));
+    addToast('Imported supplies from Materials!', 'success');
+  };
+
   return (
     <div className="space-y-6">
-      {/* Nexus Connection: Routine Import */}
-      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between">
-        <div className="flex items-center gap-2 text-indigo-900">
-          <BookOpen className="w-4 h-4" />
-          <span className="text-xs font-black uppercase tracking-wider">
-            Import Routine
-          </span>
+      {/* Nexus Connections */}
+      <div className="grid grid-cols-1 gap-3">
+        {/* Routine Import */}
+        <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <BookOpen className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import Routine
+            </span>
+          </div>
+          <button
+            onClick={importFromRoutine}
+            className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
+          >
+            <RefreshCw className="w-3 h-3" /> Sync
+          </button>
         </div>
-        <button
-          onClick={importFromRoutine}
-          className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase shadow-sm border border-indigo-100 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-        >
-          <RefreshCw className="w-3 h-3" /> Sync
-        </button>
+
+        {/* Materials Import */}
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+          <div className="flex items-center gap-2 text-rose-900">
+            <Backpack className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import Supplies
+            </span>
+          </div>
+          <button
+            onClick={importFromMaterials}
+            className="bg-white text-rose-600 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase shadow-sm border border-rose-100 hover:bg-rose-50 transition-colors flex items-center gap-1"
+          >
+            <RefreshCw className="w-3 h-3" /> Sync
+          </button>
+        </div>
       </div>
 
       {/* Mode Toggle */}
