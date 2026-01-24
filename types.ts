@@ -150,6 +150,7 @@ export interface TimerConfig {
 
 export interface TrafficConfig {
   active?: string;
+  syncWithTimer?: boolean;
 }
 
 export interface TextConfig {

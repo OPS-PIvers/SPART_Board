@@ -144,7 +144,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./CatalystVisualWidget'),
     'CatalystVisualSettings'
   ),
-  traffic: DefaultSettings,
+  traffic: lazyNamed(
+    () => import('./TrafficLightWidget'),
+    'TrafficLightSettings'
+  ),
   workSymbols: DefaultSettings,
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
