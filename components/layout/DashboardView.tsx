@@ -8,6 +8,7 @@ import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
 import { detectWidgetType } from '../../utils/smartPaste';
+import { WIDGET_DEFAULTS } from '../../config/widgetDefaults';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -108,8 +109,9 @@ export const DashboardView: React.FC = () => {
         e.preventDefault();
 
         // Place in center of viewport
-        const w = 300; // default width approximation
-        const h = 300; // default height approximation
+        const defaultDim = WIDGET_DEFAULTS[result.type] ?? { w: 300, h: 300 };
+        const w = defaultDim.w ?? 300;
+        const h = defaultDim.h ?? 300;
         const x = window.innerWidth / 2 - w / 2;
         const y = window.innerHeight / 2 - h / 2;
 

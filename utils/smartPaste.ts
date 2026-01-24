@@ -8,34 +8,49 @@ export function detectWidgetType(text: string): {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
+  // URL Handling: Normalize by adding protocol if missing but looks like a domain
+  let normalizedUrl = trimmed;
+  const hasProtocol = /^(http|https):\/\//i.test(normalizedUrl);
+  if (!hasProtocol) {
+    // Basic domain check: something.something with at least 2 chars TLD
+    // and no spaces
+    const domainLikePattern = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:[/:?].*)?$/;
+    if (domainLikePattern.test(normalizedUrl)) {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
+  }
+
   // URL Detection
-  const isUrl = /^(http|https):\/\/[^ "]+$/.test(trimmed);
+  const isUrl = /^(http|https):\/\/[^ "]+$/.test(normalizedUrl);
 
   if (isUrl) {
     // Image URL (Sticker)
-    if (/\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(trimmed)) {
+    // Matches extensions, optional query params, optional fragment
+    if (/\.(png|jpg|jpeg|gif|webp|svg)(\?[^#]*)?(#.*)?$/i.test(normalizedUrl)) {
       return {
         type: 'sticker',
-        config: { url: trimmed, rotation: 0 } as WidgetConfig,
+        config: { url: normalizedUrl, rotation: 0 } as WidgetConfig,
       };
     }
 
     // Embed URL (YouTube, Vimeo, Google Docs)
     // Note: EmbedWidget handles formatting these URLs internally
     const isEmbed =
-      /(youtube\.com|youtu\.be|vimeo\.com|docs\.google\.com)/.test(trimmed);
+      /(youtube\.com|youtu\.be|vimeo\.com|docs\.google\.com)/.test(
+        normalizedUrl
+      );
 
     if (isEmbed) {
       return {
         type: 'embed',
-        config: { url: trimmed, mode: 'url' } as WidgetConfig,
+        config: { url: normalizedUrl, mode: 'url' } as WidgetConfig,
       };
     }
 
     // Default to QR for other URLs
     return {
       type: 'qr',
-      config: { url: trimmed } as WidgetConfig,
+      config: { url: normalizedUrl } as WidgetConfig,
     };
   }
 

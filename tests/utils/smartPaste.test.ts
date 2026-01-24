@@ -17,6 +17,15 @@ describe('detectWidgetType', () => {
     });
   });
 
+  it('detects URL without protocol as embed', () => {
+    const text = 'youtube.com/watch?v=123';
+    const result = detectWidgetType(text);
+    expect(result).toEqual({
+      type: 'embed',
+      config: { url: 'https://youtube.com/watch?v=123', mode: 'url' },
+    });
+  });
+
   it('detects Google Docs URL as embed', () => {
     const text = 'https://docs.google.com/document/d/123/edit';
     const result = detectWidgetType(text);
@@ -28,6 +37,15 @@ describe('detectWidgetType', () => {
 
   it('detects Image URL as sticker', () => {
     const text = 'https://example.com/image.png';
+    const result = detectWidgetType(text);
+    expect(result).toEqual({
+      type: 'sticker',
+      config: { url: text, rotation: 0 },
+    });
+  });
+
+  it('detects Image URL with query and fragment as sticker', () => {
+    const text = 'https://example.com/image.png?v=1#anchor';
     const result = detectWidgetType(text);
     expect(result).toEqual({
       type: 'sticker',
@@ -54,6 +72,15 @@ describe('detectWidgetType', () => {
     expect(config.items[0].text).toBe('Apples');
   });
 
+  it('detects Two-line text as TextWidget', () => {
+    const text = 'Line 1\nLine 2';
+    const result = detectWidgetType(text);
+    expect(result?.type).toBe('text');
+    expect(result?.config).toMatchObject({
+      content: 'Line 1<br/>Line 2',
+    });
+  });
+
   it('detects Short text as TextWidget', () => {
     const text = 'Hello World';
     const result = detectWidgetType(text);
@@ -73,5 +100,10 @@ describe('detectWidgetType', () => {
     expect(result?.config).toMatchObject({
       content: '&lt;script&gt;alert("xss")&lt;/script&gt;',
     });
+  });
+
+  it('returns null for whitespace only', () => {
+    expect(detectWidgetType('   ')).toBeNull();
+    expect(detectWidgetType('')).toBeNull();
   });
 });
