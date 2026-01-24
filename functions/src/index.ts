@@ -370,6 +370,20 @@ export const generateWithAI = functionsV1
           - 'poll': { question: string, options: { label: string, votes: 0 }[] }
           - 'sound': { sensitivity: number, visual: 'thermometer'|'speedometer'|'balls' }
           - 'random': { mode: 'spinner'|'cards', groupSize: number }
+          - 'dice': { count: number (1-6) }
+          - 'drawing': { mode: 'window', customColors: string[] }
+          - 'qr': { url: string }
+          - 'webcam': { zoomLevel: number, isMirrored: boolean }
+          - 'scoreboard': { teams: { id: string, name: string, score: number, color: string }[] }
+          - 'workSymbols': { voiceLevel: number (0-4), workMode: 'individual'|'partner'|'group' }
+          - 'weather': { city: string, source: 'openweather' }
+          - 'calendar': { events: { date: string, title: string }[] }
+          - 'lunchCount': { schoolSite: 'schumann-elementary' }
+          - 'classes': {}
+          - 'miniApp': { activeApp: { id: string, title: string, html: string } }
+          - 'materials': { selectedItems: string[] }
+          - 'seating-chart': { gridSize: number, furniture: [] }
+          - 'catalyst': { activeTab: 'attention' }
           - 'instructionalRoutines': { customSteps: { id: string, text: string }[] }
           - 'embed': { url: string, mode: 'video' }
           - 'sticker': { url: string }

@@ -906,7 +906,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
             // Adjust height based on previous rows if we wanted to be fancy,
             // but for now, we use a fixed row height assumption or just let them overlap slightly if huge.
-            const ROW_HEIGHT = 350;
+            const ROW_HEIGHT = 650;
 
             return {
               id: crypto.randomUUID(),

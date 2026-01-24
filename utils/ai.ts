@@ -1,6 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/config/firebase';
+import { functions } from '../config/firebase';
 import { WidgetType, WidgetConfig } from '../types';
+import { TOOLS } from '@/config/tools';
 
 export interface GeneratedMiniApp {
   /** The generated HTML code for the mini-app, including embedded CSS and JS */
@@ -89,7 +90,23 @@ export async function generateDashboardLayout(
       throw new Error('Invalid response format from AI');
     }
 
-    return data.widgets;
+    if (data.widgets.length === 0) {
+      throw new Error(
+        "AI couldn't generate any widgets for this description. Please try a more specific lesson plan."
+      );
+    }
+
+    // Validate widget types
+    const validTypes = TOOLS.map((t) => t.type);
+    const validWidgets = data.widgets.filter((w) =>
+      validTypes.includes(w.type)
+    );
+
+    if (validWidgets.length === 0) {
+      throw new Error('AI generated invalid widget types.');
+    }
+
+    return validWidgets;
   } catch (error) {
     console.error('AI Generation Error:', error);
 

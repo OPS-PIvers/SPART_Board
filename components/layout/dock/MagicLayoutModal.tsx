@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Wand2, Loader2 } from 'lucide-react';
 import { GlassCard } from '../../common/GlassCard';
@@ -15,6 +15,16 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
   const { addWidgets, addToast } = useDashboard();
   const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isGenerating) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, isGenerating]);
 
   const handleGenerate = async () => {
     if (!description.trim()) return;
