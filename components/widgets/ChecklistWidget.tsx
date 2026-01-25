@@ -16,7 +16,9 @@ import {
   Users,
   RefreshCw,
   BookOpen,
+  Download,
 } from 'lucide-react';
+import { Button } from '../common/Button';
 
 interface ChecklistRowProps {
   id: string;
@@ -251,7 +253,8 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, activeDashboard, addToast } = useDashboard();
+  const { updateWidget, activeDashboard, addToast, rosters, activeRosterId } =
+    useDashboard();
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -259,6 +262,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     rosterMode = 'class',
     firstNames = '',
     lastNames = '',
+    completedNames = [],
     scaleMultiplier = 1,
   } = config;
 
@@ -318,6 +322,70 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     });
     setLocalText(newItems.map((i) => i.text).join('\n'));
     addToast('Imported steps from Routine!', 'success');
+  };
+
+  const handleExport = () => {
+    let csvContent = '';
+    const timestamp = new Date().toISOString().split('T')[0];
+    let filename = `Checklist_Export_${timestamp}.csv`;
+
+    if (mode === 'manual') {
+      csvContent = 'Task,Completed\n';
+      csvContent += items
+        .map(
+          (i) => `"${i.text.replace(/"/g, '""')}",${i.completed ? 'Yes' : 'No'}`
+        )
+        .join('\n');
+    } else {
+      // Roster mode
+      csvContent = 'Student Name,Completed\n';
+
+      let studentList: string[] = [];
+      if (rosterMode === 'class') {
+        const activeRoster = rosters.find((r) => r.id === activeRosterId);
+        if (activeRoster) {
+          studentList = activeRoster.students.map((s) =>
+            `${s.firstName} ${s.lastName}`.trim()
+          );
+        }
+      } else {
+        // Custom roster logic
+        const firsts = firstNames
+          .split('\n')
+          .map((n) => n.trim())
+          .filter((n) => n);
+        const lasts = lastNames
+          .split('\n')
+          .map((n) => n.trim())
+          .filter((n) => n);
+        const count = Math.max(firsts.length, lasts.length);
+        for (let i = 0; i < count; i++) {
+          const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
+          if (name) studentList.push(name);
+        }
+      }
+
+      csvContent += studentList
+        .map((name) => {
+          const isCompleted = completedNames.includes(name);
+          return `"${name.replace(/"/g, '""')}",${isCompleted ? 'Yes' : 'No'}`;
+        })
+        .join('\n');
+
+      filename = `Checklist_Roster_Export_${timestamp}.csv`;
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    addToast('Checklist exported to CSV', 'success');
   };
 
   return (
@@ -450,6 +518,20 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             {scaleMultiplier}x
           </span>
         </div>
+      </div>
+
+      {/* Actions */}
+      <div className="pt-4 border-t border-slate-100">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Actions
+        </label>
+        <Button
+          onClick={handleExport}
+          icon={<Download className="w-3.5 h-3.5" />}
+          className="w-full"
+        >
+          Export CSV
+        </Button>
       </div>
     </div>
   );

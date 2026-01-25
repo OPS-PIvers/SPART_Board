@@ -23,6 +23,7 @@ vi.mock('lucide-react', () => ({
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Download: () => <div />,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -231,5 +232,89 @@ describe('ChecklistSettings Nexus Connection', () => {
 
     render(<ChecklistSettings widget={mockWidget} />);
     expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChecklistSettings Actions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
+  });
+
+  it('exports data to CSV', () => {
+    const mockCreateObjectURL = vi.fn();
+    const mockRevokeObjectURL = vi.fn();
+    global.URL.createObjectURL = mockCreateObjectURL;
+    global.URL.revokeObjectURL = mockRevokeObjectURL;
+
+    const mockLink = {
+      href: '',
+      download: '',
+      click: vi.fn(),
+      setAttribute: vi.fn(),
+    };
+
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation((tagName, options) => {
+        if (tagName === 'a') {
+          return mockLink as unknown as HTMLAnchorElement;
+        }
+        return originalCreateElement(tagName, options);
+      });
+
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    const appendChildSpy = vi
+      .spyOn(document.body, 'appendChild')
+      .mockImplementation((node) => {
+        if (node === (mockLink as unknown as Node)) {
+          return mockLink as unknown as HTMLAnchorElement;
+        }
+        return originalAppendChild(node);
+      });
+
+    const originalRemoveChild = document.body.removeChild.bind(document.body);
+    const removeChildSpy = vi
+      .spyOn(document.body, 'removeChild')
+      .mockImplementation((node) => {
+        if (node === (mockLink as unknown as Node)) {
+          return mockLink as unknown as HTMLAnchorElement;
+        }
+        return originalRemoveChild(node);
+      });
+
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [
+          { id: '1', text: 'Task "A"', completed: true },
+          { id: '2', text: 'Task B', completed: false },
+        ],
+      } as ChecklistConfig,
+    };
+
+    render(<ChecklistSettings widget={itemsWidget} />);
+
+    const exportButton = screen.getByText('Export CSV');
+    fireEvent.click(exportButton);
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    const blob = mockCreateObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toBe('text/csv;charset=utf-8;');
+
+    expect(createElementSpy).toHaveBeenCalledWith('a');
+    expect(mockLink.download).toMatch(
+      /Checklist_Export_\d{4}-\d{2}-\d{2}\.csv/
+    );
+    expect(appendChildSpy).toHaveBeenCalledWith(mockLink);
+    expect(mockLink.click).toHaveBeenCalled();
+    expect(removeChildSpy).toHaveBeenCalledWith(mockLink);
+    expect(mockRevokeObjectURL).toHaveBeenCalled();
+
+    createElementSpy.mockRestore();
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
   });
 });
