@@ -34,4 +34,39 @@ describe('useWindowSize', () => {
     );
     removeEventListenerSpy.mockRestore();
   });
+
+  it('should not update size when enabled is false', () => {
+    const { result } = renderHook(() => useWindowSize(false));
+    const initialWidth = result.current.width;
+
+    act(() => {
+      window.innerWidth = 999;
+      window.innerHeight = 999;
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    expect(result.current.width).toBe(initialWidth);
+    expect(result.current.width).not.toBe(999);
+  });
+
+  it('should resume updating when enabled becomes true', () => {
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useWindowSize(enabled),
+      { initialProps: { enabled: false } }
+    );
+
+    // Resize while disabled
+    act(() => {
+      window.innerWidth = 888;
+      window.dispatchEvent(new Event('resize'));
+    });
+    // Should ignore
+    expect(result.current.width).not.toBe(888);
+
+    // Enable
+    rerender({ enabled: true });
+
+    // Should update immediately on enable (because useEffect calls handleResize)
+    expect(result.current.width).toBe(888);
+  });
 });

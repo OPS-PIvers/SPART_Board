@@ -93,7 +93,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   globalStyle,
   dashboardBackground,
 }) => {
-  const windowSize = useWindowSize();
+  const windowSize = useWindowSize(widget.maximized ?? false);
   const { canAccessFeature } = useAuth();
 
   const handleToggleLive = async () => {
