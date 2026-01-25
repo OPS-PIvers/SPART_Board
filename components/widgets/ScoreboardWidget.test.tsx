@@ -4,6 +4,7 @@ import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import * as ScoreboardItemModule from './ScoreboardItem';
+import * as ScoreboardSettingsItemModule from './ScoreboardSettingsItem';
 import {
   WidgetData,
   ScoreboardConfig,
@@ -35,6 +36,26 @@ vi.mock('./ScoreboardItem', async (importOriginal) => {
     ...actual,
     ScoreboardItem: React.memo(InnerItem),
     itemRenderSpy: spy,
+  };
+});
+
+// Mock ScoreboardSettingsItem to spy on renders
+vi.mock('./ScoreboardSettingsItem', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./ScoreboardSettingsItem')>();
+  const React = await import('react');
+  const { vi } = await import('vitest');
+
+  const spy = vi.fn();
+
+  const InnerItem = (props: { team: ScoreboardTeam }) => {
+    spy(props);
+    return <div>Settings: {props.team.name}</div>;
+  };
+
+  return {
+    ...actual,
+    ScoreboardSettingsItem: React.memo(InnerItem),
+    settingsItemRenderSpy: spy,
   };
 });
 
@@ -174,6 +195,62 @@ describe('ScoreboardWidget', () => {
     expect(itemRenderSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         team: expect.objectContaining({ id: '1', score: 11 }),
+      })
+    );
+  });
+
+  it('optimizes renders when updating team name', () => {
+    // Access the spy from the mocked module
+    const settingsItemRenderSpy = (
+      ScoreboardSettingsItemModule as unknown as { settingsItemRenderSpy: Mock }
+    ).settingsItemRenderSpy;
+
+    settingsItemRenderSpy.mockClear();
+
+    const teams = [
+      { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
+      { id: '2', name: 'Team Two', score: 20, color: 'bg-red-500' },
+    ];
+
+    const widget: WidgetData = {
+      id: 'test-id',
+      type: 'scoreboard',
+      config: { teams } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const { rerender } = render(<ScoreboardSettings widget={widget} />);
+
+    // Initial render: 2 items
+    expect(settingsItemRenderSpy).toHaveBeenCalledTimes(2);
+    settingsItemRenderSpy.mockClear();
+
+    // Simulate update: change name of Team One
+    const updatedWidget: WidgetData = {
+      ...widget,
+      config: {
+        ...widget.config,
+        teams: [
+          { ...teams[0], name: 'Team One Updated' }, // Changed (new object)
+          teams[1], // Unchanged (same reference)
+        ],
+      } as ScoreboardConfig,
+    };
+
+    rerender(<ScoreboardSettings widget={updatedWidget} />);
+
+    // Expectation:
+    // Team One should re-render.
+    // Team Two should NOT re-render.
+    expect(settingsItemRenderSpy).toHaveBeenCalledTimes(1);
+    expect(settingsItemRenderSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        team: expect.objectContaining({ id: '1', name: 'Team One Updated' }),
       })
     );
   });

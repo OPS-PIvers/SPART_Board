@@ -11,6 +11,7 @@ import { useScaledFont } from '../../hooks/useScaledFont';
 import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
+import { ScoreboardSettingsItem } from './ScoreboardSettingsItem';
 
 const DEFAULT_TEAMS: ScoreboardTeam[] = [
   { id: 'team-a', name: 'Team A', score: 0, color: 'bg-blue-500' },
@@ -153,20 +154,34 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const removeTeam = (id: string) => {
-    updateWidget(widget.id, {
-      config: { ...config, teams: teams.filter((t) => t.id !== id) },
-    });
-  };
+  // Keep a ref to the latest config/teams to ensure callbacks are stable
+  const latestState = useRef({ config, teams, widgetId: widget.id });
+  useEffect(() => {
+    latestState.current = { config, teams, widgetId: widget.id };
+  }, [config, teams, widget.id]);
 
-  const updateTeamName = (id: string, name: string) => {
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        teams: teams.map((t) => (t.id === id ? { ...t, name } : t)),
-      },
-    });
-  };
+  const removeTeam = useCallback(
+    (id: string) => {
+      const { config, teams, widgetId } = latestState.current;
+      updateWidget(widgetId, {
+        config: { ...config, teams: teams.filter((t) => t.id !== id) },
+      });
+    },
+    [updateWidget]
+  );
+
+  const updateTeamName = useCallback(
+    (id: string, name: string) => {
+      const { config, teams, widgetId } = latestState.current;
+      updateWidget(widgetId, {
+        config: {
+          ...config,
+          teams: teams.map((t) => (t.id === id ? { ...t, name } : t)),
+        },
+      });
+    },
+    [updateWidget]
+  );
 
   const resetScores = () => {
     if (confirm('Reset all scores to 0?')) {
@@ -224,29 +239,12 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
           {teams.map((team) => (
-            <div
+            <ScoreboardSettingsItem
               key={team.id}
-              className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200"
-            >
-              <div
-                className={`w-3 h-3 rounded-full shrink-0 ${team.color ?? 'bg-slate-300'}`}
-              />
-              <input
-                value={team.name}
-                onChange={(e) => updateTeamName(team.id, e.target.value)}
-                className="flex-1 text-xs font-bold text-slate-700 bg-transparent outline-none"
-                placeholder="Team Name"
-              />
-              <div className="text-xs font-mono text-slate-400 w-8 text-right">
-                {team.score}
-              </div>
-              <button
-                onClick={() => removeTeam(team.id)}
-                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              team={team}
+              onUpdateName={updateTeamName}
+              onRemove={removeTeam}
+            />
           ))}
         </div>
 
