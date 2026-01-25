@@ -19,6 +19,18 @@
 **Reason:** Found duplicate object keys during type-check which caused build failure.
 **Action:** Removed duplicate `clockStyle` and `glow` properties from destructuring assignment.
 
+## 2026-01-25 - [Security & Cleanup]
+
+**Security:** `functions/package.json`
+**Reason:** Vulnerabilities in transitive dependencies (`body-parser`, `lodash`).
+**Action:** Added `pnpm.overrides` for `body-parser` (^2.2.1) and `lodash` (^4.17.23).
+
+**Cleanup:** `package.json` (Root)
+**Action:** Removed unused `cross-env` from devDependencies.
+
+**Update:** `package.json` (Root)
+**Action:** Updated `@playwright/test` (^1.58.0) and `globals` (^17.1.0).
+
 ## Philosophy
 
 - Software ages like milk, not wine.
