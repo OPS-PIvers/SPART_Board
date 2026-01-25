@@ -15,15 +15,20 @@ vi.mock('../../context/useDashboard');
 vi.mock('../common/RosterModeControl', () => ({
   RosterModeControl: () => <div data-testid="roster-mode-control" />,
 }));
-vi.mock('lucide-react', () => ({
-  CheckSquare: () => <div data-testid="check-square" />,
-  Square: () => <div data-testid="square" />,
-  ListPlus: () => <div data-testid="list-plus" />,
-  Type: () => <div />,
-  Users: () => <div />,
-  RefreshCw: () => <div />,
-  BookOpen: () => <div />,
-}));
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lucide-react')>();
+  return {
+    ...actual,
+    CheckSquare: () => <div data-testid="check-square" />,
+    Square: () => <div data-testid="square" />,
+    ListPlus: () => <div data-testid="list-plus" />,
+    Type: () => <div />,
+    Users: () => <div />,
+    RefreshCw: () => <div />,
+    BookOpen: () => <div />,
+    Package: () => <div />,
+  };
+});
 
 const mockUpdateWidget = vi.fn();
 const mockAddToast = vi.fn();
@@ -173,7 +178,7 @@ describe('ChecklistSettings Nexus Connection', () => {
   it('imports steps from active Instructional Routine', () => {
     render(<ChecklistSettings widget={mockWidget} />);
 
-    const importButton = screen.getByText('Sync');
+    const importButton = screen.getAllByText('Sync')[0];
     fireEvent.click(importButton);
 
     expect(mockAddToast).toHaveBeenCalledWith(
@@ -205,7 +210,7 @@ describe('ChecklistSettings Nexus Connection', () => {
 
     render(<ChecklistSettings widget={mockWidget} />);
 
-    const importButton = screen.getByText('Sync');
+    const importButton = screen.getAllByText('Sync')[0];
     fireEvent.click(importButton);
 
     expect(mockAddToast).toHaveBeenCalledWith(
@@ -230,6 +235,105 @@ describe('ChecklistSettings Nexus Connection', () => {
     });
 
     render(<ChecklistSettings widget={mockWidget} />);
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChecklistSettings Materials Nexus Connection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
+  });
+
+  const mockMaterialsWidget: WidgetData = {
+    id: 'materials-1',
+    type: 'materials',
+    x: 0,
+    y: 0,
+    w: 4,
+    h: 4,
+    z: 1,
+    flipped: false,
+    config: {
+      selectedItems: ['pencil', 'notebook'],
+      activeItems: ['pencil', 'notebook'],
+    },
+  };
+
+  it('imports supplies from active Materials widget', () => {
+    (useDashboard as unknown as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      activeDashboard: {
+        widgets: [mockWidget, mockMaterialsWidget],
+      },
+    });
+
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    // Find the button inside the new section
+    const importButton = screen.getAllByText('Sync')[1]; // Second Sync button
+    fireEvent.click(importButton);
+
+    expect(mockAddToast).toHaveBeenCalledWith('Imported supplies!', 'success');
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'checklist-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          mode: 'manual',
+          items: expect.arrayContaining([
+            expect.objectContaining({ text: 'Pencil', completed: false }),
+            expect.objectContaining({ text: 'Notebook', completed: false }),
+          ]),
+        }),
+      })
+    );
+  });
+
+  it('shows error if no Materials widget exists', () => {
+    (useDashboard as unknown as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      activeDashboard: {
+        widgets: [mockWidget], // No materials widget
+      },
+    });
+
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    const importButton = screen.getAllByText('Sync')[1];
+    fireEvent.click(importButton);
+
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'No Materials widget found!',
+      'error'
+    );
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  it('shows info if Materials widget has no active items', () => {
+    const emptyMaterialsWidget = {
+      ...mockMaterialsWidget,
+      config: { ...mockMaterialsWidget.config, activeItems: [] },
+    };
+
+    (useDashboard as unknown as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      activeDashboard: {
+        widgets: [mockWidget, emptyMaterialsWidget],
+      },
+    });
+
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    const importButton = screen.getAllByText('Sync')[1];
+    fireEvent.click(importButton);
+
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'No active materials to import.',
+      'info'
+    );
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,11 @@
 # Nexus Journal - Architectural Mapping
 
+## 2024-10-27 - [Supply Drop]
+
+**Source:** Materials Widget (Active Items)
+**Destination:** Checklist Widget (Items)
+**Value:** Instantly populates the checklist with the required materials for the class, saving manual entry.
+
 ## 2025-02-21 - [Class Vote]
 
 **Source:** Classes Widget (Roster)
