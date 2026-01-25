@@ -19,6 +19,7 @@ import {
   Share2,
   Download,
 } from 'lucide-react';
+import { Toggle } from '../common/Toggle';
 
 const GLOBAL_FEATURES: {
   id: GlobalFeature;
@@ -241,19 +242,16 @@ export const GlobalPermissionsManager: React.FC = () => {
                 <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">
                   Feature Enabled
                 </span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={permission.enabled}
-                    onChange={(e) =>
-                      updatePermission(feature.id, {
-                        enabled: e.target.checked,
-                      })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue-primary"></div>
-                </label>
+                <Toggle
+                  checked={permission.enabled}
+                  onChange={(checked) =>
+                    updatePermission(feature.id, {
+                      enabled: checked,
+                    })
+                  }
+                  size="md"
+                  activeColor="bg-brand-blue-primary"
+                />
               </div>
 
               {/* Access Level */}

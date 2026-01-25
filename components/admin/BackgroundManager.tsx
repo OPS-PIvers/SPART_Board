@@ -29,6 +29,7 @@ import {
   X,
   Check,
 } from 'lucide-react';
+import { Toggle } from '../common/Toggle';
 
 const DEFAULT_PRESETS = [
   {
@@ -386,19 +387,16 @@ export const BackgroundManager: React.FC = () => {
                     <span className="text-xxs font-black uppercase text-white">
                       Active
                     </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={preset.active}
-                        onChange={(e) =>
-                          void updatePreset(preset.id, {
-                            active: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
-                      />
-                      <div className="w-6 h-3 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-green-500"></div>
-                    </label>
+                    <Toggle
+                      checked={preset.active}
+                      onChange={(checked) =>
+                        void updatePreset(preset.id, {
+                          active: checked,
+                        })
+                      }
+                      size="xxs"
+                      activeColor="bg-green-500"
+                    />
                   </div>
                 </div>
 

@@ -20,6 +20,11 @@
 **Drift:** Found hardcoded pastel hex values for the TextWidget (Sticky Note) scattered across components, defaults, and helpers.
 **Fix:** Centralized these values into `STICKY_NOTE_COLORS` in `config/colors.ts` and refactored dependent files to use the single source of truth.
 
+## 2026-01-25 - [Toggle Switch Expansion]
+
+**Zombie:** Found leftover hardcoded toggle switches in `SoundWidget`, `FeaturePermissionsManager`, `BackgroundManager`, and `GlobalPermissionsManager`.
+**Fix:** Updated `components/common/Toggle.tsx` to support `xs` and `xxs` sizes and refactored all identified components to use the standardized component.
+
 ## 2026-02-14 - [Toggle Switch]
 
 **Drift:** Found multiple hardcoded implementations of toggle switches (e.g., in `LunchCountWidget` and `RandomSettings`) with inconsistent sizing and styling.
