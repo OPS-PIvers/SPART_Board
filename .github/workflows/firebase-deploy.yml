@@ -23,9 +23,20 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install functions dependencies
+        working-directory: functions
+        run: pnpm install --frozen-lockfile
+
+      - name: Build functions
+        working-directory: functions
+        run: pnpm run build
 
       - name: Run type check
         run: pnpm run type-check
@@ -51,10 +62,12 @@ jobs:
           # OpenWeather API key
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY }}
 
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: spartboard
+      - name: Create Service Account File
+        env:
+          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: echo "$SERVICE_ACCOUNT" > ./service-account.json
+
+      - name: Deploy to Firebase (Functions & Hosting)
+        run: pnpm exec firebase deploy --project spartboard
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
