@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-  ArrowLeft,
-  Save,
-  PlusCircle,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, Save, PlusCircle, Trash2 } from 'lucide-react';
 import { InstructionalRoutine } from '../../../config/instructionalRoutines';
 import IconPicker from './IconPicker';
 
@@ -174,9 +169,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
               </div>
               <button
                 onClick={() => {
-                  const nextSteps = routine.steps.filter(
-                    (_, idx) => idx !== i
-                  );
+                  const nextSteps = routine.steps.filter((_, idx) => idx !== i);
                   setRoutine({
                     ...routine,
                     steps: nextSteps,

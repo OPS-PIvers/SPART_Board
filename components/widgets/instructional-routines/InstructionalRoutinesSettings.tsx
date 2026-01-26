@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-  Plus,
-} from 'lucide-react';
+import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import {
