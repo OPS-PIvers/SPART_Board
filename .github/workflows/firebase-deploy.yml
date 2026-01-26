@@ -59,9 +59,10 @@ jobs:
         working-directory: functions
         run: pnpm run build
 
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+
       - name: Deploy to Firebase
-        run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
-          pnpm exec firebase deploy --project spartboard
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: service-account.json
+        run: pnpm exec firebase deploy --project spartboard
