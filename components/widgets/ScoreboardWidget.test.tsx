@@ -14,6 +14,15 @@ import {
 
 vi.mock('../../context/useDashboard');
 
+vi.mock('lucide-react', () => ({
+  Plus: () => <div />,
+  Trash2: () => <div />,
+  Users: () => <div />,
+  RefreshCw: () => <div />,
+  Trophy: () => <div />,
+  Download: () => <div />,
+}));
+
 // Mock ScoreboardItem to spy on renders
 vi.mock('./ScoreboardItem', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./ScoreboardItem')>();
@@ -273,6 +282,56 @@ describe('ScoreboardSettings', () => {
           ]) as unknown,
         }) as unknown,
       })
+    );
+  });
+
+  it('exports scores to CSV', () => {
+    // Mock URL methods
+    const mockCreateObjectURL = vi.fn();
+    const mockRevokeObjectURL = vi.fn();
+    global.URL.createObjectURL = mockCreateObjectURL;
+    global.URL.revokeObjectURL = mockRevokeObjectURL;
+
+    // Spy on document/element methods
+    const createElementSpy = vi.spyOn(document, 'createElement');
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+    const removeChildSpy = vi.spyOn(document.body, 'removeChild');
+    const clickSpy = vi.spyOn(HTMLElement.prototype, 'click');
+    // We don't need to spy setAttribute if we trust the logic, but testing it would require
+    // filtering calls on specific elements which is hard without mocking return value.
+    // Given the complexity, verifying createObjectURL, append, click, remove is enough coverage.
+
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: {
+        teams: [
+          { id: '1', name: 'Team Alpha', score: 10, color: 'bg-blue-500' },
+          { id: '2', name: 'Team Beta', score: 20, color: 'bg-red-500' },
+        ],
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const exportButton = screen.getByText('Export CSV');
+    fireEvent.click(exportButton);
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    expect(createElementSpy).toHaveBeenCalledWith('a');
+    expect(appendChildSpy).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(removeChildSpy).toHaveBeenCalled();
+    expect(mockRevokeObjectURL).toHaveBeenCalled();
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Scores exported to CSV',
+      'success'
     );
   });
 });

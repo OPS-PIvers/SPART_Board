@@ -23,6 +23,7 @@ vi.mock('lucide-react', () => ({
   Users: () => <div />,
   RefreshCw: () => <div />,
   BookOpen: () => <div />,
+  Download: () => <div />,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -201,6 +202,8 @@ describe('ChecklistSettings Nexus Connection', () => {
       activeDashboard: {
         widgets: [mockWidget], // No routine widget
       },
+      rosters: [],
+      activeRosterId: null,
     });
 
     render(<ChecklistSettings widget={mockWidget} />);
@@ -227,9 +230,52 @@ describe('ChecklistSettings Nexus Connection', () => {
       activeDashboard: {
         widgets: [mockWidget, emptyRoutineWidget],
       },
+      rosters: [],
+      activeRosterId: null,
     });
 
     render(<ChecklistSettings widget={mockWidget} />);
     expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  it('exports checklist to CSV', () => {
+    // Mock URL methods
+    const mockCreateObjectURL = vi.fn();
+    const mockRevokeObjectURL = vi.fn();
+    global.URL.createObjectURL = mockCreateObjectURL;
+    global.URL.revokeObjectURL = mockRevokeObjectURL;
+
+    // Spy on document/element methods
+    const createElementSpy = vi.spyOn(document, 'createElement');
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+    const removeChildSpy = vi.spyOn(document.body, 'removeChild');
+    const clickSpy = vi.spyOn(HTMLElement.prototype, 'click');
+
+    const itemsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        items: [
+          { id: '1', text: 'Task 1', completed: true },
+          { id: '2', text: 'Task 2', completed: false },
+        ],
+      } as ChecklistConfig,
+    };
+
+    render(<ChecklistSettings widget={itemsWidget} />);
+
+    const exportButton = screen.getByText('Export CSV');
+    fireEvent.click(exportButton);
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    expect(createElementSpy).toHaveBeenCalledWith('a');
+    expect(appendChildSpy).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(removeChildSpy).toHaveBeenCalled();
+    expect(mockRevokeObjectURL).toHaveBeenCalled();
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Checklist exported to CSV',
+      'success'
+    );
   });
 });
