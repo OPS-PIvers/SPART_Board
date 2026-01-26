@@ -1,8 +1,22 @@
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useWindowSize } from './useWindowSize';
 
 describe('useWindowSize', () => {
+  let originalWidth: number;
+  let originalHeight: number;
+
+  beforeEach(() => {
+    originalWidth = window.innerWidth;
+    originalHeight = window.innerHeight;
+  });
+
+  afterEach(() => {
+    window.innerWidth = originalWidth;
+    window.innerHeight = originalHeight;
+    vi.restoreAllMocks();
+  });
+
   it('should return the current window size', () => {
     const { result } = renderHook(() => useWindowSize());
     expect(result.current.width).toBe(window.innerWidth);
@@ -32,7 +46,6 @@ describe('useWindowSize', () => {
       'resize',
       expect.any(Function)
     );
-    removeEventListenerSpy.mockRestore();
   });
 
   it('should not update size when enabled is false', () => {
