@@ -114,7 +114,11 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   };
 
   // Sync config changes to session when live
-  const configJson = JSON.stringify(widget.config);
+  // Optimization: useMemo avoids expensive stringify on every render (especially during drag/resize)
+  const configJson = React.useMemo(() => {
+    return isLive ? JSON.stringify(widget.config) : '';
+  }, [widget.config, isLive]);
+
   React.useEffect(() => {
     if (!isLive) {
       return undefined;
