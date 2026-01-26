@@ -7,6 +7,7 @@ import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
+import { HorizonCommandPalette } from '../common/HorizonCommandPalette';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -70,6 +71,7 @@ export const DashboardView: React.FC = () => {
   const [animationClass, setAnimationClass] =
     React.useState<string>('animate-fade-in');
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = React.useState(false);
 
   // Gesture Tracking
   const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
@@ -113,6 +115,18 @@ export const DashboardView: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, dashboards, loadDashboard]);
+
+  // Global Command Palette Shortcut
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 4) {
@@ -386,6 +400,12 @@ export const DashboardView: React.FC = () => {
       <Sidebar />
       <Dock />
       <ToastContainer />
+      {isCommandPaletteOpen && (
+        <HorizonCommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+        />
+      )}
     </div>
   );
 };
