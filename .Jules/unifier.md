@@ -34,3 +34,8 @@
 
 **Drift:** Widespread use of hardcoded pixel values for small text (e.g., `text-[10px]`, `text-[9px]`, `text-[8px]`) creating visual inconsistency and maintenance debt.
 **Fix:** Standardized on new `xxs` (10px) and `xxxs` (8px) font size tokens in `tailwind.config.js` and refactored over 30 components to use them.
+
+## 2026-05-21 - [Instructional Routines Hardcoded Styles]
+
+**Drift:** `InstructionalRoutinesWidget.tsx` was constructing HTML strings with inline styles, hardcoding hex values for brand colors (#2d3f89) and slate colors (#1e293b, #475569) instead of using the design system tokens.
+**Fix:** Refactored the HTML generation to use Tailwind classes (`text-brand-blue-primary`, `text-slate-800`, etc.) while preserving em-based scaling using arbitrary values.
