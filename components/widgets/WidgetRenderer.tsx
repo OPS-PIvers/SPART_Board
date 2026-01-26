@@ -114,7 +114,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   };
 
   // Sync config changes to session when live
-  // OPTIMIZATION: Only serialize config when live session is active or when config reference changes (e.g. not during drag)
+  // OPTIMIZATION: Only serialize config when live session is active. When not live, skip serialization to avoid expensive JSON.stringify during high-frequency updates like dragging.
   const configJson = React.useMemo(() => {
     return isLive ? JSON.stringify(widget.config) : '';
   }, [isLive, widget.config]);
