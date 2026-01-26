@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -266,14 +267,19 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     items.map((i) => i.text).join('\n')
   );
 
-  const handleBulkChange = (text: string) => {
-    setLocalText(text);
-    const lines = text.split('\n');
+  const debouncedText = useDebounce(localText, 500);
+  const latestConfig = useRef(config);
+  latestConfig.current = config;
+
+  useEffect(() => {
+    const lines = debouncedText.split('\n');
+    const { items: currentItems } = latestConfig.current;
+
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
       .map((line, idx) => {
         const trimmedLine = line.trim();
-        const existing = items.find((i) => i.text === trimmedLine);
+        const existing = currentItems.find((i) => i.text === trimmedLine);
         return {
           id: existing?.id ?? `item-${idx}-${Date.now()}`,
           text: trimmedLine,
@@ -281,7 +287,18 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         };
       });
 
-    updateWidget(widget.id, { config: { ...config, items: newItems } });
+    const currentItemsJson = JSON.stringify(currentItems);
+    const newItemsJson = JSON.stringify(newItems);
+
+    if (currentItemsJson !== newItemsJson) {
+      updateWidget(widget.id, {
+        config: { ...latestConfig.current, items: newItems },
+      });
+    }
+  }, [debouncedText, updateWidget, widget.id]);
+
+  const handleBulkChange = (text: string) => {
+    setLocalText(text);
   };
 
   // Nexus Connection: Import from Instructional Routines

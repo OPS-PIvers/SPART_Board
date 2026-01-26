@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, Mock, afterEach } from 'vitest';
 import { ChecklistSettings, ChecklistWidget } from './ChecklistWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { DashboardContextValue } from '../../context/DashboardContextValue';
@@ -231,5 +231,43 @@ describe('ChecklistSettings Nexus Connection', () => {
 
     render(<ChecklistSettings widget={mockWidget} />);
     expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChecklistSettings Debounce', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    (useDashboard as unknown as Mock).mockReturnValue(defaultContext);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('updates widget after debounce delay when typing', async () => {
+    render(<ChecklistSettings widget={mockWidget} />);
+
+    const textarea = screen.getByPlaceholderText('Enter tasks here...');
+    fireEvent.change(textarea, { target: { value: 'New Task' } });
+
+    // Should not update immediately
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Fast-forward time
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'checklist-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          items: expect.arrayContaining([
+            expect.objectContaining({ text: 'New Task' }),
+          ]),
+        }),
+      })
+    );
   });
 });
