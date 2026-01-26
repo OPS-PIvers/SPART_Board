@@ -23,3 +23,9 @@
 **Weed:** `Sidebar.tsx` was over 1400 lines and contained a large inner component definition (`SortableDashboardItem`) and duplicated background fetching logic found in `useBackgrounds`.
 **Root Cause:** Component grew organically as features were added (boards, backgrounds, widgets) without separating concerns.
 **Plan:** Extract sub-components and leverage existing hooks to reduce file size and improve readability/maintainability.
+
+## 2026-01-26 - Refactor InstructionalRoutinesWidget to Modular Directory
+
+**Weed:** `InstructionalRoutinesWidget.tsx` was over 1000 lines, mixing display logic, settings editor, library management, and icon picking in a single file.
+**Root Cause:** Feature accumulation over time (Library Management, Bloom's Taxonomy support) led to a "God Component".
+**Plan:** Extracted `LibraryManager`, `IconPicker`, `InstructionalRoutinesSettings`, and `constants` into a dedicated `instructional-routines/` directory.
