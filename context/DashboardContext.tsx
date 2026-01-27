@@ -425,12 +425,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!pendingShareId || !user) return;
     if (processingRef.current === pendingShareId) return;
 
-    processingRef.current = pendingShareId;
+    const currentShareId = pendingShareId;
+    processingRef.current = currentShareId;
     let mounted = true;
 
     const load = async () => {
       try {
-        const sharedDb = await loadSharedDashboard(pendingShareId);
+        const sharedDb = await loadSharedDashboard(currentShareId);
 
         if (!mounted) return;
 
@@ -457,25 +458,26 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
           await saveDashboard(newDb);
 
-          if (mounted) {
-            setActiveId(newDb.id);
-            addToast('Board imported successfully', 'success');
-            clearPendingShare();
-          }
+          if (!mounted) return;
+
+          setActiveId(newDb.id);
+          addToast('Board imported successfully', 'success');
+          clearPendingShare();
         } else {
-          if (mounted) {
-            addToast('Shared board not found', 'error');
-            clearPendingShare();
-          }
+          if (!mounted) return;
+
+          addToast('Shared board not found', 'error');
+          clearPendingShare();
         }
       } catch (err) {
         console.error('Failed to load shared dashboard:', err);
-        if (mounted) {
-          addToast('Failed to load shared board', 'error');
-          clearPendingShare();
-        }
+        if (!mounted) return;
+
+        addToast('Failed to load shared board', 'error');
+        clearPendingShare();
       } finally {
-        if (mounted) {
+        // Clear processingRef only if it still matches the current share ID
+        if (processingRef.current === currentShareId) {
           processingRef.current = null;
         }
       }
@@ -485,9 +487,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       mounted = false;
-      // We don't clear processingRef on unmount to prevent re-triggering
-      // if the component remounts quickly with the same ID,
-      // though typically clearPendingShare handles the cleanup.
+      // Clear processingRef in cleanup if it matches the current share ID
+      // This ensures the effect can re-run after StrictMode's remount cycle
+      if (processingRef.current === currentShareId) {
+        processingRef.current = null;
+      }
     };
   }, [
     pendingShareId,
