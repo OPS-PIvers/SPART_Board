@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { LayoutGrid, Plus, X } from 'lucide-react';
 import { GlassCard } from '../../common/GlassCard';
 import { TOOLS } from '../../../config/tools';
-import { WidgetType } from '../../../types';
+import { WidgetType, GlobalStyle } from '../../../types';
 
 interface WidgetLibraryProps {
   onToggle: (type: WidgetType) => void;
   visibleTools: WidgetType[];
   canAccess: (type: WidgetType) => boolean;
   onClose: () => void;
+  globalStyle: GlobalStyle;
 }
 
 export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
@@ -17,9 +18,13 @@ export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
   visibleTools,
   canAccess,
   onClose,
+  globalStyle,
 }) => {
   return createPortal(
-    <GlassCard className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-modal">
+    <GlassCard
+      globalStyle={globalStyle}
+      className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-modal"
+    >
       <div className="bg-white/50 px-6 py-4 border-b border-white/30 flex justify-between items-center shrink-0 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <LayoutGrid className="w-5 h-5 text-brand-blue-primary" />
