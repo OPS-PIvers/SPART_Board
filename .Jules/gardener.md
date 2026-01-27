@@ -23,3 +23,8 @@
 **Weed:** `Sidebar.tsx` was over 1400 lines and contained a large inner component definition (`SortableDashboardItem`) and duplicated background fetching logic found in `useBackgrounds`.
 **Root Cause:** Component grew organically as features were added (boards, backgrounds, widgets) without separating concerns.
 **Plan:** Extract sub-components and leverage existing hooks to reduce file size and improve readability/maintainability.
+
+## 2025-06-03 - [Consolidate Widget Defaults]
+**Weed:** Redundant default configuration logic in `utils/widgetHelpers.ts` (`getDefaultWidgetConfig`) duplicating `config/widgetDefaults.ts`.
+**Root Cause:** Two sources of truth for widget defaults, leading to potential inconsistencies (e.g., `checklist` default config mismatch).
+**Plan:** Remove `getDefaultWidgetConfig` and refactor consumers (`StudentApp.tsx`, tests) to use the centralized `WIDGET_DEFAULTS`.

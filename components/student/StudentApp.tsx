@@ -5,8 +5,8 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { StudentLobby } from './StudentLobby';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { Snowflake, Radio } from 'lucide-react';
-import { WidgetData, DEFAULT_GLOBAL_STYLE } from '../../types';
-import { getDefaultWidgetConfig } from '../../utils/widgetHelpers';
+import { WidgetData, DEFAULT_GLOBAL_STYLE, WidgetConfig } from '../../types';
+import { WIDGET_DEFAULTS } from '../../config/widgetDefaults';
 
 const noop = () => undefined;
 const asyncNoop = async () => {
@@ -204,7 +204,9 @@ export const StudentApp = () => {
     flipped: false,
     config:
       session.activeWidgetConfig ??
-      getDefaultWidgetConfig(session.activeWidgetType ?? 'clock'),
+      (WIDGET_DEFAULTS[session.activeWidgetType ?? 'clock']
+        ?.config as WidgetConfig) ??
+      {},
     isLive: true,
   };
 

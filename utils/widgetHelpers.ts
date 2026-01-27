@@ -1,5 +1,4 @@
-import { WidgetData, WidgetType, WidgetConfig } from '../types';
-import { STICKY_NOTE_COLORS } from '../config/colors';
+import { WidgetData } from '../types';
 
 export const getTitle = (widget: WidgetData): string => {
   if (widget.customTitle) return widget.customTitle;
@@ -15,84 +14,4 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'sticker') return 'Sticker';
   if (widget.type === 'seating-chart') return 'Seating Chart';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
-};
-
-/**
- * Get the default configuration for a widget type.
- * Returns an empty object for widgets that don't require configuration.
- */
-export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
-  const defaults: Record<WidgetType, WidgetConfig> = {
-    clock: { format24: true, showSeconds: true },
-    'time-tool': {
-      mode: 'timer',
-      visualType: 'digital',
-      theme: 'light',
-      duration: 600,
-      elapsedTime: 600,
-      isRunning: false,
-      selectedSound: 'Gong',
-    },
-    traffic: {},
-    text: {
-      content: 'Double click to edit...',
-      bgColor: STICKY_NOTE_COLORS.yellow,
-      fontSize: 18,
-    },
-    checklist: { items: [] },
-    random: { firstNames: '', lastNames: '', mode: 'single' },
-    dice: { count: 1 },
-    sound: { sensitivity: 1, visual: 'thermometer' },
-    drawing: { mode: 'window', paths: [] },
-    qr: { url: 'https://google.com' },
-    embed: { url: '' },
-    poll: {
-      question: 'Vote now!',
-      options: [
-        { label: 'Option A', votes: 0 },
-        { label: 'Option B', votes: 0 },
-      ],
-    },
-    webcam: {},
-    scoreboard: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
-    workSymbols: { voiceLevel: null, workMode: null },
-    weather: { temp: 72, condition: 'sunny' },
-    schedule: { items: [] },
-    calendar: { events: [] },
-    lunchCount: {
-      schoolSite: 'schumann-elementary',
-      isManualMode: false,
-      manualHotLunch: '',
-      manualBentoBox: '',
-      roster: [],
-      assignments: {},
-      recipient: '',
-    },
-    classes: {},
-    instructionalRoutines: {
-      selectedRoutineId: null,
-      customSteps: [],
-      favorites: [],
-      scaleMultiplier: 1,
-    },
-    miniApp: {
-      activeApp: null,
-    },
-    materials: {
-      selectedItems: [],
-      activeItems: [],
-    },
-    stickers: { uploadedUrls: [] },
-    sticker: { url: '', rotation: 0, size: 150 },
-    'seating-chart': {
-      furniture: [],
-      assignments: {},
-      gridSize: 20,
-    },
-    catalyst: { activeTab: 'attention' },
-    'catalyst-instruction': { routineId: '', stepIndex: 0 },
-    'catalyst-visual': { routineId: '', stepIndex: 0 },
-  };
-
-  return defaults[type];
 };

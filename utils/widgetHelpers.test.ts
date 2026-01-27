@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getTitle, getDefaultWidgetConfig } from './widgetHelpers';
+import { getTitle } from './widgetHelpers';
+import { WIDGET_DEFAULTS } from '../config/widgetDefaults';
 import { WidgetData, TimeToolConfig, WidgetType } from '../types';
 
 describe('widgetHelpers', () => {
@@ -43,28 +44,31 @@ describe('widgetHelpers', () => {
     });
   });
 
-  describe('getDefaultWidgetConfig', () => {
-    it('returns correct defaults for time-tool', () => {
-      const config = getDefaultWidgetConfig('time-tool') as TimeToolConfig;
+  describe('WIDGET_DEFAULTS', () => {
+    it('contains correct defaults for time-tool', () => {
+      const config = WIDGET_DEFAULTS['time-tool']?.config as TimeToolConfig;
       expect(config.mode).toBe('timer');
     });
 
-    it('returns correct defaults for miniApp', () => {
-      const config = getDefaultWidgetConfig('miniApp');
+    it('contains correct defaults for miniApp', () => {
+      const config = WIDGET_DEFAULTS['miniApp']?.config;
       expect(config).toHaveProperty('activeApp', null);
     });
 
-    it('returns correct defaults for checklist', () => {
-      const config = getDefaultWidgetConfig('checklist');
-      expect(config).toEqual({ items: [] });
+    it('contains correct defaults for checklist', () => {
+      const config = WIDGET_DEFAULTS['checklist']?.config;
+      expect(config).toMatchObject({
+        items: [],
+        mode: 'manual',
+      });
     });
 
-    it('returns empty object for traffic', () => {
-      const config = getDefaultWidgetConfig('traffic');
+    it('contains empty config for traffic', () => {
+      const config = WIDGET_DEFAULTS['traffic']?.config;
       expect(config).toEqual({});
     });
 
-    it('returns defaults for all supported widget types', () => {
+    it('contains defaults for all supported widget types', () => {
       const types: WidgetType[] = [
         'clock',
         'traffic',
@@ -90,9 +94,10 @@ describe('widgetHelpers', () => {
         'miniApp',
       ];
       types.forEach((type) => {
-        const config = getDefaultWidgetConfig(type);
-        expect(config).toBeDefined();
-        expect(typeof config).toBe('object');
+        const defaults = WIDGET_DEFAULTS[type];
+        expect(defaults).toBeDefined();
+        expect(defaults?.config).toBeDefined();
+        expect(typeof defaults?.config).toBe('object');
       });
     });
   });
