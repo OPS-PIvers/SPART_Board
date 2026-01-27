@@ -74,7 +74,8 @@ describe('DashboardContext Sharing Logic', () => {
 
     // Mock history.replaceState
     replaceStateMock = vi.fn();
-    window.history.replaceState = replaceStateMock;
+    window.history.replaceState =
+      replaceStateMock as typeof window.history.replaceState;
   });
 
   afterEach(() => {
