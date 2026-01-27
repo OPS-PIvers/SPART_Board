@@ -7,3 +7,8 @@
 
 **Insight:** Teachers often want to use polls for quick "Checks for Understanding" (CFUs), but the friction of typing out a question and 4 distractors during a live lesson is too high. This leads to them either skipping the check or using less effective verbal questions.
 **Concept:** **Magic Poll Generator**. A "Sparkle" button in the Poll Settings that uses AI to instantly generate a relevant question and plausible options from a simple topic (e.g., "Photosynthesis" or "Civil War Causes"). This reduces creation time from 2 minutes to 5 seconds, making data-driven instruction effortless.
+
+## 2024-05-25 - Predictive Command Center
+
+**Insight:** As the number of widgets grows (25+ tools), the cognitive load of scanning the Dock increases. Power users (teachers in the middle of a lesson) need instant access without taking their eyes off the class to hunt for an icon.
+**Concept:** **Horizon Command Palette**. A global "Spotlight" for the classroom (Cmd+K). It doesn't just list tools; it predicts intent. "5m" -> Suggests "Start 5 Minute Timer". "Cl" -> Suggests "Clear Board" or "Class Roster". It unifies Navigation, Creation, and Action into a single keystroke.
