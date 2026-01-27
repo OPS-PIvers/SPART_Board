@@ -51,6 +51,20 @@ export default {
     'to-cyan-500',
     'from-rose-400',
     'to-orange-400',
+    // Instructional Routines dynamic HTML classes
+    'text-slate-800',
+    'text-slate-600',
+    'text-brand-blue-primary',
+    'font-black',
+    'font-extrabold',
+    'uppercase',
+    'list-disc',
+    'mb-[0.5em]',
+    'mt-[1em]',
+    'mb-[0.25em]',
+    'pl-[1.2em]',
+    'text-[0.9em]',
+    'text-[0.85em]',
   ],
   theme: {
     extend: {
