@@ -43,3 +43,13 @@
 
 **Update:** Root Dependencies
 **Action:** Updated `@playwright/test` to `^1.58.0` and `globals` to `^17.1.0`.
+
+## 2025-02-12 - [Feb 12 Maintenance]
+
+**Update:** Root Dependencies
+**Action:** Updated `react` & `react-dom` (19.2.4), `typescript-eslint` (8.54.0), `globals` (17.2.0).
+**Verification:** Ran `pnpm validate` - All passed.
+
+**Update:** Functions Dependencies
+**Action:** Updated `axios` (1.13.3), `firebase-admin` (13.6.0), `@google/genai` (1.38.0).
+**Verification:** Ran `pnpm build` in functions - All passed.
