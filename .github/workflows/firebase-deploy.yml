@@ -66,8 +66,4 @@ jobs:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
 
       - name: Deploy to Firebase
-<<<<<<< HEAD
         run: pnpm exec firebase deploy --project spartboard
-=======
-        run: pnpm exec firebase deploy --project spartboard
->>>>>>> 14c8707 (fix(ci): Use google-github-actions/auth for firebase deploy)
