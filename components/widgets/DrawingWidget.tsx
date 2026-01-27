@@ -62,7 +62,7 @@ export const DrawingWidget: React.FC<{
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentPath, setCurrentPath] = useState<Point[]>([]);
+  const currentPathRef = useRef<Point[]>([]);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -150,27 +150,58 @@ export const DrawingWidget: React.FC<{
       canvas.height = window.innerHeight;
     }
 
-    draw(ctx, paths, currentPath);
-  }, [paths, currentPath, mode, widget.w, widget.h, draw, isStudentView]);
+    draw(ctx, paths, currentPathRef.current);
+  }, [paths, mode, widget.w, widget.h, draw, isStudentView]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (isStudentView) return;
     setIsDrawing(true);
     const pos = getPos(e);
-    setCurrentPath([pos]);
+    currentPathRef.current = [pos];
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (isStudentView || !isDrawing) return;
     const pos = getPos(e);
-    setCurrentPath((prev) => [...prev, pos]);
+    const path = currentPathRef.current;
+
+    // Draw the new segment directly to canvas to avoid re-render
+    const canvas = canvasRef.current;
+    if (canvas && path.length > 0) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const lastPos = path[path.length - 1];
+
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = width;
+
+        if (color === 'eraser') {
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.strokeStyle = 'rgba(0,0,0,1)';
+        } else {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.strokeStyle = color;
+        }
+
+        ctx.moveTo(lastPos.x, lastPos.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    path.push(pos);
   };
 
   const handleEnd = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (currentPath.length > 1) {
-      const newPath: Path = { points: currentPath, color, width };
+
+    const path = currentPathRef.current;
+    if (path.length > 1) {
+      const newPath: Path = { points: [...path], color, width };
       updateWidget(widget.id, {
         config: {
           ...config,
@@ -178,7 +209,7 @@ export const DrawingWidget: React.FC<{
         } as DrawingConfig,
       });
     }
-    setCurrentPath([]);
+    currentPathRef.current = [];
   };
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
