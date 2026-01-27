@@ -3,3 +3,5 @@
 ## 2026-01-20 - [Missing CI for Functions] **Bottleneck:** Backend code (functions) is not validated in PRs, risking broken deployments. **Fix:** Migrated functions to pnpm and added parallel CI job for functions build in `pr-validation.yml`.
 
 ## 2026-01-26 - [Broken Production Deploy] **Bottleneck:** Production deployment workflow was only deploying Hosting and missing Functions build/deploy, leading to config drift and potential runtime errors. **Fix:** Updated `firebase-deploy.yml` to install function deps, build functions, and deploy all targets using `firebase-tools` with a service account.
+
+## 2026-02-12 - [CI/CD Optimization & Config Drift] **Bottleneck:** `pr-validation` was installing function dependencies unnecessarily for linting, and `firebase-dev-deploy` was missing function verification entirely. **Fix:** Optimized `pr-validation.yml` to remove redundant steps and updated `firebase-dev-deploy.yml` to build functions, preventing config drift in dev branches.

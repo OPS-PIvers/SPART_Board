@@ -27,9 +27,20 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install functions dependencies
+        working-directory: functions
+        run: pnpm install --frozen-lockfile
+
+      - name: Build functions
+        working-directory: functions
+        run: pnpm run build
 
       - name: Run type check
         run: pnpm run type-check
