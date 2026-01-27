@@ -8,9 +8,10 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
-import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import { Plus, Trash2, Users, RefreshCw, Trophy, Download } from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
+import { downloadCsv } from '../../utils/export';
 
 const DEFAULT_TEAMS: ScoreboardTeam[] = [
   { id: 'team-a', name: 'Team A', score: 0, color: 'bg-blue-500' },
@@ -257,6 +258,28 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
           icon={<Plus className="w-4 h-4" />}
         >
           Add Team
+        </Button>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Actions
+        </label>
+        <Button
+          onClick={() => {
+            const rows = teams.map((t) => [t.name, t.score]);
+            downloadCsv(
+              `Scoreboard_${new Date().toISOString().split('T')[0]}.csv`,
+              ['Team', 'Score'],
+              rows
+            );
+            addToast('Scores exported to CSV', 'success');
+          }}
+          icon={<Download className="w-3.5 h-3.5" />}
+          className="w-full"
+          variant="secondary"
+        >
+          Export Scores
         </Button>
       </div>
     </div>

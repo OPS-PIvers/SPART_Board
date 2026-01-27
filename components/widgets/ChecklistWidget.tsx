@@ -16,7 +16,10 @@ import {
   Users,
   RefreshCw,
   BookOpen,
+  Download,
 } from 'lucide-react';
+import { Button } from '../common/Button';
+import { downloadCsv } from '../../utils/export';
 
 interface ChecklistRowProps {
   id: string;
@@ -251,7 +254,8 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, activeDashboard, addToast } = useDashboard();
+  const { updateWidget, activeDashboard, addToast, rosters, activeRosterId } =
+    useDashboard();
   const config = widget.config as ChecklistConfig;
   const {
     items = [],
@@ -259,6 +263,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     rosterMode = 'class',
     firstNames = '',
     lastNames = '',
+    completedNames = [],
     scaleMultiplier = 1,
   } = config;
 
@@ -450,6 +455,61 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
             {scaleMultiplier}x
           </span>
         </div>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100">
+        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
+          Actions
+        </label>
+        <Button
+          onClick={() => {
+            let rows: (string | boolean)[][] = [];
+
+            if (mode === 'manual') {
+              rows = items.map((i) => [i.text, i.completed ? 'Yes' : 'No']);
+            } else {
+              let studentNames: string[] = [];
+              const activeRoster = rosters.find((r) => r.id === activeRosterId);
+
+              if (rosterMode === 'class' && activeRoster) {
+                studentNames = activeRoster.students.map((s) =>
+                  `${s.firstName} ${s.lastName}`.trim()
+                );
+              } else {
+                const firsts = firstNames
+                  .split('\n')
+                  .map((n) => n.trim())
+                  .filter((n) => n);
+                const lasts = lastNames
+                  .split('\n')
+                  .map((n) => n.trim())
+                  .filter((n) => n);
+                const count = Math.max(firsts.length, lasts.length);
+                for (let i = 0; i < count; i++) {
+                  const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
+                  if (name) studentNames.push(name);
+                }
+              }
+
+              rows = studentNames.map((name) => [
+                name,
+                (completedNames ?? []).includes(name) ? 'Yes' : 'No',
+              ]);
+            }
+
+            downloadCsv(
+              `Checklist_${new Date().toISOString().split('T')[0]}.csv`,
+              ['Item', 'Completed'],
+              rows
+            );
+            addToast('List exported to CSV', 'success');
+          }}
+          icon={<Download className="w-3.5 h-3.5" />}
+          className="w-full"
+          variant="secondary"
+        >
+          Export List
+        </Button>
       </div>
     </div>
   );
