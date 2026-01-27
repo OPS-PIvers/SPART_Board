@@ -106,6 +106,6 @@ describe('DrawingWidget', () => {
     expect(callArgs[0]).toBe('drawing-1');
     const newConfig = callArgs[1].config as DrawingConfig;
     expect(newConfig.paths).toHaveLength(1);
-    expect(newConfig.paths[0].points.length).toBeGreaterThan(0);
+    expect(newConfig.paths[0].points.length).toBe(2);
   });
 });
