@@ -63,30 +63,23 @@ vi.mock('../hooks/useRosters', () => ({
 }));
 
 describe('DashboardContext Sharing Logic', () => {
-  const originalLocation = window.location;
+  const originalPathname = window.location.pathname;
+  let replaceStateMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    Object.defineProperty(window, 'location', {
-      value: {
-        ...originalLocation,
-        pathname: '/share/test-share-id',
-        assign: vi.fn(),
-        replace: vi.fn(),
-      },
-      writable: true,
-    });
+    // Simulate visiting the share URL by updating the history state
+    window.history.pushState({}, '', '/share/test-share-id');
 
     // Mock history.replaceState
-    window.history.replaceState = vi.fn();
+    replaceStateMock = vi.fn();
+    window.history.replaceState = replaceStateMock;
   });
 
   afterEach(() => {
-    Object.defineProperty(window, 'location', {
-      value: originalLocation,
-      writable: true,
-    });
+    // Restore original pathname after each test
+    window.history.pushState({}, '', originalPathname);
   });
 
   it('should load shared dashboard and duplicate it when visiting share URL', async () => {
@@ -119,20 +112,19 @@ describe('DashboardContext Sharing Logic', () => {
       expect(mockSaveDashboard).toHaveBeenCalled();
       // We might have multiple calls to saveDashboard (one for default dashboard, one for shared)
       // We need to find the one that corresponds to the shared dashboard
-      const calls = mockSaveDashboard.mock.calls;
+      const calls = mockSaveDashboard.mock.calls as Array<[Dashboard]>;
       const sharedSave = calls.find(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (call) => call[0].name === 'Shared Board (Copy)'
       );
       expect(sharedSave).toBeDefined();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-non-null-assertion
-      expect(sharedSave![0].id).not.toBe('original-id');
+      if (sharedSave) {
+        expect(sharedSave[0].id).not.toBe('original-id');
+      }
     });
 
     // Verify URL cleanup
     await waitFor(() => {
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(window.history.replaceState).toHaveBeenCalledWith(null, '', '/');
+      expect(replaceStateMock).toHaveBeenCalledWith(null, '', '/');
     });
   });
 });

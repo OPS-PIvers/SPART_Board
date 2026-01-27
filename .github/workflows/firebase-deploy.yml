@@ -65,9 +65,13 @@ jobs:
       - name: Create Service Account File
         env:
           SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: echo "$SERVICE_ACCOUNT" > ./service-account.json
+        run: printf '%s' "$SERVICE_ACCOUNT" > ./service-account.json
 
       - name: Deploy to Firebase (Functions & Hosting)
-        run: pnpm exec firebase deploy --project spartboard
+        run: pnpm exec firebase deploy --only functions,hosting --project spartboard
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
+
+      - name: Delete Service Account File
+        if: always()
+        run: rm -f ./service-account.json
