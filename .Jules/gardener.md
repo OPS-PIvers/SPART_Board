@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-06-03 - Refactor InstructionalRoutinesWidget
+
+**Weed:** `InstructionalRoutinesWidget.tsx` was >1000 lines, containing the main widget, settings, library manager, and helper components.
+**Root Cause:** "God Component" pattern where multiple distinct UI views (Student, Teacher/Settings, Admin/Library) were co-located.
+**Plan:** Decomposed into `components/widgets/InstructionalRoutines/` directory with separate files for `Widget`, `Settings`, `LibraryManager`, `IconPicker`, and `constants`. Added basic unit tests.
+
 ## 2025-05-30 - Extract Roster Logic from DashboardContext
 
 **Weed:** `DashboardContext.tsx` was over 1400 lines (God Object), mixing global app state with specific Roster management logic (including a mock implementation).
