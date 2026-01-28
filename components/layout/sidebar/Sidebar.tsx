@@ -142,7 +142,7 @@ export const Sidebar: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 15,
       },
     }),
     useSensor(KeyboardSensor, {

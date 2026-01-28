@@ -142,7 +142,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
   const isMaximized = widget.maximized ?? false;
 
-  const handleMouseDown = (_e: React.MouseEvent) => {
+  const handlePointerDown = (_e: React.PointerEvent) => {
     bringToFront(widget.id);
   };
 
@@ -165,7 +165,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     setIsEditingTitle(false);
   };
 
-  const handleDragStart = (e: React.MouseEvent) => {
+  const handleDragStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
 
     // Don't drag if clicking interactive elements or resize handle
@@ -185,7 +185,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const initialMouseX = e.clientX;
     const initialMouseY = e.clientY;
 
-    const onMouseMove = (moveEvent: MouseEvent) => {
+    const onPointerMove = (moveEvent: PointerEvent) => {
       dragDistanceRef.current = Math.sqrt(
         Math.pow(moveEvent.clientX - initialMouseX, 2) +
           Math.pow(moveEvent.clientY - initialMouseY, 2)
@@ -197,18 +197,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       });
     };
 
-    const onMouseUp = () => {
+    const onPointerUp = () => {
       setIsDragging(false);
       document.body.classList.remove('is-dragging-widget');
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
-  const handleResizeStart = (e: React.MouseEvent) => {
+  const handleResizeStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
     e.stopPropagation();
     setIsResizing(true);
@@ -218,22 +218,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const startX = e.clientX;
     const startY = e.clientY;
 
-    const onMouseMove = (moveEvent: MouseEvent) => {
+    const onPointerMove = (moveEvent: PointerEvent) => {
       updateWidget(widget.id, {
         w: Math.max(150, startW + (moveEvent.clientX - startX)),
         h: Math.max(100, startH + (moveEvent.clientY - startY)),
       });
     };
 
-    const onMouseUp = () => {
+    const onPointerUp = () => {
       setIsResizing(false);
       document.body.classList.remove('is-dragging-widget');
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
@@ -246,8 +246,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     );
     if (isInteractive) return;
 
-    // Only toggle tools if it wasn't a drag (less than 5px movement)
-    if (!isEditingTitle && dragDistanceRef.current < 5) {
+    // Only toggle tools if it wasn't a drag (less than 15px movement)
+    if (!isEditingTitle && dragDistanceRef.current < 15) {
       setShowTools(!showTools);
     }
     dragDistanceRef.current = 0;
@@ -298,7 +298,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       <GlassCard
         globalStyle={globalStyle}
         ref={windowRef}
-        onMouseDown={handleMouseDown}
+        onPointerDown={handlePointerDown}
         onClick={handleWidgetClick}
         transparency={transparency}
         cornerRadius={isMaximized ? 'none' : undefined}
@@ -315,6 +315,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           flexDirection: 'column',
           opacity: widget.minimized ? 0 : 1,
           pointerEvents: widget.minimized ? 'none' : 'auto',
+          touchAction: isDragging ? 'none' : 'auto', // Prevent scrolling while dragging
           ...style, // Merge custom styles
         }}
       >
@@ -327,8 +328,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               className="front absolute inset-0 w-full h-full flex flex-col"
               style={{
                 pointerEvents: widget.flipped ? 'none' : 'auto',
+                touchAction: 'none', // Critical for dragging on touch
               }}
-              onMouseDown={handleDragStart}
+              onPointerDown={handleDragStart}
             >
               {showConfirm && (
                 <div
@@ -475,8 +477,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
               </div>
               <div
-                onMouseDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60]"
+                onPointerDown={handleResizeStart}
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
                 <ResizeHandleIcon className="text-slate-400/80" />
               </div>
@@ -546,8 +548,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
               </div>
               <div
-                onMouseDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60]"
+                onPointerDown={handleResizeStart}
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
                 <ResizeHandleIcon className="text-slate-500/80" />
               </div>
@@ -565,7 +567,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             style={menuStyle}
             className={`flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl font-${globalStyle.fontFamily}`}
             onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center min-w-0 px-2">
               {isEditingTitle ? (

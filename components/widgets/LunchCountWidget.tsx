@@ -591,6 +591,26 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
+  const cycleAssignment = (name: string) => {
+    const current = assignments[name];
+    let next: LunchType | null = null;
+
+    if (!current) next = 'hot';
+    else if (current === 'hot') next = 'bento';
+    else if (current === 'bento') next = 'home';
+    else next = null;
+
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        assignments: {
+          ...assignments,
+          [name]: next as LunchCountConfig['assignments'][string],
+        },
+      },
+    });
+  };
+
   const unassigned = currentRoster.filter((name) => !assignments[name]);
 
   return (
@@ -657,7 +677,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
+                    onClick={() => cycleAssignment(name)}
                     className="px-2 py-1 bg-white border border-orange-100 rounded-lg text-xxs  shadow-sm cursor-grab active:cursor-grabbing"
+                    title="Drag or Click to cycle"
                   >
                     {name}
                   </div>
@@ -693,7 +715,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
+                    onClick={() => cycleAssignment(name)}
                     className="px-2 py-1 bg-white border border-emerald-100 rounded-lg text-xxs  shadow-sm cursor-grab active:cursor-grabbing"
+                    title="Drag or Click to cycle"
                   >
                     {name}
                   </div>
@@ -729,7 +753,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       e.dataTransfer.setData('studentName', name)
                     }
+                    onClick={() => cycleAssignment(name)}
                     className="px-2 py-1 bg-white border border-blue-100 rounded-lg text-xxs  shadow-sm cursor-grab active:cursor-grabbing"
+                    title="Drag or Click to cycle"
                   >
                     {name}
                   </div>
@@ -757,7 +783,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   onDragStart={(e) =>
                     e.dataTransfer.setData('studentName', name)
                   }
+                  onClick={() => cycleAssignment(name)}
                   className="px-4 py-2 bg-white/80 border-b-2 border-slate-200 rounded-xl text-xs  shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
+                  title="Drag or Click to cycle"
                 >
                   {name}
                 </div>

@@ -281,11 +281,9 @@ const ToolDockItem = ({
           ref={buttonRef}
           {...attributes}
           {...listeners}
-          onMouseDown={handlePointerDown}
-          onMouseUp={handlePointerUp}
-          onTouchStart={handlePointerDown}
-          onTouchEnd={handlePointerUp}
-          onMouseLeave={handlePointerUp}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
           onClick={handleClick}
           className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
             isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
@@ -377,10 +375,9 @@ const SortableFolderWidget = ({
             if (isEditMode) return;
             onAdd();
           }}
-          onMouseDown={handlePointerDown}
-          onMouseUp={handlePointerUp}
-          onTouchStart={handlePointerDown}
-          onTouchEnd={handlePointerUp}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
           className={`relative ${
             isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
           }`}
@@ -412,8 +409,6 @@ const SortableFolderWidget = ({
               e.stopPropagation();
               // Do not preventDefault here if it blocks the click, but usually stopPropagation is enough for dnd-kit
             }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
             className="absolute -top-2 -right-2 z-widget-drag bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer"
           >
             <X className="w-2.5 h-2.5" />
@@ -597,10 +592,9 @@ const FolderItem = ({
           ref={buttonRef}
           {...attributes}
           {...listeners}
-          onMouseDown={handlePointerDown}
-          onMouseUp={handlePointerUp}
-          onTouchStart={handlePointerDown}
-          onTouchEnd={handlePointerUp}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
           onClick={() => setShowPopover(true)}
           className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative ${
             isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
@@ -790,7 +784,7 @@ export const Dock: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Require 5px movement to start drag
+        distance: 15, // Require 15px movement to start drag (better for large touch panels)
       },
     })
   );

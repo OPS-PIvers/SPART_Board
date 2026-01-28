@@ -71,7 +71,7 @@ export const SortableDashboardItem: React.FC<SortableDashboardItemProps> = ({
         <div
           {...attributes}
           {...listeners}
-          className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur rounded-lg text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur rounded-lg text-slate-500 hover:text-slate-700 cursor-grab active:cursor-grabbing shadow-sm transition-all"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="w-4 h-4" />

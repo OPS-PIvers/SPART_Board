@@ -81,21 +81,19 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     draw(ctx, paths, currentPath);
   }, [paths, currentPath, canvasWidth, canvasHeight, draw]);
 
-  const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
+  const getPos = (e: React.PointerEvent): Point => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return { x: 0, y: 0 };
     }
     const rect = canvas.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     };
   };
 
-  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleStart = (e: React.PointerEvent) => {
     // Prevent dragging the window (parent DraggableWindow)
     e.stopPropagation();
 
@@ -104,14 +102,14 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     setCurrentPath([pos]);
   };
 
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMove = (e: React.PointerEvent) => {
     if (!isDrawing) return;
     e.stopPropagation();
     const pos = getPos(e);
     setCurrentPath((prev) => [...prev, pos]);
   };
 
-  const handleEnd = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleEnd = (e: React.PointerEvent) => {
     if (!isDrawing) return;
     e.stopPropagation();
     setIsDrawing(false);
@@ -126,13 +124,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     <canvas
       ref={canvasRef}
       className={`touch-none cursor-crosshair ${className ?? ''}`}
-      onMouseDown={handleStart}
-      onMouseMove={handleMove}
-      onMouseUp={handleEnd}
-      onMouseLeave={handleEnd}
-      onTouchStart={handleStart}
-      onTouchMove={handleMove}
-      onTouchEnd={handleEnd}
+      onPointerDown={handleStart}
+      onPointerMove={handleMove}
+      onPointerUp={handleEnd}
+      onPointerLeave={handleEnd}
+      style={{ touchAction: 'none' }}
     />
   );
 };

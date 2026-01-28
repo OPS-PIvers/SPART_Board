@@ -24,7 +24,8 @@ const DEFAULT_STICKERS = [
 export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, clearAllStickers } = useDashboard();
+  const { updateWidget, clearAllStickers, addWidget, addToast } =
+    useDashboard();
   const { user } = useAuth();
   const { uploadSticker, uploading: storageUploading } = useStorage();
   const [processing, setProcessing] = useState(false);
@@ -36,6 +37,14 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     () => config.uploadedUrls ?? [],
     [config.uploadedUrls]
   );
+
+  const removeCustomSticker = (index: number) => {
+    const next = [...customStickers];
+    next.splice(index, 1);
+    updateWidget(widget.id, {
+      config: { ...config, uploadedUrls: next },
+    });
+  };
 
   const processFile = useCallback(
     async (file: File) => {
@@ -154,12 +163,19 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     e.dataTransfer.dropEffect = 'copy';
   };
 
-  const removeCustomSticker = (index: number) => {
-    const next = [...customStickers];
-    next.splice(index, 1);
-    updateWidget(widget.id, {
-      config: { ...config, uploadedUrls: next },
+  const handleStickerClick = (url: string) => {
+    // Add sticker to the center of the viewport or a default position
+    const w = 150;
+    const h = 150;
+    // Try to place it near the top-left but visible
+    addWidget('sticker', {
+      x: 100,
+      y: 100,
+      w,
+      h,
+      config: { url, rotation: 0 },
     });
+    addToast('Sticker added to board!', 'success');
   };
 
   return (
@@ -233,7 +249,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                 draggable
                 data-no-drag="true"
                 onDragStart={(e) => handleDragStart(e, url)}
+                onClick={() => handleStickerClick(url)}
                 className="aspect-square flex items-center justify-center bg-slate-50 rounded-xl hover:bg-blue-50 hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200"
+                title="Drag or Click to add"
               >
                 <img
                   src={url}
@@ -258,7 +276,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   draggable
                   data-no-drag="true"
                   onDragStart={(e) => handleDragStart(e, url)}
+                  onClick={() => handleStickerClick(url)}
                   className="group relative aspect-square flex items-center justify-center bg-slate-50 rounded-xl hover:bg-blue-50 transition-all cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200"
+                  title="Drag or Click to add"
                 >
                   <img
                     src={url}

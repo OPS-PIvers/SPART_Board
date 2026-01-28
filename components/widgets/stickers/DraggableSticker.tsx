@@ -37,7 +37,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
   const config = widget.config as StickerConfig;
   const rotation = config.rotation ?? 0;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     // If clicking menu or handles, don't drag
     if ((e.target as HTMLElement).closest('.sticker-control')) {
       return;
@@ -56,7 +56,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     const origY = widget.y;
     let hasMoved = false;
 
-    const onMouseMove = (ev: MouseEvent) => {
+    const onPointerMove = (ev: PointerEvent) => {
       hasMoved = true;
       setIsDragging(true);
       const dx = ev.clientX - startX;
@@ -64,20 +64,20 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
       updateWidget(widget.id, { x: origX + dx, y: origY + dy });
     };
 
-    const onMouseUp = () => {
+    const onPointerUp = () => {
       setIsDragging(false);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
       if (!hasMoved) {
         // Just a click
       }
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
-  const handleRotateStart = (e: React.MouseEvent) => {
+  const handleRotateStart = (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
     const rect = nodeRef.current?.getBoundingClientRect();
@@ -86,7 +86,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    const onMouseMove = (ev: MouseEvent) => {
+    const onPointerMove = (ev: PointerEvent) => {
       const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
       const deg = angle * (180 / Math.PI) + 90;
       updateWidget(widget.id, {
@@ -94,16 +94,16 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
       });
     };
 
-    const onMouseUp = () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
-  const handleResizeStart = (e: React.MouseEvent) => {
+  const handleResizeStart = (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
 
@@ -117,7 +117,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
 
-    const onMouseMove = (ev: MouseEvent) => {
+    const onPointerMove = (ev: PointerEvent) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
 
@@ -134,13 +134,13 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
       });
     };
 
-    const onMouseUp = () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
   return (
@@ -157,7 +157,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
         cursor: 'move',
         touchAction: 'none',
       }}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
     >
       <div className="w-full h-full relative">
         {children}
@@ -173,7 +173,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
             {/* Rotate Handle */}
             <div
               className="sticker-control absolute -top-8 left-1/2 -translate-x-1/2 cursor-grab active:cursor-grabbing"
-              onMouseDown={handleRotateStart}
+              onPointerDown={handleRotateStart}
             >
               <div className="p-1.5 bg-white shadow rounded-full text-blue-600 border border-blue-100">
                 <RotateCw size={14} />
@@ -184,7 +184,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
             {/* Resize Handle (Corner) */}
             <div
               className="sticker-control absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-0.5"
-              onMouseDown={handleResizeStart}
+              onPointerDown={handleResizeStart}
             >
               <div className="w-3 h-3 border-r-2 border-b-2 border-blue-500 bg-white/50 rounded-br-[2px]" />
             </div>
@@ -193,7 +193,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
             <div
               className="sticker-control absolute -top-3 -right-3 z-[9999]"
               style={{ transform: `rotate(${-rotation}deg)` }}
-              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <div className="relative">
                 <button

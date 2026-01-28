@@ -169,7 +169,7 @@ export const DrawingWidget: React.FC<{
     draw(ctx, paths, currentPathRef.current);
   }, [paths, mode, widget.w, widget.h, draw, isStudentView]);
 
-  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleStart = (e: React.PointerEvent) => {
     if (isStudentView) return;
     setIsDrawing(true);
     const pos = getPos(e);
@@ -184,7 +184,7 @@ export const DrawingWidget: React.FC<{
     }
   };
 
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMove = (e: React.PointerEvent) => {
     if (isStudentView || !isDrawing) return;
     const pos = getPos(e);
     currentPathRef.current.push(pos);
@@ -218,17 +218,15 @@ export const DrawingWidget: React.FC<{
     currentPathRef.current = [];
   };
 
-  const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
+  const getPos = (e: React.PointerEvent): Point => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return { x: 0, y: 0 };
     }
     const rect = canvas.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     };
   };
 
@@ -374,14 +372,12 @@ export const DrawingWidget: React.FC<{
             <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
             <canvas
               ref={canvasRef}
-              onMouseDown={handleStart}
-              onMouseMove={handleMove}
-              onMouseUp={handleEnd}
-              onMouseLeave={handleEnd}
-              onTouchStart={handleStart}
-              onTouchMove={handleMove}
-              onTouchEnd={handleEnd}
+              onPointerDown={handleStart}
+              onPointerMove={handleMove}
+              onPointerUp={handleEnd}
+              onPointerLeave={handleEnd}
               className="absolute inset-0 pointer-events-auto cursor-crosshair"
+              style={{ touchAction: 'none' }}
             />
             {/* Floating Toolbar at the Top */}
             {!isStudentView && (
@@ -418,14 +414,12 @@ export const DrawingWidget: React.FC<{
       >
         <canvas
           ref={canvasRef}
-          onMouseDown={handleStart}
-          onMouseMove={handleMove}
-          onMouseUp={handleEnd}
-          onMouseLeave={handleEnd}
-          onTouchStart={handleStart}
-          onTouchMove={handleMove}
-          onTouchEnd={handleEnd}
+          onPointerDown={handleStart}
+          onPointerMove={handleMove}
+          onPointerUp={handleEnd}
+          onPointerLeave={handleEnd}
           className="absolute inset-0"
+          style={{ touchAction: 'none' }}
         />
         {paths.length === 0 && !isDrawing && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-300">

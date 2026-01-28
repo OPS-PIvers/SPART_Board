@@ -57,6 +57,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [bulkCount, setBulkCount] = useState<number>(1);
   const [dragState, setDragState] = useState<{
     id: string;
@@ -198,6 +199,33 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       config: { ...config, furniture: next, assignments: nextAssignments },
     });
     setSelectedId(null);
+  };
+
+  const handleStudentClick = (studentName: string) => {
+    if (mode !== 'assign') return;
+    if (selectedStudent === studentName) {
+      setSelectedStudent(null);
+    } else {
+      setSelectedStudent(studentName);
+    }
+  };
+
+  const handleFurnitureClick = (furnitureId: string) => {
+    if (mode === 'setup') {
+      setSelectedId(furnitureId);
+      return;
+    }
+
+    if (mode === 'assign' && selectedStudent) {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          assignments: { ...assignments, [selectedStudent]: furnitureId },
+        },
+      });
+      setSelectedStudent(null);
+      addToast(`Assigned ${selectedStudent}`, 'success');
+    }
   };
 
   // --- DRAG LOGIC (Furniture) ---
@@ -588,7 +616,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                         onDragStart={(e) =>
                           e.dataTransfer.setData('studentName', student)
                         }
-                        className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm text-xs font-bold text-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors"
+                        onClick={() => handleStudentClick(student)}
+                        className={`p-2 bg-white border ${selectedStudent === student ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'} rounded-lg shadow-sm text-xs font-bold text-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all`}
+                        title="Drag or Click to assign"
                       >
                         {student}
                       </div>
@@ -626,7 +656,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
               <div
                 key={item.id}
                 onPointerDown={(e) => handlePointerDown(e, item.id)}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFurnitureClick(item.id);
+                }}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';

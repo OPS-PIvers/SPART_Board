@@ -146,7 +146,8 @@ const ROUTINE_DB: Record<string, Routine[]> = {
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter, activeDashboard } = useDashboard();
+  const { updateWidget, gradeFilter, activeDashboard, addWidget } =
+    useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = (widget.config as WorkSymbolsConfig) ?? {};
   const activeRoutines = config.activeRoutines ?? [];
@@ -207,6 +208,19 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     e.dataTransfer.effectAllowed = 'copy';
   };
 
+  const handleStepClick = (icon: string, color: string, label: string) => {
+    // Add symbol as a sticker to the center of the viewport or a default position
+    const w = 150;
+    const h = 150;
+    addWidget('sticker', {
+      x: 100,
+      y: 100,
+      w,
+      h,
+      config: { icon, color, label, rotation: 0 },
+    });
+  };
+
   // 9-12 High School View
   if (gradeFilter === '9-12') {
     if (viewState === 'facilitator') {
@@ -257,7 +271,11 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) =>
                       onDragStart(e, step.icon, step.color, step.label)
                     }
+                    onClick={() =>
+                      handleStepClick(step.icon, step.color, step.label)
+                    }
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 bg-white cursor-grab active:cursor-grabbing hover:shadow-md transition-all group`}
+                    title="Drag or Click to add to board"
                   >
                     <div
                       className={`p-2 rounded-lg ${bgClass} ${colorClass} group-hover:scale-110 transition-transform`}
