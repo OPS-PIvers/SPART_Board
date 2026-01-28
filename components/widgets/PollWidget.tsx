@@ -14,7 +14,6 @@ import {
 import { Button } from '../common/Button';
 import { MagicInput } from '../common/MagicInput';
 import { generatePoll, GeneratedPoll } from '../../utils/ai';
-import { useAuth } from '../../context/useAuth';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -92,7 +91,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
       <button
         onClick={handleReset}
-        className="mt-4 flex items-center justify-center gap-2 py-2 text-xxs font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
+        className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
       >
         <RotateCcw className="w-3 h-3" /> Reset Poll
       </button>
@@ -123,7 +122,6 @@ const OptionInput: React.FC<OptionInputProps> = ({ label, index, onSave }) => {
 
 export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
-  const { canAccessFeature } = useAuth();
   const config = (widget.config || {}) as PollConfig;
   const { question = 'Vote Now!', options = [] } = config;
 
@@ -253,44 +251,42 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </Button>
         </div>
         {!activeRoster && (
-          <div className="text-xxs text-indigo-400 font-medium">
+          <div className="text-[10px] text-indigo-400 font-medium">
             Tip: Select a class in the Classes widget to import student names.
           </div>
         )}
       </div>
 
       {/* Magic Generator */}
-      {canAccessFeature('gemini-functions') && (
-        <div>
-          <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-            Magic Generator
-          </label>
-          <MagicInput<GeneratedPoll>
-            onGenerate={generatePoll}
-            onSuccess={(result) => {
-              const newOptions = result.options.map((opt) => ({
-                label: opt,
-                votes: 0,
-              }));
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  question: result.question,
-                  options: newOptions,
-                } as PollConfig,
-              });
-              setLocalQuestion(result.question);
-              addToast('Poll generated magically!', 'success');
-            }}
-            placeholder="e.g. Photosynthesis, Civil War, 3rd Grade Math..."
-            buttonLabel="Magic Poll"
-          />
-        </div>
-      )}
+      <div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+          Magic Generator
+        </label>
+        <MagicInput<GeneratedPoll>
+          onGenerate={generatePoll}
+          onSuccess={(result) => {
+            const newOptions = result.options.map((opt) => ({
+              label: opt,
+              votes: 0,
+            }));
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                question: result.question,
+                options: newOptions,
+              } as PollConfig,
+            });
+            setLocalQuestion(result.question);
+            addToast('Poll generated magically!', 'success');
+          }}
+          placeholder="e.g. Photosynthesis, Civil War, 3rd Grade Math..."
+          buttonLabel="Magic Poll"
+        />
+      </div>
 
       {/* Question Edit */}
       <div>
-        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
           <Type className="w-3 h-3" /> Question
         </label>
         <input
@@ -306,7 +302,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Options List */}
       <div>
-        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-2 block">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
           Options
         </label>
         <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
@@ -338,7 +334,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Actions */}
       <div className="pt-4 border-t border-slate-100">
-        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Actions
         </label>
         <div className="grid grid-cols-2 gap-3">

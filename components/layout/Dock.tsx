@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   LayoutGrid,
@@ -10,6 +10,7 @@ import {
   Cast,
   FolderPlus,
   X,
+  Wand2,
 } from 'lucide-react';
 import {
   DndContext,
@@ -50,6 +51,8 @@ import { DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
 import { WidgetLibrary } from './dock/WidgetLibrary';
 import { RenameFolderModal } from './dock/RenameFolderModal';
+import { MagicLayoutModal } from './dock/MagicLayoutModal';
+import { detectWidgetType } from '../../utils/smartPaste';
 
 /**
  * Custom Label Component for consistent readability
@@ -679,8 +682,41 @@ export const Dock: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(false); // Widget Library Visibility
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [showMagicLayout, setShowMagicLayout] = useState(false);
 
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+
+  const { addToast } = useDashboard();
+
+  // Smart Paste Handler
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const text = e.clipboardData?.getData('text');
+      if (text) {
+        const detected = detectWidgetType(text);
+        if (detected) {
+          addWidget(detected.type, { config: detected.config });
+          addToast(
+            `Added ${detected.type.charAt(0).toUpperCase() + detected.type.slice(1)} widget from clipboard!`,
+            'success'
+          );
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [addWidget, addToast]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -1175,6 +1211,17 @@ export const Dock: React.FC = () => {
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
 
                   <button
+                    onClick={() => setShowMagicLayout(true)}
+                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                    title="Magic Layout"
+                  >
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200">
+                      <Wand2 className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <DockLabel>Magic</DockLabel>
+                  </button>
+
+                  <button
                     onClick={() => setIsExpanded(false)}
                     className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
                     title="Minimize Toolbar"
@@ -1191,6 +1238,10 @@ export const Dock: React.FC = () => {
                 </div>
               )}
             </GlassCard>
+
+            {showMagicLayout && (
+              <MagicLayoutModal onClose={() => setShowMagicLayout(false)} />
+            )}
           </>
         ) : (
           /* Compressed down to a single icon (plus quick access) */

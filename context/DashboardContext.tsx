@@ -935,7 +935,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
   const addWidget = useCallback(
-    (type: WidgetType, initialData?: Partial<WidgetData>) => {
+    (type: WidgetType, overrides?: Partial<WidgetData>) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
 
@@ -943,31 +943,74 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((d) => {
           if (d.id !== activeId) return d;
           const maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
-
-          const defaultPosition = {
-            x: 150 + d.widgets.length * 20,
-            y: 150 + d.widgets.length * 20,
-          };
-
-          const defaults = WIDGET_DEFAULTS[type] || {};
+          const defaults = WIDGET_DEFAULTS[type] ?? {};
 
           const newWidget: WidgetData = {
             id: crypto.randomUUID(),
             type,
-            x: initialData?.x ?? defaultPosition.x,
-            y: initialData?.y ?? defaultPosition.y,
-            w: initialData?.w ?? defaults.w ?? 200,
-            h: initialData?.h ?? defaults.h ?? 200,
+            x: 50,
+            y: 80,
+            w: defaults.w ?? 200,
+            h: defaults.h ?? 200,
             flipped: false,
             z: maxZ + 1,
             ...defaults,
-            ...initialData,
+            ...overrides,
             config: {
               ...(defaults.config ?? {}),
-              ...(initialData?.config ?? {}),
+              ...(overrides?.config ?? {}),
             },
-          } as WidgetData;
+          };
           return { ...d, widgets: [...d.widgets, newWidget] };
+        })
+      );
+    },
+    [activeId]
+  );
+
+  const addWidgets = useCallback(
+    (widgetsToAdd: { type: WidgetType; config?: WidgetConfig }[]) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          let maxZ = d.widgets.reduce((max, w) => Math.max(max, w.z), 0);
+
+          const START_X = 50;
+          const START_Y = 80;
+          const COL_WIDTH = 300 + 50; // Width + Gap
+
+          const newWidgets = widgetsToAdd.map((item, index) => {
+            const defaults = WIDGET_DEFAULTS[item.type] ?? {};
+            maxZ++;
+
+            // 3-Column Grid Layout
+            const col = index % 3;
+            const row = Math.floor(index / 3);
+
+            // Row height assumption
+            const ROW_HEIGHT = 250;
+
+            return {
+              id: crypto.randomUUID(),
+              type: item.type,
+              x: START_X + col * COL_WIDTH,
+              y: START_Y + row * ROW_HEIGHT,
+              w: defaults.w ?? 200,
+              h: defaults.h ?? 200,
+              flipped: false,
+              z: maxZ,
+              ...defaults,
+              config: {
+                ...(defaults.config ?? {}),
+                ...(item.config ?? {}),
+              },
+            } as WidgetData;
+          });
+
+          return { ...d, widgets: [...d.widgets, ...newWidgets] };
         })
       );
     },
@@ -1224,6 +1267,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDashboards,
       setDefaultDashboard,
       addWidget,
+      addWidgets,
       removeWidget,
       duplicateWidget,
       removeWidgets,
@@ -1279,6 +1323,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       reorderDashboards,
       setDefaultDashboard,
       addWidget,
+      addWidgets,
       removeWidget,
       duplicateWidget,
       removeWidgets,

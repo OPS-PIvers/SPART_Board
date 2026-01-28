@@ -1,14 +1,15 @@
 import { createContext } from 'react';
 import {
-  Dashboard,
   WidgetData,
   WidgetType,
   Toast,
-  ClassRoster,
-  Student,
+  Dashboard,
   GradeFilter,
+  ClassRoster,
   DockItem,
+  WidgetConfig,
   GlobalStyle,
+  Student,
 } from '../types';
 
 export interface DashboardContextValue {
@@ -31,7 +32,10 @@ export interface DashboardContextValue {
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
-  addWidget: (type: WidgetType, initialData?: Partial<WidgetData>) => void;
+  addWidget: (type: WidgetType, overrides?: Partial<WidgetData>) => void;
+  addWidgets: (
+    widgetsToAdd: { type: WidgetType; config?: WidgetConfig }[]
+  ) => void;
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   removeWidgets: (ids: string[]) => void;

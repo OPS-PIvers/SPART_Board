@@ -1,5 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/config/firebase';
+import { WidgetType, WidgetConfig } from '@/types';
+import { TOOLS } from '@/config/tools';
 
 export interface GeneratedMiniApp {
   /** The generated HTML code for the mini-app, including embedded CSS and JS */
@@ -8,11 +10,17 @@ export interface GeneratedMiniApp {
   title: string;
 }
 
+export interface GeneratedWidget {
+  type: WidgetType;
+  config: WidgetConfig;
+}
+
 interface AIResponseData {
   html?: string;
   title?: string;
   question?: string;
   options?: string[];
+  widgets?: GeneratedWidget[];
 }
 
 /**
@@ -27,7 +35,7 @@ export async function generateMiniAppCode(
 ): Promise<GeneratedMiniApp> {
   try {
     const generateWithAI = httpsCallable<
-      { type: 'mini-app' | 'poll'; prompt: string },
+      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
       AIResponseData
     >(functions, 'generateWithAI');
 
@@ -71,7 +79,7 @@ export interface GeneratedPoll {
 export async function generatePoll(topic: string): Promise<GeneratedPoll> {
   try {
     const generateWithAI = httpsCallable<
-      { type: 'mini-app' | 'poll'; prompt: string },
+      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
       AIResponseData
     >(functions, 'generateWithAI');
 
@@ -91,6 +99,63 @@ export async function generatePoll(topic: string): Promise<GeneratedPoll> {
 
     let errorMessage =
       'Failed to generate poll. Please try again with a different topic.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+/**
+ * Generates a dashboard layout based on a natural language description using a Firebase Function proxy.
+ *
+ * @param description - The lesson description or activity plan.
+ * @returns A promise resolving to an array of widget configurations.
+ * @throws Error if generation fails.
+ */
+export async function generateDashboardLayout(
+  description: string
+): Promise<GeneratedWidget[]> {
+  try {
+    const generateWithAI = httpsCallable<
+      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
+      AIResponseData
+    >(functions, 'generateWithAI');
+
+    const result = await generateWithAI({
+      type: 'dashboard-layout',
+      prompt: description,
+    });
+    const data = result.data;
+
+    if (!data.widgets || !Array.isArray(data.widgets)) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    if (data.widgets.length === 0) {
+      throw new Error(
+        "AI couldn't generate any widgets for this description. Please try a more specific lesson plan."
+      );
+    }
+
+    // Validate widget types
+    const validTypes = TOOLS.map((t) => t.type);
+    const validWidgets = data.widgets.filter((w) =>
+      validTypes.includes(w.type)
+    );
+
+    if (validWidgets.length === 0) {
+      throw new Error('AI generated invalid widget types.');
+    }
+
+    return validWidgets;
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage =
+      'Failed to generate layout. Please try again with a different description.';
 
     if (error instanceof Error) {
       errorMessage += ` Underlying error: ${error.message}`;

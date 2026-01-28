@@ -68,13 +68,16 @@ const mockDashboard: DashboardContextValue = {
     /* mock */
   },
   reorderDashboards: () => {
-    /* mock */
+    // No-op
   },
   setDefaultDashboard: () => {
-    /* mock */
+    // No-op
   },
   addWidget: () => {
-    /* mock */
+    // No-op
+  },
+  addWidgets: () => {
+    // No-op
   },
   removeWidget: () => {
     // No-op

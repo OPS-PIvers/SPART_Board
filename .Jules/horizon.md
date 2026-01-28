@@ -1,9 +1,33 @@
-## 2024-05-23 - Actionable Routines
+# Horizon: AI-Powered Intelligence
 
-**Insight:** Teachers currently use "Instructional Routines" as static text lists (e.g., "Step 1: Start Timer"). They must then mentally context-switch, locate the Timer widget in the dock, and drag it out. This disconnect between _instruction_ and _action_ creates friction and breaks the flow of the lesson.
-**Concept:** **Actionable Routines**. Transform static steps into executable command centers. Allow teachers to "Attach" a widget to any step. When the step is reached, a single click launches the pre-configured tool (e.g., a Timer, a Random Picker, or a Work Symbol). This turns the routine widget into a "Lesson Remote Control," reducing navigation time by 90% and keeping the teacher focused on students, not software.
+Horizon is the intelligence layer of School Boards, leveraging Large Language Models (Gemini API) to automate tedious tasks and enhance the teaching experience.
 
-## 2024-05-24 - Smart Polls
+## AI Capabilities
 
-**Insight:** Teachers often want to use polls for quick "Checks for Understanding" (CFUs), but the friction of typing out a question and 4 distractors during a live lesson is too high. This leads to them either skipping the check or using less effective verbal questions.
-**Concept:** **Magic Poll Generator**. A "Sparkle" button in the Poll Settings that uses AI to instantly generate a relevant question and plausible options from a simple topic (e.g., "Photosynthesis" or "Civil War Causes"). This reduces creation time from 2 minutes to 5 seconds, making data-driven instruction effortless.
+### Magic Layout
+
+**Description:** Generates a full dashboard setup based on a natural language lesson description.
+**Implementation:** `generateDashboardLayout` in `utils/ai.ts` sends prompts to a Firebase Function, returning a structured list of widgets and configs.
+**UI:** Accessible via the "Cast Spell" button in the Magic Layout Modal (Dock).
+
+### Smart Polls
+
+**Description:** Generates educational multiple-choice questions based on a topic.
+**Implementation:** `generatePoll` in `utils/ai.ts` processes topics into questions and 4 distinct options.
+**UI:** Integrated into the `PollWidget` settings panel via the `MagicInput` component.
+
+### Smart Paste
+
+**Description:** Automatically detects the best widget type for content pasted from the clipboard.
+**Implementation:** `detectWidgetType` in `utils/smartPaste.ts` uses heuristics to identify URLs (Stickers/Embeds/QR) and lists (Checklists).
+**UI:** Global paste listener in `Dock.tsx` that triggers widget creation with a success toast.
+
+### Mini-Apps
+
+**Description:** Generates fully functional, single-file HTML/JS interactive tools.
+**Implementation:** `generateMiniAppCode` in `utils/ai.ts` handles complex code generation for the `MiniAppWidget`.
+
+## Usage Limits
+
+- **Admins:** Unlimited generations.
+- **Teachers:** 20 generations per 24-hour period (enforced via Cloud Functions).
