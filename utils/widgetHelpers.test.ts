@@ -27,6 +27,11 @@ describe('widgetHelpers', () => {
       expect(getTitle(widget)).toBe('App Manager');
     });
 
+    it('returns "Notebook Viewer" for smartNotebook widget', () => {
+      const widget = { type: 'smartNotebook' } as WidgetData;
+      expect(getTitle(widget)).toBe('Notebook Viewer');
+    });
+
     it('returns capitalized type for other widgets', () => {
       const widget = { type: 'clock' } as WidgetData;
       expect(getTitle(widget)).toBe('Clock');
@@ -52,6 +57,11 @@ describe('widgetHelpers', () => {
     it('returns correct defaults for miniApp', () => {
       const config = getDefaultWidgetConfig('miniApp');
       expect(config).toHaveProperty('activeApp', null);
+    });
+
+    it('returns correct defaults for smartNotebook', () => {
+      const config = getDefaultWidgetConfig('smartNotebook');
+      expect(config).toHaveProperty('activeNotebookId', null);
     });
 
     it('returns correct defaults for checklist', () => {

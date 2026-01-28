@@ -60,30 +60,50 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         } as NotebookItem;
       });
       setNotebooks(items);
-
-      // Sync active notebook if set in config
-      if (activeNotebookId) {
-        const found = items.find((n) => n.id === activeNotebookId);
-        if (found) {
-          setActiveNotebook(found);
-          // Check if current page is valid for this notebook
-          if (currentPage >= found.pageUrls.length) {
-            setCurrentPage(Math.max(0, found.pageUrls.length - 1));
-          }
-        } else {
-          // If not found (deleted?), clear active notebook local state
-          setActiveNotebook(null);
-        }
-      } else {
-        setActiveNotebook(null);
-      }
     });
     return () => unsubscribe();
-  }, [user, activeNotebookId, currentPage]);
+  }, [user]);
+
+  // Sync active notebook state
+  useEffect(() => {
+    if (activeNotebookId) {
+      const found = notebooks.find((n) => n.id === activeNotebookId);
+      if (found) {
+        setActiveNotebook(found);
+      } else if (notebooks.length > 0) {
+        // If notebooks are loaded but the active one is missing, clear config
+        // Check if we actually have notebooks loaded (length > 0) to avoid clearing during initial load
+        setActiveNotebook(null);
+        // Defer the update to avoid conflicts during render
+        setTimeout(() => {
+          updateWidget(widget.id, {
+            config: { ...config, activeNotebookId: null },
+          });
+        }, 0);
+      }
+    } else {
+      setActiveNotebook(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeNotebookId, notebooks]);
+
+  // Clamp current page index when notebook changes
+  useEffect(() => {
+    if (activeNotebook && currentPage >= activeNotebook.pageUrls.length) {
+      setCurrentPage(Math.max(0, activeNotebook.pageUrls.length - 1));
+    }
+  }, [activeNotebook, currentPage]);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
+    // Check file size (limit to 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      addToast('File is too large (max 50MB)', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     setIsImporting(true);
     try {
