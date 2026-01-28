@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import { useInstructionalRoutines } from '../../../hooks/useInstructionalRoutines';
@@ -7,6 +7,7 @@ import {
   InstructionalRoutinesConfig,
   RoutineStep,
   WidgetType,
+  WidgetConfig,
 } from '../../../types';
 import {
   ROUTINES as DEFAULT_ROUTINES,
@@ -24,6 +25,134 @@ import {
 } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 import { LibraryManager } from './LibraryManager';
+
+interface RoutineStepItemProps {
+  step: RoutineStep;
+  index: number;
+  dynamicFontSize: number;
+  onDragStart: (
+    e: React.DragEvent,
+    icon: string,
+    color: string,
+    label?: string
+  ) => void;
+  onLaunchWidget: (type: WidgetType, config?: WidgetConfig) => void;
+}
+
+const RoutineStepItem = React.memo(
+  ({
+    step,
+    index,
+    dynamicFontSize,
+    onDragStart,
+    onLaunchWidget,
+  }: RoutineStepItemProps) => {
+    const StepIcon = step.icon
+      ? (Icons as unknown as Record<string, React.ElementType>)[step.icon]
+      : null;
+
+    return (
+      <li
+        className="flex items-start animate-in slide-in-from-left duration-300 group"
+        style={{ gap: '1em' }}
+      >
+        <span
+          className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+          style={{
+            width: '2.5em',
+            height: '2.5em',
+            fontSize: '0.8em',
+          }}
+        >
+          {index + 1}
+        </span>
+        <div className="flex-1 flex flex-col" style={{ gap: '0.5em' }}>
+          <div
+            className="flex items-start justify-between"
+            style={{ gap: '1em' }}
+          >
+            <p
+              className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
+              style={{ fontSize: '1em' }}
+            >
+              {step.text}
+            </p>
+
+            {StepIcon && step.icon && (
+              <div
+                draggable
+                onDragStart={(e) =>
+                  onDragStart(
+                    e,
+                    step.icon as string,
+                    step.color ?? 'blue',
+                    step.label
+                  )
+                }
+                className={`rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
+                style={{ padding: '0.5em', gap: '0.25em' }}
+                title="Drag to whiteboard"
+              >
+                <div
+                  className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                  style={{ padding: '0.4em' }}
+                >
+                  {React.createElement(StepIcon, {
+                    size: dynamicFontSize * 1.5,
+                    strokeWidth: 2.5,
+                  })}
+                </div>
+                {step.label && (
+                  <span
+                    className="font-black uppercase text-slate-500 text-center leading-none"
+                    style={{ fontSize: '0.5em' }}
+                  >
+                    {step.label}
+                  </span>
+                )}
+                <div
+                  className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
+                  style={{ gap: '0.1em' }}
+                >
+                  <Grab
+                    size={dynamicFontSize * 0.5}
+                    className="text-slate-300"
+                  />
+                  <span
+                    className="font-black uppercase text-slate-400"
+                    style={{ fontSize: '0.4em' }}
+                  >
+                    Drag
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          {step.attachedWidget && (
+            <button
+              onClick={() =>
+                onLaunchWidget(
+                  step.attachedWidget?.type as WidgetType,
+                  step.attachedWidget?.config as WidgetConfig
+                )
+              }
+              className="self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors"
+              style={{
+                padding: '0.5em 1em',
+                gap: '0.5em',
+                fontSize: '0.8em',
+              }}
+            >
+              <Rocket size={dynamicFontSize} />
+              Launch {step.attachedWidget.label}
+            </button>
+          )}
+        </div>
+      </li>
+    );
+  }
+);
+RoutineStepItem.displayName = 'RoutineStepItem';
 
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -123,18 +252,23 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const onDragStart = (
-    e: React.DragEvent,
-    icon: string,
-    color: string,
-    label?: string
-  ) => {
-    e.dataTransfer.setData(
-      'application/spart-sticker',
-      JSON.stringify({ icon, color, label })
-    );
-    e.dataTransfer.effectAllowed = 'copy';
-  };
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, icon: string, color: string, label?: string) => {
+      e.dataTransfer.setData(
+        'application/spart-sticker',
+        JSON.stringify({ icon, color, label })
+      );
+      e.dataTransfer.effectAllowed = 'copy';
+    },
+    []
+  );
+
+  const handleLaunchWidget = useCallback(
+    (type: WidgetType, config?: WidgetConfig) => {
+      addWidget(type, { config });
+    },
+    [addWidget]
+  );
 
   if (isManagingLibrary && isAdmin) {
     const routine = editingRoutine ?? {
@@ -206,7 +340,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   onClick={() => selectRoutine(r)}
                   className="w-full h-full relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-brand-blue-primary transition-all text-left"
                 >
-                  <Icon className="w-8 h-8 text-brand-red-primary mb-2" />
+                  {React.createElement(Icon, {
+                    className: 'w-8 h-8 text-brand-red-primary mb-2',
+                  })}
                   <div className="text-[11px] font-black text-brand-gray-darkest uppercase leading-tight">
                     {r.name}
                   </div>
@@ -276,7 +412,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     let content = `<h3 style="font-weight: 900; margin-bottom: 0.5em; text-transform: uppercase; color: #1e293b;">${title}</h3>`;
 
     if (type === 'keyWords') {
-      BLOOMS_DATA.keyWords.forEach((levelGroup) => {
+      (
+        BLOOMS_DATA as { keyWords: { level: string; words: string[] }[] }
+      ).keyWords.forEach((levelGroup) => {
         content += `<h4 style="font-weight: 800; margin-top: 1em; margin-bottom: 0.25em; color: #2d3f89; font-size: 0.9em;">${levelGroup.level}</h4><ul style="padding-left: 1.2em; list-style-type: disc; color: #475569; font-size: 0.85em;">`;
         levelGroup.words.forEach((item) => {
           content += `<li>${item}</li>`;
@@ -284,7 +422,11 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         content += `</ul>`;
       });
     } else {
-      BLOOMS_DATA.questionStarters.forEach((levelGroup) => {
+      (
+        BLOOMS_DATA as {
+          questionStarters: { level: string; starters: string[] }[];
+        }
+      ).questionStarters.forEach((levelGroup) => {
         content += `<h4 style="font-weight: 800; margin-top: 1em; margin-bottom: 0.25em; color: #2d3f89; font-size: 0.9em;">${levelGroup.level}</h4><ul style="padding-left: 1.2em; list-style-type: disc; color: #475569; font-size: 0.85em;">`;
         levelGroup.starters.forEach((item) => {
           content += `<li>${item}</li>`;
@@ -298,7 +440,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         content,
         bgColor: '#ffffff',
         fontSize: 16,
-      },
+      } as WidgetConfig,
     });
   };
 
@@ -352,7 +494,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           className="bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm flex items-center justify-center"
           style={{ padding: '1em' }}
         >
-          <RoutineIcon style={{ width: '2em', height: '2em' }} />
+          {React.createElement(RoutineIcon, {
+            style: { width: '2em', height: '2em' },
+          })}
         </div>
       </div>
 
@@ -381,112 +525,16 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <ul className="flex flex-col" style={{ gap: '1.5em' }}>
-          {customSteps.map((step, i) => {
-            const StepIcon = step.icon
-              ? (Icons as unknown as Record<string, React.ElementType>)[
-                  step.icon
-                ]
-              : null;
-            return (
-              <li
-                key={step.id}
-                className="flex items-start animate-in slide-in-from-left duration-300 group"
-                style={{ gap: '1em' }}
-              >
-                <span
-                  className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                  style={{
-                    width: '2.5em',
-                    height: '2.5em',
-                    fontSize: '0.8em',
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <div className="flex-1 flex flex-col" style={{ gap: '0.5em' }}>
-                  <div
-                    className="flex items-start justify-between"
-                    style={{ gap: '1em' }}
-                  >
-                    <p
-                      className="font-bold text-brand-gray-darkest leading-relaxed pt-1"
-                      style={{ fontSize: '1em' }}
-                    >
-                      {step.text}
-                    </p>
-
-                    {StepIcon && step.icon && (
-                      <div
-                        draggable
-                        onDragStart={(e) =>
-                          onDragStart(
-                            e,
-                            step.icon as string,
-                            step.color ?? 'blue',
-                            step.label
-                          )
-                        }
-                        className={`rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
-                        style={{ padding: '0.5em', gap: '0.25em' }}
-                        title="Drag to whiteboard"
-                      >
-                        <div
-                          className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
-                          style={{ padding: '0.4em' }}
-                        >
-                          <StepIcon
-                            size={dynamicFontSize * 1.5}
-                            strokeWidth={2.5}
-                          />
-                        </div>
-                        {step.label && (
-                          <span
-                            className="font-black uppercase text-slate-500 text-center leading-none"
-                            style={{ fontSize: '0.5em' }}
-                          >
-                            {step.label}
-                          </span>
-                        )}
-                        <div
-                          className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
-                          style={{ gap: '0.1em' }}
-                        >
-                          <Grab
-                            size={dynamicFontSize * 0.5}
-                            className="text-slate-300"
-                          />
-                          <span
-                            className="font-black uppercase text-slate-400"
-                            style={{ fontSize: '0.4em' }}
-                          >
-                            Drag
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {step.attachedWidget && (
-                    <button
-                      onClick={() =>
-                        addWidget(step.attachedWidget?.type as WidgetType, {
-                          config: step.attachedWidget?.config,
-                        })
-                      }
-                      className="self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors"
-                      style={{
-                        padding: '0.5em 1em',
-                        gap: '0.5em',
-                        fontSize: '0.8em',
-                      }}
-                    >
-                      <Rocket size={dynamicFontSize} />
-                      Launch {step.attachedWidget.label}
-                    </button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+          {customSteps.map((step, i) => (
+            <RoutineStepItem
+              key={step.id}
+              step={step}
+              index={i}
+              dynamicFontSize={dynamicFontSize}
+              onDragStart={handleDragStart}
+              onLaunchWidget={handleLaunchWidget}
+            />
+          ))}
         </ul>
       </div>
     </div>
