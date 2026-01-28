@@ -407,6 +407,7 @@ export interface NotebookItem {
   id: string;
   title: string;
   pageUrls: string[];
+  pagePaths: string[];
   createdAt: number;
 }
 
