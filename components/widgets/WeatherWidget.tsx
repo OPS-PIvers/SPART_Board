@@ -860,6 +860,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                       <button
                         onClick={syncByCity}
                         disabled={loading || !hasApiKey}
+                        aria-label="Refresh city weather"
                         className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                       >
                         <RefreshCw

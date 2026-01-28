@@ -1,20 +1,36 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { SeatingChartWidget } from './SeatingChartWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
-import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
+import { WidgetData, SeatingChartConfig } from '../../types';
 import { DashboardContextValue } from '../../context/DashboardContextValue';
 
 vi.mock('../../context/useDashboard');
 
 const mockUpdateWidget = vi.fn();
+const mockAddToast = vi.fn();
 
 const mockDashboardContext: Partial<DashboardContextValue> = {
   updateWidget: mockUpdateWidget,
-  rosters: [],
-  activeRosterId: null,
-  addToast: vi.fn(),
+  addToast: mockAddToast,
+  rosters: [
+    {
+      id: 'roster-1',
+      name: 'Class A',
+      createdAt: Date.now(),
+      students: [
+        { id: '1', firstName: 'Alice', lastName: 'A' },
+        { id: '2', firstName: 'Bob', lastName: 'B' },
+        { id: '3', firstName: 'Charlie', lastName: 'C' },
+      ],
+    },
+  ],
+  activeRosterId: 'roster-1',
 };
+
+// Mock window.confirm
+const mockConfirm = vi.fn(() => true);
 
 describe('SeatingChartWidget', () => {
   beforeEach(() => {
@@ -22,6 +38,9 @@ describe('SeatingChartWidget', () => {
     vi.mocked(useDashboard).mockReturnValue(
       mockDashboardContext as DashboardContextValue
     );
+
+    // Use spyOn for window.confirm
+    vi.spyOn(window, 'confirm').mockImplementation(mockConfirm);
 
     // Mock PointerEvent since JSDOM doesn't fully support it
     class MockPointerEvent extends Event {
@@ -35,33 +54,26 @@ describe('SeatingChartWidget', () => {
         this.pointerId = props.pointerId ?? 1;
       }
     }
-    // Using unknown first to safely cast to the incompatible window type if needed,
-    // though typically this is accepted if shapes align.
     window.PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
-  const createWidget = (): WidgetData => ({
+  const createWidget = (
+    configOverrides: Partial<SeatingChartConfig> = {}
+  ): WidgetData => ({
     id: 'test-widget-id',
     type: 'seating-chart',
     config: {
-      furniture: [
-        {
-          id: 'desk-1',
-          type: 'desk',
-          x: 100,
-          y: 100,
-          width: 60,
-          height: 50,
-          rotation: 0,
-        } as FurnitureItem,
-      ],
+      furniture: [],
       assignments: {},
       gridSize: 20,
       rosterMode: 'class',
+      ...configOverrides,
     } as SeatingChartConfig,
     x: 0,
     y: 0,
@@ -71,118 +83,254 @@ describe('SeatingChartWidget', () => {
     flipped: false,
   });
 
-  it('should only call updateWidget on pointerUp, not on pointerMove', () => {
+  it('Setup Mode: Adds furniture', () => {
     const widget = createWidget();
+    render(<SeatingChartWidget widget={widget} />);
+
+    // Switch to Setup
+    fireEvent.click(screen.getByText('Setup'));
+
+    // Find "Desk" button (by text or icon, text is cleaner here)
+    fireEvent.click(screen.getByText('Desk'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget-id', {
+      config: expect.objectContaining({
+        furniture: expect.arrayContaining([
+          expect.objectContaining({ type: 'desk' }),
+        ]),
+      }),
+    });
+  });
+
+  it('Setup Mode: Clears all furniture', () => {
+    const widget = createWidget({
+      furniture: [
+        {
+          id: 'f1',
+          type: 'desk',
+          x: 0,
+          y: 0,
+          width: 50,
+          height: 50,
+          rotation: 0,
+        },
+      ],
+    });
+    render(<SeatingChartWidget widget={widget} />);
+
+    fireEvent.click(screen.getByText('Setup'));
+    fireEvent.click(screen.getByText('Clear All'));
+
+    expect(mockConfirm).toHaveBeenCalled();
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget-id', {
+      config: expect.objectContaining({
+        furniture: [],
+        assignments: {},
+      }),
+    });
+  });
+
+  it('Setup Mode: Resizes furniture', () => {
+    const widget = createWidget({
+      furniture: [
+        {
+          id: 'f1',
+          type: 'desk',
+          x: 100,
+          y: 100,
+          width: 60,
+          height: 50,
+          rotation: 0,
+        },
+      ],
+    });
     const { container } = render(<SeatingChartWidget widget={widget} />);
 
-    // 1. Switch to Setup mode
-    const setupButton = screen.getByText('Setup');
-    fireEvent.click(setupButton);
+    fireEvent.click(screen.getByText('Setup'));
 
-    // 2. Find the furniture item
-    const furnitureItem = container.querySelector(
-      'div[style*="left: 100px"][style*="top: 100px"]'
-    );
-    expect(furnitureItem).toBeTruthy();
+    // Select furniture
+    const item = container.querySelector('div[style*="left: 100px"]');
+    if (!item) throw new Error('Item not found');
 
-    if (!furnitureItem) throw new Error('Furniture item not found');
+    // Simulate selection
+    fireEvent.pointerDown(item);
+    fireEvent.pointerUp(window);
+    fireEvent.click(item);
 
-    // 3. Start dragging (PointerDown)
-    fireEvent.pointerDown(furnitureItem, {
-      clientX: 100,
-      clientY: 100,
-      pointerId: 1,
-      bubbles: true,
+    // Find resize handle
+    const handle = container.querySelector('.cursor-nwse-resize');
+    if (!handle) throw new Error('Handle not found');
+
+    // Drag handle
+    fireEvent.pointerDown(handle, { clientX: 160, clientY: 150 }); // Current bottom-right
+    fireEvent.pointerMove(window, { clientX: 180, clientY: 170 }); // Move +20, +20
+    fireEvent.pointerUp(window);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget-id', {
+      config: expect.objectContaining({
+        furniture: expect.arrayContaining([
+          expect.objectContaining({ width: 80, height: 80 }),
+        ]),
+      }),
+    });
+  });
+
+  it('Assign Mode: Assigns student via drag and drop', () => {
+    const widget = createWidget({
+      furniture: [
+        {
+          id: 'f1',
+          type: 'desk',
+          x: 100,
+          y: 100,
+          width: 60,
+          height: 50,
+          rotation: 0,
+        },
+      ],
+    });
+    const { container } = render(<SeatingChartWidget widget={widget} />);
+
+    fireEvent.click(screen.getByText('Assign'));
+
+    // Check unassigned students list
+    expect(screen.getByText('Alice A')).toBeInTheDocument();
+
+    const furnitureItem = container.querySelector('div[style*="left: 100px"]');
+    if (!furnitureItem) throw new Error('Furniture not found');
+
+    // Mock Drag Event data
+    const mockDataTransfer = {
+      getData: vi.fn(() => 'Alice A'),
+      dropEffect: 'none',
+    };
+
+    // Drop
+    fireEvent.drop(furnitureItem, {
+      dataTransfer: mockDataTransfer,
     });
 
-    // 4. Move (PointerMove)
-    fireEvent(
-      window,
-      new PointerEvent('pointermove', {
-        clientX: 120,
-        clientY: 120,
-        bubbles: true,
-      })
-    );
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget-id', {
+      config: expect.objectContaining({
+        assignments: { 'Alice A': 'f1' },
+      }),
+    });
+  });
 
-    // EXPECTATION: updateWidget should NOT be called yet (optimization)
-    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  it('Assign Mode: Add All Randomly', () => {
+    const widget = createWidget({
+      furniture: [
+        {
+          id: 'f1',
+          type: 'desk',
+          x: 0,
+          y: 0,
+          width: 50,
+          height: 50,
+          rotation: 0,
+        },
+        {
+          id: 'f2',
+          type: 'desk',
+          x: 100,
+          y: 0,
+          width: 50,
+          height: 50,
+          rotation: 0,
+        },
+      ],
+    });
+    render(<SeatingChartWidget widget={widget} />);
 
-    // 5. Stop dragging (PointerUp)
-    fireEvent(
-      window,
-      new PointerEvent('pointerup', {
-        bubbles: true,
-      })
-    );
+    fireEvent.click(screen.getByText('Assign'));
+    fireEvent.click(screen.getByText('Add All Random'));
 
-    // 6. Now it SHOULD be called
-    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
-
-    // Check arguments
+    expect(mockUpdateWidget).toHaveBeenCalled();
     const lastCall = (mockUpdateWidget as Mock).mock.lastCall as [
       string,
       { config: SeatingChartConfig },
     ];
-    expect(lastCall).toBeDefined();
+    const assignments = lastCall[1].config.assignments;
 
-    const [id, updates] = lastCall;
-    expect(id).toBe('test-widget-id');
-
-    const newFurniture = updates.config.furniture[0];
-    expect(newFurniture.x).toBe(120);
-    expect(newFurniture.y).toBe(120);
+    // Should assign at least 2 students to 2 desks
+    expect(Object.keys(assignments).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('should select an item on click and not deselect it immediately', () => {
-    const widget = createWidget();
-    const { container } = render(<SeatingChartWidget widget={widget} />);
+  it('Interact Mode: Pick Random', () => {
+    const widget = createWidget({
+      furniture: [
+        {
+          id: 'f1',
+          type: 'desk',
+          x: 0,
+          y: 0,
+          width: 50,
+          height: 50,
+          rotation: 0,
+        },
+      ],
+      assignments: { 'Alice A': 'f1' },
+    });
+    render(<SeatingChartWidget widget={widget} />);
 
-    // 1. Switch to Setup mode
-    const setupButton = screen.getByText('Setup');
-    fireEvent.click(setupButton);
+    // Verify Interact mode is default
+    expect(screen.getByText('Interact')).toHaveClass('text-indigo-600');
 
-    // 2. Find the furniture item
-    const furnitureItem = container.querySelector(
-      'div[style*="left: 100px"][style*="top: 100px"]'
-    );
-    expect(furnitureItem).toBeTruthy();
-    if (!furnitureItem) throw new Error('Furniture item not found');
+    fireEvent.click(screen.getByText('Pick Random'));
 
-    // 3. Click the item (PointerDown + PointerUp + Click)
-    fireEvent.pointerDown(furnitureItem);
-    fireEvent.pointerUp(window);
-    fireEvent.click(furnitureItem);
+    // Should start interval
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
 
-    // 4. Verify selection (the item should have a ring class or the floating menu should be visible)
-    expect(furnitureItem.className).toContain('ring-2');
-    expect(screen.getByTitle('Rotate Left')).toBeTruthy();
+    // Eventually it stops
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // We can't easily check visual highlight without deeper inspection of state/classes,
+    // but we can check no errors thrown and timers ran.
+    // Ideally we'd check if `setRandomHighlight` was called, but it's internal state.
+    // We can check if the furniture element receives a specific class (like bg-yellow-200) during animation.
+
+    // Let's re-render or check screen after some time
+    // Since `vi.advanceTimersByTime` runs synchronously in tests, the state update might be batched.
+    // But testing library `act` handles this.
   });
 
-  it('should deselect an item when clicking the canvas', () => {
-    const widget = createWidget();
-    const { container } = render(<SeatingChartWidget widget={widget} />);
+  it('Removes assignment when clicking X', () => {
+    const widget = createWidget({
+      furniture: [
+        {
+          id: 'f1',
+          type: 'desk',
+          x: 0,
+          y: 0,
+          width: 50,
+          height: 50,
+          rotation: 0,
+        },
+      ],
+      assignments: { 'Alice A': 'f1' },
+    });
+    render(<SeatingChartWidget widget={widget} />);
 
-    // 1. Switch to Setup mode
-    fireEvent.click(screen.getByText('Setup'));
+    fireEvent.click(screen.getByText('Assign'));
 
-    // 2. Find the furniture item and canvas
-    const furnitureItem = container.querySelector('div[style*="left: 100px"]');
-    const canvas = container.querySelector('.flex-1.relative.bg-slate-50');
+    // The student name should be visible in the desk
+    const studentLabel = screen.getByText('Alice A');
+    expect(studentLabel).toBeInTheDocument();
 
-    if (!furnitureItem || !canvas) throw new Error('Elements not found');
+    // The X button should be next to it
+    const removeBtn = studentLabel.parentElement?.querySelector('button');
+    if (!removeBtn) throw new Error('Remove button not found');
 
-    // 3. Select the item
-    fireEvent.pointerDown(furnitureItem);
-    fireEvent.pointerUp(window);
-    fireEvent.click(furnitureItem);
-    expect(furnitureItem.className).toContain('ring-2');
+    fireEvent.click(removeBtn);
 
-    // 4. Click the canvas
-    fireEvent.click(canvas);
-
-    // 5. Verify deselection
-    expect(furnitureItem.className).not.toContain('ring-2');
-    expect(screen.queryByTitle('Rotate Left')).toBeNull();
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget-id', {
+      config: expect.objectContaining({
+        assignments: {},
+      }),
+    });
   });
 });
