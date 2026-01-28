@@ -7,20 +7,6 @@ import { GoogleGenAI } from '@google/genai';
 
 admin.initializeApp();
 
-interface GeminiAI {
-  getGenerativeModel: (args: unknown) => GeminiModel;
-}
-
-interface GeminiModel {
-  generateContent: (args: unknown) => Promise<GeminiResult>;
-}
-
-interface GeminiResult {
-  response: {
-    text: () => string;
-  };
-}
-
 interface ClassLinkUser {
   sourcedId: string;
   email: string;
@@ -336,7 +322,7 @@ export const generateWithAI = functionsV1
 
     try {
       console.log(`AI Gen starting for type: ${data.type}`);
-      const genAI = new GoogleGenAI({ apiKey }) as unknown as GeminiAI;
+      const ai = new GoogleGenAI({ apiKey });
 
       let systemPrompt = '';
       let userPrompt = '';
@@ -400,23 +386,20 @@ export const generateWithAI = functionsV1
         );
       }
 
-      const model = genAI.getGenerativeModel({
+      const result = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-      });
-
-      const result = await model.generateContent({
         contents: [
           {
             role: 'user',
             parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
           },
         ],
-        generationConfig: {
+        config: {
           responseMimeType: 'application/json',
         },
       });
 
-      const text = result.response.text();
+      const text = result.text;
 
       if (!text) {
         throw new Error('Empty response from AI');
