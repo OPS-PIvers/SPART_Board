@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 export interface ParsedNotebook {
   title: string;
   pages: { blob: Blob; extension: string }[];
+  assets: { blob: Blob; extension: string }[];
 }
 
 export const parseNotebookFile = async (
@@ -13,6 +14,7 @@ export const parseNotebookFile = async (
 
   // Collect potential page files
   const pageFiles: { name: string; obj: JSZip.JSZipObject }[] = [];
+  const assetFiles: { name: string; obj: JSZip.JSZipObject }[] = [];
 
   zip.forEach((relativePath: string, zipEntry: JSZip.JSZipObject) => {
     if (!zipEntry.dir) {
@@ -22,6 +24,12 @@ export const parseNotebookFile = async (
         relativePath.match(/preview\d*\.(png)$/i)
       ) {
         pageFiles.push({ name: relativePath, obj: zipEntry });
+      } else if (
+        !relativePath.endsWith('.xml') &&
+        !relativePath.match(/thumbnail/i) &&
+        relativePath.match(/\.(png|jpg|jpeg|svg)$/i)
+      ) {
+        assetFiles.push({ name: relativePath, obj: zipEntry });
       }
     }
   });
@@ -48,6 +56,18 @@ export const parseNotebookFile = async (
   // Deduplicate: if multiple files map to same page number (unlikely with this logic unless folder structure duplicates), keep one.
   // Actually, usually it's just one set.
 
+  const assetData = await Promise.all(
+    assetFiles.map(async (entry) => {
+      const blob = await entry.obj.async('blob');
+      const lower = entry.name.toLowerCase();
+      let extension = 'png';
+      if (lower.endsWith('.svg')) extension = 'svg';
+      else if (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))
+        extension = 'jpg';
+      return { blob, extension };
+    })
+  );
+
   if (targetFiles.length === 0) {
     // Fallback: Check for generic 'preview.png'
     const preview = zip.file('preview.png') ?? zip.file('thumbnail.png');
@@ -56,6 +76,7 @@ export const parseNotebookFile = async (
       return {
         title: file.name,
         pages: [{ blob, extension: 'png' }],
+        assets: assetData,
       };
     }
     throw new Error('No valid pages found in Notebook file.');
@@ -74,5 +95,6 @@ export const parseNotebookFile = async (
   return {
     title: file.name,
     pages: pageData,
+    assets: assetData,
   };
 };
