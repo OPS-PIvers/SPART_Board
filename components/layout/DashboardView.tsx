@@ -5,6 +5,7 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
+import { HorizonCommandPalette } from '../common/HorizonCommandPalette';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
 
@@ -385,6 +386,7 @@ export const DashboardView: React.FC = () => {
 
       <Sidebar />
       <Dock />
+      <HorizonCommandPalette />
       <ToastContainer />
     </div>
   );
