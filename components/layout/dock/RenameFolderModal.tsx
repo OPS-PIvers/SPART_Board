@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GlassCard } from '../../common/GlassCard';
+import { GlobalStyle } from '../../../types';
 
 interface RenameFolderModalProps {
   name: string;
   title?: string;
   onClose: () => void;
   onSave: (newName: string) => void;
+  globalStyle?: GlobalStyle;
 }
 
 export const RenameFolderModal: React.FC<RenameFolderModalProps> = ({
@@ -14,11 +16,15 @@ export const RenameFolderModal: React.FC<RenameFolderModalProps> = ({
   title = 'Rename Folder',
   onClose,
   onSave,
+  globalStyle,
 }) => {
   const [val, setVal] = useState(name);
   return createPortal(
     <div className="fixed inset-0 z-critical flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <GlassCard className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+      <GlassCard
+        globalStyle={globalStyle}
+        className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+      >
         <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">
           {title}
         </h3>

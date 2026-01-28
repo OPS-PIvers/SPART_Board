@@ -27,3 +27,29 @@
 - A clean package.json tells a story of a well-maintained project.
 
 ## Journal Entries
+
+## 2025-02-12 - [Security Fixes & Updates]
+
+**Update:** `firebase-functions-test`
+**Action:** Updated to `^3.4.1` in `functions/package.json`.
+
+**Security:** `body-parser`
+**Reason:** Vulnerability in `@google-cloud/functions-framework` (via transitive dependency).
+**Action:** Added `pnpm.overrides` for `body-parser` to `^2.2.1` in `functions/package.json`.
+
+**Security:** `lodash`
+**Reason:** Vulnerability in `firebase-functions-test` (transitive).
+**Action:** Added `pnpm.overrides` for `lodash` to `^4.17.23` in `functions/package.json`.
+
+**Update:** Root Dependencies
+**Action:** Updated `@playwright/test` to `^1.58.0` and `globals` to `^17.1.0`.
+
+## 2025-02-12 - [Feb 12 Maintenance]
+
+**Update:** Root Dependencies
+**Action:** Updated `react` & `react-dom` (19.2.4), `typescript-eslint` (8.54.0), `globals` (17.2.0).
+**Verification:** Ran `pnpm validate` - All passed.
+
+**Update:** Functions Dependencies
+**Action:** Updated `axios` (1.13.3), `firebase-admin` (13.6.0), `@google/genai` (1.38.0).
+**Verification:** Ran `pnpm build` in functions - All passed.
