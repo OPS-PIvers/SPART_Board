@@ -14,6 +14,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'miniApp') return 'App Manager';
   if (widget.type === 'sticker') return 'Sticker';
   if (widget.type === 'seating-chart') return 'Seating Chart';
+  if (widget.type === 'smartNotebook') return 'Notebook Viewer';
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 
@@ -92,6 +93,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     catalyst: { activeTab: 'attention' },
     'catalyst-instruction': { routineId: '', stepIndex: 0 },
     'catalyst-visual': { routineId: '', stepIndex: 0 },
+    smartNotebook: { activeNotebookId: null },
   };
 
   return defaults[type];

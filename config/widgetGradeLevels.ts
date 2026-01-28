@@ -63,6 +63,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   catalyst: ALL_GRADE_LEVELS,
   'catalyst-instruction': [],
   'catalyst-visual': [],
+  smartNotebook: ALL_GRADE_LEVELS,
 };
 
 /**
