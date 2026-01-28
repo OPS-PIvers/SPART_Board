@@ -30,7 +30,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, addToast } = useDashboard();
   const { user } = useAuth();
-  const { uploadFile } = useStorage();
+  const { uploadFile, deleteFile } = useStorage();
   const config = widget.config as SmartNotebookConfig;
   const { activeNotebookId } = config;
 
@@ -50,9 +50,15 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       orderBy('createdAt', 'desc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(
-        (d) => ({ ...d.data(), id: d.id }) as NotebookItem
-      );
+      const items = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          title: (data.title as string) ?? 'Untitled',
+          pageUrls: (data.pageUrls as string[]) ?? [],
+          createdAt: (data.createdAt as number) ?? 0,
+        } as NotebookItem;
+      });
       setNotebooks(items);
 
       // Sync active notebook if set in config
@@ -60,6 +66,10 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         const found = items.find((n) => n.id === activeNotebookId);
         if (found) {
           setActiveNotebook(found);
+          // Check if current page is valid for this notebook
+          if (currentPage >= found.pageUrls.length) {
+            setCurrentPage(Math.max(0, found.pageUrls.length - 1));
+          }
         } else {
           // If not found (deleted?), clear active notebook local state
           setActiveNotebook(null);
@@ -69,7 +79,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       }
     });
     return () => unsubscribe();
-  }, [user, activeNotebookId]);
+  }, [user, activeNotebookId, currentPage]);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,18 +90,17 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       const { title, pages } = await parseNotebookFile(file);
       const notebookId = crypto.randomUUID();
 
-      // Upload pages in parallel and collect URLs
-      const uploadedUrls = await Promise.all(
-        pages.map(async (page, index) => {
-          const { blob, extension } = page;
-          const pageFile = new File([blob], `page${index}.${extension}`, {
-            type: blob.type,
-          });
-          const path = `users/${user.uid}/notebooks/${notebookId}/page${index}.${extension}`;
-          const url = await uploadFile(path, pageFile);
-          return url;
-        })
-      );
+      // Upload pages sequentially to avoid overwhelming network/Firebase
+      const uploadedUrls: string[] = [];
+      for (let index = 0; index < pages.length; index += 1) {
+        const { blob, extension } = pages[index];
+        const pageFile = new File([blob], `page${index}.${extension}`, {
+          type: blob.type,
+        });
+        const path = `users/${user.uid}/notebooks/${notebookId}/page${index}.${extension}`;
+        const url = await uploadFile(path, pageFile);
+        uploadedUrls.push(url);
+      }
 
       const notebook: NotebookItem = {
         id: notebookId,
@@ -123,11 +132,51 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     e.stopPropagation();
     if (!user) return;
     if (confirm('Delete this notebook?')) {
-      await deleteDoc(doc(db, 'users', user.uid, 'notebooks', id));
-      if (activeNotebookId === id) {
-        updateWidget(widget.id, {
-          config: { ...config, activeNotebookId: null },
-        });
+      try {
+        const notebookToDelete = notebooks.find((n) => n.id === id);
+        if (notebookToDelete) {
+          // Cleanup storage
+          // Since we don't have listAll exposed in useStorage, we'll try to delete known pages
+          // Best effort based on pageUrls count.
+          // Note: Ideally we should use listAll, but useStorage hook doesn't expose it yet.
+          // Assuming pageUrls corresponds to page0...pageX
+          const deletePromises = notebookToDelete.pageUrls.map(
+            async (_, index) => {
+              // We need the extension. But we don't have it stored in metadata explicitly, only in URL.
+              // However, we can guess or try both png/svg or parse the URL if needed.
+              // A safer way is to store metadata.
+              // For now, let's try to parse extension from URL if possible, or try both.
+              // Simple hack: try deleting pageN.png and pageN.svg. One will fail silently or throw (catch).
+
+              try {
+                await deleteFile(
+                  `users/${user.uid}/notebooks/${id}/page${index}.png`
+                );
+              } catch {
+                /* ignore */
+              }
+              try {
+                await deleteFile(
+                  `users/${user.uid}/notebooks/${id}/page${index}.svg`
+                );
+              } catch {
+                /* ignore */
+              }
+            }
+          );
+          await Promise.all(deletePromises);
+        }
+
+        await deleteDoc(doc(db, 'users', user.uid, 'notebooks', id));
+        if (activeNotebookId === id) {
+          updateWidget(widget.id, {
+            config: { ...config, activeNotebookId: null },
+          });
+        }
+        addToast('Notebook deleted', 'success');
+      } catch (err) {
+        console.error('Failed to delete notebook', err);
+        addToast('Failed to delete notebook', 'error');
       }
     }
   };

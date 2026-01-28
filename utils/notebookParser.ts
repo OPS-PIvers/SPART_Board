@@ -27,8 +27,8 @@ export const parseNotebookFile = async (
   });
 
   // Filter and prioritize
-  const pngs = pageFiles.filter((f) => f.name.endsWith('.png'));
-  const svgs = pageFiles.filter((f) => f.name.endsWith('.svg'));
+  const pngs = pageFiles.filter((f) => f.name.toLowerCase().endsWith('.png'));
+  const svgs = pageFiles.filter((f) => f.name.toLowerCase().endsWith('.svg'));
 
   // Prefer PNGs if available as they are pre-rendered
   // If PNGs are found, filter out thumbnails (often named differently or small)
