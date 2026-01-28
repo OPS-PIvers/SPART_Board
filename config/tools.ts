@@ -108,4 +108,10 @@ export const TOOLS: ToolMetadata[] = [
     label: 'Catalyst',
     color: 'bg-blue-600',
   },
+  {
+    type: 'smartNotebook',
+    icon: BookOpen,
+    label: 'Notebook',
+    color: 'bg-green-600',
+  },
 ];

@@ -185,4 +185,9 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 400,
     config: { routineId: '', stepIndex: 0 },
   },
+  smartNotebook: {
+    w: 600,
+    h: 500,
+    config: { activeNotebookId: null },
+  },
 };

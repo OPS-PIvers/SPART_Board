@@ -27,7 +27,8 @@ export type WidgetType =
   | 'seating-chart'
   | 'catalyst'
   | 'catalyst-instruction'
-  | 'catalyst-visual';
+  | 'catalyst-visual'
+  | 'smartNotebook';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -402,6 +403,17 @@ export interface SeatingChartConfig {
   names?: string; // Line separated names for custom roster
 }
 
+export interface NotebookItem {
+  id: string;
+  title: string;
+  pageUrls: string[];
+  createdAt: number;
+}
+
+export interface SmartNotebookConfig {
+  activeNotebookId: string | null;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -433,7 +445,8 @@ export type WidgetConfig =
   | SeatingChartConfig
   | CatalystConfig
   | CatalystInstructionConfig
-  | CatalystVisualConfig;
+  | CatalystVisualConfig
+  | SmartNotebookConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -494,7 +507,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                         ? CatalystInstructionConfig
                                                         : T extends 'catalyst-visual'
                                                           ? CatalystVisualConfig
-                                                          : never;
+                                                          : T extends 'smartNotebook'
+                                                            ? SmartNotebookConfig
+                                                            : never;
 
 export interface WidgetData {
   id: string;

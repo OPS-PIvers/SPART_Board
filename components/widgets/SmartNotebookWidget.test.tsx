@@ -1,0 +1,153 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, vi, expect, beforeEach, Mock } from 'vitest';
+import { SmartNotebookWidget } from './SmartNotebookWidget';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useStorage } from '@/hooks/useStorage';
+import * as firestore from 'firebase/firestore';
+import * as parser from '@/utils/notebookParser';
+import { WidgetData } from '@/types';
+
+// Mock Modules
+vi.mock('@/context/useAuth');
+vi.mock('@/context/useDashboard');
+vi.mock('@/hooks/useStorage');
+vi.mock('firebase/firestore');
+vi.mock('@/utils/notebookParser');
+vi.mock('@/config/firebase', () => ({
+  db: {},
+}));
+
+describe('SmartNotebookWidget', () => {
+  const mockUpdateWidget = vi.fn();
+  const mockAddToast = vi.fn();
+  const mockUploadFile = vi.fn();
+
+  const mockUser = { uid: 'test-uid' };
+  const mockWidget = {
+    id: 'widget-1',
+    type: 'smartNotebook',
+    config: { activeNotebookId: null },
+    w: 600,
+    h: 500,
+    x: 0,
+    y: 0,
+    z: 0,
+    flipped: false,
+  } as WidgetData;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    (useAuth as unknown as Mock).mockReturnValue({ user: mockUser });
+    (useDashboard as unknown as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+    });
+    (useStorage as unknown as Mock).mockReturnValue({
+      uploadFile: mockUploadFile,
+    });
+
+    // Mock Firestore
+    // We need to mock onSnapshot to return some data or empty.
+    (firestore.collection as unknown as Mock).mockReturnValue('collection-ref');
+    (firestore.query as unknown as Mock).mockReturnValue('query-ref');
+    (firestore.orderBy as unknown as Mock).mockReturnValue('orderby-ref');
+    (firestore.doc as unknown as Mock).mockReturnValue('doc-ref');
+  });
+
+  it('renders library view by default', () => {
+    (firestore.onSnapshot as unknown as Mock).mockImplementation(
+      (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
+        callback({ docs: [] }); // Empty library
+        return vi.fn(); // Unsubscribe
+      }
+    );
+
+    render(<SmartNotebookWidget widget={mockWidget} />);
+
+    expect(screen.getByText('Notebook Library')).toBeInTheDocument();
+    expect(screen.getByText('No notebooks yet')).toBeInTheDocument();
+    // Use getAllByText because button and input might have similar text or just find by role
+    expect(screen.getByRole('button', { name: /Import/i })).toBeInTheDocument();
+  });
+
+  it('handles import flow', async () => {
+    (firestore.onSnapshot as unknown as Mock).mockImplementation(
+      (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
+        callback({ docs: [] });
+        return vi.fn();
+      }
+    );
+
+    const mockFile = new File(['dummy'], 'test.notebook', {
+      type: 'application/zip',
+    });
+    const mockPages = [
+      { blob: new Blob(['page0'], { type: 'image/png' }), extension: 'png' },
+    ];
+    (parser.parseNotebookFile as unknown as Mock).mockResolvedValue({
+      title: 'Test Notebook',
+      pages: mockPages,
+    });
+    mockUploadFile.mockResolvedValue('http://example.com/page0.png');
+
+    const { container } = render(<SmartNotebookWidget widget={mockWidget} />);
+
+    // Find input by searching inside the container, as label/role might be tricky with hidden input
+    const fileInput = container.querySelector('input[type="file"]');
+    expect(fileInput).not.toBeNull();
+
+    if (fileInput) {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    }
+
+    await waitFor(() => {
+      expect(parser.parseNotebookFile).toHaveBeenCalledWith(mockFile);
+    });
+
+    await waitFor(() => {
+      expect(mockUploadFile).toHaveBeenCalled();
+    });
+
+    expect(firestore.setDoc).toHaveBeenCalled();
+    expect(mockUpdateWidget).toHaveBeenCalled(); // Auto-selects
+  });
+
+  it('displays active notebook', () => {
+    const mockNotebook = {
+      id: 'notebook-1',
+      title: 'My Lesson',
+      pageUrls: ['http://example.com/p1.png', 'http://example.com/p2.png'],
+      createdAt: 123,
+    };
+
+    const activeWidget = {
+      ...mockWidget,
+      config: { activeNotebookId: 'notebook-1' },
+    };
+
+    (firestore.onSnapshot as unknown as Mock).mockImplementation(
+      (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
+        callback({
+          docs: [
+            {
+              data: () => mockNotebook,
+              id: 'notebook-1',
+            },
+          ],
+        });
+        return vi.fn();
+      }
+    );
+
+    render(<SmartNotebookWidget widget={activeWidget} />);
+
+    expect(screen.getByText('My Lesson')).toBeInTheDocument();
+    expect(screen.getAllByText('1 / 2')[0]).toBeInTheDocument();
+    expect(screen.getByAltText('Page 1')).toHaveAttribute(
+      'src',
+      'http://example.com/p1.png'
+    );
+  });
+});
