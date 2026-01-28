@@ -37,6 +37,10 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    match /users/{userId}/notebooks/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     match /admin_backgrounds/{backgroundId}/{fileName} {
       allow read: if canReadAdminBackground(backgroundId);
       allow write: if isAdmin();
