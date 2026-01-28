@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Delete, Check } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Delete,
+  Check,
+  Edit2,
+  Plus,
+} from 'lucide-react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimerConfig } from '@/types';
 
@@ -100,6 +108,11 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setTimeLeft(sessionDuration);
   };
 
+  const addTime = (seconds: number) => {
+    setTimeLeft((prev) => prev + seconds);
+    setIsDone(false);
+  };
+
   const startEditing = () => {
     setIsActive(false); // Auto-pause
     const m = Math.floor(timeLeft / 60);
@@ -178,7 +191,22 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {seconds.toString().padStart(2, '0')}
           </div>
 
-          <div className="flex gap-4 mt-4">
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => addTime(60)}
+              className="px-2 py-1 text-xs font-bold bg-slate-100 text-slate-500 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> 1m
+            </button>
+            <button
+              onClick={() => addTime(300)}
+              className="px-2 py-1 text-xs font-bold bg-slate-100 text-slate-500 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> 5m
+            </button>
+          </div>
+
+          <div className="flex gap-4">
             <button
               onClick={toggle}
               className={`p-3 rounded-full transition-all shadow-md ${
@@ -198,6 +226,12 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               className="p-3 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all shadow-sm"
             >
               <RotateCcw className="w-6 h-6" />
+            </button>
+            <button
+              onClick={startEditing}
+              className="p-3 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all shadow-sm"
+            >
+              <Edit2 className="w-6 h-6" />
             </button>
           </div>
         </>
