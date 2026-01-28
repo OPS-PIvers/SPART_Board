@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, RotateCcw, Delete, Check } from 'lucide-react';
-import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, TimerConfig } from '../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, TimerConfig } from '@/types';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -21,6 +21,7 @@ const getTimerAudioCtx = () => {
 };
 
 export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { updateWidget } = useDashboard();
   const config = widget.config as TimerConfig;
 
   // States
@@ -38,7 +39,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const soundEnabled = config.sound;
 
-  const playAlarm = React.useCallback(() => {
+  const playAlarm = useCallback(() => {
     if (!soundEnabled) return;
     const ctx = getTimerAudioCtx();
     if (ctx.state !== 'suspended') {
@@ -138,21 +139,38 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setTimeLeft(totalSeconds);
     setIsEditing(false);
     setIsDone(false);
+
+    // Sync to global state
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        duration: totalSeconds,
+      } as TimerConfig,
+    });
   };
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
+  // Critical state: Red and pulsing/scaling when <= 10 seconds
+  const isCritical = !isDone && timeLeft <= 10 && timeLeft > 0;
+
   return (
     <div
-      className={`flex flex-col items-center justify-center h-full transition-colors duration-500 rounded-xl ${isDone ? 'bg-red-500/20' : ''}`}
+      className={`flex flex-col items-center justify-center h-full transition-colors duration-500 rounded-xl ${
+        isDone ? 'bg-red-500/20' : ''
+      }`}
     >
       {!isEditing ? (
         <>
           <div
             onClick={startEditing}
-            className={`font-mono font-bold leading-none select-none transition-all cursor-pointer hover:text-blue-500 ${
-              isDone ? 'text-red-600 scale-110 animate-pulse' : 'text-slate-800'
+            className={`font-mono font-bold leading-none select-none transition-all cursor-pointer tabular-nums hover:text-blue-500 ${
+              isDone
+                ? 'text-red-600 scale-110 animate-pulse'
+                : isCritical
+                  ? 'text-red-500 scale-105'
+                  : 'text-slate-800'
             }`}
             style={{ fontSize: 'clamp(3rem, 12vw, 5rem)' }}
           >
@@ -185,7 +203,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </>
       ) : (
         <div className="flex flex-col items-center w-full max-w-[240px] animate-in fade-in zoom-in duration-200">
-          <div className="flex items-center gap-2 mb-4 font-mono text-4xl font-bold">
+          <div className="flex items-center gap-2 mb-4 font-mono text-4xl font-bold tabular-nums">
             <button
               onClick={() => setActiveField('min')}
               className={`px-3 py-1 rounded-lg border-2 transition-colors ${
