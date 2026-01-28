@@ -673,7 +673,8 @@ export const Dock: React.FC = () => {
     moveItemOutOfFolder,
     reorderFolderItems,
   } = useDashboard();
-  const { canAccessWidget, featurePermissions, user } = useAuth();
+  const { canAccessWidget, canAccessFeature, featurePermissions, user } =
+    useAuth();
   const { session } = useLiveSession(user?.uid, 'teacher');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
@@ -690,6 +691,8 @@ export const Dock: React.FC = () => {
 
   // Smart Paste Handler
   useEffect(() => {
+    if (!canAccessFeature('smart-paste')) return;
+
     const handlePaste = (e: ClipboardEvent) => {
       // Don't intercept if user is typing in an input or textarea
       const target = e.target as HTMLElement;
@@ -716,7 +719,7 @@ export const Dock: React.FC = () => {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addWidget, addToast]);
+  }, [addWidget, addToast, canAccessFeature]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
@@ -1207,19 +1210,21 @@ export const Dock: React.FC = () => {
                     <DockLabel>{classToolMetadata.label}</DockLabel>
                   </button>
 
-                  {/* Separator and Minimize Button */}
+                  {/* Separator and Roster/Classes Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
 
-                  <button
-                    onClick={() => setShowMagicLayout(true)}
-                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
-                    title="Magic Layout"
-                  >
-                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200">
-                      <Wand2 className="w-5 h-5 md:w-6 md:h-6" />
-                    </div>
-                    <DockLabel>Magic</DockLabel>
-                  </button>
+                  {canAccessFeature('magic-layout') && (
+                    <button
+                      onClick={() => setShowMagicLayout(true)}
+                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                      title="Magic Layout"
+                    >
+                      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200">
+                        <Wand2 className="w-5 h-5 md:w-6 md:h-6" />
+                      </div>
+                      <DockLabel>Magic</DockLabel>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setIsExpanded(false)}

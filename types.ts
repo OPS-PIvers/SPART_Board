@@ -562,7 +562,10 @@ export type GlobalFeature =
   | 'live-session'
   | 'gemini-functions'
   | 'dashboard-sharing'
-  | 'dashboard-import';
+  | 'dashboard-import'
+  | 'magic-layout'
+  | 'smart-paste'
+  | 'smart-poll';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;

@@ -18,6 +18,9 @@ import {
   Cast,
   Share2,
   Download,
+  Wand2,
+  ClipboardCheck,
+  BarChart,
 } from 'lucide-react';
 
 const GLOBAL_FEATURES: {
@@ -49,6 +52,24 @@ const GLOBAL_FEATURES: {
     label: 'Board Importing',
     icon: Download,
     description: 'Import dashboards from JSON strings.',
+  },
+  {
+    id: 'magic-layout',
+    label: 'Magic Layout',
+    icon: Wand2,
+    description: 'AI-powered automatic dashboard layout generation.',
+  },
+  {
+    id: 'smart-paste',
+    label: 'Smart Paste',
+    icon: ClipboardCheck,
+    description: 'Intelligent clipboard handling to auto-create widgets.',
+  },
+  {
+    id: 'smart-poll',
+    label: 'Smart Polls',
+    icon: BarChart,
+    description: 'AI-assisted poll question and option generation.',
   },
 ];
 
