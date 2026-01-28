@@ -1,41 +1,35 @@
-# Unifier Journal
+# Unifier: Visual Consistency & Design Systems
 
-## 2024-05-21 - [Z-Index Wars]
+Unifier is responsible for maintaining a consistent look and feel across all School Boards widgets, ensuring adherence to the brand's aesthetic and accessibility standards.
 
-**Drift:** Found widespread use of arbitrary and competing z-indices (e.g., `z-[10100]`, `z-[20000]`, `z-[9999]`) leading to layering conflicts and maintenance headaches.
-**Fix:** Establishing a centralized Z-Index Registry in `tailwind.config.js` and standardizing components to use semantic layer names (e.g., `z-modal`, `z-tooltip`).
+## Standards
 
-## 2025-10-27 - Standardizing Sticky Note Colors
+### Typography
 
-**Drift:** The `TextWidget` (Sticky Note) uses a hardcoded array of hex colors `['#fef9c3', '#dcfce7', '#dbeafe', '#fce7f3', '#f3f4f6']` which are disconnected from the central design system.
-**Fix:** Moved these colors to `config/colors.ts` as `STICKY_NOTE_COLORS` to ensure they are reusable and maintained in one place.
+- **UI Elements:** Lexend
+- **Accents/Labels:** Patrick Hand
+- **Code/Technical:** Roboto Mono
 
-## 2026-01-18 - SoundWidget Color Standardization
+### Color Palette
 
-**Drift:** `SoundWidget.tsx` contained hardcoded hex values duplicating the centralized `STANDARD_COLORS` palette.
-**Fix:** Replaced hardcoded hex strings with `STANDARD_COLORS` imports to ensure consistency and single source of truth.
+- **Brand Blue:** #2d3f89 (Primary)
+- **Brand Red:** #ad2122 (Primary)
+- **Status Colors:** Standard emerald-500 (success), amber-500 (warning), rose-500 (error).
 
-## 2026-01-20 - [Sticky Note Colors]
+## Component Standardization
 
-**Drift:** Found hardcoded pastel hex values for the TextWidget (Sticky Note) scattered across components, defaults, and helpers.
-**Fix:** Centralized these values into `STICKY_NOTE_COLORS` in `config/colors.ts` and refactored dependent files to use the single source of truth.
+### Toggle Switches
 
-## 2026-02-14 - [Toggle Switch]
+- **Action:** Standardized all widget settings to use the custom `Toggle` component.
+- **Reference:** PR #328 (Standardize Toggle Switches).
 
-**Drift:** Found multiple hardcoded implementations of toggle switches (e.g., in `LunchCountWidget` and `RandomSettings`) with inconsistent sizing and styling.
-**Fix:** Created a standardized `Toggle` component in `components/common/Toggle.tsx` and refactored widgets to use it.
+### Scaling Logic
 
-## 2026-02-14 - [Auth Bypass Config]
+- **Instructional Routines:** Uses mathematical "EM-based" scaling to ensure all steps fit within the widget height without vertical scrolling.
+- **Bloom's Taxonomy:** Optimized step multiplier to 3.6 for high-density content layouts.
+- **Clock:** Fixed dynamic font sizing to prevent overflow on extreme aspect ratios.
 
-**Conflict:** The `isAuthBypass` flag in `config/firebase.ts` was hardcoded to `false`, contradicting the documentation that it should be controlled by `VITE_AUTH_BYPASS`.
-**Fix:** Updated `config/firebase.ts` to respect the environment variable.
+## Micro-Typography
 
-## 2026-02-14 - [Micro Typography]
-
-**Drift:** Widespread use of hardcoded pixel values for small text (e.g., `text-[10px]`, `text-[9px]`, `text-[8px]`) creating visual inconsistency and maintenance debt.
-**Fix:** Standardized on new `xxs` (10px) and `xxxs` (8px) font size tokens in `tailwind.config.js` and refactored over 30 components to use them.
-
-## 2026-01-27 - [Style Panel Typography]
-
-**Drift:** The Style Panel contained inconsistent micro-typography with hardcoded values (9px, 10px, 11px) mixing hierarchies.
-**Fix:** Standardized all micro-labels to `text-xxs` (10px) and `text-xxxs` (8px) using system tokens.
+- Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
+- All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.

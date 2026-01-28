@@ -82,7 +82,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     // Steps: each step is roughly 3.5em including its gap (1.5em)
     // We use a slightly more conservative estimate to ensure it fits
     const stepCount = customSteps.length || 1;
-    totalVerticalEms += stepCount * 4.2;
+    totalVerticalEms += stepCount * 3.6;
 
     const heightFactor = widget.h / totalVerticalEms;
     const widthFactor = widget.w / 22; // Estimate horizontal capacity
