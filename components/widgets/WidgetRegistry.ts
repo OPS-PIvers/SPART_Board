@@ -98,6 +98,10 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./CatalystVisualWidget'),
     'CatalystVisualWidget'
   ),
+  smartNotebook: lazyNamed(
+    () => import('./SmartNotebookWidget'),
+    'SmartNotebookWidget'
+  ),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -144,6 +148,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./CatalystVisualWidget'),
     'CatalystVisualSettings'
   ),
+  smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
   workSymbols: DefaultSettings,
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
