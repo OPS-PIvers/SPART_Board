@@ -8,10 +8,10 @@ const WHEEL_COLORS = PASTEL_PALETTE;
 interface RandomWheelProps {
   students: string[];
   rotation: number;
-  wheelSize?: number;
+  wheelSize: number;
   displayResult: string | string[] | string[][] | null;
   isSpinning: boolean;
-  fontSize?: number;
+  resultFontSize: number;
 }
 
 export const RandomWheel: React.FC<RandomWheelProps> = ({
@@ -20,7 +20,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   wheelSize,
   displayResult,
   isSpinning,
-  fontSize: resultFontSize,
+  resultFontSize,
 }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;

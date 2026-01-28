@@ -176,12 +176,13 @@ export interface RandomConfig {
   firstNames: string;
   lastNames: string;
   mode: string;
-  visualStyle?: string;
   groupSize?: number;
   lastResult?: string | string[] | RandomGroup[] | null;
   soundEnabled?: boolean;
   remainingStudents?: string[];
   rosterMode?: 'class' | 'custom';
+  autoStartTimer?: boolean;
+  visualStyle?: 'flash' | 'slots' | 'wheel';
 }
 
 export interface DiceConfig {

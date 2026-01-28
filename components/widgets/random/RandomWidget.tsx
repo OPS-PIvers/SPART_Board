@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, RandomConfig, WidgetConfig } from '../../../types';
+import {
+  WidgetData,
+  RandomConfig,
+  WidgetConfig,
+  TimeToolConfig,
+} from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target } from 'lucide-react';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
@@ -8,18 +13,28 @@ import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
+interface LayoutSizing {
+  fontSize: number;
+  slotHeight: number;
+  wheelSize: number;
+  gridCols: number;
+  gap: number;
+}
+
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, rosters, activeRosterId } = useDashboard();
+  const { updateWidget, rosters, activeRosterId, activeDashboard } =
+    useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
     lastNames = '',
     mode = 'single',
-    visualStyle = 'flash',
-    groupSize = 3,
     soundEnabled = true,
     remainingStudents = [],
     rosterMode = 'class',
+    autoStartTimer = false,
+    visualStyle = 'flash',
+    groupSize = 3,
   } = config;
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -115,22 +130,30 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [firstNames, lastNames, activeRoster, rosterMode]);
 
   // Dynamic sizing calculations for all animations
-  const layoutSizing = useMemo(() => {
+  const layoutSizing = useMemo<LayoutSizing>(() => {
     const availableH = widget.h - 100; // Subtract padding and button height
     const availableW = widget.w - 40;
+
+    const defaults: LayoutSizing = {
+      fontSize: 16,
+      slotHeight: 100,
+      wheelSize: 300,
+      gridCols: 1,
+      gap: 8,
+    };
 
     if (mode === 'single') {
       if (visualStyle === 'flash') {
         const fontSize = Math.min(availableW / 6, availableH / 2);
-        return { fontSize };
+        return { ...defaults, fontSize };
       }
       if (visualStyle === 'slots') {
         const fontSize = Math.min(availableW / 6, availableH / 3);
-        return { fontSize, slotHeight: availableH };
+        return { ...defaults, fontSize, slotHeight: availableH };
       }
       if (visualStyle === 'wheel') {
         const wheelSize = Math.min(availableW, availableH);
-        return { wheelSize };
+        return { ...defaults, wheelSize };
       }
     }
 
@@ -158,10 +181,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       // Base width calculation on character count
       const fontSizeW = availableW / cols / (maxNameLength * 0.7);
       const fontSize = Math.max(10, Math.min(24, fontSizeH, fontSizeW));
-      return { gridCols: cols, fontSize, gap: fontSize / 2 };
+      return { ...defaults, gridCols: cols, fontSize, gap: fontSize / 2 };
     }
 
-    return {};
+    return defaults;
   }, [mode, visualStyle, displayResult, widget.w, widget.h]);
 
   const shuffle = <T,>(array: T[]): T[] => {
@@ -221,6 +244,27 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         updateWidget(widget.id, {
           config: updates as unknown as WidgetConfig,
         });
+
+        // Nexus: Auto-Start Timer Logic
+        if (autoStartTimer && activeDashboard && mode === 'single') {
+          const timeWidget = activeDashboard.widgets.find(
+            (w) => w.type === 'time-tool'
+          );
+
+          if (timeWidget) {
+            const timeConfig = timeWidget.config as TimeToolConfig;
+            // Only start if not already running to avoid resetting start time unexpectedly
+            if (!timeConfig.isRunning) {
+              updateWidget(timeWidget.id, {
+                config: {
+                  ...timeConfig,
+                  isRunning: true,
+                  startTime: Date.now(),
+                } as WidgetConfig,
+              });
+            }
+          }
+        }
       } catch (err) {
         console.error('Randomizer Sync Error:', err);
       }
@@ -340,14 +384,17 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
+      const wheelSize = layoutSizing.wheelSize;
+      const resultFontSize = layoutSizing.fontSize;
+
       return (
         <RandomWheel
           students={students}
           rotation={rotation}
-          wheelSize={layoutSizing.wheelSize}
+          wheelSize={wheelSize}
           displayResult={displayResult}
           isSpinning={isSpinning}
-          fontSize={layoutSizing.fontSize}
+          resultFontSize={resultFontSize}
         />
       );
     }
