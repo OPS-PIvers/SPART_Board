@@ -35,12 +35,13 @@ const mockWidget: WidgetData = {
   x: 0,
   y: 0,
   z: 0,
+  flipped: false,
   config: {
-      selectedRoutineId: null,
-      customSteps: [],
-      favorites: [],
-      scaleMultiplier: 1
-  }
+    selectedRoutineId: null,
+    customSteps: [],
+    favorites: [],
+    scaleMultiplier: 1,
+  },
 };
 
 describe('InstructionalRoutinesWidget', () => {
