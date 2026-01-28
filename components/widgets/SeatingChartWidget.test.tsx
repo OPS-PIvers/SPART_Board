@@ -22,22 +22,6 @@ describe('SeatingChartWidget', () => {
     vi.mocked(useDashboard).mockReturnValue(
       mockDashboardContext as DashboardContextValue
     );
-
-    // Mock PointerEvent since JSDOM doesn't fully support it
-    class MockPointerEvent extends Event {
-      clientX: number;
-      clientY: number;
-      pointerId: number;
-      constructor(type: string, props: PointerEventInit) {
-        super(type, { bubbles: true, ...props });
-        this.clientX = props.clientX ?? 0;
-        this.clientY = props.clientY ?? 0;
-        this.pointerId = props.pointerId ?? 1;
-      }
-    }
-    // Using unknown first to safely cast to the incompatible window type if needed,
-    // though typically this is accepted if shapes align.
-    window.PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
   });
 
   afterEach(() => {
