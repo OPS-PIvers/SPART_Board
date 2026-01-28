@@ -14,7 +14,7 @@ export const parseNotebookFile = async (
   // Collect potential page files
   const pageFiles: { name: string; obj: JSZip.JSZipObject }[] = [];
 
-  zip.forEach((relativePath, zipEntry) => {
+  zip.forEach((relativePath: string, zipEntry: JSZip.JSZipObject) => {
     if (!zipEntry.dir) {
       // Look for files like 'page0.png', 'images/page001.png', 'page0.svg'
       if (
