@@ -9,6 +9,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
+import { TimeToolVisual } from './TimeToolVisual';
 
 interface Props {
   widget: WidgetData;
@@ -166,12 +167,37 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         ? 'bg-white/20 backdrop-blur-xl text-white'
         : 'bg-white text-slate-900';
 
-  const getStatusColor = () => {
-    if (config.mode !== 'timer') return 'text-blue-500';
+  const getTimerStatus = (): 'danger' | 'warning' | 'normal' => {
+    if (config.mode !== 'timer') return 'normal';
     const percent = displayTime / config.duration;
-    if (displayTime <= 60) return 'text-red-500';
-    if (percent <= 0.25) return 'text-amber-500';
-    return config.theme === 'light' ? 'text-slate-900' : 'text-white';
+    if (displayTime <= 60) return 'danger';
+    if (percent <= 0.25) return 'warning';
+    return 'normal';
+  };
+
+  const timerStatus = getTimerStatus();
+
+  const getStatusColorClass = () => {
+    if (config.mode !== 'timer') return 'text-blue-500';
+    switch (timerStatus) {
+      case 'danger':
+        return 'text-red-500';
+      case 'warning':
+        return 'text-amber-500';
+      default:
+        return config.theme === 'light' ? 'text-slate-900' : 'text-white';
+    }
+  };
+
+  const getStatusHexColor = () => {
+    switch (timerStatus) {
+      case 'danger':
+        return STANDARD_COLORS.red;
+      case 'warning':
+        return STANDARD_COLORS.amber;
+      default:
+        return STANDARD_COLORS.blue;
+    }
   };
 
   return (
@@ -260,51 +286,15 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       {/* Center: Time Display */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative min-h-0">
         {isVisual && (
-          <svg
-            className="absolute"
-            width="220"
-            height="220"
-            viewBox="0 0 220 220"
-          >
-            <circle
-              className="opacity-10"
-              stroke="currentColor"
-              strokeWidth="10"
-              fill="transparent"
-              r="95"
-              cx="110"
-              cy="110"
-            />
-            <circle
-              className="transition-all duration-300"
-              stroke={
-                getStatusColor().includes('red')
-                  ? STANDARD_COLORS.red
-                  : getStatusColor().includes('amber')
-                    ? STANDARD_COLORS.amber
-                    : STANDARD_COLORS.blue
-              }
-              strokeWidth="10"
-              strokeLinecap="round"
-              fill="transparent"
-              r="95"
-              cx="110"
-              cy="110"
-              strokeDasharray="597"
-              strokeDashoffset={
-                597 -
-                (config.mode === 'timer' ? displayTime / config.duration : 1) *
-                  597
-              }
-              style={{
-                transform: 'rotate(-90deg)',
-                transformOrigin: '50% 50%',
-              }}
-            />
-          </svg>
+          <TimeToolVisual
+            progress={
+              config.mode === 'timer' ? displayTime / config.duration : 1
+            }
+            color={getStatusHexColor()}
+          />
         )}
         <div
-          className={` transition-all duration-500 tabular-nums select-none ${getStatusColor()} ${isVisual ? 'text-5xl' : 'text-7xl'}`}
+          className={` transition-all duration-500 tabular-nums select-none ${getStatusColorClass()} ${isVisual ? 'text-5xl' : 'text-7xl'}`}
         >
           {formatTime(displayTime)}
         </div>
