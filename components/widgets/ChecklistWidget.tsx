@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useDashboard } from '../../context/useDashboard';
 import {
   ChecklistConfig,
@@ -266,9 +267,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     items.map((i) => i.text).join('\n')
   );
 
-  const handleBulkChange = (text: string) => {
-    setLocalText(text);
-    const lines = text.split('\n');
+  const debouncedText = useDebounce(localText, 500);
+
+  useEffect(() => {
+    const lines = debouncedText.split('\n');
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
       .map((line, idx) => {
@@ -281,7 +283,28 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         };
       });
 
-    updateWidget(widget.id, { config: { ...config, items: newItems } });
+    // Only update if there's a difference to prevent unnecessary renders/loops
+    // This is a naive check but works for the text-based nature of this editor
+    if (JSON.stringify(newItems) !== JSON.stringify(items)) {
+      updateWidget(widget.id, { config: { ...config, items: newItems } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedText, widget.id, updateWidget]);
+
+  // Keep localText in sync if items are updated externally (outside this editor).
+  // This avoids the textarea showing stale data while preventing update loops:
+  // - If items changed externally, localText is updated here.
+  // - The debounced effect below will see items already match and skip updateWidget.
+  useEffect(() => {
+    const itemsText = items.map((item) => item.text).join('\n');
+    if (itemsText !== localText) {
+      setLocalText(itemsText);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  const handleBulkChange = (text: string) => {
+    setLocalText(text);
   };
 
   // Nexus Connection: Import from Instructional Routines
