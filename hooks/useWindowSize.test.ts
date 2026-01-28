@@ -12,6 +12,7 @@ describe('useWindowSize', () => {
   });
 
   afterEach(() => {
+    // Restore original window dimensions to prevent test pollution
     window.innerWidth = originalWidth;
     window.innerHeight = originalHeight;
     vi.restoreAllMocks();
