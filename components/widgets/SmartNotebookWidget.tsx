@@ -56,6 +56,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
           id: d.id,
           title: (data.title as string) ?? 'Untitled',
           pageUrls: (data.pageUrls as string[]) ?? [],
+          pagePaths: (data.pagePaths as string[]) ?? [],
           createdAt: (data.createdAt as number) ?? 0,
         } as NotebookItem;
       });
@@ -112,6 +113,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
 
       // Upload pages sequentially to avoid overwhelming network/Firebase
       const uploadedUrls: string[] = [];
+      const uploadedPaths: string[] = [];
       for (let index = 0; index < pages.length; index += 1) {
         const { blob, extension } = pages[index];
         const pageFile = new File([blob], `page${index}.${extension}`, {
@@ -120,12 +122,14 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         const path = `users/${user.uid}/notebooks/${notebookId}/page${index}.${extension}`;
         const url = await uploadFile(path, pageFile);
         uploadedUrls.push(url);
+        uploadedPaths.push(path);
       }
 
       const notebook: NotebookItem = {
         id: notebookId,
         title,
         pageUrls: uploadedUrls,
+        pagePaths: uploadedPaths,
         createdAt: Date.now(),
       };
 
@@ -154,37 +158,18 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     if (confirm('Delete this notebook?')) {
       try {
         const notebookToDelete = notebooks.find((n) => n.id === id);
-        if (notebookToDelete) {
-          // Cleanup storage
-          // Since we don't have listAll exposed in useStorage, we'll try to delete known pages
-          // Best effort based on pageUrls count.
-          // Note: Ideally we should use listAll, but useStorage hook doesn't expose it yet.
-          // Assuming pageUrls corresponds to page0...pageX
-          const deletePromises = notebookToDelete.pageUrls.map(
-            async (_, index) => {
-              // We need the extension. But we don't have it stored in metadata explicitly, only in URL.
-              // However, we can guess or try both png/svg or parse the URL if needed.
-              // A safer way is to store metadata.
-              // For now, let's try to parse extension from URL if possible, or try both.
-              // Simple hack: try deleting pageN.png and pageN.svg. One will fail silently or throw (catch).
-
-              try {
-                await deleteFile(
-                  `users/${user.uid}/notebooks/${id}/page${index}.png`
-                );
-              } catch {
-                /* ignore */
-              }
-              try {
-                await deleteFile(
-                  `users/${user.uid}/notebooks/${id}/page${index}.svg`
-                );
-              } catch {
-                /* ignore */
-              }
-            }
+        if (notebookToDelete?.pagePaths) {
+          // Delete files using stored paths
+          const deletePromises = notebookToDelete.pagePaths.map((path) =>
+            deleteFile(path)
           );
           await Promise.all(deletePromises);
+        } else if (notebookToDelete) {
+          // Fallback for notebooks without pagePaths (legacy data)
+          console.warn(
+            'Notebook missing pagePaths, cannot delete storage files:',
+            id
+          );
         }
 
         await deleteDoc(doc(db, 'users', user.uid, 'notebooks', id));
