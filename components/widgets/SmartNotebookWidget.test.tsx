@@ -89,6 +89,7 @@ describe('SmartNotebookWidget', () => {
     (parser.parseNotebookFile as unknown as Mock).mockResolvedValue({
       title: 'Test Notebook',
       pages: mockPages,
+      assets: [],
     });
     mockUploadFile.mockResolvedValue('http://example.com/page0.png');
 
