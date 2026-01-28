@@ -146,13 +146,32 @@ describe('DrawingWidget', () => {
     if (!canvas) throw new Error('Canvas not found');
 
     // Start
-    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent(
+      canvas,
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 10,
+        clientY: 10,
+      })
+    );
 
     // Move
-    fireEvent.mouseMove(canvas, { clientX: 20, clientY: 20 });
+    fireEvent(
+      canvas,
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 20,
+        clientY: 20,
+      })
+    );
 
     // End
-    fireEvent.mouseUp(canvas);
+    fireEvent(
+      canvas,
+      new PointerEvent('pointerup', { bubbles: true, cancelable: true })
+    );
 
     // Should update widget with new path
     expect(mockUpdateWidget).toHaveBeenCalled();

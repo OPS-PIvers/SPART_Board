@@ -54,7 +54,10 @@ describe('DraggableSticker', () => {
     if (!sticker) throw new Error('Sticker not found');
 
     // Select the sticker
-    fireEvent.mouseDown(sticker);
+    fireEvent(
+      sticker,
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    );
 
     // Verify resize handle (corner)
     const resizeHandle = sticker.querySelector('.cursor-nwse-resize');
@@ -76,7 +79,10 @@ describe('DraggableSticker', () => {
     if (!sticker) throw new Error('Sticker not found');
 
     // Select sticker
-    fireEvent.mouseDown(sticker);
+    fireEvent(
+      sticker,
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    );
 
     // Find 3-dots menu button by title
     const menuButton = screen.getByTitle('Sticker Options');

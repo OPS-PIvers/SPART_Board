@@ -13,12 +13,12 @@ describe('AnnotationCanvas', () => {
     onPathsChange: vi.fn(),
   };
 
-  it('stops propagation on mousedown always', () => {
+  it('stops propagation on pointerdown always', () => {
     const { container } = render(<AnnotationCanvas {...defaultProps} />);
     const canvas = container.querySelector('canvas');
     if (!canvas) throw new Error('Canvas not found');
 
-    const event = new MouseEvent('mousedown', {
+    const event = new PointerEvent('pointerdown', {
       bubbles: true,
       cancelable: true,
     });
@@ -29,15 +29,18 @@ describe('AnnotationCanvas', () => {
     expect(stopPropagationSpy).toHaveBeenCalled();
   });
 
-  it('stops propagation on mousemove when drawing', () => {
+  it('stops propagation on pointermove when drawing', () => {
     const { container } = render(<AnnotationCanvas {...defaultProps} />);
     const canvas = container.querySelector('canvas');
     if (!canvas) throw new Error('Canvas not found');
 
     // Start drawing
-    fireEvent.mouseDown(canvas);
+    fireEvent(
+      canvas,
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    );
 
-    const moveEvent = new MouseEvent('mousemove', {
+    const moveEvent = new PointerEvent('pointermove', {
       bubbles: true,
       cancelable: true,
     });
@@ -48,12 +51,12 @@ describe('AnnotationCanvas', () => {
     expect(stopPropagationSpy).toHaveBeenCalled();
   });
 
-  it('does NOT stop propagation on mousemove when NOT drawing', () => {
+  it('does NOT stop propagation on pointermove when NOT drawing', () => {
     const { container } = render(<AnnotationCanvas {...defaultProps} />);
     const canvas = container.querySelector('canvas');
     if (!canvas) throw new Error('Canvas not found');
 
-    const moveEvent = new MouseEvent('mousemove', {
+    const moveEvent = new PointerEvent('pointermove', {
       bubbles: true,
       cancelable: true,
     });
@@ -64,15 +67,18 @@ describe('AnnotationCanvas', () => {
     expect(stopPropagationSpy).not.toHaveBeenCalled();
   });
 
-  it('stops propagation on mouseup when drawing', () => {
+  it('stops propagation on pointerup when drawing', () => {
     const { container } = render(<AnnotationCanvas {...defaultProps} />);
     const canvas = container.querySelector('canvas');
     if (!canvas) throw new Error('Canvas not found');
 
     // Start drawing
-    fireEvent.mouseDown(canvas);
+    fireEvent(
+      canvas,
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    );
 
-    const upEvent = new MouseEvent('mouseup', {
+    const upEvent = new PointerEvent('pointerup', {
       bubbles: true,
       cancelable: true,
     });
@@ -83,12 +89,12 @@ describe('AnnotationCanvas', () => {
     expect(stopPropagationSpy).toHaveBeenCalled();
   });
 
-  it('does NOT stop propagation on mouseup when NOT drawing', () => {
+  it('does NOT stop propagation on pointerup when NOT drawing', () => {
     const { container } = render(<AnnotationCanvas {...defaultProps} />);
     const canvas = container.querySelector('canvas');
     if (!canvas) throw new Error('Canvas not found');
 
-    const upEvent = new MouseEvent('mouseup', {
+    const upEvent = new PointerEvent('pointerup', {
       bubbles: true,
       cancelable: true,
     });
