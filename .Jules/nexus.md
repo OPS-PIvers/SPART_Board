@@ -23,3 +23,9 @@
 **Source:** Clock Widget
 **Destination:** Schedule Widget
 **Value:** Automatically marks schedule items as done based on the current time if a Clock widget is present.
+
+## 2024-05-24 - [Rapid Fire]
+
+**Source:** Randomizer (Winner Picked)
+**Destination:** Timer (Start)
+**Value:** Automatically starts the timer when a student is selected for rapid-fire questioning.

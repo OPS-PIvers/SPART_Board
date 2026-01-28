@@ -182,6 +182,7 @@ export interface RandomConfig {
   soundEnabled?: boolean;
   remainingStudents?: string[];
   rosterMode?: 'class' | 'custom';
+  autoStartTimer?: boolean;
 }
 
 export interface DiceConfig {

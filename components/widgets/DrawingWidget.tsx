@@ -195,8 +195,7 @@ export const DrawingWidget: React.FC<{
       // Ensure styles are set (in case they were lost or reset)
       setContextStyles(ctx);
 
-      const prev =
-        currentPathRef.current[currentPathRef.current.length - 2];
+      const prev = currentPathRef.current[currentPathRef.current.length - 2];
       ctx.beginPath();
       ctx.moveTo(prev.x, prev.y);
       ctx.lineTo(pos.x, pos.y);

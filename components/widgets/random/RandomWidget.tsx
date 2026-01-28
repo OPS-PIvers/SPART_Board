@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, RandomConfig, WidgetConfig } from '../../../types';
+import {
+  WidgetData,
+  RandomConfig,
+  WidgetConfig,
+  TimeToolConfig,
+} from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target } from 'lucide-react';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
@@ -9,7 +14,8 @@ import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, rosters, activeRosterId } = useDashboard();
+  const { updateWidget, rosters, activeRosterId, activeDashboard } =
+    useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
@@ -20,6 +26,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     soundEnabled = true,
     remainingStudents = [],
     rosterMode = 'class',
+    autoStartTimer = false,
   } = config;
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -221,6 +228,27 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         updateWidget(widget.id, {
           config: updates as unknown as WidgetConfig,
         });
+
+        // Nexus: Auto-Start Timer Logic
+        if (autoStartTimer && activeDashboard && mode === 'single') {
+          const timeWidget = activeDashboard.widgets.find(
+            (w) => w.type === 'time-tool'
+          );
+
+          if (timeWidget) {
+            const timeConfig = timeWidget.config as TimeToolConfig;
+            // Only start if not already running to avoid resetting start time unexpectedly
+            if (!timeConfig.isRunning) {
+              updateWidget(timeWidget.id, {
+                config: {
+                  ...timeConfig,
+                  isRunning: true,
+                  startTime: Date.now(),
+                } as WidgetConfig,
+              });
+            }
+          }
+        }
       } catch (err) {
         console.error('Randomizer Sync Error:', err);
       }

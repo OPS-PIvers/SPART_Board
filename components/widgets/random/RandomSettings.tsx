@@ -14,12 +14,13 @@ import {
   List,
   Volume2,
   VolumeX,
+  Clock,
 } from 'lucide-react';
 
 export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
@@ -29,6 +30,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
     groupSize = 3,
     soundEnabled = true,
     rosterMode = 'class',
+    autoStartTimer = false,
   } = config;
 
   const [localFirstNames, setLocalFirstNames] = useState(firstNames);
@@ -139,6 +141,46 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
           size="md"
         />
       </div>
+
+      {/* Automation - Nexus Connection */}
+      {mode === 'single' && (
+        <div className="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2 rounded-lg ${autoStartTimer ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-400'}`}
+            >
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xxs uppercase tracking-widest text-indigo-900 font-bold">
+                Auto-Start Timer
+              </div>
+              <div className="text-xxxs text-indigo-600 uppercase">
+                Start timer when winner is picked
+              </div>
+            </div>
+          </div>
+          <Toggle
+            checked={autoStartTimer ?? false}
+            onChange={() =>
+              updateWidget(widget.id, {
+                config: { ...config, autoStartTimer: !autoStartTimer },
+              })
+            }
+            size="md"
+            disabled={
+              !activeDashboard?.widgets.some((w) => w.type === 'time-tool')
+            }
+          />
+        </div>
+      )}
+      {!activeDashboard?.widgets.some((w) => w.type === 'time-tool') &&
+        mode === 'single' &&
+        autoStartTimer && (
+          <div className="text-xxxs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+            ⚠️ Timer widget required for automation.
+          </div>
+        )}
 
       <div>
         <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
