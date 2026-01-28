@@ -53,3 +53,13 @@
 **Update:** Functions Dependencies
 **Action:** Updated `axios` (1.13.3), `firebase-admin` (13.6.0), `@google/genai` (1.38.0).
 **Verification:** Ran `pnpm build` in functions - All passed.
+
+## 2025-02-12 - [Hono Security & Functions Updates]
+
+**Security:** `hono`
+**Reason:** Vulnerabilities in transitive dependency of `firebase-tools`.
+**Action:** Added `hono` to `devDependencies` in root (`^4.11.7`) and updated `pnpm.overrides`. This resolved peer dependency warnings and security issues.
+
+**Update:** Functions Dependencies
+**Action:** Updated `axios` (1.13.4) and `firebase-functions` (7.0.4) to latest patch versions.
+**Verification:** Ran `pnpm audit` (Clean), `pnpm validate` (Passed), and `functions/pnpm build` (Passed).
