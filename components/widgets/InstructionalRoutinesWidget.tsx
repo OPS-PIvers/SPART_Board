@@ -600,25 +600,24 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     const title =
       type === 'keyWords' ? "Bloom's Key Words" : "Bloom's Sentence Starters";
 
-    let content = `<h3 style="font-weight: 900; margin-bottom: 0.5em; text-transform: uppercase; color: #1e293b;">${title}</h3>`;
+    let content = `<h3 class="font-black mb-[0.5em] uppercase text-slate-800">${title}</h3>`;
 
-    if (type === 'keyWords') {
-      BLOOMS_DATA.keyWords.forEach((levelGroup) => {
-        content += `<h4 style="font-weight: 800; margin-top: 1em; margin-bottom: 0.25em; color: #2d3f89; font-size: 0.9em;">${levelGroup.level}</h4><ul style="padding-left: 1.2em; list-style-type: disc; color: #475569; font-size: 0.85em;">`;
-        levelGroup.words.forEach((item) => {
-          content += `<li>${item}</li>`;
-        });
-        content += `</ul>`;
+    const data =
+      type === 'keyWords' ? BLOOMS_DATA.keyWords : BLOOMS_DATA.questionStarters;
+
+    data.forEach((levelGroup) => {
+      const items =
+        type === 'keyWords'
+          ? (levelGroup as (typeof BLOOMS_DATA.keyWords)[number]).words
+          : (levelGroup as (typeof BLOOMS_DATA.questionStarters)[number])
+              .starters;
+
+      content += `<h4 class="font-extrabold mt-[1em] mb-[0.25em] text-brand-blue-primary text-[0.9em]">${levelGroup.level}</h4><ul class="pl-[1.2em] list-disc text-slate-600 text-[0.85em]">`;
+      items.forEach((item) => {
+        content += `<li>${item}</li>`;
       });
-    } else {
-      BLOOMS_DATA.questionStarters.forEach((levelGroup) => {
-        content += `<h4 style="font-weight: 800; margin-top: 1em; margin-bottom: 0.25em; color: #2d3f89; font-size: 0.9em;">${levelGroup.level}</h4><ul style="padding-left: 1.2em; list-style-type: disc; color: #475569; font-size: 0.85em;">`;
-        levelGroup.starters.forEach((item) => {
-          content += `<li>${item}</li>`;
-        });
-        content += `</ul>`;
-      });
-    }
+      content += `</ul>`;
+    });
 
     addWidget('text', {
       config: {

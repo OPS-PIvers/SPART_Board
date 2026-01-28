@@ -39,3 +39,8 @@
 
 **Drift:** The Style Panel contained inconsistent micro-typography with hardcoded values (9px, 10px, 11px) mixing hierarchies.
 **Fix:** Standardized all micro-labels to `text-xxs` (10px) and `text-xxxs` (8px) using system tokens.
+
+## 2026-01-28 - [Bloom's Taxonomy Styling]
+
+**Drift:** Found inline styles with hardcoded hex values (e.g., `#1e293b`, `#2d3f89`) in `InstructionalRoutinesWidget.tsx` for Bloom's Taxonomy resources, bypassing the design system.
+**Fix:** Refactored to use Tailwind utility classes and semantic tokens (`text-slate-800`, `text-brand-blue-primary`) and consolidated duplicated logic.
