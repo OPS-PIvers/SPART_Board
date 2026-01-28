@@ -76,7 +76,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   lunchCount: lazyNamed(() => import('./LunchCountWidget'), 'LunchCountWidget'),
   classes: lazy(() => import('./ClassesWidget')), // Default export
   instructionalRoutines: lazyNamed(
-    () => import('./InstructionalRoutines/Widget'),
+    () => import('./InstructionalRoutinesWidget'),
     'InstructionalRoutinesWidget'
   ),
   miniApp: lazyNamed(() => import('./MiniAppWidget'), 'MiniAppWidget'),
@@ -125,7 +125,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   poll: lazyNamed(() => import('./PollWidget'), 'PollSettings'),
   instructionalRoutines: lazyNamed(
-    () => import('./InstructionalRoutines/Settings'),
+    () => import('./InstructionalRoutinesWidget'),
     'InstructionalRoutinesSettings'
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),

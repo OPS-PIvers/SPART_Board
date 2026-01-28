@@ -63,7 +63,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = useRef(activeId);
-  const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [visibleTools, setVisibleTools] = useState<WidgetType[]>(() => {
     const saved = localStorage.getItem('classroom_visible_tools');
@@ -133,11 +132,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
-
-  // Sync dashboards to ref
-  useEffect(() => {
-    dashboardsRef.current = dashboards;
-  }, [dashboards]);
 
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
@@ -415,92 +409,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [removeToast]
   );
-
-  // Use a ref to prevent duplicate processing of the same share ID
-  // which can happen if dependencies change during the async load
-  const processingRef = useRef<string | null>(null);
-
-  // Handle shared dashboard loading
-  useEffect(() => {
-    if (!pendingShareId || !user) return;
-    if (processingRef.current === pendingShareId) return;
-
-    const currentShareId = pendingShareId;
-    processingRef.current = currentShareId;
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        const sharedDb = await loadSharedDashboard(currentShareId);
-
-        if (!mounted) return;
-
-        if (sharedDb) {
-          // Calculate order based on current dashboards state
-          const maxOrder = dashboardsRef.current.reduce(
-            (max, db) => Math.max(max, db.order ?? 0),
-            0
-          );
-
-          // Explicitly construct new dashboard to avoid carrying over
-          // metadata from the shared document (e.g. originalAuthor, sharedAt)
-          const newDb: Dashboard = {
-            id: crypto.randomUUID(),
-            name: `${sharedDb.name} (Copy)`,
-            background: sharedDb.background,
-            widgets: sharedDb.widgets,
-            globalStyle: sharedDb.globalStyle,
-            settings: sharedDb.settings,
-            isDefault: false,
-            createdAt: Date.now(),
-            order: maxOrder + 1,
-          };
-
-          await saveDashboard(newDb);
-
-          if (!mounted) return;
-
-          setActiveId(newDb.id);
-          addToast('Board imported successfully', 'success');
-          clearPendingShare();
-        } else {
-          if (!mounted) return;
-
-          addToast('Shared board not found', 'error');
-          clearPendingShare();
-        }
-      } catch (err) {
-        console.error('Failed to load shared dashboard:', err);
-        if (!mounted) return;
-
-        addToast('Failed to load shared board', 'error');
-        clearPendingShare();
-      } finally {
-        // Clear processingRef only if it still matches the current share ID
-        if (processingRef.current === currentShareId) {
-          processingRef.current = null;
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      mounted = false;
-      // Clear processingRef in cleanup if it matches the current share ID
-      // This ensures the effect can re-run after StrictMode's remount cycle
-      if (processingRef.current === currentShareId) {
-        processingRef.current = null;
-      }
-    };
-  }, [
-    pendingShareId,
-    user,
-    loadSharedDashboard,
-    saveDashboard,
-    addToast,
-    clearPendingShare,
-  ]);
 
   // --- FOLDER ACTIONS ---
   const addFolder = useCallback(

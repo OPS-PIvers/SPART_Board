@@ -296,7 +296,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   return (
     <>
       <GlassCard
-        globalStyle={globalStyle}
         ref={windowRef}
         onMouseDown={handleMouseDown}
         onClick={handleWidgetClick}

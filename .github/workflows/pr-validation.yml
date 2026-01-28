@@ -17,6 +17,8 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install functions dependencies
+      - name: Install functions dependencies (for linting)
         working-directory: functions
         run: pnpm install --frozen-lockfile
 
@@ -48,10 +50,6 @@ jobs:
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
 
       - name: Run type check
-        run: pnpm run type-check
-
-      - name: Run functions type check
-        working-directory: functions
         run: pnpm run type-check
 
       - name: Run linter
@@ -72,10 +70,6 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || '1:123456789:web:abc123' }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || 'test-key' }}
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
-
-      - name: Build functions
-        working-directory: functions
-        run: pnpm run build
 
       - name: Add PR Comment
         if: success()
@@ -104,3 +98,31 @@ jobs:
               repo: context.repo.repo,
               body: '❌ Validation checks failed. Please review the workflow logs and fix the issues before merging.'
             })
+
+  validate-functions:
+    runs-on: ubuntu-latest
+    name: Functions Check
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: functions/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: functions
+        run: pnpm install --frozen-lockfile
+
+      - name: Build functions
+        working-directory: functions
+        run: pnpm run build

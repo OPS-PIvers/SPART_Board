@@ -86,7 +86,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
         {/* Sub-tabs */}
         <div className="p-4">
-          <div className="flex bg-slate-100 p-0.5 rounded-lg text-xxs font-bold uppercase tracking-widest">
+          <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold uppercase tracking-widest">
             <button
               onClick={() => setStyleTab('window')}
               className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-2 transition-all ${
@@ -116,12 +116,12 @@ export const StylePanel: React.FC<StylePanelProps> = ({
         {/* Global Font Family - Always visible */}
         <div className="space-y-3">
           <div className="flex justify-between items-center px-1">
-            <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Typography
             </h3>
             <button
               onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
-              className="text-xxs font-bold uppercase text-brand-blue-primary"
+              className="text-[9px] font-bold uppercase text-brand-blue-primary"
             >
               {isFontMenuOpen ? 'Close' : 'Change'}
             </button>
@@ -187,10 +187,10 @@ export const StylePanel: React.FC<StylePanelProps> = ({
             {/* Window Transparency */}
             <div className="space-y-3">
               <div className="flex justify-between items-center px-1">
-                <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Transparency
                 </h3>
-                <span className="text-xxs font-mono font-bold text-brand-blue-primary">
+                <span className="text-[10px] font-mono font-bold text-brand-blue-primary">
                   {Math.round(pendingStyle.windowTransparency * 100)}%
                 </span>
               </div>
@@ -212,7 +212,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
             {/* Window Corners */}
             <div className="space-y-3">
-              <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest px-1">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                 Corners
               </h3>
               <div className="flex bg-slate-100 p-0.5 rounded-lg">
@@ -231,7 +231,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                           r.id as GlobalStyle['windowBorderRadius'],
                       })
                     }
-                    className={`flex-1 py-1.5 rounded-md text-xxs font-bold uppercase transition-all ${
+                    className={`flex-1 py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${
                       pendingStyle.windowBorderRadius === r.id
                         ? 'bg-white shadow-sm text-brand-blue-primary'
                         : 'text-slate-500'
@@ -248,10 +248,10 @@ export const StylePanel: React.FC<StylePanelProps> = ({
             {/* Dock Transparency */}
             <div className="space-y-3">
               <div className="flex justify-between items-center px-1">
-                <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Transparency
                 </h3>
-                <span className="text-xxs font-mono font-bold text-brand-blue-primary">
+                <span className="text-[10px] font-mono font-bold text-brand-blue-primary">
                   {Math.round(pendingStyle.dockTransparency * 100)}%
                 </span>
               </div>
@@ -273,7 +273,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
             {/* Dock Corners */}
             <div className="space-y-3">
-              <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest px-1">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                 Corners
               </h3>
               <div className="flex bg-slate-100 p-0.5 rounded-lg">
@@ -292,7 +292,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                           r.id as GlobalStyle['dockBorderRadius'],
                       })
                     }
-                    className={`flex-1 py-1.5 rounded-md text-xxs font-bold uppercase transition-all ${
+                    className={`flex-1 py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${
                       pendingStyle.dockBorderRadius === r.id
                         ? 'bg-white shadow-sm text-brand-blue-primary'
                         : 'text-slate-500'
@@ -306,7 +306,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
 
             {/* Dock Text Style */}
             <div className="space-y-3">
-              <h3 className="text-xxs font-bold text-slate-400 uppercase tracking-widest px-1">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                 Dock Text
               </h3>
               <div className="flex flex-col gap-3">
@@ -322,7 +322,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                     }
                     className="w-8 h-8 rounded-md border border-slate-200 bg-white cursor-pointer"
                   />
-                  <span className="text-xxs font-bold text-slate-600 uppercase">
+                  <span className="text-[11px] font-bold text-slate-600 uppercase">
                     Text Color
                   </span>
                 </div>
@@ -340,7 +340,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                       : 'bg-white border-slate-100 text-slate-500'
                   }`}
                 >
-                  <span className="text-xxs font-bold uppercase tracking-wider">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">
                     Text Shadow
                   </span>
                   {pendingStyle.dockTextShadow && (
@@ -360,7 +360,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
             setGlobalStyle(pendingStyle);
             addToast('Global style applied', 'success');
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-blue-primary text-white rounded-xl font-bold text-xxs uppercase tracking-widest shadow-sm hover:bg-brand-blue-dark transition-all"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-blue-primary text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-sm hover:bg-brand-blue-dark transition-all"
         >
           <Save className="w-3.5 h-3.5" /> Save
         </button>
@@ -373,7 +373,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               );
             }
           }}
-          className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-xxs uppercase tracking-widest hover:bg-slate-200 transition-all"
+          className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
         >
           Discard
         </button>
@@ -397,7 +397,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
                 pendingStyle={pendingStyle}
                 background={activeDashboard?.background}
               />
-              <p className="mt-6 text-xxs font-bold text-white/60 uppercase tracking-[0.2em] text-center drop-shadow-md">
+              <p className="mt-6 text-[10px] font-bold text-white/60 uppercase tracking-[0.2em] text-center drop-shadow-md">
                 Preview updates live as you adjust settings
               </p>
             </div>

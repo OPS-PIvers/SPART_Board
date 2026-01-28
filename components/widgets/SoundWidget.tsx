@@ -117,12 +117,6 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     []
   );
 
-  // ⚡ Bolt Optimization: Use ref for volume to prevent loop recreation on every frame
-  const volumeRef = useRef(volume);
-  useEffect(() => {
-    volumeRef.current = volume;
-  }, [volume]);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -146,7 +140,7 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     let animId: number;
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const impulse = (volumeRef.current / 100) * 15;
+      const impulse = (volume / 100) * 15;
 
       balls.current.forEach((b) => {
         // Physics logic
@@ -170,7 +164,7 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     };
     render();
     return () => cancelAnimationFrame(animId);
-  }, []);
+  }, [volume]);
 
   return (
     <canvas
@@ -204,12 +198,6 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     trafficLightThreshold = 4,
   } = widget.config as SoundConfig;
 
-  // ⚡ Bolt Optimization: Use ref for sensitivity to prevent audio stream restart
-  const sensitivityRef = useRef(sensitivity);
-  useEffect(() => {
-    sensitivityRef.current = sensitivity;
-  }, [sensitivity]);
-
   useEffect(() => {
     const startAudio = async () => {
       try {
@@ -235,10 +223,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           analyserRef.current.getByteFrequencyData(dataArray);
           const sum = dataArray.reduce((a, b) => a + b, 0);
           const average = sum / bufferLength;
-          const normalized = Math.min(
-            100,
-            average * (sensitivityRef.current * 2)
-          );
+          const normalized = Math.min(100, average * (sensitivity * 2));
 
           setVolume(normalized);
           setHistory((prev) => [...prev.slice(-49), normalized]);
@@ -254,7 +239,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [sensitivity]);
 
   const level = getLevelData(volume);
 

@@ -62,7 +62,7 @@ export const DrawingWidget: React.FC<{
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const currentPathRef = useRef<Point[]>([]);
+  const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -92,32 +92,16 @@ export const DrawingWidget: React.FC<{
     `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`
   );
 
-  const setContextStyles = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      if (color === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
-      } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = color;
-      }
-      ctx.lineWidth = width;
-    },
-    [color, width]
-  );
-
   // Draw paths on the canvas whenever they change
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, allPaths: Path[], current: Point[]) => {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
 
       const renderPath = (p: Path) => {
         if (p.points.length < 2) return;
         ctx.beginPath();
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
 
         if (p.color === 'eraser') {
           ctx.globalCompositeOperation = 'destination-out';
@@ -166,48 +150,27 @@ export const DrawingWidget: React.FC<{
       canvas.height = window.innerHeight;
     }
 
-    draw(ctx, paths, currentPathRef.current);
-  }, [paths, mode, widget.w, widget.h, draw, isStudentView]);
+    draw(ctx, paths, currentPath);
+  }, [paths, currentPath, mode, widget.w, widget.h, draw, isStudentView]);
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (isStudentView) return;
     setIsDrawing(true);
     const pos = getPos(e);
-    currentPathRef.current = [pos];
-
-    // Start imperative drawing
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
-      setContextStyles(ctx);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    }
+    setCurrentPath([pos]);
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (isStudentView || !isDrawing) return;
     const pos = getPos(e);
-    currentPathRef.current.push(pos);
-
-    // Imperatively draw the new segment
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx && currentPathRef.current.length > 1) {
-      // Ensure styles are set (in case they were lost or reset)
-      setContextStyles(ctx);
-
-      const prev = currentPathRef.current[currentPathRef.current.length - 2];
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
+    setCurrentPath((prev) => [...prev, pos]);
   };
 
   const handleEnd = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (currentPathRef.current.length > 1) {
-      const newPath: Path = { points: currentPathRef.current, color, width };
+    if (currentPath.length > 1) {
+      const newPath: Path = { points: currentPath, color, width };
       updateWidget(widget.id, {
         config: {
           ...config,
@@ -215,7 +178,7 @@ export const DrawingWidget: React.FC<{
         } as DrawingConfig,
       });
     }
-    currentPathRef.current = [];
+    setCurrentPath([]);
   };
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {

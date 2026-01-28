@@ -34,13 +34,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { useClickOutside } from '../../hooks/useClickOutside';
-import {
-  ToolMetadata,
-  WidgetType,
-  WidgetData,
-  DockFolder,
-  GlobalStyle,
-} from '../../types';
+import { ToolMetadata, WidgetType, WidgetData, DockFolder } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
 import { getJoinUrl } from '../../utils/urlHelpers';
@@ -85,7 +79,6 @@ const ToolDockItem = ({
   onRemoveFromDock,
   isEditMode,
   onLongPress,
-  globalStyle,
 }: {
   tool: ToolMetadata;
   minimizedWidgets: WidgetData[];
@@ -96,7 +89,6 @@ const ToolDockItem = ({
   onRemoveFromDock: () => void;
   isEditMode: boolean;
   onLongPress: () => void;
-  globalStyle: GlobalStyle;
 }) => {
   const {
     attributes,
@@ -181,7 +173,6 @@ const ToolDockItem = ({
         popoverPos &&
         createPortal(
           <GlassCard
-            globalStyle={globalStyle}
             ref={popoverRef}
             style={{
               position: 'fixed',
@@ -435,7 +426,6 @@ const FolderItem = ({
   minimizedWidgetsByType,
   onRemoveItem,
   onReorder,
-  globalStyle,
 }: {
   folder: DockFolder;
   onAdd: (type: WidgetType) => void;
@@ -446,7 +436,6 @@ const FolderItem = ({
   minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
   onRemoveItem: (folderId: string, type: WidgetType) => void;
   onReorder: (folderId: string, newItems: WidgetType[]) => void;
-  globalStyle: GlobalStyle;
 }) => {
   const {
     attributes,
@@ -516,7 +505,6 @@ const FolderItem = ({
       {showPopover &&
         createPortal(
           <GlassCard
-            globalStyle={globalStyle}
             ref={popoverRef}
             className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 p-4 animate-in slide-in-from-bottom-2 duration-200 z-popover"
           >
@@ -919,7 +907,6 @@ export const Dock: React.FC = () => {
               setShowCreateFolderModal(false);
             }
           }}
-          globalStyle={globalStyle}
         />
       )}
 
@@ -939,7 +926,6 @@ export const Dock: React.FC = () => {
               setRenamingFolderId(null);
             }
           }}
-          globalStyle={globalStyle}
         />
       )}
 
@@ -955,13 +941,11 @@ export const Dock: React.FC = () => {
                 }}
                 canAccess={canAccessWidget}
                 onClose={() => setShowLibrary(false)}
-                globalStyle={globalStyle}
               />
             )}
 
             {/* Expanded Toolbar with integrated minimize button */}
             <GlassCard
-              globalStyle={globalStyle}
               transparency={globalStyle.dockTransparency}
               cornerRadius={
                 globalStyle.dockBorderRadius === 'full'
@@ -1015,7 +999,6 @@ export const Dock: React.FC = () => {
                               }}
                               isEditMode={isEditMode}
                               onLongPress={handleLongPress}
-                              globalStyle={globalStyle}
                             />
                           );
                         } else {
@@ -1037,7 +1020,6 @@ export const Dock: React.FC = () => {
                                 )
                               }
                               onReorder={reorderFolderItems}
-                              globalStyle={globalStyle}
                             />
                           );
                         }
@@ -1115,7 +1097,6 @@ export const Dock: React.FC = () => {
                         livePopoverPos &&
                         createPortal(
                           <GlassCard
-                            globalStyle={globalStyle}
                             ref={livePopoverRef}
                             style={{
                               position: 'fixed',

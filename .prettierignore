@@ -11,5 +11,3 @@ functions/lib
 functions/node_modules
 test-results/
 playwright-report/
-.agents
-.gemini

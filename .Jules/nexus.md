@@ -1,17 +1,25 @@
-# Nexus: Inter-Widget Communication
+# Nexus Journal - Architectural Mapping
 
-Nexus is the system that allows widgets to interact with each other, creating a cohesive classroom ecosystem.
+## 2025-02-21 - [Class Vote]
 
-## Active Connections
+**Source:** Classes Widget (Roster)
+**Destination:** Poll Widget (Options)
+**Value:** Instantly populates poll options with student names for class elections or voting.
 
-### Random Picker -> Timer
+## 2024-05-22 - [Routine Tracker]
 
-**Description:** Automatically starts a timer when a student/winner is selected.
-**Implementation:** `RandomWidget.tsx` checks for `autoStartTimer` config and triggers `updateWidget` on any active `time-tool` widget.
-**Configuration:** Enabled via the "Auto-Start Timer" toggle in Random Widget settings (Single mode only).
+**Source:** Instructional Routines Widget (Steps)
+**Destination:** Checklist Widget (Items)
+**Value:** Allows teachers to instantly convert a classroom routine (like Think-Pair-Share) into a trackable checklist for students to follow.
 
-## Planned Connections
+## 2026-01-21 - [Auto-Traffic Control]
 
-- **Poll -> Scoreboard:** Update team scores based on poll results.
-- **Timer -> Noise Meter:** Adjust sensitivity based on timer activity (e.g., lower during "quiet time" timers).
-- **Instructional Routines -> All:** Bulk-launch tools required for a specific protocol.
+**Source:** Sound Widget (Noise Meter)
+**Destination:** Traffic Light Widget
+**Value:** Automatically switches Traffic Light to Red when noise level exceeds a threshold, acting as an unbiased classroom monitor.
+
+## 2024-05-23 - [Schedule Auto-Progress]
+
+**Source:** Clock Widget
+**Destination:** Schedule Widget
+**Value:** Automatically marks schedule items as done based on the current time if a Clock widget is present.

@@ -42,7 +42,7 @@ export const StylePreview = ({
         <div
           className={`text-center space-y-1 font-${pendingStyle.fontFamily}`}
         >
-          <div className="text-xxs font-black uppercase text-slate-400 tracking-widest leading-none mb-1">
+          <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">
             Window Preview
           </div>
           <div className="text-sm leading-tight text-slate-800">
@@ -64,14 +64,14 @@ export const StylePreview = ({
           backgroundColor: `rgba(255, 255, 255, ${pendingStyle.dockTransparency})`,
         }}
       >
-        <div className="text-xxs font-black uppercase text-slate-400 tracking-widest leading-none">
+        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">
           Dock Preview
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-blue-primary rounded-lg shadow-sm" />
             <span
-              className={`text-xxxs uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
+              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow
@@ -85,7 +85,7 @@ export const StylePreview = ({
           <div className="flex flex-col items-center gap-1">
             <div className="w-6 h-6 bg-brand-red-primary rounded-lg shadow-sm" />
             <span
-              className={`text-xxxs uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
+              className={`text-[8px] uppercase tracking-tighter whitespace-nowrap transition-all duration-300 font-${pendingStyle.fontFamily}`}
               style={{
                 color: pendingStyle.dockTextColor,
                 textShadow: pendingStyle.dockTextShadow

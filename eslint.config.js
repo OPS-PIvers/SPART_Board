@@ -21,8 +21,6 @@ export default tseslint.config(
       'scripts',
       'functions/lib',
       'coverage',
-      '.agents',
-      '.gemini',
     ],
   },
   js.configs.recommended,
