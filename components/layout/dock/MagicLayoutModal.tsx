@@ -68,7 +68,7 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
           onChange={(e) => setDescription(e.target.value)}
           autoFocus
           placeholder="e.g., Math rotations with 4 groups, a 15-minute timer, and a noise meter."
-          className="w-full h-32 px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium mb-6 resize-none"
+          className="w-full h-32 px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium mb-4 resize-none"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -76,6 +76,27 @@ export const MagicLayoutModal: React.FC<MagicLayoutModalProps> = ({
             }
           }}
         />
+
+        <div className="mb-6">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+            Try these
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              'Small group rotations with a timer',
+              'Morning meeting with weather and calendar',
+              'Math lesson with a poll and scratchpad',
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => setDescription(suggestion)}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-slate-600 rounded-lg transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex gap-3">
           <button

@@ -42,7 +42,7 @@ interface ClassLinkStudent {
 }
 
 interface AIData {
-  type: 'mini-app' | 'poll';
+  type: 'mini-app' | 'poll' | 'dashboard-layout';
   prompt: string;
 }
 
@@ -356,6 +356,43 @@ export const generateWithAI = functionsV1
           { "question": "...", "options": ["...", "...", "...", "..."] }
         `;
         userPrompt = `Topic: ${data.prompt}`;
+      } else if (data.type === 'dashboard-layout') {
+        systemPrompt = `
+          You are an expert instructional designer. Based on the user's lesson description, suggest a set of interactive widgets to place on their digital whiteboard.
+          
+          Available Widgets (use EXACT type strings):
+          - clock: Digital/analog clock
+          - time-tool: Timer/Stopwatch
+          - traffic: Traffic light for behavior/status
+          - text: Simple sticky note/text area
+          - checklist: To-do list
+          - random: Student/item picker
+          - dice: Random dice roller
+          - sound: Noise level meter
+          - drawing: Sketchpad
+          - qr: QR code generator
+          - embed: Website embedder
+          - poll: Multiple choice poll
+          - webcam: Live camera feed
+          - scoreboard: Point tracker
+          - workSymbols: Classroom expectations icons
+          - weather: Local weather display
+          - schedule: Daily class schedule
+          - calendar: Monthly events
+          - lunchCount: Student meal tracker
+          - classes: Class/Period selector
+          - instructionalRoutines: Library of teaching strategies (e.g. Think-Pair-Share)
+          - materials: Visual list of required student supplies
+          - stickers: Reward/decorative stickers
+          - seating-chart: Classroom layout manager
+          - catalyst: Instructional warm-ups/activities
+          
+          Requirements:
+          1. Select 3-6 most relevant widgets for the activity.
+          2. Return JSON: { "widgets": [{ "type": "...", "config": {} }] }
+          3. 'config' should be an empty object {} unless you are setting a specific property known to that widget (like 'question' for 'poll').
+        `;
+        userPrompt = `Lesson/Activity Description: ${data.prompt}`;
       } else {
         throw new functionsV1.https.HttpsError(
           'invalid-argument',

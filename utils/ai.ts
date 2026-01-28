@@ -111,7 +111,7 @@ export async function generatePoll(topic: string): Promise<GeneratedPoll> {
 /**
  * Generates a dashboard layout based on a natural language description using a Firebase Function proxy.
  *
- * @param description - The lesson description or activity plan.
+ * @param description - The lesson description or activity plan (e.g., "Math lesson about fractions with a 10 minute timer and a poll").
  * @returns A promise resolving to an array of widget configurations.
  * @throws Error if generation fails.
  */
