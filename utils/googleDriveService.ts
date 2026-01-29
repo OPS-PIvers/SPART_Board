@@ -250,6 +250,7 @@ export class GoogleDriveService {
   }
 
   /**
+<<<<<<< HEAD
    * Upload a general file to a specific Drive folder path.
    */
   async uploadFile(
@@ -258,6 +259,12 @@ export class GoogleDriveService {
     folderPath: string = 'Misc'
   ): Promise<DriveFile> {
     const folderId = await this.getFolderPath(folderPath);
+=======
+   * Upload a general file to the "School Boards" folder.
+   */
+  async uploadFile(file: File | Blob, fileName: string): Promise<DriveFile> {
+    const folderId = await this.getOrCreateAppFolder();
+>>>>>>> dd45016 (Polish Google Drive integration: implement full user-save-to-drive mandate and fix type errors)
 
     const metadata = {
       name: fileName,
