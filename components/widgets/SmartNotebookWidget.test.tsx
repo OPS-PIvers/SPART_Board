@@ -72,7 +72,7 @@ describe('SmartNotebookWidget', () => {
     expect(screen.getByRole('button', { name: /Import/i })).toBeInTheDocument();
   });
 
-  it('handles import flow', async () => {
+  it('handles import flow with assets', async () => {
     (firestore.onSnapshot as unknown as Mock).mockImplementation(
       (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
         callback({ docs: [] });
@@ -86,12 +86,16 @@ describe('SmartNotebookWidget', () => {
     const mockPages = [
       { blob: new Blob(['page0'], { type: 'image/png' }), extension: 'png' },
     ];
+    const mockAssets = [
+      { blob: new Blob(['asset0'], { type: 'image/png' }), extension: 'png' },
+    ];
+
     (parser.parseNotebookFile as unknown as Mock).mockResolvedValue({
       title: 'Test Notebook',
       pages: mockPages,
-      assets: [],
+      assets: mockAssets,
     });
-    mockUploadFile.mockResolvedValue('http://example.com/page0.png');
+    mockUploadFile.mockResolvedValue('http://example.com/file.png');
 
     const { container } = render(<SmartNotebookWidget widget={mockWidget} />);
 
@@ -108,10 +112,18 @@ describe('SmartNotebookWidget', () => {
     });
 
     await waitFor(() => {
-      expect(mockUploadFile).toHaveBeenCalled();
+      // Upload called 2 times (1 page + 1 asset)
+      expect(mockUploadFile).toHaveBeenCalledTimes(2);
     });
 
-    expect(firestore.setDoc).toHaveBeenCalled();
+    expect(firestore.setDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+            title: 'Test Notebook',
+            pageUrls: ['http://example.com/file.png'],
+            assetUrls: ['http://example.com/file.png'],
+        })
+    );
     expect(mockUpdateWidget).toHaveBeenCalled(); // Auto-selects
   });
 
