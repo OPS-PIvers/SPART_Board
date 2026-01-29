@@ -13,6 +13,7 @@ interface AIResponseData {
   title?: string;
   question?: string;
   options?: string[];
+  widgets?: GeneratedWidget[];
 }
 
 /**
@@ -47,6 +48,59 @@ export async function generateMiniAppCode(
 
     let errorMessage =
       'Failed to generate app. Please try again with a different prompt.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+export interface GeneratedWidget {
+  type: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  config?: Record<string, unknown>;
+}
+
+export interface GeneratedLayout {
+  widgets: GeneratedWidget[];
+}
+
+/**
+ * Generates a dashboard layout based on a natural language prompt using a Firebase Function proxy.
+ *
+ * @param prompt - The description of the lesson or activity.
+ * @returns A promise resolving to the generated layout configuration.
+ * @throws Error if generation fails.
+ */
+export async function generateDashboardLayout(
+  prompt: string
+): Promise<GeneratedLayout> {
+  try {
+    const generateWithAI = httpsCallable<
+      { type: 'layout'; prompt: string },
+      AIResponseData
+    >(functions, 'generateWithAI');
+
+    const result = await generateWithAI({ type: 'layout', prompt });
+    const data = result.data;
+
+    if (!data.widgets || !Array.isArray(data.widgets)) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    return {
+      widgets: data.widgets,
+    };
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage =
+      'Failed to generate layout. Please try again with a different prompt.';
 
     if (error instanceof Error) {
       errorMessage += ` Underlying error: ${error.message}`;

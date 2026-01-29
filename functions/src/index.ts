@@ -325,6 +325,33 @@ export const generateWithAI = functionsV1
           { "question": "...", "options": ["...", "...", "...", "..."] }
         `;
         userPrompt = `Topic: ${data.prompt}`;
+      } else if (data.type === 'layout') {
+        systemPrompt = `
+          You are an expert classroom dashboard designer. Create a JSON layout of widgets based on the user's teaching scenario.
+
+          Available Widget Types:
+          - Time: stopwatch, timer, clock, calendar
+          - Management: traffic-light, voice-level, checklist, group-maker, random-name
+          - Content: text, qr, youtube, iframe, poll, dice
+
+          Grid System:
+          - x: 0-12 (columns)
+          - y: 0-Infinity (rows)
+          - w: width (min 2, max 12)
+          - h: height (min 2, max 12)
+
+          Return JSON format:
+          {
+            "widgets": [
+              { "type": "timer", "x": 0, "y": 0, "w": 4, "h": 4, "config": { "minutes": 15 } },
+              { "type": "checklist", "x": 4, "y": 0, "w": 4, "h": 6, "config": { "items": [{ "id": "1", "text": "Task 1", "completed": false }] } }
+            ]
+          }
+
+          Ensure widgets do not overlap if possible, but you can just place them reasonably.
+          If the user asks for specific tools, prioritize them.
+        `;
+        userPrompt = `Scenario: ${data.prompt}`;
       } else {
         throw new functionsV1.https.HttpsError(
           'invalid-argument',

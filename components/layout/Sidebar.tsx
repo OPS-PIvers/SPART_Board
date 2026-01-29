@@ -24,6 +24,7 @@ import {
   Trash2,
   Cloud,
   CloudCheck,
+  Wand,
 } from 'lucide-react';
 import {
   DndContext,
@@ -55,6 +56,7 @@ import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
 import { AdminSettings } from '../admin/AdminSettings';
 import { GlassCard } from '../common/GlassCard';
 import { SortableDashboardItem } from './SortableDashboardItem';
+import { MagicLayoutModal } from './MagicLayoutModal';
 
 interface DashboardData {
   name: string;
@@ -322,6 +324,7 @@ export const Sidebar: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
+  const [showMagicModal, setShowMagicModal] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
   const [editingDashboard, setEditingDashboard] = useState<{
     id: string;
@@ -717,6 +720,17 @@ export const Sidebar: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex flex-col">
+                  {/* Magic Designer Button */}
+                  <button
+                    onClick={() => setShowMagicModal(true)}
+                    className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <Wand className="w-4 h-4 text-brand-blue-primary group-hover:text-brand-purple-500 transition-colors" />
+                    <span className="bg-gradient-to-r from-brand-blue-primary to-brand-purple-500 bg-clip-text text-transparent font-bold">
+                      Magic Designer
+                    </span>
+                  </button>
+
                   <button
                     onClick={() => setActiveSection('boards')}
                     className="group flex items-center gap-3 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-left"
@@ -1551,6 +1565,10 @@ export const Sidebar: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {showMagicModal && (
+        <MagicLayoutModal onClose={() => setShowMagicModal(false)} />
       )}
     </>
   );
