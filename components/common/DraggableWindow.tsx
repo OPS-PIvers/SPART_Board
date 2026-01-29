@@ -315,7 +315,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           flexDirection: 'column',
           opacity: widget.minimized ? 0 : 1,
           pointerEvents: widget.minimized ? 'none' : 'auto',
-          touchAction: isDragging ? 'none' : 'auto', // Prevent scrolling while dragging
+          touchAction: 'none', // Critical for preventing scroll interference
           ...style, // Merge custom styles
         }}
       >

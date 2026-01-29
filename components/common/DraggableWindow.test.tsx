@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
@@ -16,11 +16,30 @@ vi.mock('../../hooks/useClickOutside', () => ({
   useClickOutside: vi.fn(),
 }));
 
+interface GlassCardProps {
+  children: React.ReactNode;
+  className?: string;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onClick?: (e: React.MouseEvent) => void;
+  style?: React.CSSProperties;
+}
+
 vi.mock('./GlassCard', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  GlassCard: ({ children, className }: any) => (
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    <div className={className}>{children}</div>
+  GlassCard: ({
+    children,
+    className,
+    onPointerDown,
+    onClick,
+    style,
+  }: GlassCardProps) => (
+    <div
+      className={className}
+      onPointerDown={onPointerDown}
+      onClick={onClick}
+      style={style}
+    >
+      {children}
+    </div>
   ),
 }));
 
@@ -106,18 +125,17 @@ describe('DraggableWindow', () => {
     );
 
     // Now settings SHOULD be in the document
-    // Since we switched to useEffect, we might need to wait for the effect to run
     await waitFor(() => {
       expect(screen.getByTestId('settings-content')).toBeInTheDocument();
     });
+  });
 
-    // Rerender with flipped = false again
-    const unflippedWidget = { ...mockWidget, flipped: false };
-    rerender(
+  it('updates position on pointer drag', () => {
+    render(
       <DraggableWindow
-        widget={unflippedWidget}
+        widget={mockWidget}
         title="Test Widget"
-        settings={<SettingsContent />}
+        settings={<div>Settings</div>}
         updateWidget={mockUpdateWidget}
         removeWidget={mockRemoveWidget}
         duplicateWidget={mockDuplicateWidget}
@@ -125,12 +143,79 @@ describe('DraggableWindow', () => {
         addToast={mockAddToast}
         globalStyle={mockGlobalStyle}
       >
-        <div>Widget Content</div>
+        <div data-testid="widget-content">Widget Content</div>
       </DraggableWindow>
     );
 
-    // Settings should REMAIN in the document (for animation/consistency) because they were already loaded
-    // This confirms "lazy initialization" behavior
-    expect(screen.getByTestId('settings-content')).toBeInTheDocument();
+    const widgetContent = screen.getByTestId('widget-content');
+    const draggableArea = widgetContent.parentElement;
+    if (!draggableArea) throw new Error('Draggable area not found');
+
+    // Start pointer at (110, 110)
+    fireEvent.pointerDown(draggableArea, {
+      clientX: 110,
+      clientY: 110,
+      pointerId: 1,
+    });
+
+    // Move pointer to (160, 160)
+    fireEvent.pointerMove(window, {
+      clientX: 160,
+      clientY: 160,
+      pointerId: 1,
+    });
+
+    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({
+        x: 150,
+        y: 150,
+      })
+    );
+  });
+
+  it('updates size on pointer resize', () => {
+    render(
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div data-testid="widget-content">Widget Content</div>
+      </DraggableWindow>
+    );
+
+    const resizeHandles = document.querySelectorAll('.resize-handle');
+    const frontResizeHandle = resizeHandles[0];
+
+    // Start resize pointer at (300, 300)
+    fireEvent.pointerDown(frontResizeHandle, {
+      clientX: 300,
+      clientY: 300,
+      pointerId: 1,
+    });
+
+    // Move pointer to (350, 400)
+    fireEvent.pointerMove(window, {
+      clientX: 350,
+      clientY: 400,
+      pointerId: 1,
+    });
+
+    // New size should be w: 200 + (350 - 300) = 250, h: 200 + (400 - 300) = 300
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({
+        w: 250,
+        h: 300,
+      })
+    );
   });
 });
