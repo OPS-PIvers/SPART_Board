@@ -26,6 +26,7 @@ import {
   migrateWidget,
 } from '../utils/migration';
 import { useRosters } from '../hooks/useRosters';
+import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import { DashboardContext } from './DashboardContextValue';
 
 // Helper to migrate legacy visibleTools to dockItems
@@ -36,15 +37,80 @@ const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { driveService } = useGoogleDrive();
   const {
-    saveDashboard,
-    saveDashboards,
+    saveDashboard: saveDashboardFirestore,
+    saveDashboards: saveDashboardsFirestore,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
-    shareDashboard,
-    loadSharedDashboard,
+    shareDashboard: shareDashboardFirestore,
+    loadSharedDashboard: loadSharedDashboardFirestore,
   } = useFirestore(user?.uid ?? null);
+
+  const saveDashboard = useCallback(
+    async (dashboard: Dashboard) => {
+      // Always save to Firestore for real-time sync
+      await saveDashboardFirestore(dashboard);
+
+      // If non-admin, also save to Drive for persistence/sharing
+      // as requested: "anything at all that users will save and share will be through Google Drive"
+      if (!isAdmin && driveService) {
+        try {
+          await driveService.exportDashboard(dashboard);
+        } catch (e) {
+          console.error('Failed to export to Drive during save:', e);
+        }
+      }
+    },
+    [isAdmin, driveService, saveDashboardFirestore]
+  );
+
+  const saveDashboards = useCallback(
+    async (dashboardsToSave: Dashboard[]) => {
+      await saveDashboardsFirestore(dashboardsToSave);
+
+      if (!isAdmin && driveService) {
+        for (const db of dashboardsToSave) {
+          try {
+            await driveService.exportDashboard(db);
+          } catch (e) {
+            console.error(`Failed to export dashboard ${db.name} to Drive:`, e);
+          }
+        }
+      }
+    },
+    [isAdmin, driveService, saveDashboardsFirestore]
+  );
+
+  const handleShareDashboard = useCallback(
+    async (dashboard: Dashboard): Promise<string> => {
+      if (!isAdmin && driveService) {
+        const fileId = await driveService.exportDashboard(dashboard);
+        await driveService.makePublic(fileId);
+        return `drive-${fileId}`;
+      }
+      return shareDashboardFirestore(dashboard);
+    },
+    [isAdmin, driveService, shareDashboardFirestore]
+  );
+
+  const handleLoadSharedDashboard = useCallback(
+    async (shareId: string): Promise<Dashboard | null> => {
+      if (shareId.startsWith('drive-')) {
+        if (!driveService) {
+          // If not connected, we might need the user to sign in first,
+          // but for now we'll just throw or return null.
+          // In a real app, we'd maybe redirect to a Drive-specific auth flow.
+          throw new Error('Google Drive access required to load this board');
+        }
+        const fileId = shareId.replace('drive-', '');
+        return driveService.importDashboard(fileId);
+      }
+      return loadSharedDashboardFirestore(shareId);
+    },
+    [driveService, loadSharedDashboardFirestore]
+  );
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
@@ -431,7 +497,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const load = async () => {
       try {
-        const sharedDb = await loadSharedDashboard(currentShareId);
+        const sharedDb = await handleLoadSharedDashboard(currentShareId);
 
         if (!mounted) return;
 
@@ -496,7 +562,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [
     pendingShareId,
     user,
-    loadSharedDashboard,
+    handleLoadSharedDashboard,
     saveDashboard,
     addToast,
     clearPendingShare,
@@ -1297,8 +1363,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       removeItemFromFolder,
       moveItemOutOfFolder,
       reorderFolderItems,
-      shareDashboard,
-      loadSharedDashboard,
+      shareDashboard: handleShareDashboard,
+      loadSharedDashboard: handleLoadSharedDashboard,
       pendingShareId,
       clearPendingShare,
     }),
@@ -1353,8 +1419,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       removeItemFromFolder,
       moveItemOutOfFolder,
       reorderFolderItems,
-      shareDashboard,
-      loadSharedDashboard,
+      handleShareDashboard,
+      handleLoadSharedDashboard,
       pendingShareId,
       clearPendingShare,
     ]

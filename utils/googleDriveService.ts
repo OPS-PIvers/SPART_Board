@@ -198,6 +198,99 @@ export class GoogleDriveService {
   }
 
   /**
+   * Upload a general file to the "School Boards" folder.
+   */
+  async uploadFile(file: File | Blob, fileName: string): Promise<DriveFile> {
+    const folderId = await this.getOrCreateAppFolder();
+
+    const metadata = {
+      name: fileName,
+      parents: [folderId],
+    };
+
+    // Create metadata
+    const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(metadata),
+    });
+
+    if (!createResponse.ok) {
+      throw new Error('Failed to create file metadata in Drive');
+    }
+
+    const driveFile = (await createResponse.json()) as DriveFile;
+
+    // Upload content
+    const uploadResponse = await fetch(
+      `${UPLOAD_API_URL}/files/${driveFile.id}?uploadType=media`,
+      {
+        method: 'PATCH',
+        headers: {
+          ...this.headers,
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+        body: file,
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload file content to Drive');
+    }
+
+    // Get full file details (including links)
+    const detailResponse = await fetch(
+      `${DRIVE_API_URL}/files/${driveFile.id}?fields=id,name,mimeType,webViewLink,webContentLink,thumbnailLink`,
+      {
+        headers: this.headers,
+      }
+    );
+
+    return (await detailResponse.json()) as DriveFile;
+  }
+
+  /**
+   * Make a file public (anyone with the link can view).
+   */
+  async makePublic(fileId: string): Promise<void> {
+    const response = await fetch(
+      `${DRIVE_API_URL}/files/${fileId}/permissions`,
+      {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({
+          role: 'reader',
+          type: 'anyone',
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Failed to make file public:', error);
+      throw new Error('Failed to make file public in Drive');
+    }
+  }
+
+  /**
+   * Delete a file from Google Drive.
+   */
+  async deleteFile(fileId: string): Promise<void> {
+    const response = await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+
+    if (!response.ok && response.status !== 404) {
+      const error = await response.text();
+      console.error('Failed to delete Drive file:', error);
+      throw new Error('Failed to delete file from Google Drive');
+    }
+  }
+
+  /**
    * Import a dashboard from a Google Drive file.
    */
   async importDashboard(fileId: string): Promise<Dashboard> {

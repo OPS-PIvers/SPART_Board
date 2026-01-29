@@ -14,6 +14,7 @@ import {
   Minimize2,
   Camera,
   Cast,
+  CloudUpload,
 } from 'lucide-react';
 import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
@@ -25,7 +26,7 @@ export const DrawingWidget: React.FC<{
   widget: WidgetData;
   isStudentView?: boolean;
 }> = ({ widget, isStudentView = false }) => {
-  const { updateWidget, activeDashboard } = useDashboard();
+  const { updateWidget, activeDashboard, addToast } = useDashboard();
   const { user } = useAuth();
   const { session, startSession, endSession } = useLiveSession(
     user?.uid,
@@ -89,7 +90,14 @@ export const DrawingWidget: React.FC<{
 
   const { takeScreenshot, isCapturing } = useScreenshot(
     portalTarget,
-    `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`
+    `Classroom-Annotation-${new Date().toISOString().split('T')[0]}`,
+    {
+      onSuccess: (url) => {
+        if (url) {
+          addToast('Drawing saved to cloud!', 'success');
+        }
+      },
+    }
   );
 
   const setContextStyles = useCallback(
@@ -317,6 +325,14 @@ export const DrawingWidget: React.FC<{
             size="icon"
             title="Capture Full Screen"
             icon={<Camera className="w-4 h-4" />}
+          />
+          <Button
+            onClick={() => void takeScreenshot({ upload: true })}
+            disabled={isCapturing}
+            variant="ghost"
+            size="icon"
+            title="Save to Cloud"
+            icon={<CloudUpload className="w-4 h-4" />}
           />
           <div className="h-6 w-px bg-slate-200 mx-1" />
         </>

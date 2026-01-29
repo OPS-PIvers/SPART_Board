@@ -742,7 +742,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 )}
                 {canScreenshot && (
                   <button
-                    onClick={takeScreenshot}
+                    onClick={() => void takeScreenshot()}
                     disabled={isCapturing}
                     className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
                     title="Take Screenshot"

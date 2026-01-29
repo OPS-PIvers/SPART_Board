@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   collection,
   onSnapshot,
@@ -12,6 +12,8 @@ import {
 import { User } from 'firebase/auth';
 import { ClassRoster, Student } from '../types';
 import { db, isAuthBypass } from '../config/firebase';
+import { useGoogleDrive } from './useGoogleDrive';
+import { useAuth } from '../context/useAuth';
 
 /**
  * Singleton pattern for mock roster storage in bypass mode.
@@ -133,11 +135,39 @@ const validateRoster = (id: string, data: unknown): ClassRoster | null => {
 
 export const useRosters = (user: User | null) => {
   const [rosters, setRosters] = useState<ClassRoster[]>([]);
+  const { isAdmin } = useAuth();
+  const { driveService } = useGoogleDrive();
   const [activeRosterId, setActiveRosterIdState] = useState<string | null>(
     () => {
       return localStorage.getItem('spart_active_roster_id');
     }
   );
+
+  const lastExportedRostersRef = useRef<string>('');
+
+  // --- DRIVE SYNC EFFECT ---
+  useEffect(() => {
+    if (!user || isAdmin || !driveService || rosters.length === 0) return;
+
+    const rostersJson = JSON.stringify(rosters);
+    if (rostersJson === lastExportedRostersRef.current) return;
+
+    const timer = setTimeout(() => {
+      void driveService
+        .uploadFile(
+          new Blob([rostersJson], { type: 'application/json' }),
+          'rosters.json'
+        )
+        .then(() => {
+          lastExportedRostersRef.current = rostersJson;
+        })
+        .catch((err) => {
+          console.error('Failed to sync rosters to Drive:', err);
+        });
+    }, 2000); // Debounce roster export
+
+    return () => clearTimeout(timer);
+  }, [user, isAdmin, driveService, rosters]);
 
   // --- ROSTER EFFECT ---
   useEffect(() => {
