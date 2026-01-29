@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { LunchCountWidget, LunchCountSettings } from './LunchCountWidget';
@@ -9,7 +10,11 @@ import { WidgetData, LunchCountConfig } from '../../types';
 vi.mock('../../context/useDashboard');
 vi.mock('../../context/useAuth');
 vi.mock('../common/RosterModeControl', () => ({
-  RosterModeControl: ({ onModeChange }: { onModeChange: (mode: string) => void }) => (
+  RosterModeControl: ({
+    onModeChange,
+  }: {
+    onModeChange: (mode: string) => void;
+  }) => (
     <div data-testid="roster-mode-control">
       <button onClick={() => onModeChange('custom')}>Switch to Custom</button>
     </div>
@@ -62,7 +67,11 @@ describe('LunchCountWidget', () => {
       updateWidget: mockUpdateWidget,
       addToast: mockAddToast,
       rosters: [
-        { id: 'roster-1', name: 'Class 1', students: [{ firstName: 'John', lastName: 'Doe' }] }
+        {
+          id: 'roster-1',
+          name: 'Class 1',
+          students: [{ firstName: 'John', lastName: 'Doe' }],
+        },
       ],
       activeRosterId: 'roster-1',
     });
@@ -76,7 +85,7 @@ describe('LunchCountWidget', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
-      text: () => Promise.resolve('Not Found')
+      text: () => Promise.resolve('Not Found'),
     });
   });
 
@@ -97,7 +106,7 @@ describe('LunchCountWidget', () => {
         rosterMode: 'custom',
         roster: ['Student A'],
         assignments: {},
-      } as LunchCountConfig
+      } as LunchCountConfig,
     };
 
     render(<LunchCountWidget widget={assignedWidget} />);
@@ -108,8 +117,8 @@ describe('LunchCountWidget', () => {
     // Expect update to Hot
     expect(mockUpdateWidget).toHaveBeenCalledWith('lunch-1', {
       config: expect.objectContaining({
-        assignments: { 'Student A': 'hot' }
-      })
+        assignments: { 'Student A': 'hot' },
+      }),
     });
   });
 
@@ -125,16 +134,18 @@ describe('LunchCountWidget', () => {
 
   it('fetches nutrislice menu manually', async () => {
     const mockMenu = {
-      days: [{
-        date: new Date().toISOString().split('T')[0],
-        menu_items: [
-          {
-            is_section_title: false,
-            section_name: 'Entree',
-            food: { name: 'Pizza' }
-          }
-        ]
-      }]
+      days: [
+        {
+          date: new Date().toISOString().split('T')[0],
+          menu_items: [
+            {
+              is_section_title: false,
+              section_name: 'Entree',
+              food: { name: 'Pizza' },
+            },
+          ],
+        },
+      ],
     };
 
     (global.fetch as Mock).mockResolvedValue({
@@ -148,27 +159,30 @@ describe('LunchCountWidget', () => {
     fireEvent.click(refreshBtn);
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('Menu synced from Nutrislice', 'success');
+      expect(mockAddToast).toHaveBeenCalledWith(
+        'Menu synced from Nutrislice',
+        'success'
+      );
     });
   });
 
   it('handles reset board', () => {
-     render(<LunchCountWidget widget={mockWidget} />);
+    render(<LunchCountWidget widget={mockWidget} />);
 
-     const resetBtn = screen.getByText('Reset');
-     fireEvent.click(resetBtn);
+    const resetBtn = screen.getByText('Reset');
+    fireEvent.click(resetBtn);
 
-     expect(mockUpdateWidget).toHaveBeenCalledWith('lunch-1', {
-        config: expect.objectContaining({
-            assignments: {}
-        })
-     });
-     expect(mockAddToast).toHaveBeenCalledWith('Board reset', 'info');
+    expect(mockUpdateWidget).toHaveBeenCalledWith('lunch-1', {
+      config: expect.objectContaining({
+        assignments: {},
+      }),
+    });
+    expect(mockAddToast).toHaveBeenCalledWith('Board reset', 'info');
   });
 });
 
 describe('LunchCountSettings', () => {
-   beforeEach(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
     (useDashboard as unknown as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
@@ -183,26 +197,26 @@ describe('LunchCountSettings', () => {
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('lunch-1', {
       config: expect.objectContaining({
-        isManualMode: true
-      })
+        isManualMode: true,
+      }),
     });
   });
 
   it('updates manual lunch names when in manual mode', () => {
-      const manualWidget = {
-          ...mockWidget,
-          config: { ...mockWidget.config, isManualMode: true }
-      };
+    const manualWidget = {
+      ...mockWidget,
+      config: { ...mockWidget.config, isManualMode: true },
+    };
 
-      render(<LunchCountSettings widget={manualWidget} />);
+    render(<LunchCountSettings widget={manualWidget} />);
 
-      const hotInput = screen.getByPlaceholderText('Hot Lunch Name');
-      fireEvent.change(hotInput, { target: { value: 'Tacos' } });
+    const hotInput = screen.getByPlaceholderText('Hot Lunch Name');
+    fireEvent.change(hotInput, { target: { value: 'Tacos' } });
 
-      expect(mockUpdateWidget).toHaveBeenCalledWith('lunch-1', {
-          config: expect.objectContaining({
-              manualHotLunch: 'Tacos'
-          })
-      });
+    expect(mockUpdateWidget).toHaveBeenCalledWith('lunch-1', {
+      config: expect.objectContaining({
+        manualHotLunch: 'Tacos',
+      }),
+    });
   });
 });
