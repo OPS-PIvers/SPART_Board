@@ -5,6 +5,11 @@ export interface InstructionalStep {
   icon?: string;
   color?: string;
   label?: string;
+  attachedWidget?: {
+    type: string;
+    label: string;
+    config?: Record<string, unknown>;
+  };
 }
 
 export interface InstructionalRoutine {
@@ -13,6 +18,7 @@ export interface InstructionalRoutine {
   grades: string;
   gradeLevels: GradeLevel[];
   icon: string;
+  color: string; // Added color property
   steps: InstructionalStep[];
 }
 
@@ -23,6 +29,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'MessagesSquare',
+    color: 'blue',
     steps: [
       {
         text: 'Read the question on the board.',
@@ -50,6 +57,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Users',
+    color: 'indigo',
     steps: [
       {
         text: 'Read the text together in one voice.',
@@ -71,6 +79,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Volume2',
+    color: 'violet',
     steps: [
       {
         text: 'Listen to the teacher read.',
@@ -92,6 +101,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'Eye',
+    color: 'cyan',
     steps: [
       {
         text: 'Inside group: Practice the skill.',
@@ -119,6 +129,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Image',
+    color: 'emerald',
     steps: [
       {
         text: 'Walk quietly around the room.',
@@ -146,6 +157,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'ArrowRightLeft',
+    color: 'orange',
     steps: [
       {
         text: 'Write your idea on a card.',
@@ -173,6 +185,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Puzzle',
+    color: 'pink',
     steps: [
       {
         text: 'Learn your part with your expert group.',
@@ -200,6 +213,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'PencilLine',
+    color: 'teal',
     steps: [
       {
         text: 'Quickly write your answer.',
@@ -227,6 +241,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Users2',
+    color: 'rose',
     steps: [
       {
         text: 'Think about the question.',
@@ -254,6 +269,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-2',
     gradeLevels: ['k-2'],
     icon: 'Signpost',
+    color: 'lime',
     steps: [
       {
         text: 'Pick the corner you want to answer.',
@@ -281,6 +297,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Smile',
+    color: 'fuchsia',
     steps: [
       {
         text: 'Get your group and your parts.',
@@ -308,6 +325,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '2-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Repeat2',
+    color: 'sky',
     steps: [
       {
         text: 'Read with the teacher.',
@@ -335,6 +353,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'Pause',
+    color: 'amber',
     steps: [
       {
         text: 'Work with your group.',
@@ -362,6 +381,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'Vote',
+    color: 'red',
     steps: [
       {
         text: 'Listen to the question.',
@@ -389,6 +409,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-12',
     gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
     icon: 'Brain',
+    color: 'yellow',
     steps: [
       {
         text: 'Think silently about the question.',
@@ -416,6 +437,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: 'K-5',
     gradeLevels: ['k-2', '3-5'],
     icon: 'BookOpenCheck',
+    color: 'green',
     steps: [
       {
         text: 'Listen to the word.',
@@ -443,6 +465,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '3-5',
     gradeLevels: ['3-5'],
     icon: 'Zap',
+    color: 'purple',
     steps: [
       {
         text: 'Listen to the prompt.',
@@ -470,6 +493,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '6-12',
     gradeLevels: ['6-8', '9-12'],
     icon: 'Users',
+    color: 'slate',
     steps: [
       {
         text: 'Predict and clarify content.',
@@ -497,6 +521,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '6-12',
     gradeLevels: ['6-8', '9-12'],
     icon: 'GraduationCap',
+    color: 'zinc',
     steps: [
       {
         text: 'Read and annotate the text.',
@@ -524,6 +549,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '6-12',
     gradeLevels: ['6-8', '9-12'],
     icon: 'RefreshCw',
+    color: 'stone',
     steps: [
       {
         text: 'Write your first draft response.',
@@ -551,6 +577,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '9-12',
     gradeLevels: ['9-12'],
     icon: 'Eye',
+    color: 'neutral',
     steps: [
       {
         text: 'Observe the phenomenon or text closely.',
@@ -578,6 +605,7 @@ export const ROUTINES: InstructionalRoutine[] = [
     grades: '9-12',
     gradeLevels: ['9-12'],
     icon: 'Brain',
+    color: 'blue',
     steps: [
       {
         text: 'Recall and list facts.',

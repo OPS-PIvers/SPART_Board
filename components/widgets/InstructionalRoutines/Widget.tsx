@@ -25,6 +25,139 @@ import {
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 import { LibraryManager } from './LibraryManager';
 
+// Color mapping for routines
+const ROUTINE_COLORS: Record<
+  string,
+  { bg: string; text: string; border: string; hoverBorder: string }
+> = {
+  blue: {
+    bg: 'bg-blue-50',
+    text: 'text-blue-600',
+    border: 'border-blue-100',
+    hoverBorder: 'hover:border-blue-300',
+  },
+  indigo: {
+    bg: 'bg-indigo-50',
+    text: 'text-indigo-600',
+    border: 'border-indigo-100',
+    hoverBorder: 'hover:border-indigo-300',
+  },
+  violet: {
+    bg: 'bg-violet-50',
+    text: 'text-violet-600',
+    border: 'border-violet-100',
+    hoverBorder: 'hover:border-violet-300',
+  },
+  purple: {
+    bg: 'bg-purple-50',
+    text: 'text-purple-600',
+    border: 'border-purple-100',
+    hoverBorder: 'hover:border-purple-300',
+  },
+  fuchsia: {
+    bg: 'bg-fuchsia-50',
+    text: 'text-fuchsia-600',
+    border: 'border-fuchsia-100',
+    hoverBorder: 'hover:border-fuchsia-300',
+  },
+  pink: {
+    bg: 'bg-pink-50',
+    text: 'text-pink-600',
+    border: 'border-pink-100',
+    hoverBorder: 'hover:border-pink-300',
+  },
+  rose: {
+    bg: 'bg-rose-50',
+    text: 'text-rose-600',
+    border: 'border-rose-100',
+    hoverBorder: 'hover:border-rose-300',
+  },
+  red: {
+    bg: 'bg-red-50',
+    text: 'text-red-600',
+    border: 'border-red-100',
+    hoverBorder: 'hover:border-red-300',
+  },
+  orange: {
+    bg: 'bg-orange-50',
+    text: 'text-orange-600',
+    border: 'border-orange-100',
+    hoverBorder: 'hover:border-orange-300',
+  },
+  amber: {
+    bg: 'bg-amber-50',
+    text: 'text-amber-600',
+    border: 'border-amber-100',
+    hoverBorder: 'hover:border-amber-300',
+  },
+  yellow: {
+    bg: 'bg-yellow-50',
+    text: 'text-yellow-600',
+    border: 'border-yellow-100',
+    hoverBorder: 'hover:border-yellow-300',
+  },
+  lime: {
+    bg: 'bg-lime-50',
+    text: 'text-lime-600',
+    border: 'border-lime-100',
+    hoverBorder: 'hover:border-lime-300',
+  },
+  green: {
+    bg: 'bg-green-50',
+    text: 'text-green-600',
+    border: 'border-green-100',
+    hoverBorder: 'hover:border-green-300',
+  },
+  emerald: {
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-600',
+    border: 'border-emerald-100',
+    hoverBorder: 'hover:border-emerald-300',
+  },
+  teal: {
+    bg: 'bg-teal-50',
+    text: 'text-teal-600',
+    border: 'border-teal-100',
+    hoverBorder: 'hover:border-teal-300',
+  },
+  cyan: {
+    bg: 'bg-cyan-50',
+    text: 'text-cyan-600',
+    border: 'border-cyan-100',
+    hoverBorder: 'hover:border-cyan-300',
+  },
+  sky: {
+    bg: 'bg-sky-50',
+    text: 'text-sky-600',
+    border: 'border-sky-100',
+    hoverBorder: 'hover:border-sky-300',
+  },
+  slate: {
+    bg: 'bg-slate-50',
+    text: 'text-slate-600',
+    border: 'border-slate-100',
+    hoverBorder: 'hover:border-slate-300',
+  },
+  zinc: {
+    bg: 'bg-zinc-50',
+    text: 'text-zinc-600',
+    border: 'border-zinc-100',
+    hoverBorder: 'hover:border-zinc-300',
+  },
+  stone: {
+    bg: 'bg-stone-50',
+    text: 'text-stone-600',
+    border: 'border-stone-100',
+    hoverBorder: 'hover:border-stone-300',
+  },
+  neutral: {
+    bg: 'bg-neutral-50',
+    text: 'text-neutral-600',
+    border: 'border-neutral-100',
+    hoverBorder: 'hover:border-neutral-300',
+  },
+};
+
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -155,6 +288,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       grades: 'Universal',
       gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
       icon: 'Zap',
+      color: 'blue',
       steps: [{ text: '', icon: 'Zap', color: 'blue', label: 'Step' }],
     };
 
@@ -212,18 +346,30 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
               Icons.HelpCircle;
             const isFav = favorites.includes(r.id);
+            const colors =
+              ROUTINE_COLORS[r.color || 'blue'] || ROUTINE_COLORS.blue;
+
             return (
-              <div key={r.id} className="relative group/card">
+              <div key={r.id} className="relative group/card h-full">
                 <button
                   onClick={() => selectRoutine(r)}
-                  className="w-full h-full relative p-4 border-2 border-white rounded-2xl bg-white shadow-sm hover:border-brand-blue-primary transition-all text-left"
+                  className={`w-full h-full relative p-4 border rounded-xl bg-white shadow-sm transition-all duration-300 flex flex-col items-center text-center group-hover/card:shadow-md group-hover/card:-translate-y-1 ${colors.border} ${colors.hoverBorder}`}
                 >
-                  <Icon className="w-8 h-8 text-brand-red-primary mb-2" />
-                  <div className="text-[11px] font-black text-brand-gray-darkest uppercase leading-tight">
-                    {r.name}
+                  <div
+                    className={`p-3 rounded-full mb-3 transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
+                  >
+                    <Icon size={28} strokeWidth={2} />
+                  </div>
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="text-[11px] font-black text-slate-800 uppercase leading-tight tracking-wide">
+                      {r.name}
+                    </div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                      {r.grades}
+                    </div>
                   </div>
                 </button>
-                <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -234,7 +380,11 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                         config: { ...config, favorites: next },
                       });
                     }}
-                    className={`p-1 rounded-full bg-white/80 backdrop-blur shadow-sm border border-slate-100 ${isFav ? 'text-brand-blue-light' : 'text-slate-300 hover:text-slate-500'}`}
+                    className={`p-1.5 rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform ${
+                      isFav
+                        ? 'text-amber-400'
+                        : 'text-slate-300 hover:text-slate-400'
+                    }`}
                   >
                     <Star size={12} className={isFav ? 'fill-current' : ''} />
                   </button>
@@ -246,7 +396,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           setEditingRoutine(r);
                           setIsManagingLibrary(true);
                         }}
-                        className="p-1 rounded-full bg-white/80 backdrop-blur shadow-sm border border-slate-100 text-blue-400 hover:text-blue-600"
+                        className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-blue-400 hover:text-blue-600 hover:scale-110 transition-transform"
                       >
                         <PlusCircle size={12} />
                       </button>
@@ -261,7 +411,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             await deleteRoutine(r.id);
                           }
                         }}
-                        className="p-1 rounded-full bg-white/80 backdrop-blur shadow-sm border border-slate-100 text-red-300 hover:text-red-500"
+                        className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-red-300 hover:text-red-500 hover:scale-110 transition-transform"
                       >
                         <Trash2 size={12} />
                       </button>

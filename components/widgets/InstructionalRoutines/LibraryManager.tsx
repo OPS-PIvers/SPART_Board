@@ -59,17 +59,57 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
           </div>
           <div className="space-y-1 text-left">
             <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
-              Main Icon
+              Main Icon & Color
             </label>
-            <IconPicker
-              currentIcon={routine.icon}
-              onSelect={(icon) =>
-                onChange({
-                  ...routine,
-                  icon,
-                })
-              }
-            />
+            <div className="flex gap-2">
+              <IconPicker
+                currentIcon={routine.icon}
+                onSelect={(icon) =>
+                  onChange({
+                    ...routine,
+                    icon,
+                  })
+                }
+              />
+              <select
+                value={routine.color || 'blue'}
+                onChange={(e) =>
+                  onChange({
+                    ...routine,
+                    color: e.target.value,
+                  })
+                }
+                className="bg-slate-50 border-none rounded-xl px-2 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 flex-1"
+              >
+                {[
+                  'blue',
+                  'indigo',
+                  'violet',
+                  'purple',
+                  'fuchsia',
+                  'pink',
+                  'rose',
+                  'red',
+                  'orange',
+                  'amber',
+                  'yellow',
+                  'lime',
+                  'green',
+                  'emerald',
+                  'teal',
+                  'cyan',
+                  'sky',
+                  'slate',
+                  'zinc',
+                  'stone',
+                  'neutral',
+                ].map((c) => (
+                  <option key={c} value={c}>
+                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
