@@ -40,6 +40,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
   );
   const [currentPage, setCurrentPage] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
+  const [showAssets, setShowAssets] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch notebooks
@@ -57,6 +58,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
           title: (data.title as string) ?? 'Untitled',
           pageUrls: (data.pageUrls as string[]) ?? [],
           pagePaths: (data.pagePaths as string[]) ?? [],
+          assetUrls: (data.assetUrls as string[]) ?? [],
           createdAt: (data.createdAt as number) ?? 0,
         } as NotebookItem;
       });
@@ -74,14 +76,17 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       } else if (notebooks.length > 0) {
         // If notebooks are loaded but the active one is missing, clear config
         setActiveNotebook(null);
-        updateWidget(widget.id, {
-          config: { ...config, activeNotebookId: null },
-        });
+        // Defer the update to avoid conflicts during render
+        setTimeout(() => {
+          updateWidget(widget.id, {
+            config: { ...config, activeNotebookId: null },
+          });
+        }, 0);
       }
     } else {
       setActiveNotebook(null);
     }
-  }, [activeNotebookId, notebooks, config, updateWidget, widget.id]);
+  }, [activeNotebookId, notebooks, widget.id, updateWidget, config]);
 
   // Clamp current page index when notebook changes
   useEffect(() => {
@@ -103,28 +108,45 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
 
     setIsImporting(true);
     try {
-      const { title, pages } = await parseNotebookFile(file);
+      const { title, pages, assets } = await parseNotebookFile(file);
       const notebookId = crypto.randomUUID();
 
-      // Upload pages sequentially to avoid overwhelming network/Firebase
-      const uploadedUrls: string[] = [];
-      const uploadedPaths: string[] = [];
-      for (let index = 0; index < pages.length; index += 1) {
-        const { blob, extension } = pages[index];
-        const pageFile = new File([blob], `page${index}.${extension}`, {
-          type: blob.type,
-        });
-        const path = `users/${user.uid}/notebooks/${notebookId}/page${index}.${extension}`;
-        const url = await uploadFile(path, pageFile);
-        uploadedUrls.push(url);
-        uploadedPaths.push(path);
-      }
+      // Helper to upload a set of blobs to a specific path structure
+      const uploadBatch = async (
+        items: { blob: Blob; extension: string }[],
+        basePath: string,
+        namePrefix: string
+      ) => {
+        return Promise.all(
+          items.map(async (item, index) => {
+            const fileName = `${namePrefix}${index}.${item.extension}`;
+            const fileObj = new File([item.blob], fileName, {
+              type: item.blob.type,
+            });
+            const path = `${basePath}/${fileName}`;
+            const url = await uploadFile(path, fileObj);
+            return { url, path };
+          })
+        );
+      };
+
+      // Upload pages and assets in parallel batches
+      const notebookPath = `users/${user.uid}/notebooks/${notebookId}`;
+      const [uploadedPages, uploadedAssets] = await Promise.all([
+        uploadBatch(pages, notebookPath, 'page'),
+        assets ? uploadBatch(assets, `${notebookPath}/assets`, 'asset') : [],
+      ]);
+
+      const uploadedUrls = uploadedPages.map((p) => p.url);
+      const uploadedPaths = uploadedPages.map((p) => p.path);
+      const uploadedAssetUrls = uploadedAssets.map((a) => a.url);
 
       const notebook: NotebookItem = {
         id: notebookId,
         title,
         pageUrls: uploadedUrls,
         pagePaths: uploadedPaths,
+        assetUrls: uploadedAssetUrls,
         createdAt: Date.now(),
       };
 
@@ -153,18 +175,26 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     if (confirm('Delete this notebook?')) {
       try {
         const notebookToDelete = notebooks.find((n) => n.id === id);
-        if (notebookToDelete?.pagePaths) {
-          // Delete files using stored paths
-          const deletePromises = notebookToDelete.pagePaths.map((path) =>
-            deleteFile(path)
+        if (notebookToDelete) {
+          // Cleanup storage
+          // Use direct URLs/Paths for deletion as they are most robust
+          const deletePromises = (
+            notebookToDelete.pagePaths || notebookToDelete.pageUrls
+          ).map((pathOrUrl) =>
+            deleteFile(pathOrUrl).catch(() => {
+              /* ignore */
+            })
           );
           await Promise.all(deletePromises);
-        } else if (notebookToDelete) {
-          // Fallback for notebooks without pagePaths (legacy data)
-          console.warn(
-            'Notebook missing pagePaths, cannot delete storage files:',
-            id
-          );
+
+          if (notebookToDelete.assetUrls) {
+            const assetDeletePromises = notebookToDelete.assetUrls.map((url) =>
+              deleteFile(url).catch(() => {
+                /* ignore */
+              })
+            );
+            await Promise.all(assetDeletePromises);
+          }
         }
 
         await deleteDoc(doc(db, 'users', user.uid, 'notebooks', id));
@@ -190,8 +220,21 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, activeNotebookId: null } });
   };
 
+  const handleDragStart = (e: React.DragEvent, url: string) => {
+    const img = e.currentTarget.querySelector('img');
+    const ratio = img ? img.naturalWidth / img.naturalHeight : 1;
+    e.dataTransfer.setData(
+      'application/sticker',
+      JSON.stringify({ url, ratio })
+    );
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
   // Viewer
   if (activeNotebook) {
+    const hasAssets =
+      activeNotebook.assetUrls && activeNotebook.assetUrls.length > 0;
+
     return (
       <div className="w-full h-full bg-slate-100 flex flex-col relative rounded-2xl overflow-hidden">
         {/* Toolbar */}
@@ -205,21 +248,67 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
             </p>
           </div>
 
-          <button
-            onClick={handleClose}
-            className="pointer-events-auto p-2 bg-slate-900/90 hover:bg-slate-800 text-white rounded-lg shadow-lg transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2 pointer-events-auto">
+            {hasAssets && (
+              <button
+                onClick={() => setShowAssets(!showAssets)}
+                className={`p-2 rounded-lg shadow-lg transition-all ${
+                  showAssets
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white/90 text-slate-700 hover:bg-slate-100'
+                }`}
+                title="Toggle Assets"
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="p-2 bg-slate-900/90 hover:bg-slate-800 text-white rounded-lg shadow-lg transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Slide */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <img
-            src={activeNotebook.pageUrls[currentPage]}
-            alt={`Page ${currentPage + 1}`}
-            className="max-w-full max-h-full object-contain shadow-lg bg-white"
-          />
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Slide */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <img
+              src={activeNotebook.pageUrls[currentPage]}
+              alt={`Page ${currentPage + 1}`}
+              className="max-w-full max-h-full object-contain shadow-lg bg-white"
+            />
+          </div>
+
+          {/* Assets Panel */}
+          {showAssets && hasAssets && (
+            <div className="w-1/3 max-w-[200px] min-w-[120px] bg-white border-l border-slate-200 shadow-xl overflow-y-auto p-2 custom-scrollbar z-20 flex flex-col gap-2">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
+                Assets
+              </h4>
+              <p className="text-[9px] text-center text-slate-400 mb-2">
+                Drag to board
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {activeNotebook.assetUrls?.map((url, index) => (
+                  <div
+                    key={url}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, url)}
+                    className="aspect-square bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-indigo-500 hover:bg-indigo-50 transition-all"
+                  >
+                    <img
+                      src={url}
+                      alt={`Asset ${index}`}
+                      className="max-w-full max-h-full p-1 object-contain pointer-events-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}

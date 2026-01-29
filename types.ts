@@ -415,6 +415,7 @@ export interface NotebookItem {
   title: string;
   pageUrls: string[];
   pagePaths: string[];
+  assetUrls?: string[];
   createdAt: number;
 }
 

@@ -72,7 +72,7 @@ describe('SmartNotebookWidget', () => {
     expect(screen.getByRole('button', { name: /Import/i })).toBeInTheDocument();
   });
 
-  it('handles import flow', async () => {
+  it('handles import flow with assets', async () => {
     (firestore.onSnapshot as unknown as Mock).mockImplementation(
       (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
         callback({ docs: [] });
@@ -86,11 +86,16 @@ describe('SmartNotebookWidget', () => {
     const mockPages = [
       { blob: new Blob(['page0'], { type: 'image/png' }), extension: 'png' },
     ];
+    const mockAssets = [
+      { blob: new Blob(['asset0'], { type: 'image/png' }), extension: 'png' },
+    ];
+
     (parser.parseNotebookFile as unknown as Mock).mockResolvedValue({
       title: 'Test Notebook',
       pages: mockPages,
+      assets: mockAssets,
     });
-    mockUploadFile.mockResolvedValue('http://example.com/page0.png');
+    mockUploadFile.mockResolvedValue('http://example.com/file.png');
 
     const { container } = render(<SmartNotebookWidget widget={mockWidget} />);
 
@@ -107,10 +112,18 @@ describe('SmartNotebookWidget', () => {
     });
 
     await waitFor(() => {
-      expect(mockUploadFile).toHaveBeenCalled();
+      // Upload called 2 times (1 page + 1 asset)
+      expect(mockUploadFile).toHaveBeenCalledTimes(2);
     });
 
-    expect(firestore.setDoc).toHaveBeenCalled();
+    expect(firestore.setDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        title: 'Test Notebook',
+        pageUrls: ['http://example.com/file.png'],
+        assetUrls: ['http://example.com/file.png'],
+      })
+    );
     expect(mockUpdateWidget).toHaveBeenCalled(); // Auto-selects
   });
 
@@ -149,5 +162,96 @@ describe('SmartNotebookWidget', () => {
       'src',
       'http://example.com/p1.png'
     );
+  });
+
+  it('toggles assets panel', () => {
+    const mockNotebook = {
+      id: 'notebook-1',
+      title: 'My Lesson',
+      pageUrls: ['http://example.com/p1.png'],
+      assetUrls: ['http://example.com/a1.png'],
+      createdAt: 123,
+    };
+
+    const activeWidget = {
+      ...mockWidget,
+      config: { activeNotebookId: 'notebook-1' },
+    };
+
+    (firestore.onSnapshot as unknown as Mock).mockImplementation(
+      (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
+        callback({
+          docs: [
+            {
+              data: () => mockNotebook,
+              id: 'notebook-1',
+            },
+          ],
+        });
+        return vi.fn();
+      }
+    );
+
+    render(<SmartNotebookWidget widget={activeWidget} />);
+
+    const toggleBtn = screen.getByTitle('Toggle Assets');
+    fireEvent.click(toggleBtn);
+
+    expect(screen.getByText('Assets')).toBeInTheDocument();
+    expect(screen.getByAltText('Asset 0')).toHaveAttribute(
+      'src',
+      'http://example.com/a1.png'
+    );
+  });
+
+  it('handles deletion of notebook and its storage assets', async () => {
+    const mockNotebook = {
+      id: 'notebook-1',
+      title: 'To Delete',
+      pageUrls: ['http://example.com/p1.png'],
+      pagePaths: ['users/test-uid/notebooks/notebook-1/page0.png'],
+      assetUrls: ['http://example.com/a1.png'],
+      createdAt: 123,
+    };
+
+    (firestore.onSnapshot as unknown as Mock).mockImplementation(
+      (_query: unknown, callback: (snapshot: { docs: unknown[] }) => void) => {
+        callback({
+          docs: [
+            {
+              data: () => mockNotebook,
+              id: 'notebook-1',
+            },
+          ],
+        });
+        return vi.fn();
+      }
+    );
+
+    // Mock confirm
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const mockDeleteFile = vi.fn().mockResolvedValue(undefined);
+    (useStorage as unknown as Mock).mockReturnValue({
+      uploadFile: vi.fn(),
+      deleteFile: mockDeleteFile,
+    });
+
+    render(<SmartNotebookWidget widget={mockWidget} />);
+
+    // The trash icon button
+    // Actually, finding by class or icon might be better, but let's try to find the button in the card
+    const deleteButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.querySelector('svg.lucide-trash2'));
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(mockDeleteFile).toHaveBeenCalledWith(
+        'users/test-uid/notebooks/notebook-1/page0.png'
+      );
+      expect(mockDeleteFile).toHaveBeenCalledWith('http://example.com/a1.png');
+    });
+
+    expect(firestore.deleteDoc).toHaveBeenCalled();
   });
 });
