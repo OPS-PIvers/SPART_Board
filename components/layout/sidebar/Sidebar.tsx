@@ -568,6 +568,47 @@ export const Sidebar: React.FC = () => {
                     ? 'Classroom Manager'
                     : activeSection.replace('-', ' ')}
                 </span>
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <div
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${
+                      isSaving
+                        ? 'bg-amber-50 text-amber-600 animate-pulse'
+                        : 'bg-emerald-50 text-emerald-600'
+                    }`}
+                    title={
+                      isSaving ? 'Saving to Cloud...' : 'All Changes Saved'
+                    }
+                  >
+                    {isSaving ? (
+                      <Cloud className="w-3 h-3 animate-bounce" />
+                    ) : (
+                      <CloudCheck className="w-3 h-3" />
+                    )}
+                    <span className="text-[8px] font-black uppercase tracking-tighter">
+                      {isSaving ? 'Syncing' : 'Cloud'}
+                    </span>
+                  </div>
+
+                  {!isAdmin && (
+                    <div
+                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${
+                        isDriveConnected
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'bg-slate-100 text-slate-400'
+                      }`}
+                      title={
+                        isDriveConnected
+                          ? 'Google Drive Connected'
+                          : 'Drive Disconnected'
+                      }
+                    >
+                      <GoogleDriveIcon className="w-3 h-3" />
+                      <span className="text-[8px] font-black uppercase tracking-tighter">
+                        Drive
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => {
@@ -967,51 +1008,53 @@ export const Sidebar: React.FC = () => {
               >
                 <div className="space-y-6">
                   {/* Google Drive Connection Management */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="flex items-center gap-2 mb-3 px-1">
-                      <GoogleDriveIcon className="w-4 h-4" />
-                      <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
-                        Google Drive Integration
-                      </label>
-                    </div>
-
-                    <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
-                      Your boards and assets are automatically backed up to your
-                      &quot;School Boards&quot; folder in Drive.
-                    </p>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        {isDriveConnected ? (
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-amber-500" />
-                        )}
-                        <span className="text-xxs font-bold text-slate-600 uppercase">
-                          {isDriveConnected
-                            ? 'Connected & Synced'
-                            : 'Disconnected'}
-                        </span>
+                  {!isAdmin && (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <GoogleDriveIcon className="w-4 h-4" />
+                        <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
+                          Google Drive Integration
+                        </label>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          if (isDriveConnected) {
-                            void signOut();
-                          } else {
-                            void signInWithGoogle();
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${
-                          isDriveConnected
-                            ? 'text-slate-400 hover:text-brand-red-primary bg-slate-50 hover:bg-brand-red-lighter'
-                            : 'bg-brand-blue-primary text-white shadow-sm'
-                        }`}
-                      >
-                        {isDriveConnected ? 'Disconnect' : 'Connect'}
-                      </button>
+                      <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
+                        Your boards and assets are automatically backed up to
+                        your &quot;School Boards&quot; folder in Drive.
+                      </p>
+
+                      <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          {isDriveConnected ? (
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                          )}
+                          <span className="text-xxs font-bold text-slate-600 uppercase">
+                            {isDriveConnected
+                              ? 'Connected & Synced'
+                              : 'Disconnected'}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            if (isDriveConnected) {
+                              void signOut();
+                            } else {
+                              void signInWithGoogle();
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${
+                            isDriveConnected
+                              ? 'text-slate-400 hover:text-brand-red-primary bg-slate-50 hover:bg-brand-red-lighter'
+                              : 'bg-brand-blue-primary text-white shadow-sm'
+                          }`}
+                        >
+                          {isDriveConnected ? 'Disconnect' : 'Connect'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div className="flex items-center gap-2 mb-3 px-1">
