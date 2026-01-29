@@ -28,7 +28,11 @@ interface ClassLinkStudent {
 }
 
 interface AIData {
-  type: 'mini-app' | 'poll' | 'dashboard-layout';
+  type:
+    | 'mini-app'
+    | 'poll'
+    | 'dashboard-layout'
+    | 'instructional-routine';
   prompt: string;
 }
 
@@ -379,6 +383,27 @@ export const generateWithAI = functionsV1
           3. 'config' should be an empty object {} unless you are setting a specific property known to that widget (like 'question' for 'poll').
         `;
         userPrompt = `Lesson/Activity Description: ${data.prompt}`;
+      } else if (data.type === 'instructional-routine') {
+        systemPrompt = `
+          You are an expert instructional designer. Create a classroom instructional routine based on the user's description.
+
+          Return JSON:
+          {
+            "name": "Routine Name",
+            "grades": "Grade Range (e.g. K-5, 6-12)",
+            "icon": "Lucide Icon Name (e.g. Brain, Users, Zap)",
+            "color": "Color Name (blue, indigo, violet, purple, fuchsia, pink, rose, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, slate, zinc, stone, neutral)",
+            "steps": [
+              {
+                "text": "Step instruction...",
+                "icon": "Lucide Icon Name",
+                "color": "Color Name",
+                "label": "Short Label (e.g. Pair, Share)"
+              }
+            ]
+          }
+        `;
+        userPrompt = `Description: ${data.prompt}`;
       } else {
         throw new functionsV1.https.HttpsError(
           'invalid-argument',
