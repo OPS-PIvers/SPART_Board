@@ -16,6 +16,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `QRWidget.tsx` monitors the content of any active text widget and updates its URL if syncing is enabled.
 **Configuration:** Enabled via the "Sync with Text Widget" toggle in QR Settings.
 
+### Random Picker (Groups) -> Scoreboard
+
+**Description:** Instantly creates a Scoreboard widget with teams pre-populated from the randomizer's groups.
+**Implementation:** `RandomWidget.tsx` renders a "Create Scoreboard" button when groups are generated, which calls `addWidget` with the group data mapped to teams.
+**Configuration:** Button appears automatically in the Randomizer when groups are present.
+
 ## Planned Connections
 
 - **Poll -> Scoreboard:** Update team scores based on poll results.

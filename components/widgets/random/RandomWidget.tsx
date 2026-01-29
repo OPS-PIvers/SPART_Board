@@ -5,11 +5,13 @@ import {
   RandomConfig,
   WidgetConfig,
   TimeToolConfig,
+  ScoreboardTeam,
 } from '../../../types';
 import { Button } from '../../common/Button';
-import { Users, RefreshCw, Layers, Target } from 'lucide-react';
+import { Users, RefreshCw, Layers, Target, Trophy } from 'lucide-react';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
 import { RandomWheel } from './RandomWheel';
+import { TEAM_COLORS } from '../ScoreboardItem';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
@@ -22,8 +24,14 @@ interface LayoutSizing {
 }
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, rosters, activeRosterId, activeDashboard } =
-    useDashboard();
+  const {
+    updateWidget,
+    rosters,
+    activeRosterId,
+    activeDashboard,
+    addWidget,
+    addToast,
+  } = useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
@@ -130,6 +138,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [firstNames, lastNames, activeRoster, rosterMode]);
 
   // Dynamic sizing calculations for all animations
+  const isGroupData = (
+    data: string | string[] | string[][]
+  ): data is string[][] => {
+    return Array.isArray(data) && data.length > 0 && Array.isArray(data[0]);
+  };
+
   const layoutSizing = useMemo<LayoutSizing>(() => {
     const availableH = widget.h - 100; // Subtract padding and button height
     const availableW = widget.w - 40;
@@ -534,6 +548,35 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         )}
       </div>
+
+      {mode === 'groups' && isGroupData(displayResult) && (
+        <Button
+          variant="secondary"
+          size="sm"
+          shape="pill"
+          onClick={() => {
+            // isGroupData check in render ensures this is safe, but we cast for TS
+            const groups = displayResult as string[][];
+            const newTeams: ScoreboardTeam[] = groups.map((g, i) => ({
+              id: crypto.randomUUID(),
+              name: `Group ${i + 1}`,
+              score: 0,
+              color: TEAM_COLORS[i % TEAM_COLORS.length],
+            }));
+
+            addWidget('scoreboard', {
+              x: widget.x + widget.w + 20,
+              y: widget.y,
+              config: { teams: newTeams },
+            });
+            addToast('Scoreboard Created!', 'success');
+          }}
+          className="mt-2 w-full shrink-0"
+          icon={<Trophy className="w-4 h-4" />}
+        >
+          Create Scoreboard
+        </Button>
+      )}
 
       <Button
         variant="hero"
