@@ -13,7 +13,6 @@ import { User } from 'firebase/auth';
 import { ClassRoster, Student } from '../types';
 import { db, isAuthBypass } from '../config/firebase';
 import { useGoogleDrive } from './useGoogleDrive';
-import { useAuth } from '../context/useAuth';
 
 /**
  * Singleton pattern for mock roster storage in bypass mode.
@@ -135,7 +134,6 @@ const validateRoster = (id: string, data: unknown): ClassRoster | null => {
 
 export const useRosters = (user: User | null) => {
   const [rosters, setRosters] = useState<ClassRoster[]>([]);
-  const { isAdmin } = useAuth();
   const { driveService } = useGoogleDrive();
   const [activeRosterId, setActiveRosterIdState] = useState<string | null>(
     () => {
@@ -147,7 +145,7 @@ export const useRosters = (user: User | null) => {
 
   // --- DRIVE SYNC EFFECT ---
   useEffect(() => {
-    if (!user || isAdmin || !driveService || rosters.length === 0) return;
+    if (!user || !driveService || rosters.length === 0) return;
 
     const rostersJson = JSON.stringify(rosters);
     if (rostersJson === lastExportedRostersRef.current) return;
@@ -168,7 +166,7 @@ export const useRosters = (user: User | null) => {
     }, 2000); // Debounce roster export
 
     return () => clearTimeout(timer);
-  }, [user, isAdmin, driveService, rosters]);
+  }, [user, driveService, rosters]);
 
   // --- ROSTER EFFECT ---
   useEffect(() => {
@@ -179,8 +177,8 @@ export const useRosters = (user: User | null) => {
 
     if (isAuthBypass) {
       // Use mock roster store in bypass mode
-      const callback = (rosters: ClassRoster[]) => {
-        setRosters(rosters);
+      const callback = (updatedRosters: ClassRoster[]) => {
+        setRosters(updatedRosters);
       };
       mockRosterStore.addListener(callback);
       // Initial callback with current state
@@ -200,8 +198,8 @@ export const useRosters = (user: User | null) => {
       q,
       (snapshot) => {
         const loaded: ClassRoster[] = [];
-        snapshot.forEach((doc) => {
-          const validated = validateRoster(doc.id, doc.data());
+        snapshot.forEach((docSnap) => {
+          const validated = validateRoster(docSnap.id, docSnap.data());
           if (validated) loaded.push(validated);
         });
         setRosters(loaded);
@@ -212,8 +210,8 @@ export const useRosters = (user: User | null) => {
         if (error.code === 'failed-precondition') {
           innerUnsubscribe = onSnapshot(rostersRef, (innerSnapshot) => {
             const innerLoaded: ClassRoster[] = [];
-            innerSnapshot.forEach((doc) => {
-              const validated = validateRoster(doc.id, doc.data());
+            innerSnapshot.forEach((docSnap) => {
+              const validated = validateRoster(docSnap.id, docSnap.data());
               if (validated) innerLoaded.push(validated);
             });
             innerLoaded.sort((a, b) => a.name.localeCompare(b.name));

@@ -37,7 +37,7 @@ const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const { driveService } = useGoogleDrive();
   const {
     saveDashboard: saveDashboardFirestore,
@@ -147,7 +147,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     async (dashboard: Dashboard) => {
       let driveFileId = dashboard.driveFileId;
 
-      if (!isAdmin && driveService) {
+      if (driveService) {
         try {
           driveFileId ??= await driveService.exportDashboard(dashboard);
         } catch (e) {
@@ -160,14 +160,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         driveFileId,
       });
     },
-    [isAdmin, driveService, saveDashboardFirestore]
+    [driveService, saveDashboardFirestore]
   );
 
   const saveDashboards = useCallback(
     async (dashboardsToSave: Dashboard[]) => {
       await saveDashboardsFirestore(dashboardsToSave);
 
-      if (!isAdmin && driveService) {
+      if (driveService) {
         void (async () => {
           for (const db of dashboardsToSave) {
             try {
@@ -182,13 +182,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         })();
       }
     },
-    [isAdmin, driveService, saveDashboardsFirestore]
+    [driveService, saveDashboardsFirestore]
   );
 
   const handleDeleteDashboard = useCallback(
     async (id: string) => {
       const dashboard = dashboards.find((d) => d.id === id);
-      if (!isAdmin && driveService && dashboard?.driveFileId) {
+      if (driveService && dashboard?.driveFileId) {
         try {
           await driveService.deleteFile(dashboard.driveFileId);
         } catch (e) {
@@ -197,19 +197,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       await deleteDashboardFirestore(id);
     },
-    [isAdmin, driveService, dashboards, deleteDashboardFirestore]
+    [driveService, dashboards, deleteDashboardFirestore]
   );
 
   const handleShareDashboard = useCallback(
     async (dashboard: Dashboard): Promise<string> => {
-      if (!isAdmin && driveService) {
+      if (driveService) {
         const fileId = await driveService.exportDashboard(dashboard);
         await driveService.makePublic(fileId);
         return `drive-${fileId}`;
       }
       return shareDashboardFirestore(dashboard);
     },
-    [isAdmin, driveService, shareDashboardFirestore]
+    [driveService, shareDashboardFirestore]
   );
 
   const handleLoadSharedDashboard = useCallback(
@@ -409,7 +409,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const driveSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!user || isAdmin || !driveService || loading || !activeId) return;
+    if (!user || !driveService || loading || !activeId) return;
 
     const active = dashboards.find((d) => d.id === activeId);
     if (!active) return;
@@ -441,7 +441,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [
     user,
-    isAdmin,
     driveService,
     dashboards,
     activeId,
