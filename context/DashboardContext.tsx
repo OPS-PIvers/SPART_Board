@@ -50,34 +50,50 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const saveDashboard = useCallback(
     async (dashboard: Dashboard) => {
-      // Always save to Firestore for real-time sync
-      await saveDashboardFirestore(dashboard);
+      // If non-admin, ensure we have a Drive version synced
+      // but we don't necessarily need to block the Firestore sync on it
+      // unless it's a manual save.
+      let driveFileId = dashboard.driveFileId;
 
-      // If non-admin, also save to Drive for persistence/sharing
-      // as requested: "anything at all that users will save and share will be through Google Drive"
       if (!isAdmin && driveService) {
         try {
-          await driveService.exportDashboard(dashboard);
+          // Only perform immediate export if it's a new dashboard or doesn't have an ID yet
+          if (!driveFileId) {
+            driveFileId = await driveService.exportDashboard(dashboard);
+          }
         } catch (e) {
           console.error('Failed to export to Drive during save:', e);
         }
       }
+
+      // Always save to Firestore for real-time sync
+      await saveDashboardFirestore({
+        ...dashboard,
+        driveFileId,
+      });
     },
     [isAdmin, driveService, saveDashboardFirestore]
   );
 
   const saveDashboards = useCallback(
     async (dashboardsToSave: Dashboard[]) => {
+      // For plural saves (like reordering), we'll do Firestore first
       await saveDashboardsFirestore(dashboardsToSave);
 
+      // Then background sync to Drive
       if (!isAdmin && driveService) {
-        for (const db of dashboardsToSave) {
-          try {
-            await driveService.exportDashboard(db);
-          } catch (e) {
-            console.error(`Failed to export dashboard ${db.name} to Drive:`, e);
+        void (async () => {
+          for (const db of dashboardsToSave) {
+            try {
+              await driveService.exportDashboard(db);
+            } catch (e) {
+              console.error(
+                `Failed to export dashboard ${db.name} to Drive:`,
+                e
+              );
+            }
           }
-        }
+        })();
       }
     },
     [isAdmin, driveService, saveDashboardsFirestore]
@@ -380,6 +396,53 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [dashboards, activeId, user, loading, saveDashboard]);
+
+  // --- GOOGLE DRIVE SYNC EFFECT ---
+  // Decoupled from Firestore auto-save to ensure performance.
+  // Debounced heavily (5 seconds) to avoid hitting Drive API limits.
+  const lastExportedDataRef = useRef<string>('');
+  const driveSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!user || isAdmin || !driveService || loading || !activeId) return;
+
+    const active = dashboards.find((d) => d.id === activeId);
+    if (!active) return;
+
+    const currentData =
+      JSON.stringify(active.widgets) + active.background + active.name;
+
+    if (currentData === lastExportedDataRef.current) return;
+
+    if (driveSyncTimerRef.current) clearTimeout(driveSyncTimerRef.current);
+
+    driveSyncTimerRef.current = setTimeout(() => {
+      void driveService
+        .exportDashboard(active)
+        .then((newFileId) => {
+          lastExportedDataRef.current = currentData;
+          // If we got a new ID (e.g. first sync), save it back to Firestore silently
+          if (newFileId !== active.driveFileId) {
+            void saveDashboardFirestore({ ...active, driveFileId: newFileId });
+          }
+        })
+        .catch((err) => {
+          console.error('[Drive Sync] Background export failed:', err);
+        });
+    }, 5000);
+
+    return () => {
+      if (driveSyncTimerRef.current) clearTimeout(driveSyncTimerRef.current);
+    };
+  }, [
+    user,
+    isAdmin,
+    driveService,
+    dashboards,
+    activeId,
+    loading,
+    saveDashboardFirestore,
+  ]);
 
   // Flush pending saves on page refresh/close
   useEffect(() => {

@@ -106,11 +106,6 @@ export class GoogleDriveService {
     const folderId = await this.getOrCreateAppFolder();
     const fileName = `${dashboard.name}.spart`;
 
-    // Check if file exists to update or create
-    const existingFiles = await this.listFiles(
-      `name = '${fileName}' and '${folderId}' in parents and trashed = false`
-    );
-
     const metadata = {
       name: fileName,
       parents: [folderId],
@@ -118,6 +113,42 @@ export class GoogleDriveService {
     };
 
     const fileContent = JSON.stringify(dashboard, null, 2);
+
+    // If we already have a driveFileId, try to update it directly
+    if (dashboard.driveFileId) {
+      try {
+        // Update content
+        const uploadResponse = await fetch(
+          `${UPLOAD_API_URL}/files/${dashboard.driveFileId}?uploadType=media`,
+          {
+            method: 'PATCH',
+            headers: {
+              ...this.headers,
+              'Content-Type': 'application/json',
+            },
+            body: fileContent,
+          }
+        );
+
+        if (uploadResponse.ok) {
+          return dashboard.driveFileId;
+        }
+
+        // If 404, the file might have been deleted from Drive, fallback to search/create
+        if (uploadResponse.status !== 404) {
+          const errorBody = await uploadResponse.text();
+          console.error('Drive API Error (Update Content):', errorBody);
+          throw new Error('Failed to update dashboard in Drive');
+        }
+      } catch (e) {
+        console.warn('Direct Drive update failed, falling back to search:', e);
+      }
+    }
+
+    // Fallback: Check if file exists by name to update or create
+    const existingFiles = await this.listFiles(
+      `name = '${fileName}' and '${folderId}' in parents and trashed = false`
+    );
 
     if (existingFiles.length > 0) {
       // Update existing

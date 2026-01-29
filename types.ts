@@ -559,6 +559,7 @@ export interface DashboardSettings {
 export interface Dashboard {
   id: string;
   name: string;
+  driveFileId?: string;
   background: string;
   thumbnailUrl?: string;
   widgets: WidgetData[];
