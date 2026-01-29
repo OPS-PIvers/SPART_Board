@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from 'lucide-react';
+import { Button } from '../common/Button';
 import { classLinkService } from '../../utils/classlinkService';
 
 interface Props {
@@ -102,12 +103,14 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <button
+          <Button
+            variant="success"
+            size="sm"
             onClick={handleSave}
-            className="bg-green-600 text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs  hover:bg-green-700 shadow-sm transition-colors"
+            icon={<Save size={14} />}
           >
-            <Save size={14} /> Save
-          </button>
+            Save
+          </Button>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
@@ -230,24 +233,26 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 This cannot be undone.
               </p>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="neutral"
+                  size="md"
                   onClick={() => setConfirmDeleteId(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-700 text-white text-xs  hover:bg-slate-600 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="md"
                   onClick={async () => {
                     if (confirmDeleteId) {
                       await deleteRoster(confirmDeleteId);
                       setConfirmDeleteId(null);
                     }
                   }}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs  hover:bg-red-700 transition-colors"
                   title="Confirm deletion"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             </div>
           )}

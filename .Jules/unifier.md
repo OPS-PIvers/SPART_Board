@@ -33,3 +33,7 @@ Unifier is responsible for maintaining a consistent look and feel across all Sch
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## 2025-02-18 - Standardized Action Buttons
+**Gap:** Found inconsistent hardcoded implementations of "Destructive" (filled red) and "Neutral" (filled dark slate) buttons in dialogs and overlays.
+**Fix:** Added `destructive` and `neutral` variants to `Button.tsx` and refactored `DraggableWindow`, `ClassesWidget`, and `BackgroundManager` to use them.

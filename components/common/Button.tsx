@@ -5,6 +5,8 @@ export type ButtonVariant =
   | 'secondary'
   | 'success'
   | 'danger'
+  | 'destructive'
+  | 'neutral'
   | 'ghost-danger'
   | 'ghost'
   | 'hero';
@@ -39,6 +41,8 @@ export const Button: React.FC<ButtonProps> = ({
     secondary: 'bg-slate-200 text-slate-600 hover:bg-slate-300',
     success: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700',
     danger: 'bg-red-50 text-red-600 hover:bg-red-100',
+    destructive: 'bg-red-600 text-white shadow-sm hover:bg-red-700',
+    neutral: 'bg-slate-700 text-white shadow-sm hover:bg-slate-600',
     'ghost-danger': 'text-red-500 hover:bg-red-50 hover:text-red-600',
     ghost: 'text-slate-400 hover:text-brand-blue-primary hover:bg-indigo-50',
     hero: 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark active:scale-95 hover:-translate-y-1',

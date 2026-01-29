@@ -21,6 +21,7 @@ import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
+import { Button } from './Button';
 
 import { Z_INDEX } from '../../config/zIndex';
 
@@ -425,24 +426,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     Close widget? Data will be lost.
                   </p>
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="neutral"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowConfirm(false);
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeWidget(widget.id);
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
                     >
                       Close
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -579,12 +582,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 <span className="text-xs font-bold text-slate-700 uppercase">
                   Settings
                 </span>
-                <button
+                <Button
+                  variant="neutral"
+                  size="sm"
                   onClick={() => updateWidget(widget.id, { flipped: false })}
-                  className="p-1 bg-slate-700 text-white rounded-md hover:bg-slate-800 transition-colors flex items-center gap-1 text-xxs font-bold px-2"
                 >
                   DONE
-                </button>
+                </Button>
               </div>
               <div className="flex-1 p-4 overflow-y-auto">
                 <div className="mb-4 flex flex-col gap-2 bg-white/40 px-3 py-2 rounded-xl border border-white/20">

@@ -29,6 +29,7 @@ import {
   X,
   Check,
 } from 'lucide-react';
+import { Button } from '../common/Button';
 
 const DEFAULT_PRESETS = [
   {
@@ -394,13 +395,14 @@ export const BackgroundManager: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-1.5 right-1.5 z-10">
-                    <button
+                    <Button
+                      variant="destructive"
+                      size="icon"
                       onClick={() => void deletePreset(preset)}
-                      className="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition-all scale-90 hover:scale-100"
+                      className="scale-90 hover:scale-100 shadow-md !p-1.5"
                       title="Delete background"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
+                    />
                   </div>
                   <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-xxs font-black uppercase text-white">
