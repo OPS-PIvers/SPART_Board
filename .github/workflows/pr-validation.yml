@@ -140,7 +140,7 @@ jobs:
             })
 
       - name: Add PR Comment on Failure
-        if: ${{ needs.quality.result == 'failure' || needs.test.result == 'failure' || needs.build.result == 'failure' }}
+        if: ${{ needs.quality.result != 'success' || needs.test.result != 'success' || needs.build.result != 'success' }}
         continue-on-error: true
         uses: actions/github-script@v7
         with:
