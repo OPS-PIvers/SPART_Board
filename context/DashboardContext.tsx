@@ -37,7 +37,7 @@ const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { driveService } = useGoogleDrive();
   const {
     saveDashboard: saveDashboardFirestore,
@@ -47,6 +47,75 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     shareDashboard: shareDashboardFirestore,
     loadSharedDashboard: loadSharedDashboardFirestore,
   } = useFirestore(user?.uid ?? null);
+
+  const saveDashboard = useCallback(
+    async (dashboard: Dashboard) => {
+      // Always save to Firestore for real-time sync
+      let driveFileId = dashboard.driveFileId;
+
+      // If non-admin, also save to Drive for persistence/sharing
+      // as requested: "anything at all that users will save and share will be through Google Drive"
+      if (!isAdmin && driveService) {
+        try {
+          driveFileId = await driveService.exportDashboard(dashboard);
+        } catch (e) {
+          console.error('Failed to export to Drive during save:', e);
+        }
+      }
+
+      await saveDashboardFirestore({
+        ...dashboard,
+        driveFileId,
+      });
+    },
+    [isAdmin, driveService, saveDashboardFirestore]
+  );
+
+  const saveDashboards = useCallback(
+    async (dashboardsToSave: Dashboard[]) => {
+      await saveDashboardsFirestore(dashboardsToSave);
+
+      if (!isAdmin && driveService) {
+        for (const db of dashboardsToSave) {
+          try {
+            await driveService.exportDashboard(db);
+          } catch (e) {
+            console.error(`Failed to export dashboard ${db.name} to Drive:`, e);
+          }
+        }
+      }
+    },
+    [isAdmin, driveService, saveDashboardsFirestore]
+  );
+
+  const handleShareDashboard = useCallback(
+    async (dashboard: Dashboard): Promise<string> => {
+      if (!isAdmin && driveService) {
+        const fileId = await driveService.exportDashboard(dashboard);
+        await driveService.makePublic(fileId);
+        return `drive-${fileId}`;
+      }
+      return shareDashboardFirestore(dashboard);
+    },
+    [isAdmin, driveService, shareDashboardFirestore]
+  );
+
+  const handleLoadSharedDashboard = useCallback(
+    async (shareId: string): Promise<Dashboard | null> => {
+      if (shareId.startsWith('drive-')) {
+        if (!driveService) {
+          // If not connected, we might need the user to sign in first,
+          // but for now we'll just throw or return null.
+          // In a real app, we'd maybe redirect to a Drive-specific auth flow.
+          throw new Error('Google Drive access required to load this board');
+        }
+        const fileId = shareId.replace('drive-', '');
+        return driveService.importDashboard(fileId);
+      }
+      return loadSharedDashboardFirestore(shareId);
+    },
+    [driveService, loadSharedDashboardFirestore]
+  );
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
@@ -142,48 +211,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [dashboards]);
 
   // --- DRIVE WRAPPERS & CALLBACKS ---
-
-  const saveDashboard = useCallback(
-    async (dashboard: Dashboard) => {
-      let driveFileId = dashboard.driveFileId;
-
-      if (driveService) {
-        try {
-          driveFileId ??= await driveService.exportDashboard(dashboard);
-        } catch (e) {
-          console.error('Failed to export to Drive during save:', e);
-        }
-      }
-
-      await saveDashboardFirestore({
-        ...dashboard,
-        driveFileId,
-      });
-    },
-    [driveService, saveDashboardFirestore]
-  );
-
-  const saveDashboards = useCallback(
-    async (dashboardsToSave: Dashboard[]) => {
-      await saveDashboardsFirestore(dashboardsToSave);
-
-      if (driveService) {
-        void (async () => {
-          for (const db of dashboardsToSave) {
-            try {
-              await driveService.exportDashboard(db);
-            } catch (e) {
-              console.error(
-                `Failed to export dashboard ${db.name} to Drive:`,
-                e
-              );
-            }
-          }
-        })();
-      }
-    },
-    [driveService, saveDashboardsFirestore]
-  );
 
   const handleDeleteDashboard = useCallback(
     async (id: string) => {
