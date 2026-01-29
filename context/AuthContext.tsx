@@ -61,6 +61,8 @@ const MOCK_TOKEN = 'mock-token';
 const MOCK_ACCESS_TOKEN = 'mock-google-access-token';
 const MOCK_TIME = new Date().toISOString(); // Fixed time at module load
 
+const GOOGLE_ACCESS_TOKEN_KEY = 'spart_google_access_token';
+
 /**
  * Mock user object for bypass mode.
  * Defined at module level to ensure referential equality.
@@ -116,7 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isAuthBypass ? MOCK_USER : null
   );
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
-    isAuthBypass ? MOCK_ACCESS_TOKEN : null
+    () => {
+      if (isAuthBypass) return MOCK_ACCESS_TOKEN;
+      return localStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
+    }
   );
   // Note: In bypass mode we initialize `loading` to false because the mock user
   // and admin status are set synchronously above. This makes the auth state
@@ -131,6 +136,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [globalPermissions, setGlobalPermissions] = useState<
     GlobalFeaturePermission[]
   >([]);
+
+  // Persist googleAccessToken to localStorage
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (googleAccessToken) {
+      localStorage.setItem(GOOGLE_ACCESS_TOKEN_KEY, googleAccessToken);
+    } else {
+      localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+    }
+  }, [googleAccessToken]);
 
   // Check if user is admin
   useEffect(() => {
@@ -214,6 +229,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (!user) {
+        setGoogleAccessToken(null);
+      }
       setLoading(false);
     });
     return unsubscribe;

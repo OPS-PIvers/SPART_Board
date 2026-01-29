@@ -82,8 +82,14 @@ export const Sidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { user, signOut, isAdmin, featurePermissions, canAccessFeature } =
-    useAuth();
+  const {
+    user,
+    signOut,
+    signInWithGoogle,
+    isAdmin,
+    featurePermissions,
+    canAccessFeature,
+  } = useAuth();
   const { uploadBackgroundImage } = useStorage();
   const {
     dashboards,
@@ -992,7 +998,7 @@ export const Sidebar: React.FC = () => {
                           if (isDriveConnected) {
                             void signOut();
                           } else {
-                            window.location.reload();
+                            void signInWithGoogle();
                           }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${
