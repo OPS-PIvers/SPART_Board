@@ -40,11 +40,17 @@ import {
 import { useInstructionalRoutines } from '../../hooks/useInstructionalRoutines';
 import { LibraryManager } from '../widgets/InstructionalRoutines/LibraryManager';
 import { InstructionalRoutine } from '../../config/instructionalRoutines';
+import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
+import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const { routines, deleteRoutine, saveRoutine } = useInstructionalRoutines();
   const [editingRoutine, setEditingRoutine] =
     useState<InstructionalRoutine | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    routineId: string;
+    routineName: string;
+  } | null>(null);
   const [permissions, setPermissions] = useState<
     Map<WidgetType, FeaturePermission>
   >(new Map());
@@ -988,7 +994,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                           >
                             <div className="flex items-center gap-2">
                               <div
-                                className={`p-1.5 rounded-md bg-${routine.color || 'blue'}-50 text-${routine.color || 'blue'}-600`}
+                                className={`p-1.5 rounded-md ${getRoutineColorClasses(routine.color || 'blue').bg} ${getRoutineColorClasses(routine.color || 'blue').text}`}
                               >
                                 <div className="w-3 h-3 rounded-full bg-current opacity-50" />
                               </div>
@@ -1011,13 +1017,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => {
-                                  if (
-                                    confirm(
-                                      'Are you sure you want to delete this routine?'
-                                    )
-                                  ) {
-                                    void deleteRoutine(routine.id);
-                                  }
+                                  setDeleteConfirm({
+                                    routineId: routine.id,
+                                    routineName: routine.name,
+                                  });
                                 }}
                                 className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600 transition-colors"
                                 title="Delete Routine"
@@ -1215,6 +1218,31 @@ export const FeaturePermissionsManager: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <ConfirmDialog
+          title="Delete Routine"
+          message={`Are you sure you want to delete "${deleteConfirm.routineName}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={async () => {
+            try {
+              await deleteRoutine(deleteConfirm.routineId);
+              showMessage('success', 'Routine deleted successfully');
+            } catch (error) {
+              console.error('Failed to delete routine:', error);
+              showMessage(
+                'error',
+                'Failed to delete routine. Please try again.'
+              );
+            } finally {
+              setDeleteConfirm(null);
+            }
+          }}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       )}
     </div>
   );

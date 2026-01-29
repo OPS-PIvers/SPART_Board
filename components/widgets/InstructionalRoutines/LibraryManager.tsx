@@ -20,6 +20,7 @@ import {
   removeBackground,
   trimImageWhitespace,
 } from '../../../utils/imageProcessing';
+import { PromptDialog } from './PromptDialog';
 
 interface LibraryManagerProps {
   routine: InstructionalRoutine;
@@ -40,13 +41,13 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
   const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(
     null
   );
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState<string | null>(
+    null
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleMagicDesign = async () => {
-    const prompt = window.prompt(
-      'Describe the instructional routine you want to create (e.g., "A 3-step routine for peer review where students swap papers twice")'
-    );
-    if (!prompt) return;
-
+  const handleMagicDesign = async (prompt: string) => {
     setIsGenerating(true);
     try {
       const generate = httpsCallable(functions, 'generateWithAI');
@@ -72,7 +73,8 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       });
     } catch (error) {
       console.error('Magic Design failed:', error);
-      alert('Failed to generate routine. Please try again.');
+      setErrorMessage('Failed to generate routine. Please try again.');
+      setTimeout(() => setErrorMessage(null), 3000);
     } finally {
       setIsGenerating(false);
     }
@@ -81,7 +83,20 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
   const handleStickerUpload = async (file: File, index: number) => {
     if (!user || !file) return;
 
+    // Validate file size (max 5MB)
+    const maxFileSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxFileSizeBytes) {
+      setErrorMessage(
+        'The selected image is too large. Please choose an image smaller than 5MB.'
+      );
+      setTimeout(() => setErrorMessage(null), 4000);
+      return;
+    }
+
     setUploadingStepIndex(index);
+    setProcessingMessage(
+      'Processing image... This may take a few seconds for large images.'
+    );
     try {
       // Process image
       const reader = new FileReader();
@@ -92,6 +107,8 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
 
       const noBg = await removeBackground(dataUrl);
       const trimmed = await trimImageWhitespace(noBg);
+
+      setProcessingMessage('Uploading sticker...');
 
       // Convert back to File
       const response = await fetch(trimmed);
@@ -108,9 +125,15 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       const nextSteps = [...routine.steps];
       nextSteps[index] = { ...nextSteps[index], stickerUrl: url };
       onChange({ ...routine, steps: nextSteps });
+
+      setProcessingMessage(null);
     } catch (e) {
-      console.error(e);
-      alert('Failed to upload sticker');
+      console.error('Sticker upload failed:', e);
+      setErrorMessage(
+        'Failed to upload sticker. Please check your image and try again.'
+      );
+      setTimeout(() => setErrorMessage(null), 3000);
+      setProcessingMessage(null);
     } finally {
       setUploadingStepIndex(null);
     }
@@ -129,7 +152,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
           {routine.id ? 'Edit Routine Template' : 'Add New Routine'}
         </h3>
         <button
-          onClick={handleMagicDesign}
+          onClick={() => setShowPromptDialog(true)}
           disabled={isGenerating}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-xxs font-black uppercase tracking-wider hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 transition-all shadow-sm"
         >
@@ -226,7 +249,10 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                       });
                     }}
                   />
-                  <label className="cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-colors relative group/upload">
+                  <label
+                    className="cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-colors relative group/upload"
+                    aria-label="Upload custom sticker image"
+                  >
                     {uploadingStepIndex === i ? (
                       <Loader2
                         size={16}
@@ -267,6 +293,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                           void handleStickerUpload(e.target.files[0], i);
                       }}
                       disabled={uploadingStepIndex !== null}
+                      aria-label="Upload custom sticker image"
                     />
                   </label>
                   <input
@@ -348,6 +375,37 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Processing Message */}
+      {processingMessage && (
+        <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-4 z-50">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm font-medium">{processingMessage}</span>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-4 z-50">
+          <span className="text-sm font-medium">{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Magic Design Prompt Dialog */}
+      {showPromptDialog && (
+        <PromptDialog
+          title="Magic Design"
+          message="Describe the instructional routine you want to create"
+          placeholder='e.g., "A 3-step routine for peer review where students swap papers twice"'
+          confirmLabel="Generate"
+          cancelLabel="Cancel"
+          onConfirm={(prompt) => {
+            setShowPromptDialog(false);
+            void handleMagicDesign(prompt);
+          }}
+          onCancel={() => setShowPromptDialog(false)}
+        />
+      )}
     </div>
   );
 };
