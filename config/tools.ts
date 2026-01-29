@@ -13,7 +13,6 @@ import {
   BarChart2,
   Video,
   Trophy,
-  AlertCircle,
   CloudSun,
   Calendar,
   Utensils,
@@ -23,6 +22,7 @@ import {
   Sticker,
   Armchair,
   Rocket,
+  LayoutGrid,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -53,8 +53,8 @@ export const TOOLS: ToolMetadata[] = [
   { type: 'scoreboard', icon: Trophy, label: 'Scores', color: 'bg-yellow-600' },
   {
     type: 'workSymbols',
-    icon: AlertCircle,
-    label: 'Expects',
+    icon: LayoutGrid,
+    label: 'Work Symbols',
     color: 'bg-emerald-600',
   },
   { type: 'weather', icon: CloudSun, label: 'Weather', color: 'bg-sky-400' },

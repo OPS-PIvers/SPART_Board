@@ -84,7 +84,7 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
   workSymbols: {
     w: 320,
     h: 350,
-    config: { voiceLevel: null, workMode: null },
+    config: { voiceLevel: null, workMode: null, interactionMode: null },
   },
   weather: {
     w: 250,

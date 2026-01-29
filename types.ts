@@ -248,6 +248,12 @@ export interface ScoreboardConfig {
 export interface WorkSymbolsConfig {
   voiceLevel: number | null; // 0, 1, 2, 3, or 4
   workMode: 'individual' | 'partner' | 'group' | null;
+  interactionMode:
+    | 'none'
+    | 'respectful'
+    | 'supportive'
+    | 'collaborative'
+    | null;
   instructionalRoutine?: string; // Legacy/K-8
   activeRoutines?: string[]; // New: 9-12 Multi-select
 }

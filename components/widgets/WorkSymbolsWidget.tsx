@@ -1,495 +1,344 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { useScaledFont } from '../../hooks/useScaledFont';
+import { WidgetData, WorkSymbolsConfig } from '../../types';
 import {
-  WidgetData,
-  WorkSymbolsConfig,
-  DEFAULT_GLOBAL_STYLE,
-} from '../../types';
-import * as Icons from 'lucide-react';
+  Volume2,
+  Users,
+  ArrowLeft,
+  User,
+  UsersRound,
+  Ear,
+  Heart,
+  MessagesSquare,
+  CheckCircle2,
+} from 'lucide-react';
 
-// --- Types & Constants ---
-// ... (rest of constants remains same)
+// --- Constants & Data ---
 
-interface RoutineStep {
-  icon: string;
+const VOLUME_OPTIONS = [
+  {
+    id: 0,
+    label: 'Silence',
+    sub: 'Independent',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+  },
+  {
+    id: 1,
+    label: 'Whisper',
+    sub: 'Partner Talk',
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+  },
+  {
+    id: 2,
+    label: 'Conversation',
+    sub: 'Table Talk',
+    color: 'text-yellow-600',
+    bg: 'bg-yellow-50',
+  },
+  {
+    id: 3,
+    label: 'Presenter',
+    sub: 'Speaking',
+    color: 'text-orange-600',
+    bg: 'bg-orange-50',
+  },
+  {
+    id: 4,
+    label: 'Outside',
+    sub: 'Recess',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+  },
+];
+
+const GROUP_OPTIONS: {
+  id: WorkSymbolsConfig['workMode'];
   label: string;
+  icon: typeof User;
   color: string;
-}
+  bg: string;
+}[] = [
+  {
+    id: 'individual',
+    label: 'Alone',
+    icon: User,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+  },
+  {
+    id: 'partner',
+    label: 'Partner',
+    icon: Users,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+  },
+  {
+    id: 'group',
+    label: 'Group',
+    icon: UsersRound,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+  },
+];
 
-interface Routine {
-  id: string;
+const INTERACTION_OPTIONS: {
+  id: WorkSymbolsConfig['interactionMode'];
   label: string;
-  icon: string;
-  hint?: string;
-  steps: RoutineStep[];
-}
-
-const ROUTINE_DB: Record<string, Routine[]> = {
-  Blooms: [
-    {
-      id: 'b1',
-      label: '1. Remember',
-      icon: 'Archive',
-      hint: 'Recall facts (Effect: 0.46)',
-      steps: [{ icon: 'Pencil', label: 'Recall & List Facts', color: 'slate' }],
-    },
-    {
-      id: 'b2',
-      label: '2. Understand',
-      icon: 'Book',
-      hint: 'Construct meaning',
-      steps: [
-        { icon: 'MessageSquare', label: 'Summarize / Explain', color: 'blue' },
-      ],
-    },
-    {
-      id: 'b3',
-      label: '3. Apply',
-      icon: 'Play',
-      hint: 'Carry out a procedure',
-      steps: [{ icon: 'Zap', label: 'Solve / Implement', color: 'indigo' }],
-    },
-    {
-      id: 'b4',
-      label: '4. Analyze',
-      icon: 'Brain',
-      hint: 'Break into components',
-      steps: [
-        { icon: 'Brain', label: 'Attribute / Organize', color: 'purple' },
-      ],
-    },
-    {
-      id: 'b5',
-      label: '5. Evaluate',
-      icon: 'Award',
-      hint: 'Make judgments',
-      steps: [
-        { icon: 'CheckCircle', label: 'Critique / Judge', color: 'amber' },
-      ],
-    },
-    {
-      id: 'b6',
-      label: '6. Create',
-      icon: 'Lightbulb',
-      hint: 'Produce original work',
-      steps: [
-        { icon: 'PlusCircle', label: 'Design / Produce', color: 'green' },
-      ],
-    },
-  ],
-  Collaboration: [
-    {
-      id: 'reciprocal',
-      label: 'Reciprocal Teaching',
-      icon: 'Users',
-      hint: 'Effect Size: 0.74',
-      steps: [
-        { icon: 'Search', label: 'Predict & Clarify', color: 'blue' },
-        { icon: 'Ear', label: 'Listen to Summarizer', color: 'indigo' },
-        { icon: 'HelpCircle', label: 'Question Content', color: 'purple' },
-      ],
-    },
-    {
-      id: 'tps',
-      label: 'Think-Pair-Share',
-      icon: 'Users',
-      steps: [
-        { icon: 'Lightbulb', label: 'Internal Think Time', color: 'amber' },
-        {
-          icon: 'MessageSquare',
-          label: 'Dialogue with Partner',
-          color: 'blue',
-        },
-        { icon: 'Share2', label: 'Whole Class Share', color: 'green' },
-      ],
-    },
-  ],
-  Literacy: [
-    {
-      id: 'nw',
-      label: 'Notice & Wonder',
-      icon: 'Eye',
-      steps: [
-        { icon: 'Eye', label: 'Close Observation', color: 'slate' },
-        { icon: 'HelpCircle', label: 'Identify Wonders', color: 'purple' },
-      ],
-    },
-    {
-      id: 'sc',
-      label: 'Stronger & Clearer',
-      icon: 'RefreshCw',
-      steps: [
-        { icon: 'Pencil', label: 'Write First Draft', color: 'blue' },
-        {
-          icon: 'MessageSquare',
-          label: 'Refine via Discussion',
-          color: 'indigo',
-        },
-      ],
-    },
-  ],
-  Thinking: [
-    {
-      id: 'stw',
-      label: 'See-Think-Wonder',
-      icon: 'Brain',
-      steps: [
-        { icon: 'Eye', label: 'What do you see?', color: 'blue' },
-        { icon: 'Lightbulb', label: 'What do you think?', color: 'amber' },
-        { icon: 'HelpCircle', label: 'What do you wonder?', color: 'purple' },
-      ],
-    },
-  ],
-};
+  icon: typeof Heart;
+  color: string;
+  bg: string;
+}[] = [
+  {
+    id: 'respectful',
+    label: 'Respectful',
+    icon: Heart,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50',
+  },
+  {
+    id: 'listening',
+    label: 'Listening',
+    icon: Ear,
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+  },
+  {
+    id: 'productive',
+    label: 'Productive',
+    icon: CheckCircle2,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+  },
+  {
+    id: 'discussion',
+    label: 'Discussion',
+    icon: MessagesSquare,
+    color: 'text-sky-600',
+    bg: 'bg-sky-50',
+  },
+];
 
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter, activeDashboard, addWidget } =
-    useDashboard();
-  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-  const config = (widget.config as WorkSymbolsConfig) ?? {};
-  const activeRoutines = config.activeRoutines ?? [];
-  const { voiceLevel = null, workMode = null } = config;
+  const { updateWidget } = useDashboard();
+  const config = widget.config as WorkSymbolsConfig;
+  const { voiceLevel = null, workMode = null, interactionMode = null } = config;
 
-  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 8, 12);
-  const voiceSize = useScaledFont(widget.w, widget.h, 0.3, 10, 14);
+  const [activeCategory, setActiveCategory] = useState<
+    'volume' | 'groups' | 'interaction' | null
+  >(null);
 
-  // View state: 'picker' or 'facilitator' (for specific routine steps)
-  const [viewState, setViewState] = useState<'picker' | 'facilitator'>(
-    'picker'
-  );
-  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(
-    null
-  );
-  const [activeCategory, setActiveCategory] =
-    useState<keyof typeof ROUTINE_DB>('Blooms');
-
-  // Helper to get current routine object
-  const getCurrentRoutine = () => {
-    if (!selectedRoutineId) return null;
-    for (const cat in ROUTINE_DB) {
-      const routine = ROUTINE_DB[cat].find((r) => r.id === selectedRoutineId);
-      if (routine) return routine;
-    }
-    return null;
-  };
-
-  const toggleRoutine = (id: string) => {
-    const newRoutines = activeRoutines.includes(id)
-      ? activeRoutines.filter((r: string) => r !== id)
-      : [...activeRoutines, id];
-
+  const updateConfig = (newConfig: Partial<WorkSymbolsConfig>) => {
     updateWidget(widget.id, {
-      config: { ...config, activeRoutines: newRoutines },
+      config: { ...config, ...newConfig },
     });
   };
 
-  const handleRoutineClick = (routineId: string) => {
-    setSelectedRoutineId(routineId);
-    setViewState('facilitator');
+  // --- Render Sub-views ---
 
-    if (!activeRoutines.includes(routineId)) {
-      toggleRoutine(routineId);
-    }
-  };
-
-  const onDragStart = (
-    e: React.DragEvent,
-    icon: string,
-    color: string,
-    label?: string
-  ) => {
-    e.dataTransfer.setData(
-      'application/spart-sticker',
-      JSON.stringify({ icon, color, label })
-    );
-    e.dataTransfer.effectAllowed = 'copy';
-  };
-
-  const handleStepClick = (icon: string, color: string, label: string) => {
-    // Add symbol as a sticker to the center of the viewport or a default position
-    const w = 150;
-    const h = 150;
-    addWidget('sticker', {
-      x: 100,
-      y: 100,
-      w,
-      h,
-      config: { icon, color, label, rotation: 0 },
-    });
-  };
-
-  // 9-12 High School View
-  if (gradeFilter === '9-12') {
-    if (viewState === 'facilitator') {
-      const routine = getCurrentRoutine();
-      if (!routine)
-        return (
-          <div onClick={() => setViewState('picker')}>
-            Error: Routine not found
-          </div>
-        );
-
-      return (
-        <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-2 p-3 border-b bg-slate-50">
-            <button
-              onClick={() => setViewState('picker')}
-              className="p-1.5 hover:bg-slate-200 rounded-full transition-colors"
-            >
-              <Icons.ArrowLeft size={18} className="text-slate-600" />
-            </button>
-            <div className="flex-1">
-              <h3 className=" text-slate-800 leading-tight">{routine.label}</h3>
-              {routine.hint && (
-                <p className="text-xxs text-slate-500">{routine.hint}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Steps / Drag Zone */}
-          <div className="flex-1 p-3 overflow-y-auto bg-slate-100">
-            <div className="space-y-3">
-              <div className="text-xxs  text-slate-400 uppercase tracking-wider text-center mb-2">
-                Drag icons to whiteboard
-              </div>
-              {routine.steps.map((step, idx) => {
-                const IconComponent =
-                  (Icons as unknown as Record<string, React.ElementType>)[
-                    step.icon
-                  ] ?? Icons.HelpCircle;
-                const colorClass = `text-${step.color}-600`;
-                const bgClass = `bg-${step.color}-50`;
-
-                return (
-                  <div
-                    key={idx}
-                    draggable
-                    onDragStart={(e) =>
-                      onDragStart(e, step.icon, step.color, step.label)
-                    }
-                    onClick={() =>
-                      handleStepClick(step.icon, step.color, step.label)
-                    }
-                    className={`flex items-center gap-3 p-3 rounded-xl border-2 bg-white cursor-grab active:cursor-grabbing hover:shadow-md transition-all group`}
-                    title="Drag or Click to add to board"
-                  >
-                    <div
-                      className={`p-2 rounded-lg ${bgClass} ${colorClass} group-hover:scale-110 transition-transform`}
-                    >
-                      <IconComponent size={24} />
-                    </div>
-                    <span className=" text-slate-700 text-sm">
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Picker View
-    return (
-      <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden">
-        {/* Category Tabs */}
-        <div className="flex gap-1 p-2 bg-gray-50 border-b overflow-x-auto no-scrollbar">
-          {Object.keys(ROUTINE_DB).map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs  transition-all whitespace-nowrap ${
-                activeCategory === cat
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid of Routine Cards */}
-        <div className="flex-1 p-3 overflow-y-auto no-scrollbar">
-          <div className="grid grid-cols-2 gap-3">
-            {ROUTINE_DB[activeCategory].map((routine) => {
-              const isActive = activeRoutines.includes(routine.id);
-              const IconComponent =
-                (Icons as unknown as Record<string, React.ElementType>)[
-                  routine.icon
-                ] ?? Icons.HelpCircle;
-
-              return (
-                <button
-                  key={routine.id}
-                  onClick={() => handleRoutineClick(routine.id)}
-                  className={`p-3 border-2 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group relative overflow-hidden ${
-                    isActive
-                      ? 'border-blue-500 bg-blue-50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                      : 'border-gray-100 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`p-2 rounded-full transition-colors ${
-                      isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
-                    }`}
-                  >
-                    <IconComponent size={20} />
-                  </div>
-                  <span
-                    className={`text-xxs  text-center leading-tight ${
-                      isActive ? 'text-blue-700' : 'text-gray-500'
-                    }`}
-                  >
-                    {routine.label}
-                  </span>
-                  {isActive && (
-                    <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+  const renderVolumeView = () => (
+    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-200">
+      <div className="flex items-center p-3 border-b shrink-0">
+        <button
+          onClick={() => setActiveCategory(null)}
+          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <h3 className="font-bold text-slate-800">Volume Level</h3>
       </div>
-    );
-  }
-
-  // Original K-8 View
-  const voices = [
-    {
-      id: 4,
-      label: 'Outside',
-      sub: '(Recess)',
-      color: 'bg-red-500',
-      text: 'text-white',
-    },
-    {
-      id: 3,
-      label: 'Presenter',
-      sub: '(Speaking)',
-      color: 'bg-orange-500',
-      text: 'text-white',
-    },
-    {
-      id: 2,
-      label: 'Conversation',
-      sub: '(Table Talk)',
-      color: 'bg-yellow-400',
-      text: 'text-slate-900',
-    },
-    {
-      id: 1,
-      label: 'Whisper',
-      sub: '(Partner Talk)',
-      color: 'bg-green-500',
-      text: 'text-white',
-    },
-    {
-      id: 0,
-      label: 'Silence',
-      sub: '(Independent)',
-      color: 'bg-blue-500',
-      text: 'text-white',
-    },
-  ];
-
-  const modes: {
-    id: 'individual' | 'partner' | 'group';
-    label: string;
-    icon: React.ElementType;
-  }[] = [
-    { id: 'individual', label: 'On Your Own', icon: Icons.User },
-    { id: 'partner', label: 'With a Partner', icon: Icons.Users },
-    { id: 'group', label: 'With a Group', icon: Icons.UsersRound },
-  ];
-
-  return (
-    <div
-      className={`flex h-full w-full p-2 gap-3 bg-transparent overflow-hidden select-none font-${globalStyle.fontFamily}`}
-    >
-      {/* Voice Level Thermometer */}
-
-      <div className="flex-1 flex flex-col gap-1.5 h-full">
-        <label className="text-xxs  uppercase text-slate-500 tracking-widest pl-1 mb-1">
-          Voice Level
-        </label>
-        {voices.map((v) => (
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
+        {VOLUME_OPTIONS.map((v) => (
           <button
             key={v.id}
             onClick={() =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  voiceLevel: voiceLevel === v.id ? null : v.id,
-                },
-              })
+              updateConfig({ voiceLevel: voiceLevel === v.id ? null : v.id })
             }
-            className={`flex items-center gap-3 px-3 flex-1 rounded-xl border-2 transition-all duration-300 ${
+            className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
               voiceLevel === v.id
-                ? `${v.color} border-white shadow-lg scale-[1.02] ${v.text}`
-                : 'border-white/20 bg-white/30 text-slate-600 hover:bg-white/50'
+                ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
+                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
             }`}
           >
-            <span className="text-2xl font-black opacity-40">{v.id}</span>
-            <div className="flex flex-col items-start leading-none">
-              <span
-                className="font-black uppercase tracking-tight"
-                style={{ fontSize: `${voiceSize}px` }}
-              >
+            <span className="text-2xl font-black opacity-40 w-6">{v.id}</span>
+            <div className="text-left">
+              <div className="font-black uppercase text-sm leading-tight">
                 {v.label}
-              </span>
-              <span
-                className="font-bold opacity-60 uppercase"
-                style={{ fontSize: `${voiceSize * 0.7}px` }}
-              >
+              </div>
+              <div className="text-[10px] font-bold opacity-60 uppercase">
                 {v.sub}
-              </span>
+              </div>
             </div>
+            {voiceLevel === v.id && (
+              <CheckCircle2 className="ml-auto" size={18} />
+            )}
           </button>
         ))}
       </div>
+    </div>
+  );
 
-      {/* Working Mode Section */}
-      <div className="w-28 flex flex-col gap-2 h-full border-l border-white/20 pl-3">
-        {' '}
-        <label className="text-xxs  uppercase text-slate-500 tracking-widest mb-1">
-          Working...
-        </label>
-        {modes.map((m) => (
+  const renderGroupsView = () => (
+    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-200">
+      <div className="flex items-center p-3 border-b shrink-0">
+        <button
+          onClick={() => setActiveCategory(null)}
+          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <h3 className="font-bold text-slate-800">Group Size</h3>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
+        {GROUP_OPTIONS.map((g) => (
           <button
-            key={m.id}
+            key={g.id}
             onClick={() =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  workMode: workMode === m.id ? null : m.id,
-                },
+              updateConfig({ workMode: workMode === g.id ? null : g.id })
+            }
+            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+              workMode === g.id
+                ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
+                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+            }`}
+          >
+            <g.icon size={24} strokeWidth={2.5} />
+            <span className="font-black uppercase text-sm tracking-wide">
+              {g.label}
+            </span>
+            {workMode === g.id && (
+              <CheckCircle2 className="ml-auto" size={18} />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderInteractionView = () => (
+    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-200">
+      <div className="flex items-center p-3 border-b shrink-0">
+        <button
+          onClick={() => setActiveCategory(null)}
+          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <h3 className="font-bold text-slate-800">Interaction</h3>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
+        {INTERACTION_OPTIONS.map((i) => (
+          <button
+            key={i.id}
+            onClick={() =>
+              updateConfig({
+                interactionMode: interactionMode === i.id ? null : i.id,
               })
             }
-            className={`flex flex-col items-center justify-center flex-1 gap-1 rounded-2xl border-2 transition-all duration-300 ${
-              workMode === m.id
-                ? 'bg-indigo-600 border-white shadow-lg scale-105 text-white'
-                : 'border-white/20 bg-white/30 text-slate-600 hover:bg-white/50'
+            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+              interactionMode === i.id
+                ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
+                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
             }`}
           >
-            <m.icon className="w-6 h-6" strokeWidth={2.5} />
-            <span
-              className="font-black uppercase text-center leading-tight px-1"
-              style={{ fontSize: `${labelSize}px` }}
-            >
-              {m.label}
+            <i.icon size={24} strokeWidth={2.5} />
+            <span className="font-black uppercase text-sm tracking-wide">
+              {i.label}
             </span>
+            {interactionMode === i.id && (
+              <CheckCircle2 className="ml-auto" size={18} />
+            )}
           </button>
         ))}
       </div>
+    </div>
+  );
+
+  // --- Main Category Picker ---
+
+  if (activeCategory === 'volume') return renderVolumeView();
+  if (activeCategory === 'groups') return renderGroupsView();
+  if (activeCategory === 'interaction') return renderInteractionView();
+
+  const selectedVolume = VOLUME_OPTIONS.find((v) => v.id === voiceLevel);
+  const selectedGroup = GROUP_OPTIONS.find((g) => g.id === workMode);
+  const selectedInteraction = INTERACTION_OPTIONS.find(
+    (i) => i.id === interactionMode
+  );
+
+  return (
+    <div className="flex flex-col h-full bg-slate-50 p-3 gap-3 overflow-hidden animate-in fade-in duration-200">
+      <button
+        onClick={() => setActiveCategory('volume')}
+        className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+          selectedVolume
+            ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
+            : 'bg-white border-white text-slate-600 hover:border-slate-200 shadow-sm'
+        }`}
+      >
+        <div
+          className={`p-3 rounded-xl ${selectedVolume ? 'bg-white/50' : 'bg-slate-50'}`}
+        >
+          <Volume2 size={24} strokeWidth={2.5} />
+        </div>
+        <div className="text-left flex-1">
+          <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">
+            Volume
+          </div>
+          <div className="font-black uppercase text-sm tracking-tight">
+            {selectedVolume ? selectedVolume.label : 'Not Set'}
+          </div>
+        </div>
+      </button>
+
+      <button
+        onClick={() => setActiveCategory('groups')}
+        className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+          selectedGroup
+            ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
+            : 'bg-white border-white text-slate-600 hover:border-slate-200 shadow-sm'
+        }`}
+      >
+        <div
+          className={`p-3 rounded-xl ${selectedGroup ? 'bg-white/50' : 'bg-slate-50'}`}
+        >
+          <Users size={24} strokeWidth={2.5} />
+        </div>
+        <div className="text-left flex-1">
+          <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">
+            Group Size
+          </div>
+          <div className="font-black uppercase text-sm tracking-tight">
+            {selectedGroup ? selectedGroup.label : 'Not Set'}
+          </div>
+        </div>
+      </button>
+
+      <button
+        onClick={() => setActiveCategory('interaction')}
+        className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+          selectedInteraction
+            ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
+            : 'bg-white border-white text-slate-600 hover:border-slate-200 shadow-sm'
+        }`}
+      >
+        <div
+          className={`p-3 rounded-xl ${selectedInteraction ? 'bg-white/50' : 'bg-slate-50'}`}
+        >
+          <MessagesSquare size={24} strokeWidth={2.5} />
+        </div>
+        <div className="text-left flex-1">
+          <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">
+            Interaction
+          </div>
+          <div className="font-black uppercase text-sm tracking-tight">
+            {selectedInteraction ? selectedInteraction.label : 'Not Set'}
+          </div>
+        </div>
+      </button>
     </div>
   );
 };

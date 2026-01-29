@@ -40,20 +40,40 @@ const DEFAULT_PRESETS = [
     label: 'Corkboard',
   },
   {
-    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000',
-    label: 'Geometric',
+    url: 'https://images.unsplash.com/photo-1564507592333-c60657451dd7?q=80&w=2000',
+    label: 'Taj Mahal',
   },
   {
-    url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000',
-    label: 'Nature',
+    url: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=2000',
+    label: 'Colosseum',
   },
   {
-    url: 'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000',
-    label: 'Paper',
+    url: 'https://images.unsplash.com/photo-1587590227264-0ac64ce63ce8?q=80&w=2000',
+    label: 'Machu Picchu',
   },
   {
-    url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000',
-    label: 'Tech',
+    url: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=80&w=2000',
+    label: 'Great Wall of China',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1579606030136-1e09549f2873?q=80&w=2000',
+    label: 'Petra',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2000',
+    label: 'Chichén Itzá',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a7447?q=80&w=2000',
+    label: 'Pyramids of Giza',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?q=80&w=2000',
+    label: 'Christ the Redeemer',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?q=80&w=2000',
+    label: 'Eiffel Tower',
   },
 ];
 
