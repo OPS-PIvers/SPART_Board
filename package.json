@@ -7,6 +7,10 @@
   "scripts": {
     "dev": "node scripts/generate-version.js && vite",
     "build": "node scripts/generate-version.js && vite build",
+    "build:functions": "cd functions && pnpm run build",
+    "build:all": "pnpm run build && pnpm run build:functions",
+    "install:functions": "cd functions && pnpm install",
+    "install:all": "pnpm install && pnpm run install:functions",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
