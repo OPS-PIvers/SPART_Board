@@ -282,7 +282,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       });
 
     updateWidget(widget.id, { config: { ...config, items: newItems } });
-  }, [debouncedText, widget.id, updateWidget, config, items]);
+  }, [debouncedText, widget.id, updateWidget]);
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);
