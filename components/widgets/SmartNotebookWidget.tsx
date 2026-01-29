@@ -86,8 +86,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     } else {
       setActiveNotebook(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeNotebookId, notebooks]);
+  }, [activeNotebookId, notebooks, widget.id, updateWidget, config]);
 
   // Clamp current page index when notebook changes
   useEffect(() => {
@@ -112,33 +111,35 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       const { title, pages, assets } = await parseNotebookFile(file);
       const notebookId = crypto.randomUUID();
 
-      // Upload pages sequentially to avoid overwhelming network/Firebase
-      const uploadedUrls: string[] = [];
-      const uploadedPaths: string[] = [];
-      for (let index = 0; index < pages.length; index += 1) {
-        const { blob, extension } = pages[index];
-        const pageFile = new File([blob], `page${index}.${extension}`, {
-          type: blob.type,
-        });
-        const path = `users/${user.uid}/notebooks/${notebookId}/page${index}.${extension}`;
-        const url = await uploadFile(path, pageFile);
-        uploadedUrls.push(url);
-        uploadedPaths.push(path);
-      }
+      // Helper to upload a set of blobs to a specific path structure
+      const uploadBatch = async (
+        items: { blob: Blob; extension: string }[],
+        basePath: string,
+        namePrefix: string
+      ) => {
+        return Promise.all(
+          items.map(async (item, index) => {
+            const fileName = `${namePrefix}${index}.${item.extension}`;
+            const fileObj = new File([item.blob], fileName, {
+              type: item.blob.type,
+            });
+            const path = `${basePath}/${fileName}`;
+            const url = await uploadFile(path, fileObj);
+            return { url, path };
+          })
+        );
+      };
 
-      // Upload assets
-      const uploadedAssetUrls: string[] = [];
-      if (assets) {
-        for (let index = 0; index < assets.length; index += 1) {
-          const { blob, extension } = assets[index];
-          const assetFile = new File([blob], `asset${index}.${extension}`, {
-            type: blob.type,
-          });
-          const path = `users/${user.uid}/notebooks/${notebookId}/assets/asset${index}.${extension}`;
-          const url = await uploadFile(path, assetFile);
-          uploadedAssetUrls.push(url);
-        }
-      }
+      // Upload pages and assets in parallel batches
+      const notebookPath = `users/${user.uid}/notebooks/${notebookId}`;
+      const [uploadedPages, uploadedAssets] = await Promise.all([
+        uploadBatch(pages, notebookPath, 'page'),
+        assets ? uploadBatch(assets, `${notebookPath}/assets`, 'asset') : [],
+      ]);
+
+      const uploadedUrls = uploadedPages.map((p) => p.url);
+      const uploadedPaths = uploadedPages.map((p) => p.path);
+      const uploadedAssetUrls = uploadedAssets.map((a) => a.url);
 
       const notebook: NotebookItem = {
         id: notebookId,
