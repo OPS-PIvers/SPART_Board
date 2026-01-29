@@ -923,13 +923,17 @@ export const FeaturePermissionsManager: React.FC = () => {
                                               type="file"
                                               className="hidden"
                                               accept="image/*"
-                                              onChange={(e) =>
-                                                handleWeatherImageUpload(
-                                                  tool.type,
-                                                  range.id,
-                                                  e.target.files?.[0] as File
-                                                )
-                                              }
+                                              onChange={(e) => {
+                                                const file =
+                                                  e.target.files?.[0];
+                                                if (file) {
+                                                  void handleWeatherImageUpload(
+                                                    tool.type,
+                                                    range.id,
+                                                    file
+                                                  );
+                                                }
+                                              }}
                                               disabled={!!uploadingRangeId}
                                             />
                                           </label>
@@ -1012,7 +1016,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                       'Are you sure you want to delete this routine?'
                                     )
                                   ) {
-                                    deleteRoutine(routine.id);
+                                    void deleteRoutine(routine.id);
                                   }
                                 }}
                                 className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600 transition-colors"

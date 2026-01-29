@@ -60,15 +60,15 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       // Preserve ID but overwrite other fields
       onChange({
         ...routine,
-        name: data.name || routine.name,
-        grades: (data.grades as string) || routine.grades,
-        icon: data.icon || routine.icon,
-        color: data.color || routine.color,
+        name: data.name ?? routine.name,
+        grades: (data.grades as string) ?? routine.grades,
+        icon: data.icon ?? routine.icon,
+        color: data.color ?? routine.color,
         steps:
           data.steps?.map((s) => ({
             ...s,
             stickerUrl: undefined, // Ensure type compatibility
-          })) || routine.steps,
+          })) ?? routine.steps,
       });
     } catch (error) {
       console.error('Magic Design failed:', error);
@@ -264,7 +264,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files?.[0])
-                          handleStickerUpload(e.target.files[0], i);
+                          void handleStickerUpload(e.target.files[0], i);
                       }}
                       disabled={uploadingStepIndex !== null}
                     />
