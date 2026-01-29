@@ -7,6 +7,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
   InstructionalRoutinesConfig,
 } from '../../types';
+import { useDebounce } from '../../hooks/useDebounce';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
@@ -266,9 +267,14 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     items.map((i) => i.text).join('\n')
   );
 
-  const handleBulkChange = (text: string) => {
-    setLocalText(text);
-    const lines = text.split('\n');
+  const debouncedText = useDebounce(localText, 500);
+
+  // Sync debounced text to widget config
+  useEffect(() => {
+    const currentText = items.map((i) => i.text).join('\n');
+    if (debouncedText === currentText) return;
+
+    const lines = debouncedText.split('\n');
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
       .map((line, idx) => {
@@ -282,6 +288,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       });
 
     updateWidget(widget.id, { config: { ...config, items: newItems } });
+  }, [debouncedText, widget.id, updateWidget]);
+
+  const handleBulkChange = (text: string) => {
+    setLocalText(text);
   };
 
   // Nexus Connection: Import from Instructional Routines
