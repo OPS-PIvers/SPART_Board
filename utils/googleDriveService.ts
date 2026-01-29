@@ -62,29 +62,40 @@ export class GoogleDriveService {
   }
 
   /**
-   * Search for the "School Boards" folder or create it.
+   * Search for a folder by name within a parent folder.
    */
-  async getOrCreateAppFolder(): Promise<string> {
-    const folders = await this.listFiles(
-      "name = 'School Boards' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-    );
+  async getOrCreateFolder(
+    folderName: string,
+    parentId?: string
+  ): Promise<string> {
+    let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    if (parentId) {
+      query += ` and '${parentId}' in parents`;
+    }
+
+    const folders = await this.listFiles(query);
 
     if (folders.length > 0) {
       return folders[0].id;
     }
 
     // Create folder
+    const body: { name: string; mimeType: string; parents?: string[] } = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+    };
+    if (parentId) {
+      body.parents = [parentId];
+    }
+
     const response = await fetch(`${DRIVE_API_URL}/files`, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify({
-        name: 'School Boards',
-        mimeType: 'application/vnd.google-apps.folder',
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create app folder in Drive');
+      throw new Error(`Failed to create folder ${folderName} in Drive`);
     }
 
     const folder = (await response.json()) as DriveFileCreateResponse;
@@ -92,10 +103,31 @@ export class GoogleDriveService {
   }
 
   /**
+   * Get the main app folder.
+   */
+  async getAppFolder(): Promise<string> {
+    return this.getOrCreateFolder('School Boards');
+  }
+
+  /**
+   * Get a specific subfolder path (e.g., "Assets/Backgrounds")
+   */
+  async getFolderPath(path: string): Promise<string> {
+    const parts = path.split('/').filter(Boolean);
+    let parentId = await this.getAppFolder();
+
+    for (const part of parts) {
+      parentId = await this.getOrCreateFolder(part, parentId);
+    }
+
+    return parentId;
+  }
+
+  /**
    * Export a dashboard to Google Drive as a .spart file.
    */
   async exportDashboard(dashboard: Dashboard): Promise<string> {
-    const folderId = await this.getOrCreateAppFolder();
+    const folderId = await this.getFolderPath('Dashboards');
     const fileName = `${dashboard.name}.spart`;
 
     const metadata = {
@@ -146,7 +178,7 @@ export class GoogleDriveService {
       // Update existing
       const fileId = existingFiles[0].id;
 
-      // Update metadata
+      // Update metadata (name might have changed)
       await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
         method: 'PATCH',
         headers: this.headers,
@@ -166,12 +198,14 @@ export class GoogleDriveService {
         }
       );
 
-      if (!uploadResponse.ok)
+      if (!uploadResponse.ok) {
+        const errorBody = await uploadResponse.text();
+        console.error('Drive API Error (Update Content):', errorBody);
         throw new Error('Failed to update dashboard in Drive');
+      }
       return fileId;
     } else {
       // Create new
-      // Simple upload (multipart would be better but this is easier for now)
       // First create metadata
       const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
         method: 'POST',
@@ -179,8 +213,11 @@ export class GoogleDriveService {
         body: JSON.stringify(metadata),
       });
 
-      if (!createResponse.ok)
+      if (!createResponse.ok) {
+        const errorBody = await createResponse.text();
+        console.error('Drive API Error (Create Metadata):', errorBody);
         throw new Error('Failed to create dashboard metadata in Drive');
+      }
       const file = (await createResponse.json()) as DriveFileCreateResponse;
 
       // Then upload content
@@ -196,17 +233,24 @@ export class GoogleDriveService {
         }
       );
 
-      if (!uploadResponse.ok)
+      if (!uploadResponse.ok) {
+        const errorBody = await uploadResponse.text();
+        console.error('Drive API Error (Upload Content):', errorBody);
         throw new Error('Failed to upload dashboard content to Drive');
+      }
       return file.id;
     }
   }
 
   /**
-   * Upload a general file to the "School Boards" folder.
+   * Upload a general file to a specific Drive folder path.
    */
-  async uploadFile(file: File | Blob, fileName: string): Promise<DriveFile> {
-    const folderId = await this.getOrCreateAppFolder();
+  async uploadFile(
+    file: File | Blob,
+    fileName: string,
+    folderPath: string = 'Misc'
+  ): Promise<DriveFile> {
+    const folderId = await this.getFolderPath(folderPath);
 
     const metadata = {
       name: fileName,

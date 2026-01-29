@@ -156,7 +156,8 @@ export const useRosters = (user: User | null) => {
       void driveService
         .uploadFile(
           new Blob([rostersJson], { type: 'application/json' }),
-          'rosters.json'
+          'rosters.json',
+          'Data'
         )
         .then(() => {
           lastExportedRostersRef.current = rostersJson;
