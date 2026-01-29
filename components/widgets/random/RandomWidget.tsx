@@ -555,8 +555,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           size="sm"
           shape="pill"
           onClick={() => {
-            // isGroupData check in render ensures this is safe, but we cast for TS
-            const groups = displayResult as string[][];
+            // isGroupData check in render ensures this is safe
+            const groups = displayResult;
             const newTeams: ScoreboardTeam[] = groups.map((g, i) => ({
               id: crypto.randomUUID(),
               name: `Group ${i + 1}`,

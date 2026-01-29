@@ -2,11 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { RandomWidget } from './RandomWidget';
 import { useDashboard } from '../../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import {
-  WidgetData,
-  RandomConfig,
-  ScoreboardConfig,
-} from '../../../types';
+import { WidgetData, RandomConfig } from '../../../types';
 
 // Mock useDashboard
 vi.mock('../../../context/useDashboard');
@@ -33,7 +29,9 @@ describe('RandomWidget (Nexus)', () => {
       mockDashboardContext
     );
     // Mock crypto.randomUUID
-    global.crypto.randomUUID = vi.fn(() => 'test-uuid');
+    global.crypto.randomUUID = vi.fn(
+      () => 'test-uuid'
+    ) as unknown as () => `${string}-${string}-${string}-${string}-${string}`;
   });
 
   it('renders "Create Scoreboard" button when in groups mode with results', () => {
@@ -51,10 +49,7 @@ describe('RandomWidget (Nexus)', () => {
         firstNames: 'Alice\nCharlie',
         lastNames: 'Bob\nDave',
         // Simulate existing group result
-        lastResult: [
-          { names: ['Alice Bob'] },
-          { names: ['Charlie Dave'] },
-        ],
+        lastResult: [{ names: ['Alice Bob'] }, { names: ['Charlie Dave'] }],
       } as RandomConfig,
     };
 
@@ -98,10 +93,7 @@ describe('RandomWidget (Nexus)', () => {
         mode: 'groups',
         firstNames: 'Alice\nCharlie',
         lastNames: 'Bob\nDave',
-        lastResult: [
-          { names: ['Alice Bob'] },
-          { names: ['Charlie Dave'] },
-        ],
+        lastResult: [{ names: ['Alice Bob'] }, { names: ['Charlie Dave'] }],
       } as RandomConfig,
     };
 
@@ -115,7 +107,9 @@ describe('RandomWidget (Nexus)', () => {
       expect.objectContaining({
         x: widget.x + widget.w + 20,
         y: widget.y,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           teams: expect.arrayContaining([
             expect.objectContaining({
               name: 'Group 1',
