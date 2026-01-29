@@ -203,9 +203,9 @@ describe('LunchCountSettings', () => {
   });
 
   it('updates manual lunch names when in manual mode', () => {
-    const manualWidget = {
+    const manualWidget: WidgetData = {
       ...mockWidget,
-      config: { ...mockWidget.config, isManualMode: true },
+      config: { ...mockWidget.config, isManualMode: true } as LunchCountConfig,
     };
 
     render(<LunchCountSettings widget={manualWidget} />);
