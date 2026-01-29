@@ -1,4 +1,5 @@
 import * as functionsV1 from 'firebase-functions/v1';
+import * as functionsV2 from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
@@ -441,23 +442,24 @@ interface JulesData {
   description: string;
 }
 
-export const triggerJulesWidgetGeneration = functionsV1
-  .runWith({
+export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
+  {
     secrets: ['JULES_API_KEY'],
     timeoutSeconds: 300,
-    memory: '256MB',
-  })
-  .https.onCall(async (data: JulesData, context) => {
-    if (!context.auth) {
-      throw new functionsV1.https.HttpsError(
+    memory: '256MiB',
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new functionsV2.https.HttpsError(
         'unauthenticated',
         'The function must be called while authenticated.'
       );
     }
 
-    const email = context.auth.token.email;
+    const email = request.auth.token.email;
     if (!email) {
-      throw new functionsV1.https.HttpsError(
+      throw new functionsV2.https.HttpsError(
         'invalid-argument',
         'User must have an email associated with their account.'
       );
@@ -469,7 +471,7 @@ export const triggerJulesWidgetGeneration = functionsV1
       .doc(email.toLowerCase())
       .get();
     if (!adminDoc.exists) {
-      throw new functionsV1.https.HttpsError(
+      throw new functionsV2.https.HttpsError(
         'permission-denied',
         'This function is restricted to administrators.'
       );
@@ -477,22 +479,23 @@ export const triggerJulesWidgetGeneration = functionsV1
 
     const julesApiKey = process.env.JULES_API_KEY;
     if (!julesApiKey) {
-      throw new functionsV1.https.HttpsError(
+      throw new functionsV2.https.HttpsError(
         'internal',
         'Jules API Key is missing on the server.'
       );
     }
 
     const repoName = 'google-labs-code/SPART_Board';
+    const { widgetName, description } = request.data;
 
     const prompt = `
       As a Jules Agent, your task is to implement a new widget for the School Boards application.
       
-      Widget Name: ${data.widgetName}
-      Features Requested: ${data.description}
+      Widget Name: ${widgetName}
+      Features Requested: ${description}
       
       Implementation Requirements:
-      1. Create a new component in 'components/widgets/' named '${data.widgetName.replace(/\s+/g, '')}Widget.tsx'.
+      1. Create a new component in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.tsx'.
       2. Follow the existing patterns:
          - Accept 'widget: WidgetData' as a prop.
          - Use 'useDashboard()' for state updates.
@@ -502,7 +505,7 @@ export const triggerJulesWidgetGeneration = functionsV1
       4. Add metadata to 'TOOLS' in 'config/tools.ts'.
       5. Map the component in 'WidgetRenderer.tsx'.
       6. Define default configuration in 'context/DashboardContext.tsx' (inside the 'addWidget' function).
-      7. Add a unit test in 'components/widgets/' named '${data.widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
+      7. Add a unit test in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
       
       Please ensure all code is strictly typed and follows the project's 'Zero-tolerance' linting policy.
     `;
@@ -539,9 +542,10 @@ export const triggerJulesWidgetGeneration = functionsV1
         errorMessage = error.message;
       }
       console.error('Jules API Error:', errorMessage);
-      throw new functionsV1.https.HttpsError(
+      throw new functionsV2.https.HttpsError(
         'internal',
         `Failed to trigger Jules: ${errorMessage}`
       );
     }
-  });
+  }
+);
