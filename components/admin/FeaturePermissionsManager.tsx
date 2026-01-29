@@ -1002,7 +1002,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                           >
                             <div className="flex items-center gap-2">
                               <div
-                                className={`p-1.5 rounded-md bg-${routine.color || 'blue'}-50 text-${routine.color || 'blue'}-600`}
+                                className={`p-1.5 rounded-md ${getRoutineColorClasses(routine.color || 'blue').bg} ${getRoutineColorClasses(routine.color || 'blue').text}`}
                               >
                                 <div className="w-3 h-3 rounded-full bg-current opacity-50" />
                               </div>
@@ -1025,13 +1025,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => {
-                                  if (
-                                    confirm(
-                                      'Are you sure you want to delete this routine?'
-                                    )
-                                  ) {
-                                    void deleteRoutine(routine.id);
-                                  }
+                                  setDeleteConfirm({
+                                    routineId: routine.id,
+                                    routineName: routine.name,
+                                  });
                                 }}
                                 className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600 transition-colors"
                                 title="Delete Routine"
