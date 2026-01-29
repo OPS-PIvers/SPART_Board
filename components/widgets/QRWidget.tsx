@@ -4,7 +4,10 @@ import { WidgetData, QRConfig, TextConfig } from '../../types';
 import { Link, AlertCircle } from 'lucide-react';
 
 const stripHtml = (html: string) => {
-  if (typeof DOMParser === 'undefined') return html;
+  if (typeof DOMParser === 'undefined') {
+    // Basic fallback for SSR environments to remove HTML tags.
+    return html.replace(/<[^>]*>?/gm, '');
+  }
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return doc.body.textContent || '';
 };
@@ -16,7 +19,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Nexus Connection: Link Repeater (Text -> QR)
   useEffect(() => {
-    if (config.syncWithTextWidget && activeDashboard) {
+    if (config.syncWithTextWidget && activeDashboard?.widgets) {
       const textWidget = activeDashboard.widgets.find((w) => w.type === 'text');
       if (textWidget) {
         const textConfig = textWidget.config as TextConfig;
@@ -24,18 +27,17 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         if (plainText && plainText !== config.url) {
           updateWidget(widget.id, {
-            config: { ...config, url: plainText } as QRConfig,
+            config: { url: plainText, syncWithTextWidget: true } as QRConfig,
           });
         }
       }
     }
   }, [
     config.syncWithTextWidget,
-    activeDashboard,
+    activeDashboard?.widgets,
     config.url,
     widget.id,
     updateWidget,
-    config,
   ]);
 
   // Use a simple public API for QR codes
