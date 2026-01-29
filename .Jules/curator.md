@@ -53,3 +53,14 @@
 **Update:** Functions Dependencies
 **Action:** Updated `axios` (1.13.3), `firebase-admin` (13.6.0), `@google/genai` (1.38.0).
 **Verification:** Ran `pnpm build` in functions - All passed.
+
+## 2025-02-12 - [Security Audit & Fixes]
+
+**Security:** `hono` & `tar`
+**Reason:** Found vulnerabilities (Hono: XSS, IP Spoofing; Tar: Arbitrary File Creation).
+**Action:** Added `hono` to `devDependencies` (^4.11.7) and updated overrides for `hono` (^4.11.7) and `tar` (^7.5.7).
+**Verification:** Ran `pnpm audit` (0 vulnerabilities) and `pnpm test` (Passed).
+
+**Update:** Functions Dependencies
+**Action:** Updated `axios` (^1.13.4) and `firebase-functions` (^7.0.5) in `functions/`.
+**Verification:** Ran `pnpm build` in functions - All passed.
