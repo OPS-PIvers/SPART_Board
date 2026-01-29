@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useDebounce } from '../../hooks/useDebounce';
 import {
   ChecklistConfig,
   ChecklistItem,
@@ -266,9 +267,23 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     items.map((i) => i.text).join('\n')
   );
 
-  const handleBulkChange = (text: string) => {
-    setLocalText(text);
-    const lines = text.split('\n');
+  // Sync local text with items from props (handling external updates)
+  useEffect(() => {
+    const currentText = items.map((i) => i.text).join('\n');
+    // Only update if strictly different to avoid cursor jumps if possible,
+    // though for a textarea complete replacement usually resets cursor anyway.
+    // Ideally we'd track if the user is editing, but for now we follow the simple sync pattern.
+    setLocalText((prev) => (prev !== currentText ? currentText : prev));
+  }, [items]);
+
+  const debouncedText = useDebounce(localText, 500);
+
+  // Persist changes when debounced text updates
+  useEffect(() => {
+    const currentText = items.map((i) => i.text).join('\n');
+    if (debouncedText === currentText) return;
+
+    const lines = debouncedText.split('\n');
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
       .map((line, idx) => {
@@ -282,6 +297,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       });
 
     updateWidget(widget.id, { config: { ...config, items: newItems } });
+  }, [debouncedText, items, config, widget.id, updateWidget]);
+
+  const handleBulkChange = (text: string) => {
+    setLocalText(text);
   };
 
   // Nexus Connection: Import from Instructional Routines
