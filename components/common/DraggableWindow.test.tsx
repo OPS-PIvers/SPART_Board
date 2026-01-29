@@ -24,6 +24,13 @@ interface GlassCardProps {
   style?: React.CSSProperties;
 }
 
+// Helper for JSDOM missing methods
+interface HTMLElementWithCapture extends HTMLDivElement {
+  setPointerCapture: (id: number) => void;
+  hasPointerCapture: (id: number) => boolean;
+  releasePointerCapture: (id: number) => void;
+}
+
 vi.mock('./GlassCard', () => ({
   GlassCard: ({
     children,
@@ -37,6 +44,14 @@ vi.mock('./GlassCard', () => ({
       onPointerDown={onPointerDown}
       onClick={onClick}
       style={style}
+      ref={(el) => {
+        if (el) {
+          const div = el as unknown as HTMLElementWithCapture;
+          div.setPointerCapture = vi.fn();
+          div.hasPointerCapture = vi.fn().mockReturnValue(true);
+          div.releasePointerCapture = vi.fn();
+        }
+      }}
     >
       {children}
     </div>
@@ -147,12 +162,19 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const widgetContent = screen.getByTestId('widget-content');
-    const draggableArea = widgetContent.parentElement;
-    if (!draggableArea) throw new Error('Draggable area not found');
+    // The drag handle is a div with cursor-grab
+    const dragHandle = document.querySelector(
+      '.cursor-grab'
+    ) as HTMLElementWithCapture;
+    if (!dragHandle) throw new Error('Drag handle not found');
+
+    // Mock capture methods on the handle itself since it's the currentTarget
+    dragHandle.setPointerCapture = vi.fn();
+    dragHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragHandle.releasePointerCapture = vi.fn();
 
     // Start pointer at (110, 110)
-    fireEvent.pointerDown(draggableArea, {
+    fireEvent.pointerDown(dragHandle, {
       clientX: 110,
       clientY: 110,
       pointerId: 1,
@@ -193,7 +215,13 @@ describe('DraggableWindow', () => {
     );
 
     const resizeHandles = document.querySelectorAll('.resize-handle');
-    const frontResizeHandle = resizeHandles[0];
+    const frontResizeHandle = resizeHandles[0] as HTMLElementWithCapture;
+    if (!frontResizeHandle) throw new Error('Resize handle not found');
+
+    // Mock capture methods on the handle itself
+    frontResizeHandle.setPointerCapture = vi.fn();
+    frontResizeHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
+    frontResizeHandle.releasePointerCapture = vi.fn();
 
     // Start resize pointer at (300, 300)
     fireEvent.pointerDown(frontResizeHandle, {

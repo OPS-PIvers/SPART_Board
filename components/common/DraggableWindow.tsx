@@ -178,6 +178,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Don't drag if annotating
     if (isAnnotating) return;
 
+    // Prevent default browser behavior (like scroll or selection)
+    e.preventDefault();
+
     setIsDragging(true);
     document.body.classList.add('is-dragging-widget');
     const startX = e.clientX - widget.x;
@@ -185,7 +188,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const initialMouseX = e.clientX;
     const initialMouseY = e.clientY;
 
+    // Use pointer capture to ensure we get events even if pointer leaves the element
+    const targetElement = e.currentTarget as HTMLElement;
+    try {
+      targetElement.setPointerCapture(e.pointerId);
+    } catch (_err) {
+      console.warn('Failed to set pointer capture:', _err);
+    }
+
     const onPointerMove = (moveEvent: PointerEvent) => {
+      // Only process the same pointer that started the drag
+      if (moveEvent.pointerId !== e.pointerId) return;
+
       dragDistanceRef.current = Math.sqrt(
         Math.pow(moveEvent.clientX - initialMouseX, 2) +
           Math.pow(moveEvent.clientY - initialMouseY, 2)
@@ -197,20 +211,34 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       });
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== e.pointerId) return;
+
       setIsDragging(false);
       document.body.classList.remove('is-dragging-widget');
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      try {
+        if (targetElement.hasPointerCapture(e.pointerId)) {
+          targetElement.releasePointerCapture(e.pointerId);
+        }
+      } catch (_err) {
+        // Ignore capture release errors
+      }
     };
 
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
   };
 
   const handleResizeStart = (e: React.PointerEvent) => {
     if (isMaximized) return;
     e.stopPropagation();
+    e.preventDefault();
+
     setIsResizing(true);
     document.body.classList.add('is-dragging-widget');
     const startW = widget.w;
@@ -218,22 +246,43 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const startX = e.clientX;
     const startY = e.clientY;
 
+    const targetElement = e.currentTarget as HTMLElement;
+    try {
+      targetElement.setPointerCapture(e.pointerId);
+    } catch (_err) {
+      console.warn('Failed to set pointer capture:', _err);
+    }
+
     const onPointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== e.pointerId) return;
+
       updateWidget(widget.id, {
         w: Math.max(150, startW + (moveEvent.clientX - startX)),
         h: Math.max(100, startH + (moveEvent.clientY - startY)),
       });
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== e.pointerId) return;
+
       setIsResizing(false);
       document.body.classList.remove('is-dragging-widget');
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      try {
+        if (targetElement.hasPointerCapture(e.pointerId)) {
+          targetElement.releasePointerCapture(e.pointerId);
+        }
+      } catch (_err) {
+        // Ignore capture release errors
+      }
     };
 
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
   };
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
@@ -328,10 +377,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               className="front absolute inset-0 w-full h-full flex flex-col"
               style={{
                 pointerEvents: widget.flipped ? 'none' : 'auto',
-                touchAction: 'none', // Critical for dragging on touch
+                touchAction: 'none',
               }}
-              onPointerDown={handleDragStart}
             >
+              {/* Drag Handle Area (Top 40px) */}
+              <div
+                className="absolute top-0 left-0 right-0 h-10 z-20 cursor-grab active:cursor-grabbing"
+                onPointerDown={handleDragStart}
+                style={{ touchAction: 'none' }}
+              />
+
               {showConfirm && (
                 <div
                   className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
@@ -489,7 +544,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               className="back absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col bg-white/60 backdrop-blur-xl"
               style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
             >
-              <div className="flex items-center justify-between px-3 py-2 bg-white/50 border-b border-white/30">
+              {/* Drag Handle Area (Top 40px) */}
+              <div
+                className="absolute top-0 left-0 right-0 h-10 z-20 cursor-grab active:cursor-grabbing"
+                onPointerDown={handleDragStart}
+                style={{ touchAction: 'none' }}
+              />
+
+              <div className="flex items-center justify-between px-3 py-2 bg-white/50 border-b border-white/30 relative z-30">
                 <span className="text-xs font-bold text-slate-700 uppercase">
                   Settings
                 </span>

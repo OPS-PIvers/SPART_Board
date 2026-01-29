@@ -97,6 +97,13 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     // Prevent dragging the window (parent DraggableWindow)
     e.stopPropagation();
 
+    const targetElement = e.currentTarget as HTMLElement;
+    try {
+      targetElement.setPointerCapture(e.pointerId);
+    } catch (_err) {
+      console.warn('Failed to set pointer capture in AnnotationCanvas:', _err);
+    }
+
     setIsDrawing(true);
     const pos = getPos(e);
     setCurrentPath([pos]);
@@ -112,6 +119,16 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   const handleEnd = (e: React.PointerEvent) => {
     if (!isDrawing) return;
     e.stopPropagation();
+
+    const targetElement = e.currentTarget as HTMLElement;
+    try {
+      if (targetElement.hasPointerCapture(e.pointerId)) {
+        targetElement.releasePointerCapture(e.pointerId);
+      }
+    } catch (_err) {
+      // Ignore
+    }
+
     setIsDrawing(false);
     if (currentPath.length > 0) {
       const newPath: Path = { points: currentPath, color, width };
@@ -127,6 +144,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       onPointerDown={handleStart}
       onPointerMove={handleMove}
       onPointerUp={handleEnd}
+      onPointerCancel={handleEnd}
       onPointerLeave={handleEnd}
       style={{ touchAction: 'none' }}
     />
