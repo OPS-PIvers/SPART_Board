@@ -6,12 +6,10 @@ import {
   deleteObject,
 } from 'firebase/storage';
 import { storage } from '../config/firebase';
-import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
 
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
-  const { isAdmin } = useAuth();
   const { driveService } = useGoogleDrive();
 
   const uploadFile = async (path: string, file: File): Promise<string> => {
@@ -30,7 +28,7 @@ export const useStorage = () => {
     userId: string,
     file: File
   ): Promise<string> => {
-    if (!isAdmin && driveService) {
+    if (driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -55,7 +53,7 @@ export const useStorage = () => {
   };
 
   const uploadSticker = async (userId: string, file: File): Promise<string> => {
-    if (!isAdmin && driveService) {
+    if (driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -81,7 +79,7 @@ export const useStorage = () => {
     userId: string,
     blob: Blob
   ): Promise<string> => {
-    if (!isAdmin && driveService) {
+    if (driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
