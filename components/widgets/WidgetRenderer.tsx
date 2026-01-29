@@ -1,4 +1,4 @@
-import React, { memo, Suspense } from 'react';
+import React, { memo, Suspense, useMemo } from 'react';
 import {
   WidgetData,
   DrawingConfig,
@@ -114,7 +114,11 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   };
 
   // Sync config changes to session when live
-  const configJson = JSON.stringify(widget.config);
+  // OPTIMIZATION: Only serialize when config reference changes to avoid expensive JSON.stringify on every drag/render
+  const configJson = useMemo(
+    () => JSON.stringify(widget.config),
+    [widget.config]
+  );
   React.useEffect(() => {
     if (!isLive) {
       return undefined;
