@@ -64,6 +64,7 @@ export interface DashboardContextValue {
   addRoster: (name: string, students: Student[]) => Promise<string>;
   updateRoster: (id: string, updates: Partial<ClassRoster>) => Promise<void>;
   deleteRoster: (id: string) => Promise<void>;
+  duplicateRoster: (id: string) => Promise<void>;
   setActiveRoster: (id: string | null) => void;
 
   // Folder system

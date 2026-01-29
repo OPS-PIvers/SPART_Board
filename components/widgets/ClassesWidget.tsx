@@ -15,6 +15,7 @@ import {
   Edit2,
   RefreshCw,
   ExternalLink,
+  Copy,
 } from 'lucide-react';
 import { classLinkService } from '../../utils/classlinkService';
 
@@ -148,6 +149,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
     addRoster,
     updateRoster,
     deleteRoster,
+    duplicateRoster,
     activeRosterId,
     setActiveRoster,
     addToast,
@@ -319,6 +321,17 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                     title="Edit Class"
                   >
                     <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      void duplicateRoster(r.id).then(() => {
+                        addToast('Class duplicated', 'success');
+                      });
+                    }}
+                    className="p-2 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                    title="Duplicate Class"
+                  >
+                    <Copy size={16} />
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(r.id)}

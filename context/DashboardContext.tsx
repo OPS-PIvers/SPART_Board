@@ -123,6 +123,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     addRoster,
     updateRoster,
     deleteRoster,
+    duplicateRoster,
     setActiveRoster,
   } = useRosters(user);
 
@@ -1288,6 +1289,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       addRoster,
       updateRoster,
       deleteRoster,
+      duplicateRoster,
       setActiveRoster,
       addFolder,
       createFolderWithItems,
@@ -1344,6 +1346,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       addRoster,
       updateRoster,
       deleteRoster,
+      duplicateRoster,
       setActiveRoster,
       addFolder,
       createFolderWithItems,

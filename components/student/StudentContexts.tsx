@@ -175,6 +175,9 @@ const mockDashboard: DashboardContextValue = {
   deleteRoster: async () => {
     // No-op
   },
+  duplicateRoster: async () => {
+    // No-op
+  },
   setActiveRoster: () => {
     // No-op
   },

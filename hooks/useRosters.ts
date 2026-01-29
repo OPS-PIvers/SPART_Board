@@ -255,6 +255,21 @@ export const useRosters = (user: User | null) => {
     [user, activeRosterId, setActiveRoster]
   );
 
+  const duplicateRoster = useCallback(
+    async (id: string) => {
+      const original = rosters.find((r) => r.id === id);
+      if (!original) return;
+
+      const newStudents = original.students.map((s) => ({
+        ...s,
+        id: crypto.randomUUID(),
+      }));
+
+      await addRoster(`${original.name} (Copy)`, newStudents);
+    },
+    [rosters, addRoster]
+  );
+
   return useMemo(
     () => ({
       rosters,
@@ -262,6 +277,7 @@ export const useRosters = (user: User | null) => {
       addRoster,
       updateRoster,
       deleteRoster,
+      duplicateRoster,
       setActiveRoster,
     }),
     [
@@ -270,6 +286,7 @@ export const useRosters = (user: User | null) => {
       addRoster,
       updateRoster,
       deleteRoster,
+      duplicateRoster,
       setActiveRoster,
     ]
   );
