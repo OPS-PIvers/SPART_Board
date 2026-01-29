@@ -28,11 +28,7 @@ interface ClassLinkStudent {
 }
 
 interface AIData {
-  type:
-    | 'mini-app'
-    | 'poll'
-    | 'dashboard-layout'
-    | 'instructional-routine';
+  type: 'mini-app' | 'poll' | 'dashboard-layout' | 'instructional-routine';
   prompt: string;
 }
 
