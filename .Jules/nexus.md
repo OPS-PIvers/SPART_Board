@@ -23,3 +23,9 @@
 **Source:** Clock Widget
 **Destination:** Schedule Widget
 **Value:** Automatically marks schedule items as done based on the current time if a Clock widget is present.
+
+## 2025-05-24 - [Link Repeater]
+
+**Source:** Text Widget (Content)
+**Destination:** QR Widget (URL)
+**Value:** Automatically generates a QR code for any link pasted into a sticky note, saving the step of manually copying/pasting into the QR settings.

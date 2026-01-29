@@ -205,6 +205,7 @@ export interface DrawingConfig {
 
 export interface QRConfig {
   url: string;
+  syncWithTextWidget?: boolean;
 }
 
 export interface EmbedConfig {
