@@ -26,6 +26,35 @@ export const InstructionalRoutinesSettings: React.FC<{
     updateWidget(widget.id, { config: { ...config, customSteps: next } });
   };
 
+  const detectSmartTool = (text: string) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('1 min'))
+      return QUICK_TOOLS.find((t) => t.label === 'Timer (1 min)');
+    if (lower.includes('2 min'))
+      return QUICK_TOOLS.find((t) => t.label === 'Timer (2 min)');
+    if (lower.includes('5 min'))
+      return QUICK_TOOLS.find((t) => t.label === 'Timer (5 min)');
+    if (lower.includes('stopwatch'))
+      return QUICK_TOOLS.find((t) => t.label === 'Stopwatch');
+    if (
+      lower.includes('noise') ||
+      lower.includes('quiet') ||
+      lower.includes('loud')
+    )
+      return QUICK_TOOLS.find((t) => t.label === 'Noise Meter');
+    if (lower.includes('traffic') || lower.includes('light'))
+      return QUICK_TOOLS.find((t) => t.label === 'Traffic Light');
+    if (
+      lower.includes('random') ||
+      lower.includes('pick') ||
+      lower.includes('group')
+    )
+      return QUICK_TOOLS.find((t) => t.label === 'Random Picker');
+    if (lower.includes('vote') || lower.includes('poll'))
+      return QUICK_TOOLS.find((t) => t.label === 'Poll');
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       {/* Switch Routine Fix: Resets selection and flips back to grid */}
@@ -110,8 +139,31 @@ export const InstructionalRoutinesSettings: React.FC<{
               <textarea
                 value={step.text}
                 onChange={(e) => {
+                  const newVal = e.target.value;
                   const next = [...customSteps];
-                  next[i] = { ...next[i], text: e.target.value };
+                  // Smart Attach: Check for keywords if no widget is manually attached
+                  if (!step.attachedWidget) {
+                    const smartTool = detectSmartTool(newVal);
+                    if (
+                      smartTool &&
+                      smartTool.type !== 'none' &&
+                      smartTool.config
+                    ) {
+                      next[i] = {
+                        ...next[i],
+                        text: newVal,
+                        attachedWidget: {
+                          type: smartTool.type,
+                          label: smartTool.label,
+                          config: smartTool.config,
+                        },
+                      };
+                    } else {
+                      next[i] = { ...next[i], text: newVal };
+                    }
+                  } else {
+                    next[i] = { ...next[i], text: newVal };
+                  }
                   updateWidget(widget.id, {
                     config: { ...config, customSteps: next },
                   });

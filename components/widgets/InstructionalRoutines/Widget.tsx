@@ -21,6 +21,11 @@ import {
   Rocket,
   Settings,
   PlusCircle,
+  Play,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 import { LibraryManager } from './LibraryManager';
@@ -191,6 +196,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     customSteps = [],
     favorites = [],
     scaleMultiplier = 1,
+    activeStepIndex = null,
   } = config;
 
   const [isManagingLibrary, setIsManagingLibrary] = useState(false);
@@ -230,6 +236,12 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       return Math.max(8, baseSize * scaleMultiplier);
     }
 
+    // Active Mode scaling
+    if (activeStepIndex !== null) {
+      // Focus on one big step
+      return Math.max(16, Math.min(widget.w / 18, widget.h / 12));
+    }
+
     // Routine view scaling: Estimate total vertical "ems" to fit without scrolling
     // Padding (3em) + Header area (~4.5em)
     let totalVerticalEms = 7.5;
@@ -255,6 +267,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     scaleMultiplier,
     selectedRoutineId,
     customSteps.length,
+    activeStepIndex,
   ]);
 
   const displayedRoutines = useMemo(() => {
@@ -447,6 +460,133 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       selectedRoutine.icon
     ] ?? Icons.HelpCircle;
 
+  // Active Mode Render
+  if (activeStepIndex !== null && customSteps[activeStepIndex]) {
+    const activeStep = customSteps[activeStepIndex];
+    const StepIcon = activeStep.icon
+      ? (Icons as unknown as Record<string, React.ElementType>)[activeStep.icon]
+      : null;
+
+    return (
+      <div
+        className="flex flex-col h-full bg-white relative animate-in zoom-in-95 duration-300"
+        style={{ fontSize: `${dynamicFontSize}px`, padding: '1em' }}
+      >
+        {/* Active Header */}
+        <div className="flex items-center justify-between shrink-0 mb-4">
+          <div className="flex items-center gap-2 text-slate-400">
+            <span
+              className="font-black uppercase tracking-widest"
+              style={{ fontSize: '0.6em' }}
+            >
+              Step {activeStepIndex + 1} of {customSteps.length}
+            </span>
+          </div>
+          <button
+            onClick={() =>
+              updateWidget(widget.id, {
+                config: { ...config, activeStepIndex: null },
+              })
+            }
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors"
+          >
+            <X size={dynamicFontSize} />
+          </button>
+        </div>
+
+        {/* Active Content */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 px-4">
+          <div
+            className={`rounded-full p-4 mb-2 ${getRoutineColorClasses(activeStep.color ?? 'blue').bg} ${getRoutineColorClasses(activeStep.color ?? 'blue').text} ring-4 ring-offset-2 ring-transparent`}
+          >
+            {StepIcon && <StepIcon size={dynamicFontSize * 3} />}
+          </div>
+          <h3
+            className="font-bold text-slate-800 leading-tight"
+            style={{ fontSize: '1.5em' }}
+          >
+            {activeStep.text}
+          </h3>
+
+          {/* Large Launch Button */}
+          {activeStep.attachedWidget && (
+            <button
+              onClick={() =>
+                addWidget(activeStep.attachedWidget?.type as WidgetType, {
+                  config: activeStep.attachedWidget?.config,
+                })
+              }
+              className="mt-4 flex items-center gap-3 bg-brand-blue-primary text-white rounded-2xl shadow-lg hover:bg-brand-blue-dark hover:scale-105 transition-all"
+              style={{ padding: '0.75em 1.5em', fontSize: '0.8em' }}
+            >
+              <Rocket size={dynamicFontSize * 1.2} />
+              <span className="font-bold uppercase tracking-wide">
+                Launch {activeStep.attachedWidget.label}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Navigation Footer */}
+        <div className="flex items-center justify-between mt-auto pt-4 shrink-0">
+          <button
+            onClick={() => {
+              if (activeStepIndex > 0) {
+                updateWidget(widget.id, {
+                  config: { ...config, activeStepIndex: activeStepIndex - 1 },
+                });
+              }
+            }}
+            disabled={activeStepIndex === 0}
+            className="p-3 rounded-xl bg-slate-50 text-slate-600 disabled:opacity-30 hover:bg-slate-100 transition-colors"
+          >
+            <ChevronLeft size={dynamicFontSize} />
+          </button>
+
+          <div className="flex gap-1">
+            {customSteps.map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-1.5 rounded-full transition-all ${
+                  idx === activeStepIndex
+                    ? 'w-6 bg-brand-blue-primary'
+                    : 'w-1.5 bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              if (activeStepIndex < customSteps.length - 1) {
+                updateWidget(widget.id, {
+                  config: { ...config, activeStepIndex: activeStepIndex + 1 },
+                });
+              } else {
+                // Finish
+                updateWidget(widget.id, {
+                  config: { ...config, activeStepIndex: null },
+                });
+              }
+            }}
+            className="flex items-center gap-2 bg-brand-blue-primary text-white rounded-xl font-bold uppercase tracking-wider hover:bg-brand-blue-dark transition-colors shadow-sm"
+            style={{ padding: '0.6em 1.2em', fontSize: '0.7em' }}
+          >
+            {activeStepIndex === customSteps.length - 1 ? (
+              <>
+                Finish <CheckCircle size={dynamicFontSize * 0.8} />
+              </>
+            ) : (
+              <>
+                Next <ChevronRight size={dynamicFontSize * 0.8} />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const launchBloomsResource = (type: 'keyWords' | 'questionStarters') => {
     const title =
       type === 'keyWords' ? "Bloom's Key Words" : "Bloom's Sentence Starters";
@@ -518,6 +658,27 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             {selectedRoutine.grades} Protocol
           </span>
         </div>
+
+        {/* Play Button */}
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, activeStepIndex: 0 },
+            })
+          }
+          className="bg-brand-blue-primary text-white rounded-xl hover:bg-brand-blue-dark transition-all flex items-center justify-center shadow-sm hover:scale-105"
+          style={{ padding: '0.6em 1em', gap: '0.4em' }}
+          title="Start Active Mode"
+        >
+          <Play size={dynamicFontSize * 1} fill="currentColor" />
+          <span
+            className="font-black uppercase tracking-wider"
+            style={{ fontSize: '0.6em' }}
+          >
+            Play
+          </span>
+        </button>
+
         <button
           onClick={clearAllStickers}
           className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"

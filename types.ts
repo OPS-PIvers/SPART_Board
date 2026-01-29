@@ -328,6 +328,7 @@ export interface InstructionalRoutinesConfig {
   customSteps: RoutineStep[];
   favorites: string[];
   scaleMultiplier: number;
+  activeStepIndex?: number | null;
 }
 
 export interface TimeToolConfig {

@@ -138,6 +138,7 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
       customSteps: [],
       favorites: [],
       scaleMultiplier: 1,
+      activeStepIndex: null,
     },
   },
   miniApp: {

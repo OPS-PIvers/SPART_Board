@@ -31,3 +31,5 @@ Horizon is the intelligence layer of School Boards, leveraging Large Language Mo
 
 - **Admins:** Unlimited generations.
 - **Teachers:** 20 generations per 24-hour period (enforced via Cloud Functions).
+
+## 2026-01-29 - Smart Routines & Active Flow **Insight:** Teachers waste time manually launching tools during lessons. **Concept:** Turn static checklists into playable flows with predictive tool attachment.
