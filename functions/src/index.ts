@@ -112,7 +112,7 @@ export const getClassLinkRosterV1 = functionsV1
         );
       }
 
-      const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
+      const cleanTenantUrl = tenantUrl.replace(///$/, '');
 
       try {
         const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
@@ -539,7 +539,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      const sessionId = session.name?.split('/').pop() || session.id;
+      const sessionId = session.id;
       console.log(`Jules session created: ${sessionId}`);
 
       return {
