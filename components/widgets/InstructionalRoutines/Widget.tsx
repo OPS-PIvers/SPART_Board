@@ -277,6 +277,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       icon: step.icon,
       color: step.color,
       label: step.label,
+      stickerUrl: step.stickerUrl,
     }));
     updateWidget(widget.id, {
       config: { ...config, selectedRoutineId: r.id, customSteps: initialSteps },
