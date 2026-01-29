@@ -46,3 +46,37 @@ export const STICKY_NOTE_COLORS = {
   pink: '#fce7f3', // pink-100
   gray: '#f3f4f6', // gray-100
 } as const;
+
+export const ROUTINE_COLORS = [
+  'blue',
+  'indigo',
+  'violet',
+  'purple',
+  'fuchsia',
+  'pink',
+  'rose',
+  'red',
+  'orange',
+  'amber',
+  'yellow',
+  'lime',
+  'green',
+  'emerald',
+  'teal',
+  'cyan',
+  'sky',
+  'slate',
+  'zinc',
+  'stone',
+  'neutral',
+] as const;
+
+export const ROUTINE_STEP_COLORS = [
+  'blue',
+  'amber',
+  'indigo',
+  'green',
+  'slate',
+  'purple',
+  'rose',
+] as const;

@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, Save, Trash2, PlusCircle } from 'lucide-react';
 import { InstructionalRoutine } from '../../../config/instructionalRoutines';
 import { IconPicker } from './IconPicker';
+import { ROUTINE_COLORS, ROUTINE_STEP_COLORS } from '../../../config/colors';
 
 interface LibraryManagerProps {
   routine: InstructionalRoutine;
@@ -81,29 +82,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                 }
                 className="bg-slate-50 border-none rounded-xl px-2 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 flex-1"
               >
-                {[
-                  'blue',
-                  'indigo',
-                  'violet',
-                  'purple',
-                  'fuchsia',
-                  'pink',
-                  'rose',
-                  'red',
-                  'orange',
-                  'amber',
-                  'yellow',
-                  'lime',
-                  'green',
-                  'emerald',
-                  'teal',
-                  'cyan',
-                  'sky',
-                  'slate',
-                  'zinc',
-                  'stone',
-                  'neutral',
-                ].map((c) => (
+                {ROUTINE_COLORS.map((c) => (
                   <option key={c} value={c}>
                     {c.charAt(0).toUpperCase() + c.slice(1)}
                   </option>
@@ -162,15 +141,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                     }}
                     className="bg-white border-none rounded px-2 py-0.5 text-[9px] font-bold text-slate-600"
                   >
-                    {[
-                      'blue',
-                      'amber',
-                      'indigo',
-                      'green',
-                      'slate',
-                      'purple',
-                      'rose',
-                    ].map((c) => (
+                    {ROUTINE_STEP_COLORS.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>
