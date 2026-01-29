@@ -6,10 +6,12 @@ import {
   deleteObject,
 } from 'firebase/storage';
 import { storage } from '../config/firebase';
+import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
 
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
+  const { isAdmin } = useAuth();
   const { driveService } = useGoogleDrive();
 
   const getDriveViewUrl = (fileId: string): string => {
@@ -32,7 +34,7 @@ export const useStorage = () => {
     userId: string,
     file: File
   ): Promise<string> => {
-    if (driveService) {
+    if (!isAdmin && driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -57,7 +59,7 @@ export const useStorage = () => {
   };
 
   const uploadSticker = async (userId: string, file: File): Promise<string> => {
-    if (driveService) {
+    if (!isAdmin && driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -83,7 +85,7 @@ export const useStorage = () => {
     userId: string,
     blob: Blob
   ): Promise<string> => {
-    if (driveService) {
+    if (!isAdmin && driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -119,7 +121,7 @@ export const useStorage = () => {
       filePath.startsWith('https://lh3.googleusercontent.com') ||
       filePath.includes('drive.google.com')
     ) {
-      if (driveService) {
+      if (!isAdmin && driveService) {
         try {
           // Deletion of Drive assets by URL is not yet fully implemented
           console.warn(

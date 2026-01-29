@@ -48,80 +48,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     loadSharedDashboard: loadSharedDashboardFirestore,
   } = useFirestore(user?.uid ?? null);
 
-  const saveDashboard = useCallback(
-    async (dashboard: Dashboard) => {
-      // Always save to Firestore for real-time sync
-      let driveFileId = dashboard.driveFileId;
-
-      // If non-admin, also save to Drive for persistence/sharing
-      // as requested: "anything at all that users will save and share will be through Google Drive"
-      if (!isAdmin && driveService) {
-        try {
-          driveFileId = await driveService.exportDashboard(dashboard);
-        } catch (e) {
-          console.error('Failed to export to Drive during save:', e);
-        }
-      }
-
-      await saveDashboardFirestore({
-        ...dashboard,
-        driveFileId,
-      });
-    },
-    [isAdmin, driveService, saveDashboardFirestore]
-  );
-
-  const saveDashboards = useCallback(
-    async (dashboardsToSave: Dashboard[]) => {
-      await saveDashboardsFirestore(dashboardsToSave);
-
-      if (!isAdmin && driveService) {
-        for (const db of dashboardsToSave) {
-          try {
-            await driveService.exportDashboard(db);
-          } catch (e) {
-            console.error(`Failed to export dashboard ${db.name} to Drive:`, e);
-          }
-        }
-      }
-    },
-    [isAdmin, driveService, saveDashboardsFirestore]
-  );
-
-  const handleShareDashboard = useCallback(
-    async (dashboard: Dashboard): Promise<string> => {
-      // If non-admin and Drive is available, we can share via Drive.
-      // But for better compatibility, we default to Firestore sharing
-      // unless specifically requested. Here we prioritize the Firestore
-      // sharing method which is more robust for recipients.
-      if (!isAdmin && driveService) {
-        try {
-          const fileId = await driveService.exportDashboard(dashboard);
-          await driveService.makePublic(fileId);
-          return `drive-${fileId}`;
-        } catch (e) {
-          console.error('Drive sharing failed, falling back to Firestore:', e);
-        }
-      }
-      return shareDashboardFirestore(dashboard);
-    },
-    [isAdmin, driveService, shareDashboardFirestore]
-  );
-
-  const handleLoadSharedDashboard = useCallback(
-    async (shareId: string): Promise<Dashboard | null> => {
-      if (shareId.startsWith('drive-')) {
-        if (!driveService) {
-          throw new Error('Google Drive access required to load this board');
-        }
-        const fileId = shareId.replace('drive-', '');
-        return driveService.importDashboard(fileId);
-      }
-      return loadSharedDashboardFirestore(shareId);
-    },
-    [driveService, loadSharedDashboardFirestore]
-  );
-
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [pendingShareId, setPendingShareId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -217,10 +143,53 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // --- DRIVE WRAPPERS & CALLBACKS ---
 
+  const saveDashboard = useCallback(
+    async (dashboard: Dashboard) => {
+      let driveFileId = dashboard.driveFileId;
+
+      // MANDATE: Save to Drive for non-admins
+      if (!isAdmin && driveService) {
+        try {
+          driveFileId = await driveService.exportDashboard(dashboard);
+        } catch (e) {
+          console.error('Failed to export to Drive during save:', e);
+        }
+      }
+
+      await saveDashboardFirestore({
+        ...dashboard,
+        driveFileId,
+      });
+    },
+    [isAdmin, driveService, saveDashboardFirestore]
+  );
+
+  const saveDashboards = useCallback(
+    async (dashboardsToSave: Dashboard[]) => {
+      await saveDashboardsFirestore(dashboardsToSave);
+
+      if (!isAdmin && driveService) {
+        void (async () => {
+          for (const db of dashboardsToSave) {
+            try {
+              await driveService.exportDashboard(db);
+            } catch (e) {
+              console.error(
+                `Failed to export dashboard ${db.name} to Drive:`,
+                e
+              );
+            }
+          }
+        })();
+      }
+    },
+    [isAdmin, driveService, saveDashboardsFirestore]
+  );
+
   const handleDeleteDashboard = useCallback(
     async (id: string) => {
       const dashboard = dashboards.find((d) => d.id === id);
-      if (driveService && dashboard?.driveFileId) {
+      if (!isAdmin && driveService && dashboard?.driveFileId) {
         try {
           await driveService.deleteFile(dashboard.driveFileId);
         } catch (e) {
@@ -229,9 +198,38 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       await deleteDashboardFirestore(id);
     },
-    [driveService, dashboards, deleteDashboardFirestore]
+    [isAdmin, driveService, dashboards, deleteDashboardFirestore]
   );
 
+  const handleShareDashboard = useCallback(
+    async (dashboard: Dashboard): Promise<string> => {
+      if (!isAdmin && driveService) {
+        try {
+          const fileId = await driveService.exportDashboard(dashboard);
+          await driveService.makePublic(fileId);
+          return `drive-${fileId}`;
+        } catch (e) {
+          console.error('Drive sharing failed, falling back to Firestore:', e);
+        }
+      }
+      return shareDashboardFirestore(dashboard);
+    },
+    [isAdmin, driveService, shareDashboardFirestore]
+  );
+
+  const handleLoadSharedDashboard = useCallback(
+    async (shareId: string): Promise<Dashboard | null> => {
+      if (shareId.startsWith('drive-')) {
+        if (!driveService) {
+          throw new Error('Google Drive access required to load this board');
+        }
+        const fileId = shareId.replace('drive-', '');
+        return driveService.importDashboard(fileId);
+      }
+      return loadSharedDashboardFirestore(shareId);
+    },
+    [driveService, loadSharedDashboardFirestore]
+  );
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
     if (!user) {
@@ -334,7 +332,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               },
             ]);
           }
-          setMigrated(true);
+          setMigrated(true)
         })
         .catch((err) => {
           console.error('Migration error:', err);
@@ -415,7 +413,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const driveSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!user || !driveService || loading || !activeId) return;
+    // MANDATE: Only users (non-admins) sync to Drive automatically.
+    if (!user || isAdmin || !driveService || loading || !activeId) return;
 
     const active = dashboards.find((d) => d.id === activeId);
     if (!active) return;
@@ -447,6 +446,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [
     user,
+    isAdmin,
     driveService,
     dashboards,
     activeId,
