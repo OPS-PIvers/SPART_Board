@@ -28,38 +28,28 @@ export const useStorage = () => {
 
   const uploadBackgroundImage = async (
     userId: string,
-
     file: File
   ): Promise<string> => {
     if (!isAdmin && driveService) {
       setUploading(true);
-
       try {
         const driveFile = await driveService.uploadFile(
           file,
-
           `background-${Date.now()}-${file.name}`,
-
           'Assets/Backgrounds'
         );
-
         // Make it public so it can be viewed as a background
-
         await driveService.makePublic(driveFile.id);
-
         // Use webContentLink for direct image access
-
-        return driveFile.webContentLink || driveFile.webViewLink || '';
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
         setUploading(false);
       }
     }
 
     const timestamp = Date.now();
-
     return uploadFile(
       `users/${userId}/backgrounds/${timestamp}-${file.name}`,
-
       file
     );
   };
@@ -67,71 +57,54 @@ export const useStorage = () => {
   const uploadSticker = async (userId: string, file: File): Promise<string> => {
     if (!isAdmin && driveService) {
       setUploading(true);
-
       try {
         const driveFile = await driveService.uploadFile(
           file,
-
           `sticker-${Date.now()}-${file.name}`,
-
           'Assets/Stickers'
         );
-
         await driveService.makePublic(driveFile.id);
-
-        return driveFile.webContentLink || driveFile.webViewLink || '';
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
         setUploading(false);
       }
     }
 
     const timestamp = Date.now();
-
     return uploadFile(
       `users/${userId}/stickers/${timestamp}-${file.name}`,
-
       file
     );
   };
 
   const uploadScreenshot = async (
     userId: string,
-
     blob: Blob
   ): Promise<string> => {
     if (!isAdmin && driveService) {
       setUploading(true);
-
       try {
         const driveFile = await driveService.uploadFile(
           blob,
-
           `screenshot-${Date.now()}.jpg`,
-
           'Assets/Screenshots'
         );
-
         await driveService.makePublic(driveFile.id);
-
-        return driveFile.webContentLink || driveFile.webViewLink || '';
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
         setUploading(false);
       }
     }
 
     const timestamp = Date.now();
-
     const storageRef = ref(
       storage,
-
       `users/${userId}/screenshots/${timestamp}.jpg`
     );
 
     setUploading(true);
-
     try {
       const snapshot = await uploadBytes(storageRef, blob);
-
       return await getDownloadURL(snapshot.ref);
     } finally {
       setUploading(false);
@@ -140,7 +113,6 @@ export const useStorage = () => {
 
   const deleteFile = async (filePath: string): Promise<void> => {
     // If it's a Drive link, we try to delete it from Drive
-
     if (
       filePath.startsWith('https://lh3.googleusercontent.com') ||
       filePath.includes('drive.google.com')
@@ -148,13 +120,9 @@ export const useStorage = () => {
       if (driveService) {
         try {
           // We don't have the ID easily from the URL for lh3 links
-
           // but if it's a Drive export link we might.
-
           // For now, we'll try to find it by name if possible, or just log.
-
           // In a production app, we'd store URL -> ID mapping.
-
           console.warn(
             'Deletion of Drive assets by URL is not yet fully implemented'
           );
@@ -162,12 +130,10 @@ export const useStorage = () => {
           console.error('Failed to delete from Drive:', e);
         }
       }
-
       return;
     }
 
     const fileRef = ref(storage, filePath);
-
     await deleteObject(fileRef);
   };
 

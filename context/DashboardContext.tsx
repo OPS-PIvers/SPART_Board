@@ -149,9 +149,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!isAdmin && driveService) {
         try {
-          if (!driveFileId) {
-            driveFileId = await driveService.exportDashboard(dashboard);
-          }
+          driveFileId ??= await driveService.exportDashboard(dashboard);
         } catch (e) {
           console.error('Failed to export to Drive during save:', e);
         }
@@ -211,7 +209,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return shareDashboardFirestore(dashboard);
     },
-    [isAdmin, driveService]
+    [isAdmin, driveService, shareDashboardFirestore]
   );
 
   const handleLoadSharedDashboard = useCallback(
