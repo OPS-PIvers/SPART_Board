@@ -112,7 +112,7 @@ export const getClassLinkRosterV1 = functionsV1
         );
       }
 
-      const cleanTenantUrl = tenantUrl.replace(///$/, '');
+      const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
 
       try {
         const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
@@ -442,24 +442,23 @@ interface JulesData {
   description: string;
 }
 
-export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
-  {
+export const triggerJulesWidgetGeneration = functionsV1
+  .runWith({
     secrets: ['JULES_API_KEY'],
     timeoutSeconds: 300,
-    memory: '256MiB',
-    cors: true,
-  },
-  async (request) => {
-    if (!request.auth) {
-      throw new functionsV2.https.HttpsError(
+    memory: '256MB',
+  })
+  .https.onCall(async (data: JulesData, context) => {
+    if (!context.auth) {
+      throw new functionsV1.https.HttpsError(
         'unauthenticated',
         'The function must be called while authenticated.'
       );
     }
 
-    const email = request.auth.token.email;
+    const email = context.auth.token.email;
     if (!email) {
-      throw new functionsV2.https.HttpsError(
+      throw new functionsV1.https.HttpsError(
         'invalid-argument',
         'User must have an email associated with their account.'
       );
@@ -471,7 +470,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       .doc(email.toLowerCase())
       .get();
     if (!adminDoc.exists) {
-      throw new functionsV2.https.HttpsError(
+      throw new functionsV1.https.HttpsError(
         'permission-denied',
         'This function is restricted to administrators.'
       );
@@ -479,27 +478,22 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     const julesApiKey = process.env.JULES_API_KEY;
     if (!julesApiKey) {
-      throw new functionsV2.https.HttpsError(
+      throw new functionsV1.https.HttpsError(
         'internal',
         'Jules API Key is missing on the server.'
       );
     }
 
-    const repoName = 'OPS-PIvers/SPART_Board';
-    const { widgetName, description } = request.data;
-
-    console.log(
-      `Triggering Jules for widget: ${widgetName} in repo: ${repoName}`
-    );
+    const repoName = 'google-labs-code/SPART_Board';
 
     const prompt = `
-      As a Jules Agent, your task is to implement a new widget for the School Boards application.
+      As a Jules Agent, your task is to implement a new widget for the School Boards application. 
       
-      Widget Name: ${widgetName}
-      Features Requested: ${description}
+      Widget Name: ${data.widgetName}
+      Features Requested: ${data.description}
       
       Implementation Requirements:
-      1. Create a new component in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.tsx'.
+      1. Create a new component in 'components/widgets/' named '${data.widgetName.replace(/\s+/g, '')}Widget.tsx'.
       2. Follow the existing patterns:
          - Accept 'widget: WidgetData' as a prop.
          - Use 'useDashboard()' for state updates.
@@ -509,7 +503,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       4. Add metadata to 'TOOLS' in 'config/tools.ts'.
       5. Map the component in 'WidgetRenderer.tsx'.
       6. Define default configuration in 'context/DashboardContext.tsx' (inside the 'addWidget' function).
-      7. Add a unit test in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
+      7. Add a unit test in 'components/widgets/' named '${data.widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
       
       Please ensure all code is strictly typed and follows the project's 'Zero-tolerance' linting policy.
     `;
@@ -520,15 +514,12 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       const { data: session } = await axios.post(
         `https://jules.googleapis.com/v1alpha/sessions?key=${julesApiKey}`,
         {
-          prompt: prompt,
-          sourceContext: {
-            source: `sources/github/${repoName}`,
-            githubRepoContext: {
-              startingBranch: 'main',
+          source: {
+            github: {
+              repo: repoName,
             },
           },
-          automationMode: 'AUTO_CREATE_PR',
-          title: `Generate Widget: ${widgetName}`,
+          prompt: prompt,
         },
         {
           headers: {
@@ -539,28 +530,22 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      const sessionId = session.name?.split('/').pop() || session.id;
-      console.log(`Jules session created: ${sessionId}`);
-
       return {
         success: true,
-        message: `Jules session started successfully. Session ID: ${sessionId}`,
-        consoleUrl: `https://jules.google.com/session/${sessionId}`,
+        message: `Jules session started successfully. Session ID: ${session.id}`,
+        consoleUrl: `https://jules.google/session/${session.id}`,
       };
     } catch (error: unknown) {
       let errorMessage = 'An unknown error occurred';
       if (axios.isAxiosError(error)) {
-        console.error('Jules API Error Response Data:', error.response?.data);
-        console.error('Jules API Error Status:', error.response?.status);
         errorMessage = error.response?.data?.error?.message || error.message;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
       console.error('Jules API Error:', errorMessage);
-      throw new functionsV2.https.HttpsError(
+      throw new functionsV1.https.HttpsError(
         'internal',
         `Failed to trigger Jules: ${errorMessage}`
       );
     }
-  }
-);
+  });
