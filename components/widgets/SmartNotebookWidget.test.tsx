@@ -209,6 +209,7 @@ describe('SmartNotebookWidget', () => {
       id: 'notebook-1',
       title: 'To Delete',
       pageUrls: ['http://example.com/p1.png'],
+      pagePaths: ['users/test-uid/notebooks/notebook-1/page0.png'],
       assetUrls: ['http://example.com/a1.png'],
       createdAt: 123,
     };
@@ -245,7 +246,9 @@ describe('SmartNotebookWidget', () => {
     fireEvent.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(mockDeleteFile).toHaveBeenCalledWith('http://example.com/p1.png');
+      expect(mockDeleteFile).toHaveBeenCalledWith(
+        'users/test-uid/notebooks/notebook-1/page0.png'
+      );
       expect(mockDeleteFile).toHaveBeenCalledWith('http://example.com/a1.png');
     });
 
