@@ -8,9 +8,41 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
+import { useDebounce } from '../../hooks/useDebounce';
 import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
+
+const TeamNameInput: React.FC<{
+  value: string;
+  onUpdate: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}> = ({ value, onUpdate, placeholder, className }) => {
+  const [localValue, setLocalValue] = React.useState(value);
+  const debouncedValue = useDebounce(localValue, 500);
+
+  // Sync with prop changes (e.g. undo/redo)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  // Sync debounced value to parent
+  useEffect(() => {
+    if (debouncedValue !== value) {
+      onUpdate(debouncedValue);
+    }
+  }, [debouncedValue, value, onUpdate]);
+
+  return (
+    <input
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      className={className}
+      placeholder={placeholder}
+    />
+  );
+};
 
 const DEFAULT_TEAMS: ScoreboardTeam[] = [
   { id: 'team-a', name: 'Team A', score: 0, color: 'bg-blue-500' },
@@ -231,9 +263,9 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
               <div
                 className={`w-3 h-3 rounded-full shrink-0 ${team.color ?? 'bg-slate-300'}`}
               />
-              <input
+              <TeamNameInput
                 value={team.name}
-                onChange={(e) => updateTeamName(team.id, e.target.value)}
+                onUpdate={(val) => updateTeamName(team.id, val)}
                 className="flex-1 text-xs font-bold text-slate-700 bg-transparent outline-none"
                 placeholder="Team Name"
               />
