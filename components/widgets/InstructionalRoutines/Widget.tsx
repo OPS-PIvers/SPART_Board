@@ -24,6 +24,10 @@ import {
 } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 import { LibraryManager } from './LibraryManager';
+import {
+  getRoutineColorClasses,
+  getRoutineStepBorderClass,
+} from './colorHelpers';
 
 // Color mapping for routines
 const ROUTINE_COLORS: Record<
@@ -609,7 +613,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             step.stickerUrl
                           )
                         }
-                        className={`rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
+                        className={`rounded-xl bg-white border-2 ${getRoutineStepBorderClass(step.color ?? 'blue')} shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
                         style={{ padding: '0.5em', gap: '0.25em' }}
                         title="Drag or Click to add to whiteboard"
                       >
@@ -630,7 +634,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           </div>
                         ) : (
                           <div
-                            className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                            className={`rounded-lg ${getRoutineColorClasses(step.color ?? 'blue').bg} ${getRoutineColorClasses(step.color ?? 'blue').text}`}
                             style={{ padding: '0.4em' }}
                           >
                             {StepIcon && (

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { COMMON_INSTRUCTIONAL_ICONS } from '../../../config/instructionalIcons';
+import { getRoutineColorClasses } from './colorHelpers';
 
 export const IconPicker: React.FC<{
   currentIcon: string;
@@ -8,12 +9,13 @@ export const IconPicker: React.FC<{
   color?: string;
 }> = ({ currentIcon, onSelect, color = 'blue' }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const colorClasses = getRoutineColorClasses(color);
 
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-center text-${color}-600 bg-${color}-50`}
+        className={`p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-center ${colorClasses.text} ${colorClasses.bg}`}
         title="Select Icon"
       >
         {(Icons as unknown as Record<string, React.ElementType>)[
