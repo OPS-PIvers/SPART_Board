@@ -1030,7 +1030,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                       'Are you sure you want to delete this routine?'
                                     )
                                   ) {
-                                    deleteRoutine(routine.id);
+                                    void deleteRoutine(routine.id);
                                   }
                                 }}
                                 className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600 transition-colors"
