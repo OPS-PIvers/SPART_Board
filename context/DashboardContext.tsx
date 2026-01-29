@@ -202,14 +202,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleShareDashboard = useCallback(
     async (dashboard: Dashboard): Promise<string> => {
-      if (driveService) {
-        const fileId = await driveService.exportDashboard(dashboard);
-        await driveService.makePublic(fileId);
-        return `drive-${fileId}`;
-      }
+      // Always use Firestore for sharing to ensure maximum compatibility.
+      // Recipients shouldn't need Google Drive access to view a shared board.
       return shareDashboardFirestore(dashboard);
     },
-    [driveService, shareDashboardFirestore]
+    [shareDashboardFirestore]
   );
 
   const handleLoadSharedDashboard = useCallback(
