@@ -125,6 +125,7 @@ export interface RoutineStep {
   id: string;
   text: string;
   icon?: string;
+  stickerUrl?: string;
   color?: string;
   attachedWidget?: {
     type: WidgetType;

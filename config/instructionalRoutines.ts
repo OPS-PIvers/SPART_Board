@@ -3,6 +3,7 @@ import { GradeLevel } from '../types';
 export interface InstructionalStep {
   text: string;
   icon?: string;
+  stickerUrl?: string;
   color?: string;
   label?: string;
   attachedWidget?: {
