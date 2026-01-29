@@ -27,18 +27,17 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         if (plainText && plainText !== config.url) {
           updateWidget(widget.id, {
-            config: { ...config, url: plainText } as QRConfig,
+            config: { url: plainText, syncWithTextWidget: true } as QRConfig,
           });
         }
       }
     }
   }, [
     config.syncWithTextWidget,
-    activeDashboard,
+    activeDashboard?.widgets,
     config.url,
     widget.id,
     updateWidget,
-    config,
   ]);
 
   // Use a simple public API for QR codes
