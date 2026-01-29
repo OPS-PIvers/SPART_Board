@@ -342,16 +342,40 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     return undefined;
   }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Only close if this window or its contents are focused
+        const isFocused =
+          windowRef.current === document.activeElement ||
+          windowRef.current?.contains(document.activeElement);
+
+        if (isFocused) {
+          if (skipCloseConfirmation) {
+            removeWidget(widget.id);
+          } else {
+            setShowConfirm(true);
+            setShowTools(false);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [widget.id, skipCloseConfirmation, removeWidget]);
+
   return (
     <>
       <GlassCard
         globalStyle={globalStyle}
         ref={windowRef}
+        tabIndex={0}
         onPointerDown={handlePointerDown}
         onClick={handleWidgetClick}
         transparency={transparency}
         cornerRadius={isMaximized ? 'none' : undefined}
-        className={`absolute select-none widget group will-change-transform ${
+        className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
           isMaximized ? 'border-none !shadow-none' : ''
         } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
