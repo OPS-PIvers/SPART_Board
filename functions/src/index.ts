@@ -512,7 +512,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     try {
       const { data: session } = await axios.post(
-        'https://jules.google/api/v1/sessions',
+        'https://jules.google.com/api/v1/sessions',
         {
           source: {
             github: {
@@ -532,7 +532,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       return {
         success: true,
         message: `Jules session started successfully. Session ID: ${session.id}`,
-        consoleUrl: `https://jules.google/session/${session.id}`,
+        consoleUrl: `https://jules.google.com/session/${session.id}`,
       };
     } catch (error: unknown) {
       let errorMessage = 'An unknown error occurred';
