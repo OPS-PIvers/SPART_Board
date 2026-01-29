@@ -435,3 +435,113 @@ export const generateWithAI = functionsV1
       throw new functionsV1.https.HttpsError('internal', msg);
     }
   });
+
+interface JulesData {
+  widgetName: string;
+  description: string;
+}
+
+export const triggerJulesWidgetGeneration = functionsV1
+  .runWith({
+    secrets: ['JULES_API_KEY'],
+    timeoutSeconds: 300,
+    memory: '256MB',
+  })
+  .https.onCall(async (data: JulesData, context) => {
+    if (!context.auth) {
+      throw new functionsV1.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+
+    const email = context.auth.token.email;
+    if (!email) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'User must have an email associated with their account.'
+      );
+    }
+
+    const db = admin.firestore();
+    const adminDoc = await db
+      .collection('admins')
+      .doc(email.toLowerCase())
+      .get();
+    if (!adminDoc.exists) {
+      throw new functionsV1.https.HttpsError(
+        'permission-denied',
+        'This function is restricted to administrators.'
+      );
+    }
+
+    const julesApiKey = process.env.JULES_API_KEY;
+    if (!julesApiKey) {
+      throw new functionsV1.https.HttpsError(
+        'internal',
+        'Jules API Key is missing on the server.'
+      );
+    }
+
+    const repoName = 'google-labs-code/SPART_Board';
+
+    const prompt = `
+      As a Jules Agent, your task is to implement a new widget for the School Boards application.
+      
+      Widget Name: ${data.widgetName}
+      Features Requested: ${data.description}
+      
+      Implementation Requirements:
+      1. Create a new component in 'components/widgets/' named '${data.widgetName.replace(/\s+/g, '')}Widget.tsx'.
+      2. Follow the existing patterns:
+         - Accept 'widget: WidgetData' as a prop.
+         - Use 'useDashboard()' for state updates.
+         - Use Tailwind CSS for styling, adhering to the brand theme (brand-blue, brand-red, etc.).
+         - Use Lucide icons.
+      3. Register the new type in 'types.ts' (WidgetType).
+      4. Add metadata to 'TOOLS' in 'config/tools.ts'.
+      5. Map the component in 'WidgetRenderer.tsx'.
+      6. Define default configuration in 'context/DashboardContext.tsx' (inside the 'addWidget' function).
+      7. Add a unit test in 'components/widgets/' named '${data.widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
+      
+      Please ensure all code is strictly typed and follows the project's 'Zero-tolerance' linting policy.
+    `;
+
+    try {
+      const { data: session } = await axios.post(
+        'https://jules.google/api/v1/sessions',
+        {
+          source: {
+            github: {
+              repo: repoName,
+            },
+          },
+          prompt: prompt,
+        },
+        {
+          headers: {
+            'X-Goog-Api-Key': julesApiKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return {
+        success: true,
+        message: `Jules session started successfully. Session ID: ${session.id}`,
+        consoleUrl: `https://jules.google/session/${session.id}`,
+      };
+    } catch (error: unknown) {
+      let errorMessage = 'An unknown error occurred';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.error?.message || error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.error('Jules API Error:', errorMessage);
+      throw new functionsV1.https.HttpsError(
+        'internal',
+        `Failed to trigger Jules: ${errorMessage}`
+      );
+    }
+  });
