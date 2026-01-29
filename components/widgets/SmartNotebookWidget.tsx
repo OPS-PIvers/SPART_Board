@@ -73,20 +73,15 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         setActiveNotebook(found);
       } else if (notebooks.length > 0) {
         // If notebooks are loaded but the active one is missing, clear config
-        // Check if we actually have notebooks loaded (length > 0) to avoid clearing during initial load
         setActiveNotebook(null);
-        // Defer the update to avoid conflicts during render
-        setTimeout(() => {
-          updateWidget(widget.id, {
-            config: { ...config, activeNotebookId: null },
-          });
-        }, 0);
+        updateWidget(widget.id, {
+          config: { ...config, activeNotebookId: null },
+        });
       }
     } else {
       setActiveNotebook(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeNotebookId, notebooks]);
+  }, [activeNotebookId, notebooks, config, updateWidget, widget.id]);
 
   // Clamp current page index when notebook changes
   useEffect(() => {
@@ -296,33 +291,43 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {notebooks.map((notebook) => (
-              <div
-                key={notebook.id}
-                onClick={() => handleSelect(notebook.id)}
-                className="group relative aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all border border-slate-200"
-              >
-                <img
-                  src={notebook.pageUrls[0]}
-                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                  alt={notebook.title}
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
-                  <p className="text-white text-xs font-bold truncate">
-                    {notebook.title}
-                  </p>
-                  <p className="text-white/70 text-[10px]">
-                    {notebook.pageUrls.length} pages
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => handleDelete(e, notebook.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
+            {notebooks.map((notebook) => {
+              const firstPageUrl = notebook.pageUrls?.[0];
+
+              return (
+                <div
+                  key={notebook.id}
+                  onClick={() => handleSelect(notebook.id)}
+                  className="group relative aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all border border-slate-200"
                 >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+                  {firstPageUrl ? (
+                    <img
+                      src={firstPageUrl}
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      alt={notebook.title}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 text-xs">
+                      No preview available
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
+                    <p className="text-white text-xs font-bold truncate">
+                      {notebook.title}
+                    </p>
+                    <p className="text-white/70 text-[10px]">
+                      {notebook.pageUrls.length} pages
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => handleDelete(e, notebook.id)}
+                    className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
