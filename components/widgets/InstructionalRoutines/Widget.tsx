@@ -589,7 +589,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       {step.text}
                     </p>
 
-                    {(step.stickerUrl || (StepIcon && step.icon)) && (
+                    {(step.stickerUrl ?? (StepIcon && step.icon)) && (
                       <div
                         draggable
                         onDragStart={(e) =>
@@ -620,7 +620,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           >
                             <img
                               src={step.stickerUrl}
-                              alt={step.label || 'Sticker'}
+                              alt={step.label ?? 'Sticker'}
                               className="object-contain"
                               style={{
                                 width: dynamicFontSize * 1.5,
