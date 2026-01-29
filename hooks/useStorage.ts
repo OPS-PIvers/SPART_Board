@@ -6,12 +6,10 @@ import {
   deleteObject,
 } from 'firebase/storage';
 import { storage } from '../config/firebase';
-import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
 
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
-  const { isAdmin } = useAuth();
   const { driveService } = useGoogleDrive();
 
   const getDriveViewUrl = (fileId: string): string => {
@@ -34,7 +32,7 @@ export const useStorage = () => {
     userId: string,
     file: File
   ): Promise<string> => {
-    if (!isAdmin && driveService) {
+    if (driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -59,7 +57,7 @@ export const useStorage = () => {
   };
 
   const uploadSticker = async (userId: string, file: File): Promise<string> => {
-    if (!isAdmin && driveService) {
+    if (driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -85,7 +83,7 @@ export const useStorage = () => {
     userId: string,
     blob: Blob
   ): Promise<string> => {
-    if (!isAdmin && driveService) {
+    if (driveService) {
       setUploading(true);
       try {
         const driveFile = await driveService.uploadFile(
@@ -123,10 +121,7 @@ export const useStorage = () => {
     ) {
       if (!isAdmin && driveService) {
         try {
-          // We don't have the ID easily from the URL for lh3 links
-          // but if it's a Drive export link we might.
-          // For now, we'll try to find it by name if possible, or just log.
-          // In a production app, we'd store URL -> ID mapping.
+          // Deletion of Drive assets by URL is not yet fully implemented
           console.warn(
             'Deletion of Drive assets by URL is not yet fully implemented'
           );
