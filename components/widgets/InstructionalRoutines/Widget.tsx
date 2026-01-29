@@ -193,7 +193,12 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   const [editingRoutine, setEditingRoutine] =
     useState<InstructionalRoutine | null>(null);
 
-  const handleStepClick = (icon: string, color: string, label?: string) => {
+  const handleStepClick = (
+    icon: string | undefined,
+    color: string,
+    label?: string,
+    stickerUrl?: string
+  ) => {
     const w = 150;
     const h = 150;
     addWidget('sticker', {
@@ -201,7 +206,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       y: 100,
       w,
       h,
-      config: { icon, color, label, rotation: 0 },
+      config: {
+        icon: stickerUrl ? undefined : icon,
+        url: stickerUrl,
+        color,
+        label,
+        rotation: 0,
+      },
     });
   };
 
@@ -270,13 +281,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const onDragStart = (
     e: React.DragEvent,
-    icon: string,
+    icon: string | undefined,
     color: string,
-    label?: string
+    label?: string,
+    stickerUrl?: string
   ) => {
     e.dataTransfer.setData(
       'application/spart-sticker',
-      JSON.stringify({ icon, color, label })
+      JSON.stringify({ icon, color, label, url: stickerUrl })
     );
     e.dataTransfer.effectAllowed = 'copy';
   };
@@ -577,7 +589,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       {step.text}
                     </p>
 
-                    {StepIcon && step.icon && (
+                    {(step.stickerUrl || (StepIcon && step.icon)) && (
                       <div
                         draggable
                         onDragStart={(e) =>
@@ -585,29 +597,51 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             e,
                             step.icon as string,
                             step.color ?? 'blue',
-                            step.label
+                            step.label,
+                            step.stickerUrl
                           )
                         }
                         onClick={() =>
                           handleStepClick(
                             step.icon as string,
                             step.color ?? 'blue',
-                            step.label
+                            step.label,
+                            step.stickerUrl
                           )
                         }
                         className={`rounded-xl bg-white border-2 border-${step.color ?? 'blue'}-100 shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker`}
                         style={{ padding: '0.5em', gap: '0.25em' }}
                         title="Drag or Click to add to whiteboard"
                       >
-                        <div
-                          className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
-                          style={{ padding: '0.4em' }}
-                        >
-                          <StepIcon
-                            size={dynamicFontSize * 1.5}
-                            strokeWidth={2.5}
-                          />
-                        </div>
+                        {step.stickerUrl ? (
+                          <div
+                            className="rounded-lg bg-transparent"
+                            style={{ padding: '0.4em' }}
+                          >
+                            <img
+                              src={step.stickerUrl}
+                              alt={step.label || 'Sticker'}
+                              className="object-contain"
+                              style={{
+                                width: dynamicFontSize * 1.5,
+                                height: dynamicFontSize * 1.5,
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className={`rounded-lg bg-${step.color ?? 'blue'}-50 text-${step.color ?? 'blue'}-600`}
+                            style={{ padding: '0.4em' }}
+                          >
+                            {StepIcon && (
+                              <StepIcon
+                                size={dynamicFontSize * 1.5}
+                                strokeWidth={2.5}
+                              />
+                            )}
+                          </div>
+                        )}
+
                         {step.label && (
                           <span
                             className="font-black uppercase text-slate-500 text-center leading-none"
