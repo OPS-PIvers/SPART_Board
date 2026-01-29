@@ -251,8 +251,9 @@ export interface WorkSymbolsConfig {
   interactionMode:
     | 'none'
     | 'respectful'
-    | 'supportive'
-    | 'collaborative'
+    | 'listening'
+    | 'productive'
+    | 'discussion'
     | null;
   instructionalRoutine?: string; // Legacy/K-8
   activeRoutines?: string[]; // New: 9-12 Multi-select
