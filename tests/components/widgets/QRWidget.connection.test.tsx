@@ -60,7 +60,7 @@ describe('QRWidget Link Repeater Connection', () => {
 
     // Expect updateWidget to be called with the text content
     expect(mockUpdateWidget).toHaveBeenCalledWith('qr-1', {
-      config: { ...qrWidget.config, url: 'https://example.com/synced' },
+      config: { url: 'https://example.com/synced', syncWithTextWidget: true },
     });
   });
 
@@ -141,6 +141,34 @@ describe('QRWidget Link Repeater Connection', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: {
         widgets: [textWidget, qrWidget],
+      },
+      updateWidget: mockUpdateWidget,
+    });
+
+    render(<QRWidget widget={qrWidget} />);
+
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
+
+  it('does not update if sync is enabled but no text widget exists', () => {
+    const qrWidget: WidgetData = {
+      id: 'qr-1',
+      type: 'qr',
+      x: 2,
+      y: 0,
+      w: 2,
+      h: 2,
+      z: 1,
+      flipped: false,
+      config: {
+        url: 'https://google.com',
+        syncWithTextWidget: true,
+      } as QRConfig,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      activeDashboard: {
+        widgets: [qrWidget], // Only QR widget
       },
       updateWidget: mockUpdateWidget,
     });
