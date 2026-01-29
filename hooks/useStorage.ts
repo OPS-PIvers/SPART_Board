@@ -123,7 +123,10 @@ export const useStorage = () => {
     ) {
       if (!isAdmin && driveService) {
         try {
-          // Deletion of Drive assets by URL is not yet fully implemented
+          // We don't have the ID easily from the URL for lh3 links
+          // but if it's a Drive export link we might.
+          // For now, we'll try to find it by name if possible, or just log.
+          // In a production app, we'd store URL -> ID mapping.
           console.warn(
             'Deletion of Drive assets by URL is not yet fully implemented'
           );
