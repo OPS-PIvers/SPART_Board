@@ -6,6 +6,12 @@
 **Root Cause:** "God Component" pattern where multiple distinct UI views (Student, Teacher/Settings, Admin/Library) were co-located.
 **Plan:** Decomposed into `components/widgets/InstructionalRoutines/` directory with separate files for `Widget`, `Settings`, `LibraryManager`, `IconPicker`, and `constants`. Added basic unit tests.
 
+## 2025-06-03 - Refactor LunchCountWidget
+
+**Weed:** `LunchCountWidget.tsx` was ~1000 lines, mixing UI rendering, data fetching (Nutrislice), settings configuration, and a large modal component.
+**Root Cause:** Feature creep led to a "God Component" where unrelated responsibilities (API logic, modal UI, main board) were coupled in a single file.
+**Plan:** Decomposed into `components/widgets/LunchCount/` directory with `Widget.tsx`, `Settings.tsx`, `SubmitReportModal.tsx`, and `useNutrislice.ts`. Added unit tests to ensure regression safety.
+
 ## 2025-05-30 - Extract Roster Logic from DashboardContext
 
 **Weed:** `DashboardContext.tsx` was over 1400 lines (God Object), mixing global app state with specific Roster management logic (including a mock implementation).
