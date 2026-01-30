@@ -7,7 +7,14 @@ import {
   ScheduleConfig,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
-import { Circle, CheckCircle2, Type, Clock, AlertTriangle } from 'lucide-react';
+import {
+  Circle,
+  CheckCircle2,
+  Type,
+  Clock,
+  AlertTriangle,
+  RefreshCw,
+} from 'lucide-react';
 import { Toggle } from '../common/Toggle';
 
 interface ScheduleRowProps {
@@ -97,6 +104,16 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     [updateWidget, widget.id]
   );
 
+  const resetSchedule = useCallback(() => {
+    const currentConfig = configRef.current;
+    const currentItems = itemsRef.current;
+    const resetItems = currentItems.map((i) => ({ ...i, done: false }));
+
+    updateWidget(widget.id, {
+      config: { ...currentConfig, items: resetItems } as ScheduleConfig,
+    });
+  }, [updateWidget, widget.id]);
+
   // Logic for Auto-Progress
   useEffect(() => {
     // Only run if autoProgress is on AND a clock widget exists
@@ -173,7 +190,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full flex flex-col p-4 bg-transparent rounded-lg ${getFontClass()}`}
+      className={`h-full flex flex-col p-4 bg-transparent rounded-lg ${getFontClass()} group relative`}
     >
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
@@ -186,6 +203,17 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             taskSize={taskSize}
           />
         ))}
+      </div>
+
+      {/* Prominent Reset Button - Visible on Hover or Mobile */}
+      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={resetSchedule}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 shadow-md rounded-full text-xxs font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95"
+          title="Reset all items"
+        >
+          <RefreshCw className="w-3 h-3" /> Reset
+        </button>
       </div>
     </div>
   );
