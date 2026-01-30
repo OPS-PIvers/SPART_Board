@@ -967,7 +967,6 @@ export const Sidebar: React.FC = () => {
               >
                 <div className="space-y-6">
                   {/* Google Drive Connection Management */}
-                  {/* Google Drive Connection Management */}
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div className="flex items-center gap-2 mb-3 px-1">
                       <GoogleDriveIcon className="w-4 h-4" />
