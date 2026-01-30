@@ -64,6 +64,8 @@ export const DrawingWidget: React.FC<{
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const currentPathRef = useRef<Point[]>([]);
+  // OPTIMIZATION: Cache rect to prevent layout thrashing (getBoundingClientRect) on every pointer move
+  const rectRef = useRef<DOMRect | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -180,7 +182,12 @@ export const DrawingWidget: React.FC<{
   const handleStart = (e: React.PointerEvent) => {
     if (isStudentView) return;
     setIsDrawing(true);
-    const pos = getPos(e);
+
+    if (canvasRef.current) {
+      rectRef.current = canvasRef.current.getBoundingClientRect();
+    }
+
+    const pos = getPos(e, rectRef.current);
     currentPathRef.current = [pos];
 
     // Start imperative drawing
@@ -194,7 +201,7 @@ export const DrawingWidget: React.FC<{
 
   const handleMove = (e: React.PointerEvent) => {
     if (isStudentView || !isDrawing) return;
-    const pos = getPos(e);
+    const pos = getPos(e, rectRef.current);
     currentPathRef.current.push(pos);
 
     // Imperatively draw the new segment
@@ -214,6 +221,7 @@ export const DrawingWidget: React.FC<{
   const handleEnd = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
+    rectRef.current = null;
     if (currentPathRef.current.length > 1) {
       const newPath: Path = { points: currentPathRef.current, color, width };
       updateWidget(widget.id, {
@@ -226,12 +234,15 @@ export const DrawingWidget: React.FC<{
     currentPathRef.current = [];
   };
 
-  const getPos = (e: React.PointerEvent): Point => {
+  const getPos = (
+    e: React.PointerEvent,
+    cachedRect?: DOMRect | null
+  ): Point => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return { x: 0, y: 0 };
     }
-    const rect = canvas.getBoundingClientRect();
+    const rect = cachedRect ?? canvas.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
