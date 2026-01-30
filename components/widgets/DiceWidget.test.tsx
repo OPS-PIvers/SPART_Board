@@ -46,8 +46,8 @@ const mockWidget: WidgetData = {
   type: 'dice',
   x: 0,
   y: 0,
-  w: 4,
-  h: 4,
+  w: 200,
+  h: 200,
   z: 1,
   flipped: false,
   config: {
