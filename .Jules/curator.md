@@ -53,3 +53,16 @@
 **Update:** Functions Dependencies
 **Action:** Updated `axios` (1.13.3), `firebase-admin` (13.6.0), `@google/genai` (1.38.0).
 **Verification:** Ran `pnpm build` in functions - All passed.
+
+## 2025-02-27 - [Security & Maintenance]
+
+**Security:** `hono` & `tar`
+**Reason:** Fixed moderate severity (XSS, Bypass) in `hono` and high severity (Arbitrary File Creation) in `tar`.
+**Action:** Updated `pnpm.overrides` to `^4.11.7` (hono) and `^7.5.7` (tar). Added `hono` as a direct `devDependency` to resolve peer dependency conflicts.
+
+**Update:** `firebase-tools`
+**Action:** Updated to `15.5.1`.
+
+**Blocker:** `@types/node` v25
+**Reason:** Major version jump from v22 (LTS) to v25. Project targets Node 20/22.
+**Plan:** Maintain current version to ensure compatibility.
