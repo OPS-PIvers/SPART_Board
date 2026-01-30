@@ -8,6 +8,9 @@ import { GoogleGenAI } from '@google/genai';
 
 admin.initializeApp();
 
+export const JULES_API_SESSIONS_ENDPOINT =
+  'https://jules.google.com/api/v1/sessions';
+
 interface ClassLinkUser {
   sourcedId: string;
   email: string;
@@ -516,9 +519,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     try {
       console.log('Sending request to Jules API...');
-      // Try passing the key as a query parameter and in both headers
+      // Use the named constant for the endpoint
       const { data: session } = await axios.post(
-        `https://jules.googleapis.com/v1alpha/sessions?key=${julesApiKey}`,
+        `${JULES_API_SESSIONS_ENDPOINT}?key=${julesApiKey}`,
         {
           prompt: prompt,
           sourceContext: {

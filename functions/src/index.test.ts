@@ -1,21 +1,26 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+/* eslint-disable @typescript-eslint/unbound-method */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
-import * as admin from 'firebase-admin';
+
+// Granular mocks for better control in tests
+const getMock = vi.fn();
+const docMock = vi.fn(() => ({ get: getMock }));
+const collectionMock = vi.fn(() => ({ doc: docMock }));
 
 // Mock firebase-admin
 vi.mock('firebase-admin', () => ({
   initializeApp: vi.fn(),
-  firestore: vi.fn(() => ({
-    collection: vi.fn(() => ({
-      doc: vi.fn(() => ({
-        get: vi.fn(),
-      })),
+  firestore: Object.assign(
+    vi.fn(() => ({
+      collection: collectionMock,
+      runTransaction: vi.fn(),
     })),
-    FieldValue: {
-      serverTimestamp: vi.fn(),
-    },
-    runTransaction: vi.fn(),
-  })),
+    {
+      FieldValue: {
+        serverTimestamp: vi.fn(),
+      },
+    }
+  ),
 }));
 
 // Mock firebase-functions/v2
@@ -44,7 +49,10 @@ vi.mock('firebase-functions/v1', () => ({
 vi.mock('axios');
 
 // Import the function under test
-import { triggerJulesWidgetGeneration } from './index';
+import {
+  triggerJulesWidgetGeneration,
+  JULES_API_SESSIONS_ENDPOINT,
+} from './index';
 
 describe('triggerJulesWidgetGeneration', () => {
   beforeEach(() => {
@@ -53,20 +61,11 @@ describe('triggerJulesWidgetGeneration', () => {
   });
 
   it('should call Jules API with correct endpoint', async () => {
-    // Mock Admin Check
-    const mockGet = vi.fn().mockResolvedValue({ exists: true });
+    // Mock Admin Check using the granular mock
+    getMock.mockResolvedValue({ exists: true });
 
-    (admin.firestore as unknown as Mock).mockReturnValue({
-      collection: vi.fn().mockReturnValue({
-        doc: vi.fn().mockReturnValue({
-          get: mockGet,
-        }),
-      }),
-    });
-
-    // Mock Axios response
-
-    (axios.post as unknown as Mock).mockResolvedValue({
+    // Mock Axios response using vi.mocked for type safety
+    vi.mocked(axios.post).mockResolvedValue({
       data: {
         name: 'sessions/12345',
       },
@@ -87,9 +86,8 @@ describe('triggerJulesWidgetGeneration', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(axios.post).toHaveBeenCalledWith(
-      'https://jules.googleapis.com/v1alpha/sessions?key=test-api-key',
+    expect(vi.mocked(axios.post)).toHaveBeenCalledWith(
+      `${JULES_API_SESSIONS_ENDPOINT}?key=test-api-key`,
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
         sourceContext: expect.objectContaining({
