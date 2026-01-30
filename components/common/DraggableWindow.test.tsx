@@ -83,11 +83,15 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
-  let mockUpdateWidget: Mock<(id: string, updates: Partial<WidgetData>) => void>;
+  let mockUpdateWidget: Mock<
+    (id: string, updates: Partial<WidgetData>) => void
+  >;
   let mockRemoveWidget: Mock<(id: string) => void>;
   let mockDuplicateWidget: Mock<(id: string) => void>;
   let mockBringToFront: Mock<(id: string) => void>;
-  let mockAddToast: Mock<(message: string, type?: 'info' | 'success' | 'error') => void>;
+  let mockAddToast: Mock<
+    (message: string, type?: 'info' | 'success' | 'error') => void
+  >;
 
   beforeEach(() => {
     mockUpdateWidget = vi.fn();
