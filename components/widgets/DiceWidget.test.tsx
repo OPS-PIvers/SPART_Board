@@ -99,7 +99,7 @@ describe('DiceWidget', () => {
     // Check for the blur class on the DiceFace element
     // DiceFace has classes including bg-white/70
     // We select it and check if it has the blur class
-    const diceFace = container.querySelector('.bg-white\\/70');
+    const diceFace = container.querySelector('.grid-cols-3')?.parentElement;
     expect(diceFace).not.toHaveClass('blur-[1px]');
   });
 });
