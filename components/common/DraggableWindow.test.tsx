@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
 
@@ -72,11 +72,6 @@ const mockWidget: WidgetData = {
   },
 };
 
-const mockUpdateWidget = vi.fn();
-const mockRemoveWidget = vi.fn();
-const mockDuplicateWidget = vi.fn();
-const mockBringToFront = vi.fn();
-const mockAddToast = vi.fn();
 const mockGlobalStyle: GlobalStyle = {
   fontFamily: 'sans',
   windowTransparency: 0.8,
@@ -88,7 +83,22 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
+  let mockUpdateWidget: Mock<
+    (id: string, updates: Partial<WidgetData>) => void
+  >;
+  let mockRemoveWidget: Mock<(id: string) => void>;
+  let mockDuplicateWidget: Mock<(id: string) => void>;
+  let mockBringToFront: Mock<(id: string) => void>;
+  let mockAddToast: Mock<
+    (message: string, type?: 'info' | 'success' | 'error') => void
+  >;
+
   beforeEach(() => {
+    mockUpdateWidget = vi.fn();
+    mockRemoveWidget = vi.fn();
+    mockDuplicateWidget = vi.fn();
+    mockBringToFront = vi.fn();
+    mockAddToast = vi.fn();
     vi.clearAllMocks();
   });
 
