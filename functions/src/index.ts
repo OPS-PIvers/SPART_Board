@@ -112,7 +112,7 @@ export const getClassLinkRosterV1 = functionsV1
         );
       }
 
-      const cleanTenantUrl = tenantUrl.replace(///$/, '');
+      const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
 
       try {
         const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
