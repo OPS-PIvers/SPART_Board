@@ -125,7 +125,8 @@ const ToolDockItem = ({
   // Close popover when clicking outside
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    listeners?.onPointerDown?.(e);
     if (isEditMode) return;
     longPressTimer.current = setTimeout(() => {
       onLongPress();
@@ -340,7 +341,9 @@ const SortableFolderWidget = ({
 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    listeners?.onPointerDown?.(e);
+    if (isEditMode) return;
     longPressTimer.current = setTimeout(() => {
       onLongPress();
     }, 600);
@@ -474,7 +477,9 @@ const FolderItem = ({
 
   useClickOutside(popoverRef, () => setShowPopover(false), [buttonRef]);
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    listeners?.onPointerDown?.(e);
+    if (isEditMode) return;
     longPressTimer.current = setTimeout(() => {
       onLongPress();
     }, 600);
@@ -1003,7 +1008,7 @@ export const Dock: React.FC = () => {
                     ? 'none'
                     : globalStyle.dockBorderRadius
               }
-              className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar animate-in zoom-in-95 fade-in duration-300"
+              className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar flex-nowrap animate-in zoom-in-95 fade-in duration-300"
             >
               {dockItems.length > 0 ? (
                 <>
