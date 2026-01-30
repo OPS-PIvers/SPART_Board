@@ -61,7 +61,7 @@ const DiceFace: React.FC<{
                   relative bg-white/70 rounded-2xl shadow-lg border-2 border-white/30
                   flex items-center justify-center
                   transition-all duration-300
-                  ${isRolling ? 'scale-110 rotate-12 blur-[1px]' : 'scale-100 rotate-0'}
+                  ${isRolling ? 'scale-110 rotate-12' : 'scale-100 rotate-0'}
                 `}
       style={{ width: `${size}px`, height: `${size}px` }}
     >
