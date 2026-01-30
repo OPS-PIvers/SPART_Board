@@ -5,6 +5,8 @@ import {
   RandomConfig,
   WidgetConfig,
   TimeToolConfig,
+  RandomGroup,
+  SharedGroup,
 } from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target } from 'lucide-react';
@@ -13,17 +15,14 @@ import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
-interface LayoutSizing {
-  fontSize: number;
-  slotHeight: number;
-  wheelSize: number;
-  gridCols: number;
-  gap: number;
-}
-
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, rosters, activeRosterId, activeDashboard } =
-    useDashboard();
+  const {
+    updateWidget,
+    updateDashboard,
+    rosters,
+    activeRosterId,
+    activeDashboard,
+  } = useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
@@ -39,7 +38,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
-    string | string[] | string[][]
+    string | string[] | string[][] | RandomGroup[]
   >(() => {
     const raw = config.lastResult;
     if (
@@ -49,7 +48,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       raw[0] !== null &&
       'names' in raw[0]
     ) {
-      return (raw as { names: string[] }[]).map((g) => g.names);
+      return raw as RandomGroup[];
     }
     return (raw as string | string[] | string[][]) ?? '';
   });
@@ -70,9 +69,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       rawResult[0] !== null &&
       'names' in rawResult[0]
     ) {
-      setDisplayResult(
-        (rawResult as { names: string[] }[]).map((g) => g.names)
-      );
+      setDisplayResult(rawResult as RandomGroup[]);
     } else {
       setDisplayResult((rawResult as string | string[] | string[][]) ?? '');
     }
@@ -129,63 +126,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return combined;
   }, [firstNames, lastNames, activeRoster, rosterMode]);
 
-  // Dynamic sizing calculations for all animations
-  const layoutSizing = useMemo<LayoutSizing>(() => {
-    const availableH = widget.h - 100; // Subtract padding and button height
-    const availableW = widget.w - 40;
-
-    const defaults: LayoutSizing = {
-      fontSize: 16,
-      slotHeight: 100,
-      wheelSize: 300,
-      gridCols: 1,
-      gap: 8,
-    };
-
-    if (mode === 'single') {
-      if (visualStyle === 'flash') {
-        const fontSize = Math.min(availableW / 6, availableH / 2);
-        return { ...defaults, fontSize };
-      }
-      if (visualStyle === 'slots') {
-        const fontSize = Math.min(availableW / 6, availableH / 3);
-        return { ...defaults, fontSize, slotHeight: availableH };
-      }
-      if (visualStyle === 'wheel') {
-        const wheelSize = Math.min(availableW, availableH);
-        return { ...defaults, wheelSize };
-      }
-    }
-
-    if (
-      mode === 'groups' &&
-      Array.isArray(displayResult) &&
-      (displayResult.length === 0 || Array.isArray(displayResult[0]))
-    ) {
-      const numGroups = displayResult.length;
-      let cols = 1;
-      if (widget.w > 600) cols = 3;
-      else if (widget.w > 400) cols = 2;
-      const rows = Math.ceil(numGroups / cols);
-
-      // Find max name length to scale font
-      const allNames = (displayResult as string[][]).flat();
-      const maxNameLength =
-        allNames.reduce((max, name) => Math.max(max, name.length), 0) || 10;
-
-      const maxItemsInGroup = Math.max(
-        ...(displayResult as string[][]).map((g: string[]) => g.length)
-      );
-      const linesPerRow = maxItemsInGroup + 1.5;
-      const fontSizeH = availableH / rows / linesPerRow;
-      // Base width calculation on character count
-      const fontSizeW = availableW / cols / (maxNameLength * 0.7);
-      const fontSize = Math.max(10, Math.min(24, fontSizeH, fontSizeW));
-      return { ...defaults, gridCols: cols, fontSize, gap: fontSize / 2 };
-    }
-
-    return defaults;
-  }, [mode, visualStyle, displayResult, widget.w, widget.h]);
+  // Grid columns for group view - Deprecated in favor of auto-fit
+  // const gridCols = useMemo(() => {
+  //   if (widget.w > 600) return 3;
+  //   if (widget.w > 400) return 2;
+  //   return 1;
+  // }, [widget.w]);
 
   const shuffle = <T,>(array: T[]): T[] => {
     const newArr = [...array];
@@ -213,29 +159,53 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsSpinning(true);
 
     const performUpdate = (
-      result: string | string[] | string[][],
+      result: string | string[] | string[][] | RandomGroup[],
       remaining?: string[]
     ) => {
       try {
         // Firestore doesn't support nested arrays (e.g., string[][]).
         // If we have groups, we transform them into an array of objects.
-        let syncResult: string | string[] | { names: string[] }[] = result as
-          | string
-          | string[];
+        let syncResult = result;
 
+        if (mode === 'groups' && Array.isArray(result) && result.length > 0) {
+          // Check if it's string[][] (legacy)
+          if (Array.isArray(result[0])) {
+            syncResult = (result as string[][]).map((names) => ({
+              names,
+              id: crypto.randomUUID(),
+            }));
+          }
+          // If it is already RandomGroup[] (has .names), we keep it
+        }
+
+        // If we have RandomGroups with IDs, sync them to Dashboard sharedGroups
         if (
           mode === 'groups' &&
-          Array.isArray(result) &&
-          result.length > 0 &&
-          Array.isArray(result[0])
+          Array.isArray(syncResult) &&
+          syncResult.length > 0 &&
+          typeof syncResult[0] === 'object' &&
+          'id' in syncResult[0]
         ) {
-          syncResult = (result as string[][]).map((names) => ({ names }));
+          const groups = syncResult as RandomGroup[];
+          const newSharedGroups: SharedGroup[] = groups.map((g, i) => ({
+            id: g.id ?? '',
+            name: `Group ${i + 1}`,
+          }));
+
+          const existing = activeDashboard?.sharedGroups ?? [];
+          const uniqueNew = newSharedGroups.filter(
+            (n) => !existing.some((e) => e.id === n.id)
+          );
+
+          if (uniqueNew.length > 0) {
+            updateDashboard({ sharedGroups: [...existing, ...uniqueNew] });
+          }
         }
 
         // Optimized update: only send what changed.
         // DashboardContext now handles deep merging of config.
         const updates: Partial<RandomConfig> = {
-          lastResult: syncResult as string | string[] | { names: string[] }[],
+          lastResult: syncResult as string | string[] | RandomGroup[],
         };
         if (remaining) {
           updates.remainingStudents = remaining;
@@ -371,7 +341,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const shuffled = shuffle(students);
           result = [];
           for (let i = 0; i < shuffled.length; i += groupSize) {
-            result.push(shuffled.slice(i, i + groupSize));
+            result.push({
+              id: crypto.randomUUID(),
+              names: shuffled.slice(i, i + groupSize),
+            });
           }
         }
         setDisplayResult(result);
@@ -384,17 +357,20 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
-      const wheelSize = layoutSizing.wheelSize;
-      const resultFontSize = layoutSizing.fontSize;
+      const VERTICAL_OFFSET = 100; // Accounts for button height and vertical padding
+      const HORIZONTAL_PADDING = 40;
+      const availableH = widget.h - VERTICAL_OFFSET;
+      const availableW = widget.w - HORIZONTAL_PADDING;
+      const wheelSize = Math.min(availableW, availableH);
 
       return (
         <RandomWheel
           students={students}
           rotation={rotation}
           wheelSize={wheelSize}
-          displayResult={displayResult}
+          displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={resultFontSize}
+          resultFontSize={32}
         />
       );
     }
@@ -402,18 +378,18 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (visualStyle === 'slots') {
       return (
         <RandomSlots
-          displayResult={displayResult}
-          fontSize={layoutSizing.fontSize}
-          slotHeight={layoutSizing.slotHeight}
+          displayResult={displayResult as string | string[] | string[][] | null}
+          fontSize={48}
+          slotHeight={widget.h - 100}
         />
       );
     }
 
     return (
       <RandomFlash
-        displayResult={displayResult}
+        displayResult={displayResult as string | string[] | string[][] | null}
         isSpinning={isSpinning}
-        fontSize={layoutSizing.fontSize}
+        fontSize={48}
       />
     );
   };
@@ -482,36 +458,57 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               </div>
             ) : (
               <div
-                className="flex-1 w-full grid"
+                className="flex-1 w-full grid content-start overflow-y-auto custom-scrollbar pr-1"
                 style={{
-                  gridTemplateColumns: `repeat(${layoutSizing?.gridCols ?? 1}, minmax(0, 1fr))`,
-                  gap: `${layoutSizing?.gap ?? 8}px`,
+                  gridTemplateColumns: `repeat(auto-fit, minmax(145px, 1fr))`,
+                  gap: '12px',
                 }}
               >
                 {(Array.isArray(displayResult) &&
-                (displayResult.length === 0 || Array.isArray(displayResult[0]))
-                  ? (displayResult as string[][])
+                (displayResult.length === 0 ||
+                  Array.isArray(displayResult[0]) ||
+                  (typeof displayResult[0] === 'object' &&
+                    displayResult[0] !== null))
+                  ? (displayResult as (string[] | RandomGroup)[])
                   : []
-                ).map((group: string[], i: number) => {
-                  if (!Array.isArray(group)) return null;
+                ).map((groupItem, i) => {
+                  const groupNames = Array.isArray(groupItem)
+                    ? groupItem
+                    : groupItem.names;
+                  const groupId =
+                    !Array.isArray(groupItem) && 'id' in groupItem
+                      ? groupItem.id
+                      : null;
+
+                  // Lookup shared name if ID exists
+                  let groupName = `Group ${i + 1}`;
+                  if (groupId && activeDashboard?.sharedGroups) {
+                    const shared = activeDashboard.sharedGroups.find(
+                      (g) => g.id === groupId
+                    );
+                    if (shared) groupName = shared.name;
+                  }
+
+                  if (!groupNames) return null;
+
                   return (
                     <div
                       key={i}
-                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
+                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
+                      style={{ fontSize: '14px' }}
                     >
                       <div
-                        className=" uppercase text-blue-400 mb-1 tracking-widest opacity-80"
-                        style={{ fontSize: '0.6em' }}
+                        className="uppercase text-blue-400 mb-1 tracking-widest opacity-80 text-[10px] font-bold truncate"
+                        title={groupName}
                       >
-                        Group {i + 1}
+                        {groupName}
                       </div>
-                      <div className="space-y-0.5 overflow-hidden">
-                        {group.map((name, ni) => (
+                      <div className="space-y-1 overflow-hidden">
+                        {groupNames.map((name, ni) => (
                           <div
                             key={ni}
                             data-no-drag="true"
-                            className=" text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                            className="text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
                           >
                             {name}
                           </div>
@@ -523,7 +520,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 {(!displayResult ||
                   !Array.isArray(displayResult) ||
                   (displayResult.length > 0 &&
-                    !Array.isArray(displayResult[0]))) && (
+                    !Array.isArray(displayResult[0]) &&
+                    typeof displayResult[0] !== 'object')) && (
                   <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
                     <Users className="w-8 h-8 opacity-20" />
                     <span>Click Randomize to Group</span>

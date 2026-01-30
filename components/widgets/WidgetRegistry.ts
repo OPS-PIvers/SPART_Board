@@ -7,7 +7,7 @@
  */
 
 import React, { lazy } from 'react';
-import { WidgetData, WidgetType } from '@/types';
+import { WidgetData, WidgetType, ScalingConfig } from '@/types';
 
 // Component type definitions to ensure type safety
 type WidgetComponentProps = {
@@ -153,4 +153,62 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   workSymbols: DefaultSettings,
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
+};
+
+export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
+  clock: { baseWidth: 280, baseHeight: 140, canSpread: true },
+  'time-tool': { baseWidth: 420, baseHeight: 400, canSpread: true },
+  traffic: { baseWidth: 120, baseHeight: 320, canSpread: false },
+  text: { baseWidth: 300, baseHeight: 250, canSpread: true },
+  checklist: { baseWidth: 280, baseHeight: 300, canSpread: true },
+  random: { baseWidth: 300, baseHeight: 320, canSpread: true },
+  dice: { baseWidth: 240, baseHeight: 240, canSpread: false },
+  sound: { baseWidth: 300, baseHeight: 300, canSpread: true },
+  webcam: { baseWidth: 400, baseHeight: 300, canSpread: true },
+  embed: { baseWidth: 480, baseHeight: 350, canSpread: true },
+  drawing: {
+    baseWidth: 400,
+    baseHeight: 350,
+    canSpread: true,
+    skipScaling: true,
+  },
+  qr: { baseWidth: 200, baseHeight: 250, canSpread: false },
+  scoreboard: { baseWidth: 320, baseHeight: 200, canSpread: true },
+  workSymbols: { baseWidth: 320, baseHeight: 350, canSpread: true },
+  poll: { baseWidth: 300, baseHeight: 250, canSpread: true },
+  weather: { baseWidth: 250, baseHeight: 280, canSpread: true },
+  schedule: { baseWidth: 300, baseHeight: 350, canSpread: true },
+  calendar: { baseWidth: 300, baseHeight: 350, canSpread: true },
+  lunchCount: { baseWidth: 500, baseHeight: 400, canSpread: true },
+  classes: {
+    baseWidth: 600,
+    baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+  },
+  instructionalRoutines: { baseWidth: 400, baseHeight: 480, canSpread: true },
+  miniApp: { baseWidth: 500, baseHeight: 600, canSpread: true },
+  materials: { baseWidth: 340, baseHeight: 340, canSpread: true },
+  stickers: {
+    baseWidth: 600,
+    baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+  },
+  sticker: { baseWidth: 200, baseHeight: 200, canSpread: false },
+  'seating-chart': {
+    baseWidth: 600,
+    baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+  },
+  catalyst: { baseWidth: 320, baseHeight: 400, canSpread: true },
+  'catalyst-instruction': { baseWidth: 280, baseHeight: 350, canSpread: true },
+  'catalyst-visual': { baseWidth: 600, baseHeight: 400, canSpread: true },
+  smartNotebook: {
+    baseWidth: 600,
+    baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+  },
 };
