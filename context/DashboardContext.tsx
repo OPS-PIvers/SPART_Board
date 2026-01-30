@@ -1366,6 +1366,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
+  const updateDashboard = useCallback((updates: Partial<Dashboard>) => {
+    if (!activeIdRef.current) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => (d.id === activeIdRef.current ? { ...d, ...updates } : d))
+    );
+  }, []);
+
   const setGlobalStyle = useCallback((style: Partial<GlobalStyle>) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
@@ -1415,6 +1423,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       moveWidgetLayer,
       setBackground,
       updateDashboardSettings,
+      updateDashboard,
       setGlobalStyle,
       toggleToolVisibility,
       setAllToolsVisibility,
@@ -1471,6 +1480,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       moveWidgetLayer,
       setBackground,
       updateDashboardSettings,
+      updateDashboard,
       setGlobalStyle,
       toggleToolVisibility,
       setAllToolsVisibility,
