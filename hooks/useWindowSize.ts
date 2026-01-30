@@ -1,4 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useLayoutEffect, useEffect } from 'react';
+
+// Use useLayoutEffect in browser environments to prevent flicker,
+// and useEffect in SSR to avoid warnings.
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface WindowSize {
   width: number;
@@ -20,11 +25,17 @@ const handleResize = () => {
 
   // Throttle updates to 100ms
   timeoutId = window.setTimeout(() => {
-    windowSize = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
-    listeners.forEach((listener) => listener(windowSize));
+    const nextWidth = window.innerWidth;
+    const nextHeight = window.innerHeight;
+
+    // Only update and notify listeners if the size actually changed
+    if (nextWidth !== windowSize.width || nextHeight !== windowSize.height) {
+      windowSize = {
+        width: nextWidth,
+        height: nextHeight,
+      };
+      listeners.forEach((listener) => listener(windowSize));
+    }
     timeoutId = null;
   }, 100);
 };
@@ -32,9 +43,7 @@ const handleResize = () => {
 export const useWindowSize = (): WindowSize => {
   const [size, setSize] = useState<WindowSize>(windowSize);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
+  useIsomorphicLayoutEffect(() => {
     // Add this component's state setter to the listeners
     listeners.add(setSize);
 
@@ -45,25 +54,32 @@ export const useWindowSize = (): WindowSize => {
 
     // Check for stale state (e.g. resized while no listeners were active)
     // Only update if actually different to avoid unnecessary re-renders
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+
     if (
-      window.innerWidth !== windowSize.width ||
-      window.innerHeight !== windowSize.height
+      currentWidth !== windowSize.width ||
+      currentHeight !== windowSize.height
     ) {
       windowSize = {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: currentWidth,
+        height: currentHeight,
       };
       // Notify all listeners (including self, since we just added setSize)
       listeners.forEach((listener) => listener(windowSize));
     } else {
-      // Even if global state matches, ensure local component state is in sync
-      // (This handles the edge case where a component mounts with an old initial state but global is current)
-      if (
-        size.width !== windowSize.width ||
-        size.height !== windowSize.height
-      ) {
-        setSize(windowSize);
-      }
+      // Even if global state matches, ensure local component state is in sync.
+      // We use the functional update form to access the current state value
+      // without adding 'size' to the dependency array.
+      setSize((prevSize) => {
+        if (
+          prevSize.width !== windowSize.width ||
+          prevSize.height !== windowSize.height
+        ) {
+          return windowSize;
+        }
+        return prevSize;
+      });
     }
 
     return () => {
@@ -78,7 +94,6 @@ export const useWindowSize = (): WindowSize => {
         }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return size;
