@@ -5,6 +5,7 @@ import {
   ScoreboardConfig,
   ScoreboardTeam,
   RandomConfig,
+  RandomGroup,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
@@ -130,7 +131,8 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
 export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, activeDashboard, addToast } = useDashboard();
+  const { updateWidget, updateDashboard, activeDashboard, addToast } =
+    useDashboard();
   const config = widget.config as ScoreboardConfig;
   const teams = config.teams ?? [];
 
@@ -156,13 +158,31 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
       lastResult[0] !== null &&
       'names' in lastResult[0]
     ) {
-      const groups = lastResult as { names: string[] }[];
-      const newTeams: ScoreboardTeam[] = groups.map((g, i) => ({
-        id: crypto.randomUUID(),
-        name: `Group ${i + 1}`,
-        score: 0,
-        color: TEAM_COLORS[i % TEAM_COLORS.length],
-      }));
+      const groups = lastResult as RandomGroup[];
+      const newTeams: ScoreboardTeam[] = groups.map((g, i) => {
+        // If the random group has an ID, use it to lookup shared name
+        let name = `Group ${i + 1}`;
+        let linkedGroupId: string | undefined = undefined;
+
+        if (g.id) {
+          linkedGroupId = g.id;
+          // Try to find shared name
+          const shared = activeDashboard?.sharedGroups?.find(
+            (sg) => sg.id === g.id
+          );
+          if (shared) {
+            name = shared.name;
+          }
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          name,
+          score: 0,
+          color: TEAM_COLORS[i % TEAM_COLORS.length],
+          linkedGroupId,
+        };
+      });
 
       updateWidget(widget.id, {
         config: { ...config, teams: newTeams },
@@ -192,6 +212,28 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
   };
 
   const updateTeamName = (id: string, name: string) => {
+    const team = teams.find((t) => t.id === id);
+    if (team?.linkedGroupId) {
+      // Update shared group name
+      const sharedGroups = activeDashboard?.sharedGroups ?? [];
+      const existing = sharedGroups.find((g) => g.id === team.linkedGroupId);
+
+      let newSharedGroups;
+      if (existing) {
+        newSharedGroups = sharedGroups.map((g) =>
+          g.id === team.linkedGroupId ? { ...g, name } : g
+        );
+      } else {
+        // Should not happen if data is consistent, but safe fallback
+        newSharedGroups = [
+          ...sharedGroups,
+          { id: team.linkedGroupId ?? '', name },
+        ];
+      }
+
+      updateDashboard({ sharedGroups: newSharedGroups });
+    }
+
     updateWidget(widget.id, {
       config: {
         ...config,
