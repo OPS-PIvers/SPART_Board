@@ -52,6 +52,7 @@ import { TOOLS } from '../../../config/tools';
 import { getWidgetGradeLevels } from '../../../config/widgetGradeLevels';
 import { AdminSettings } from '../../admin/AdminSettings';
 import { GlassCard } from '../../common/GlassCard';
+import { Toggle } from '../../common/Toggle';
 import { SortableDashboardItem } from './SortableDashboardItem';
 import { StylePanel } from './StylePanel';
 
@@ -1009,6 +1010,38 @@ export const Sidebar: React.FC = () => {
                       >
                         {isDriveConnected ? 'Disconnect' : 'Connect'}
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <Settings className="w-4 h-4 text-slate-400" />
+                      <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
+                        Interface Preferences
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
+                          Disable Close Warning
+                        </span>
+                        <span className="text-[10px] text-slate-400 leading-tight">
+                          Skip the confirmation prompt when closing widgets.
+                        </span>
+                      </div>
+                      <Toggle
+                        size="sm"
+                        checked={
+                          activeDashboard?.settings?.disableCloseConfirmation ??
+                          false
+                        }
+                        onChange={(checked) =>
+                          updateDashboardSettings({
+                            disableCloseConfirmation: checked,
+                          })
+                        }
+                      />
                     </div>
                   </div>
 

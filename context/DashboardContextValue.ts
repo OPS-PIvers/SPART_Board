@@ -50,6 +50,7 @@ export interface DashboardContextValue {
   reorderTools: (tools: WidgetType[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
+  updateDashboard: (updates: Partial<Dashboard>) => void;
   clearAllStickers: () => void;
 
   // Sharing system
