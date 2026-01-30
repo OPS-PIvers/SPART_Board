@@ -294,7 +294,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   // to get proper CORS headers configured for a production-ready solution.
   const fetchWithFallback = async (url: string) => {
     const proxies = [
-      (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+      (u: string) =>
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
       (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       (u: string) =>
         `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,

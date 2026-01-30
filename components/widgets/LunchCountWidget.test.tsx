@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { LunchCountWidget } from './LunchCountWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
@@ -82,9 +82,9 @@ describe('LunchCountWidget', () => {
         assignments: {},
         // Pre-populate cachedMenu to prevent auto-sync loop in tests
         cachedMenu: {
-            hotLunch: 'Pizza',
-            bentoBox: 'Bento',
-            date: new Date().toISOString(),
+          hotLunch: 'Pizza',
+          bentoBox: 'Bento',
+          date: new Date().toISOString(),
         },
         lastSyncDate: new Date().toISOString(),
         ...config,
@@ -93,20 +93,16 @@ describe('LunchCountWidget', () => {
   };
 
   it('renders student chips from roster', async () => {
-    await act(async () => {
-      render(<LunchCountWidget widget={createWidget()} />);
-    });
+    render(<LunchCountWidget widget={createWidget()} />);
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(await screen.findByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
   it('allows dragging student chips', async () => {
-    await act(async () => {
-      render(<LunchCountWidget widget={createWidget()} />);
-    });
+    render(<LunchCountWidget widget={createWidget()} />);
 
-    const chip = screen.getByText('John Doe');
+    const chip = await screen.findByText('John Doe');
 
     expect(chip).toHaveAttribute('draggable', 'true');
 
@@ -116,19 +112,20 @@ describe('LunchCountWidget', () => {
     };
 
     fireEvent.dragStart(chip, {
-      dataTransfer
+      dataTransfer,
     });
 
-    expect(dataTransfer.setData).toHaveBeenCalledWith('studentName', 'John Doe');
+    expect(dataTransfer.setData).toHaveBeenCalledWith(
+      'studentName',
+      'John Doe'
+    );
     expect(dataTransfer.effectAllowed).toBe('move');
   });
 
   it('updates assignments on drop', async () => {
-    await act(async () => {
-      render(<LunchCountWidget widget={createWidget()} />);
-    });
+    render(<LunchCountWidget widget={createWidget()} />);
 
-    const hotLunchLabel = screen.getByText('Hot Lunch');
+    const hotLunchLabel = await screen.findByText('Hot Lunch');
     const hotLunchContainer = hotLunchLabel.closest('.group');
     expect(hotLunchContainer).toBeInTheDocument();
 
@@ -140,6 +137,7 @@ describe('LunchCountWidget', () => {
 
     fireEvent.drop(hotLunchContainer, { dataTransfer });
 
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     expect(mockDashboardContext.updateWidget).toHaveBeenCalledWith(
       'lunch-1',
       expect.objectContaining({
@@ -150,5 +148,6 @@ describe('LunchCountWidget', () => {
         }),
       })
     );
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   });
 });
