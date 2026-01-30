@@ -89,7 +89,7 @@ describe('triggerJulesWidgetGeneration', () => {
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(axios.post).toHaveBeenCalledWith(
-      'https://jules.google.com/api/v1/sessions',
+      'https://jules.googleapis.com/v1alpha/sessions?key=test-api-key',
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
         sourceContext: expect.objectContaining({
@@ -99,6 +99,7 @@ describe('triggerJulesWidgetGeneration', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           'X-Goog-Api-Key': 'test-api-key',
+          Authorization: 'Bearer test-api-key',
         }),
       })
     );

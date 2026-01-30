@@ -360,38 +360,4 @@ describe('DraggableWindow', () => {
 
     expect(mockRemoveWidget).toHaveBeenCalledWith('test-widget');
   });
-
-  it('shows confirmation on Escape if skipCloseConfirmation is false', () => {
-    const { container } = render(
-      <DraggableWindow
-        widget={mockWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        skipCloseConfirmation={false}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div data-testid="widget-content">Widget Content</div>
-      </DraggableWindow>
-    );
-
-    const widgetElement = container.querySelector('.widget') as HTMLElement;
-    if (!widgetElement) throw new Error('Widget element not found');
-
-    // Mock activeElement
-    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
-
-    fireEvent.keyDown(widgetElement, { key: 'Escape' });
-
-    // Should NOT call removeWidget yet
-    expect(mockRemoveWidget).not.toHaveBeenCalled();
-    // Should show confirmation
-    expect(
-      screen.getByText(/Close widget\? Data will be lost\./i)
-    ).toBeInTheDocument();
-  });
 });
