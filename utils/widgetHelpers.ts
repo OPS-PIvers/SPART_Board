@@ -19,7 +19,7 @@ const WIDGET_TITLES: Partial<Record<WidgetType, string>> = {
 export const getTitle = (widget: WidgetData): string => {
   if (widget.customTitle) return widget.customTitle;
   return (
-    WIDGET_TITLES[widget.type] ||
+    WIDGET_TITLES[widget.type] ??
     widget.type.charAt(0).toUpperCase() + widget.type.slice(1)
   );
 };
@@ -29,5 +29,5 @@ export const getTitle = (widget: WidgetData): string => {
  * Returns an empty object for widgets that don't require configuration.
  */
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
-  return (WIDGET_DEFAULTS[type]?.config as WidgetConfig) || {};
+  return (WIDGET_DEFAULTS[type]?.config as WidgetConfig) ?? {};
 };
