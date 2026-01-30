@@ -13,14 +13,6 @@ import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
-interface LayoutSizing {
-  fontSize: number;
-  slotHeight: number;
-  wheelSize: number;
-  gridCols: number;
-  gap: number;
-}
-
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, rosters, activeRosterId, activeDashboard } =
     useDashboard();
@@ -129,63 +121,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return combined;
   }, [firstNames, lastNames, activeRoster, rosterMode]);
 
-  // Dynamic sizing calculations for all animations
-  const layoutSizing = useMemo<LayoutSizing>(() => {
-    const availableH = widget.h - 100; // Subtract padding and button height
-    const availableW = widget.w - 40;
-
-    const defaults: LayoutSizing = {
-      fontSize: 16,
-      slotHeight: 100,
-      wheelSize: 300,
-      gridCols: 1,
-      gap: 8,
-    };
-
-    if (mode === 'single') {
-      if (visualStyle === 'flash') {
-        const fontSize = Math.min(availableW / 6, availableH / 2);
-        return { ...defaults, fontSize };
-      }
-      if (visualStyle === 'slots') {
-        const fontSize = Math.min(availableW / 6, availableH / 3);
-        return { ...defaults, fontSize, slotHeight: availableH };
-      }
-      if (visualStyle === 'wheel') {
-        const wheelSize = Math.min(availableW, availableH);
-        return { ...defaults, wheelSize };
-      }
-    }
-
-    if (
-      mode === 'groups' &&
-      Array.isArray(displayResult) &&
-      (displayResult.length === 0 || Array.isArray(displayResult[0]))
-    ) {
-      const numGroups = displayResult.length;
-      let cols = 1;
-      if (widget.w > 600) cols = 3;
-      else if (widget.w > 400) cols = 2;
-      const rows = Math.ceil(numGroups / cols);
-
-      // Find max name length to scale font
-      const allNames = (displayResult as string[][]).flat();
-      const maxNameLength =
-        allNames.reduce((max, name) => Math.max(max, name.length), 0) || 10;
-
-      const maxItemsInGroup = Math.max(
-        ...(displayResult as string[][]).map((g: string[]) => g.length)
-      );
-      const linesPerRow = maxItemsInGroup + 1.5;
-      const fontSizeH = availableH / rows / linesPerRow;
-      // Base width calculation on character count
-      const fontSizeW = availableW / cols / (maxNameLength * 0.7);
-      const fontSize = Math.max(10, Math.min(24, fontSizeH, fontSizeW));
-      return { ...defaults, gridCols: cols, fontSize, gap: fontSize / 2 };
-    }
-
-    return defaults;
-  }, [mode, visualStyle, displayResult, widget.w, widget.h]);
+  // Grid columns for group view
+  const gridCols = useMemo(() => {
+    if (widget.w > 600) return 3;
+    if (widget.w > 400) return 2;
+    return 1;
+  }, [widget.w]);
 
   const shuffle = <T,>(array: T[]): T[] => {
     const newArr = [...array];
@@ -384,8 +325,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
-      const wheelSize = layoutSizing.wheelSize;
-      const resultFontSize = layoutSizing.fontSize;
+      const availableH = widget.h - 100;
+      const availableW = widget.w - 40;
+      const wheelSize = Math.min(availableW, availableH);
 
       return (
         <RandomWheel
@@ -394,7 +336,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult}
           isSpinning={isSpinning}
-          resultFontSize={resultFontSize}
+          resultFontSize={32}
         />
       );
     }
@@ -403,8 +345,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return (
         <RandomSlots
           displayResult={displayResult}
-          fontSize={layoutSizing.fontSize}
-          slotHeight={layoutSizing.slotHeight}
+          fontSize={48}
+          slotHeight={widget.h - 100}
         />
       );
     }
@@ -413,7 +355,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <RandomFlash
         displayResult={displayResult}
         isSpinning={isSpinning}
-        fontSize={layoutSizing.fontSize}
+        fontSize={48}
       />
     );
   };
@@ -482,10 +424,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               </div>
             ) : (
               <div
-                className="flex-1 w-full grid"
+                className="flex-1 w-full grid content-start overflow-y-auto custom-scrollbar pr-1"
                 style={{
-                  gridTemplateColumns: `repeat(${layoutSizing?.gridCols ?? 1}, minmax(0, 1fr))`,
-                  gap: `${layoutSizing?.gap ?? 8}px`,
+                  gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+                  gap: '12px',
                 }}
               >
                 {(Array.isArray(displayResult) &&
@@ -497,21 +439,18 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   return (
                     <div
                       key={i}
-                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-2.5 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: `${layoutSizing?.fontSize ?? 14}px` }}
+                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
+                      style={{ fontSize: '14px' }}
                     >
-                      <div
-                        className=" uppercase text-blue-400 mb-1 tracking-widest opacity-80"
-                        style={{ fontSize: '0.6em' }}
-                      >
+                      <div className="uppercase text-blue-400 mb-1 tracking-widest opacity-80 text-[10px] font-bold">
                         Group {i + 1}
                       </div>
-                      <div className="space-y-0.5 overflow-hidden">
+                      <div className="space-y-1 overflow-hidden">
                         {group.map((name, ni) => (
                           <div
                             key={ni}
                             data-no-drag="true"
-                            className=" text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                            className="text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
                           >
                             {name}
                           </div>

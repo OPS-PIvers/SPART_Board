@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
@@ -26,14 +25,8 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     glow = false,
   } = widget.config as ClockConfig;
 
-  // Calculate scaled font size
-  const fontSize = useScaledFont(
-    widget.w,
-    widget.h,
-    showSeconds ? 1.8 : 2.5, // Base factor
-    16, // Min size
-    200 // Max size
-  );
+  // Base font size for the clock at its base dimensions (280x140)
+  const baseFontSize = showSeconds ? 48 : 64;
 
   const hours = time.getHours();
   const displayHours = format24
@@ -68,9 +61,9 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div
         className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
         style={{
-          fontSize: `${fontSize}px`,
+          fontSize: `${baseFontSize}px`,
           color: themeColor,
-          textShadow: glow ? `0 0 ${fontSize / 4}px ${themeColor}66` : 'none',
+          textShadow: glow ? `0 0 ${baseFontSize / 4}px ${themeColor}66` : 'none',
         }}
       >
         {clockStyle === 'lcd' && (

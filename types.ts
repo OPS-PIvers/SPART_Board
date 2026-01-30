@@ -698,6 +698,13 @@ export interface GlobalStyle {
   dockTextShadow: boolean;
 }
 
+export interface ScalingConfig {
+  baseWidth: number;
+  baseHeight: number;
+  canSpread?: boolean;
+  skipScaling?: boolean;
+}
+
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
   fontFamily: 'sans',
   windowTransparency: 0.8,

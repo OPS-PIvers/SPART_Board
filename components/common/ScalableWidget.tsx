@@ -5,7 +5,10 @@ interface ScalableWidgetProps {
   height: number;
   baseWidth: number;
   baseHeight: number;
-  children: React.ReactNode;
+  canSpread?: boolean;
+  padding?: number;
+  headerHeight?: number;
+  children: React.ReactNode | ((props: { internalW: number, internalH: number, scale: number }) => React.ReactNode);
 }
 
 export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
@@ -13,18 +16,48 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
   height,
   baseWidth,
   baseHeight,
+  canSpread = true,
+  padding = 0,
+  headerHeight = 0,
   children,
 }) => {
-  const scale = useMemo(() => {
-    // Avoid division by zero
-    if (baseWidth === 0 || baseHeight === 0) return 1;
-    const scaleX = width / baseWidth;
-    const scaleY = height / baseHeight;
-    return Math.min(scaleX, scaleY);
-  }, [width, height, baseWidth, baseHeight]);
+  const { scale, internalW, internalH } = useMemo(() => {
+    const availableW = Math.max(10, width - padding * 2);
+    const availableH = Math.max(10, height - headerHeight - padding * 2);
+
+    if (baseWidth <= 0 || baseHeight <= 0) {
+      return { scale: 1, internalW: availableW, internalH: availableH };
+    }
+
+    const scaleX = availableW / baseWidth;
+    const scaleY = availableH / baseHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return {
+      scale,
+      internalW: canSpread ? availableW / scale : baseWidth,
+      internalH: canSpread ? availableH / scale : baseHeight,
+    };
+  }, [
+    width,
+    height,
+    baseWidth,
+    baseHeight,
+    canSpread,
+    padding,
+    headerHeight,
+  ]);
+
+  const renderContent = () => {
+    if (typeof children === 'function') {
+      return children({ internalW, internalH, scale });
+    }
+    return children;
+  };
 
   return (
     <div
+      className="scalable-widget-container"
       style={{
         width: '100%',
         height: '100%',
@@ -32,19 +65,24 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+        padding: padding,
+        boxSizing: 'border-box',
       }}
     >
       <div
+        className="scalable-widget-content"
         style={{
-          width: baseWidth,
-          height: baseHeight,
+          width: internalW,
+          height: internalH,
           transform: `scale(${scale})`,
           transformOrigin: 'center center',
           display: 'flex',
           flexDirection: 'column',
+          flexShrink: 0,
+          willChange: 'transform',
         }}
       >
-        {children}
+        {renderContent()}
       </div>
     </div>
   );

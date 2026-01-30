@@ -173,10 +173,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const dynamicFontSize = useMemo(() => {
-    const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    return Math.max(12, baseSize * scaleMultiplier);
-  }, [widget.w, widget.h, scaleMultiplier]);
+  const baseFontSize = 18 * scaleMultiplier;
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
@@ -210,10 +207,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 
       <div className="flex-1 overflow-y-auto py-4 pl-12 pr-4 custom-scrollbar">
-        <ul
-          style={{ gap: `${dynamicFontSize / 2}px` }}
-          className="flex flex-col"
-        >
+        <ul style={{ gap: `${baseFontSize / 2}px` }} className="flex flex-col">
           {(mode === 'manual' ? items : students).map((item) => {
             const isManual = typeof item !== 'string';
             const label = isManual ? item.text : item;
@@ -228,7 +222,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                 id={id}
                 label={label}
                 isCompleted={isCompleted}
-                dynamicFontSize={dynamicFontSize}
+                dynamicFontSize={baseFontSize}
                 onToggle={toggleItem}
               />
             );
