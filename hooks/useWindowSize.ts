@@ -41,15 +41,29 @@ export const useWindowSize = (): WindowSize => {
     // If this is the first listener, set up the global event listener
     if (listeners.size === 1) {
       window.addEventListener('resize', handleResize);
-      // Ensure we have the latest size immediately
+    }
+
+    // Check for stale state (e.g. resized while no listeners were active)
+    // Only update if actually different to avoid unnecessary re-renders
+    if (
+      window.innerWidth !== windowSize.width ||
+      window.innerHeight !== windowSize.height
+    ) {
       windowSize = {
         width: window.innerWidth,
         height: window.innerHeight,
       };
-      setSize(windowSize);
+      // Notify all listeners (including self, since we just added setSize)
+      listeners.forEach((listener) => listener(windowSize));
     } else {
-      // Sync with current known size
-      setSize(windowSize);
+      // Even if global state matches, ensure local component state is in sync
+      // (This handles the edge case where a component mounts with an old initial state but global is current)
+      if (
+        size.width !== windowSize.width ||
+        size.height !== windowSize.height
+      ) {
+        setSize(windowSize);
+      }
     }
 
     return () => {
@@ -64,6 +78,7 @@ export const useWindowSize = (): WindowSize => {
         }
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return size;
