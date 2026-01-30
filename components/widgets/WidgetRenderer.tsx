@@ -144,21 +144,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
 
-  const getWidgetContent = () => {
-    if (WidgetComponent) {
-      return (
-        <Suspense fallback={<LoadingFallback />}>
-          <WidgetComponent widget={widget} isStudentView={isStudentView} />
-        </Suspense>
-      );
-    }
-    return (
-      <div className="p-4 text-center text-slate-400 text-sm">
-        Widget under construction
-      </div>
-    );
-  };
-
   const getWidgetSettings = () => {
     if (SettingsComponent) {
       return (

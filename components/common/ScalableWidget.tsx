@@ -8,7 +8,13 @@ interface ScalableWidgetProps {
   canSpread?: boolean;
   padding?: number;
   headerHeight?: number;
-  children: React.ReactNode | ((props: { internalW: number, internalH: number, scale: number }) => React.ReactNode);
+  children:
+    | React.ReactNode
+    | ((props: {
+        internalW: number;
+        internalH: number;
+        scale: number;
+      }) => React.ReactNode);
 }
 
 export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
@@ -38,15 +44,7 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
       internalW: canSpread ? availableW / scale : baseWidth,
       internalH: canSpread ? availableH / scale : baseHeight,
     };
-  }, [
-    width,
-    height,
-    baseWidth,
-    baseHeight,
-    canSpread,
-    padding,
-    headerHeight,
-  ]);
+  }, [width, height, baseWidth, baseHeight, canSpread, padding, headerHeight]);
 
   const renderContent = () => {
     if (typeof children === 'function') {
