@@ -41,3 +41,7 @@ playwright-report/
 
 # Vitest
 coverage/
+.env
+
+.gemini/
+gha-creds-*.json

@@ -6,9 +6,11 @@ import {
   deleteObject,
 } from 'firebase/storage';
 import { storage } from '../config/firebase';
+import { useGoogleDrive } from './useGoogleDrive';
 
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
+  const { driveService } = useGoogleDrive();
 
   const uploadFile = async (path: string, file: File): Promise<string> => {
     setUploading(true);
@@ -26,6 +28,23 @@ export const useStorage = () => {
     userId: string,
     file: File
   ): Promise<string> => {
+    if (driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `background-${Date.now()}-${file.name}`,
+          'Assets/Backgrounds'
+        );
+        // Make it public so it can be viewed as a background
+        await driveService.makePublic(driveFile.id);
+        // Use webContentLink for direct image access
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+      } finally {
+        setUploading(false);
+      }
+    }
+
     const timestamp = Date.now();
     return uploadFile(
       `users/${userId}/backgrounds/${timestamp}-${file.name}`,
@@ -34,6 +53,21 @@ export const useStorage = () => {
   };
 
   const uploadSticker = async (userId: string, file: File): Promise<string> => {
+    if (driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `sticker-${Date.now()}-${file.name}`,
+          'Assets/Stickers'
+        );
+        await driveService.makePublic(driveFile.id);
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+      } finally {
+        setUploading(false);
+      }
+    }
+
     const timestamp = Date.now();
     return uploadFile(
       `users/${userId}/stickers/${timestamp}-${file.name}`,
@@ -45,6 +79,21 @@ export const useStorage = () => {
     userId: string,
     blob: Blob
   ): Promise<string> => {
+    if (driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          blob,
+          `screenshot-${Date.now()}.jpg`,
+          'Assets/Screenshots'
+        );
+        await driveService.makePublic(driveFile.id);
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+      } finally {
+        setUploading(false);
+      }
+    }
+
     const timestamp = Date.now();
     const storageRef = ref(
       storage,
@@ -61,6 +110,24 @@ export const useStorage = () => {
   };
 
   const deleteFile = async (filePath: string): Promise<void> => {
+    // If it's a Drive link, we try to delete it from Drive
+    if (
+      filePath.startsWith('https://lh3.googleusercontent.com') ||
+      filePath.includes('drive.google.com')
+    ) {
+      if (driveService) {
+        try {
+          // Deletion of Drive assets by URL is not yet fully implemented
+          console.warn(
+            'Deletion of Drive assets by URL is not yet fully implemented'
+          );
+        } catch (e) {
+          console.error('Failed to delete from Drive:', e);
+        }
+      }
+      return;
+    }
+
     const fileRef = ref(storage, filePath);
     await deleteObject(fileRef);
   };
@@ -69,6 +136,7 @@ export const useStorage = () => {
     backgroundId: string,
     file: File
   ): Promise<string> => {
+    // Admins always save to Firebase Storage for global availability
     return uploadFile(`admin_backgrounds/${backgroundId}/${file.name}`, file);
   };
 
@@ -76,6 +144,7 @@ export const useStorage = () => {
     rangeId: string,
     file: File
   ): Promise<string> => {
+    // Admins always save to Firebase Storage for global availability
     const timestamp = Date.now();
     const storageRef = ref(
       storage,

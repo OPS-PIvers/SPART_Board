@@ -26,6 +26,7 @@ import {
   migrateWidget,
 } from '../utils/migration';
 import { useRosters } from '../hooks/useRosters';
+import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import { DashboardContext } from './DashboardContextValue';
 
 // Helper to migrate legacy visibleTools to dockItems
@@ -37,13 +38,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
+  const { driveService } = useGoogleDrive();
   const {
-    saveDashboard,
-    saveDashboards,
+    saveDashboard: saveDashboardFirestore,
+    saveDashboards: saveDashboardsFirestore,
     deleteDashboard: deleteDashboardFirestore,
     subscribeToDashboards,
-    shareDashboard,
-    loadSharedDashboard,
+    shareDashboard: shareDashboardFirestore,
+    loadSharedDashboard: loadSharedDashboardFirestore,
   } = useFirestore(user?.uid ?? null);
 
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
@@ -138,6 +140,88 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     dashboardsRef.current = dashboards;
   }, [dashboards]);
+
+  // --- DRIVE WRAPPERS & CALLBACKS ---
+
+  const saveDashboard = useCallback(
+    async (dashboard: Dashboard) => {
+      let driveFileId = dashboard.driveFileId;
+
+      if (driveService) {
+        try {
+          driveFileId ??= await driveService.exportDashboard(dashboard);
+        } catch (e) {
+          console.error('Failed to export to Drive during save:', e);
+        }
+      }
+
+      await saveDashboardFirestore({
+        ...dashboard,
+        driveFileId,
+      });
+    },
+    [driveService, saveDashboardFirestore]
+  );
+
+  const saveDashboards = useCallback(
+    async (dashboardsToSave: Dashboard[]) => {
+      await saveDashboardsFirestore(dashboardsToSave);
+
+      if (driveService) {
+        void (async () => {
+          for (const db of dashboardsToSave) {
+            try {
+              await driveService.exportDashboard(db);
+            } catch (e) {
+              console.error(
+                `Failed to export dashboard ${db.name} to Drive:`,
+                e
+              );
+            }
+          }
+        })();
+      }
+    },
+    [driveService, saveDashboardsFirestore]
+  );
+
+  const handleDeleteDashboard = useCallback(
+    async (id: string) => {
+      const dashboard = dashboards.find((d) => d.id === id);
+      if (driveService && dashboard?.driveFileId) {
+        try {
+          await driveService.deleteFile(dashboard.driveFileId);
+        } catch (e) {
+          console.error('Failed to delete dashboard from Drive:', e);
+        }
+      }
+      await deleteDashboardFirestore(id);
+    },
+    [driveService, dashboards, deleteDashboardFirestore]
+  );
+
+  const handleShareDashboard = useCallback(
+    async (dashboard: Dashboard): Promise<string> => {
+      // Always use Firestore for sharing to ensure maximum compatibility.
+      // Recipients shouldn't need Google Drive access to view a shared board.
+      return shareDashboardFirestore(dashboard);
+    },
+    [shareDashboardFirestore]
+  );
+
+  const handleLoadSharedDashboard = useCallback(
+    async (shareId: string): Promise<Dashboard | null> => {
+      if (shareId.startsWith('drive-')) {
+        if (!driveService) {
+          throw new Error('Google Drive access required to load this board');
+        }
+        const fileId = shareId.replace('drive-', '');
+        return driveService.importDashboard(fileId);
+      }
+      return loadSharedDashboardFirestore(shareId);
+    },
+    [driveService, loadSharedDashboardFirestore]
+  );
 
   // Load dashboards on mount and subscribe to changes
   useEffect(() => {
@@ -315,6 +399,52 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
+  // --- GOOGLE DRIVE SYNC EFFECT ---
+  // Decoupled from Firestore auto-save to ensure performance.
+  // Debounced heavily (5 seconds) to avoid hitting Drive API limits.
+  const lastExportedDataRef = useRef<string>('');
+  const driveSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!user || !driveService || loading || !activeId) return;
+
+    const active = dashboards.find((d) => d.id === activeId);
+    if (!active) return;
+
+    const currentData =
+      JSON.stringify(active.widgets) + active.background + active.name;
+
+    if (currentData === lastExportedDataRef.current) return;
+
+    if (driveSyncTimerRef.current) clearTimeout(driveSyncTimerRef.current);
+
+    driveSyncTimerRef.current = setTimeout(() => {
+      void driveService
+        .exportDashboard(active)
+        .then((newFileId) => {
+          lastExportedDataRef.current = currentData;
+          // If we got a new ID (e.g. first sync), save it back to Firestore silently
+          if (newFileId !== active.driveFileId) {
+            void saveDashboardFirestore({ ...active, driveFileId: newFileId });
+          }
+        })
+        .catch((err) => {
+          console.error('[Drive Sync] Background export failed:', err);
+        });
+    }, 5000);
+
+    return () => {
+      if (driveSyncTimerRef.current) clearTimeout(driveSyncTimerRef.current);
+    };
+  }, [
+    user,
+    driveService,
+    dashboards,
+    activeId,
+    loading,
+    saveDashboardFirestore,
+  ]);
+
   // Flush pending saves on page refresh/close
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -431,7 +561,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const load = async () => {
       try {
-        const sharedDb = await loadSharedDashboard(currentShareId);
+        const sharedDb = await handleLoadSharedDashboard(currentShareId);
 
         if (!mounted) return;
 
@@ -496,7 +626,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [
     pendingShareId,
     user,
-    loadSharedDashboard,
+    handleLoadSharedDashboard,
     saveDashboard,
     addToast,
     clearPendingShare,
@@ -769,7 +899,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      deleteDashboardFirestore(id)
+      handleDeleteDashboard(id)
         .then(() => {
           if (activeId === id) {
             const filtered = dashboards.filter((d) => d.id !== id);
@@ -782,7 +912,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           addToast('Delete failed', 'error');
         });
     },
-    [user, activeId, dashboards, deleteDashboardFirestore, addToast]
+    [user, activeId, dashboards, handleDeleteDashboard, addToast]
   );
 
   const duplicateDashboard = useCallback(
@@ -1297,8 +1427,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       removeItemFromFolder,
       moveItemOutOfFolder,
       reorderFolderItems,
-      shareDashboard,
-      loadSharedDashboard,
+      shareDashboard: handleShareDashboard,
+      loadSharedDashboard: handleLoadSharedDashboard,
       pendingShareId,
       clearPendingShare,
     }),
@@ -1353,8 +1483,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       removeItemFromFolder,
       moveItemOutOfFolder,
       reorderFolderItems,
-      shareDashboard,
-      loadSharedDashboard,
+      handleShareDashboard,
+      handleLoadSharedDashboard,
       pendingShareId,
       clearPendingShare,
     ]

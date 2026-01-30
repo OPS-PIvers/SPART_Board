@@ -1,8 +1,26 @@
-import React from 'react';
-import { ArrowLeft, Save, Trash2, PlusCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  ArrowLeft,
+  Save,
+  Trash2,
+  PlusCircle,
+  Sparkles,
+  Loader2,
+  Image as ImageIcon,
+  X,
+} from 'lucide-react';
 import { InstructionalRoutine } from '../../../config/instructionalRoutines';
 import { IconPicker } from './IconPicker';
 import { ROUTINE_COLORS, ROUTINE_STEP_COLORS } from '../../../config/colors';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../../config/firebase';
+import { useAuth } from '../../../context/useAuth';
+import { useStorage } from '../../../hooks/useStorage';
+import {
+  removeBackground,
+  trimImageWhitespace,
+} from '../../../utils/imageProcessing';
+import { PromptDialog } from './PromptDialog';
 
 interface LibraryManagerProps {
   routine: InstructionalRoutine;
@@ -17,6 +35,110 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
   onSave,
   onCancel,
 }) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { user } = useAuth();
+  const { uploadSticker } = useStorage();
+  const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(
+    null
+  );
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState<string | null>(
+    null
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleMagicDesign = async (prompt: string) => {
+    setIsGenerating(true);
+    try {
+      const generate = httpsCallable(functions, 'generateWithAI');
+      const result = await generate({
+        type: 'instructional-routine',
+        prompt,
+      });
+
+      const data = result.data as Partial<InstructionalRoutine>;
+
+      // Preserve ID but overwrite other fields
+      onChange({
+        ...routine,
+        name: data.name ?? routine.name,
+        grades: (data.grades as string) ?? routine.grades,
+        icon: data.icon ?? routine.icon,
+        color: data.color ?? routine.color,
+        steps:
+          data.steps?.map((s) => ({
+            ...s,
+            stickerUrl: undefined, // Ensure type compatibility
+          })) ?? routine.steps,
+      });
+    } catch (error) {
+      console.error('Magic Design failed:', error);
+      setErrorMessage('Failed to generate routine. Please try again.');
+      setTimeout(() => setErrorMessage(null), 3000);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleStickerUpload = async (file: File, index: number) => {
+    if (!user || !file) return;
+
+    // Validate file size (max 5MB)
+    const maxFileSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxFileSizeBytes) {
+      setErrorMessage(
+        'The selected image is too large. Please choose an image smaller than 5MB.'
+      );
+      setTimeout(() => setErrorMessage(null), 4000);
+      return;
+    }
+
+    setUploadingStepIndex(index);
+    setProcessingMessage(
+      'Processing image... This may take a few seconds for large images.'
+    );
+    try {
+      // Process image
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const noBg = await removeBackground(dataUrl);
+      const trimmed = await trimImageWhitespace(noBg);
+
+      setProcessingMessage('Uploading sticker...');
+
+      // Convert back to File
+      const response = await fetch(trimmed);
+      const blob = await response.blob();
+      const processedFile = new File(
+        [blob],
+        file.name.replace(/\.[^/.]+$/, '') + '.png',
+        { type: 'image/png' }
+      );
+
+      const url = await uploadSticker(user.uid, processedFile);
+
+      // Update step
+      const nextSteps = [...routine.steps];
+      nextSteps[index] = { ...nextSteps[index], stickerUrl: url };
+      onChange({ ...routine, steps: nextSteps });
+
+      setProcessingMessage(null);
+    } catch (e) {
+      console.error('Sticker upload failed:', e);
+      setErrorMessage(
+        'Failed to upload sticker. Please check your image and try again.'
+      );
+      setTimeout(() => setErrorMessage(null), 3000);
+      setProcessingMessage(null);
+    } finally {
+      setUploadingStepIndex(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 p-4 overflow-y-auto custom-scrollbar">
       <div className="flex items-center gap-2 mb-4">
@@ -29,6 +151,18 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
         <h3 className="font-black text-xs uppercase tracking-widest text-slate-500 flex-1">
           {routine.id ? 'Edit Routine Template' : 'Add New Routine'}
         </h3>
+        <button
+          onClick={() => setShowPromptDialog(true)}
+          disabled={isGenerating}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-xxs font-black uppercase tracking-wider hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 transition-all shadow-sm"
+        >
+          {isGenerating ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Sparkles size={14} />
+          )}
+          Magic Design
+        </button>
         <button
           onClick={onSave}
           disabled={!routine.name}
@@ -115,6 +249,53 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                       });
                     }}
                   />
+                  <label
+                    className="cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-colors relative group/upload"
+                    aria-label="Upload custom sticker image"
+                  >
+                    {uploadingStepIndex === i ? (
+                      <Loader2
+                        size={16}
+                        className="animate-spin text-blue-500"
+                      />
+                    ) : step.stickerUrl ? (
+                      <div className="relative">
+                        <img
+                          src={step.stickerUrl}
+                          alt="Sticker"
+                          className="w-6 h-6 object-contain"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const next = [...routine.steps];
+                            next[i] = { ...next[i], stickerUrl: undefined };
+                            onChange({ ...routine, steps: next });
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/upload:opacity-100 transition-opacity"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ) : (
+                      <ImageIcon
+                        size={16}
+                        className="text-slate-400 group-hover/upload:text-blue-500"
+                      />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0])
+                          void handleStickerUpload(e.target.files[0], i);
+                      }}
+                      disabled={uploadingStepIndex !== null}
+                      aria-label="Upload custom sticker image"
+                    />
+                  </label>
                   <input
                     type="text"
                     value={step.label ?? ''}
@@ -194,6 +375,37 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Processing Message */}
+      {processingMessage && (
+        <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-4 z-50">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm font-medium">{processingMessage}</span>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-4 z-50">
+          <span className="text-sm font-medium">{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Magic Design Prompt Dialog */}
+      {showPromptDialog && (
+        <PromptDialog
+          title="Magic Design"
+          message="Describe the instructional routine you want to create"
+          placeholder='e.g., "A 3-step routine for peer review where students swap papers twice"'
+          confirmLabel="Generate"
+          cancelLabel="Cancel"
+          onConfirm={(prompt) => {
+            setShowPromptDialog(false);
+            void handleMagicDesign(prompt);
+          }}
+          onCancel={() => setShowPromptDialog(false)}
+        />
+      )}
     </div>
   );
 };

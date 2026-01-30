@@ -6,11 +6,13 @@ import {
   Shield,
   Image as ImageIcon,
   Zap,
+  Bot,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
+import { JulesWidgetGenerator } from './JulesWidgetGenerator';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -45,7 +47,7 @@ const TabButton: React.FC<{
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds'
+    'features' | 'global' | 'backgrounds' | 'jules'
   >('features');
 
   // Close modal on Escape key press
@@ -115,6 +117,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               icon={<ImageIcon className="w-4 h-4" />}
               label="Background Manager"
             />
+            <TabButton
+              id="tab-jules"
+              controls="panel-jules"
+              isActive={activeTab === 'jules'}
+              onClick={() => setActiveTab('jules')}
+              icon={<Bot className="w-4 h-4" />}
+              label="Jules Agent"
+            />
           </div>
         </div>
 
@@ -176,6 +186,26 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
                 </p>
               </div>
               <BackgroundManager />
+            </div>
+          )}
+
+          {activeTab === 'jules' && (
+            <div
+              id="panel-jules"
+              role="tabpanel"
+              aria-labelledby="tab-jules"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  Jules Widget Architect
+                </h3>
+                <p className="text-slate-600">
+                  Summon the Jules AI Agent to build and implement a new widget
+                  directly into the codebase.
+                </p>
+              </div>
+              <JulesWidgetGenerator />
             </div>
           )}
         </div>

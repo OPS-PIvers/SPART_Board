@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
@@ -31,32 +32,26 @@ interface HTMLElementWithCapture extends HTMLDivElement {
   releasePointerCapture: (id: number) => void;
 }
 
-vi.mock('./GlassCard', () => ({
-  GlassCard: ({
-    children,
-    className,
-    onPointerDown,
-    onClick,
-    style,
-  }: GlassCardProps) => (
+vi.mock('./GlassCard', () => {
+  const GlassCard = React.forwardRef<
+    HTMLDivElement,
+    GlassCardProps & { tabIndex?: number }
+  >(({ children, className, onPointerDown, onClick, style, tabIndex }, ref) => (
     <div
+      ref={ref}
+      tabIndex={tabIndex}
+      data-testid="draggable-window"
       className={className}
       onPointerDown={onPointerDown}
       onClick={onClick}
       style={style}
-      ref={(el) => {
-        if (el) {
-          const div = el as unknown as HTMLElementWithCapture;
-          div.setPointerCapture = vi.fn();
-          div.hasPointerCapture = vi.fn().mockReturnValue(true);
-          div.releasePointerCapture = vi.fn();
-        }
-      }}
     >
       {children}
     </div>
-  ),
-}));
+  ));
+  GlassCard.displayName = 'GlassCard';
+  return { GlassCard };
+});
 
 vi.mock('./AnnotationCanvas', () => ({
   AnnotationCanvas: () => <div data-testid="annotation-canvas" />,
@@ -245,5 +240,68 @@ describe('DraggableWindow', () => {
         h: 300,
       })
     );
+  });
+
+  it('closes immediately on Escape if skipCloseConfirmation is true', () => {
+    const { container } = render(
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        skipCloseConfirmation={true}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div data-testid="widget-content">Widget Content</div>
+      </DraggableWindow>
+    );
+
+    const widgetElement = container.querySelector('.widget') as HTMLElement;
+    if (!widgetElement) throw new Error('Widget element not found');
+
+    // Mock activeElement
+    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
+
+    fireEvent.keyDown(widgetElement, { key: 'Escape' });
+
+    expect(mockRemoveWidget).toHaveBeenCalledWith('test-widget');
+  });
+
+  it('shows confirmation on Escape if skipCloseConfirmation is false', () => {
+    const { container } = render(
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        skipCloseConfirmation={false}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div data-testid="widget-content">Widget Content</div>
+      </DraggableWindow>
+    );
+
+    const widgetElement = container.querySelector('.widget') as HTMLElement;
+    if (!widgetElement) throw new Error('Widget element not found');
+
+    // Mock activeElement
+    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
+
+    fireEvent.keyDown(widgetElement, { key: 'Escape' });
+
+    // Should NOT call removeWidget yet
+    expect(mockRemoveWidget).not.toHaveBeenCalled();
+    // Should show confirmation
+    expect(
+      screen.getByText(/Close widget\? Data will be lost\./i)
+    ).toBeInTheDocument();
   });
 });

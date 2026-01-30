@@ -24,7 +24,10 @@ import {
   Cloud,
   CloudCheck,
   Save,
+  AlertCircle,
 } from 'lucide-react';
+import { GoogleDriveIcon } from '../../common/GoogleDriveIcon';
+import { useGoogleDrive } from '../../../hooks/useGoogleDrive';
 import {
   DndContext,
   closestCenter,
@@ -79,8 +82,14 @@ export const Sidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { user, signOut, isAdmin, featurePermissions, canAccessFeature } =
-    useAuth();
+  const {
+    user,
+    signOut,
+    signInWithGoogle,
+    isAdmin,
+    featurePermissions,
+    canAccessFeature,
+  } = useAuth();
   const { uploadBackgroundImage } = useStorage();
   const {
     dashboards,
@@ -106,6 +115,8 @@ export const Sidebar: React.FC = () => {
     addToast,
     shareDashboard,
   } = useDashboard();
+
+  const { isConnected: isDriveConnected } = useGoogleDrive();
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -207,11 +218,26 @@ export const Sidebar: React.FC = () => {
     }
     const target = db ?? activeDashboard;
     if (!target) return;
+
+    addToast('Generating share link...', 'info');
+
     try {
       const shareId = await shareDashboard(target);
       const url = `${window.location.origin}/share/${shareId}`;
-      await navigator.clipboard.writeText(url);
-      addToast('Board link copied to clipboard!', 'success');
+
+      // Try to copy immediately - if it fails due to focus/gesture,
+      // we'll at least have told the user it's ready.
+      try {
+        await navigator.clipboard.writeText(url);
+        addToast('Link copied to clipboard!', 'success');
+      } catch (clipErr) {
+        console.warn(
+          'Initial clipboard write failed, likely focus issue:',
+          clipErr
+        );
+        // Fallback: Just show the link or a success message
+        addToast('Board is now shared! Link ready.', 'success');
+      }
     } catch (err) {
       console.error('Share failed:', err);
       addToast('Failed to generate share link', 'error');
@@ -541,23 +567,6 @@ export const Sidebar: React.FC = () => {
                     ? 'Classroom Manager'
                     : activeSection.replace('-', ' ')}
                 </span>
-                <div
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${
-                    isSaving
-                      ? 'bg-amber-50 text-amber-600 animate-pulse'
-                      : 'bg-emerald-50 text-emerald-600'
-                  }`}
-                  title={isSaving ? 'Saving to Cloud...' : 'All Changes Saved'}
-                >
-                  {isSaving ? (
-                    <Cloud className="w-3 h-3 animate-bounce" />
-                  ) : (
-                    <CloudCheck className="w-3 h-3" />
-                  )}
-                  <span className="text-[8px] font-black uppercase tracking-tighter">
-                    {isSaving ? 'Syncing' : 'Cloud'}
-                  </span>
-                </div>
               </div>
               <button
                 onClick={() => {
@@ -956,6 +965,53 @@ export const Sidebar: React.FC = () => {
                 }`}
               >
                 <div className="space-y-6">
+                  {/* Google Drive Connection Management */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <GoogleDriveIcon className="w-4 h-4" />
+                      <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
+                        Google Drive Integration
+                      </label>
+                    </div>
+
+                    <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
+                      Your boards and assets are automatically backed up to your
+                      &quot;School Boards&quot; folder in Drive.
+                    </p>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        {isDriveConnected ? (
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                        )}
+                        <span className="text-xxs font-bold text-slate-600 uppercase">
+                          {isDriveConnected
+                            ? 'Connected & Synced'
+                            : 'Disconnected'}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (isDriveConnected) {
+                            void signOut();
+                          } else {
+                            void signInWithGoogle();
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${
+                          isDriveConnected
+                            ? 'text-slate-400 hover:text-brand-red-primary bg-slate-50 hover:bg-brand-red-lighter'
+                            : 'bg-brand-blue-primary text-white shadow-sm'
+                        }`}
+                      >
+                        {isDriveConnected ? 'Disconnect' : 'Connect'}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div className="flex justify-between items-center mb-3 px-1">
                       <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
@@ -1069,8 +1125,48 @@ export const Sidebar: React.FC = () => {
                     {user?.email}
                   </span>
                 </div>
+
+                <div className="flex items-center gap-2 mr-1">
+                  {/* Sync Status */}
+                  <div
+                    className={`transition-all duration-500 ${
+                      isSaving ? 'text-amber-500' : 'text-emerald-500'
+                    }`}
+                    title={
+                      isSaving ? 'Syncing changes...' : 'All changes saved'
+                    }
+                  >
+                    {isSaving ? (
+                      <Cloud className="w-4 h-4 animate-bounce" />
+                    ) : (
+                      <CloudCheck className="w-4 h-4" />
+                    )}
+                  </div>
+
+                  {/* Drive Status */}
+                  <div className="relative">
+                    <div
+                      className={`transition-all duration-500 ${
+                        isDriveConnected ? '' : 'grayscale opacity-30'
+                      }`}
+                      title={
+                        isDriveConnected
+                          ? 'Google Drive Connected'
+                          : 'Google Drive Disconnected'
+                      }
+                    >
+                      <GoogleDriveIcon className="w-4 h-4" />
+                    </div>
+                    {!isDriveConnected && (
+                      <div className="absolute -top-1 -right-1 bg-white rounded-full">
+                        <AlertCircle className="w-2.5 h-2.5 text-brand-red-primary fill-white" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <button
-                  onClick={signOut}
+                  onClick={() => void signOut()}
                   className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
                   title="Sign Out"
                 >

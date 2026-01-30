@@ -4,6 +4,7 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  GoogleAuthProvider,
 } from 'firebase/auth';
 import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isAuthBypass } from '../config/firebase';
@@ -57,7 +58,10 @@ import { AuthContext } from './AuthContextValue';
 
 // Constants for mock data consistency
 const MOCK_TOKEN = 'mock-token';
+const MOCK_ACCESS_TOKEN = 'mock-google-access-token';
 const MOCK_TIME = new Date().toISOString(); // Fixed time at module load
+
+const GOOGLE_ACCESS_TOKEN_KEY = 'spart_google_access_token';
 
 /**
  * Mock user object for bypass mode.
@@ -113,6 +117,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(
     isAuthBypass ? MOCK_USER : null
   );
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
+    () => {
+      if (isAuthBypass) return MOCK_ACCESS_TOKEN;
+      return localStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
+    }
+  );
   // Note: In bypass mode we initialize `loading` to false because the mock user
   // and admin status are set synchronously above. This makes the auth state
   // appear "ready" immediately for faster local development and testing.
@@ -126,6 +136,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [globalPermissions, setGlobalPermissions] = useState<
     GlobalFeaturePermission[]
   >([]);
+
+  // Persist googleAccessToken to localStorage
+  useEffect(() => {
+    if (isAuthBypass) return;
+    if (googleAccessToken) {
+      localStorage.setItem(GOOGLE_ACCESS_TOKEN_KEY, googleAccessToken);
+    } else {
+      localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+    }
+  }, [googleAccessToken]);
 
   // Check if user is admin
   useEffect(() => {
@@ -209,6 +229,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (!user) {
+        setGoogleAccessToken(null);
+      }
       setLoading(false);
     });
     return unsubscribe;
@@ -225,7 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!user) return false;
 
       const permission = featurePermissions.find(
-        (p) => p.widgetType === widgetType
+        (p: FeaturePermission) => p.widgetType === widgetType
       );
 
       // Default behavior: If no permission record exists, allow public access
@@ -285,11 +308,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isAuthBypass) {
       console.warn('Bypassing Google Sign In');
       setUser(MOCK_USER);
+      setGoogleAccessToken(MOCK_ACCESS_TOKEN);
       setIsAdmin(true); // Restore admin status on sign in
       return;
     }
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential) {
+        setGoogleAccessToken(credential.accessToken ?? null);
+      }
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -300,12 +328,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isAuthBypass) {
       console.warn('Bypassing Sign Out');
       setUser(null);
+      setGoogleAccessToken(null);
       setIsAdmin(null); // Clear admin status on sign out (consistent with non-bypass behavior)
       setFeaturePermissions([]); // Clear feature permissions on sign out in bypass mode
       return;
     }
     try {
       await firebaseSignOut(auth);
+      setGoogleAccessToken(null);
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;
@@ -316,6 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     <AuthContext.Provider
       value={{
         user,
+        googleAccessToken,
         loading,
         isAdmin,
         featurePermissions,

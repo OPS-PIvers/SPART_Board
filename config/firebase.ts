@@ -48,6 +48,9 @@ if (isConfigured) {
   storage = getStorage(app);
   functions = getFunctions(app);
   googleProvider = new GoogleAuthProvider();
+  // Add Google Drive scopes
+  googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
+  googleProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
 } else {
   // Mock objects to prevent crashes when importing
   auth = {

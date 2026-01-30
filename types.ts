@@ -125,6 +125,7 @@ export interface RoutineStep {
   id: string;
   text: string;
   icon?: string;
+  stickerUrl?: string;
   color?: string;
   attachedWidget?: {
     type: WidgetType;
@@ -207,6 +208,7 @@ export interface DrawingConfig {
 
 export interface QRConfig {
   url: string;
+  syncWithTextWidget?: boolean;
 }
 
 export interface EmbedConfig {
@@ -557,6 +559,7 @@ export interface DashboardSettings {
 export interface Dashboard {
   id: string;
   name: string;
+  driveFileId?: string;
   background: string;
   thumbnailUrl?: string;
   widgets: WidgetData[];
@@ -693,6 +696,28 @@ export interface GlobalStyle {
   dockBorderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
   dockTextColor: string; // hex color
   dockTextShadow: boolean;
+}
+
+/**
+ * Configuration for the universal widget scaling system.
+ * Defines how a widget should be scaled within its window.
+ */
+export interface ScalingConfig {
+  /** The target internal width (in pixels) the widget is designed for. */
+  baseWidth: number;
+  /** The target internal height (in pixels) the widget is designed for. */
+  baseHeight: number;
+  /**
+   * If true, the widget's internal layout can expand horizontally or vertically
+   * beyond the base dimensions while maintaining the calculated scale.
+   * Useful for widgets with flexible content like text or lists.
+   */
+  canSpread?: boolean;
+  /**
+   * If true, the universal ScalableWidget wrapper will be skipped.
+   * The widget will be responsible for its own responsiveness.
+   */
+  skipScaling?: boolean;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {

@@ -15,6 +15,8 @@ import { ref, deleteObject } from 'firebase/storage';
 import { BackgroundPreset, AccessLevel } from '../../types';
 import { useStorage } from '../../hooks/useStorage';
 import { useAuth } from '../../context/useAuth';
+import { useGoogleDrive } from '../../hooks/useGoogleDrive';
+import { DriveFile } from '../../utils/googleDriveService';
 import {
   Upload,
   Trash2,
@@ -28,6 +30,7 @@ import {
   Pencil,
   X,
   Check,
+  Database,
 } from 'lucide-react';
 
 const DEFAULT_PRESETS = [
@@ -93,10 +96,77 @@ export const BackgroundManager: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadAdminBackground } = useStorage();
   const { user } = useAuth();
+  const { driveService, isConnected: isDriveConnected } = useGoogleDrive();
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
+  const [loadingDrive, setLoadingDrive] = useState(false);
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
   }, []);
+
+  const loadDriveImages = async () => {
+    if (!driveService) return;
+    try {
+      setLoadingDrive(true);
+      const images = await driveService.getBackgroundImages();
+      setDriveFiles(images);
+      setShowDrivePicker(true);
+    } catch (error) {
+      console.error('Error loading Drive images:', error);
+      showMessage('error', 'Failed to load images from Google Drive');
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  const handleDriveSelect = async (file: DriveFile) => {
+    if (!driveService || !user) return;
+
+    setUploading(true);
+    setShowDrivePicker(false);
+    let downloadURL = '';
+    const presetId = crypto.randomUUID();
+
+    try {
+      // 1. Download blob from Google Drive
+      const blob = await driveService.downloadFile(file.id);
+
+      // 2. Convert to File object
+      const imageFile = new File([blob], file.name, { type: file.mimeType });
+
+      // 3. Upload to Firebase Storage (Reuse admin path)
+      downloadURL = await uploadAdminBackground(presetId, imageFile);
+
+      const newPreset: BackgroundPreset = {
+        id: presetId,
+        url: downloadURL,
+        label: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+        active: true,
+        accessLevel: 'public',
+        betaUsers: [],
+        createdAt: Date.now(),
+      };
+
+      await setDoc(doc(db, 'admin_backgrounds', newPreset.id), newPreset);
+      setPresets((prev) => [newPreset, ...prev]);
+      showMessage('success', 'Background imported from Google Drive');
+    } catch (error) {
+      console.error('Drive import failed:', error);
+      showMessage('error', 'Failed to import from Drive');
+      // Cleanup orphaned file if DB write failed
+      if (downloadURL) {
+        try {
+          const fileRef = ref(storage, downloadURL);
+          await deleteObject(fileRef);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup orphaned file:', cleanupError);
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Manage message timeout lifecycle
   useEffect(() => {
@@ -348,6 +418,23 @@ export const BackgroundManager: React.FC = () => {
         </h3>
         <div className="flex gap-2">
           <button
+            onClick={() => void loadDriveImages()}
+            disabled={!isDriveConnected || loadingDrive}
+            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors flex items-center gap-2 disabled:opacity-50"
+            title={
+              isDriveConnected
+                ? 'Select from Google Drive'
+                : 'Sign in with Google to use Drive'
+            }
+          >
+            {loadingDrive ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Database className="w-4 h-4" />
+            )}
+            Google Drive
+          </button>
+          <button
             onClick={() => void restoreDefaults()}
             className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2"
             title="Restore original stock images"
@@ -376,6 +463,65 @@ export const BackgroundManager: React.FC = () => {
           onChange={(e) => void handleFileUpload(e)}
         />
       </div>
+
+      {/* Drive Picker Modal */}
+      {showDrivePicker && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">
+                  Select Image from Google Drive
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Only images from your drive are shown
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDrivePicker(false)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {driveFiles.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {driveFiles.map((file) => (
+                    <button
+                      key={file.id}
+                      onClick={() => void handleDriveSelect(file)}
+                      className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-blue-primary transition-all text-left"
+                    >
+                      {file.thumbnailLink ? (
+                        <img
+                          src={file.thumbnailLink.replace('=s220', '=s400')}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-slate-300" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                        <p className="text-white text-xs font-medium truncate">
+                          {file.name}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center text-slate-400">
+                  <Database className="w-12 h-12 mb-2 opacity-20" />
+                  <p>No images found in your Google Drive</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="flex-1">

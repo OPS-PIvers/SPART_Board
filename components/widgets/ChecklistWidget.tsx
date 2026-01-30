@@ -7,6 +7,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
   InstructionalRoutinesConfig,
 } from '../../types';
+import { useDebounce } from '../../hooks/useDebounce';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
@@ -172,10 +173,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const dynamicFontSize = useMemo(() => {
-    const baseSize = Math.min(widget.w / 18, widget.h / 12);
-    return Math.max(12, baseSize * scaleMultiplier);
-  }, [widget.w, widget.h, scaleMultiplier]);
+  const baseFontSize = 18 * scaleMultiplier;
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
@@ -209,10 +207,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
 
       <div className="flex-1 overflow-y-auto py-4 pl-12 pr-4 custom-scrollbar">
-        <ul
-          style={{ gap: `${dynamicFontSize / 2}px` }}
-          className="flex flex-col"
-        >
+        <ul style={{ gap: `${baseFontSize / 2}px` }} className="flex flex-col">
           {(mode === 'manual' ? items : students).map((item) => {
             const isManual = typeof item !== 'string';
             const label = isManual ? item.text : item;
@@ -227,7 +222,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                 id={id}
                 label={label}
                 isCompleted={isCompleted}
-                dynamicFontSize={dynamicFontSize}
+                dynamicFontSize={baseFontSize}
                 onToggle={toggleItem}
               />
             );
@@ -266,9 +261,14 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
     items.map((i) => i.text).join('\n')
   );
 
-  const handleBulkChange = (text: string) => {
-    setLocalText(text);
-    const lines = text.split('\n');
+  const debouncedText = useDebounce(localText, 500);
+
+  // Sync debounced text to widget config
+  useEffect(() => {
+    const currentText = items.map((i) => i.text).join('\n');
+    if (debouncedText === currentText) return;
+
+    const lines = debouncedText.split('\n');
     const newItems: ChecklistItem[] = lines
       .filter((line) => line.trim() !== '')
       .map((line, idx) => {
@@ -282,6 +282,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       });
 
     updateWidget(widget.id, { config: { ...config, items: newItems } });
+  }, [debouncedText, widget.id, updateWidget, config, items]);
+
+  const handleBulkChange = (text: string) => {
+    setLocalText(text);
   };
 
   // Nexus Connection: Import from Instructional Routines

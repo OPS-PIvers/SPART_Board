@@ -1,14 +1,16 @@
 import { useState, useCallback } from 'react';
 import { toPng } from 'html-to-image';
+import { useStorage } from './useStorage';
+import { useAuth } from '../context/useAuth';
 
 interface UseScreenshotResult {
-  takeScreenshot: () => Promise<void>;
+  takeScreenshot: (options?: { upload?: boolean }) => Promise<string | void>;
   isFlashing: boolean;
   isCapturing: boolean;
 }
 
 interface ScreenshotOptions {
-  onSuccess?: () => void;
+  onSuccess?: (url?: string) => void;
   onError?: (error: unknown) => void;
 }
 
@@ -20,58 +22,69 @@ export const useScreenshot = (
   const [isFlashing, setIsFlashing] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const { onSuccess, onError } = options;
+  const { user } = useAuth();
+  const { uploadScreenshot } = useStorage();
 
-  const takeScreenshot = useCallback(async () => {
-    const node =
-      nodeOrRef && 'current' in nodeOrRef ? nodeOrRef.current : nodeOrRef;
+  const takeScreenshot = useCallback(
+    async (takeOptions: { upload?: boolean } = {}) => {
+      const node =
+        nodeOrRef && 'current' in nodeOrRef ? nodeOrRef.current : nodeOrRef;
 
-    if (!node) return;
+      if (!node) return;
 
-    try {
-      setIsCapturing(true);
+      try {
+        setIsCapturing(true);
 
-      // Trigger Flash Animation
-      setIsFlashing(true);
-      setTimeout(() => setIsFlashing(false), 300); // Flash duration matches CSS duration-300
+        // Trigger Flash Animation
+        setIsFlashing(true);
+        setTimeout(() => setIsFlashing(false), 300);
 
-      // Allow a brief delay so React can process the flash state change before capture starts.
-      // The flash overlay is also excluded via the filter below as a secondary safeguard.
-      await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // Generate Image
-      const dataUrl = await toPng(node, {
-        cacheBust: true,
-        pixelRatio: 2, // Higher quality
-        filter: (node: Element) => {
-          if (!(node instanceof HTMLElement)) {
-            return true;
-          }
+        const dataUrl = await toPng(node, {
+          cacheBust: true,
+          pixelRatio: 2,
+          filter: (node: Element) => {
+            if (!(node instanceof HTMLElement)) {
+              return true;
+            }
+            const dataset = node.dataset;
+            const shouldExclude =
+              dataset.screenshot === 'flash' ||
+              dataset.screenshot === 'exclude' ||
+              node.classList.contains('isFlashing');
 
-          // Exclude the flash overlay and anything marked for exclusion
-          const dataset = node.dataset;
-          const shouldExclude =
-            dataset.screenshot === 'flash' ||
-            dataset.screenshot === 'exclude' ||
-            node.classList.contains('isFlashing');
+            return !shouldExclude;
+          },
+        });
 
-          return !shouldExclude;
-        },
-      });
-
-      // Download logic
-      const link = document.createElement('a');
-      link.download = `${fileName}.png`;
-      link.href = dataUrl;
-      link.click();
-      onSuccess?.();
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      console.error('Screenshot failed:', error);
-      onError?.(error);
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [nodeOrRef, fileName, onSuccess, onError]);
+        if (takeOptions.upload && user) {
+          // Convert dataUrl to blob
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          const url = await uploadScreenshot(user.uid, blob);
+          onSuccess?.(url);
+          return url;
+        } else {
+          // Download logic
+          const link = document.createElement('a');
+          link.download = `${fileName}.png`;
+          link.href = dataUrl;
+          link.click();
+          onSuccess?.();
+          return;
+        }
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        console.error('Screenshot failed:', error);
+        onError?.(error);
+        return;
+      } finally {
+        setIsCapturing(false);
+      }
+    },
+    [nodeOrRef, fileName, onSuccess, onError, user, uploadScreenshot]
+  );
 
   return { takeScreenshot, isFlashing, isCapturing };
 };
