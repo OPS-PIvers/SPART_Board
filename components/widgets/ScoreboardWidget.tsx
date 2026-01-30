@@ -141,7 +141,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     [activeDashboard]
   );
 
-  // Find Poll Widget
+  // Find Poll Widget (Nexus Connection)
   const pollWidget = useMemo(
     () => activeDashboard?.widgets.find((w) => w.type === 'poll'),
     [activeDashboard]
