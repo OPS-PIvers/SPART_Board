@@ -1,20 +1,26 @@
 {
-  "name": "Gemini AI Workspace",
+  "name": "School Boards - Full AI Workspace",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
 
   "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/pnpm:1": {
+      "version": "latest"
+    }
   },
 
-  // 1. AUTO-INSTALLATION
-  // Installs necessary CLI tools and project dependencies automatically
-  "postCreateCommand": "npm install -g @google/gemini-cli firebase-tools && npm install",
+  // AUTO-INSTALLATION
+  // Installs necessary CLI tools, project dependencies, and Gemini extensions/skills
+  "postCreateCommand": "corepack enable && pnpm install && npx playwright install --with-deps && npm install -g @google/gemini-cli firebase-tools @google/jules && gemini extensions install https://github.com/gemini-cli-extensions/stitch --consent && gemini extensions install https://github.com/ChromeDevTools/chrome-devtools-mcp --consent && gemini extensions install https://github.com/gemini-cli-extensions/code-review --consent && gemini extensions install https://github.com/upstash/context7 --consent && gemini extensions install https://github.com/gemini-cli-extensions/firebase --consent && gemini extensions install https://github.com/gemini-cli-extensions/jules --consent && gemini extensions install https://github.com/gemini-cli-extensions/security --consent",
 
-  // 2. AUTO-START
+  // AUTO-START
   // Automatically clears the terminal and starts Gemini
-  "postAttachCommand": "clear && echo 'Welcome to SPART Board AI! Starting Gemini...' && gemini",
+  "postAttachCommand": "clear && echo 'Welcome to School Boards AI! Starting Gemini...' && gemini",
 
-  // 3. PORT FORWARDING
+  // PORT FORWARDING
   // Automatically forwards the Vite dev server port and labels it
   "forwardPorts": [3000],
   "portsAttributes": {
@@ -27,8 +33,7 @@
   "customizations": {
     "vscode": {
       "settings": {
-        // 4. SIMPLIFIED INTERFACE
-        // Hides sidebars and maps to focus purely on the AI tool
+        // SIMPLIFIED INTERFACE
         "workbench.activityBar.location": "hidden",
         "workbench.statusBar.visible": true,
         "editor.minimap.enabled": false,
@@ -47,6 +52,7 @@
           ".devcontainer": true,
           ".github": true,
           "package-lock.json": true,
+          "pnpm-lock.yaml": true,
           "package.json": true,
           "tsconfig.json": true,
           "vite.config.ts": true,
@@ -64,10 +70,22 @@
           "CLAUDE.md": true,
           "DEV_WORKFLOW.md": true,
           "AGENTS.md": true
+        },
+        "tailwindCSS.includeLanguages": {
+          "typescript": "javascript",
+          "typescriptreact": "javascript"
         }
       },
       // Installs useful extensions silently
-      "extensions": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint"]
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "Firebase.firebase-vscode",
+        "irongeek.vscode-env",
+        "dsznajder.es7-react-js-snippets",
+        "GitHub.vscode-pull-request-github"
+      ]
     }
   }
 }
