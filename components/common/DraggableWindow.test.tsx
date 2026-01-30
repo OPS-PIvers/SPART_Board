@@ -98,6 +98,11 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
+  let mockUpdateWidget: ReturnType<typeof vi.fn>;
+  let mockRemoveWidget: ReturnType<typeof vi.fn>;
+  let mockDuplicateWidget: ReturnType<typeof vi.fn>;
+  let mockBringToFront: ReturnType<typeof vi.fn>;
+  let mockAddToast: ReturnType<typeof vi.fn>;
   let activeElementSpy: MockInstance;
   let mockUpdateWidget: Mock<
     (id: string, updates: Partial<WidgetData>) => void
