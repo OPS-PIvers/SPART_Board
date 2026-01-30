@@ -517,7 +517,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     try {
       console.log('Sending request to Jules API...');
       const { data: session } = await axios.post(
-        'https://jules.google.com/api/v1/sessions',
+        'https://jules.google.com/api/v1/tasks',
         {
           source: {
             github: {
@@ -534,7 +534,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      console.log(`Jules session created: ${session.id}`);
+      console.log(`Jules task created: ${session.id}`);
 
       return {
         success: true,
