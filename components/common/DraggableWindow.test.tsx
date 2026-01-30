@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+} from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
@@ -88,8 +94,13 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
+  let activeElementSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Setup default spy to return null
+    activeElementSpy = vi.spyOn(document, 'activeElement', 'get');
+    activeElementSpy.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -268,8 +279,8 @@ describe('DraggableWindow', () => {
     const widgetElement = container.querySelector('.widget') as HTMLElement;
     if (!widgetElement) throw new Error('Widget element not found');
 
-    // Mock activeElement
-    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
+    // Mock activeElement using shared spy
+    activeElementSpy.mockReturnValue(widgetElement);
 
     fireEvent.keyDown(widgetElement, { key: 'Escape' });
 
@@ -297,8 +308,8 @@ describe('DraggableWindow', () => {
     const widgetElement = container.querySelector('.widget') as HTMLElement;
     if (!widgetElement) throw new Error('Widget element not found');
 
-    // Mock activeElement
-    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
+    // Mock activeElement using shared spy
+    activeElementSpy.mockReturnValue(widgetElement);
 
     fireEvent.keyDown(widgetElement, { key: 'Escape' });
 
