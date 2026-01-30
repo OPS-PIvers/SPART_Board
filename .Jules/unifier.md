@@ -33,3 +33,7 @@ Unifier is responsible for maintaining a consistent look and feel across all Sch
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## 2024-05-22 - Standardized Toolbar Buttons
+**Gap:** Repeated hardcoded button styles in `DraggableWindow.tsx` for tool controls.
+**Fix:** Created `components/common/IconButton.tsx` and refactored `DraggableWindow.tsx` to use it.
