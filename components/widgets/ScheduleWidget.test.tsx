@@ -19,6 +19,7 @@ vi.mock('lucide-react', () => ({
   Type: () => <div>Type Icon</div>,
   Clock: () => <div>Clock Icon</div>,
   AlertTriangle: () => <div>Alert Icon</div>,
+  RefreshCw: () => <div data-testid="refresh-icon" />,
 }));
 
 const mockUpdateWidget = vi.fn();
