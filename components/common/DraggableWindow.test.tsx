@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
 
@@ -83,11 +83,11 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
-  let mockUpdateWidget: ReturnType<typeof vi.fn>;
-  let mockRemoveWidget: ReturnType<typeof vi.fn>;
-  let mockDuplicateWidget: ReturnType<typeof vi.fn>;
-  let mockBringToFront: ReturnType<typeof vi.fn>;
-  let mockAddToast: ReturnType<typeof vi.fn>;
+  let mockUpdateWidget: Mock<(id: string, updates: Partial<WidgetData>) => void>;
+  let mockRemoveWidget: Mock<(id: string) => void>;
+  let mockDuplicateWidget: Mock<(id: string) => void>;
+  let mockBringToFront: Mock<(id: string) => void>;
+  let mockAddToast: Mock<(message: string, type?: 'info' | 'success' | 'error') => void>;
 
   beforeEach(() => {
     mockUpdateWidget = vi.fn();
