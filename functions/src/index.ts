@@ -518,7 +518,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       console.log('Sending request to Jules API...');
       // Use documentation-exact endpoint and header
       const { data: session } = await axios.post(
-        'https://jules.googleapis.com/v1alpha/sessions',
+        'https://jules.google.com/api/v1/sessions',
         {
           prompt: prompt,
           sourceContext: {
