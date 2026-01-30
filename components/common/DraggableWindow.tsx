@@ -139,8 +139,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
   );
 
-  const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
   const isMaximized = widget.maximized ?? false;
+  const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
   const handlePointerDown = (_e: React.PointerEvent) => {
     bringToFront(widget.id);
@@ -177,6 +177,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     // Don't drag if annotating
     if (isAnnotating) return;
+
+    // Check if we are in the top handle area (40px)
+    // We use getBoundingClientRect because the widget might be scaled or shifted
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    if (relativeY > 40) return;
 
     // Prevent default browser behavior (like scroll or selection)
     e.preventDefault();
@@ -351,12 +357,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           windowRef.current?.contains(document.activeElement);
 
         if (isFocused) {
-          if (skipCloseConfirmation) {
-            removeWidget(widget.id);
-          } else {
-            setShowConfirm(true);
-            setShowTools(false);
-          }
+          removeWidget(widget.id);
         }
       }
     };
@@ -399,17 +400,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             {/* Front Face */}
             <div
               className="front absolute inset-0 w-full h-full flex flex-col"
+              onPointerDown={handleDragStart}
               style={{
                 pointerEvents: widget.flipped ? 'none' : 'auto',
                 touchAction: 'none',
               }}
             >
-              {/* Drag Handle Area (Top 40px) */}
-              <div
-                className="absolute top-0 left-0 right-0 h-10 z-20 cursor-grab active:cursor-grabbing"
-                onPointerDown={handleDragStart}
-                style={{ touchAction: 'none' }}
-              />
+              {/* Drag Handle Area - visual only, pointer events pass to parent */}
+              <div className="absolute top-0 left-0 right-0 h-10 z-0 cursor-grab active:cursor-grabbing pointer-events-none" />
 
               {showConfirm && (
                 <div
@@ -566,14 +564,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
             {/* Back Face (Settings) */}
             <div
               className="back absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col bg-white/60 backdrop-blur-xl"
+              onPointerDown={handleDragStart}
               style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
             >
-              {/* Drag Handle Area (Top 40px) */}
-              <div
-                className="absolute top-0 left-0 right-0 h-10 z-20 cursor-grab active:cursor-grabbing"
-                onPointerDown={handleDragStart}
-                style={{ touchAction: 'none' }}
-              />
+              {/* Drag Handle Area - visual only, pointer events pass to parent */}
+              <div className="absolute top-0 left-0 right-0 h-10 z-0 cursor-grab active:cursor-grabbing pointer-events-none" />
 
               <div className="flex items-center justify-between px-3 py-2 bg-white/50 border-b border-white/30 relative z-30">
                 <span className="text-xs font-bold text-slate-700 uppercase">

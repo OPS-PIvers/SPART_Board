@@ -23,15 +23,15 @@ export const Toggle: React.FC<ToggleProps> = ({
 }) => {
   const sizes = {
     sm: {
-      button: 'w-10 h-5',
+      button: 'w-8 h-4.5',
       knob: 'w-3 h-3',
-      translate: 'translate-x-5',
-      padding: 'top-1 left-1',
+      translate: 'translate-x-3.5',
+      padding: 'top-0.75 left-0.75',
     },
     md: {
-      button: 'w-12 h-6',
+      button: 'w-11 h-6',
       knob: 'w-4 h-4',
-      translate: 'translate-x-6',
+      translate: 'translate-x-5',
       padding: 'top-1 left-1',
     },
   };

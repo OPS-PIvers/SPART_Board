@@ -123,6 +123,9 @@ const mockDashboard: DashboardContextValue = {
   updateDashboardSettings: () => {
     // No-op
   },
+  updateDashboard: () => {
+    // No-op
+  },
   addFolder: () => {
     // No-op
   },
