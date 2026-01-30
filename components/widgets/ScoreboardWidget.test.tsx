@@ -8,6 +8,7 @@ import {
   WidgetData,
   ScoreboardConfig,
   RandomConfig,
+  PollConfig,
   WidgetType,
   ScoreboardTeam,
 } from '../../types';
@@ -175,6 +176,72 @@ describe('ScoreboardWidget', () => {
       expect.objectContaining({
         team: expect.objectContaining({ id: '1', score: 11 }),
       })
+    );
+  });
+
+  it('imports scores from poll', () => {
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: {
+        teams: [
+          { id: '1', name: 'Team A', score: 10 },
+          { id: '2', name: 'Team B', score: 20 },
+        ],
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const pollWidget: WidgetData = {
+      id: 'poll-id',
+      type: 'poll' as WidgetType,
+      config: {
+        question: 'Who is the best?',
+        options: [
+          { label: 'Team A', votes: 5 },
+          { label: 'Team B', votes: 3 },
+          { label: 'Other', votes: 1 },
+        ],
+      } as PollConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        widgets: [pollWidget],
+      },
+    });
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const importButton = screen.getByText('Add Votes');
+    fireEvent.click(importButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Team A', score: 15 }), // 10 + 5
+            expect.objectContaining({ name: 'Team B', score: 23 }), // 20 + 3
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Updated scores for 2 teams'),
+      'success'
     );
   });
 });

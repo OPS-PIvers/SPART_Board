@@ -5,6 +5,7 @@ import {
   ScoreboardConfig,
   ScoreboardTeam,
   RandomConfig,
+  PollConfig,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
@@ -140,6 +141,12 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     [activeDashboard]
   );
 
+  // Find Poll Widget
+  const pollWidget = useMemo(
+    () => activeDashboard?.widgets.find((w) => w.type === 'poll'),
+    [activeDashboard]
+  );
+
   const importFromRandom = () => {
     if (!randomWidget) {
       addToast('No Randomizer widget found!', 'error');
@@ -170,6 +177,39 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
       addToast(`Imported ${newTeams.length} groups!`, 'success');
     } else {
       addToast('Randomizer needs to have generated groups first.', 'info');
+    }
+  };
+
+  const importFromPoll = () => {
+    if (!pollWidget) {
+      addToast('No Poll widget found!', 'error');
+      return;
+    }
+
+    const pollConfig = pollWidget.config as PollConfig;
+    const options = pollConfig.options || [];
+
+    let updatedCount = 0;
+    const newTeams = teams.map((team) => {
+      // Find matching option (case insensitive)
+      const match = options.find(
+        (o) => o.label.trim().toLowerCase() === team.name.trim().toLowerCase()
+      );
+
+      if (match && match.votes > 0) {
+        updatedCount++;
+        return { ...team, score: team.score + match.votes };
+      }
+      return team;
+    });
+
+    if (updatedCount > 0) {
+      updateWidget(widget.id, {
+        config: { ...config, teams: newTeams },
+      });
+      addToast(`Updated scores for ${updatedCount} teams!`, 'success');
+    } else {
+      addToast('No matching team names found in poll results.', 'info');
     }
   };
 
@@ -237,6 +277,32 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         {!randomWidget && (
           <div className="text-xxs text-indigo-400 font-medium">
             Tip: Add a Randomizer widget and create groups to import them here.
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 bg-purple-50 border border-purple-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-purple-900">
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import from Poll
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromPoll}
+            disabled={!pollWidget}
+            title={!pollWidget ? 'Add a Poll widget first' : 'Add Poll Votes'}
+            icon={<RefreshCw className="w-3 h-3" />}
+          >
+            Add Votes
+          </Button>
+        </div>
+        {!pollWidget && (
+          <div className="text-xxs text-purple-400 font-medium">
+            Tip: Add a Poll widget. Team names must match poll options.
           </div>
         )}
       </div>
