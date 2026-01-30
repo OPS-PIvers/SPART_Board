@@ -516,11 +516,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     try {
       console.log('Sending request to Jules API...');
-<<<<<<< HEAD
-      // Use documentation-exact endpoint and header
-=======
       // Try passing the key as a query parameter and in both headers
->>>>>>> 116ac7d ([AI] Implement multi-method authentication for Jules API)
       const { data: session } = await axios.post(
         `https://jules.googleapis.com/v1alpha/sessions?key=${julesApiKey}`,
         {

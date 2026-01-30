@@ -90,10 +90,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleShareDashboard = useCallback(
     async (dashboard: Dashboard): Promise<string> => {
+      // If non-admin and Drive is available, we can share via Drive.
+      // But for better compatibility, we default to Firestore sharing
+      // unless specifically requested. Here we prioritize the Firestore
+      // sharing method which is more robust for recipients.
       if (!isAdmin && driveService) {
-        const fileId = await driveService.exportDashboard(dashboard);
-        await driveService.makePublic(fileId);
-        return `drive-${fileId}`;
+        try {
+          const fileId = await driveService.exportDashboard(dashboard);
+          await driveService.makePublic(fileId);
+          return `drive-${fileId}`;
+        } catch (e) {
+          console.error('Drive sharing failed, falling back to Firestore:', e);
+        }
       }
       return shareDashboardFirestore(dashboard);
     },
@@ -104,9 +112,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     async (shareId: string): Promise<Dashboard | null> => {
       if (shareId.startsWith('drive-')) {
         if (!driveService) {
-          // If not connected, we might need the user to sign in first,
-          // but for now we'll just throw or return null.
-          // In a real app, we'd maybe redirect to a Drive-specific auth flow.
           throw new Error('Google Drive access required to load this board');
         }
         const fileId = shareId.replace('drive-', '');
@@ -225,29 +230,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       await deleteDashboardFirestore(id);
     },
     [driveService, dashboards, deleteDashboardFirestore]
-  );
-
-  const handleShareDashboard = useCallback(
-    async (dashboard: Dashboard): Promise<string> => {
-      // Always use Firestore for sharing to ensure maximum compatibility.
-      // Recipients shouldn't need Google Drive access to view a shared board.
-      return shareDashboardFirestore(dashboard);
-    },
-    [shareDashboardFirestore]
-  );
-
-  const handleLoadSharedDashboard = useCallback(
-    async (shareId: string): Promise<Dashboard | null> => {
-      if (shareId.startsWith('drive-')) {
-        if (!driveService) {
-          throw new Error('Google Drive access required to load this board');
-        }
-        const fileId = shareId.replace('drive-', '');
-        return driveService.importDashboard(fileId);
-      }
-      return loadSharedDashboardFirestore(shareId);
-    },
-    [driveService, loadSharedDashboardFirestore]
   );
 
   // Load dashboards on mount and subscribe to changes
