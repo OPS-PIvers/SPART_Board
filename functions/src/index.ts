@@ -485,8 +485,12 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       );
     }
 
-    const repoName = 'ops-pivers/SPART_Board';
+    const repoName = 'OPS-PIvers/SPART_Board';
     const { widgetName, description } = request.data;
+
+    console.log(
+      `Triggering Jules for widget: ${widgetName} in repo: ${repoName}`
+    );
 
     const prompt = `
       As a Jules Agent, your task is to implement a new widget for the School Boards application.
@@ -511,6 +515,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     `;
 
     try {
+      console.log('Sending request to Jules API...');
       const { data: session } = await axios.post(
         'https://jules.google.com/api/v1/sessions',
         {
@@ -529,6 +534,8 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
+      console.log(`Jules session created: ${session.id}`);
+
       return {
         success: true,
         message: `Jules session started successfully. Session ID: ${session.id}`,
@@ -537,6 +544,8 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     } catch (error: unknown) {
       let errorMessage = 'An unknown error occurred';
       if (axios.isAxiosError(error)) {
+        console.error('Jules API Error Response Data:', error.response?.data);
+        console.error('Jules API Error Status:', error.response?.status);
         errorMessage = error.response?.data?.error?.message || error.message;
       } else if (error instanceof Error) {
         errorMessage = error.message;
