@@ -171,6 +171,7 @@ export interface ChecklistConfig {
 }
 
 export interface RandomGroup {
+  id?: string;
   names: string[];
 }
 
@@ -233,6 +234,7 @@ export interface ScoreboardTeam {
   name: string;
   score: number;
   color?: string;
+  linkedGroupId?: string;
 }
 
 export interface ScoreboardConfig {
@@ -556,6 +558,12 @@ export interface DashboardSettings {
   quickAccessWidgets?: WidgetType[];
 }
 
+export interface SharedGroup {
+  id: string;
+  name: string;
+  color?: string;
+}
+
 export interface Dashboard {
   id: string;
   name: string;
@@ -564,6 +572,7 @@ export interface Dashboard {
   thumbnailUrl?: string;
   widgets: WidgetData[];
   globalStyle?: GlobalStyle;
+  sharedGroups?: SharedGroup[];
   createdAt: number;
   isDefault?: boolean;
   order?: number;

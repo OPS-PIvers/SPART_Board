@@ -5,6 +5,8 @@ import {
   RandomConfig,
   WidgetConfig,
   TimeToolConfig,
+  RandomGroup,
+  SharedGroup,
 } from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target } from 'lucide-react';
@@ -14,7 +16,7 @@ import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, rosters, activeRosterId, activeDashboard } =
+  const { updateWidget, updateDashboard, rosters, activeRosterId, activeDashboard } =
     useDashboard();
   const config = widget.config as RandomConfig;
   const {
@@ -31,7 +33,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [displayResult, setDisplayResult] = useState<
-    string | string[] | string[][]
+    string | string[] | string[][] | RandomGroup[]
   >(() => {
     const raw = config.lastResult;
     if (
@@ -41,7 +43,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       raw[0] !== null &&
       'names' in raw[0]
     ) {
-      return (raw as { names: string[] }[]).map((g) => g.names);
+      return raw as RandomGroup[];
     }
     return (raw as string | string[] | string[][]) ?? '';
   });
@@ -62,9 +64,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       rawResult[0] !== null &&
       'names' in rawResult[0]
     ) {
-      setDisplayResult(
-        (rawResult as { names: string[] }[]).map((g) => g.names)
-      );
+      setDisplayResult(rawResult as RandomGroup[]);
     } else {
       setDisplayResult((rawResult as string | string[] | string[][]) ?? '');
     }
@@ -121,12 +121,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return combined;
   }, [firstNames, lastNames, activeRoster, rosterMode]);
 
-  // Grid columns for group view
-  const gridCols = useMemo(() => {
-    if (widget.w > 600) return 3;
-    if (widget.w > 400) return 2;
-    return 1;
-  }, [widget.w]);
+  // Grid columns for group view - Deprecated in favor of auto-fit
+  // const gridCols = useMemo(() => {
+  //   if (widget.w > 600) return 3;
+  //   if (widget.w > 400) return 2;
+  //   return 1;
+  // }, [widget.w]);
 
   const shuffle = <T,>(array: T[]): T[] => {
     const newArr = [...array];
@@ -154,29 +154,57 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsSpinning(true);
 
     const performUpdate = (
-      result: string | string[] | string[][],
+      result: string | string[] | string[][] | RandomGroup[],
       remaining?: string[]
     ) => {
       try {
         // Firestore doesn't support nested arrays (e.g., string[][]).
         // If we have groups, we transform them into an array of objects.
-        let syncResult: string | string[] | { names: string[] }[] = result as
-          | string
-          | string[];
+        let syncResult = result;
 
         if (
           mode === 'groups' &&
           Array.isArray(result) &&
-          result.length > 0 &&
-          Array.isArray(result[0])
+          result.length > 0
         ) {
-          syncResult = (result as string[][]).map((names) => ({ names }));
+          // Check if it's string[][] (legacy)
+          if (Array.isArray(result[0])) {
+            syncResult = (result as string[][]).map((names) => ({
+              names,
+              id: crypto.randomUUID(),
+            }));
+          }
+          // If it is already RandomGroup[] (has .names), we keep it
+        }
+
+        // If we have RandomGroups with IDs, sync them to Dashboard sharedGroups
+        if (
+          mode === 'groups' &&
+          Array.isArray(syncResult) &&
+          syncResult.length > 0 &&
+          typeof syncResult[0] === 'object' &&
+          'id' in syncResult[0]
+        ) {
+          const groups = syncResult as RandomGroup[];
+          const newSharedGroups: SharedGroup[] = groups.map((g, i) => ({
+            id: g.id!,
+            name: `Group ${i + 1}`,
+          }));
+
+          const existing = activeDashboard?.sharedGroups ?? [];
+          const uniqueNew = newSharedGroups.filter(
+            (n) => !existing.some((e) => e.id === n.id)
+          );
+
+          if (uniqueNew.length > 0) {
+            updateDashboard({ sharedGroups: [...existing, ...uniqueNew] });
+          }
         }
 
         // Optimized update: only send what changed.
         // DashboardContext now handles deep merging of config.
         const updates: Partial<RandomConfig> = {
-          lastResult: syncResult as string | string[] | { names: string[] }[],
+          lastResult: syncResult as string | string[] | RandomGroup[],
         };
         if (remaining) {
           updates.remainingStudents = remaining;
@@ -312,7 +340,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           const shuffled = shuffle(students);
           result = [];
           for (let i = 0; i < shuffled.length; i += groupSize) {
-            result.push(shuffled.slice(i, i + groupSize));
+            result.push({
+              id: crypto.randomUUID(),
+              names: shuffled.slice(i, i + groupSize),
+            });
           }
         }
         setDisplayResult(result);
@@ -428,27 +459,51 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <div
                 className="flex-1 w-full grid content-start overflow-y-auto custom-scrollbar pr-1"
                 style={{
-                  gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(auto-fit, minmax(145px, 1fr))`,
                   gap: '12px',
                 }}
               >
                 {(Array.isArray(displayResult) &&
-                (displayResult.length === 0 || Array.isArray(displayResult[0]))
-                  ? (displayResult as string[][])
+                (displayResult.length === 0 ||
+                  Array.isArray(displayResult[0]) ||
+                  (typeof displayResult[0] === 'object' &&
+                    displayResult[0] !== null))
+                  ? (displayResult as (string[] | RandomGroup)[])
                   : []
-                ).map((group: string[], i: number) => {
-                  if (!Array.isArray(group)) return null;
+                ).map((groupItem, i) => {
+                  const groupNames = Array.isArray(groupItem)
+                    ? groupItem
+                    : groupItem.names;
+                  const groupId =
+                    !Array.isArray(groupItem) && 'id' in groupItem
+                      ? groupItem.id
+                      : null;
+
+                  // Lookup shared name if ID exists
+                  let groupName = `Group ${i + 1}`;
+                  if (groupId && activeDashboard?.sharedGroups) {
+                    const shared = activeDashboard.sharedGroups.find(
+                      (g) => g.id === groupId
+                    );
+                    if (shared) groupName = shared.name;
+                  }
+
+                  if (!groupNames) return null;
+
                   return (
                     <div
                       key={i}
                       className="bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
                       style={{ fontSize: '14px' }}
                     >
-                      <div className="uppercase text-blue-400 mb-1 tracking-widest opacity-80 text-[10px] font-bold">
-                        Group {i + 1}
+                      <div
+                        className="uppercase text-blue-400 mb-1 tracking-widest opacity-80 text-[10px] font-bold truncate"
+                        title={groupName}
+                      >
+                        {groupName}
                       </div>
                       <div className="space-y-1 overflow-hidden">
-                        {group.map((name, ni) => (
+                        {groupNames.map((name, ni) => (
                           <div
                             key={ni}
                             data-no-drag="true"
@@ -464,7 +519,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 {(!displayResult ||
                   !Array.isArray(displayResult) ||
                   (displayResult.length > 0 &&
-                    !Array.isArray(displayResult[0]))) && (
+                    !Array.isArray(displayResult[0]) &&
+                    typeof displayResult[0] !== 'object')) && (
                   <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
                     <Users className="w-8 h-8 opacity-20" />
                     <span>Click Randomize to Group</span>
