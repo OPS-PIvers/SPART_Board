@@ -38,8 +38,8 @@ export const useStorage = () => {
         );
         // Make it public so it can be viewed as a background
         await driveService.makePublic(driveFile.id);
-        // Use webContentLink for direct image access
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        // Use direct link for image access
+        return `https://drive.google.com/uc?export=view&id=${driveFile.id}`;
       } finally {
         setUploading(false);
       }
@@ -62,7 +62,7 @@ export const useStorage = () => {
           'Assets/Stickers'
         );
         await driveService.makePublic(driveFile.id);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        return `https://drive.google.com/uc?export=view&id=${driveFile.id}`;
       } finally {
         setUploading(false);
       }
@@ -88,7 +88,7 @@ export const useStorage = () => {
           'Assets/Screenshots'
         );
         await driveService.makePublic(driveFile.id);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        return `https://drive.google.com/uc?export=view&id=${driveFile.id}`;
       } finally {
         setUploading(false);
       }
