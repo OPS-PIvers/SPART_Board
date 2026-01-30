@@ -13,8 +13,8 @@ import {
   vi,
   beforeEach,
   afterEach,
+  type Mock,
   type MockInstance,
-  Mock,
 } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
@@ -98,12 +98,6 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
-  let mockUpdateWidget: ReturnType<typeof vi.fn>;
-  let mockRemoveWidget: ReturnType<typeof vi.fn>;
-  let mockDuplicateWidget: ReturnType<typeof vi.fn>;
-  let mockBringToFront: ReturnType<typeof vi.fn>;
-  let mockAddToast: ReturnType<typeof vi.fn>;
-  let activeElementSpy: MockInstance;
   let mockUpdateWidget: Mock<
     (id: string, updates: Partial<WidgetData>) => void
   >;
@@ -113,6 +107,7 @@ describe('DraggableWindow', () => {
   let mockAddToast: Mock<
     (message: string, type?: 'info' | 'success' | 'error') => void
   >;
+  let activeElementSpy: MockInstance;
 
   beforeEach(() => {
     mockUpdateWidget = vi.fn();
