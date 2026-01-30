@@ -182,7 +182,19 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    // OPTIMIZATION: Should NOT update global widget state during drag
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // But should update local position (style)
+    const windowEl = screen.getByTestId('draggable-window');
+    expect(windowEl).toHaveStyle({ left: '150px', top: '150px' });
+
+    // Release pointer
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+    });
+
+    // NOW it should update global state
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -232,7 +244,19 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New size should be w: 200 + (350 - 300) = 250, h: 200 + (400 - 300) = 300
+    // OPTIMIZATION: Should NOT update global widget state during resize
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // But should update local size (style)
+    const windowEl = screen.getByTestId('draggable-window');
+    expect(windowEl).toHaveStyle({ width: '250px', height: '300px' });
+
+    // Release pointer
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+    });
+
+    // NOW it should update global state
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
