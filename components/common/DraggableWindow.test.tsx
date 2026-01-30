@@ -6,7 +6,7 @@ import {
   fireEvent,
   cleanup,
 } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
 
@@ -94,7 +94,7 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
-  let activeElementSpy: ReturnType<typeof vi.spyOn>;
+  let activeElementSpy: MockInstance;
 
   beforeEach(() => {
     vi.clearAllMocks();
