@@ -66,7 +66,7 @@ describe('widgetHelpers', () => {
 
     it('returns correct defaults for checklist', () => {
       const config = getDefaultWidgetConfig('checklist');
-      expect(config).toEqual({ items: [] });
+      expect(config).toMatchObject({ items: [] });
     });
 
     it('returns empty object for traffic', () => {

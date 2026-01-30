@@ -1,21 +1,27 @@
 import { WidgetData, WidgetType, WidgetConfig } from '../types';
-import { STICKY_NOTE_COLORS } from '../config/colors';
+import { WIDGET_DEFAULTS } from '../config/widgetDefaults';
+
+const WIDGET_TITLES: Partial<Record<WidgetType, string>> = {
+  sound: 'Noise Meter',
+  checklist: 'Task List',
+  random: 'Selector',
+  workSymbols: 'Work Symbols',
+  calendar: 'Class Events',
+  lunchCount: 'Lunch Orders',
+  classes: 'Class Roster',
+  'time-tool': 'Timer',
+  miniApp: 'App Manager',
+  sticker: 'Sticker',
+  'seating-chart': 'Seating Chart',
+  smartNotebook: 'Notebook Viewer',
+};
 
 export const getTitle = (widget: WidgetData): string => {
   if (widget.customTitle) return widget.customTitle;
-  if (widget.type === 'sound') return 'Noise Meter';
-  if (widget.type === 'checklist') return 'Task List';
-  if (widget.type === 'random') return 'Selector';
-  if (widget.type === 'workSymbols') return 'Work Symbols';
-  if (widget.type === 'calendar') return 'Class Events';
-  if (widget.type === 'lunchCount') return 'Lunch Orders';
-  if (widget.type === 'classes') return 'Class Roster';
-  if (widget.type === 'time-tool') return 'Timer';
-  if (widget.type === 'miniApp') return 'App Manager';
-  if (widget.type === 'sticker') return 'Sticker';
-  if (widget.type === 'seating-chart') return 'Seating Chart';
-  if (widget.type === 'smartNotebook') return 'Notebook Viewer';
-  return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
+  return (
+    WIDGET_TITLES[widget.type] ||
+    widget.type.charAt(0).toUpperCase() + widget.type.slice(1)
+  );
 };
 
 /**
@@ -23,78 +29,5 @@ export const getTitle = (widget: WidgetData): string => {
  * Returns an empty object for widgets that don't require configuration.
  */
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
-  const defaults: Record<WidgetType, WidgetConfig> = {
-    clock: { format24: true, showSeconds: true },
-    'time-tool': {
-      mode: 'timer',
-      visualType: 'digital',
-      theme: 'light',
-      duration: 600,
-      elapsedTime: 600,
-      isRunning: false,
-      selectedSound: 'Gong',
-    },
-    traffic: {},
-    text: {
-      content: 'Double click to edit...',
-      bgColor: STICKY_NOTE_COLORS.yellow,
-      fontSize: 18,
-    },
-    checklist: { items: [] },
-    random: { firstNames: '', lastNames: '', mode: 'single' },
-    dice: { count: 1 },
-    sound: { sensitivity: 1, visual: 'thermometer' },
-    drawing: { mode: 'window', paths: [] },
-    qr: { url: 'https://google.com' },
-    embed: { url: '' },
-    poll: {
-      question: 'Vote now!',
-      options: [
-        { label: 'Option A', votes: 0 },
-        { label: 'Option B', votes: 0 },
-      ],
-    },
-    webcam: {},
-    scoreboard: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
-    workSymbols: { voiceLevel: null, workMode: null, interactionMode: null },
-    weather: { temp: 72, condition: 'sunny' },
-    schedule: { items: [] },
-    calendar: { events: [] },
-    lunchCount: {
-      schoolSite: 'schumann-elementary',
-      isManualMode: false,
-      manualHotLunch: '',
-      manualBentoBox: '',
-      roster: [],
-      assignments: {},
-      recipient: '',
-    },
-    classes: {},
-    instructionalRoutines: {
-      selectedRoutineId: null,
-      customSteps: [],
-      favorites: [],
-      scaleMultiplier: 1,
-    },
-    miniApp: {
-      activeApp: null,
-    },
-    materials: {
-      selectedItems: [],
-      activeItems: [],
-    },
-    stickers: { uploadedUrls: [] },
-    sticker: { url: '', rotation: 0, size: 150 },
-    'seating-chart': {
-      furniture: [],
-      assignments: {},
-      gridSize: 20,
-    },
-    catalyst: { activeTab: 'attention' },
-    'catalyst-instruction': { routineId: '', stepIndex: 0 },
-    'catalyst-visual': { routineId: '', stepIndex: 0 },
-    smartNotebook: { activeNotebookId: null },
-  };
-
-  return defaults[type];
+  return (WIDGET_DEFAULTS[type]?.config as WidgetConfig) || {};
 };
