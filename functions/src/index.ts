@@ -485,7 +485,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       );
     }
 
-    const repoName = 'ops-pivers/spart_board/SPART_Board';
+    const repoName = 'ops-pivers/SPART_Board';
     const { widgetName, description } = request.data;
 
     const prompt = `
