@@ -225,7 +225,10 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         );
       } else {
         // Should not happen if data is consistent, but safe fallback
-        newSharedGroups = [...sharedGroups, { id: team.linkedGroupId!, name }];
+        newSharedGroups = [
+          ...sharedGroups,
+          { id: team.linkedGroupId ?? '', name },
+        ];
       }
 
       updateDashboard({ sharedGroups: newSharedGroups });

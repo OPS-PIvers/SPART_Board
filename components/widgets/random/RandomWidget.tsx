@@ -16,8 +16,13 @@ import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, updateDashboard, rosters, activeRosterId, activeDashboard } =
-    useDashboard();
+  const {
+    updateWidget,
+    updateDashboard,
+    rosters,
+    activeRosterId,
+    activeDashboard,
+  } = useDashboard();
   const config = widget.config as RandomConfig;
   const {
     firstNames = '',
@@ -162,11 +167,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         // If we have groups, we transform them into an array of objects.
         let syncResult = result;
 
-        if (
-          mode === 'groups' &&
-          Array.isArray(result) &&
-          result.length > 0
-        ) {
+        if (mode === 'groups' && Array.isArray(result) && result.length > 0) {
           // Check if it's string[][] (legacy)
           if (Array.isArray(result[0])) {
             syncResult = (result as string[][]).map((names) => ({
@@ -187,7 +188,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         ) {
           const groups = syncResult as RandomGroup[];
           const newSharedGroups: SharedGroup[] = groups.map((g, i) => ({
-            id: g.id!,
+            id: g.id ?? '',
             name: `Group ${i + 1}`,
           }));
 
@@ -367,7 +368,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           students={students}
           rotation={rotation}
           wheelSize={wheelSize}
-          displayResult={displayResult}
+          displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
           resultFontSize={32}
         />
@@ -377,7 +378,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (visualStyle === 'slots') {
       return (
         <RandomSlots
-          displayResult={displayResult}
+          displayResult={displayResult as string | string[] | string[][] | null}
           fontSize={48}
           slotHeight={widget.h - 100}
         />
@@ -386,7 +387,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     return (
       <RandomFlash
-        displayResult={displayResult}
+        displayResult={displayResult as string | string[] | string[][] | null}
         isSpinning={isSpinning}
         fontSize={48}
       />
