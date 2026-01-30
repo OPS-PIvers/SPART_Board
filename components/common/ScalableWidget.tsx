@@ -78,6 +78,7 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
           flexDirection: 'column',
           flexShrink: 0,
           willChange: 'transform',
+          overflow: 'auto',
         }}
       >
         {renderContent()}

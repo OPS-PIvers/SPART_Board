@@ -325,8 +325,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
-      const availableH = widget.h - 100;
-      const availableW = widget.w - 40;
+      const VERTICAL_OFFSET = 100; // Accounts for button height and vertical padding
+      const HORIZONTAL_PADDING = 40;
+      const availableH = widget.h - VERTICAL_OFFSET;
+      const availableW = widget.w - HORIZONTAL_PADDING;
       const wheelSize = Math.min(availableW, availableH);
 
       return (

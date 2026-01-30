@@ -1,4 +1,4 @@
-import React, { memo, Suspense, useMemo } from 'react';
+import React, { memo, Suspense, useMemo, useCallback } from 'react';
 import {
   WidgetData,
   DrawingConfig,
@@ -16,6 +16,7 @@ import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useAuth } from '@/context/useAuth';
+import { UI_CONSTANTS } from '@/config/layout';
 import {
   WIDGET_COMPONENTS,
   WIDGET_SETTINGS_COMPONENTS,
@@ -137,10 +138,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     void updateSessionBackground(dashboardBackground);
   }, [dashboardBackground, isLive, updateSessionBackground]);
 
-  if (widget.type === 'sticker') {
-    return <StickerItemWidget widget={widget} />;
-  }
-
   const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
 
@@ -173,26 +170,33 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const effectiveHeight = widget.maximized ? windowSize.height : widget.h;
 
   // Header height and padding constants
-  const HEADER_HEIGHT = 40;
-  const PADDING = 16; // Appropriate padding on each side
+  const HEADER_HEIGHT = UI_CONSTANTS.WIDGET_HEADER_HEIGHT;
+  const PADDING = UI_CONSTANTS.WIDGET_PADDING;
 
-  const getWidgetContentInternal = (w: number, h: number) => {
-    if (WidgetComponent) {
+  const getWidgetContentInternal = useCallback(
+    (w: number, h: number) => {
+      if (WidgetComponent) {
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <WidgetComponent
+              widget={{ ...widget, w, h }}
+              isStudentView={isStudentView}
+            />
+          </Suspense>
+        );
+      }
       return (
-        <Suspense fallback={<LoadingFallback />}>
-          <WidgetComponent
-            widget={{ ...widget, w, h }}
-            isStudentView={isStudentView}
-          />
-        </Suspense>
+        <div className="p-4 text-center text-slate-400 text-sm">
+          Widget under construction
+        </div>
       );
-    }
-    return (
-      <div className="p-4 text-center text-slate-400 text-sm">
-        Widget under construction
-      </div>
-    );
-  };
+    },
+    [WidgetComponent, widget, isStudentView]
+  );
+
+  if (widget.type === 'sticker') {
+    return <StickerItemWidget widget={widget} />;
+  }
 
   const finalContent =
     scaling && !scaling.skipScaling ? (
