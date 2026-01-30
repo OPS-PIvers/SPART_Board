@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
 
@@ -90,6 +90,11 @@ const mockGlobalStyle: GlobalStyle = {
 describe('DraggableWindow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
   });
 
   it('conditionally loads settings only after flip (optimization)', async () => {
