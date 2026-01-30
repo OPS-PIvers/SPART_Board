@@ -72,11 +72,6 @@ const mockWidget: WidgetData = {
   },
 };
 
-const mockUpdateWidget = vi.fn();
-const mockRemoveWidget = vi.fn();
-const mockDuplicateWidget = vi.fn();
-const mockBringToFront = vi.fn();
-const mockAddToast = vi.fn();
 const mockGlobalStyle: GlobalStyle = {
   fontFamily: 'sans',
   windowTransparency: 0.8,
@@ -88,7 +83,18 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
+  let mockUpdateWidget: ReturnType<typeof vi.fn>;
+  let mockRemoveWidget: ReturnType<typeof vi.fn>;
+  let mockDuplicateWidget: ReturnType<typeof vi.fn>;
+  let mockBringToFront: ReturnType<typeof vi.fn>;
+  let mockAddToast: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
+    mockUpdateWidget = vi.fn();
+    mockRemoveWidget = vi.fn();
+    mockDuplicateWidget = vi.fn();
+    mockBringToFront = vi.fn();
+    mockAddToast = vi.fn();
     vi.clearAllMocks();
   });
 
