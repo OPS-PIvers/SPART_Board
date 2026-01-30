@@ -112,7 +112,7 @@ export const getClassLinkRosterV1 = functionsV1
         );
       }
 
-      const cleanTenantUrl = tenantUrl.replace(///$/, '');
+      const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
 
       try {
         const usersBaseUrl = `${cleanTenantUrl}/ims/oneroster/v1p1/users`;
@@ -151,8 +151,8 @@ export const getClassLinkRosterV1 = functionsV1
           clientSecret
         );
 
-        const classesResponse = await axios.get<{ classes: ClassLinkClass[] }>
-          (classesUrl,
+        const classesResponse = await axios.get<{ classes: ClassLinkClass[] }>(
+          classesUrl,
           { headers: { ...classesHeaders } }
         );
         const classes = classesResponse.data.classes;
@@ -170,7 +170,7 @@ export const getClassLinkRosterV1 = functionsV1
               clientSecret
             );
             try {
-              const studentsResponse = await axios.get<{ 
+              const studentsResponse = await axios.get<{
                 users: ClassLinkStudent[];
               }>(studentsUrl, { headers: { ...studentsHeaders } });
               studentsByClass[cls.sourcedId] =
@@ -516,9 +516,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     try {
       console.log('Sending request to Jules API...');
-      // Use documentation-exact endpoint and header
+      // Try passing the key as a query parameter and in both headers
       const { data: session } = await axios.post(
-        'https://jules.google.com/api/v1/sessions',
+        `https://jules.googleapis.com/v1alpha/sessions?key=${julesApiKey}`,
         {
           prompt: prompt,
           sourceContext: {
@@ -539,7 +539,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      const sessionId = session.id;
+      const sessionId = session.name?.split('/').pop() || session.id;
       console.log(`Jules session created: ${sessionId}`);
 
       return {

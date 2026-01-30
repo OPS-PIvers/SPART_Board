@@ -282,7 +282,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       });
 
     updateWidget(widget.id, { config: { ...config, items: newItems } });
-  }, [debouncedText, widget.id, updateWidget]);
+  }, [debouncedText, widget.id, updateWidget, config, items]);
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);
@@ -435,7 +435,10 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
         </label>
         <div className="flex items-center gap-4 px-2">
           <input
-            type="range" min="0.5" max="2.0" step="0.1"
+            type="range"
+            min="0.5"
+            max="2.0"
+            step="0.1"
             value={scaleMultiplier}
             onChange={(e) =>
               updateWidget(widget.id, {

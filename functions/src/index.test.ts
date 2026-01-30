@@ -27,7 +27,7 @@ vi.mock('firebase-functions/v2', () => ({
         super(message);
         this.name = code;
       }
-    }
+    },
   },
 }));
 
@@ -36,7 +36,7 @@ vi.mock('firebase-functions/v1', () => ({
   runWith: vi.fn().mockReturnThis(),
   https: {
     onCall: vi.fn(),
-    HttpsError: class extends Error {}
+    HttpsError: class extends Error {},
   },
 }));
 
