@@ -15,7 +15,8 @@ export const IconButton: React.FC<IconButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = 'rounded-full transition-all flex items-center justify-center';
+  const baseStyles =
+    'rounded-full transition-all flex items-center justify-center';
 
   // Apply default padding only if not overridden in className
   // This is a heuristic; technically a regex would be better but this covers "p-"
