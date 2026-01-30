@@ -7,6 +7,7 @@ import {
   LiveStudent,
   GlobalStyle,
   WidgetType,
+  DashboardSettings,
 } from '@/types';
 import { DraggableWindow } from '../common/DraggableWindow';
 import { LiveControl } from './LiveControl';
@@ -61,6 +62,7 @@ interface WidgetRendererProps {
   addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
   globalStyle: GlobalStyle;
   dashboardBackground?: string;
+  dashboardSettings?: DashboardSettings;
 }
 
 const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
@@ -83,6 +85,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   addToast,
   globalStyle,
   dashboardBackground,
+  dashboardSettings,
 }) => {
   const windowSize = useWindowSize();
   const { canAccessFeature } = useAuth();
@@ -236,7 +239,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       title={getTitle(widget)}
       settings={getWidgetSettings()}
       style={customStyle}
-      skipCloseConfirmation={widget.type === 'classes'}
+      skipCloseConfirmation={
+        widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
+      }
       updateWidget={updateWidget}
       removeWidget={removeWidget}
       duplicateWidget={duplicateWidget}

@@ -378,6 +378,7 @@ export const DashboardView: React.FC = () => {
               addToast={addToast}
               globalStyle={globalStyle}
               dashboardBackground={activeDashboard.background}
+              dashboardSettings={activeDashboard.settings}
             />
           );
         })}
