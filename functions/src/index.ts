@@ -516,8 +516,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     try {
       console.log('Sending request to Jules API...');
+      // Try passing the key as a query parameter and in both headers
       const { data: session } = await axios.post(
-        'https://jules.googleapis.com/v1alpha/sessions',
+        `https://jules.googleapis.com/v1alpha/sessions?key=${julesApiKey}`,
         {
           prompt: prompt,
           sourceContext: {
@@ -532,6 +533,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         {
           headers: {
             'X-Goog-Api-Key': julesApiKey,
+            Authorization: `Bearer ${julesApiKey}`,
             'Content-Type': 'application/json',
           },
         }
