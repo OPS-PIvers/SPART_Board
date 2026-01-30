@@ -556,6 +556,7 @@ export type DockItem =
 
 export interface DashboardSettings {
   quickAccessWidgets?: WidgetType[];
+  disableCloseConfirmation?: boolean;
 }
 
 export interface SharedGroup {
