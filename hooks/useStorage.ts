@@ -12,6 +12,10 @@ export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
   const { driveService } = useGoogleDrive();
 
+  const getDriveViewUrl = (fileId: string): string => {
+    return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(fileId)}`;
+  };
+
   const uploadFile = async (path: string, file: File): Promise<string> => {
     setUploading(true);
     try {
@@ -39,7 +43,7 @@ export const useStorage = () => {
         // Make it public so it can be viewed as a background
         await driveService.makePublic(driveFile.id);
         // Use direct link for image access
-        return `https://drive.google.com/uc?export=view&id=${driveFile.id}`;
+        return getDriveViewUrl(driveFile.id);
       } finally {
         setUploading(false);
       }
@@ -62,7 +66,7 @@ export const useStorage = () => {
           'Assets/Stickers'
         );
         await driveService.makePublic(driveFile.id);
-        return `https://drive.google.com/uc?export=view&id=${driveFile.id}`;
+        return getDriveViewUrl(driveFile.id);
       } finally {
         setUploading(false);
       }
@@ -88,7 +92,7 @@ export const useStorage = () => {
           'Assets/Screenshots'
         );
         await driveService.makePublic(driveFile.id);
-        return `https://drive.google.com/uc?export=view&id=${driveFile.id}`;
+        return getDriveViewUrl(driveFile.id);
       } finally {
         setUploading(false);
       }
