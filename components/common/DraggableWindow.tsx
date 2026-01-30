@@ -357,7 +357,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           windowRef.current?.contains(document.activeElement);
 
         if (isFocused) {
-          removeWidget(widget.id);
+          if (skipCloseConfirmation) {
+            removeWidget(widget.id);
+          } else {
+            setShowConfirm(true);
+            setShowTools(false);
+          }
         }
       }
     };

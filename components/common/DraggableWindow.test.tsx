@@ -1,6 +1,21 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+} from '@testing-library/react';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type MockInstance,
+  Mock,
+} from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
 
@@ -83,6 +98,7 @@ const mockGlobalStyle: GlobalStyle = {
 };
 
 describe('DraggableWindow', () => {
+  let activeElementSpy: MockInstance;
   let mockUpdateWidget: Mock<
     (id: string, updates: Partial<WidgetData>) => void
   >;
@@ -100,6 +116,14 @@ describe('DraggableWindow', () => {
     mockBringToFront = vi.fn();
     mockAddToast = vi.fn();
     vi.clearAllMocks();
+    // Setup default spy to return null
+    activeElementSpy = vi.spyOn(document, 'activeElement', 'get');
+    activeElementSpy.mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
   });
 
   it('conditionally loads settings only after flip (optimization)', async () => {
@@ -313,35 +337,6 @@ describe('DraggableWindow', () => {
     fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
-  it('closes immediately on Escape regardless of skipCloseConfirmation', () => {
-    const { container } = render(
-      <DraggableWindow
-        widget={mockWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        skipCloseConfirmation={false}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div data-testid="widget-content">Widget Content</div>
-      </DraggableWindow>
-    );
-
-    const widgetElement = container.querySelector('.widget') as HTMLElement;
-    if (!widgetElement) throw new Error('Widget element not found');
-
-    // Mock activeElement
-    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
-
-    fireEvent.keyDown(widgetElement, { key: 'Escape' });
-
-    expect(mockRemoveWidget).toHaveBeenCalledWith('test-widget');
-  });
-
   it('closes immediately on Escape if skipCloseConfirmation is true', () => {
     const { container } = render(
       <DraggableWindow
@@ -363,11 +358,45 @@ describe('DraggableWindow', () => {
     const widgetElement = container.querySelector('.widget') as HTMLElement;
     if (!widgetElement) throw new Error('Widget element not found');
 
-    // Mock activeElement
-    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(widgetElement);
+    // Mock activeElement using shared spy
+    activeElementSpy.mockReturnValue(widgetElement);
 
     fireEvent.keyDown(widgetElement, { key: 'Escape' });
 
     expect(mockRemoveWidget).toHaveBeenCalledWith('test-widget');
+  });
+
+  it('shows confirmation on Escape if skipCloseConfirmation is false', () => {
+    const { container } = render(
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        skipCloseConfirmation={false}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div data-testid="widget-content">Widget Content</div>
+      </DraggableWindow>
+    );
+
+    const widgetElement = container.querySelector('.widget') as HTMLElement;
+    if (!widgetElement) throw new Error('Widget element not found');
+
+    // Mock activeElement using shared spy
+    activeElementSpy.mockReturnValue(widgetElement);
+
+    fireEvent.keyDown(widgetElement, { key: 'Escape' });
+
+    // Should NOT call removeWidget yet
+    expect(mockRemoveWidget).not.toHaveBeenCalled();
+    // Should show confirmation
+    expect(
+      screen.getByText(/Close widget\? Data will be lost\./i)
+    ).toBeInTheDocument();
   });
 });
