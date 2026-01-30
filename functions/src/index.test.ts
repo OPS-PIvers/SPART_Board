@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import axios from 'axios';
 import * as admin from 'firebase-admin';
 
@@ -22,7 +22,7 @@ vi.mock('firebase-admin', () => ({
 // Mock firebase-functions/v2
 vi.mock('firebase-functions/v2', () => ({
   https: {
-    onCall: (options: any, handler: any) => handler,
+    onCall: (_options: unknown, handler: unknown) => handler,
     HttpsError: class extends Error {
       constructor(code: string, message: string) {
         super(message);
@@ -45,7 +45,6 @@ vi.mock('firebase-functions/v1', () => ({
 vi.mock('axios');
 
 // Import the function under test
-// We need to use require or dynamic import because of the mocks
 import { triggerJulesWidgetGeneration } from './index';
 
 describe('triggerJulesWidgetGeneration', () => {
@@ -57,7 +56,8 @@ describe('triggerJulesWidgetGeneration', () => {
   it('should call Jules API with correct endpoint', async () => {
     // Mock Admin Check
     const mockGet = vi.fn().mockResolvedValue({ exists: true });
-    (admin.firestore as any).mockReturnValue({
+
+    (admin.firestore as unknown as Mock).mockReturnValue({
       collection: vi.fn().mockReturnValue({
         doc: vi.fn().mockReturnValue({
           get: mockGet,
@@ -66,7 +66,8 @@ describe('triggerJulesWidgetGeneration', () => {
     });
 
     // Mock Axios response
-    (axios.post as any).mockResolvedValue({
+
+    (axios.post as unknown as Mock).mockResolvedValue({
       data: {
         name: 'sessions/12345',
       },
@@ -84,8 +85,10 @@ describe('triggerJulesWidgetGeneration', () => {
     };
 
     // Verify type casting if needed, but since we mocked onCall to return the handler, it is the handler.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(axios.post).toHaveBeenCalledWith(
       'https://jules.google.com/api/v1/sessions',
       expect.objectContaining({
