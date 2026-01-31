@@ -14,6 +14,7 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "install:ci": "pnpm install --frozen-lockfile && pnpm -C functions install --frozen-lockfile",
     "install:all": "pnpm install && pnpm -C functions install",
     "build:all": "pnpm run build && pnpm -C functions run build",
     "type-check:all": "pnpm run type-check && pnpm -C functions run type-check",
