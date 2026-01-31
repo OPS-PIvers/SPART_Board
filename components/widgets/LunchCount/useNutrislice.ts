@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { LunchCountConfig, LunchMenuDay } from '../../../types';
+import { LunchCountConfig, LunchMenuDay, WidgetData } from '../../../types';
 
 interface UseNutrisliceProps {
   widgetId: string;
   config: LunchCountConfig;
-  updateWidget: (id: string, updates: any) => void;
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
 }
 
