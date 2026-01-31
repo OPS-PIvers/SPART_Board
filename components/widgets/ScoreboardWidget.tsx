@@ -11,14 +11,7 @@ import {
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import { useDebounce } from '../../hooks/useDebounce';
-import {
-  Plus,
-  Trash2,
-  Users,
-  RefreshCw,
-  Trophy,
-  BarChart,
-} from 'lucide-react';
+import { Plus, Trash2, Users, RefreshCw, Trophy, BarChart } from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
 
