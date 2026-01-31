@@ -17,16 +17,16 @@ window.PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
 
 // Mock Pointer Capture methods on Element.prototype
 Object.assign(Element.prototype, {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setPointerCapture: () => {},
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  releasePointerCapture: () => {},
-  hasPointerCapture: () => false,
+  setPointerCapture: vi.fn(),
+  releasePointerCapture: vi.fn(),
+  hasPointerCapture: vi.fn(() => false),
 });
 
 // Mock HTMLCanvasElement.prototype.getContext to silence warnings and support basic drawing calls
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
+HTMLCanvasElement.prototype.getContext = vi.fn(function (
+  this: HTMLCanvasElement,
+  contextId: string
+) {
   if (contextId === '2d') {
     return {
       clearRect: vi.fn(),
@@ -36,22 +36,28 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
       stroke: vi.fn(),
       arc: vi.fn(),
       fill: vi.fn(),
-      // Add other methods/properties as needed
-      canvas: { width: 0, height: 0 },
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      set lineCap(_val: string) {},
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      set lineJoin(_val: string) {},
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      set globalCompositeOperation(_val: string) {},
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      set strokeStyle(_val: string) {},
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      set fillStyle(_val: string) {},
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      set lineWidth(_val: number) {},
+      // Use the actual canvas element for the canvas property
+      canvas: this,
+      // Use vi.fn() for setters to allow tracking and avoid empty function warnings
+      set lineCap(_val: string) {
+        vi.fn()(_val);
+      },
+      set lineJoin(_val: string) {
+        vi.fn()(_val);
+      },
+      set globalCompositeOperation(_val: string) {
+        vi.fn()(_val);
+      },
+      set strokeStyle(_val: string) {
+        vi.fn()(_val);
+      },
+      set fillStyle(_val: string) {
+        vi.fn()(_val);
+      },
+      set lineWidth(_val: number) {
+        vi.fn()(_val);
+      },
     } as unknown as CanvasRenderingContext2D;
   }
   return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}) as any;
+}) as unknown as typeof HTMLCanvasElement.prototype.getContext;

@@ -2,7 +2,7 @@
 
 ## 2025-05-20 - Testing Infrastructure & Mocks
 
-**Gap:** Root `vitest` runner failed to resolve dependencies imported by `functions/src/index.ts` (e.g., `crypto-js`, `@google/genai`) because `functions` is not a workspace.
+**Gap:** Root `vitest` runner failed to resolve dependencies imported by `functions/src/index.ts` (e.g., `crypto-js`, `@google/genai`) because the `functions/` package is not registered as a pnpm workspace (its dependencies are not hoisted to the root).
 **Fix:** Installed these backend dependencies in root `devDependencies`. This ensures `vitest` can resolve imports when compiling function source files from the root context.
 
 **Gap:** `AnnotationCanvas` tests produced "Not implemented" warnings for `getContext` and errors for `setPointerCapture` in JSDOM environment.
