@@ -1,0 +1,210 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '../../common/Button';
+import { FileSpreadsheet, X, Send } from 'lucide-react';
+
+/**
+ * Props for the SubmitReportModal component.
+ */
+interface SubmitReportModalProps {
+  /** Whether the modal is currently open */
+  isOpen: boolean;
+  /** Callback to close the modal */
+  onClose: () => void;
+  /** Callback to submit the report data */
+  onSubmit: (notes: string, extraPizza?: number) => Promise<void>;
+  /** The report data to display and submit */
+  data: {
+    date: string;
+    staffName: string;
+    hotLunch: number;
+    bentoBox: number;
+    hotLunchName: string;
+    bentoBoxName: string;
+    schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
+  };
+  /** Whether the report is currently being submitted */
+  isSubmitting: boolean;
+}
+
+/**
+ * A modal dialog for reviewing and submitting a lunch count report.
+ * Provides fields for additional notes and site-specific data.
+ */
+export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  data,
+  isSubmitting,
+}) => {
+  const [notes, setNotes] = useState('');
+  const [extraPizza, setExtraPizza] = useState<number | ''>('');
+
+  // Handle keyboard events (Escape to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, isSubmitting]);
+
+  if (!isOpen) return null;
+
+  const isIntermediate = data.schoolSite === 'orono-intermediate-school';
+
+  return (
+    <div
+      className="absolute inset-0 z-modal flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 rounded-3xl overflow-hidden"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isSubmitting) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-slate-100 animate-in zoom-in-95 duration-200 custom-scrollbar">
+        <div className="p-6 bg-brand-blue-primary text-white flex justify-between items-center sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/30 rounded-xl">
+              <FileSpreadsheet className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3
+                id="report-modal-title"
+                className=" text-lg uppercase tracking-tight"
+              >
+                Submit Lunch Report
+              </h3>
+              <p className="text-white/70 text-xxs  uppercase tracking-widest">
+                Review and add notes
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="p-2 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <span className="text-xxs  text-slate-400 uppercase tracking-widest">
+                Date
+              </span>
+              <p className="text-sm  text-slate-700">{data.date}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xxs  text-slate-400 uppercase tracking-widest">
+                Staff Name
+              </span>
+              <p className="text-sm  text-slate-700">{data.staffName}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-2xl border border-orange-100">
+              <div className="flex flex-col">
+                <span className="text-xxs  text-orange-600 uppercase">
+                  Hot Lunch
+                </span>
+                <span className="text-[11px]  text-orange-800 line-clamp-1">
+                  {data.hotLunchName}
+                </span>
+              </div>
+              <span className="text-2xl  text-orange-600">{data.hotLunch}</span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+              <div className="flex flex-col">
+                <span className="text-xxs  text-emerald-600 uppercase">
+                  Bento Box
+                </span>
+                <span className="text-[11px]  text-emerald-800 line-clamp-1">
+                  {data.bentoBoxName}
+                </span>
+              </div>
+              <span className="text-2xl  text-emerald-600">
+                {data.bentoBox}
+              </span>
+            </div>
+
+            {isIntermediate && (
+              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-between">
+                <div>
+                  <label
+                    htmlFor="extra-pizza-input"
+                    className="text-xxs  text-purple-600 uppercase block mb-1"
+                  >
+                    Extra Pizza Slices
+                  </label>
+                  <p className="text-xxs text-purple-400  uppercase">
+                    Optional
+                  </p>
+                </div>
+                <input
+                  id="extra-pizza-input"
+                  type="number"
+                  min="0"
+                  value={extraPizza}
+                  onChange={(e) =>
+                    setExtraPizza(
+                      e.target.value === '' ? '' : parseInt(e.target.value)
+                    )
+                  }
+                  placeholder="0"
+                  className="w-20 p-2 text-center text-lg  bg-white border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400/20"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="report-notes"
+              className="text-xxs  text-slate-400 uppercase tracking-widest"
+            >
+              Additional Notes
+            </label>
+            <textarea
+              id="report-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Gluten Free, Field Trips, etc..."
+              className="w-full h-24 p-4 text-sm  bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-brand-blue-primary/20 focus:border-brand-blue-primary transition-all resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
+            <Button
+              onClick={onClose}
+              variant="secondary"
+              className="flex-1 py-4 rounded-2xl  uppercase tracking-widest"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                void onSubmit(notes, extraPizza === '' ? 0 : extraPizza)
+              }
+              variant="success"
+              className="flex-[2] py-4 rounded-2xl  uppercase tracking-widest"
+              isLoading={isSubmitting}
+              icon={<Send className="w-4 h-4" />}
+            >
+              {isSubmitting ? 'Sending...' : 'Confirm & Submit'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
