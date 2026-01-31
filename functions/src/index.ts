@@ -488,14 +488,18 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     const repoName = 'ops-pivers/SPART_Board';
     const { widgetName, description } = request.data;
 
+    // Basic sanitization to prevent prompt injection or structure breaking
+    const safeWidgetName = widgetName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+    const safeDescription = description.replace(/[$`{}]/g, '');
+
     const prompt = `
       As a Jules Agent, your task is to implement a new widget for the School Boards application.
       
-      Widget Name: ${widgetName}
-      Features Requested: ${description}
+      Widget Name: ${safeWidgetName}
+      Features Requested: ${safeDescription}
       
       Implementation Requirements:
-      1. Create a new component in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.tsx'.
+      1. Create a new component in 'components/widgets/' named '${safeWidgetName.replace(/\s+/g, '')}Widget.tsx'.
       2. Follow the existing patterns:
          - Accept 'widget: WidgetData' as a prop.
          - Use 'useDashboard()' for state updates.
@@ -505,7 +509,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       4. Add metadata to 'TOOLS' in 'config/tools.ts'.
       5. Map the component in 'WidgetRenderer.tsx'.
       6. Define default configuration in 'context/DashboardContext.tsx' (inside the 'addWidget' function).
-      7. Add a unit test in 'components/widgets/' named '${widgetName.replace(/\s+/g, '')}Widget.test.tsx'.
+      7. Add a unit test in 'components/widgets/' named '${safeWidgetName.replace(/\s+/g, '')}Widget.test.tsx'.
       
       Please ensure all code is strictly typed and follows the project's 'Zero-tolerance' linting policy.
     `;

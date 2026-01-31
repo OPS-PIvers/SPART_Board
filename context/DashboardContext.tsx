@@ -168,18 +168,25 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       await saveDashboardsFirestore(dashboardsToSave);
 
       if (driveService) {
-        void (async () => {
-          for (const db of dashboardsToSave) {
-            try {
-              await driveService.exportDashboard(db);
-            } catch (e) {
-              console.error(
-                `Failed to export dashboard ${db.name} to Drive:`,
-                e
-              );
-            }
+        const results = await Promise.allSettled(
+          dashboardsToSave.map((db) => driveService.exportDashboard(db))
+        );
+
+        let hadError = false;
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            hadError = true;
+            const failedDashboard = dashboardsToSave[index];
+            console.error(
+              `Failed to export dashboard ${failedDashboard.name} to Drive:`,
+              result.reason
+            );
           }
-        })();
+        });
+
+        if (hadError) {
+          console.error('One or more dashboards failed to export to Drive');
+        }
       }
     },
     [driveService, saveDashboardsFirestore]
@@ -424,7 +431,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         .then((newFileId) => {
           lastExportedDataRef.current = currentData;
           // If we got a new ID (e.g. first sync), save it back to Firestore silently
-          if (newFileId !== active.driveFileId) {
+          // Only update if the ID is different AND not null/undefined
+          if (newFileId && newFileId !== active.driveFileId) {
+            // Update reference first to prevent re-trigger loop from Firestore update
+            // However, since `active.driveFileId` comes from `dashboards` state which comes from Firestore,
+            // we mainly need to ensure we don't spam updates if nothing changed.
             void saveDashboardFirestore({ ...active, driveFileId: newFileId });
           }
         })

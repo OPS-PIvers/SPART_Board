@@ -288,7 +288,8 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       });
 
     updateWidget(widget.id, { config: { ...config, items: newItems } });
-  }, [debouncedText, widget.id, updateWidget, config, items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedText, widget.id, updateWidget, items]);
 
   const handleBulkChange = (text: string) => {
     setLocalText(text);

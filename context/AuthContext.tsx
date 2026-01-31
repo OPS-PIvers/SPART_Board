@@ -120,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
     () => {
       if (isAuthBypass) return MOCK_ACCESS_TOKEN;
-      return localStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
+      return sessionStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
     }
   );
   // Note: In bypass mode we initialize `loading` to false because the mock user
@@ -137,13 +137,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     GlobalFeaturePermission[]
   >([]);
 
-  // Persist googleAccessToken to localStorage
+  // Persist googleAccessToken to sessionStorage (safer than localStorage)
   useEffect(() => {
     if (isAuthBypass) return;
     if (googleAccessToken) {
-      localStorage.setItem(GOOGLE_ACCESS_TOKEN_KEY, googleAccessToken);
+      sessionStorage.setItem(GOOGLE_ACCESS_TOKEN_KEY, googleAccessToken);
     } else {
-      localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+      sessionStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
     }
   }, [googleAccessToken]);
 

@@ -72,9 +72,11 @@ export class GoogleDriveService {
     folderName: string,
     parentId?: string
   ): Promise<string> {
-    let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const sanitizedFolderName = folderName.replace(/'/g, "\\'");
+    let query = `name = '${sanitizedFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     if (parentId) {
-      query += ` and '${parentId}' in parents`;
+      const sanitizedParentId = parentId.replace(/'/g, "\\'");
+      query += ` and '${sanitizedParentId}' in parents`;
     }
 
     const folders = await this.listFiles(query);

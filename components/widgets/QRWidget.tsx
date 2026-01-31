@@ -18,23 +18,25 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const url = config.url ?? 'https://google.com';
 
   // Nexus Connection: Link Repeater (Text -> QR)
-  useEffect(() => {
-    if (config.syncWithTextWidget && activeDashboard?.widgets) {
-      const textWidget = activeDashboard.widgets.find((w) => w.type === 'text');
-      if (textWidget) {
-        const textConfig = textWidget.config as TextConfig;
-        const plainText = stripHtml(textConfig.content || '').trim();
+  // Optimization: Find the text widget content outside the effect to use stable dependencies
+  const textWidget = activeDashboard?.widgets.find((w) => w.type === 'text');
+  const textContent = textWidget
+    ? (textWidget.config as TextConfig).content
+    : '';
 
-        if (plainText && plainText !== config.url) {
-          updateWidget(widget.id, {
-            config: { url: plainText, syncWithTextWidget: true } as QRConfig,
-          });
-        }
+  useEffect(() => {
+    if (config.syncWithTextWidget && textContent) {
+      const plainText = stripHtml(textContent).trim();
+
+      if (plainText && plainText !== config.url) {
+        updateWidget(widget.id, {
+          config: { url: plainText, syncWithTextWidget: true } as QRConfig,
+        });
       }
     }
   }, [
     config.syncWithTextWidget,
-    activeDashboard?.widgets,
+    textContent, // Stable string dependency instead of full widgets array
     config.url,
     widget.id,
     updateWidget,
