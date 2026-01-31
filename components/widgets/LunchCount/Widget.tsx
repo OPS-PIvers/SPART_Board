@@ -7,13 +7,7 @@ import {
   LunchCountGlobalConfig,
 } from '../../../types';
 import { Button } from '../../common/Button';
-import {
-  RefreshCw,
-  Loader2,
-  Undo2,
-  CheckCircle2,
-  Box,
-} from 'lucide-react';
+import { RefreshCw, Loader2, Undo2, CheckCircle2, Box } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
 import { useNutrislice } from './useNutrislice';
 
@@ -42,10 +36,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   } = config;
 
   const { isSyncing, fetchNutrislice } = useNutrislice({
-      widgetId: widget.id,
-      config,
-      updateWidget,
-      addToast,
+    widgetId: widget.id,
+    config,
+    updateWidget,
+    addToast,
   });
 
   const activeRoster = useMemo(
