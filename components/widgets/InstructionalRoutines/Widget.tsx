@@ -28,6 +28,7 @@ import {
   getRoutineColorClasses,
   getRoutineStepBorderClass,
 } from './colorHelpers';
+import { Button } from '../../common/Button';
 
 // Color mapping for routines
 const ROUTINE_COLORS: Record<
@@ -338,23 +339,25 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
           <div className="flex items-center gap-3">
             {isAdmin && (
-              <button
+              <Button
+                variant="ghost-primary"
+                size="sm"
+                icon={<Settings size={12} />}
                 onClick={() => setIsManagingLibrary(true)}
-                className="flex items-center gap-1 text-xxs font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
                 title="Manage global routine library"
               >
-                <Settings size={12} />
                 Manage
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="ghost-danger"
+              size="sm"
+              icon={<Trash2 size={12} />}
               onClick={clearAllStickers}
-              className="flex items-center gap-1 text-xxs font-black uppercase text-red-500 hover:text-red-600 transition-colors"
               title="Remove all stickers from board"
             >
-              <Trash2 size={12} />
               Clear Board
-            </button>
+            </Button>
           </div>
         </div>
         <div className="flex-1 grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">

@@ -48,6 +48,9 @@ describe('InstructionalRoutinesWidget', () => {
   it('renders correctly in library mode', () => {
     render(<InstructionalRoutinesWidget widget={mockWidget} />);
     expect(screen.getByText(/Library/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /clear board/i })
+    ).toBeInTheDocument();
   });
 });
 
