@@ -62,6 +62,8 @@ export const DrawingWidget: React.FC<{
   } = config;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Optimization: cache DOMRect during drawing to avoid expensive reflows on every move event
+  const canvasRectRef = useRef<DOMRect | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const currentPathRef = useRef<Point[]>([]);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -180,6 +182,12 @@ export const DrawingWidget: React.FC<{
   const handleStart = (e: React.PointerEvent) => {
     if (isStudentView) return;
     setIsDrawing(true);
+
+    // Cache rect on start to avoid repeated getBoundingClientRect calls during drag
+    if (canvasRef.current) {
+      canvasRectRef.current = canvasRef.current.getBoundingClientRect();
+    }
+
     const pos = getPos(e);
     currentPathRef.current = [pos];
 
@@ -214,6 +222,7 @@ export const DrawingWidget: React.FC<{
   const handleEnd = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
+    canvasRectRef.current = null; // Clear cached rect
     if (currentPathRef.current.length > 1) {
       const newPath: Path = { points: currentPathRef.current, color, width };
       updateWidget(widget.id, {
@@ -227,11 +236,13 @@ export const DrawingWidget: React.FC<{
   };
 
   const getPos = (e: React.PointerEvent): Point => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
+    // Use cached rect if available (during drawing), otherwise fall back to fresh rect
+    const rect =
+      canvasRectRef.current ?? canvasRef.current?.getBoundingClientRect();
+
+    if (!rect) {
       return { x: 0, y: 0 };
     }
-    const rect = canvas.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
