@@ -35,5 +35,6 @@ Unifier is responsible for maintaining a consistent look and feel across all Sch
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
 
 ## 2026-01-31 - Standardized Widget Header Buttons
+
 **Drift:** `InstructionalRoutinesWidget` used hardcoded `<button>` elements with `text-blue-600` (instead of `brand-blue-primary`) and inconsistent spacing/hover states for "Manage" and "Clear Board" actions.
 **Fix:** Refactored to use standard `<Button>` component. Added `ghost-primary` variant to `Button` to support brand-colored text buttons, and refined `Button` gap sizing logic (moved to size-specific styles) for better density controls on small screens.
