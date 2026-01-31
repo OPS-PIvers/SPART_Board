@@ -252,7 +252,7 @@ export class GoogleDriveService {
   }
 
   /**
-   * Upload a general file to a specific Drive folder path.
+   * Upload (or update if exists) a general file to a specific Drive folder path.
    */
   async uploadFile(
     file: File | Blob,
@@ -261,27 +261,41 @@ export class GoogleDriveService {
   ): Promise<DriveFile> {
     const folderId = await this.getFolderPath(folderPath);
 
-    const metadata = {
-      name: fileName,
-      parents: [folderId],
-    };
+    // 1. Check for existing file with same name in folder
+    const sanitizedFileName = fileName.replace(/'/g, "\\'");
+    const existingFiles = await this.listFiles(
+      `name = '${sanitizedFileName}' and '${folderId}' in parents and trashed = false`
+    );
 
-    // Create metadata
-    const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify(metadata),
-    });
+    let fileId: string;
 
-    if (!createResponse.ok) {
-      throw new Error('Failed to create file metadata in Drive');
+    if (existingFiles.length > 0) {
+      // Update existing
+      fileId = existingFiles[0].id;
+    } else {
+      // Create new metadata
+      const metadata = {
+        name: fileName,
+        parents: [folderId],
+      };
+
+      const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(metadata),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Failed to create file metadata in Drive');
+      }
+
+      const driveFile = (await createResponse.json()) as DriveFile;
+      fileId = driveFile.id;
     }
 
-    const driveFile = (await createResponse.json()) as DriveFile;
-
-    // Upload content
+    // 2. Upload content (works for both new and existing files via PATCH)
     const uploadResponse = await fetch(
-      `${UPLOAD_API_URL}/files/${driveFile.id}?uploadType=media`,
+      `${UPLOAD_API_URL}/files/${fileId}?uploadType=media`,
       {
         method: 'PATCH',
         headers: {
@@ -296,9 +310,9 @@ export class GoogleDriveService {
       throw new Error('Failed to upload file content to Drive');
     }
 
-    // Get full file details (including links)
+    // 3. Get full file details
     const detailResponse = await fetch(
-      `${DRIVE_API_URL}/files/${driveFile.id}?fields=id,name,mimeType,webViewLink,webContentLink,thumbnailLink`,
+      `${DRIVE_API_URL}/files/${fileId}?fields=id,name,mimeType,webViewLink,webContentLink,thumbnailLink`,
       {
         headers: this.headers,
       }
