@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock PointerEvent globally since JSDOM doesn't fully support it
 class MockPointerEvent extends Event {
@@ -13,3 +14,10 @@ class MockPointerEvent extends Event {
   }
 }
 window.PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
+
+// Mock HTMLCanvasElement.prototype.getContext
+HTMLCanvasElement.prototype.getContext = vi.fn();
+
+// Mock Element.prototype.setPointerCapture and releasePointerCapture
+Element.prototype.setPointerCapture = vi.fn();
+Element.prototype.releasePointerCapture = vi.fn();
