@@ -142,6 +142,7 @@ export const useRosters = (user: User | null) => {
   );
 
   const lastExportedRostersRef = useRef<string>('');
+  const rostersFileIdRef = useRef<string | null>(null);
 
   // --- DRIVE SYNC EFFECT ---
   useEffect(() => {
@@ -151,18 +152,40 @@ export const useRosters = (user: User | null) => {
     if (rostersJson === lastExportedRostersRef.current) return;
 
     const timer = setTimeout(() => {
-      void driveService
-        .uploadFile(
-          new Blob([rostersJson], { type: 'application/json' }),
-          'rosters.json',
-          'Data'
-        )
-        .then(() => {
+      const syncRosters = async () => {
+        try {
+          const fileName = 'rosters.json';
+          const folderPath = 'Data';
+          const fileContent = new Blob([rostersJson], { type: 'application/json' });
+
+          // If we don't have a file ID yet, try to find it first
+          if (!rostersFileIdRef.current) {
+            const folderId = await driveService.getFolderPath(folderPath);
+            const query = `name = '${fileName}' and '${folderId}' in parents and trashed = false`;
+            const existingFiles = await driveService.listFiles(query);
+            if (existingFiles.length > 0) {
+              rostersFileIdRef.current = existingFiles[0].id;
+            }
+          }
+
+          // Use uploadFile with existingFileId to perform an update if available,
+          // otherwise it performs a create.
+          const resultFile = await driveService.uploadFile(
+            fileContent,
+            fileName,
+            folderPath,
+            rostersFileIdRef.current ?? undefined
+          );
+
+          // Store the file ID for future updates
+          rostersFileIdRef.current = resultFile.id;
           lastExportedRostersRef.current = rostersJson;
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error('Failed to sync rosters to Drive:', err);
-        });
+        }
+      };
+
+      void syncRosters();
     }, 2000); // Debounce roster export
 
     return () => clearTimeout(timer);

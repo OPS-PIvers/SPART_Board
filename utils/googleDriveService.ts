@@ -21,6 +21,11 @@ interface DriveFileCreateResponse {
   name: string;
 }
 
+// Simple regex escaping for single quotes as they delimit strings in Drive queries
+const escapeQueryString = (str: string) => {
+  return str.replace(/'/g, "\\'");
+};
+
 export class GoogleDriveService {
   private accessToken: string;
 
@@ -72,9 +77,11 @@ export class GoogleDriveService {
     folderName: string,
     parentId?: string
   ): Promise<string> {
-    let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const safeFolderName = escapeQueryString(folderName);
+    let query = `name = '${safeFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     if (parentId) {
-      query += ` and '${parentId}' in parents`;
+      const safeParentId = escapeQueryString(parentId);
+      query += ` and '${safeParentId}' in parents`;
     }
 
     const folders = await this.listFiles(query);
@@ -133,6 +140,8 @@ export class GoogleDriveService {
   async exportDashboard(dashboard: Dashboard): Promise<string> {
     const folderId = await this.getFolderPath('Dashboards');
     const fileName = `${dashboard.name}.spart`;
+    const safeFileName = escapeQueryString(fileName);
+    const safeFolderId = escapeQueryString(folderId);
 
     const metadata = {
       name: fileName,
@@ -175,7 +184,7 @@ export class GoogleDriveService {
 
     // Fallback: Check if file exists by name to update or create
     const existingFiles = await this.listFiles(
-      `name = '${fileName}' and '${folderId}' in parents and trashed = false`
+      `name = '${safeFileName}' and '${safeFolderId}' in parents and trashed = false`
     );
 
     if (existingFiles.length > 0) {
@@ -183,11 +192,17 @@ export class GoogleDriveService {
       const fileId = existingFiles[0].id;
 
       // Update metadata (name might have changed)
-      await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
+      const metadataResponse = await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
         method: 'PATCH',
         headers: this.headers,
         body: JSON.stringify({ name: fileName }),
       });
+
+      if (!metadataResponse.ok) {
+        const errorBody = await metadataResponse.text();
+        console.error('Drive API Error (Update Metadata):', errorBody);
+        throw new Error('Failed to update dashboard metadata in Drive');
+      }
 
       // Update content
       const uploadResponse = await fetch(
@@ -251,12 +266,49 @@ export class GoogleDriveService {
 
   /**
    * Upload a general file to a specific Drive folder path.
+   * If existingFileId is provided, it updates the content of that file instead of creating a new one.
    */
   async uploadFile(
     file: File | Blob,
     fileName: string,
-    folderPath: string = 'Misc'
+    folderPath: string = 'Misc',
+    existingFileId?: string
   ): Promise<DriveFile> {
+    if (existingFileId) {
+      // Update existing file content
+      const uploadResponse = await fetch(
+        `${UPLOAD_API_URL}/files/${existingFileId}?uploadType=media`,
+        {
+          method: 'PATCH',
+          headers: {
+            ...this.headers,
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+          body: file,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        const errorBody = await uploadResponse.text();
+        console.error('Drive API Error (Update Content):', errorBody);
+        throw new Error('Failed to update file content in Drive');
+      }
+
+      // Return updated file details
+      const detailResponse = await fetch(
+        `${DRIVE_API_URL}/files/${existingFileId}?fields=id,name,mimeType,webViewLink,webContentLink,thumbnailLink`,
+        {
+          headers: this.headers,
+        }
+      );
+
+      if (!detailResponse.ok) {
+        throw new Error('Failed to retrieve file details after update');
+      }
+
+      return (await detailResponse.json()) as DriveFile;
+    }
+
     const folderId = await this.getFolderPath(folderPath);
 
     const metadata = {
@@ -301,6 +353,12 @@ export class GoogleDriveService {
         headers: this.headers,
       }
     );
+
+    if (!detailResponse.ok) {
+      const errorBody = await detailResponse.text();
+      console.error('Drive API Error (Get Details):', errorBody);
+      throw new Error('Failed to retrieve file details from Drive');
+    }
 
     return (await detailResponse.json()) as DriveFile;
   }

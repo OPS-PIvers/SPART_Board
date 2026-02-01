@@ -144,10 +144,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // --- DRIVE WRAPPERS & CALLBACKS ---
 
   const saveDashboard = useCallback(
-    async (dashboard: Dashboard) => {
+    async (dashboard: Dashboard, options: { skipDrive?: boolean } = {}) => {
       let driveFileId = dashboard.driveFileId;
 
-      if (driveService) {
+      if (driveService && !options.skipDrive) {
         try {
           driveFileId ??= await driveService.exportDashboard(dashboard);
         } catch (e) {
@@ -293,6 +293,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             background: 'bg-slate-900',
             widgets: [],
             createdAt: Date.now(),
+            order: maxOrder + 1,
           };
           void saveDashboard(defaultDb).then(() => {
             setToasts((prev) => [
@@ -374,7 +375,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     saveTimerRef.current = setTimeout(() => {
       lastSavedDataRef.current = currentData;
       lastWidgetCountRef.current = active.widgets.length;
-      saveDashboard(active)
+      // Skip Drive export here as it's handled by the separate debounced effect
+      saveDashboard(active, { skipDrive: true })
         .then(() => {
           // If Firestore is fast, we might want to clear isSaving here,
           // but onSnapshot will also handle it via hasPendingWrites.

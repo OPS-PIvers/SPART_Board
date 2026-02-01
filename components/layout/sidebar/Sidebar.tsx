@@ -1007,7 +1007,7 @@ export const Sidebar: React.FC = () => {
                             : 'bg-brand-blue-primary text-white shadow-sm'
                         }`}
                       >
-                        {isDriveConnected ? 'Disconnect' : 'Connect'}
+                        {isDriveConnected ? 'Sign Out' : 'Connect'}
                       </button>
                     </div>
                   </div>

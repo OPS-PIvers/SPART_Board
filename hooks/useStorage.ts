@@ -39,7 +39,11 @@ export const useStorage = () => {
         // Make it public so it can be viewed as a background
         await driveService.makePublic(driveFile.id);
         // Use webContentLink for direct image access
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        const link = driveFile.webContentLink ?? driveFile.webViewLink;
+        if (!link) {
+          throw new Error('Failed to retrieve a valid link for the uploaded background image.');
+        }
+        return link;
       } finally {
         setUploading(false);
       }
@@ -62,7 +66,11 @@ export const useStorage = () => {
           'Assets/Stickers'
         );
         await driveService.makePublic(driveFile.id);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        const link = driveFile.webContentLink ?? driveFile.webViewLink;
+        if (!link) {
+          throw new Error('Failed to retrieve a valid link for the uploaded sticker.');
+        }
+        return link;
       } finally {
         setUploading(false);
       }
@@ -88,7 +96,11 @@ export const useStorage = () => {
           'Assets/Screenshots'
         );
         await driveService.makePublic(driveFile.id);
-        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+        const link = driveFile.webContentLink ?? driveFile.webViewLink;
+        if (!link) {
+          throw new Error('Failed to retrieve a valid link for the uploaded screenshot.');
+        }
+        return link;
       } finally {
         setUploading(false);
       }
