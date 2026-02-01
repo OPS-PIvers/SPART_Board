@@ -775,9 +775,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     setIsAnnotating(!isAnnotating);
                     setShowTools(false);
                   }}
-                  className={
-                    isAnnotating ? 'text-indigo-600 bg-indigo-50' : ''
-                  }
+                  className={isAnnotating ? 'text-indigo-600 bg-indigo-50' : ''}
                   title="Annotate"
                 >
                   <Highlighter className="w-3.5 h-3.5" />
