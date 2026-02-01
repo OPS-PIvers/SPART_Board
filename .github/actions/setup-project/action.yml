@@ -1,0 +1,32 @@
+name: 'Setup Project'
+description: 'Sets up Node, pnpm, and installs dependencies'
+inputs:
+  install-functions:
+    description: 'Whether to install functions dependencies'
+    required: false
+    default: 'true'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: |
+          pnpm-lock.yaml
+          functions/pnpm-lock.yaml
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Install functions dependencies
+      if: inputs.install-functions == 'true'
+      working-directory: functions
+      shell: bash
+      run: pnpm install --frozen-lockfile
