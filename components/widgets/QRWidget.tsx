@@ -18,9 +18,12 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const url = config.url ?? 'https://google.com';
 
   // Nexus Connection: Link Repeater (Text -> QR)
+  // OPTIMIZATION: Use stringified dependency to prevent excessive re-renders
+  const widgetsJson = JSON.stringify(activeDashboard?.widgets ?? []);
   useEffect(() => {
-    if (config.syncWithTextWidget && activeDashboard?.widgets) {
-      const textWidget = activeDashboard.widgets.find((w) => w.type === 'text');
+    if (config.syncWithTextWidget) {
+      const widgets = JSON.parse(widgetsJson) as WidgetData[];
+      const textWidget = widgets.find((w) => w.type === 'text');
       if (textWidget) {
         const textConfig = textWidget.config as TextConfig;
         const plainText = stripHtml(textConfig.content || '').trim();
@@ -34,7 +37,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }, [
     config.syncWithTextWidget,
-    activeDashboard?.widgets,
+    widgetsJson,
     config.url,
     widget.id,
     updateWidget,

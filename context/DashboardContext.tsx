@@ -425,11 +425,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           lastExportedDataRef.current = currentData;
           // If we got a new ID (e.g. first sync), save it back to Firestore silently
           if (newFileId !== active.driveFileId) {
-            void saveDashboardFirestore({ ...active, driveFileId: newFileId });
+            saveDashboardFirestore({ ...active, driveFileId: newFileId }).catch(
+              (err) => {
+                console.error(
+                  '[Drive Sync] Failed to save new file ID to Firestore:',
+                  err
+                );
+                // Invalidate local cache so we try again next time
+                lastExportedDataRef.current = '';
+              }
+            );
           }
         })
         .catch((err) => {
           console.error('[Drive Sync] Background export failed:', err);
+          // Invalidate local cache so we try again next time
+          lastExportedDataRef.current = '';
         });
     }, 5000);
 

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Bot, Wand2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
+import { useAuth } from '../../context/useAuth';
 
 export const JulesWidgetGenerator: React.FC = () => {
+  const { isAdmin } = useAuth();
   const [widgetName, setWidgetName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<
@@ -15,6 +17,12 @@ export const JulesWidgetGenerator: React.FC = () => {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!widgetName || !description) return;
+
+    if (!isAdmin) {
+      setStatus('error');
+      setMessage('Access Denied: Only administrators can trigger Jules.');
+      return;
+    }
 
     setStatus('loading');
     setMessage(

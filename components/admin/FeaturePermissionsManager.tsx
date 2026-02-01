@@ -938,9 +938,12 @@ export const FeaturePermissionsManager: React.FC = () => {
                                               className="hidden"
                                               accept="image/*"
                                               onChange={(e) => {
-                                                const file =
-                                                  e.target.files?.[0];
-                                                if (file) {
+                                                const fileList = e.target.files;
+                                                if (
+                                                  fileList &&
+                                                  fileList.length > 0
+                                                ) {
+                                                  const file = fileList[0];
                                                   void handleWeatherImageUpload(
                                                     tool.type,
                                                     range.id,

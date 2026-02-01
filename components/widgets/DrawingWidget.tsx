@@ -338,7 +338,11 @@ export const DrawingWidget: React.FC<{
             icon={<Camera className="w-4 h-4" />}
           />
           <Button
-            onClick={() => void takeScreenshot({ upload: true })}
+            onClick={() =>
+              void takeScreenshot({ upload: true }).catch((err) =>
+                console.error('Screenshot upload failed:', err)
+              )
+            }
             disabled={isCapturing}
             variant="ghost"
             size="icon"
