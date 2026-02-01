@@ -224,6 +224,16 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
+    // Should NOT update global state during drag (optimization)
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // End drag (commit changes)
+    fireEvent.pointerUp(window, {
+      clientX: 160,
+      clientY: 160,
+      pointerId: 1,
+    });
+
     // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
@@ -232,9 +242,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('does not drag if clicking below the 40px handle area', () => {
