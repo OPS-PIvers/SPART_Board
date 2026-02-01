@@ -6,14 +6,18 @@ import { Button } from './Button';
 describe('Button', () => {
   it('renders children correctly', () => {
     render(<Button>Click me</Button>);
-    expect(screen.getByRole('button', { name: /click me/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /click me/i })
+    ).toBeInTheDocument();
   });
 
   it('renders with icon', () => {
     const icon = <span data-testid="test-icon">icon</span>;
     render(<Button icon={icon}>With Icon</Button>);
     expect(screen.getByTestId('test-icon')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /with icon/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /with icon/i })
+    ).toBeInTheDocument();
   });
 
   it('handles click events', async () => {
