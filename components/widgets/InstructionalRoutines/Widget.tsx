@@ -278,9 +278,35 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       color: step.color,
       label: step.label,
       stickerUrl: step.stickerUrl,
+      attachedWidget: step.attachedWidget
+        ? {
+            type: step.attachedWidget.type,
+            label: step.attachedWidget.label,
+            config: step.attachedWidget.config,
+          }
+        : undefined,
     }));
     updateWidget(widget.id, {
       config: { ...config, selectedRoutineId: r.id, customSteps: initialSteps },
+    });
+  };
+
+  const handleLaunchAll = () => {
+    const stepsWithWidgets = customSteps.filter((s) => s.attachedWidget);
+    if (stepsWithWidgets.length === 0) return;
+
+    stepsWithWidgets.forEach((step, index) => {
+      if (step.attachedWidget) {
+        // Stagger launch slightly to visualize the flow
+        setTimeout(() => {
+          addWidget(step.attachedWidget!.type, {
+            config: step.attachedWidget!.config,
+            // Offset from the current widget to cascade
+            x: widget.x + widget.w + 20 + index * 20,
+            y: widget.y + index * 40,
+          });
+        }, index * 200);
+      }
     });
   };
 
@@ -519,6 +545,19 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             {selectedRoutine.grades} Protocol
           </span>
         </div>
+        {customSteps.some((s) => s.attachedWidget) && (
+          <button
+            onClick={handleLaunchAll}
+            className="bg-brand-blue-primary text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-md animate-in zoom-in duration-300"
+            style={{ padding: '0.6em 1em', fontSize: '0.7em' }}
+            title="Launch all smart tools for this routine"
+          >
+            <Rocket size={dynamicFontSize * 1.5} />
+            <span className="font-black uppercase tracking-wider">
+              Launch Tools
+            </span>
+          </button>
+        )}
         <button
           onClick={clearAllStickers}
           className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"

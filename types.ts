@@ -130,7 +130,7 @@ export interface RoutineStep {
   attachedWidget?: {
     type: WidgetType;
     label: string;
-    config: WidgetConfig;
+    config?: WidgetConfig;
   };
   label?: string;
 }

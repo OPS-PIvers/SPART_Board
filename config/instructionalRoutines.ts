@@ -1,4 +1,5 @@
-import { GradeLevel } from '../types';
+import { GradeLevel, WidgetConfig, TimeToolConfig, RandomConfig, WidgetType } from '../types';
+import { WIDGET_DEFAULTS } from './widgetDefaults';
 
 export interface InstructionalStep {
   text: string;
@@ -7,9 +8,9 @@ export interface InstructionalStep {
   color?: string;
   label?: string;
   attachedWidget?: {
-    type: string;
+    type: WidgetType;
     label: string;
-    config?: Record<string, unknown>;
+    config?: WidgetConfig;
   };
 }
 
@@ -43,6 +44,17 @@ export const ROUTINES: InstructionalRoutine[] = [
         icon: 'Pencil',
         color: 'slate',
         label: 'Write',
+        attachedWidget: {
+          type: 'time-tool',
+          label: '5 Min Timer',
+          config: {
+            ...(WIDGET_DEFAULTS['time-tool']?.config as TimeToolConfig),
+            mode: 'timer',
+            duration: 300,
+            elapsedTime: 300,
+            isRunning: true,
+          } as WidgetConfig,
+        },
       },
       {
         text: 'Read and answer what your friends wrote.',
@@ -221,6 +233,17 @@ export const ROUTINES: InstructionalRoutine[] = [
         icon: 'Pencil',
         color: 'blue',
         label: 'Jot',
+        attachedWidget: {
+          type: 'time-tool',
+          label: '2 Min Timer',
+          config: {
+            ...(WIDGET_DEFAULTS['time-tool']?.config as TimeToolConfig),
+            mode: 'timer',
+            duration: 120,
+            elapsedTime: 120,
+            isRunning: true,
+          } as WidgetConfig,
+        },
       },
       {
         text: 'Share your writing with a partner.',
@@ -417,18 +440,47 @@ export const ROUTINES: InstructionalRoutine[] = [
         icon: 'Lightbulb',
         color: 'amber',
         label: 'Think',
+        attachedWidget: {
+          type: 'time-tool',
+          label: '1 Min Timer',
+          config: {
+            ...(WIDGET_DEFAULTS['time-tool']?.config as TimeToolConfig),
+            mode: 'timer',
+            duration: 60,
+            elapsedTime: 60,
+            isRunning: true,
+          } as WidgetConfig,
+        },
       },
       {
         text: 'Share your thoughts with a partner.',
         icon: 'Users',
         color: 'blue',
         label: 'Pair',
+        attachedWidget: {
+          type: 'random',
+          label: 'Pair Generator',
+          config: {
+            ...(WIDGET_DEFAULTS['random']?.config as RandomConfig),
+            mode: 'groups',
+            groupSize: 2,
+          } as WidgetConfig,
+        },
       },
       {
         text: 'Join the class discussion.',
         icon: 'Share2',
         color: 'green',
         label: 'Share',
+        attachedWidget: {
+          type: 'random',
+          label: 'Speaker Picker',
+          config: {
+            ...(WIDGET_DEFAULTS['random']?.config as RandomConfig),
+            mode: 'single',
+            visualStyle: 'wheel',
+          } as WidgetConfig,
+        },
       },
     ],
   },
