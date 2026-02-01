@@ -1,8 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { InstructionalRoutinesWidget } from './Widget';
 import { InstructionalRoutinesSettings } from './Settings';
 import { vi, describe, it, expect } from 'vitest';
-import { WidgetData, RoutineStep } from '../../../types';
+import {
+  WidgetData,
+  RoutineStep,
+  InstructionalRoutinesConfig,
+  TimeToolConfig,
+  WidgetConfig,
+} from '../../../types';
 
 const mockUpdateWidget = vi.fn();
 const mockAddWidget = vi.fn();
@@ -75,6 +82,7 @@ describe('InstructionalRoutinesWidget', () => {
 
     // 3. Simulate re-render with selected routine (since we mocked updateWidget)
     // We need to manually construct the steps that would have been created
+    const timerConfig: Partial<TimeToolConfig> = { duration: 60 };
     const expectedSteps: RoutineStep[] = [
       {
         id: '1',
@@ -82,18 +90,20 @@ describe('InstructionalRoutinesWidget', () => {
         attachedWidget: {
           type: 'time-tool',
           label: '1 Min Timer',
-          config: { duration: 60 } as any,
+          config: timerConfig as WidgetConfig,
         },
       },
     ];
 
-    const selectedWidget = {
+    const newConfig: InstructionalRoutinesConfig = {
+      ...(mockWidget.config as InstructionalRoutinesConfig),
+      selectedRoutineId: 'think-pair-share',
+      customSteps: expectedSteps,
+    };
+
+    const selectedWidget: WidgetData = {
       ...mockWidget,
-      config: {
-        ...mockWidget.config,
-        selectedRoutineId: 'think-pair-share',
-        customSteps: expectedSteps,
-      } as any,
+      config: newConfig as unknown as WidgetConfig,
     };
 
     rerender(<InstructionalRoutinesWidget widget={selectedWidget} />);

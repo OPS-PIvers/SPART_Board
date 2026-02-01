@@ -296,11 +296,12 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     if (stepsWithWidgets.length === 0) return;
 
     stepsWithWidgets.forEach((step, index) => {
-      if (step.attachedWidget) {
+      const attached = step.attachedWidget;
+      if (attached) {
         // Stagger launch slightly to visualize the flow
         setTimeout(() => {
-          addWidget(step.attachedWidget!.type, {
-            config: step.attachedWidget!.config,
+          addWidget(attached.type, {
+            config: attached.config,
             // Offset from the current widget to cascade
             x: widget.x + widget.w + 20 + index * 20,
             y: widget.y + index * 40,

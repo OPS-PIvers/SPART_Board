@@ -1,4 +1,10 @@
-import { GradeLevel, WidgetConfig, TimeToolConfig, RandomConfig, WidgetType } from '../types';
+import {
+  GradeLevel,
+  WidgetConfig,
+  TimeToolConfig,
+  RandomConfig,
+  WidgetType,
+} from '../types';
 import { WIDGET_DEFAULTS } from './widgetDefaults';
 
 export interface InstructionalStep {
