@@ -42,7 +42,7 @@ jobs:
       - name: Setup Project
         uses: ./.github/actions/setup-project
         with:
-          install-functions: 'false'
+          install-functions: 'true'
 
       - name: Run unit tests
         run: pnpm test
