@@ -86,12 +86,20 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     widget.flipped
   );
 
-  // Sync position with props when not dragging
+  // Keep track of drag state in ref to avoid flicker effect dependency
+  const isDraggingRef = useRef(isDragging);
   useEffect(() => {
-    if (!isDragging) {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+
+  // Sync position with props when not dragging
+  // We use the ref here to prevent this effect from running when isDragging changes to false
+  // (which would reset position to stale props before the new props arrive)
+  useEffect(() => {
+    if (!isDraggingRef.current) {
       setPosition({ x: widget.x, y: widget.y });
     }
-  }, [widget.x, widget.y, isDragging]);
+  }, [widget.x, widget.y]);
 
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
