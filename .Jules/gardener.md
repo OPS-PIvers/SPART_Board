@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-06-03 - Refactor LunchCountWidget
+
+**Weed:** `LunchCountWidget.tsx` was ~1000 lines, containing the main widget, settings, and modal components.
+**Root Cause:** "God Component" pattern where UI for the main widget, settings, and reporting modal were co-located.
+**Plan:** Decomposed into `components/widgets/lunch/` directory with separate files for `LunchCountWidget`, `LunchCountSettings`, `SubmitReportModal`, and `constants`.
+
 ## 2025-06-03 - Refactor InstructionalRoutinesWidget
 
 **Weed:** `InstructionalRoutinesWidget.tsx` was >1000 lines, containing the main widget, settings, library manager, and helper components.

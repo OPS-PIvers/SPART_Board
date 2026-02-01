@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LunchCountWidget } from './LunchCountWidget';
+import { LunchCountWidget } from './lunch';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { WidgetData, LunchCountConfig } from '../../types';
