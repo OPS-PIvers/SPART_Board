@@ -75,6 +75,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   globalStyle,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: widget.x, y: widget.y });
   const [_isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTools, setShowTools] = useState(false);
@@ -84,6 +85,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
     widget.flipped
   );
+
+  // Sync position with props when not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setPosition({ x: widget.x, y: widget.y });
+    }
+  }, [widget.x, widget.y, isDragging]);
 
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
@@ -211,7 +219,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
+      setPosition({
         x: moveEvent.clientX - startX,
         y: moveEvent.clientY - startY,
       });
@@ -225,6 +233,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      // Commit changes
+      const finalX = upEvent.clientX - startX;
+      const finalY = upEvent.clientY - startY;
+      updateWidget(widget.id, {
+        x: finalX,
+        y: finalY,
+      });
+      setPosition({ x: finalX, y: finalY });
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {
@@ -385,8 +402,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           isMaximized ? 'border-none !shadow-none' : ''
         } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
-          left: isMaximized ? 0 : widget.x,
-          top: isMaximized ? 0 : widget.y,
+          left: isMaximized ? 0 : position.x,
+          top: isMaximized ? 0 : position.y,
           width: isMaximized ? '100vw' : widget.w,
           height: isMaximized ? '100vh' : widget.h,
           zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
