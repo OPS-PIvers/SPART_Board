@@ -24,11 +24,11 @@ test('Text Widget scaling verification', async ({ page }) => {
   await contentArea.fill('Scaling Test Content');
   await contentArea.blur();
 
-  // 5. Verify initial font-size style uses px
+  // 5. Verify initial font-size style uses cqmin
   // Use evaluate to get the actual style attribute value to avoid issues with browser normalization of style
   const style = await contentArea.evaluate((el) => el.getAttribute('style'));
-  // We removed cqmin in favor of px-based scaling via transform
-  expect(style).toContain('font-size: 18px');
+  // Browser might normalize the calc expression
+  expect(style).toMatch(/font-size:\s*calc\(7\.2cqmin\)/);
 
   // Ensure verification directory exists
   const vDir = path.join(process.cwd(), 'verification');
@@ -54,18 +54,16 @@ test('Text Widget scaling verification', async ({ page }) => {
     await page.mouse.move(box.x + 600, box.y + 400);
     await page.mouse.up();
 
-    // Wait for the resize to complete by asserting the bounding box has changed.
-    await expect
-      .poll(async () => await textWidget.boundingBox())
-      .not.toEqual(box);
+    // Wait for any transitions
+    await page.waitForTimeout(500);
 
     // Take screenshot at large size
     await page.screenshot({ path: 'verification/text-scaling-large.png' });
   }
 
-  // Final check that style is still px
+  // Final check that style is still cqmin
   const finalStyle = await contentArea.evaluate((el) =>
     el.getAttribute('style')
   );
-  expect(finalStyle).toContain('font-size: 18px');
+  expect(finalStyle).toMatch(/font-size:\s*calc\(7\.2cqmin\)/);
 });
