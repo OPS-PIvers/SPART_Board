@@ -187,7 +187,12 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     canSpread: true,
     skipScaling: true,
   },
-  dice: { baseWidth: 240, baseHeight: 240, canSpread: false, skipScaling: true },
+  dice: {
+    baseWidth: 240,
+    baseHeight: 240,
+    canSpread: false,
+    skipScaling: true,
+  },
   sound: { baseWidth: 300, baseHeight: 300, canSpread: true },
   webcam: { baseWidth: 400, baseHeight: 300, canSpread: true },
   embed: { baseWidth: 480, baseHeight: 350, canSpread: true },
