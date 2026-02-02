@@ -28,7 +28,7 @@ HTMLCanvasElement.prototype.getContext = vi.fn(function (
   contextId: string
 ) {
   if (contextId === '2d') {
-    return {
+    const context = {
       clearRect: vi.fn(),
       beginPath: vi.fn(),
       moveTo: vi.fn(),
@@ -38,26 +38,60 @@ HTMLCanvasElement.prototype.getContext = vi.fn(function (
       fill: vi.fn(),
       // Use the actual canvas element for the canvas property
       canvas: this,
-      // Use vi.fn() for setters to allow tracking and avoid empty function warnings
-      set lineCap(_val: string) {
-        vi.fn()(_val);
+
+      // Internal storage for properties
+      _lineCap: 'butt',
+      _lineJoin: 'miter',
+      _globalCompositeOperation: 'source-over',
+      _strokeStyle: '#000000',
+      _fillStyle: '#000000',
+      _lineWidth: 1,
+
+      // Getters and Setters
+      get lineCap() {
+        return this._lineCap;
       },
-      set lineJoin(_val: string) {
-        vi.fn()(_val);
+      set lineCap(val: string) {
+        this._lineCap = val;
       },
-      set globalCompositeOperation(_val: string) {
-        vi.fn()(_val);
+
+      get lineJoin() {
+        return this._lineJoin;
       },
-      set strokeStyle(_val: string) {
-        vi.fn()(_val);
+      set lineJoin(val: string) {
+        this._lineJoin = val;
       },
-      set fillStyle(_val: string) {
-        vi.fn()(_val);
+
+      get globalCompositeOperation() {
+        return this._globalCompositeOperation;
       },
-      set lineWidth(_val: number) {
-        vi.fn()(_val);
+      set globalCompositeOperation(val: string) {
+        this._globalCompositeOperation = val;
       },
-    } as unknown as CanvasRenderingContext2D;
+
+      get strokeStyle() {
+        return this._strokeStyle;
+      },
+      set strokeStyle(val: string) {
+        this._strokeStyle = val;
+      },
+
+      get fillStyle() {
+        return this._fillStyle;
+      },
+      set fillStyle(val: string) {
+        this._fillStyle = val;
+      },
+
+      get lineWidth() {
+        return this._lineWidth;
+      },
+      set lineWidth(val: number) {
+        this._lineWidth = val;
+      },
+    };
+
+    return context as unknown as CanvasRenderingContext2D;
   }
   return null;
 }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
