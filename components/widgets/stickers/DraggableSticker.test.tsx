@@ -104,7 +104,7 @@ describe('DraggableSticker', () => {
     expect(mockRemoveWidget).toHaveBeenCalledWith('sticker-1');
   });
 
-  it('removes sticker on widget-escape-press event', async () => {
+  it('removes sticker on widget-escape-press event', () => {
     render(
       <DraggableSticker widget={mockWidget}>
         <div>Sticker Content</div>
@@ -114,14 +114,14 @@ describe('DraggableSticker', () => {
     const event = new CustomEvent('widget-escape-press', {
       detail: { widgetId: 'sticker-1' },
     });
-    await act(async () => {
+    act(() => {
       window.dispatchEvent(event);
     });
 
     expect(mockRemoveWidget).toHaveBeenCalledWith('sticker-1');
   });
 
-  it('does not remove sticker on widget-escape-press for a different ID', async () => {
+  it('does not remove sticker on widget-escape-press for a different ID', () => {
     render(
       <DraggableSticker widget={mockWidget}>
         <div>Sticker Content</div>
@@ -131,7 +131,7 @@ describe('DraggableSticker', () => {
     const event = new CustomEvent('widget-escape-press', {
       detail: { widgetId: 'other-sticker' },
     });
-    await act(async () => {
+    act(() => {
       window.dispatchEvent(event);
     });
 

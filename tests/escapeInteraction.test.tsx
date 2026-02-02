@@ -6,9 +6,12 @@ import {
   cleanup,
   act,
 } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { DashboardView } from '../components/layout/DashboardView';
-import { DashboardContext } from '../context/DashboardContextValue';
+import {
+  DashboardContext,
+  DashboardContextValue,
+} from '../context/DashboardContextValue';
 import { Dashboard, WidgetData, GlobalStyle } from '../types';
 
 // Mock child components to simplify testing
@@ -66,7 +69,7 @@ const createMockDashboard = (widgets: WidgetData[]): Dashboard => ({
 });
 
 describe('Global Escape Interaction', () => {
-  const mockContextValue: any = {
+  const mockContextValue: Partial<DashboardContextValue> = {
     activeDashboard: null as Dashboard | null,
     dashboards: [] as Dashboard[],
     addWidget: vi.fn(),
@@ -90,11 +93,16 @@ describe('Global Escape Interaction', () => {
     vi.clearAllMocks();
   });
 
-  it('blurs a focused input on Escape press', async () => {
+  it('blurs a focused input on Escape press', () => {
     const dashboard = createMockDashboard([]);
     render(
       <DashboardContext.Provider
-        value={{ ...mockContextValue, activeDashboard: dashboard }}
+        value={
+          {
+            ...mockContextValue,
+            activeDashboard: dashboard,
+          } as DashboardContextValue
+        }
       >
         <DashboardView />
         <input data-testid="test-input" />
@@ -105,7 +113,7 @@ describe('Global Escape Interaction', () => {
     input.focus();
     expect(document.activeElement).toBe(input);
 
-    await act(async () => {
+    act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
 
@@ -113,7 +121,7 @@ describe('Global Escape Interaction', () => {
     expect(document.activeElement).toBe(document.body);
   });
 
-  it('dispatches widget-escape-press for the top-most widget', async () => {
+  it('dispatches widget-escape-press for the top-most widget', () => {
     const widgets: WidgetData[] = [
       {
         id: 'w1',
@@ -125,7 +133,7 @@ describe('Global Escape Interaction', () => {
         z: 1,
         flipped: false,
         config: {},
-      } as any,
+      } as unknown as WidgetData,
       {
         id: 'w2',
         type: 'text',
@@ -136,7 +144,7 @@ describe('Global Escape Interaction', () => {
         z: 10,
         flipped: false,
         config: {},
-      } as any,
+      } as unknown as WidgetData,
       {
         id: 'w3',
         type: 'dice',
@@ -147,7 +155,7 @@ describe('Global Escape Interaction', () => {
         z: 5,
         flipped: false,
         config: {},
-      } as any,
+      } as unknown as WidgetData,
     ];
     const dashboard = createMockDashboard(widgets);
 
@@ -155,26 +163,33 @@ describe('Global Escape Interaction', () => {
 
     render(
       <DashboardContext.Provider
-        value={{ ...mockContextValue, activeDashboard: dashboard }}
+        value={
+          {
+            ...mockContextValue,
+            activeDashboard: dashboard,
+          } as DashboardContextValue
+        }
       >
         <DashboardView />
       </DashboardContext.Provider>
     );
 
-    await act(async () => {
+    act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
 
     // Should target w2 (z=10)
     expect(dispatchSpy).toHaveBeenCalledWith(expect.any(CustomEvent));
-    const event = dispatchSpy.mock.calls.find(
+    const calls = dispatchSpy.mock.calls;
+    const escapeCall = calls.find(
       (call) =>
         call[0] instanceof CustomEvent && call[0].type === 'widget-escape-press'
-    )[0] as CustomEvent;
-    expect(event.detail).toEqual({ widgetId: 'w2' });
+    );
+    const event = escapeCall?.[0] as CustomEvent;
+    expect(event?.detail).toEqual({ widgetId: 'w2' });
   });
 
-  it('does not dispatch event if an input was just blurred', async () => {
+  it('does not dispatch event if an input was just blurred', () => {
     const widgets: WidgetData[] = [
       {
         id: 'w1',
@@ -186,14 +201,19 @@ describe('Global Escape Interaction', () => {
         z: 1,
         flipped: false,
         config: {},
-      } as any,
+      } as unknown as WidgetData,
     ];
     const dashboard = createMockDashboard(widgets);
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
     render(
       <DashboardContext.Provider
-        value={{ ...mockContextValue, activeDashboard: dashboard }}
+        value={
+          {
+            ...mockContextValue,
+            activeDashboard: dashboard,
+          } as DashboardContextValue
+        }
       >
         <DashboardView />
         <input data-testid="test-input" />
@@ -203,7 +223,7 @@ describe('Global Escape Interaction', () => {
     const input = screen.getByTestId('test-input');
     input.focus();
 
-    await act(async () => {
+    act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
 
@@ -214,7 +234,7 @@ describe('Global Escape Interaction', () => {
     );
 
     // Second press should dispatch
-    await act(async () => {
+    act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
     expect(dispatchSpy).toHaveBeenCalledWith(
