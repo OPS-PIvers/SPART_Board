@@ -44,6 +44,7 @@ describe('RandomWidget', () => {
     config: {
       mode: 'single',
       firstNames: 'Alice\nBob\nCharlie',
+      lastNames: '',
       remainingStudents: ['Alice', 'Bob'],
       lastResult: 'Charlie',
     },
