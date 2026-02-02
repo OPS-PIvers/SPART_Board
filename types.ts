@@ -561,6 +561,10 @@ export interface WidgetData {
   config: WidgetConfig;
 }
 
+export interface DashboardWidget extends WidgetData {
+  activeRoster?: string[];
+}
+
 export interface DockFolder {
   id: string;
   name: string;
