@@ -142,7 +142,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   // --- Render Sub-views ---
 
   const renderVolumeView = () => (
-    <div className="flex flex-col h-full animate-in slide-in-from-right duration-200">
+    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
       <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
@@ -186,7 +186,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const renderGroupsView = () => (
-    <div className="flex flex-col h-full animate-in slide-in-from-right duration-200">
+    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
       <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
@@ -225,7 +225,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const renderInteractionView = () => (
-    <div className="flex flex-col h-full animate-in slide-in-from-right duration-200">
+    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
       <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
@@ -281,7 +281,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
+      className={`h-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
         isElementary ? 'grid grid-cols-2' : 'flex flex-col'
       }`}
     >
@@ -357,20 +357,16 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   );
 };
 
-const LAYOUTS: {
-  id: 'secondary' | 'elementary';
-  label: string;
-  icon: typeof LayoutList;
-}[] = [
-  { id: 'secondary', label: 'Secondary', icon: LayoutList },
-  { id: 'elementary', label: 'Elementary', icon: LayoutGrid },
-];
-
 export const WorkSymbolsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as WorkSymbolsConfig;
+
+  const layouts = [
+    { id: 'secondary', label: 'Secondary', icon: LayoutList },
+    { id: 'elementary', label: 'Elementary', icon: LayoutGrid },
+  ];
 
   return (
     <div className="space-y-6">
@@ -379,14 +375,14 @@ export const WorkSymbolsSettings: React.FC<{ widget: WidgetData }> = ({
           Layout Mode
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {LAYOUTS.map((l) => (
+          {layouts.map((l) => (
             <button
               key={l.id}
               onClick={() =>
                 updateWidget(widget.id, {
                   config: {
                     ...config,
-                    layout: l.id,
+                    layout: l.id as 'secondary' | 'elementary',
                   },
                 })
               }

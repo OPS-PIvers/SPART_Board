@@ -77,49 +77,11 @@ describe('WorkSymbolsWidget', () => {
     // The main container should have 'grid grid-cols-2'
     const volumeButton = screen.getByText('Volume').closest('button');
     const container = volumeButton?.parentElement;
-    expect(container).toHaveClass('grid grid-cols-2');
+    expect(container?.className).toContain('grid');
+    expect(container?.className).toContain('grid-cols-2');
 
     // Volume button should have 'col-span-2'
-    expect(volumeButton).toHaveClass('col-span-2');
-  });
-
-  it('navigates back from a category', () => {
-    render(<WorkSymbolsWidget widget={mockWidget} />);
-    fireEvent.click(screen.getByText('Volume'));
-
-    // Find back button by icon (it has ArrowLeft)
-    // In our mock/implementation we use lucide-react, which we didn't mock here specifically
-    // but the test should find the button.
-    const backButton = screen.getByRole('button', { name: '' }); // The one with ArrowLeft
-    fireEvent.click(backButton);
-
-    expect(screen.getByText('Volume')).toBeDefined();
-  });
-
-  it('selects a group mode', () => {
-    render(<WorkSymbolsWidget widget={mockWidget} />);
-    fireEvent.click(screen.getByText('Group Size'));
-    fireEvent.click(screen.getByText('Partner'));
-
-    expect(mockUpdateWidget).toHaveBeenCalledWith('work-symbols-1', {
-      config: {
-        ...mockWidget.config,
-        workMode: 'partner',
-      },
-    });
-  });
-
-  it('selects an interaction mode', () => {
-    render(<WorkSymbolsWidget widget={mockWidget} />);
-    fireEvent.click(screen.getByText('Interaction'));
-    fireEvent.click(screen.getByText('Respectful'));
-
-    expect(mockUpdateWidget).toHaveBeenCalledWith('work-symbols-1', {
-      config: {
-        ...mockWidget.config,
-        interactionMode: 'respectful',
-      },
-    });
+    expect(volumeButton?.className).toContain('col-span-2');
   });
 });
 
@@ -164,6 +126,45 @@ describe('WorkSymbolsSettings', () => {
       config: {
         ...mockWidget.config,
         layout: 'secondary',
+      },
+    });
+  });
+
+  it('navigates back from a category', () => {
+    render(<WorkSymbolsWidget widget={mockWidget} />);
+    fireEvent.click(screen.getByText('Volume'));
+
+    // Find back button by icon (it has ArrowLeft)
+    // In our mock/implementation we use lucide-react, which we didn't mock here specifically
+    // but the test should find the button.
+    const backButton = screen.getByRole('button', { name: '' }); // The one with ArrowLeft
+    fireEvent.click(backButton);
+
+    expect(screen.getByText('Volume')).toBeDefined();
+  });
+
+  it('selects a group mode', () => {
+    render(<WorkSymbolsWidget widget={mockWidget} />);
+    fireEvent.click(screen.getByText('Group Size'));
+    fireEvent.click(screen.getByText('Partner'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('work-symbols-1', {
+      config: {
+        ...mockWidget.config,
+        workMode: 'partner',
+      },
+    });
+  });
+
+  it('selects an interaction mode', () => {
+    render(<WorkSymbolsWidget widget={mockWidget} />);
+    fireEvent.click(screen.getByText('Interaction'));
+    fireEvent.click(screen.getByText('Respectful'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('work-symbols-1', {
+      config: {
+        ...mockWidget.config,
+        interactionMode: 'respectful',
       },
     });
   });
