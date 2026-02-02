@@ -32,7 +32,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
 
     // Determine values, prioritizing props over global settings
     const finalTransparency =
-      propTransparency !== undefined ? propTransparency : globalStyle.windowTransparency;
+      propTransparency ?? globalStyle.windowTransparency;
 
     const isInvisible = allowInvisible && finalTransparency <= 0.001;
 
