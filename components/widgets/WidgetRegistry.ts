@@ -50,7 +50,7 @@ const MiniAppSettings = lazyNamed(
 
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   clock: lazyNamed(() => import('./ClockWidget'), 'ClockWidget'),
-  'time-tool': lazyNamed(() => import('./TimeToolWidget'), 'TimeToolWidget'),
+  'time-tool': lazyNamed(() => import('./TimerWidget'), 'TimerWidget'),
   traffic: lazyNamed(
     () => import('./TrafficLightWidget'),
     'TrafficLightWidget'
@@ -134,7 +134,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
   miniApp: MiniAppSettings,
-  'time-tool': lazyNamed(() => import('./TimeToolWidget'), 'TimeToolSettings'),
+  'time-tool': lazyNamed(() => import('./TimerWidget'), 'TimerSettings'),
   'seating-chart': lazyNamed(
     () => import('./SeatingChartSettings'),
     'SeatingChartSettings'
