@@ -189,28 +189,11 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     const m = Math.floor(config.elapsedTime / 60);
     const s = Math.floor(config.elapsedTime % 60);
     setEditValues({
-      min: m.toString().padStart(2, '0'),
+      min: m.toString().padStart(3, '0'),
       sec: s.toString().padStart(2, '0'),
     });
     setIsEditing(true);
     setActiveField('min');
-  };
-
-  const handleKeypadInput = (num: string) => {
-    setEditValues((prev) => {
-      const current = prev[activeField];
-      let next = (current + num).slice(-2);
-      if (activeField === 'sec' && parseInt(next) > 59) next = '59';
-      if (activeField === 'min' && parseInt(next) > 99) next = '99';
-      return { ...prev, [activeField]: next };
-    });
-  };
-
-  const handleBackspace = () => {
-    setEditValues((prev) => ({
-      ...prev,
-      [activeField]: '0' + prev[activeField].slice(0, 1),
-    }));
   };
 
   const confirmEdit = () => {
@@ -220,7 +203,33 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     setIsEditing(false);
   };
 
+  const handleKeypadInput = (num: string) => {
+    setEditValues((prev) => {
+      const current = prev[activeField];
+      const limit = activeField === 'min' ? 3 : 2;
+      let next = (current + num).slice(-limit).padStart(limit, '0');
+      if (activeField === 'sec' && parseInt(next) > 59) next = '59';
+      return { ...prev, [activeField]: next };
+    });
+  };
+
+  const handleBackspace = () => {
+    setEditValues((prev) => {
+      const limit = activeField === 'min' ? 3 : 2;
+      const next = ('0' + prev[activeField]).slice(0, -1).padStart(limit, '0');
+      return { ...prev, [activeField]: next };
+    });
+  };
+
   // --- STYLING ---
+  const numpadButtonClasses = `py-2 rounded-lg font-bold transition-colors shadow-sm active:scale-95 ${
+    config.theme === 'dark'
+      ? 'bg-slate-800 text-white hover:bg-slate-700'
+      : config.theme === 'glass'
+        ? 'bg-white/10 text-white hover:bg-white/20'
+        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+  }`;
+
   const isVisual = config.visualType === 'visual';
   const themeClass =
     config.theme === 'dark'
@@ -364,13 +373,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 <button
                   key={n}
                   onClick={() => handleKeypadInput(n.toString())}
-                  className={`py-2 rounded-lg font-bold transition-colors shadow-sm active:scale-95 ${
-                    config.theme === 'dark'
-                      ? 'bg-slate-800 text-white hover:bg-slate-700'
-                      : config.theme === 'glass'
-                        ? 'bg-white/10 text-white hover:bg-white/20'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  className={numpadButtonClasses}
                 >
                   {n}
                 </button>
@@ -390,13 +393,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
               </button>
               <button
                 onClick={() => handleKeypadInput('0')}
-                className={`py-2 rounded-lg font-bold transition-colors shadow-sm active:scale-95 ${
-                  config.theme === 'dark'
-                    ? 'bg-slate-800 text-white hover:bg-slate-700'
-                    : config.theme === 'glass'
-                      ? 'bg-white/10 text-white hover:bg-white/20'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+                className={numpadButtonClasses}
               >
                 0
               </button>
