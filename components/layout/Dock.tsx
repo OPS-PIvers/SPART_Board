@@ -280,6 +280,7 @@ const ToolDockItem = ({
 
         <button
           ref={buttonRef}
+          data-tool-id={tool.type}
           {...attributes}
           {...listeners}
           onPointerDown={handlePointerDown}
