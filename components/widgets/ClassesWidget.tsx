@@ -36,26 +36,9 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
   const [lasts, setLasts] = useState(
     roster?.students.map((s) => s.lastName).join('\n') ?? ''
   );
-
-  const handleSmartPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData('text');
-    const rows = text.split(/\r\n|\r|\n/);
-    const newF: string[] = [];
-    const newL: string[] = [];
-
-    rows.forEach((row) => {
-      const parts = row.trim().split(' ');
-      if (parts.length > 0 && parts[0]) {
-        newF.push(parts[0]);
-        newL.push(parts.slice(1).join(' '));
-      }
-    });
-
-    const prefix = firsts ? '\n' : '';
-    setFirsts(firsts + prefix + newF.join('\n'));
-    setLasts(lasts + (lasts ? '\n' : '') + newL.join('\n'));
-  };
+  const [showLastNames, setShowLastNames] = useState(
+    roster?.students.some((s) => s.lastName.trim() !== '') ?? false
+  );
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -110,33 +93,55 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+      <div
+        className={`grid ${showLastNames ? 'grid-cols-2' : 'grid-cols-1'} gap-3 flex-1 min-h-0`}
+      >
         <div className="flex flex-col h-full">
-          <label className="text-xxs  text-slate-500 uppercase tracking-widest mb-1">
-            First Name (Smart Paste)
-          </label>
+          <div className="flex justify-between items-end mb-1">
+            <label className="text-xxs  text-slate-500 uppercase tracking-widest">
+              {showLastNames ? 'First Names' : 'Names (One per line)'}
+            </label>
+            {!showLastNames && (
+              <button
+                onClick={() => setShowLastNames(true)}
+                className="text-xxs text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider"
+              >
+                + Add Last Name
+              </button>
+            )}
+          </div>
           <textarea
             className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
             value={firsts}
             onChange={(e) => setFirsts(e.target.value)}
-            onPaste={handleSmartPaste}
-            placeholder="Paste names here..."
+            placeholder={
+              showLastNames
+                ? 'Paste first names...'
+                : 'Paste full names or group names here...'
+            }
           />
         </div>
-        <div className="flex flex-col h-full">
-          <label className="text-xxs  text-slate-500 uppercase tracking-widest mb-1">
-            Last Name
-          </label>
-          <textarea
-            className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-            value={lasts}
-            onChange={(e) => setLasts(e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="mt-2 text-xxs text-slate-400 text-center italic">
-        Tip: Paste a full list of names into &quot;First Name&quot; to
-        auto-split them.
+        {showLastNames && (
+          <div className="flex flex-col h-full">
+            <div className="flex justify-between items-end mb-1">
+              <label className="text-xxs  text-slate-500 uppercase tracking-widest">
+                Last Names
+              </label>
+              <button
+                onClick={() => setShowLastNames(false)}
+                className="text-xxs text-slate-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+            <textarea
+              className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              value={lasts}
+              onChange={(e) => setLasts(e.target.value)}
+              placeholder="Paste last names..."
+            />
+          </div>
+        )}
       </div>
     </div>
   );
