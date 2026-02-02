@@ -60,7 +60,9 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         style={{
           fontSize: showSeconds ? '15cqmin' : '20cqmin',
           color: themeColor,
-          textShadow: glow ? `0 0 0.25em ${themeColor}66` : 'none',
+          textShadow: glow
+            ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
+            : 'none',
         }}
       >
         {clockStyle === 'lcd' && (
