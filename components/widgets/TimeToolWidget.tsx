@@ -504,7 +504,7 @@ const DigitalMode: React.FC<{
   const getStatusColor = () => {
     if (config.mode !== 'timer') return 'text-blue-500';
     if (displayTime <= 60) return 'text-red-600';
-    const percent = displayTime / config.duration;
+    const percent = displayTime / (config.duration || 1);
     if (percent <= 0.25) return 'text-amber-500';
     return config.theme === 'light' ? 'text-slate-900' : 'text-white';
   };
