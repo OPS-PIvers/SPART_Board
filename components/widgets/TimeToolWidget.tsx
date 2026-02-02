@@ -269,8 +269,13 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Mode Tabs */}
-      <div className="px-8 mt-4 flex gap-4 border-b border-white/5 shrink-0">
+      <div
+        className="px-8 mt-4 flex gap-4 border-b border-white/5 shrink-0"
+        role="tablist"
+      >
         <button
+          role="tab"
+          aria-selected={config.mode === 'timer'}
           onClick={() => {
             updateWidget(widget.id, {
               config: {
@@ -289,6 +294,8 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
           Timer
         </button>
         <button
+          role="tab"
+          aria-selected={config.mode === 'stopwatch'}
           onClick={() => {
             updateWidget(widget.id, {
               config: {
