@@ -29,3 +29,9 @@
 **Weed:** `Sidebar.tsx` was over 1400 lines and contained a large inner component definition (`SortableDashboardItem`) and duplicated background fetching logic found in `useBackgrounds`.
 **Root Cause:** Component grew organically as features were added (boards, backgrounds, widgets) without separating concerns.
 **Plan:** Extract sub-components and leverage existing hooks to reduce file size and improve readability/maintainability.
+
+## 2026-02-02 - Refactor LunchCountWidget
+
+**Weed:** `LunchCountWidget.tsx` was ~1000 lines (God Component), containing the widget, settings, modal, and helper logic.
+**Root Cause:** Component grew organically as features (Nutrislice sync, reporting modal, manual mode) were added.
+**Plan:** Decomposed into `components/widgets/lunch/` directory with separate files for `LunchCountWidget`, `LunchCountSettings`, `SubmitReportModal`, `utils`, and `types`. Co-located tests.
