@@ -37,8 +37,10 @@ Unifier is responsible for maintaining a consistent look and feel across all Sch
 ## UNIFIER'S JOURNAL
 
 ## 2024-05-23 - DraggableWindow Toolbar Standardization
+
 **Drift:** The `DraggableWindow` component was using hardcoded HTML `<button>` elements with `p-1 hover:bg-slate-800/10` classes for its toolbar actions (Settings, Close, Minimize) and confirmation dialogs. This created visual inconsistencies ("Snowflakes") and made it harder to maintain shared behaviors.
 **Fix:**
+
 1. Enhanced the `Button` component with:
    - `size="icon-sm"` (mapped to `p-1.5`) for dense toolbars.
    - `variant="ghost-secondary"` (neutral gray hover) for unobtrusive actions.
