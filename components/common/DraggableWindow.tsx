@@ -427,6 +427,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
+          containerType: 'size',
           opacity: widget.minimized ? 0 : 1,
           pointerEvents: widget.minimized ? 'none' : 'auto',
           touchAction: 'none', // Critical for preventing scroll interference
