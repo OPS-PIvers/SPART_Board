@@ -181,7 +181,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   ? 'text-red-500 scale-105'
                   : 'text-slate-800'
             }`}
-            style={{ fontSize: 'clamp(2rem, 20cqmin, 12rem)' }}
+            style={{ fontSize: '5rem' }}
           >
             {minutes.toString().padStart(2, '0')}:
             {seconds.toString().padStart(2, '0')}
