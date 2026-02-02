@@ -10,6 +10,7 @@ import {
   RandomConfig,
   WidgetType,
   ScoreboardTeam,
+  PollConfig,
 } from '../../types';
 
 vi.mock('../../context/useDashboard');
@@ -242,6 +243,72 @@ describe('ScoreboardSettings', () => {
     );
     expect(mockAddToast).toHaveBeenCalledWith(
       expect.stringContaining('Imported 2 groups'),
+      'success'
+    );
+  });
+
+  it('updates scores from poll results', () => {
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: {
+        teams: [
+          { id: '1', name: 'Team A', score: 10, color: 'bg-blue-500' },
+          { id: '2', name: 'Team B', score: 20, color: 'bg-red-500' },
+        ],
+      } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const pollWidget: WidgetData = {
+      id: 'poll-id',
+      type: 'poll' as WidgetType,
+      config: {
+        question: 'Who won?',
+        options: [
+          { label: 'Team A', votes: 5 },
+          { label: 'Team B', votes: 3 },
+          { label: 'Team C', votes: 10 }, // No match
+        ],
+      } as PollConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        widgets: [pollWidget],
+      },
+    });
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const importButton = screen.getByText('Add Votes');
+    fireEvent.click(importButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Team A', score: 15 }), // 10 + 5
+            expect.objectContaining({ name: 'Team B', score: 23 }), // 20 + 3
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Added votes to 2 teams'),
       'success'
     );
   });

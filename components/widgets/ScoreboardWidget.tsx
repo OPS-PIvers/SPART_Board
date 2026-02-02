@@ -6,11 +6,19 @@ import {
   ScoreboardTeam,
   RandomConfig,
   RandomGroup,
+  PollConfig,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { useScaledFont } from '../../hooks/useScaledFont';
 import { useDebounce } from '../../hooks/useDebounce';
-import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Users,
+  RefreshCw,
+  Trophy,
+  BarChart2,
+} from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
 
@@ -141,6 +149,46 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     () => activeDashboard?.widgets.find((w) => w.type === 'random'),
     [activeDashboard]
   );
+
+  // Find Poll Widget
+  const pollWidget = useMemo(
+    () => activeDashboard?.widgets.find((w) => w.type === 'poll'),
+    [activeDashboard]
+  );
+
+  const importFromPoll = () => {
+    if (!pollWidget) {
+      addToast('No Poll widget found!', 'error');
+      return;
+    }
+
+    const pollConfig = pollWidget.config as PollConfig;
+    const options = pollConfig.options || [];
+    let updatedCount = 0;
+
+    const newTeams = teams.map((team) => {
+      const matchingOption = options.find(
+        (opt) =>
+          opt.label.trim().toLowerCase() === team.name.trim().toLowerCase()
+      );
+
+      if (matchingOption && matchingOption.votes > 0) {
+        updatedCount++;
+        return { ...team, score: team.score + matchingOption.votes };
+      }
+      return team;
+    });
+
+    if (updatedCount === 0) {
+      addToast('No matching team names found in poll results.', 'info');
+      return;
+    }
+
+    updateWidget(widget.id, {
+      config: { ...config, teams: newTeams },
+    });
+    addToast(`Added votes to ${updatedCount} teams!`, 'success');
+  };
 
   const importFromRandom = () => {
     if (!randomWidget) {
@@ -279,6 +327,32 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         {!randomWidget && (
           <div className="text-xxs text-indigo-400 font-medium">
             Tip: Add a Randomizer widget and create groups to import them here.
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <BarChart2 className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import from Poll
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromPoll}
+            disabled={!pollWidget}
+            title={!pollWidget ? 'Add a Poll widget first' : 'Add Votes'}
+            icon={<RefreshCw className="w-3 h-3" />}
+          >
+            Add Votes
+          </Button>
+        </div>
+        {!pollWidget && (
+          <div className="text-xxs text-indigo-400 font-medium">
+            Tip: Add a Poll widget to sync votes to scores.
           </div>
         )}
       </div>
