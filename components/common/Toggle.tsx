@@ -25,8 +25,8 @@ export const Toggle: React.FC<ToggleProps> = ({
     sm: {
       button: 'w-10 h-5',
       knob: 'w-3 h-3',
-      translate: 'translate-x-4',
-      padding: 'top-1 left-1.5',
+      translate: 'translate-x-5',
+      padding: 'top-1 left-1',
     },
     md: {
       button: 'w-11 h-6',
@@ -65,7 +65,7 @@ export const Toggle: React.FC<ToggleProps> = ({
           ON
         </span>
         <span
-          className={`text-[8px] font-black leading-none text-slate-500 transition-opacity duration-200 ${
+          className={`text-[8px] font-black leading-none text-slate-700 transition-opacity duration-200 ${
             !checked ? 'opacity-100' : 'opacity-0'
           }`}
         >
