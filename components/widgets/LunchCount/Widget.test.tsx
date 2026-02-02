@@ -12,6 +12,14 @@ vi.mock('../../../context/useAuth');
 const mockDashboardContext = {
   updateWidget: vi.fn(),
   addToast: vi.fn(),
+  activeDashboard: {
+    widgets: [
+      {
+        id: 'lunch-1',
+        activeRoster: ['John Doe', 'Jane Smith'],
+      },
+    ],
+  },
   rosters: [
     {
       id: 'roster-1',
