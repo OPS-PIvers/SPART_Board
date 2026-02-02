@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
@@ -44,8 +44,7 @@ const playRollSound = () => {
 const DiceFace: React.FC<{
   value: number;
   isRolling: boolean;
-  size: number;
-}> = ({ value, isRolling, size }) => {
+}> = ({ value, isRolling }) => {
   const dotPositions: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -61,24 +60,15 @@ const DiceFace: React.FC<{
                   relative bg-white/40 backdrop-blur-md rounded-2xl shadow-lg border-2 border-white/40
                   flex items-center justify-center
                   transition-all duration-300
+                  w-[25cqmin] h-[25cqmin] max-w-[160px] max-h-[160px]
                   ${isRolling ? 'scale-110 rotate-12 shadow-indigo-500/20 shadow-2xl' : 'scale-100 rotate-0'}
                 `}
-      style={{ width: `${size}px`, height: `${size}px` }}
     >
-      <div
-        className="grid grid-cols-3 grid-rows-3 w-full h-full gap-1"
-        style={{ padding: `${size * 0.15}px` }}
-      >
+      <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-1 p-[15%]">
         {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="flex items-center justify-center">
             {dotPositions[value]?.includes(i) && (
-              <div
-                className="bg-slate-800 rounded-full shadow-sm"
-                style={{
-                  width: `${size * 0.15}px`,
-                  height: `${size * 0.15}px`,
-                }}
-              />
+              <div className="bg-slate-800 rounded-full shadow-sm w-[70%] h-[70%]" />
             )}
           </div>
         ))}
@@ -93,20 +83,6 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as DiceConfig;
   const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = config.count ?? 1;
-
-  // Calculate dice size based on widget dimensions and count
-  const diceSize = useMemo(() => {
-    const availableW = widget.w - 40;
-    const availableH = widget.h - 100; // Account for roll button and padding
-
-    // Approximate size based on count (single row vs wrap)
-    if (diceCount === 1) {
-      return Math.min(availableW, availableH, 400); // Increased from 160
-    }
-    const maxW = availableW / Math.min(diceCount, 3) - 24;
-    const maxH = availableH / Math.ceil(diceCount / 3) - 24;
-    return Math.min(maxW, maxH, 300); // Increased from 120
-  }, [widget.w, widget.h, diceCount]);
 
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
   const [isRolling, setIsRolling] = useState(false);
@@ -141,10 +117,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [diceCount, values.length]);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 gap-6">
-      <div className="flex flex-wrap justify-center gap-4">
+    <div className="h-full flex flex-col items-center justify-center p-4 gap-4 overflow-hidden">
+      <div className="flex flex-wrap justify-center gap-[5cqmin] max-h-[70%] overflow-y-auto no-scrollbar">
         {values.map((v, i) => (
-          <DiceFace key={i} value={v} isRolling={isRolling} size={diceSize} />
+          <DiceFace key={i} value={v} isRolling={isRolling} />
         ))}
       </div>
 
