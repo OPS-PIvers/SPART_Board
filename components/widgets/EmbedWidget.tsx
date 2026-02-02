@@ -50,15 +50,16 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (refreshInterval > 0) {
-      const interval = setInterval(
-        () => {
-          setRefreshKey((prev) => prev + 1);
-        },
-        refreshInterval * 60 * 1000
-      );
-      return () => clearInterval(interval);
-    }
+    if (refreshInterval <= 0) return;
+
+    const interval = setInterval(
+      () => {
+        setRefreshKey((prev) => prev + 1);
+      },
+      refreshInterval * 60 * 1000
+    );
+
+    return () => clearInterval(interval);
   }, [refreshInterval]);
 
   if (mode === 'url' && !url) {
