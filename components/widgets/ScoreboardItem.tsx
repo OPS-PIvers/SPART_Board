@@ -85,11 +85,9 @@ export const ScoreboardItem = React.memo(
   ({
     team,
     onUpdateScore,
-    scoreFontSize,
   }: {
     team: ScoreboardTeam;
     onUpdateScore: (id: string, delta: number) => void;
-    scoreFontSize: number;
   }) => {
     const colorClass = team.color ?? 'bg-blue-500';
     const styles = getStyles(colorClass);
@@ -97,15 +95,17 @@ export const ScoreboardItem = React.memo(
     return (
       <div
         className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
+        style={{ containerType: 'size' }}
       >
         <div
-          className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+          className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+          style={{ fontSize: '10cqmin' }}
         >
           {team.name}
         </div>
         <div
-          className={`text-4xl lg:text-5xl font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
-          style={{ fontSize: `${scoreFontSize}px`, lineHeight: 1 }}
+          className={`font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
+          style={{ fontSize: `35cqmin`, lineHeight: 1 }}
         >
           {team.score}
         </div>

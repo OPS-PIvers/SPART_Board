@@ -89,6 +89,31 @@ export const DashboardView: React.FC = () => {
   // Keyboard Navigation
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: Close top-most widget or blur input
+      if (e.key === 'Escape') {
+        const activeElement = document.activeElement as HTMLElement;
+        const isInput =
+          ['INPUT', 'TEXTAREA'].includes(activeElement?.tagName || '') ||
+          activeElement?.isContentEditable;
+
+        if (isInput) {
+          activeElement.blur();
+          return;
+        }
+
+        if (activeDashboard && activeDashboard.widgets.length > 0) {
+          const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
+          const topWidget = sorted[0];
+
+          // Dispatch custom event to notify the widget to close
+          const event = new CustomEvent('widget-escape-press', {
+            detail: { widgetId: topWidget.id },
+          });
+          window.dispatchEvent(event);
+        }
+        return;
+      }
+
       // Alt + M: Toggle minimize
       if (e.altKey && (e.key === 'm' || e.key === 'M')) {
         e.preventDefault();
@@ -112,7 +137,7 @@ export const DashboardView: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, dashboards, loadDashboard]);
+  }, [currentIndex, dashboards, loadDashboard, activeDashboard]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 4) {

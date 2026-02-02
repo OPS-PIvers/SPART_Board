@@ -9,7 +9,8 @@ import {
   SharedGroup,
 } from '../../../types';
 import { Button } from '../../common/Button';
-import { Users, RefreshCw, Layers, Target } from 'lucide-react';
+import { Users, RefreshCw, Layers, Target, RotateCcw } from 'lucide-react';
+import { useScaledFont } from '../../../hooks/useScaledFont';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
 import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
@@ -140,6 +141,17 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
     }
     return newArr;
+  };
+
+  const handleReset = () => {
+    updateWidget(widget.id, {
+      config: {
+        remainingStudents: [],
+        lastResult: null,
+      } as unknown as WidgetConfig,
+    });
+    setDisplayResult('');
+    setRotation(0);
   };
 
   const handlePick = async () => {
@@ -355,6 +367,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
+  const resultFontSize = useScaledFont(widget.w, widget.h, 1.5, 24, 80);
+  const groupFontSize = useScaledFont(widget.w, widget.h, 0.45, 12, 24);
+
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
       const VERTICAL_OFFSET = 100; // Accounts for button height and vertical padding
@@ -370,7 +385,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={32}
+          resultFontSize={resultFontSize}
         />
       );
     }
@@ -379,7 +394,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return (
         <RandomSlots
           displayResult={displayResult as string | string[] | string[][] | null}
-          fontSize={48}
+          fontSize={resultFontSize * 1.5}
           slotHeight={widget.h - 100}
         />
       );
@@ -389,7 +404,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <RandomFlash
         displayResult={displayResult as string | string[] | string[][] | null}
         isSpinning={isSpinning}
-        fontSize={48}
+        fontSize={resultFontSize * 1.5}
       />
     );
   };
@@ -411,11 +426,30 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 font-sans bg-white rounded-lg shadow-inner border border-slate-100 overflow-hidden relative">
+    <div className="h-full flex flex-col p-2 font-sans bg-transparent rounded-lg overflow-hidden relative">
+      {mode === 'single' && students.length > 0 && (
+        <div className="absolute top-2 left-8 flex items-center gap-1.5 z-10">
+          <button
+            onClick={handleReset}
+            disabled={
+              isSpinning || (remainingStudents.length === 0 && !displayResult)
+            }
+            className="p-2 hover:bg-slate-800/10 rounded-full text-slate-500 hover:text-brand-blue-primary transition-all disabled:opacity-30 disabled:pointer-events-none"
+            title="Reset student pool"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          {remainingStudents.length > 0 && (
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight bg-white/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-white/50 shadow-sm">
+              {remainingStudents.length} Left
+            </span>
+          )}
+        </div>
+      )}
       {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
+        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
           <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
-          <span className="text-xxs  uppercase text-brand-blue-primary tracking-wider">
+          <span className="text-xxs  font-black uppercase text-brand-blue-primary tracking-wider">
             {activeRoster.name}
           </span>
         </div>
@@ -426,7 +460,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         ) : (
           <div className="w-full h-full flex flex-col min-h-0">
             {mode === 'shuffle' ? (
-              <div className="flex-1 overflow-y-auto w-full py-2 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto w-full py-1 custom-scrollbar">
                 {(Array.isArray(displayResult) &&
                 (displayResult.length === 0 || !Array.isArray(displayResult[0]))
                   ? (displayResult as string[])
@@ -436,12 +470,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     key={i}
                     draggable
                     data-no-drag="true"
-                    className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-1.5 transition-all hover:bg-slate-100"
+                    className="flex items-center gap-3 bg-white/40 backdrop-blur-sm p-2.5 rounded-xl border border-white/50 mb-1.5 transition-all hover:bg-white/60 shadow-sm"
                   >
-                    <span className="text-xs font-mono  text-slate-300">
+                    <span className="text-xs font-mono font-black text-slate-400">
                       {i + 1}
                     </span>
-                    <span className="text-lg leading-none  text-slate-700">
+                    <span className="text-lg leading-none font-bold text-slate-700">
                       {name}
                     </span>
                   </div>
@@ -450,9 +484,11 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   !Array.isArray(displayResult) ||
                   (displayResult.length > 0 &&
                     Array.isArray(displayResult[0]))) && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-300 italic py-10 gap-2">
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 italic py-10 gap-2">
                     <Layers className="w-8 h-8 opacity-20" />
-                    <span>Click Randomize to Shuffle</span>
+                    <span className="font-bold">
+                      Click Randomize to Shuffle
+                    </span>
                   </div>
                 )}
               </div>
@@ -494,11 +530,11 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   return (
                     <div
                       key={i}
-                      className="bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: '14px' }}
+                      className="bg-brand-blue-primary/10 backdrop-blur-sm border border-brand-blue-primary/20 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
+                      style={{ fontSize: `${groupFontSize}px` }}
                     >
                       <div
-                        className="uppercase text-blue-400 mb-1 tracking-widest opacity-80 text-[10px] font-bold truncate"
+                        className="uppercase text-brand-blue-primary mb-1 tracking-widest opacity-80 text-[10px] font-black truncate"
                         title={groupName}
                       >
                         {groupName}
@@ -508,7 +544,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                           <div
                             key={ni}
                             data-no-drag="true"
-                            className="text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis"
+                            className="text-slate-700 font-bold whitespace-nowrap overflow-hidden text-ellipsis"
                           >
                             {name}
                           </div>
@@ -522,7 +558,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   (displayResult.length > 0 &&
                     !Array.isArray(displayResult[0]) &&
                     typeof displayResult[0] !== 'object')) && (
-                  <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2">
+                  <div className="col-span-full flex flex-col items-center justify-center text-slate-400 italic h-full gap-2 font-bold">
                     <Users className="w-8 h-8 opacity-20" />
                     <span>Click Randomize to Group</span>
                   </div>
