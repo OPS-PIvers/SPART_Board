@@ -27,6 +27,11 @@ import { Z_INDEX } from '../../config/zIndex';
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
 
+const INTERACTIVE_ELEMENTS_SELECTOR =
+  'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .cursor-pointer, [contenteditable="true"]';
+
+const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"]`;
+
 interface DraggableWindowProps {
   widget: WidgetData;
   children: React.ReactNode;
@@ -170,9 +175,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
-    const isInteractive = target.closest(
-      'button, input, textarea, select, canvas, iframe, label, [role="button"], .resize-handle, [draggable="true"], [data-no-drag="true"], [contenteditable="true"]'
-    );
+    const isInteractive = target.closest(DRAG_BLOCKING_SELECTOR);
     if (isInteractive) return;
 
     // Don't drag if annotating
@@ -323,9 +326,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
     const target = e.target as HTMLElement;
-    const isInteractive = target.closest(
-      'button, input, textarea, select, canvas, iframe, label, [role="button"], [contenteditable="true"]'
-    );
+    const isInteractive = target.closest(INTERACTIVE_ELEMENTS_SELECTOR);
     if (isInteractive) return;
 
     // Only toggle tools if it wasn't a drag (less than 15px movement)
