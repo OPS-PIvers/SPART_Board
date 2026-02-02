@@ -146,9 +146,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const handleReset = () => {
     updateWidget(widget.id, {
       config: {
+        ...config,
         remainingStudents: [],
         lastResult: null,
-      } as unknown as WidgetConfig,
+      },
     });
     setDisplayResult('');
     setRotation(0);
@@ -426,7 +427,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="h-full flex flex-col p-2 font-sans overflow-hidden relative">
+    <div className="h-full flex flex-col p-2 font-sans bg-transparent rounded-lg overflow-hidden relative">
       {mode === 'single' && students.length > 0 && (
         <div className="absolute top-2 left-8 flex items-center gap-1.5 z-10">
           <button
@@ -434,10 +435,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             disabled={
               isSpinning || (remainingStudents.length === 0 && !displayResult)
             }
-            className="p-2 hover:bg-slate-800/10 rounded-full text-slate-500 hover:text-brand-blue-primary transition-all disabled:opacity-30 disabled:pointer-events-none"
+            className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-400 hover:text-brand-blue-primary transition-all disabled:opacity-30 disabled:pointer-events-none"
             title="Reset student pool"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
           {remainingStudents.length > 0 && (
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight bg-white/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-white/50 shadow-sm">
