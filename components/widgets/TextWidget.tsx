@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { useScaledFont } from '../../hooks/useScaledFont';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 import { sanitizeHtml } from '../../utils/security';
@@ -15,6 +16,10 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     fontSize = 18,
   } = config;
 
+  const autoSize = useScaledFont(widget.w, widget.h, 0.6);
+  // Normalize around 18px as the 1.0 multiplier
+  const effectiveFontSize = autoSize * (fontSize / 18);
+
   return (
     <div
       className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
@@ -26,7 +31,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       />
       <div
         className="relative z-10 h-full w-full outline-none"
-        style={{ fontSize: `${fontSize}px` }}
+        style={{ fontSize: `${effectiveFontSize}px` }}
         contentEditable
         suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: content }}

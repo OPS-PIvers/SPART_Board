@@ -10,6 +10,7 @@ import {
 } from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target } from 'lucide-react';
+import { useScaledFont } from '../../../hooks/useScaledFont';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
 import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
@@ -355,6 +356,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
+  const resultFontSize = useScaledFont(widget.w, widget.h, 1.5, 24, 80);
+  const groupFontSize = useScaledFont(widget.w, widget.h, 0.45, 12, 24);
+
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
       const VERTICAL_OFFSET = 100; // Accounts for button height and vertical padding
@@ -370,7 +374,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={32}
+          resultFontSize={resultFontSize}
         />
       );
     }
@@ -379,7 +383,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return (
         <RandomSlots
           displayResult={displayResult as string | string[] | string[][] | null}
-          fontSize={48}
+          fontSize={resultFontSize * 1.5}
           slotHeight={widget.h - 100}
         />
       );
@@ -389,7 +393,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <RandomFlash
         displayResult={displayResult as string | string[] | string[][] | null}
         isSpinning={isSpinning}
-        fontSize={48}
+        fontSize={resultFontSize * 1.5}
       />
     );
   };
@@ -497,7 +501,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     <div
                       key={i}
                       className="bg-brand-blue-primary/10 backdrop-blur-sm border border-brand-blue-primary/20 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: '14px' }}
+                      style={{ fontSize: `${groupFontSize}px` }}
                     >
                       <div
                         className="uppercase text-brand-blue-primary mb-1 tracking-widest opacity-80 text-[10px] font-black truncate"

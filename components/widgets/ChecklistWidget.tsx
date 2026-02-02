@@ -8,6 +8,7 @@ import {
   InstructionalRoutinesConfig,
 } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useScaledFont } from '../../hooks/useScaledFont';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
@@ -173,7 +174,8 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const baseFontSize = 18 * scaleMultiplier;
+  const autoFontSize = useScaledFont(widget.w, widget.h, 0.6);
+  const baseFontSize = autoFontSize * scaleMultiplier;
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
