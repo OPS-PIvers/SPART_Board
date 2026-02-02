@@ -6,7 +6,11 @@ import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
+import {
+  DEFAULT_GLOBAL_STYLE,
+  LiveStudent,
+  SpartStickerDropPayload,
+} from '../../types';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -240,11 +244,9 @@ export const DashboardView: React.FC = () => {
     if (spartStickerData) {
       e.preventDefault();
       try {
-        const { icon, color, label } = JSON.parse(spartStickerData) as {
-          icon: string;
-          color: string;
-          label?: string;
-        };
+        const { icon, color, label, url } = JSON.parse(
+          spartStickerData
+        ) as SpartStickerDropPayload;
         const w = 150;
         const h = 150;
         const x = e.clientX - w / 2;
@@ -255,7 +257,13 @@ export const DashboardView: React.FC = () => {
           y,
           w,
           h,
-          config: { icon, color, label, rotation: 0 },
+          config: {
+            icon: url ? undefined : icon,
+            url,
+            color,
+            label,
+            rotation: 0,
+          },
         });
       } catch (err) {
         console.error('Failed to parse spart-sticker data', err);
