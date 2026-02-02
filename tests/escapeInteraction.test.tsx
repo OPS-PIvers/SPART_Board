@@ -179,14 +179,12 @@ describe('Global Escape Interaction', () => {
     });
 
     // Should target w2 (z=10)
-    expect(dispatchSpy).toHaveBeenCalledWith(expect.any(CustomEvent));
-    const calls = dispatchSpy.mock.calls;
-    const escapeCall = calls.find(
-      (call) =>
-        call[0] instanceof CustomEvent && call[0].type === 'widget-escape-press'
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'widget-escape-press',
+        detail: { widgetId: 'w2' },
+      })
     );
-    const event = escapeCall?.[0] as CustomEvent;
-    expect(event?.detail).toEqual({ widgetId: 'w2' });
   });
 
   it('does not dispatch event if an input was just blurred', () => {
