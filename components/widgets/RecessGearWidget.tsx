@@ -8,6 +8,8 @@ import {
 } from '../../types';
 import {
   Shirt,
+  CloudRain,
+  CloudSnow,
   Thermometer,
   Info,
   Link as LinkIcon,
@@ -24,31 +26,31 @@ interface GearItem {
 export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard } = useDashboard();
+  const { activeDashboard, updateWidget } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as RecessGearConfig;
 
-  const widgets = activeDashboard?.widgets;
-
   // Find linked or first available weather widget
   const weatherWidget = useMemo(() => {
-    if (!widgets) return null;
+    if (!activeDashboard?.widgets) return null;
     if (config.linkedWeatherWidgetId) {
-      const linked = widgets.find((w) => w.id === config.linkedWeatherWidgetId);
+      const linked = activeDashboard.widgets.find(
+        (w) => w.id === config.linkedWeatherWidgetId
+      );
       if (linked && linked.type === 'weather') return linked;
     }
-    return widgets.find((w) => w.type === 'weather') ?? null;
-  }, [widgets, config.linkedWeatherWidgetId]);
+    return activeDashboard.widgets.find((w) => w.type === 'weather') ?? null;
+  }, [activeDashboard?.widgets, config.linkedWeatherWidgetId]);
 
   const weatherConfig = weatherWidget?.config as WeatherConfig | undefined;
 
   const getRecessGear = () => {
-    if (!weatherConfig || weatherConfig.temp === undefined) return [];
+    if (!weatherConfig) return [];
 
     const temp =
       config.useFeelsLike && weatherConfig.feelsLike !== undefined
         ? weatherConfig.feelsLike
-        : weatherConfig.temp;
+        : (weatherConfig.temp ?? 72);
     const condition = weatherConfig.condition?.toLowerCase() ?? 'sunny';
 
     const gear: GearItem[] = [];
@@ -87,7 +89,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   const gearList = getRecessGear();
 
-  if (!weatherWidget || !weatherConfig || weatherConfig.temp === undefined) {
+  if (!weatherWidget) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-4">
         <div className="bg-slate-100 p-4 rounded-full">
@@ -107,7 +109,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`flex flex-col h-full p-4 gap-3 font-${globalStyle.fontFamily} @container`}
+      className={`flex flex-col h-full p-4 gap-3 font-${globalStyle.fontFamily}`}
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <div className="flex items-center gap-2">
@@ -131,11 +133,11 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 @[200px]:grid-cols-2 gap-2 overflow-y-auto no-scrollbar">
+      <div className="grid grid-cols-2 gap-2 overflow-y-auto no-scrollbar">
         {gearList.map((item, idx) => (
           <div
             key={`${item.label}-${idx}`}
-            className="flex items-center gap-3 p-3 bg-white/40 border border-white/20 rounded-xl hover:border-emerald-200 transition-colors"
+            className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-emerald-200 transition-colors"
           >
             <span className="text-2xl">{item.icon}</span>
             <div className="flex flex-col min-w-0">
@@ -153,7 +155,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="mt-auto pt-2 flex items-center justify-between text-[8px] font-bold text-slate-300 uppercase tracking-widest border-t border-slate-50">
         <div className="flex items-center gap-1">
           <LinkIcon className="w-2 h-2" />
-          Linked to {weatherConfig.locationName ?? 'Weather'}
+          Linked to {weatherConfig.locationName || 'Weather'}
         </div>
         <span>Automatic</span>
       </div>
@@ -168,12 +170,14 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as RecessGearConfig;
 
   const weatherWidgets = useMemo(() => {
-    return activeDashboard?.widgets.filter((w) => w.type === 'weather') ?? [];
+    return (
+      activeDashboard?.widgets.filter((w) => w.type === 'weather') ?? []
+    );
   }, [activeDashboard?.widgets]);
 
   return (
     <div className="space-y-6">
-      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-4">
+      <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-4">
         <div className="flex items-center gap-2 text-emerald-900">
           <Info className="w-4 h-4" />
           <span className="text-xs font-black uppercase tracking-wider">
@@ -187,10 +191,10 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-white/20 rounded-xl border border-white/10">
+        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div className="flex flex-col gap-0.5">
             <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
-              Use &quot;Feels Like&quot; Temp
+              Use "Feels Like" Temp
             </span>
             <span className="text-xxs text-slate-400 leading-tight">
               Use wind chill and heat index for gear calculation.
@@ -226,8 +230,7 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
             <option value="">Auto-select (First available)</option>
             {weatherWidgets.map((w) => (
               <option key={w.id} value={w.id}>
-                Weather at{' '}
-                {(w.config as WeatherConfig).locationName ?? 'Classroom'}
+                Weather at {(w.config as WeatherConfig).locationName || 'Classroom'}
               </option>
             ))}
           </select>
