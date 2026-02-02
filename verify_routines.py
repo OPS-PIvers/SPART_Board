@@ -41,7 +41,7 @@ def verify_instructional_routines():
             # Wait for builder
             expect(page.get_by_text("Structure & Audience")).to_be_visible(timeout=5000)
             time.sleep(1) # Wait for animation
-            page.screenshot(path="/home/jules/verification/admin_builder.png")
+            page.screenshot(path="verification/admin_builder.png")
             print("Admin builder screenshot saved.")
 
             # 2. Verify Widget Rendering
@@ -73,12 +73,12 @@ def verify_instructional_routines():
 
             # Take a screenshot of the widget in Linear mode
             time.sleep(1)
-            page.screenshot(path="/home/jules/verification/widget_linear.png")
+            page.screenshot(path="verification/widget_linear.png")
             print("Widget linear screenshot saved.")
 
         except Exception as e:
             print(f"Error: {e}")
-            page.screenshot(path="/home/jules/verification/error.png")
+            page.screenshot(path="verification/error.png")
         finally:
             browser.close()
 

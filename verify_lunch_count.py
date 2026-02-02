@@ -78,7 +78,7 @@ def test_lunch_count_drag(page: Page):
         student = page.locator("div[draggable='true']", has_text="Student A").first
         expect(student).to_be_visible()
 
-        page.screenshot(path="/home/jules/verification/before_drag.png")
+        page.screenshot(path="verification/before_drag.png")
 
         # Drag
         # student.drag_to(hot_lunch)
@@ -95,12 +95,12 @@ def test_lunch_count_drag(page: Page):
             page.mouse.up()
 
         page.wait_for_timeout(1000)
-        page.screenshot(path="/home/jules/verification/after_drag.png")
+        page.screenshot(path="verification/after_drag.png")
         print("Verification complete!")
 
     except Exception as e:
         print(f"Error interacting: {e}")
-        page.screenshot(path="/home/jules/verification/interaction_error.png")
+        page.screenshot(path="verification/interaction_error.png")
 
 if __name__ == "__main__":
     with sync_playwright() as p:
