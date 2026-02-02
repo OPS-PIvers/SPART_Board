@@ -31,7 +31,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
   const { color } = getLevelData(volume);
   return (
     <div className="relative w-full h-full flex items-center justify-center py-4">
-      <svg viewBox="0 0 40 100" className="h-full">
+      <svg viewBox="0 0 40 100" className="h-full drop-shadow-sm">
         {/* Tube Background */}
         <rect
           x="15"
@@ -39,7 +39,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
           width="10"
           height="75"
           rx="5"
-          className="fill-slate-100 stroke-slate-200"
+          className="fill-white/20 stroke-white/30"
           strokeWidth="1"
         />
         {/* Liquid Fill */}
@@ -57,7 +57,7 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
           cy="85"
           r="10"
           fill={color}
-          className="stroke-slate-200"
+          className="stroke-white/30"
           strokeWidth="1"
         />
       </svg>
@@ -69,7 +69,7 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
   const rotation = -90 + volume * 1.8; // -90 to +90 degrees
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
-      <svg viewBox="0 0 100 60" className="w-full h-auto">
+      <svg viewBox="0 0 100 60" className="w-full h-auto drop-shadow-sm">
         {/* Arcs */}
         {POSTER_LEVELS.map((level, i) => (
           <path
@@ -78,14 +78,14 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
             fill="none"
             stroke={level.color}
             strokeWidth="8"
-            className="opacity-30"
+            className="opacity-20"
           />
         ))}
         {/* Main Background Arc */}
         <path
           d="M 10 55 A 40 40 0 0 1 90 55"
           fill="none"
-          className="stroke-slate-100"
+          className="stroke-white/20"
           strokeWidth="8"
         />
         {/* Needle */}
@@ -300,7 +300,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         {visual === 'speedometer' && <SpeedometerView volume={volume} />}
         {visual === 'balls' && <PopcornBallsView volume={volume} />}
         {visual === 'line' && (
-          <div className="w-full h-full bg-slate-900 rounded-xl p-2">
+          <div className="w-full h-full bg-slate-900/80 backdrop-blur-sm rounded-xl p-2">
             <svg
               viewBox="0 0 100 100"
               preserveAspectRatio="none"

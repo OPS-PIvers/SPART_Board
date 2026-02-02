@@ -179,7 +179,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (!hasContent) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3 bg-white">
+      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3 bg-transparent">
         {mode === 'manual' ? (
           <ListPlus className="w-12 h-12 opacity-20" />
         ) : (
@@ -201,13 +201,10 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full w-full bg-[#fdfdfd] relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
+      className={`h-full w-full bg-transparent relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
     >
-      {/* Notebook Margin Line */}
-      <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-red-100" />
-
-      <div className="flex-1 overflow-y-auto py-4 pl-12 pr-4 custom-scrollbar">
-        <ul style={{ gap: `${baseFontSize / 2}px` }} className="flex flex-col">
+      <div className="flex-1 overflow-y-auto py-1 px-2 custom-scrollbar">
+        <ul style={{ gap: `${baseFontSize / 3}px` }} className="flex flex-col">
           {(mode === 'manual' ? items : students).map((item) => {
             const isManual = typeof item !== 'string';
             const label = isManual ? item.text : item;

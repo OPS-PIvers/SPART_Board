@@ -80,7 +80,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 </span>
               </div>
 
-              <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
+              <div className="h-4 bg-white/20 rounded-full overflow-hidden relative border border-white/30 backdrop-blur-sm">
                 <div
                   className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
                   style={{ width: `${percent}%` }}

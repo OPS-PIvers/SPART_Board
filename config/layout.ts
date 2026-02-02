@@ -5,8 +5,8 @@
 
 export const UI_CONSTANTS = {
   /** The height of the header bar in a widget (DraggableWindow) */
-  WIDGET_HEADER_HEIGHT: 40,
+  WIDGET_HEADER_HEIGHT: 24,
 
   /** Standard padding used inside widgets */
-  WIDGET_PADDING: 16,
+  WIDGET_PADDING: 8,
 } as const;

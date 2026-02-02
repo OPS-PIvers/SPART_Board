@@ -316,4 +316,4 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
 ## 3. Integration
 
-No other files need modification. The `sessionDuration` logic ensures that even if a teacher types a custom time, the "Default" slider in the settings remains valid for the next time they pull out a fresh timer, while their current timer respects their manual entry.
+The `sessionDuration` logic ensures that even if a teacher types a custom time, the "Default" slider in the settings remains valid for the next time they pull out a fresh timer, while their current timer respects their manual entry.

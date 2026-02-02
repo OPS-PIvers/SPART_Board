@@ -406,7 +406,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           Instruction
         </div>
 
-        <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center gap-3">
+        <div className="w-full bg-white/20 border border-white/30 backdrop-blur-sm rounded-2xl p-3 flex items-center gap-3">
           <div className="shrink-0">{displayImage}</div>
           <div className="text-xs font-bold text-slate-700 leading-tight">
             {displayMessage}
@@ -415,11 +415,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       {isAuto && (
-        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100 w-full justify-start">
+        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-white/20 w-full justify-start">
           <button
             onClick={handleRefresh}
             disabled={isSyncing}
-            className="p-2 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-all border border-slate-100 disabled:opacity-50"
+            className="p-2 bg-white/20 hover:bg-white/40 text-slate-500 hover:text-indigo-600 rounded-lg transition-all border border-white/30 backdrop-blur-sm disabled:opacity-50 shadow-sm"
             title="Refresh Weather"
           >
             {isSyncing ? (

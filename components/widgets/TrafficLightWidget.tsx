@@ -21,7 +21,7 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="flex items-center justify-center h-full">
-      <div className="bg-slate-800 p-4 rounded-3xl shadow-inner flex flex-col gap-4 border-2 border-slate-700">
+      <div className="bg-slate-900/80 backdrop-blur-md p-4 rounded-3xl shadow-inner flex flex-col gap-4 border-2 border-white/10">
         <button
           onClick={() => {
             toggle('red');

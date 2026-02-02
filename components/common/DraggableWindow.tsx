@@ -178,12 +178,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Don't drag if annotating
     if (isAnnotating) return;
 
-    // Check if we are in the top handle area (40px)
-    // We use getBoundingClientRect because the widget might be scaled or shifted
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const relativeY = e.clientY - rect.top;
-    if (relativeY > 40) return;
-
     // Prevent default browser behavior (like scroll or selection)
     e.preventDefault();
 
@@ -240,7 +234,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     window.addEventListener('pointercancel', onPointerUp);
   };
 
-  const handleResizeStart = (e: React.PointerEvent) => {
+  const handleResizeStart = (e: React.PointerEvent, direction: string) => {
     if (isMaximized) return;
     e.stopPropagation();
     e.preventDefault();
@@ -251,6 +245,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const startH = widget.h;
     const startX = e.clientX;
     const startY = e.clientY;
+    const startPosX = widget.x;
+    const startPosY = widget.y;
 
     const targetElement = e.currentTarget as HTMLElement;
     try {
@@ -262,9 +258,40 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (moveEvent.pointerId !== e.pointerId) return;
 
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      let newW = startW;
+      let newH = startH;
+      let newX = startPosX;
+      let newY = startPosY;
+
+      if (direction.includes('e')) {
+        newW = Math.max(150, startW + dx);
+      }
+      if (direction.includes('w')) {
+        const potentialW = startW - dx;
+        if (potentialW >= 150) {
+          newW = potentialW;
+          newX = startPosX + dx;
+        }
+      }
+      if (direction.includes('s')) {
+        newH = Math.max(100, startH + dy);
+      }
+      if (direction.includes('n')) {
+        const potentialH = startH - dy;
+        if (potentialH >= 100) {
+          newH = potentialH;
+          newY = startPosY + dy;
+        }
+      }
+
       updateWidget(widget.id, {
-        w: Math.max(150, startW + (moveEvent.clientX - startX)),
-        h: Math.max(100, startH + (moveEvent.clientY - startY)),
+        w: newW,
+        h: newH,
+        x: newX,
+        y: newY,
       });
     };
 
@@ -411,9 +438,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 touchAction: 'none',
               }}
             >
-              {/* Drag Handle Area - visual only, pointer events pass to parent */}
-              <div className="absolute top-0 left-0 right-0 h-10 z-0 cursor-grab active:cursor-grabbing pointer-events-none" />
-
               {showConfirm && (
                 <div
                   className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
@@ -558,9 +582,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </>
                 )}
               </div>
+
+              {/* Resize Handles (Corners Only) */}
               <div
-                onPointerDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60] touch-none"
+                onPointerDown={(e) => handleResizeStart(e, 'nw')}
+                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-[60] touch-none"
+              />
+              <div
+                onPointerDown={(e) => handleResizeStart(e, 'ne')}
+                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-[60] touch-none"
+              />
+              <div
+                onPointerDown={(e) => handleResizeStart(e, 'sw')}
+                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-[60] touch-none"
+              />
+              <div
+                onPointerDown={(e) => handleResizeStart(e, 'se')}
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
                 <ResizeHandleIcon className="text-slate-400/80" />
               </div>
@@ -572,9 +610,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               onPointerDown={handleDragStart}
               style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
             >
-              {/* Drag Handle Area - visual only, pointer events pass to parent */}
-              <div className="absolute top-0 left-0 right-0 h-10 z-0 cursor-grab active:cursor-grabbing pointer-events-none" />
-
               <div className="flex items-center justify-between px-3 py-2 bg-white/50 border-b border-white/30 relative z-30">
                 <span className="text-xs font-bold text-slate-700 uppercase">
                   Settings
@@ -633,9 +668,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Resize Handles (Settings Face) */}
               <div
-                onPointerDown={handleResizeStart}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1.5 z-[60] touch-none"
+                onPointerDown={(e) => handleResizeStart(e, 'nw')}
+                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-[60] touch-none"
+              />
+              <div
+                onPointerDown={(e) => handleResizeStart(e, 'ne')}
+                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-[60] touch-none"
+              />
+              <div
+                onPointerDown={(e) => handleResizeStart(e, 'sw')}
+                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-[60] touch-none"
+              />
+              <div
+                onPointerDown={(e) => handleResizeStart(e, 'se')}
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
                 <ResizeHandleIcon className="text-slate-500/80" />
               </div>
