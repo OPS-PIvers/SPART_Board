@@ -40,45 +40,49 @@ def verify_instructional_routines():
 
             # Wait for builder
             expect(page.get_by_text("Structure & Audience")).to_be_visible(timeout=5000)
-            time.sleep(1) # Wait for animation
-            page.screenshot(path="verification/admin_builder.png")
+            
+            import os
+            os.makedirs("tests/e2e/screenshots", exist_ok=True)
+            
+            page.screenshot(path="tests/e2e/screenshots/admin_builder.png")
             print("Admin builder screenshot saved.")
 
             # 2. Verify Widget Rendering
             print("Returning to Dashboard...")
             page.keyboard.press("Escape") # Close builder
-            time.sleep(0.5)
+            page.wait_for_selector('text="Structure & Audience"', state="hidden")
+            
             page.keyboard.press("Escape") # Close library
-            time.sleep(0.5)
+            page.wait_for_selector('text="Instructional Routines Library"', state="hidden")
+            
             page.keyboard.press("Escape") # Close Admin Settings
-            time.sleep(1)
+            page.wait_for_selector('text="Admin Settings"', state="hidden")
 
             print("Opening Tools from Dock...")
             page.get_by_title("Open Tools").click()
-            time.sleep(1)
-
+            
             # Try to find Routines in Dock
             routines_btn = page.get_by_role("button", name="Routines", exact=True).last
-            if not routines_btn.is_visible():
-                routines_btn = page.get_by_text("Routines", exact=True).last
+            routines_btn.wait_for(state="visible")
 
             print("Clicking Routines...")
             routines_btn.click(force=True)
 
             # Select Chalk Talk from the widget's internal library
             print("Selecting Chalk Talk in widget...")
-            # Click on the widget area first to activate menu if needed
-            expect(page.get_by_text("Chalk Talk").last).to_be_visible(timeout=10000)
-            page.get_by_text("Chalk Talk").last.click(force=True)
+            chalk_talk_item = page.get_by_text("Chalk Talk").last
+            expect(chalk_talk_item).to_be_visible(timeout=10000)
+            chalk_talk_item.click(force=True)
 
             # Take a screenshot of the widget in Linear mode
-            time.sleep(1)
-            page.screenshot(path="verification/widget_linear.png")
+            page.wait_for_selector('text="For Students"', state="visible")
+            page.screenshot(path="tests/e2e/screenshots/widget_linear.png")
             print("Widget linear screenshot saved.")
 
         except Exception as e:
             print(f"Error: {e}")
-            page.screenshot(path="verification/error.png")
+            os.makedirs("tests/e2e/screenshots", exist_ok=True)
+            page.screenshot(path="tests/e2e/screenshots/error.png")
         finally:
             browser.close()
 
