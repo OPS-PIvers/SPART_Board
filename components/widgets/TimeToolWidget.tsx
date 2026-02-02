@@ -437,7 +437,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             <button
               onClick={startEditing}
               data-testid="time-display"
-              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
+              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-7xl' : 'text-8xl'}`}
               disabled={config.isRunning || config.mode !== 'timer'}
             >
               {formatTime(displayTime)}

@@ -58,7 +58,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div
         className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
         style={{
-          fontSize: showSeconds ? '15cqmin' : '20cqmin',
+          fontSize: showSeconds ? '3.5rem' : '4.5rem',
           color: themeColor,
           textShadow: glow
             ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
