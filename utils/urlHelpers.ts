@@ -22,46 +22,85 @@ export const getJoinUrl = (): string => {
  */
 export const convertToEmbedUrl = (url: string): string => {
   if (!url) return '';
-  const embedUrl = url.trim();
+  const trimmedUrl = url.trim();
 
   // YouTube
   const ytMatch =
     /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.exec(
-      embedUrl
+      trimmedUrl
     );
   if (ytMatch) {
     return `https://www.youtube.com/embed/${ytMatch[1]}`;
   }
 
-  // Google Docs
-  if (embedUrl.includes('docs.google.com/document')) {
-    const docIdMatch = /\/document\/d\/([a-zA-Z0-9_-]+)/.exec(embedUrl);
-    if (docIdMatch) {
-      const docId = docIdMatch[1];
-      const tabMatch = /[?&]tab=([^&]+)/.exec(embedUrl);
-      const tabParam = tabMatch ? `&tab=${tabMatch[1]}` : '';
-      return `https://docs.google.com/document/d/${docId}/edit?rm=minimal${tabParam}`;
+  // Google Services
+  if (trimmedUrl.includes('docs.google.com/')) {
+    const fullUrlString = trimmedUrl.startsWith('http')
+      ? trimmedUrl
+      : `https://${trimmedUrl}`;
+    try {
+      const parsed = new URL(fullUrlString);
+
+      // Google Docs
+      if (
+        parsed.hostname === 'docs.google.com' &&
+        parsed.pathname.includes('/document/')
+      ) {
+        const docIdMatch = /\/document\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/.exec(
+          parsed.pathname
+        );
+        if (docIdMatch) {
+          const docId = docIdMatch[1];
+          parsed.pathname = `/document/d/${docId}/edit`;
+          parsed.searchParams.set('rm', 'minimal');
+          return parsed.toString();
+        }
+      }
+
+      // Google Slides
+      if (
+        parsed.hostname === 'docs.google.com' &&
+        parsed.pathname.includes('/presentation/')
+      ) {
+        const slideIdMatch =
+          /\/presentation\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/.exec(
+            parsed.pathname
+          );
+        if (slideIdMatch) {
+          const slideId = slideIdMatch[1];
+          parsed.pathname = `/presentation/d/${slideId}/embed`;
+          return parsed.toString();
+        }
+      }
+
+      // Google Sheets
+      if (
+        parsed.hostname === 'docs.google.com' &&
+        parsed.pathname.includes('/spreadsheets/')
+      ) {
+        const sheetIdMatch =
+          /\/spreadsheets\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/.exec(
+            parsed.pathname
+          );
+        if (sheetIdMatch) {
+          const sheetId = sheetIdMatch[1];
+          parsed.pathname = `/spreadsheets/d/${sheetId}/preview`;
+          return parsed.toString();
+        }
+      }
+
+      // Google Forms
+      if (
+        parsed.hostname === 'docs.google.com' &&
+        parsed.pathname.includes('/forms/')
+      ) {
+        parsed.searchParams.set('embedded', 'true');
+        return parsed.toString();
+      }
+    } catch (_e) {
+      // Fallback if URL constructor fails
     }
   }
 
-  // Google Slides
-  if (embedUrl.includes('docs.google.com/presentation')) {
-    return embedUrl.replace(/\/edit.*$/, '/embed');
-  }
-
-  // Google Sheets
-  if (embedUrl.includes('docs.google.com/spreadsheets')) {
-    return embedUrl.replace(/\/edit.*$/, '/preview');
-  }
-
-  // Google Forms
-  if (
-    embedUrl.includes('docs.google.com/forms') &&
-    !embedUrl.includes('embedded=true')
-  ) {
-    const separator = embedUrl.includes('?') ? '&' : '?';
-    return `${embedUrl}${separator}embedded=true`;
-  }
-
-  return embedUrl;
+  return trimmedUrl;
 };

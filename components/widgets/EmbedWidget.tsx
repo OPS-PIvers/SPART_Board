@@ -47,6 +47,30 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return base;
   }, [mode, url]);
 
+  const sandbox = React.useMemo(() => {
+    let base = 'allow-scripts allow-forms allow-popups';
+    if (mode === 'url') {
+      base += ' allow-modals';
+      try {
+        const parsedUrl = new URL(
+          url.startsWith('http') ? url : `https://${url}`
+        );
+        const hostname = parsedUrl.hostname.toLowerCase();
+        const allowSameOriginHosts = new Set([
+          'docs.google.com',
+          'www.youtube.com',
+          'youtube.com',
+        ]);
+        if (allowSameOriginHosts.has(hostname)) {
+          base += ' allow-same-origin';
+        }
+      } catch (_e) {
+        // Fallback for malformed URLs
+      }
+    }
+    return base;
+  }, [mode, url]);
+
   if (mode === 'url' && !url) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
@@ -78,11 +102,6 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
     );
   }
-
-  const sandbox =
-    mode === 'url'
-      ? 'allow-scripts allow-forms allow-popups allow-modals allow-same-origin'
-      : 'allow-scripts allow-forms allow-popups allow-modals';
 
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
