@@ -8,8 +8,6 @@ import {
 } from '../../types';
 import {
   Shirt,
-  CloudRain,
-  CloudSnow,
   Thermometer,
   Info,
   Link as LinkIcon,
@@ -26,21 +24,21 @@ interface GearItem {
 export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard, updateWidget } = useDashboard();
+  const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as RecessGearConfig;
 
+  const widgets = activeDashboard?.widgets;
+
   // Find linked or first available weather widget
   const weatherWidget = useMemo(() => {
-    if (!activeDashboard?.widgets) return null;
+    if (!widgets) return null;
     if (config.linkedWeatherWidgetId) {
-      const linked = activeDashboard.widgets.find(
-        (w) => w.id === config.linkedWeatherWidgetId
-      );
+      const linked = widgets.find((w) => w.id === config.linkedWeatherWidgetId);
       if (linked && linked.type === 'weather') return linked;
     }
-    return activeDashboard.widgets.find((w) => w.type === 'weather') ?? null;
-  }, [activeDashboard?.widgets, config.linkedWeatherWidgetId]);
+    return widgets.find((w) => w.type === 'weather') ?? null;
+  }, [widgets, config.linkedWeatherWidgetId]);
 
   const weatherConfig = weatherWidget?.config as WeatherConfig | undefined;
 
@@ -155,7 +153,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="mt-auto pt-2 flex items-center justify-between text-[8px] font-bold text-slate-300 uppercase tracking-widest border-t border-slate-50">
         <div className="flex items-center gap-1">
           <LinkIcon className="w-2 h-2" />
-          Linked to {weatherConfig.locationName || 'Weather'}
+          Linked to {weatherConfig.locationName ?? 'Weather'}
         </div>
         <span>Automatic</span>
       </div>
@@ -170,9 +168,7 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as RecessGearConfig;
 
   const weatherWidgets = useMemo(() => {
-    return (
-      activeDashboard?.widgets.filter((w) => w.type === 'weather') ?? []
-    );
+    return activeDashboard?.widgets.filter((w) => w.type === 'weather') ?? [];
   }, [activeDashboard?.widgets]);
 
   return (
@@ -194,7 +190,7 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div className="flex flex-col gap-0.5">
             <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
-              Use "Feels Like" Temp
+              Use &quot;Feels Like&quot; Temp
             </span>
             <span className="text-xxs text-slate-400 leading-tight">
               Use wind chill and heat index for gear calculation.
@@ -230,7 +226,8 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
             <option value="">Auto-select (First available)</option>
             {weatherWidgets.map((w) => (
               <option key={w.id} value={w.id}>
-                Weather at {(w.config as WeatherConfig).locationName || 'Classroom'}
+                Weather at{' '}
+                {(w.config as WeatherConfig).locationName ?? 'Classroom'}
               </option>
             ))}
           </select>
