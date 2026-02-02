@@ -224,7 +224,23 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    // OPTIMIZATION CHECK: Ensure updateWidget is NOT called during drag
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Verify local state updated visual position
+    const widgetElement = screen.getByTestId('draggable-window');
+    // Original: 100, 100. Drag: +50, +50. New: 150, 150.
+    expect(widgetElement.style.left).toBe('150px');
+    expect(widgetElement.style.top).toBe('150px');
+
+    // Clean up / Drop
+    fireEvent.pointerUp(window, {
+      clientX: 160,
+      clientY: 160,
+      pointerId: 1,
+    });
+
+    // NOW expect updateWidget
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -232,9 +248,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('does not drag if clicking below the 40px handle area', () => {
@@ -282,6 +295,7 @@ describe('DraggableWindow', () => {
 
     // Clean up
     fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
 
   it('updates size on pointer resize', () => {
@@ -324,7 +338,23 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New size should be w: 200 + (350 - 300) = 250, h: 200 + (400 - 300) = 300
+    // OPTIMIZATION CHECK: Ensure updateWidget is NOT called during resize
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Verify local state updated visual size
+    const widgetElement = screen.getByTestId('draggable-window');
+    // Original: 200, 200. Resize: +50, +100. New: 250, 300.
+    expect(widgetElement.style.width).toBe('250px');
+    expect(widgetElement.style.height).toBe('300px');
+
+    // Clean up / Drop
+    fireEvent.pointerUp(window, {
+      clientX: 350,
+      clientY: 400,
+      pointerId: 1,
+    });
+
+    // NOW expect updateWidget
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -332,9 +362,6 @@ describe('DraggableWindow', () => {
         h: 300,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('closes immediately on Escape if skipCloseConfirmation is true', () => {

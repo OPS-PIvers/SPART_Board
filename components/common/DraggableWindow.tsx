@@ -75,7 +75,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   globalStyle,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [_isResizing, setIsResizing] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTools, setShowTools] = useState(false);
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
@@ -84,6 +84,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
     widget.flipped
   );
+
+  // Local state for smooth dragging/resizing without global re-renders
+  const [localRect, setLocalRect] = useState({
+    x: widget.x,
+    y: widget.y,
+    w: widget.w,
+    h: widget.h,
+  });
+
+  // Sync local state with props when not interacting
+  useEffect(() => {
+    if (!isDragging && !isResizing) {
+      setLocalRect({
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+      });
+    }
+  }, [widget.x, widget.y, widget.w, widget.h, isDragging, isResizing]);
 
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
@@ -189,8 +209,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     setIsDragging(true);
     document.body.classList.add('is-dragging-widget');
-    const startX = e.clientX - widget.x;
-    const startY = e.clientY - widget.y;
+    const startX = e.clientX - localRect.x;
+    const startY = e.clientY - localRect.y;
     const initialMouseX = e.clientX;
     const initialMouseY = e.clientY;
 
@@ -211,10 +231,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      setLocalRect((prev) => ({
+        ...prev,
+        x: newX,
+        y: newY,
+      }));
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -233,6 +257,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       } catch (_err) {
         // Ignore capture release errors
       }
+
+      // Commit final position to global state
+      const finalX = upEvent.clientX - startX;
+      const finalY = upEvent.clientY - startY;
+      updateWidget(widget.id, {
+        x: finalX,
+        y: finalY,
+      });
     };
 
     window.addEventListener('pointermove', onPointerMove);
@@ -247,8 +279,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     setIsResizing(true);
     document.body.classList.add('is-dragging-widget');
-    const startW = widget.w;
-    const startH = widget.h;
+    const startW = localRect.w;
+    const startH = localRect.h;
     const startX = e.clientX;
     const startY = e.clientY;
 
@@ -262,10 +294,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (moveEvent.pointerId !== e.pointerId) return;
 
-      updateWidget(widget.id, {
-        w: Math.max(150, startW + (moveEvent.clientX - startX)),
-        h: Math.max(100, startH + (moveEvent.clientY - startY)),
-      });
+      const newW = Math.max(150, startW + (moveEvent.clientX - startX));
+      const newH = Math.max(100, startH + (moveEvent.clientY - startY));
+
+      setLocalRect((prev) => ({
+        ...prev,
+        w: newW,
+        h: newH,
+      }));
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -284,6 +320,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       } catch (_err) {
         // Ignore capture release errors
       }
+
+      // Commit final size to global state
+      const finalW = Math.max(150, startW + (upEvent.clientX - startX));
+      const finalH = Math.max(100, startH + (upEvent.clientY - startY));
+      updateWidget(widget.id, {
+        w: finalW,
+        h: finalH,
+      });
     };
 
     window.addEventListener('pointermove', onPointerMove);
@@ -346,7 +390,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       return () => window.removeEventListener('resize', updatePosition);
     }
     return undefined;
-  }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized]);
+  }, [
+    showTools,
+    localRect.x,
+    localRect.y,
+    localRect.w,
+    localRect.h,
+    isMaximized,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -385,10 +436,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           isMaximized ? 'border-none !shadow-none' : ''
         } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
         style={{
-          left: isMaximized ? 0 : widget.x,
-          top: isMaximized ? 0 : widget.y,
-          width: isMaximized ? '100vw' : widget.w,
-          height: isMaximized ? '100vh' : widget.h,
+          left: isMaximized ? 0 : localRect.x,
+          top: isMaximized ? 0 : localRect.y,
+          width: isMaximized ? '100vw' : localRect.w,
+          height: isMaximized ? '100vh' : localRect.h,
           zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
@@ -470,8 +521,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       paths={widget.annotation?.paths ?? []}
                       color={annotationColor}
                       width={annotationWidth}
-                      canvasWidth={isMaximized ? window.innerWidth : widget.w}
-                      canvasHeight={isMaximized ? window.innerHeight : widget.h}
+                      canvasWidth={
+                        isMaximized ? window.innerWidth : localRect.w
+                      }
+                      canvasHeight={
+                        isMaximized ? window.innerHeight : localRect.h
+                      }
                       onPathsChange={(newPaths: Path[]) => {
                         updateWidget(widget.id, {
                           annotation: {
