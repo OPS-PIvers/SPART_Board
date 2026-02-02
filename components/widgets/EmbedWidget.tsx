@@ -227,17 +227,26 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           value={refreshInterval}
           onChange={(e) =>
             updateWidget(widget.id, {
-              config: { ...config, refreshInterval: parseInt(e.target.value) },
+              config: {
+                ...config,
+                refreshInterval: parseInt(e.target.value, 10),
+              },
             })
           }
           className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-900"
         >
-          <option value={0}>Disabled</option>
-          <option value={1}>Every 1 Minute</option>
-          <option value={5}>Every 5 Minutes</option>
-          <option value={15}>Every 15 Minutes</option>
-          <option value={30}>Every 30 Minutes</option>
-          <option value={60}>Every 1 Hour</option>
+          {[
+            { value: 0, label: 'Disabled' },
+            { value: 1, label: 'Every 1 Minute' },
+            { value: 5, label: 'Every 5 Minutes' },
+            { value: 15, label: 'Every 15 Minutes' },
+            { value: 30, label: 'Every 30 Minutes' },
+            { value: 60, label: 'Every 1 Hour' },
+          ].map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </div>
     </div>
