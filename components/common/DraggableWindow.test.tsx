@@ -5,6 +5,7 @@ import {
   waitFor,
   fireEvent,
   cleanup,
+  act,
 } from '@testing-library/react';
 import {
   describe,
@@ -392,8 +393,8 @@ describe('DraggableWindow', () => {
     fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
-  it('closes immediately on Escape if skipCloseConfirmation is true', () => {
-    const { container } = render(
+  it('closes immediately on widget-escape-press if skipCloseConfirmation is true', async () => {
+    render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -410,19 +411,20 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const widgetElement = container.querySelector('.widget') as HTMLElement;
-    if (!widgetElement) throw new Error('Widget element not found');
+    const event = new CustomEvent('widget-escape-press', {
+      detail: { widgetId: 'test-widget' },
+    });
+    act(() => {
+      window.dispatchEvent(event);
+    });
 
-    // Mock activeElement using shared spy
-    activeElementSpy.mockReturnValue(widgetElement);
-
-    fireEvent.keyDown(widgetElement, { key: 'Escape' });
-
-    expect(mockRemoveWidget).toHaveBeenCalledWith('test-widget');
+    await waitFor(() => {
+      expect(mockRemoveWidget).toHaveBeenCalledWith('test-widget');
+    });
   });
 
-  it('shows confirmation on Escape if skipCloseConfirmation is false', () => {
-    const { container } = render(
+  it('shows confirmation on widget-escape-press if skipCloseConfirmation is false', async () => {
+    render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -439,19 +441,21 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const widgetElement = container.querySelector('.widget') as HTMLElement;
-    if (!widgetElement) throw new Error('Widget element not found');
-
-    // Mock activeElement using shared spy
-    activeElementSpy.mockReturnValue(widgetElement);
-
-    fireEvent.keyDown(widgetElement, { key: 'Escape' });
+    const event = new CustomEvent('widget-escape-press', {
+      detail: { widgetId: 'test-widget' },
+    });
+    act(() => {
+      window.dispatchEvent(event);
+    });
 
     // Should NOT call removeWidget yet
     expect(mockRemoveWidget).not.toHaveBeenCalled();
+
     // Should show confirmation
-    expect(
-      screen.getByText(/Close widget\? Data will be lost\./i)
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Close widget\? Data will be lost\./i)
+      ).toBeInTheDocument();
+    });
   });
 });
