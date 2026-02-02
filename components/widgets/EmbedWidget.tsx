@@ -79,6 +79,11 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
+  const sandbox =
+    mode === 'url'
+      ? 'allow-scripts allow-forms allow-popups allow-modals allow-same-origin'
+      : 'allow-scripts allow-forms allow-popups allow-modals';
+
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
       <iframe
