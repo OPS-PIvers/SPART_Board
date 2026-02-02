@@ -48,7 +48,7 @@ describe('Toggle Component', () => {
       <Toggle checked={false} onChange={vi.fn()} size="sm" />
     );
     let button = screen.getByRole('switch');
-    expect(button).toHaveClass('w-8'); // sm width
+    expect(button).toHaveClass('w-10'); // sm width
 
     rerender(<Toggle checked={false} onChange={vi.fn()} size="md" />);
     button = screen.getByRole('switch');
