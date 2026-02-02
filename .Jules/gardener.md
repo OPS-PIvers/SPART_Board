@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-06-04 - Refactor LunchCountWidget
+
+**Weed:** `LunchCountWidget.tsx` was ~1000 lines, mixing UI components (Widget, Settings, Modal) with complex API fetching logic.
+**Root Cause:** "God Component" pattern; new features (Nutrislice sync, reporting modal) were added inline over time.
+**Plan:** Decomposed into `components/widgets/LunchCount/` with `Widget.tsx`, `Settings.tsx`, `SubmitReportModal.tsx`, and extracted API logic to `useNutrislice.ts` hook.
+
 ## 2025-06-03 - Refactor InstructionalRoutinesWidget
 
 **Weed:** `InstructionalRoutinesWidget.tsx` was >1000 lines, containing the main widget, settings, library manager, and helper components.

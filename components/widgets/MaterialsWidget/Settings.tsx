@@ -67,7 +67,7 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
         {MATERIAL_ITEMS.map((item) => {
           const isSelected = selectedItems.has(item.id);
           return (

@@ -399,11 +399,11 @@ export const DrawingWidget: React.FC<{
             {!isStudentView && (
               <div
                 data-screenshot="exclude"
-                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
+                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
               >
-                <div className="px-3 flex items-center gap-2 border-r border-slate-100 mr-1">
+                <div className="px-3 flex items-center gap-2 border-r border-white/30 mr-1">
                   <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
-                  <span className="text-xxs  uppercase tracking-widest text-slate-700">
+                  <span className="text-xxs  font-black uppercase tracking-widest text-slate-700">
                     Annotating
                   </span>
                 </div>
@@ -420,12 +420,12 @@ export const DrawingWidget: React.FC<{
   return (
     <div
       className={`h-full flex flex-col ${
-        isStudentView ? 'bg-transparent' : 'bg-white'
+        isStudentView ? 'bg-transparent' : 'bg-transparent'
       } rounded-lg overflow-hidden`}
     >
       <div
         className={`flex-1 relative ${
-          isStudentView ? 'bg-transparent' : 'bg-slate-50'
+          isStudentView ? 'bg-transparent' : 'bg-white/5'
         } overflow-hidden ${!isStudentView && 'cursor-crosshair'}`}
       >
         <canvas
@@ -438,13 +438,13 @@ export const DrawingWidget: React.FC<{
           style={{ touchAction: 'none' }}
         />
         {paths.length === 0 && !isDrawing && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-300">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400">
             <Pencil className="w-8 h-8 opacity-20" />
           </div>
         )}
       </div>
       {!isStudentView && (
-        <div className="shrink-0 border-t border-slate-100 bg-white">
+        <div className="shrink-0 border-t border-white/20 bg-white/20 backdrop-blur-sm">
           {PaletteUI}
         </div>
       )}

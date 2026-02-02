@@ -28,7 +28,8 @@ export type WidgetType =
   | 'catalyst'
   | 'catalyst-instruction'
   | 'catalyst-visual'
-  | 'smartNotebook';
+  | 'smartNotebook'
+  | 'recessGear';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -121,11 +122,15 @@ export interface CalendarEvent {
   title: string;
 }
 
+export type RoutineStructure = 'linear' | 'cycle' | 'visual-cue' | 'components';
+export type RoutineAudience = 'student' | 'teacher';
+
 export interface RoutineStep {
   id: string;
   text: string;
   icon?: string;
   stickerUrl?: string;
+  imageUrl?: string;
   color?: string;
   attachedWidget?: {
     type: WidgetType;
@@ -216,6 +221,7 @@ export interface EmbedConfig {
   url: string;
   mode?: string;
   html?: string;
+  refreshInterval?: number;
 }
 
 export interface PollConfig {
@@ -261,6 +267,7 @@ export interface WorkSymbolsConfig {
     | null;
   instructionalRoutine?: string; // Legacy/K-8
   activeRoutines?: string[]; // New: 9-12 Multi-select
+  layout?: 'secondary' | 'elementary';
 }
 
 export interface WeatherConfig {
@@ -330,6 +337,8 @@ export interface InstructionalRoutinesConfig {
   customSteps: RoutineStep[];
   favorites: string[];
   scaleMultiplier: number;
+  structure?: RoutineStructure;
+  audience?: RoutineAudience;
 }
 
 export interface TimeToolConfig {
@@ -427,6 +436,11 @@ export interface SmartNotebookConfig {
   activeNotebookId: string | null;
 }
 
+export interface RecessGearConfig {
+  linkedWeatherWidgetId?: string | null;
+  useFeelsLike?: boolean;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -459,7 +473,8 @@ export type WidgetConfig =
   | CatalystConfig
   | CatalystInstructionConfig
   | CatalystVisualConfig
-  | SmartNotebookConfig;
+  | SmartNotebookConfig
+  | RecessGearConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -522,7 +537,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                           ? CatalystVisualConfig
                                                           : T extends 'smartNotebook'
                                                             ? SmartNotebookConfig
-                                                            : never;
+                                                            : T extends 'recessGear'
+                                                              ? RecessGearConfig
+                                                              : never;
 
 export interface WidgetData {
   id: string;
@@ -542,6 +559,10 @@ export interface WidgetData {
   transparency?: number;
   annotation?: DrawingConfig;
   config: WidgetConfig;
+}
+
+export interface DashboardWidget extends WidgetData {
+  activeRoster?: string[];
 }
 
 export interface DockFolder {

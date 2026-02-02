@@ -23,6 +23,7 @@ import {
   Armchair,
   Rocket,
   LayoutGrid,
+  Shirt,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -113,5 +114,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: BookOpen,
     label: 'Notebook',
     color: 'bg-green-600',
+  },
+  {
+    type: 'recessGear',
+    icon: Shirt,
+    label: 'Recess Gear',
+    color: 'bg-emerald-500',
   },
 ];

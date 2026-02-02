@@ -83,9 +83,9 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl overflow-hidden shadow-xl border border-slate-200">
+    <div className="flex flex-col h-full bg-transparent rounded-2xl overflow-hidden group">
       {/* Header Tabs */}
-      <div className="flex bg-slate-50 border-b border-slate-200">
+      <div className="flex bg-white/20 border-b border-white/30 backdrop-blur-sm">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isActive = activeTab === cat.id;
@@ -102,8 +102,8 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
               }
               className={`flex-1 flex flex-col items-center gap-1 py-3 px-1 transition-all ${
                 isActive
-                  ? 'bg-white text-blue-600 border-b-2 border-blue-600'
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                  ? 'bg-white/60 text-blue-600 border-b-2 border-blue-600 shadow-[inset_0_-2px_0_0_#2563eb]'
+                  : 'text-slate-600 hover:text-slate-800 hover:bg-white/30'
               }`}
             >
               <Icon size={18} />
@@ -125,7 +125,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
           return (
             <div
               key={routine.id}
-              className="group bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all shadow-sm"
+              className="group bg-white/40 backdrop-blur-sm rounded-2xl p-4 border border-white/50 hover:border-blue-200 hover:bg-white/60 transition-all shadow-sm"
             >
               <div className="flex items-center gap-3 mb-1">
                 <div className="p-2 rounded-xl bg-blue-100 text-blue-600 shadow-sm">
@@ -135,7 +135,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
                   <span className="font-black text-sm text-slate-700 leading-tight">
                     {routine.title}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">
+                  <span className="text-[10px] font-bold text-slate-500">
                     {routine.shortDesc}
                   </span>
                 </div>
@@ -144,7 +144,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleTeacherMode(routine)}
-                  className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
+                  className="flex-1 py-2 bg-white/50 border border-white/30 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-white/80 transition-all shadow-sm"
                 >
                   Guide
                 </button>

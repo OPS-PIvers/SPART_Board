@@ -36,7 +36,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     },
     traffic: {},
     text: {
-      content: 'Double click to edit...',
+      content: 'Click to edit...',
       bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },
@@ -94,6 +94,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     'catalyst-instruction': { routineId: '', stepIndex: 0 },
     'catalyst-visual': { routineId: '', stepIndex: 0 },
     smartNotebook: { activeNotebookId: null },
+    recessGear: { linkedWeatherWidgetId: null, useFeelsLike: true },
   };
 
   return defaults[type];
