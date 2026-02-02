@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardView } from '../../../components/layout/DashboardView';
@@ -179,7 +180,6 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(mockAddWidget).toHaveBeenCalledWith(
       'sticker',
       expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           icon: undefined,
           url: 'https://example.com/custom-sticker.png',
@@ -218,7 +218,6 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(mockAddWidget).toHaveBeenCalledWith(
       'sticker',
       expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           icon: 'Share2',
           url: undefined,
