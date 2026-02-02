@@ -177,13 +177,14 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const PADDING = UI_CONSTANTS.WIDGET_PADDING;
 
   const getWidgetContentInternal = useCallback(
-    (w: number, h: number) => {
+    (w: number, h: number, scale?: number) => {
       if (WidgetComponent) {
         return (
           <Suspense fallback={<LoadingFallback />}>
             <WidgetComponent
               widget={{ ...widget, w, h }}
               isStudentView={isStudentView}
+              scale={scale}
             />
           </Suspense>
         );
@@ -201,24 +202,21 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     return <StickerItemWidget widget={widget} />;
   }
 
-  const finalContent =
-    scaling && !scaling.skipScaling ? (
-      <ScalableWidget
-        width={effectiveWidth}
-        height={effectiveHeight}
-        baseWidth={scaling.baseWidth}
-        baseHeight={scaling.baseHeight}
-        canSpread={scaling.canSpread}
-        headerHeight={HEADER_HEIGHT}
-        padding={PADDING}
-      >
-        {({ internalW, internalH }) =>
-          getWidgetContentInternal(internalW, internalH)
-        }
-      </ScalableWidget>
-    ) : (
-      getWidgetContentInternal(effectiveWidth, effectiveHeight)
-    );
+  const finalContent = (
+    <ScalableWidget
+      width={effectiveWidth}
+      height={effectiveHeight}
+      baseWidth={scaling?.baseWidth ?? 300}
+      baseHeight={scaling?.baseHeight ?? 200}
+      canSpread={scaling?.canSpread ?? true}
+      headerHeight={HEADER_HEIGHT}
+      padding={PADDING}
+    >
+      {({ internalW, internalH, scale }) =>
+        getWidgetContentInternal(internalW, internalH, scale)
+      }
+    </ScalableWidget>
+  );
 
   if (isStudentView) {
     const isDrawing = widget.type === 'drawing';

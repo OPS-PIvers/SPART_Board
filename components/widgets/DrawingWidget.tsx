@@ -25,7 +25,8 @@ import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
   isStudentView?: boolean;
-}> = ({ widget, isStudentView = false }) => {
+  scale?: number;
+}> = ({ widget, isStudentView = false, scale = 1 }) => {
   const { updateWidget, activeDashboard, addToast } = useDashboard();
   const { user } = useAuth();
   const { session, startSession, endSession } = useLiveSession(
@@ -232,9 +233,13 @@ export const DrawingWidget: React.FC<{
       return { x: 0, y: 0 };
     }
     const rect = canvas.getBoundingClientRect();
+    // When in window mode, we must account for the CSS transform scale applied by the parent ScalableWidget
+    // In overlay mode, the canvas is portalled to the root and is not scaled.
+    const effectiveScale = mode === 'overlay' ? 1 : scale;
+
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / effectiveScale,
+      y: (e.clientY - rect.top) / effectiveScale,
     };
   };
 
