@@ -1002,6 +1002,7 @@ export const Dock: React.FC = () => {
             <GlassCard
               globalStyle={globalStyle}
               transparency={globalStyle.dockTransparency}
+              allowInvisible={true}
               cornerRadius={
                 globalStyle.dockBorderRadius === 'full'
                   ? 'full'
