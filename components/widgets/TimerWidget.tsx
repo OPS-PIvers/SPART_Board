@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimerConfig } from '@/types';
-import { useButtonAccessibility } from '@/hooks/useButtonAccessibility';
+import { getButtonAccessibilityProps } from '@/utils/accessibility';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -34,9 +34,6 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as TimerConfig;
 
   // States
-  const [sessionDuration, setSessionDuration] = useState(
-    config.duration ?? 300
-  );
   const [timeLeft, setTimeLeft] = useState(config.duration ?? 300);
   const [isActive, setIsActive] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -67,10 +64,9 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Sync with config if the permanent setting changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionDuration(config.duration);
-
+    /* eslint-disable react-hooks/set-state-in-effect */
     setTimeLeft(config.duration);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [config.duration]);
 
   useEffect(() => {
@@ -106,7 +102,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsActive(false);
     setIsDone(false);
     setIsEditing(false);
-    setTimeLeft(sessionDuration);
+    setTimeLeft(config.duration);
   };
 
   const addTime = (seconds: number) => {
@@ -149,7 +145,6 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const confirmEdit = () => {
     const totalSeconds =
       parseInt(editValues.min) * 60 + parseInt(editValues.sec);
-    setSessionDuration(totalSeconds);
     setTimeLeft(totalSeconds);
     setIsEditing(false);
     setIsDone(false);
@@ -178,7 +173,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {!isEditing ? (
         <>
           <div
-            {...useButtonAccessibility(startEditing)}
+            {...getButtonAccessibilityProps(startEditing)}
             className={`font-mono font-bold leading-none select-none transition-all cursor-pointer tabular-nums hover:text-blue-500 ${
               isDone
                 ? 'text-red-600 scale-110 animate-pulse'
