@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { EmbedWidget, EmbedSettings } from './EmbedWidget';
 import { WidgetData, EmbedConfig } from '../../types';
