@@ -6,7 +6,9 @@ def debug_landing():
         page = browser.new_page()
         page.goto("http://localhost:3000")
         page.wait_for_timeout(5000)
-        page.screenshot(path="verification/debug_landing.png")
+        import os
+        os.makedirs("tests/e2e/screenshots", exist_ok=True)
+        page.screenshot(path="tests/e2e/screenshots/debug_landing.png")
         print(f"URL: {page.url}")
         print(f"Content: {page.content()[:1000]}")
         browser.close()
