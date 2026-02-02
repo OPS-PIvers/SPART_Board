@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
 import { render, screen } from '@testing-library/react';
 import { RecessGearWidget } from './RecessGearWidget';
 import { WidgetData, RecessGearConfig, WeatherConfig } from '../../types';
