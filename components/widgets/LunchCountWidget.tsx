@@ -299,10 +299,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const fetchWithFallback = async (url: string) => {
     const proxies = [
       (u: string) =>
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
       (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       (u: string) =>
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
     ];
 
     let lastError: Error | null = null;

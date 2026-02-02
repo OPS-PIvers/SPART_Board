@@ -50,7 +50,7 @@ const MiniAppSettings = lazyNamed(
 
 export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   clock: lazyNamed(() => import('./ClockWidget'), 'ClockWidget'),
-  'time-tool': lazyNamed(() => import('./TimerWidget'), 'TimerWidget'),
+  'time-tool': lazyNamed(() => import('./TimeToolWidget'), 'TimeToolWidget'),
   traffic: lazyNamed(
     () => import('./TrafficLightWidget'),
     'TrafficLightWidget'
@@ -102,6 +102,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SmartNotebookWidget'),
     'SmartNotebookWidget'
   ),
+  recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearWidget'),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -134,7 +135,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   materials: lazyNamed(() => import('./MaterialsWidget'), 'MaterialsSettings'),
   miniApp: MiniAppSettings,
-  'time-tool': lazyNamed(() => import('./TimerWidget'), 'TimerSettings'),
+  'time-tool': lazyNamed(() => import('./TimeToolWidget'), 'TimeToolSettings'),
   'seating-chart': lazyNamed(
     () => import('./SeatingChartSettings'),
     'SeatingChartSettings'
@@ -150,15 +151,37 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
-  workSymbols: DefaultSettings,
+  workSymbols: lazyNamed(
+    () => import('./WorkSymbolsWidget'),
+    'WorkSymbolsSettings'
+  ),
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
+  recessGear: lazyNamed(
+    () => import('./RecessGearWidget'),
+    'RecessGearSettings'
+  ),
 };
 
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
-  clock: { baseWidth: 280, baseHeight: 140, canSpread: true },
-  'time-tool': { baseWidth: 420, baseHeight: 400, canSpread: true },
-  traffic: { baseWidth: 120, baseHeight: 320, canSpread: false },
+  clock: {
+    baseWidth: 280,
+    baseHeight: 140,
+    canSpread: true,
+    skipScaling: true,
+  },
+  'time-tool': {
+    baseWidth: 420,
+    baseHeight: 400,
+    canSpread: true,
+    skipScaling: true,
+  },
+  traffic: {
+    baseWidth: 120,
+    baseHeight: 320,
+    canSpread: false,
+    skipScaling: true,
+  },
   text: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   checklist: {
     baseWidth: 280,
@@ -172,17 +195,37 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     canSpread: true,
     skipScaling: true,
   },
-  dice: { baseWidth: 240, baseHeight: 240, canSpread: false },
-  sound: { baseWidth: 300, baseHeight: 300, canSpread: true },
-  webcam: { baseWidth: 400, baseHeight: 300, canSpread: true },
-  embed: { baseWidth: 480, baseHeight: 350, canSpread: true },
+  dice: {
+    baseWidth: 240,
+    baseHeight: 240,
+    canSpread: false,
+    skipScaling: true,
+  },
+  sound: {
+    baseWidth: 300,
+    baseHeight: 300,
+    canSpread: true,
+    skipScaling: true,
+  },
+  webcam: {
+    baseWidth: 400,
+    baseHeight: 300,
+    canSpread: true,
+    skipScaling: true,
+  },
+  embed: {
+    baseWidth: 480,
+    baseHeight: 350,
+    canSpread: true,
+    skipScaling: true,
+  },
   drawing: {
     baseWidth: 400,
     baseHeight: 350,
     canSpread: true,
     skipScaling: true,
   },
-  qr: { baseWidth: 200, baseHeight: 250, canSpread: false },
+  qr: { baseWidth: 200, baseHeight: 250, canSpread: false, skipScaling: true },
   scoreboard: {
     baseWidth: 320,
     baseHeight: 200,
@@ -278,6 +321,12 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   smartNotebook: {
     baseWidth: 600,
     baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+  },
+  recessGear: {
+    baseWidth: 250,
+    baseHeight: 280,
     canSpread: true,
     skipScaling: true,
   },
