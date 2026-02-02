@@ -209,11 +209,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
         const proxies = [
-          (u: string) =>
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
           (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
           (u: string) =>
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
         ];
 
         let data: EarthNetworksResponse | null = null;
@@ -303,31 +301,26 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   const getIcon = () => {
-    const iconClasses = 'w-20 h-20';
     switch (condition.toLowerCase()) {
       case 'cloudy':
       case 'clouds':
-        return <Cloud className={`${iconClasses} text-slate-400`} />;
+        return <Cloud className="w-20 h-20 text-slate-400" />;
       case 'rainy':
       case 'rain':
       case 'drizzle':
-        return <CloudRain className={`${iconClasses} text-blue-400`} />;
+        return <CloudRain className="w-20 h-20 text-blue-400" />;
       case 'snowy':
       case 'snow':
-        return <CloudSnow className={`${iconClasses} text-blue-200`} />;
+        return <CloudSnow className="w-20 h-20 text-blue-200" />;
       case 'windy':
       case 'squall':
       case 'tornado':
-        return <Wind className={`${iconClasses} text-slate-500`} />;
+        return <Wind className="w-20 h-20 text-slate-500" />;
       case 'sunny':
       case 'clear':
-        return (
-          <Sun className={`${iconClasses} text-amber-400 animate-spin-slow`} />
-        );
+        return <Sun className="w-20 h-20 text-amber-400 animate-spin-slow" />;
       default:
-        return (
-          <Sun className={`${iconClasses} text-amber-400 animate-spin-slow`} />
-        );
+        return <Sun className="w-20 h-20 text-amber-400 animate-spin-slow" />;
     }
   };
 
@@ -374,7 +367,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col items-center justify-between h-full p-4 gap-2 font-${globalStyle.fontFamily}`}
+      className={`flex flex-col items-center justify-between h-full p-4 gap-2 relative font-${globalStyle.fontFamily}`}
     >
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="text-xxs font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
@@ -512,11 +505,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       // Use a list of proxies to improve reliability.
       const proxies = [
-        (u: string) =>
-          `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
         (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
         (u: string) =>
-          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+          `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
       ];
 
       let lastError: Error | null = null;
@@ -679,7 +670,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between p-3 bg-white/20 rounded-xl border border-white/10">
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
         <div className="flex flex-col gap-0.5">
           <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
             Prioritize Feels Like
