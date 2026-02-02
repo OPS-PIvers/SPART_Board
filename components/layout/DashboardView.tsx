@@ -240,10 +240,11 @@ export const DashboardView: React.FC = () => {
     if (spartStickerData) {
       e.preventDefault();
       try {
-        const { icon, color, label } = JSON.parse(spartStickerData) as {
+        const { icon, color, label, url } = JSON.parse(spartStickerData) as {
           icon: string;
           color: string;
           label?: string;
+          url?: string;
         };
         const w = 150;
         const h = 150;
@@ -255,7 +256,13 @@ export const DashboardView: React.FC = () => {
           y,
           w,
           h,
-          config: { icon, color, label, rotation: 0 },
+          config: {
+            icon: url ? undefined : icon,
+            url,
+            color,
+            label,
+            rotation: 0,
+          },
         });
       } catch (err) {
         console.error('Failed to parse spart-sticker data', err);
