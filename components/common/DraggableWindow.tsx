@@ -423,6 +423,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onPointerDown={handlePointerDown}
         onClick={handleWidgetClick}
         transparency={transparency}
+        allowInvisible={true}
         cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
           isMaximized ? 'border-none !shadow-none' : ''

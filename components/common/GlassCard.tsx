@@ -8,6 +8,8 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   transparency?: number;
   cornerRadius?: string;
   globalStyle?: GlobalStyle;
+  allowInvisible?: boolean;
+  disableBlur?: boolean;
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -19,6 +21,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       transparency: propTransparency,
       cornerRadius: propCornerRadius,
       globalStyle: propGlobalStyle,
+      allowInvisible = false,
+      disableBlur = false,
       style,
       ...props
     },
@@ -29,6 +33,9 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     // Determine values, prioritizing props over global settings
     const finalTransparency =
       propTransparency ?? globalStyle.windowTransparency;
+
+    const isInvisible = allowInvisible && finalTransparency === 0;
+
     const finalRadiusClass = propCornerRadius
       ? `rounded-${propCornerRadius}`
       : globalStyle.windowBorderRadius === 'none'
@@ -44,17 +51,25 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         ref={ref}
         className={`${finalRadiusClass} ${className}`}
         style={{
-          backgroundColor: `rgba(255, 255, 255, ${finalTransparency})`,
-          border: `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
-          boxShadow: `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
+          backgroundColor: isInvisible
+            ? 'transparent'
+            : `rgba(255, 255, 255, ${finalTransparency})`,
+          border: isInvisible
+            ? 'none'
+            : `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
+          boxShadow: isInvisible
+            ? 'none'
+            : `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
           backdropFilter:
-            finalTransparency > 0 ? `blur(${12 * factor}px)` : 'none',
+            !isInvisible && finalTransparency > 0 && !disableBlur
+              ? `blur(${12 * factor}px)`
+              : 'none',
           ...style,
         }}
         {...props}
       >
         {/* Glossy gradient overlay */}
-        {gradientOverlay && (
+        {gradientOverlay && !isInvisible && (
           <div
             className="absolute inset-0 pointer-events-none rounded-[inherit] -z-10"
             style={{
