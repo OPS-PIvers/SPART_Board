@@ -8,8 +8,9 @@ def debug_admin_settings():
         page = context.new_page()
         page.goto("http://localhost:3000")
         page.get_by_title("Admin Settings").click()
-        page.wait_for_timeout(5000)
-        page.screenshot(path="/home/jules/verification/admin_settings_debug.png")
+        # Wait for the Admin Settings panel to appear
+        expect(page.get_by_text("Global Permissions")).to_be_visible(timeout=10000)
+        page.screenshot(path="verification/admin_settings_debug.png")
         browser.close()
 
 if __name__ == "__main__":
