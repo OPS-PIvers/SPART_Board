@@ -66,42 +66,62 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
 };
 
 const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
-  const rotation = -90 + volume * 1.8; // -90 to +90 degrees
+  // Map volume (0-100) to angle (180-360 degrees)
+  // 180 = Left, 270 = Up, 360 = Right
+  const angle = 180 + volume * 1.8;
+  const centerX = 50;
+  const centerY = 55;
+  const radius = 40;
+  const needleLen = 35;
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
       <svg viewBox="0 0 100 60" className="w-full h-auto drop-shadow-sm">
         {/* Arcs */}
-        {POSTER_LEVELS.map((level, i) => (
-          <path
-            key={i}
-            d={`M ${20 + i * 12} 55 A 40 40 0 0 1 ${32 + i * 12} 55`}
-            fill="none"
-            stroke={level.color}
-            strokeWidth="8"
-            className="opacity-20"
-          />
-        ))}
+        {POSTER_LEVELS.map((level, i) => {
+          const startVol = level.threshold;
+          const endVol =
+            i < POSTER_LEVELS.length - 1 ? POSTER_LEVELS[i + 1].threshold : 100;
+          const startAngle = 180 + startVol * 1.8;
+          const endAngle = 180 + endVol * 1.8;
+
+          const x1 = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
+          const y1 = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
+          const x2 = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+          const y2 = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
+
+          return (
+            <path
+              key={i}
+              d={`M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`}
+              fill="none"
+              stroke={level.color}
+              strokeWidth="8"
+              className="opacity-20"
+            />
+          );
+        })}
         {/* Main Background Arc */}
         <path
           d="M 10 55 A 40 40 0 0 1 90 55"
           fill="none"
-          className="stroke-white/20"
+          className="stroke-white/10"
           strokeWidth="8"
         />
         {/* Needle */}
         <line
-          x1="50"
-          y1="55"
-          x2={50 + 35 * Math.cos(((rotation - 90) * Math.PI) / 180)}
-          y2={55 + 35 * Math.sin(((rotation - 90) * Math.PI) / 180)}
+          x1={centerX}
+          y1={centerY}
+          x2={centerX + needleLen * Math.cos((angle * Math.PI) / 180)}
+          y2={centerY + needleLen * Math.sin((angle * Math.PI) / 180)}
           stroke={STANDARD_COLORS.slate}
           strokeWidth="2"
           strokeLinecap="round"
           className="transition-all duration-150 stroke-slate-800"
         />
         <circle
-          cx="50"
-          cy="55"
+          cx={centerX}
+          cy={centerY}
           r="3"
           fill={STANDARD_COLORS.slate}
           className="fill-slate-800"
