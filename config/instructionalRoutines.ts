@@ -1,9 +1,12 @@
-import { GradeLevel } from '../types';
+import { GradeLevel, RoutineStructure, RoutineAudience } from '../types';
+
+export type { RoutineStructure, RoutineAudience };
 
 export interface InstructionalStep {
   text: string;
   icon?: string;
   stickerUrl?: string;
+  imageUrl?: string;
   color?: string;
   label?: string;
   attachedWidget?: {
@@ -19,8 +22,10 @@ export interface InstructionalRoutine {
   grades: string;
   gradeLevels: GradeLevel[];
   icon: string;
-  color: string; // Added color property
+  color: string;
   steps: InstructionalStep[];
+  structure?: RoutineStructure;
+  audience?: RoutineAudience;
 }
 
 export const ROUTINES: InstructionalRoutine[] = [
