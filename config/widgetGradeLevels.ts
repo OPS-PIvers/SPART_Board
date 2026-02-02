@@ -64,6 +64,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   'catalyst-instruction': [],
   'catalyst-visual': [],
   smartNotebook: ALL_GRADE_LEVELS,
+  recessGear: ['k-2', '3-5'],
 };
 
 /**

@@ -28,7 +28,8 @@ export type WidgetType =
   | 'catalyst'
   | 'catalyst-instruction'
   | 'catalyst-visual'
-  | 'smartNotebook';
+  | 'smartNotebook'
+  | 'recessGear';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -435,6 +436,11 @@ export interface SmartNotebookConfig {
   activeNotebookId: string | null;
 }
 
+export interface RecessGearConfig {
+  linkedWeatherWidgetId?: string | null;
+  useFeelsLike?: boolean;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -467,7 +473,8 @@ export type WidgetConfig =
   | CatalystConfig
   | CatalystInstructionConfig
   | CatalystVisualConfig
-  | SmartNotebookConfig;
+  | SmartNotebookConfig
+  | RecessGearConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -530,7 +537,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                           ? CatalystVisualConfig
                                                           : T extends 'smartNotebook'
                                                             ? SmartNotebookConfig
-                                                            : never;
+                                                            : T extends 'recessGear'
+                                                              ? RecessGearConfig
+                                                              : never;
 
 export interface WidgetData {
   id: string;
