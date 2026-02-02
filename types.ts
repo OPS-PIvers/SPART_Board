@@ -263,6 +263,7 @@ export interface WorkSymbolsConfig {
     | null;
   instructionalRoutine?: string; // Legacy/K-8
   activeRoutines?: string[]; // New: 9-12 Multi-select
+  layout?: 'secondary' | 'elementary';
 }
 
 export interface WeatherConfig {
