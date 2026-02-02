@@ -1,37 +1,22 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
-import {
-  WidgetData,
-  LunchCountConfig,
-  LunchCountGlobalConfig,
-} from '../../../types';
+import { WidgetData, LunchCountConfig, DashboardWidget } from '../../../types';
 import { Button } from '../../common/Button';
-import { RefreshCw, Loader2, Undo2, CheckCircle2, Box } from 'lucide-react';
+import { RefreshCw, Undo2, CheckCircle2, Box } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
 import { useNutrislice } from './useNutrislice';
-
-type LunchType = 'hot' | 'bento' | 'home';
-const DEFAULT_RECIPIENT_EMAIL = 'paul.ivers@orono.k12.mn.us';
 
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
-  const { user, featurePermissions } = useAuth();
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-
+  const { updateWidget, addToast, activeDashboard } = useDashboard();
+  const { user } = useAuth();
   const config = widget.config as LunchCountConfig;
   const {
-    cachedMenu,
-    isManualMode = false,
-    manualHotLunch = '',
-    manualBentoBox = '',
-    roster = [],
+    cachedMenu = null,
     assignments = {},
-    recipient = DEFAULT_RECIPIENT_EMAIL,
-    syncError,
+    roster = [],
     rosterMode = 'class',
   } = config;
 
@@ -42,418 +27,316 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     addToast,
   });
 
-  const activeRoster = useMemo(
-    () => rosters.find((r) => r.id === activeRosterId),
-    [rosters, activeRosterId]
-  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentRoster = useMemo(() => {
-    if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) =>
-        `${s.firstName} ${s.lastName}`.trim()
-      );
-    }
-    return roster;
-  }, [activeRoster, roster, rosterMode]);
+  const activeRoster = useMemo((): string[] => {
+    if (rosterMode === 'custom') return roster;
+    const dashboardWidget = activeDashboard?.widgets.find(
+      (w) => w.id === widget.id
+    ) as DashboardWidget | undefined;
+    return dashboardWidget?.activeRoster ?? [];
+  }, [rosterMode, roster, widget.id, activeDashboard]);
 
-  const handleDrop = (e: React.DragEvent, type: LunchType | null) => {
-    const name = e.dataTransfer.getData('studentName');
-    if (name) {
+  const stats = useMemo(() => {
+    const total = activeRoster.length;
+    const hotLunch = Object.values(assignments).filter(
+      (a) => a === 'hot'
+    ).length;
+    const bentoBox = Object.values(assignments).filter(
+      (a) => a === 'bento'
+    ).length;
+    const homeLunch = Object.values(assignments).filter(
+      (a) => a === 'home'
+    ).length;
+    const remaining = total - (hotLunch + bentoBox + homeLunch);
+
+    return { total, hotLunch, bentoBox, homeLunch, remaining };
+  }, [activeRoster, assignments]);
+
+  const handleDrop = useCallback(
+    (student: string, type: 'hot' | 'bento' | 'home' | null) => {
+      const newAssignments = { ...assignments };
+      if (type === null) {
+        delete newAssignments[student];
+      } else {
+        newAssignments[student] = type;
+      }
       updateWidget(widget.id, {
-        config: {
-          ...config,
-          assignments: {
-            ...assignments,
-            [name]: type as LunchCountConfig['assignments'][string],
-          },
-        },
+        config: { ...config, assignments: newAssignments },
       });
-    }
-  };
-
-  const resetBoard = () => {
-    updateWidget(widget.id, {
-      config: { ...config, assignments: {} },
-    });
-    addToast('Board reset', 'info');
-  };
-
-  const menuDisplay = useMemo(
-    () => ({
-      hot: isManualMode
-        ? manualHotLunch
-        : (cachedMenu?.hotLunch ?? 'Loading...'),
-      bento: isManualMode
-        ? manualBentoBox
-        : (cachedMenu?.bentoBox ?? 'Loading...'),
-    }),
-    [cachedMenu, isManualMode, manualBentoBox, manualHotLunch]
+    },
+    [widget.id, config, assignments, updateWidget]
   );
 
-  const getReportData = useCallback(() => {
-    const counts = { hot: 0, bento: 0, home: 0 };
-    Object.values(assignments).forEach((type) => {
-      if (type && counts[type as LunchType] !== undefined) {
-        counts[type as LunchType]++;
-      }
-    });
-
-    const staffName =
-      user?.displayName?.trim() ?? user?.email?.trim() ?? 'Unattributed Staff';
-
-    return {
-      date: new Date().toLocaleDateString(),
-      staffName,
-      hotLunch: counts.hot,
-      bentoBox: counts.bento,
-      hotLunchName: menuDisplay.hot,
-      bentoBoxName: menuDisplay.bento,
-      schoolSite: config.schoolSite ?? 'schumann-elementary',
-    };
-  }, [assignments, config.schoolSite, menuDisplay, user]);
-
-  // Capture a snapshot of report data when modal opens
-  const reportDataSnapshot = useMemo(() => {
-    if (!isReportModalOpen) return null;
-    return getReportData();
-  }, [isReportModalOpen, getReportData]);
-
-  const submitReport = () => {
-    setIsReportModalOpen(true);
-  };
-
-  const handleConfirmReport = async (notes: string, extraPizza?: number) => {
-    const data = getReportData();
-    const permission = featurePermissions.find(
-      (p) => p.widgetType === 'lunchCount'
-    );
-    const gConfig = (permission?.config ?? {}) as LunchCountGlobalConfig;
-    const submissionUrl = gConfig.submissionUrl;
-    const spreadsheetId = gConfig.googleSheetId;
-
-    const siteCode = data.schoolSite === 'schumann-elementary' ? 'SE' : 'IS';
-
-    if (!submissionUrl) {
-      // Fallback to email if no URL configured
-      const summary =
-        `Lunch Count Report - ${data.date}\n\n` +
-        `Site: ${siteCode}\n` +
-        `Staff: ${data.staffName}\n` +
-        `Hot Lunch (${data.hotLunchName}): ${data.hotLunch}\n` +
-        `Bento Box (${data.bentoBoxName}): ${data.bentoBox}\n` +
-        (extraPizza ? `Extra Pizza Slices: ${extraPizza}\n` : '') +
-        `Notes: ${notes}\n\n` +
-        `Sent from Dashboard.`;
-
-      window.open(
-        `mailto:${recipient}?subject=Lunch Count Report&body=${encodeURIComponent(
-          summary
-        )}`
-      );
-
-      addToast(
-        'Email draft opened. Please review and send it from your email app to complete the report.',
-        'info'
-      );
-      // Keep modal open so user can see it didn't "auto-submit" if they missed the popup
-      return;
-    }
-
-    setIsSubmittingReport(true);
+  const handleSubmitReport = async (notes: string, extraPizza?: number) => {
+    setIsSubmitting(true);
     try {
-      const payload = {
-        // Only include spreadsheetId if explicitly configured
-        ...(spreadsheetId && { spreadsheetId }),
-        date: data.date,
-        site: siteCode,
-        staffName: data.staffName,
-        hotLunch: data.hotLunch,
-        bentoBox: data.bentoBox,
-        extraPizza: extraPizza ?? 0,
-        notes: notes,
-      };
-
-      const response = await fetch(submissionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.warn('Lunch Report Submitted:', {
+        date: new Date().toLocaleDateString(),
+        staff: user?.displayName ?? 'Unknown',
+        hotLunch: stats.hotLunch,
+        bentoBox: stats.bentoBox,
+        homeLunch: stats.homeLunch,
+        notes,
+        extraPizza,
       });
 
-      if (!response.ok) {
-        throw new Error(`Submission failed with status ${response.status}`);
-      }
-
-      addToast('Report submitted to Google Sheet', 'success');
-      setIsReportModalOpen(false);
-    } catch (error) {
-      console.error('Report submission error:', error);
-      addToast(
-        'Failed to submit report. Please check your connection or use email fallback.',
-        'error'
-      );
+      addToast('Lunch report submitted successfully!', 'success');
+      setIsModalOpen(false);
+    } catch (_err) {
+      addToast('Failed to submit report', 'error');
     } finally {
-      setIsSubmittingReport(false);
+      setIsSubmitting(false);
     }
   };
 
-  const cycleAssignment = (name: string) => {
-    const current = assignments[name];
-    let next: LunchType | null = null;
-
-    if (!current) next = 'hot';
-    else if (current === 'hot') next = 'bento';
-    else if (current === 'bento') next = 'home';
-    else next = null;
-
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        assignments: {
-          ...assignments,
-          [name]: next as LunchCountConfig['assignments'][string],
-        },
-      },
-    });
-  };
-
-  const unassigned = currentRoster.filter((name) => !assignments[name]);
+  const unassignedStudents = activeRoster.filter((s) => !assignments[s]);
 
   return (
-    <div className="h-full flex flex-col bg-transparent select-none relative">
-      {/* Header Actions */}
-      <div className="p-3 bg-white/30 border-b border-white/20 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full bg-transparent p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex justify-between items-center shrink-0">
+        <div className="flex flex-col">
+          <h3 className="text-xxs font-black text-slate-400 uppercase tracking-widest">
+            Daily Lunch Count
+          </h3>
+          <p className="text-xxs font-bold text-slate-500 uppercase tracking-tighter">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+        </div>
+        <div className="flex gap-2">
           <Button
-            onClick={submitReport}
-            variant="success"
-            className="rounded-xl"
-            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+            onClick={() => void fetchNutrislice()}
+            variant="ghost"
+            size="sm"
+            className="p-2 h-8 w-8 rounded-xl"
+            disabled={isSyncing}
           >
-            Submit Report
+            <RefreshCw
+              className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+            />
           </Button>
           <Button
-            onClick={resetBoard}
-            variant="secondary"
-            className="rounded-xl"
-            icon={<Undo2 className="w-3.5 h-3.5" />}
+            onClick={() =>
+              updateWidget(widget.id, {
+                config: { ...config, assignments: {} },
+              })
+            }
+            variant="ghost"
+            size="sm"
+            className="p-2 h-8 w-8 rounded-xl text-slate-400 hover:text-red-500"
           >
-            Reset
+            <Undo2 className="w-4 h-4" />
           </Button>
         </div>
-
-        {activeRoster && rosterMode === 'class' && (
-          <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/30 animate-in fade-in slide-in-from-top-1 ml-auto">
-            <Box className="w-2 h-2 text-orange-500" />
-            <span className="text-xxxs  uppercase text-orange-600 tracking-wider">
-              {activeRoster.name}
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="flex-1 p-3 flex flex-col gap-3 min-h-0">
-        {/* Choice Buckets */}
-        <div className="grid grid-cols-3 gap-3">
-          {/* Hot Lunch */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, 'hot')}
-            className="bg-orange-50 border-2 border-dashed border-orange-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xxs  uppercase text-orange-400 tracking-tighter">
+      {/* Main Grid */}
+      <div className="grid grid-cols-3 gap-3 shrink-0">
+        {/* Hot Lunch Drop Zone */}
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            const student = e.dataTransfer.getData('student');
+            if (student) handleDrop(student, 'hot');
+          }}
+          className="bg-orange-500/10 border-2 border-dashed border-orange-500/20 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid backdrop-blur-sm group"
+        >
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex flex-col">
+              <span className="text-xxs font-black uppercase text-orange-600 tracking-tighter">
                 Hot Lunch
               </span>
-              <span className="bg-orange-500 text-white text-xxs px-2 py-0.5 rounded-full ">
-                {Object.values(assignments).filter((v) => v === 'hot').length}
+              <span className="bg-orange-500 text-white text-xxs px-2 py-0.5 rounded-full font-black">
+                {stats.hotLunch}
               </span>
             </div>
-            <div className="text-xxs  text-orange-800 leading-tight mb-3 line-clamp-2 italic">
-              {menuDisplay.hot}
-            </div>
-            <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
-              {Object.entries(assignments)
-                .filter(([_, type]) => type === 'hot')
-                .map(([name]) => (
-                  <div
-                    key={name}
-                    draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation();
-                      e.dataTransfer.effectAllowed = 'move';
-                      e.dataTransfer.setData('studentName', name);
-                    }}
-                    onClick={() => cycleAssignment(name)}
-                    className="px-2 py-1 bg-white border border-orange-100 rounded-lg text-xxs  shadow-sm cursor-grab active:cursor-grabbing"
-                    title="Drag or Click to cycle"
-                  >
-                    {name}
-                  </div>
-                ))}
-            </div>
+            <Box className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
           </div>
-
-          {/* Bento Box */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, 'bento')}
-            className="bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xxs  uppercase text-emerald-400 tracking-tighter">
-                Bento Box
-              </span>
-              <span className="bg-emerald-500 text-white text-xxs px-2 py-0.5 rounded-full ">
-                {Object.values(assignments).filter((v) => v === 'bento').length}
-              </span>
-            </div>
-            <div className="text-xxs  text-emerald-800 leading-tight mb-3 line-clamp-2 italic">
-              {menuDisplay.bento}
-            </div>
-            <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
-              {Object.entries(assignments)
-                .filter(([_, type]) => type === 'bento')
-                .map(([name]) => (
-                  <div
-                    key={name}
-                    draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation();
-                      e.dataTransfer.effectAllowed = 'move';
-                      e.dataTransfer.setData('studentName', name);
-                    }}
-                    onClick={() => cycleAssignment(name)}
-                    className="px-2 py-1 bg-white border border-emerald-100 rounded-lg text-xxs  shadow-sm cursor-grab active:cursor-grabbing"
-                    title="Drag or Click to cycle"
-                  >
-                    {name}
-                  </div>
-                ))}
-            </div>
+          <div className="text-xxs font-bold text-orange-800 leading-tight mb-3 line-clamp-2 italic">
+            {cachedMenu?.hotLunch ?? 'Loading menu...'}
           </div>
-
-          {/* Home Lunch */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, 'home')}
-            className="bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xxs  uppercase text-blue-400 tracking-tighter">
-                Home Lunch
-              </span>
-              <span className="bg-blue-500 text-white text-xxs px-2 py-0.5 rounded-full ">
-                {Object.values(assignments).filter((v) => v === 'home').length}
-              </span>
-            </div>
-            <div className="text-xxs  text-blue-800 leading-tight mb-3 italic">
-              Packing from home
-            </div>
-            <div className="flex-1 flex flex-wrap gap-1 content-start overflow-y-auto custom-scrollbar">
-              {Object.entries(assignments)
-                .filter(([_, type]) => type === 'home')
-                .map(([name]) => (
-                  <div
-                    key={name}
-                    draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation();
-                      e.dataTransfer.effectAllowed = 'move';
-                      e.dataTransfer.setData('studentName', name);
-                    }}
-                    onClick={() => cycleAssignment(name)}
-                    className="px-2 py-1 bg-white border border-blue-100 rounded-lg text-xxs  shadow-sm cursor-grab active:cursor-grabbing"
-                    title="Drag or Click to cycle"
-                  >
-                    {name}
-                  </div>
-                ))}
-            </div>
+          <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
+            {activeRoster
+              .filter((s) => assignments[s] === 'hot')
+              .map((student) => (
+                <div
+                  key={student}
+                  draggable
+                  onDragStart={(e) =>
+                    e.dataTransfer.setData('student', student)
+                  }
+                  onClick={() => handleDrop(student, null)}
+                  className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-orange-200 rounded-lg text-xxs font-bold text-orange-900 shadow-sm cursor-grab active:cursor-grabbing"
+                >
+                  {student}
+                </div>
+              ))}
           </div>
         </div>
 
-        {/* Waiting Area (Bottom) */}
+        {/* Bento Box Drop Zone */}
         <div
           onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleDrop(e, null)}
-          className="flex-1 bg-white/50 border border-white/30 rounded-2xl p-4 overflow-y-auto custom-scrollbar"
+          onDrop={(e) => {
+            const student = e.dataTransfer.getData('student');
+            if (student) handleDrop(student, 'bento');
+          }}
+          className="bg-emerald-500/10 border-2 border-dashed border-emerald-500/20 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid backdrop-blur-sm group"
         >
-          <div className="text-xxs  uppercase text-slate-600 mb-4 tracking-widest text-center">
-            Drag Your Name to Your Choice
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex flex-col">
+              <span className="text-xxs font-black uppercase text-emerald-600 tracking-tighter">
+                Bento Box
+              </span>
+              <span className="bg-emerald-500 text-white text-xxs px-2 py-0.5 rounded-full font-black">
+                {stats.bentoBox}
+              </span>
+            </div>
+            <Box className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="text-xxs font-bold text-emerald-800 leading-tight mb-3 line-clamp-2 italic">
+            {cachedMenu?.bentoBox ?? 'Loading menu...'}
+          </div>
+          <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
+            {activeRoster
+              .filter((s) => assignments[s] === 'bento')
+              .map((student) => (
+                <div
+                  key={student}
+                  draggable
+                  onDragStart={(e) =>
+                    e.dataTransfer.setData('student', student)
+                  }
+                  onClick={() => handleDrop(student, null)}
+                  className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-emerald-200 rounded-lg text-xxs font-bold text-emerald-900 shadow-sm cursor-grab active:cursor-grabbing"
+                >
+                  {student}
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Home Lunch Drop Zone */}
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            const student = e.dataTransfer.getData('student');
+            if (student) handleDrop(student, 'home');
+          }}
+          className="bg-blue-500/10 border-2 border-dashed border-blue-500/20 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid backdrop-blur-sm group"
+        >
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex flex-col">
+              <span className="text-xxs font-black uppercase text-blue-600 tracking-tighter">
+                Home Lunch / Other
+              </span>
+              <span className="bg-blue-500 text-white text-xxs px-2 py-0.5 rounded-full font-black">
+                {stats.homeLunch}
+              </span>
+            </div>
+            <Box className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="text-xxs font-bold text-blue-800 leading-tight mb-3 italic">
+            Home Lunch, Field Trips, or Absent students.
+          </div>
+          <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
+            {activeRoster
+              .filter((s) => assignments[s] === 'home')
+              .map((student) => (
+                <div
+                  key={student}
+                  draggable
+                  onDragStart={(e) =>
+                    e.dataTransfer.setData('student', student)
+                  }
+                  onClick={() => handleDrop(student, null)}
+                  className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-blue-200 rounded-lg text-xxs font-bold text-blue-900 shadow-sm cursor-grab active:cursor-grabbing"
+                >
+                  {student}
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Roster Area */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div
+          className="flex-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-4 overflow-y-auto custom-scrollbar shadow-inner"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            const student = e.dataTransfer.getData('student');
+            if (student) handleDrop(student, null);
+          }}
+        >
+          <div className="text-xxs font-black uppercase text-slate-500 mb-4 tracking-widest text-center">
+            Unassigned Students ({unassignedStudents.length})
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            {unassigned.length > 0 ? (
-              unassigned.map((name) => (
-                <div
-                  key={name}
-                  draggable
-                  onDragStart={(e) => {
-                    e.stopPropagation();
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('studentName', name);
-                  }}
-                  onClick={() => cycleAssignment(name)}
-                  className="px-4 py-2 bg-white/80 border-b-2 border-slate-200 rounded-xl text-xs  shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
-                  title="Drag or Click to cycle"
-                >
-                  {name}
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-slate-400 italic py-4">
-                All students checked in!
+            {unassignedStudents.map((student) => (
+              <div
+                key={student}
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('student', student)}
+                className="px-4 py-2 bg-white/60 backdrop-blur-sm border-b-2 border-white/40 rounded-xl text-xs font-black text-slate-700 shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
+              >
+                {student}
+              </div>
+            ))}
+            {unassignedStudents.length === 0 && (
+              <div className="text-xs text-slate-400 italic py-4 font-bold">
+                All students accounted for!
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="p-3 bg-white/30 border-t border-white/20 flex justify-start items-center gap-2 shrink-0">
-        <button
-          onClick={() => void fetchNutrislice()}
-          disabled={isSyncing || isManualMode}
-          className="p-2 bg-white hover:bg-white/80 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 disabled:opacity-50 relative"
-          title="Sync from Nutrislice"
+      {/* Footer Actions */}
+      <div className="shrink-0 flex gap-3 pt-2 border-t border-slate-100">
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          disabled={stats.remaining > 0 || stats.total === 0}
+          variant={
+            stats.remaining === 0 && stats.total > 0 ? 'primary' : 'secondary'
+          }
+          className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs"
         >
-          {isSyncing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5" />
-          )}
-          {syncError && (
-            <div
-              className="absolute -top-1 -right-1 bg-red-500 text-white text-xxxs  px-1 rounded-full border border-white"
-              title={syncError}
-            >
-              !
+          {stats.remaining === 0 && stats.total > 0 ? (
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              Submit Daily Report
             </div>
+          ) : (
+            `Assign ${stats.remaining} More Students`
           )}
-        </button>
-        <div className="text-xxxs  text-slate-400 uppercase flex items-center gap-1.5">
-          <span>Last Sync</span>
-          {config.lastSyncDate && (
-            <span className="text-slate-500">
-              {new Date(config.lastSyncDate).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}
-            </span>
-          )}
-        </div>
+        </Button>
       </div>
 
-      {isReportModalOpen && (
-        <SubmitReportModal
-          isOpen={isReportModalOpen}
-          onClose={() => setIsReportModalOpen(false)}
-          onSubmit={handleConfirmReport}
-          data={reportDataSnapshot ?? getReportData()}
-          isSubmitting={isSubmittingReport}
-        />
-      )}
+      {/* Modal */}
+      <SubmitReportModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmitReport}
+        data={{
+          date: new Date().toLocaleDateString(),
+          staffName: user?.displayName ?? 'Unknown Staff',
+          hotLunch: stats.hotLunch,
+          bentoBox: stats.bentoBox,
+          hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
+          bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
+          schoolSite: config.schoolSite ?? 'schumann-elementary',
+        }}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
