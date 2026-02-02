@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   TimeToolConfig,
   WidgetData,
@@ -9,7 +9,6 @@ import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell, Delete, Check, X } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
-import { useScaledFont } from '../../hooks/useScaledFont';
 
 interface Props {
   widget: WidgetData;
@@ -24,27 +23,6 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeField, setActiveField] = useState<'min' | 'sec'>('min');
   const [editValues, setEditValues] = useState({ min: '00', sec: '00' });
-
-  const { w, h } = widget;
-
-  // Dynamic sizing based on current window dimensions
-  const baseFontSize = useScaledFont(
-    w,
-    h,
-    config.visualType === 'visual' ? 0.8 : 1.2,
-    24,
-    200
-  );
-  const visualSize = useMemo(() => Math.min(w * 0.7, h * 0.55), [w, h]);
-  const strokeWidth = useMemo(
-    () => Math.max(4, visualSize * 0.05),
-    [visualSize]
-  );
-  const radius = useMemo(
-    () => (visualSize - strokeWidth) / 2,
-    [visualSize, strokeWidth]
-  );
-  const circumference = useMemo(() => 2 * Math.PI * radius, [radius]);
 
   // Local state for the smooth display time while running
   const [runningDisplayTime, setRunningDisplayTime] = useState(
@@ -291,7 +269,10 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Mode Tabs */}
-      <div className="px-4 flex gap-3 border-b border-white/10 shrink-0" role="tablist">
+      <div
+        className="px-4 flex gap-3 border-b border-white/10 shrink-0"
+        role="tablist"
+      >
         <button
           role="tab"
           aria-selected={config.mode === 'timer'}
@@ -334,7 +315,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Center: Time Display */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-0">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 relative min-h-0">
         {isEditing ? (
           <div className="flex flex-col items-center w-full max-w-[280px] animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-2 mb-4 font-mono text-4xl font-bold tabular-nums">
@@ -410,19 +391,18 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
           <>
             {isVisual && (
               <svg
-                className="absolute"
-                width={visualSize}
-                height={visualSize}
-                viewBox={`0 0 ${visualSize} ${visualSize}`}
+                className="absolute p-4 max-h-full max-w-full"
+                viewBox="0 0 220 220"
+                preserveAspectRatio="xMidYMid meet"
               >
                 <circle
                   className="opacity-10"
                   stroke="currentColor"
-                  strokeWidth={strokeWidth}
+                  strokeWidth="10"
                   fill="transparent"
-                  r={radius}
-                  cx={visualSize / 2}
-                  cy={visualSize / 2}
+                  r="95"
+                  cx="110"
+                  cy="110"
                 />
                 <circle
                   className="transition-all duration-300"
@@ -433,22 +413,22 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                         ? STANDARD_COLORS.amber
                         : STANDARD_COLORS.blue
                   }
-                  strokeWidth={strokeWidth}
+                  strokeWidth="10"
                   strokeLinecap="round"
                   fill="transparent"
-                  r={radius}
-                  cx={visualSize / 2}
-                  cy={visualSize / 2}
-                  strokeDasharray={circumference}
+                  r="95"
+                  cx="110"
+                  cy="110"
+                  strokeDasharray="597"
                   strokeDashoffset={
-                    circumference -
+                    597 -
                     (config.mode === 'timer'
                       ? displayTime / config.duration
                       : 1) *
-                      circumference
+                      597
                   }
                   style={{
-                    transform: `rotate(-90deg)`,
+                    transform: 'rotate(-90deg)',
                     transformOrigin: '50% 50%',
                   }}
                 />
@@ -457,8 +437,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             <button
               onClick={startEditing}
               data-testid="time-display"
-              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
-              style={{ fontSize: baseFontSize }}
+              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
               disabled={config.isRunning || config.mode !== 'timer'}
             >
               {formatTime(displayTime)}
