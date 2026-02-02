@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimerConfig } from '@/types';
-import { getButtonAccessibilityProps } from '@/utils/accessibility';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -34,6 +33,9 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as TimerConfig;
 
   // States
+  const [sessionDuration, setSessionDuration] = useState(
+    config.duration ?? 300
+  );
   const [timeLeft, setTimeLeft] = useState(config.duration ?? 300);
   const [isActive, setIsActive] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -64,9 +66,10 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Sync with config if the permanent setting changes
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessionDuration(config.duration);
+
     setTimeLeft(config.duration);
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [config.duration]);
 
   useEffect(() => {
@@ -102,7 +105,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     setIsActive(false);
     setIsDone(false);
     setIsEditing(false);
-    setTimeLeft(config.duration);
+    setTimeLeft(sessionDuration);
   };
 
   const addTime = (seconds: number) => {
@@ -145,6 +148,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const confirmEdit = () => {
     const totalSeconds =
       parseInt(editValues.min) * 60 + parseInt(editValues.sec);
+    setSessionDuration(totalSeconds);
     setTimeLeft(totalSeconds);
     setIsEditing(false);
     setIsDone(false);
@@ -173,7 +177,15 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {!isEditing ? (
         <>
           <div
-            {...getButtonAccessibilityProps(startEditing)}
+            role="button"
+            tabIndex={0}
+            onClick={startEditing}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                startEditing();
+              }
+            }}
             className={`font-mono font-bold leading-none select-none transition-all cursor-pointer tabular-nums hover:text-blue-500 ${
               isDone
                 ? 'text-red-600 scale-110 animate-pulse'
@@ -181,7 +193,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   ? 'text-red-500 scale-105'
                   : 'text-slate-800'
             }`}
-            style={{ fontSize: '8rem' }}
+            style={{ fontSize: 'clamp(3rem, 12vw, 5rem)' }}
           >
             {minutes.toString().padStart(2, '0')}:
             {seconds.toString().padStart(2, '0')}

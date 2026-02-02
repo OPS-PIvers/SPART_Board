@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
-import { getButtonAccessibilityProps } from '@/utils/accessibility';
 import {
   collection,
   onSnapshot,
@@ -237,7 +236,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       activeNotebook.assetUrls && activeNotebook.assetUrls.length > 0;
 
     return (
-      <div className="w-full h-full flex flex-col relative overflow-hidden">
+      <div className="w-full h-full bg-slate-100 flex flex-col relative rounded-2xl overflow-hidden">
         {/* Toolbar */}
         <div className="absolute top-2 right-2 left-2 z-10 flex justify-between items-start pointer-events-none">
           <div className="bg-white/90 backdrop-blur rounded-lg px-3 py-2 shadow-sm pointer-events-auto border border-slate-200">
@@ -342,8 +341,8 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Library
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white/10">
+    <div className="w-full h-full bg-white flex flex-col">
+      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
         <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
           <Book className="w-4 h-4 text-indigo-500" /> Notebook Library
         </h2>
@@ -387,9 +386,15 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
               return (
                 <div
                   key={notebook.id}
-                  {...getButtonAccessibilityProps(() =>
-                    handleSelect(notebook.id)
-                  )}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleSelect(notebook.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelect(notebook.id);
+                    }
+                  }}
                   className="group relative aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all border border-slate-200"
                 >
                   {firstPageUrl ? (

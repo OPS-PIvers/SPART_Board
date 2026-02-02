@@ -244,9 +244,7 @@ describe('SmartNotebookWidget', () => {
       .getAllByRole('button')
       .filter((btn) => btn.querySelector('svg.lucide-trash2'));
     // Filter to ensure we get the actual button, not the parent div role="button"
-    const actualDeleteBtn = deleteButtons.find(
-      (btn) => btn.tagName === 'BUTTON'
-    );
+    const actualDeleteBtn = deleteButtons.find(btn => btn.tagName === 'BUTTON');
     if (!actualDeleteBtn) throw new Error('Delete button not found');
     fireEvent.click(actualDeleteBtn);
 
