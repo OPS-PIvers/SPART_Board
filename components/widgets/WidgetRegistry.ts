@@ -102,6 +102,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SmartNotebookWidget'),
     'SmartNotebookWidget'
   ),
+  recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearWidget'),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -153,6 +154,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   workSymbols: DefaultSettings,
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
+  recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearSettings'),
 };
 
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
@@ -313,6 +315,12 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   smartNotebook: {
     baseWidth: 600,
     baseHeight: 500,
+    canSpread: true,
+    skipScaling: true,
+  },
+  recessGear: {
+    baseWidth: 250,
+    baseHeight: 280,
     canSpread: true,
     skipScaling: true,
   },
