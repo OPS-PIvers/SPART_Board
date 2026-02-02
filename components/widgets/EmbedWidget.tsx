@@ -1,52 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
-
-const convertToEmbedUrl = (url: string): string => {
-  if (!url) return '';
-  const embedUrl = url.trim();
-
-  // YouTube
-  const ytMatch =
-    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.exec(
-      embedUrl
-    );
-  if (ytMatch) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  }
-
-  // Google Docs
-  if (embedUrl.includes('docs.google.com/document')) {
-    return embedUrl.replace(/\/edit.*$/, '/preview');
-  }
-
-  // Google Slides
-  if (embedUrl.includes('docs.google.com/presentation')) {
-    return embedUrl.replace(/\/edit.*$/, '/embed');
-  }
-
-  // Google Sheets
-  if (embedUrl.includes('docs.google.com/spreadsheets')) {
-    return embedUrl.replace(/\/edit.*$/, '/preview');
-  }
-
-  // Google Forms
-  if (
-    embedUrl.includes('docs.google.com/forms') &&
-    !embedUrl.includes('embedded=true')
-  ) {
-    const separator = embedUrl.includes('?') ? '&' : '?';
-    return `${embedUrl}${separator}embedded=true`;
-  }
-
-  return embedUrl;
-};
+import { convertToEmbedUrl } from '../../utils/urlHelpers';
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;
-  const { mode = 'url', url = '', html = '' } = config;
+  const { mode = 'url', url = '', html = '', refreshInterval = 0 } = config;
   const embedUrl = convertToEmbedUrl(url);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (refreshInterval <= 0) return;
+
+    const interval = setInterval(
+      () => {
+        setRefreshKey((prev) => prev + 1);
+      },
+      refreshInterval * 60 * 1000
+    );
+
+    return () => clearInterval(interval);
+  }, [refreshInterval]);
+
+  const sandbox = React.useMemo(() => {
+    let base = 'allow-scripts allow-forms allow-popups';
+    if (mode === 'url') {
+      base += ' allow-modals';
+      try {
+        const parsedUrl = new URL(
+          url.startsWith('http') ? url : `https://${url}`
+        );
+        const hostname = parsedUrl.hostname.toLowerCase();
+        const allowSameOriginHosts = new Set([
+          'docs.google.com',
+          'www.youtube.com',
+          'youtube.com',
+        ]);
+        if (allowSameOriginHosts.has(hostname)) {
+          base += ' allow-same-origin';
+        }
+      } catch (_e) {
+        // Fallback for malformed URLs
+      }
+    }
+    return base;
+  }, [mode, url]);
 
   if (mode === 'url' && !url) {
     return (
@@ -83,10 +82,12 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
       <iframe
+        key={refreshKey}
+        title="Embed Content"
         src={mode === 'url' ? embedUrl : undefined}
         srcDoc={mode === 'code' ? html : undefined}
         className="flex-1 w-full border-none"
-        sandbox="allow-scripts allow-forms allow-popups"
+        sandbox={sandbox}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
       />
@@ -97,7 +98,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as EmbedConfig;
-  const { mode = 'url', url = '', html = '' } = config;
+  const { mode = 'url', url = '', html = '', refreshInterval = 0 } = config;
 
   return (
     <div className="space-y-4">
@@ -197,6 +198,42 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         </div>
       )}
+
+      {/* Auto-Refresh Setting */}
+      <div className="pt-4 border-t border-slate-100">
+        <label
+          htmlFor="refresh-interval"
+          className="text-xxs  text-slate-500 uppercase mb-2 block tracking-widest"
+        >
+          Auto-Refresh
+        </label>
+        <select
+          id="refresh-interval"
+          value={refreshInterval}
+          onChange={(e) =>
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                refreshInterval: parseInt(e.target.value, 10),
+              },
+            })
+          }
+          className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-900"
+        >
+          {[
+            { value: 0, label: 'Disabled' },
+            { value: 1, label: 'Every 1 Minute' },
+            { value: 5, label: 'Every 5 Minutes' },
+            { value: 15, label: 'Every 15 Minutes' },
+            { value: 30, label: 'Every 30 Minutes' },
+            { value: 60, label: 'Every 1 Hour' },
+          ].map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 };

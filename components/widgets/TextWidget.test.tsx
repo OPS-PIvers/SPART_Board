@@ -4,7 +4,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TextWidget, TextSettings } from './TextWidget';
 import { WidgetData, TextConfig } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
-import { useScaledFont } from '../../hooks/useScaledFont';
 
 // Mock useDashboard
 const mockUpdateWidget = vi.fn();
@@ -13,7 +12,6 @@ const mockDashboardContext = {
 };
 
 vi.mock('../../context/useDashboard');
-vi.mock('../../hooks/useScaledFont');
 
 describe('TextWidget', () => {
   beforeEach(() => {
@@ -21,7 +19,6 @@ describe('TextWidget', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       mockDashboardContext
     );
-    (useScaledFont as unknown as ReturnType<typeof vi.fn>).mockReturnValue(18);
   });
 
   const mockConfig: TextConfig = {
@@ -58,7 +55,7 @@ describe('TextWidget', () => {
     const { container } = render(<TextWidget widget={mockWidget} />);
     const contentDiv = container.querySelector('.relative.z-10') as HTMLElement;
     expect(contentDiv.style.fontSize).toBeDefined();
-    expect(contentDiv.style.fontSize).toContain('px');
+    expect(contentDiv.style.fontSize).toContain('cqmin');
   });
 
   it('updates content on blur', () => {

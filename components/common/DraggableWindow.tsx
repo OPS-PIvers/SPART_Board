@@ -376,27 +376,35 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Only close if this window or its contents are focused
-        const isFocused =
-          windowRef.current === document.activeElement ||
-          windowRef.current?.contains(document.activeElement);
+    const handleEscapePress = (e: Event) => {
+      const customEvent = e as CustomEvent<{ widgetId: string }>;
+      if (customEvent.detail?.widgetId !== widget.id) return;
 
-        if (isFocused) {
-          if (skipCloseConfirmation) {
-            removeWidget(widget.id);
-          } else {
-            setShowConfirm(true);
-            setShowTools(false);
-          }
+      if (showConfirm) {
+        setShowConfirm(false);
+      } else if (widget.flipped) {
+        updateWidget(widget.id, { flipped: false });
+      } else {
+        if (skipCloseConfirmation) {
+          removeWidget(widget.id);
+        } else {
+          setShowConfirm(true);
+          setShowTools(false);
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [widget.id, skipCloseConfirmation, removeWidget]);
+    window.addEventListener('widget-escape-press', handleEscapePress);
+    return () =>
+      window.removeEventListener('widget-escape-press', handleEscapePress);
+  }, [
+    widget.id,
+    widget.flipped,
+    showConfirm,
+    skipCloseConfirmation,
+    removeWidget,
+    updateWidget,
+  ]);
 
   return (
     <>
@@ -419,6 +427,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
+          containerType: 'size',
           opacity: widget.minimized ? 0 : 1,
           pointerEvents: widget.minimized ? 'none' : 'auto',
           touchAction: 'none', // Critical for preventing scroll interference
