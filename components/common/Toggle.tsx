@@ -23,10 +23,10 @@ export const Toggle: React.FC<ToggleProps> = ({
 }) => {
   const sizes = {
     sm: {
-      button: 'w-8 h-4.5',
+      button: 'w-10 h-5',
       knob: 'w-3 h-3',
-      translate: 'translate-x-3.5',
-      padding: 'top-0.75 left-0.75',
+      translate: 'translate-x-4',
+      padding: 'top-1 left-1.5',
     },
     md: {
       button: 'w-11 h-6',
@@ -47,13 +47,32 @@ export const Toggle: React.FC<ToggleProps> = ({
       onClick={() => !disabled && onChange(!checked)}
       className={`
         ${currentSize.button}
-        rounded-full relative transition-colors duration-200 ease-in-out
+        rounded-full relative transition-all duration-200 ease-in-out
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue-primary
         ${checked ? activeColor : 'bg-slate-300'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
+        flex-shrink-0
       `}
     >
+      {/* State Labels */}
+      <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
+        <span
+          className={`text-[8px] font-black leading-none text-white transition-opacity duration-200 ${
+            checked ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          ON
+        </span>
+        <span
+          className={`text-[8px] font-black leading-none text-slate-500 transition-opacity duration-200 ${
+            !checked ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          OFF
+        </span>
+      </span>
+
       <span
         className={`
           absolute ${currentSize.padding}
