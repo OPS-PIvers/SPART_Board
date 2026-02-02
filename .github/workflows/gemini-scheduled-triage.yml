@@ -27,8 +27,6 @@ defaults:
 
 jobs:
   triage:
-    if: |-
-      ${{ vars.GCP_WIF_PROVIDER || secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}
     runs-on: 'ubuntu-latest'
     timeout-minutes: 7
     permissions:

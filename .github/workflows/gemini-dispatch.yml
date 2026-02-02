@@ -73,6 +73,7 @@ jobs:
       request: '${{ steps.extract_command.outputs.request }}'
       additional_context: '${{ steps.extract_command.outputs.additional_context }}'
       issue_number: '${{ github.event.pull_request.number || github.event.issue.number }}'
+      secrets_available: '${{ steps.extract_command.outputs.secrets_available }}'
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
@@ -92,11 +93,17 @@ jobs:
         env:
           EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
+          HAS_GEMINI_KEY: '${{ secrets.GEMINI_API_KEY != '' || secrets.GOOGLE_API_KEY != '' }}'
+          HAS_GCP_WIF: '${{ vars.GCP_WIF_PROVIDER != '' }}'
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST;
+            const hasGeminiKey = process.env.HAS_GEMINI_KEY === 'true';
+            const hasGcpWif = process.env.HAS_GCP_WIF === 'true';
+            
             core.setOutput('request', request);
+            core.setOutput('secrets_available', (hasGeminiKey || hasGcpWif).toString());
 
             if (eventType === 'pull_request.opened') {
               core.setOutput('command', 'review');
@@ -131,7 +138,7 @@ jobs:
   review:
     needs: 'dispatch'
     if: |-
-      ${{ needs.dispatch.outputs.command == 'review' }}
+      ${{ needs.dispatch.outputs.command == 'review' && needs.dispatch.outputs.secrets_available == 'true' }}
     uses: './.github/workflows/gemini-review.yml'
     permissions:
       contents: 'read'
@@ -140,12 +147,14 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
-    secrets: 'inherit'
+    secrets:
+      GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+      GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'
 
   triage:
     needs: 'dispatch'
     if: |-
-      ${{ needs.dispatch.outputs.command == 'triage' }}
+      ${{ needs.dispatch.outputs.command == 'triage' && needs.dispatch.outputs.secrets_available == 'true' }}
     uses: './.github/workflows/gemini-triage.yml'
     permissions:
       contents: 'read'
@@ -154,12 +163,14 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
-    secrets: 'inherit'
+    secrets:
+      GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+      GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'
 
   invoke:
     needs: 'dispatch'
     if: |-
-      ${{ needs.dispatch.outputs.command == 'invoke' }}
+      ${{ needs.dispatch.outputs.command == 'invoke' && needs.dispatch.outputs.secrets_available == 'true' }}
     uses: './.github/workflows/gemini-invoke.yml'
     permissions:
       contents: 'read'
@@ -168,4 +179,6 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
-    secrets: 'inherit'
+    secrets:
+      GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+      GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'

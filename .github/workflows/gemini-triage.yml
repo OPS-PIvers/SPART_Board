@@ -7,6 +7,11 @@ on:
         type: 'string'
         description: 'Any additional context from the request'
         required: false
+    secrets:
+      GEMINI_API_KEY:
+        required: false
+      GOOGLE_API_KEY:
+        required: false
 
 concurrency:
   group: '${{ github.workflow }}-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'
@@ -18,8 +23,6 @@ defaults:
 
 jobs:
   triage:
-    if: |-
-      ${{ vars.GCP_WIF_PROVIDER || secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}
     runs-on: 'ubuntu-latest'
     timeout-minutes: 7
     outputs:
