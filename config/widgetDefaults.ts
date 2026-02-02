@@ -21,7 +21,7 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     w: 300,
     h: 250,
     config: {
-      content: 'Double click to edit...',
+      content: 'Click to edit...',
       bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },

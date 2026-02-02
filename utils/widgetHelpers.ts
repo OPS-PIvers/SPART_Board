@@ -36,7 +36,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     },
     traffic: {},
     text: {
-      content: 'Double click to edit...',
+      content: 'Click to edit...',
       bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },
