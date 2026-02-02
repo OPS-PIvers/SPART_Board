@@ -21,6 +21,7 @@ import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
+import { Button } from './Button';
 
 import { Z_INDEX } from '../../config/zIndex';
 
@@ -452,24 +453,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     Close widget? Data will be lost.
                   </p>
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowConfirm(false);
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeWidget(widget.id);
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
                     >
                       Close
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -737,17 +740,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
                   </div>
                   <div className="flex items-center -mr-1">
-                    <button
+                    <Button
+                      variant="ghost-secondary"
+                      size="icon-sm"
+                      shape="pill"
                       onClick={() => {
                         updateWidget(widget.id, { flipped: true });
                         setShowTools(false);
                       }}
-                      className="p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
                       title="Settings"
                     >
                       <Settings className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost-danger"
+                      size="icon-sm"
+                      shape="pill"
                       onClick={() => {
                         if (skipCloseConfirmation) {
                           removeWidget(widget.id);
@@ -756,19 +764,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           setShowTools(false);
                         }
                       }}
-                      className="p-1 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
                       title="Close"
                     >
                       <X className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost-secondary"
+                      size="icon-sm"
+                      shape="pill"
                       onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
-                      className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all ${
-                        isToolbarExpanded ? 'rotate-180' : ''
-                      }`}
+                      className={isToolbarExpanded ? 'rotate-180' : ''}
                     >
                       <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -790,35 +798,45 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </div>
                 )}
                 {canScreenshot && (
-                  <button
+                  <Button
+                    variant="ghost-secondary"
+                    size="icon-sm"
+                    shape="pill"
                     onClick={() => void takeScreenshot()}
                     disabled={isCapturing}
-                    className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
                     title="Take Screenshot"
                   >
                     <Camera className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 )}
                 <button
                   onClick={() => {
                     setIsAnnotating(!isAnnotating);
                     setShowTools(false);
                   }}
-                  className={`p-1.5 hover:bg-slate-800/10 rounded-full transition-all ${isAnnotating ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                  className={`p-1.5 hover:bg-slate-800/10 rounded-full transition-all flex items-center justify-center ${
+                    isAnnotating
+                      ? 'text-indigo-600 bg-indigo-50'
+                      : 'text-slate-600'
+                  }`}
                   title="Annotate"
                 >
                   <Highlighter className="w-3.5 h-3.5" />
                 </button>
-                <button
+                <Button
+                  variant="ghost-secondary"
+                  size="icon-sm"
+                  shape="pill"
                   onClick={() => duplicateWidget(widget.id)}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
                   title="Duplicate"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost-secondary"
+                  size="icon-sm"
+                  shape="pill"
                   onClick={handleMaximizeToggle}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
                   title={isMaximized ? 'Restore' : 'Maximize'}
                 >
                   {isMaximized ? (
@@ -826,14 +844,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   ) : (
                     <Maximize className="w-3.5 h-3.5" />
                   )}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost-secondary"
+                  size="icon-sm"
+                  shape="pill"
                   onClick={() => updateWidget(widget.id, { minimized: true })}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
                   title="Minimize"
                 >
                   <Minus className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>,
