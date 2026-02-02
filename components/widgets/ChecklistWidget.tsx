@@ -174,7 +174,9 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const autoFontSize = useScaledFont(widget.w, widget.h, 0.6);
+  const autoFontSize = useScaledFont(widget.w, widget.h, 0.8, {
+    mode: 'average',
+  });
   const baseFontSize = autoFontSize * scaleMultiplier;
 
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;

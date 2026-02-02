@@ -99,7 +99,8 @@ export const ScoreboardItem = React.memo(
         className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
       >
         <div
-          className={`text-[10px] font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+          className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
+          style={{ fontSize: `${Math.max(10, scoreFontSize * 0.2)}px` }}
         >
           {team.name}
         </div>
@@ -112,15 +113,29 @@ export const ScoreboardItem = React.memo(
         <div className="flex gap-2 opacity-100 transition-opacity">
           <button
             onClick={() => onUpdateScore(team.id, -1)}
-            className={`p-1.5 bg-white/40 ${styles.button} rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
+            aria-label="Decrease score"
+            style={{ padding: `${scoreFontSize * 0.1}px` }}
+            className={`bg-white/40 ${styles.button} rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
           >
-            <Minus className="w-4 h-4" />
+            <Minus
+              style={{
+                width: scoreFontSize * 0.3,
+                height: scoreFontSize * 0.3,
+              }}
+            />
           </button>
           <button
             onClick={() => onUpdateScore(team.id, 1)}
-            className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
+            aria-label="Increase score"
+            style={{ padding: `${scoreFontSize * 0.1}px` }}
+            className={`${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
           >
-            <Plus className="w-4 h-4" />
+            <Plus
+              style={{
+                width: scoreFontSize * 0.3,
+                height: scoreFontSize * 0.3,
+              }}
+            />
           </button>
         </div>
       </div>

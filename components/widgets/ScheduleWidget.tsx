@@ -158,8 +158,16 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     return () => clearInterval(interval);
   }, [autoProgress, hasClock, widget.id, updateWidget]);
 
-  const taskSize = useScaledFont(widget.w, widget.h, 0.35, 14, 24);
-  const timeSize = useScaledFont(widget.w, widget.h, 0.2, 10, 14);
+  const taskSize = useScaledFont(widget.w, widget.h, 0.5, {
+    minSize: 14,
+    maxSize: 32,
+    mode: 'average',
+  });
+  const timeSize = useScaledFont(widget.w, widget.h, 0.3, {
+    minSize: 10,
+    maxSize: 18,
+    mode: 'average',
+  });
 
   const getFontClass = () => {
     if (fontFamily === 'global') {

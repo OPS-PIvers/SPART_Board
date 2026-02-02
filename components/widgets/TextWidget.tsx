@@ -16,7 +16,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     fontSize = 18,
   } = config;
 
-  const autoSize = useScaledFont(widget.w, widget.h, 0.6);
+  const autoSize = useScaledFont(widget.w, widget.h, 0.8, { mode: 'average' });
   // Normalize around 18px as the 1.0 multiplier
   const effectiveFontSize = autoSize * (fontSize / 18);
 

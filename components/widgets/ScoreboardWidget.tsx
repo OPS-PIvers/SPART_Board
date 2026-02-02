@@ -102,7 +102,11 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     [widget.id, updateWidget]
   );
 
-  const scoreFontSize = useScaledFont(widget.w, widget.h, 0.5, 24, 120);
+  const scoreFontSize = useScaledFont(widget.w, widget.h, 2.0, {
+    minSize: 32,
+    maxSize: 150,
+    mode: 'average',
+  });
 
   return (
     <div

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimerConfig } from '@/types';
+import { useScaledFont } from '@/hooks/useScaledFont';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -168,6 +169,16 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // Critical state: Red and pulsing/scaling when <= 10 seconds
   const isCritical = !isDone && timeLeft <= 10 && timeLeft > 0;
 
+  const timerFontSize = useScaledFont(widget.w, widget.h, 4.0, {
+    minSize: 48,
+    maxSize: 300,
+  });
+  const buttonSize = useScaledFont(widget.w, widget.h, 0.4, {
+    minSize: 32,
+    maxSize: 64,
+  });
+  const iconSize = buttonSize * 0.5;
+
   return (
     <div
       className={`flex flex-col items-center justify-center h-full transition-colors duration-500 rounded-xl ${
@@ -185,53 +196,62 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   ? 'text-red-500 scale-105'
                   : 'text-slate-800'
             }`}
-            style={{ fontSize: 'clamp(3rem, 12vw, 5rem)' }}
+            style={{ fontSize: `${timerFontSize}px` }}
           >
             {minutes.toString().padStart(2, '0')}:
             {seconds.toString().padStart(2, '0')}
           </div>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-6 mt-4">
             <button
               onClick={() => addTime(60)}
-              className="px-2 py-1 text-xs font-bold bg-slate-100 text-slate-500 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 shadow-sm"
             >
-              <Plus className="w-3 h-3" /> 1m
+              <Plus className="w-3.5 h-3.5" /> 1m
             </button>
             <button
               onClick={() => addTime(300)}
-              className="px-2 py-1 text-xs font-bold bg-slate-100 text-slate-500 rounded hover:bg-slate-200 transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 shadow-sm"
             >
-              <Plus className="w-3 h-3" /> 5m
+              <Plus className="w-3.5 h-3.5" /> 5m
             </button>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-6">
             <button
               onClick={toggle}
-              className={`p-3 rounded-full transition-all shadow-md ${
+              style={{ width: `${buttonSize}px`, height: `${buttonSize}px` }}
+              className={`flex items-center justify-center rounded-full transition-all shadow-lg ${
                 isActive
                   ? 'bg-amber-500 hover:bg-amber-600 text-white'
                   : 'bg-green-500 hover:bg-green-600 text-white'
               }`}
             >
               {isActive ? (
-                <Pause className="w-6 h-6" />
+                <Pause style={{ width: iconSize, height: iconSize }} />
               ) : (
-                <Play className="w-6 h-6 ml-1" />
+                <Play
+                  style={{
+                    width: iconSize,
+                    height: iconSize,
+                    marginLeft: iconSize * 0.15,
+                  }}
+                />
               )}
             </button>
             <button
               onClick={reset}
-              className="p-3 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all shadow-sm"
+              style={{ width: `${buttonSize}px`, height: `${buttonSize}px` }}
+              className="flex items-center justify-center bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all shadow-md"
             >
-              <RotateCcw className="w-6 h-6" />
+              <RotateCcw style={{ width: iconSize, height: iconSize }} />
             </button>
             <button
               onClick={startEditing}
-              className="p-3 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all shadow-sm"
+              style={{ width: `${buttonSize}px`, height: `${buttonSize}px` }}
+              className="flex items-center justify-center bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all shadow-md"
             >
-              <Edit2 className="w-6 h-6" />
+              <Edit2 style={{ width: iconSize, height: iconSize }} />
             </button>
           </div>
         </>

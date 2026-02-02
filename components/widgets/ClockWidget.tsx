@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
+import { useScaledFont } from '../../hooks/useScaledFont';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
@@ -25,8 +26,16 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     glow = false,
   } = widget.config as ClockConfig;
 
-  // Base font size for the clock at its base dimensions (280x140)
-  const baseFontSize = showSeconds ? 48 : 64;
+  // Scaled font size for the clock
+  const baseFontSize = useScaledFont(
+    widget.w,
+    widget.h,
+    showSeconds ? 3.5 : 4.5,
+    {
+      minSize: 24,
+      maxSize: 150,
+    }
+  );
 
   const hours = time.getHours();
   const displayHours = format24
@@ -110,7 +119,8 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div
-        className={`text-xxs md:text-xs  opacity-40 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+        className={`opacity-40 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+        style={{ fontSize: `${Math.max(10, baseFontSize * 0.2)}px` }}
       >
         {time.toLocaleDateString(undefined, {
           weekday: 'long',

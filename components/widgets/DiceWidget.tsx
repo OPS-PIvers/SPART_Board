@@ -101,11 +101,11 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     // Approximate size based on count (single row vs wrap)
     if (diceCount === 1) {
-      return Math.min(availableW, availableH, 160);
+      return Math.min(availableW, availableH, 300);
     }
     const maxW = availableW / Math.min(diceCount, 3) - 16;
     const maxH = availableH / Math.ceil(diceCount / 3) - 16;
-    return Math.min(maxW, maxH, 120);
+    return Math.min(maxW, maxH, 200);
   }, [widget.w, widget.h, diceCount]);
 
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
@@ -151,8 +151,12 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <button
         onClick={roll}
         disabled={isRolling}
+        style={{
+          fontSize: `${Math.max(12, diceSize * 0.15)}px`,
+          padding: `${diceSize * 0.1}px ${diceSize * 0.3}px`,
+        }}
         className={`
-          flex items-center gap-2 px-8 py-3 rounded-full  uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
+          flex items-center gap-2 rounded-full uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
           ${
             isRolling
               ? 'bg-slate-100 text-slate-400'
@@ -160,7 +164,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           }
         `}
       >
-        <RefreshCw className={`w-5 h-5 ${isRolling ? 'animate-spin' : ''}`} />
+        <RefreshCw
+          style={{ width: diceSize * 0.2, height: diceSize * 0.2 }}
+          className={`${isRolling ? 'animate-spin' : ''}`}
+        />
         {isRolling ? 'Rolling...' : 'Roll Dice'}
       </button>
     </div>

@@ -47,7 +47,11 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
     [selectedItems]
   );
 
-  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 9, 14);
+  const labelSize = useScaledFont(widget.w, widget.h, 0.4, {
+    minSize: 9,
+    maxSize: 18,
+    mode: 'average',
+  });
 
   if (displayItems.length === 0) {
     return (

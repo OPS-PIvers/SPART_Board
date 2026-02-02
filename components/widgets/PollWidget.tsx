@@ -45,8 +45,16 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const total = options.reduce((sum, o) => sum + o.votes, 0);
 
-  const questionSize = useScaledFont(widget.w, widget.h, 0.4, 14, 32);
-  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 10, 18);
+  const questionSize = useScaledFont(widget.w, widget.h, 0.8, {
+    minSize: 18,
+    maxSize: 48,
+    mode: 'average',
+  });
+  const labelSize = useScaledFont(widget.w, widget.h, 0.5, {
+    minSize: 12,
+    maxSize: 24,
+    mode: 'average',
+  });
 
   return (
     <div className={`flex flex-col h-full p-4 font-${globalStyle.fontFamily}`}>

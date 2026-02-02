@@ -301,26 +301,57 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   const getIcon = () => {
+    const iconSize = tempFontSize * 0.8;
     switch (condition.toLowerCase()) {
       case 'cloudy':
       case 'clouds':
-        return <Cloud className="w-12 h-12 text-slate-400" />;
+        return (
+          <Cloud
+            style={{ width: iconSize, height: iconSize }}
+            className="text-slate-400"
+          />
+        );
       case 'rainy':
       case 'rain':
       case 'drizzle':
-        return <CloudRain className="w-12 h-12 text-blue-400" />;
+        return (
+          <CloudRain
+            style={{ width: iconSize, height: iconSize }}
+            className="text-blue-400"
+          />
+        );
       case 'snowy':
       case 'snow':
-        return <CloudSnow className="w-12 h-12 text-blue-200" />;
+        return (
+          <CloudSnow
+            style={{ width: iconSize, height: iconSize }}
+            className="text-blue-200"
+          />
+        );
       case 'windy':
       case 'squall':
       case 'tornado':
-        return <Wind className="w-12 h-12 text-slate-500" />;
+        return (
+          <Wind
+            style={{ width: iconSize, height: iconSize }}
+            className="text-slate-500"
+          />
+        );
       case 'sunny':
       case 'clear':
-        return <Sun className="w-12 h-12 text-amber-400 animate-spin-slow" />;
+        return (
+          <Sun
+            style={{ width: iconSize, height: iconSize }}
+            className="text-amber-400 animate-spin-slow"
+          />
+        );
       default:
-        return <Sun className="w-12 h-12 text-amber-400 animate-spin-slow" />;
+        return (
+          <Sun
+            style={{ width: iconSize, height: iconSize }}
+            className="text-amber-400 animate-spin-slow"
+          />
+        );
     }
   };
 
@@ -363,7 +394,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }
 
-  const tempFontSize = useScaledFont(widget.w, widget.h, 1.2, 24, 80);
+  const tempFontSize = useScaledFont(widget.w, widget.h, 2.0, {
+    minSize: 32,
+    maxSize: 120,
+    mode: 'average',
+  });
 
   return (
     <div

@@ -356,8 +356,16 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
-  const resultFontSize = useScaledFont(widget.w, widget.h, 1.5, 24, 80);
-  const groupFontSize = useScaledFont(widget.w, widget.h, 0.45, 12, 24);
+  const resultFontSize = useScaledFont(widget.w, widget.h, 2.0, {
+    minSize: 24,
+    maxSize: 100,
+    mode: 'average',
+  });
+  const groupFontSize = useScaledFont(widget.w, widget.h, 0.6, {
+    minSize: 12,
+    maxSize: 32,
+    mode: 'average',
+  });
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
