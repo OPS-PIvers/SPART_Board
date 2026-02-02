@@ -25,8 +25,8 @@ export const Toggle: React.FC<ToggleProps> = ({
     sm: {
       button: 'w-10 h-5',
       knob: 'w-3 h-3',
-      translate: 'translate-x-5',
-      padding: 'top-1 left-1',
+      translate: 'translate-x-4',
+      padding: 'top-1 left-1.5',
     },
     md: {
       button: 'w-11 h-6',
@@ -58,14 +58,14 @@ export const Toggle: React.FC<ToggleProps> = ({
       {/* State Labels */}
       <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
         <span
-          className={`text-xxxs font-black leading-none text-white transition-opacity duration-200 ${
+          className={`text-[8px] font-black leading-none text-white transition-opacity duration-200 ${
             checked ? 'opacity-100' : 'opacity-0'
           }`}
         >
           ON
         </span>
         <span
-          className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
+          className={`text-[8px] font-black leading-none text-slate-500 transition-opacity duration-200 ${
             !checked ? 'opacity-100' : 'opacity-0'
           }`}
         >
