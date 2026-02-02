@@ -151,7 +151,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   workSymbols: DefaultSettings,
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
-  recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearSettings'),
+  recessGear: lazyNamed(
+    () => import('./RecessGearWidget'),
+    'RecessGearSettings'
+  ),
 };
 
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
