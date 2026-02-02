@@ -571,6 +571,13 @@ export interface SharedGroup {
   color?: string;
 }
 
+export interface SpartStickerDropPayload {
+  icon: string;
+  color: string;
+  label?: string;
+  url?: string;
+}
+
 export interface Dashboard {
   id: string;
   name: string;
