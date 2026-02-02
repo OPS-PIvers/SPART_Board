@@ -3,11 +3,14 @@ import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
+import { useScaledFont } from '../../hooks/useScaledFont';
 
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const [time, setTime] = useState(new Date());
+
+  const { w, h } = widget;
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -25,8 +28,8 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     glow = false,
   } = widget.config as ClockConfig;
 
-  // Base font size for the clock at its base dimensions (280x140)
-  const baseFontSize = showSeconds ? 48 : 64;
+  // Dynamic font sizing
+  const baseFontSize = useScaledFont(w, h, showSeconds ? 0.9 : 1.2, 24, 200);
 
   const hours = time.getHours();
   const displayHours = format24

@@ -111,7 +111,11 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
   );
 };
 
-const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
+const PopcornBallsView: React.FC<{
+  volume: number;
+  width: number;
+  height: number;
+}> = ({ volume, width, height }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const balls = useRef<{ x: number; y: number; vy: number; color: string }[]>(
     []
@@ -123,41 +127,41 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     volumeRef.current = volume;
   }, [volume]);
 
+  // Handle resizing and ball re-initialization
+  useEffect(() => {
+    balls.current = []; // Reset balls on resize to reposition them
+    for (let i = 0; i < 30; i++) {
+      balls.current.push({
+        x: Math.random() * width,
+        y: height - 10,
+        vy: 0,
+        color:
+          POSTER_LEVELS[Math.floor(Math.random() * POSTER_LEVELS.length)].color,
+      });
+    }
+  }, [width, height]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Initialize balls if empty
-    if (balls.current.length === 0) {
-      for (let i = 0; i < 20; i++) {
-        balls.current.push({
-          x: Math.random() * canvas.width,
-          y: canvas.height - 10,
-          vy: 0,
-          color:
-            POSTER_LEVELS[Math.floor(Math.random() * POSTER_LEVELS.length)]
-              .color,
-        });
-      }
-    }
-
     let animId: number;
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const impulse = (volumeRef.current / 100) * 15;
+      ctx.clearRect(0, 0, width, height);
+      const impulse = (volumeRef.current / 100) * (height * 0.1);
 
       balls.current.forEach((b) => {
         // Physics logic
-        if (b.y >= canvas.height - 10 && impulse > 2) {
+        if (b.y >= height - 10 && impulse > 2) {
           b.vy = -impulse * (0.5 + Math.random());
         }
         b.vy += 0.5; // Gravity
         b.y += b.vy;
 
-        if (b.y > canvas.height - 10) {
-          b.y = canvas.height - 10;
+        if (b.y > height - 10) {
+          b.y = height - 10;
           b.vy = 0;
         }
 
@@ -170,14 +174,14 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     };
     render();
     return () => cancelAnimationFrame(animId);
-  }, []);
+  }, [width, height]);
 
   return (
     <canvas
       ref={canvasRef}
       className="w-full h-full"
-      width={300}
-      height={200}
+      width={width}
+      height={height}
     />
   );
 };
@@ -191,6 +195,8 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number>(null);
+
+  const { w, h } = widget;
 
   // Add type definition for webkitAudioContext
   interface CustomWindow extends Window {
@@ -294,11 +300,13 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   return (
-    <div className="flex flex-col h-full p-4 gap-3 bg-transparent">
-      <div className="flex-1 min-h-0 relative">
+    <div className="flex flex-col h-full p-4 gap-3 bg-transparent w-full">
+      <div className="flex-1 min-h-0 relative w-full">
         {visual === 'thermometer' && <ThermometerView volume={volume} />}
         {visual === 'speedometer' && <SpeedometerView volume={volume} />}
-        {visual === 'balls' && <PopcornBallsView volume={volume} />}
+        {visual === 'balls' && (
+          <PopcornBallsView volume={volume} width={w} height={h - 60} />
+        )}
         {visual === 'line' && (
           <div className="w-full h-full bg-slate-900/80 backdrop-blur-sm rounded-xl p-2">
             <svg
@@ -319,9 +327,9 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         )}
       </div>
-      <div className="text-center">
+      <div className="text-center shrink-0">
         <span
-          className="text-xs  uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm transition-colors duration-300"
+          className="text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-white shadow-sm transition-colors duration-300"
           style={{ backgroundColor: level.color }}
         >
           {level.label}
