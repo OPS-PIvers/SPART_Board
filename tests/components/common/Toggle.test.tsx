@@ -54,4 +54,16 @@ describe('Toggle Component', () => {
     button = screen.getByRole('switch');
     expect(button).toHaveClass('w-11'); // md width
   });
+
+  it('renders ON/OFF labels with correct visibility', () => {
+    const { rerender } = render(<Toggle checked={false} onChange={vi.fn()} />);
+
+    expect(screen.getByText('ON')).toHaveClass('opacity-0');
+    expect(screen.getByText('OFF')).toHaveClass('opacity-100');
+
+    rerender(<Toggle checked={true} onChange={vi.fn()} />);
+
+    expect(screen.getByText('ON')).toHaveClass('opacity-100');
+    expect(screen.getByText('OFF')).toHaveClass('opacity-0');
+  });
 });
