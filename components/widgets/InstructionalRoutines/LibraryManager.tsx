@@ -27,8 +27,6 @@ import {
 } from '../../../utils/imageProcessing';
 import { PromptDialog } from './PromptDialog';
 
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-
 interface LibraryManagerProps {
   routine: InstructionalRoutine;
   onChange: (routine: InstructionalRoutine) => void;
@@ -44,7 +42,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
-  const { uploadSticker, uploadDisplayImage } = useStorage();
+  const { uploadSticker } = useStorage();
   const [uploadingStickerIndex, setUploadingStickerIndex] = useState<
     number | null
   >(null);
@@ -90,14 +88,12 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
     }
   };
 
-  const handleImageUpload = async (
-    file: File,
-    index: number,
-    type: 'sticker' | 'display'
-  ) => {
+  const handleStickerUpload = async (file: File, index: number) => {
     if (!user || !file) return;
 
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    // Validate file size (max 5MB)
+    const maxFileSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxFileSizeBytes) {
       setErrorMessage(
         'The selected image is too large. Please choose an image smaller than 5MB.'
       );
@@ -105,70 +101,85 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       return;
     }
 
-    const setUploading =
-      type === 'sticker' ? setUploadingStickerIndex : setUploadingImageIndex;
-    setUploading(index);
-
+    setUploadingStickerIndex(index);
     setProcessingMessage(
-      type === 'sticker'
-        ? 'Processing sticker... This may take a few seconds for large images.'
-        : 'Uploading display image...'
+      'Processing sticker... This may take a few seconds for large images.'
     );
-
     try {
-      let finalFile = file;
+      // Process image
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
 
-      if (type === 'sticker') {
-        const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
+      const noBg = await removeBackground(dataUrl);
+      const trimmed = await trimImageWhitespace(noBg);
 
-        const noBg = await removeBackground(dataUrl);
-        const trimmed = await trimImageWhitespace(noBg);
+      setProcessingMessage('Uploading sticker...');
 
-        setProcessingMessage('Uploading sticker...');
-        const response = await fetch(trimmed);
-        const blob = await response.blob();
-        finalFile = new File(
-          [blob],
-          file.name.replace(/\.[^/.]+$/, '') + '.png',
-          {
-            type: 'image/png',
-          }
-        );
-      }
+      // Convert back to File
+      const response = await fetch(trimmed);
+      const blob = await response.blob();
+      const processedFile = new File(
+        [blob],
+        file.name.replace(/\.[^/.]+$/, '') + '.png',
+        { type: 'image/png' }
+      );
 
-      const url =
-        type === 'sticker'
-          ? await uploadSticker(user.uid, finalFile)
-          : await uploadDisplayImage(user.uid, finalFile);
+      const url = await uploadSticker(user.uid, processedFile);
 
+      // Update step
       const nextSteps = [...routine.steps];
-      nextSteps[index] = {
-        ...nextSteps[index],
-        [type === 'sticker' ? 'stickerUrl' : 'imageUrl']: url,
-      };
+      nextSteps[index] = { ...nextSteps[index], stickerUrl: url };
       onChange({ ...routine, steps: nextSteps });
+
       setProcessingMessage(null);
     } catch (e) {
-      console.error(`${type} upload failed:`, e);
+      console.error('Sticker upload failed:', e);
       setErrorMessage(
-        `Failed to upload ${type}. Please check your image and try again.`
+        'Failed to upload sticker. Please check your image and try again.'
       );
       setTimeout(() => setErrorMessage(null), 3000);
       setProcessingMessage(null);
     } finally {
-      setUploading(null);
+      setUploadingStickerIndex(null);
     }
   };
 
-  const handleStickerUpload = (file: File, index: number) =>
-    handleImageUpload(file, index, 'sticker');
+  const handleDisplayImageUpload = async (file: File, index: number) => {
+    if (!user || !file) return;
 
-  const handleDisplayImageUpload = (file: File, index: number) =>
-    handleImageUpload(file, index, 'display');
+    // Validate file size (max 5MB)
+    const maxFileSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxFileSizeBytes) {
+      setErrorMessage(
+        'The selected image is too large. Please choose an image smaller than 5MB.'
+      );
+      setTimeout(() => setErrorMessage(null), 4000);
+      return;
+    }
+
+    setUploadingImageIndex(index);
+    setProcessingMessage('Uploading display image...');
+    try {
+      const url = await uploadSticker(user.uid, file);
+
+      // Update step
+      const nextSteps = [...routine.steps];
+      nextSteps[index] = { ...nextSteps[index], imageUrl: url };
+      onChange({ ...routine, steps: nextSteps });
+
+      setProcessingMessage(null);
+    } catch (e) {
+      console.error('Image upload failed:', e);
+      setErrorMessage('Failed to upload image. Please try again.');
+      setTimeout(() => setErrorMessage(null), 3000);
+      setProcessingMessage(null);
+    } finally {
+      setUploadingImageIndex(null);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-slate-50 p-4 overflow-y-auto custom-scrollbar">
@@ -205,7 +216,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       </div>
 
       <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
               Routine Name

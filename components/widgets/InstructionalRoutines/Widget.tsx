@@ -7,7 +7,6 @@ import {
   InstructionalRoutinesConfig,
   RoutineStep,
   WidgetType,
-  WidgetConfig,
 } from '../../../types';
 import {
   ROUTINES as DEFAULT_ROUTINES,
@@ -164,202 +163,6 @@ const ROUTINE_COLORS: Record<
     border: 'border-neutral-100',
     hoverBorder: 'hover:border-neutral-300',
   },
-};
-
-interface RoutineStepItemProps {
-  step: RoutineStep;
-  index: number;
-  structure: string;
-  dynamicFontSize: number;
-  onDragStart: (
-    e: React.DragEvent,
-    icon: string | undefined,
-    color: string,
-    label?: string,
-    stickerUrl?: string
-  ) => void;
-  onStepClick: (
-    icon: string | undefined,
-    color: string,
-    label?: string,
-    stickerUrl?: string
-  ) => void;
-  onAddWidget: (type: WidgetType, config?: WidgetConfig) => void;
-}
-
-const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
-  step,
-  index,
-  structure,
-  dynamicFontSize,
-  onDragStart,
-  onStepClick,
-  onAddWidget,
-}) => {
-  const StepIcon = step.icon
-    ? (Icons as unknown as Record<string, React.ElementType>)[step.icon]
-    : null;
-
-  const isVisualCue = structure === 'visual-cue';
-
-  return (
-    <div
-      className={`
-        flex animate-in slide-in-from-left duration-300 group
-        ${isVisualCue ? 'flex-col items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm text-center' : 'items-start'}
-      `}
-      style={{ gap: '1em' }}
-    >
-      {structure === 'linear' && (
-        <span
-          className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-          style={{
-            width: '2.5em',
-            height: '2.5em',
-            fontSize: '0.8em',
-          }}
-        >
-          {index + 1}
-        </span>
-      )}
-      {structure === 'cycle' && (
-        <span
-          className="bg-brand-blue-primary text-white rounded-full flex items-center justify-center shrink-0 shadow-lg"
-          style={{
-            width: '2.5em',
-            height: '2.5em',
-            fontSize: '0.8em',
-          }}
-        >
-          {index + 1}
-        </span>
-      )}
-
-      <div
-        className={`flex-1 flex flex-col ${isVisualCue ? 'w-full' : ''}`}
-        style={{ gap: '0.5em' }}
-      >
-        <div
-          className={`flex ${isVisualCue ? 'flex-col items-center' : 'items-start justify-between'}`}
-          style={{ gap: '1em' }}
-        >
-          {step.imageUrl && (
-            <div
-              className={`${isVisualCue ? 'w-full aspect-square mb-2' : 'w-24 shrink-0'}`}
-            >
-              <img
-                src={step.imageUrl}
-                alt="Step Illustration"
-                className="w-full h-full object-cover rounded-xl shadow-sm border border-slate-200"
-              />
-            </div>
-          )}
-
-          <p
-            className={`font-bold text-brand-gray-darkest leading-relaxed pt-1 ${isVisualCue ? 'text-xs' : 'text-sm'}`}
-            style={{ fontSize: '1em' }}
-          >
-            {step.text}
-          </p>
-
-          {(step.stickerUrl ?? (StepIcon && step.icon)) && (
-            <div
-              draggable
-              onDragStart={(e) =>
-                onDragStart(
-                  e,
-                  step.icon as string,
-                  step.color ?? 'blue',
-                  step.label,
-                  step.stickerUrl
-                )
-              }
-              onClick={() =>
-                onStepClick(
-                  step.icon as string,
-                  step.color ?? 'blue',
-                  step.label,
-                  step.stickerUrl
-                )
-              }
-              className={`
-                rounded-xl bg-white border-2 ${getRoutineStepBorderClass(step.color ?? 'blue')} shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker
-                ${isVisualCue ? 'mt-3 w-max' : ''}
-              `}
-              style={{ padding: '0.5em', gap: '0.25em' }}
-              title="Drag or Click to add to whiteboard"
-            >
-              {step.stickerUrl ? (
-                <div
-                  className="rounded-lg bg-transparent"
-                  style={{ padding: '0.4em' }}
-                >
-                  <img
-                    src={step.stickerUrl}
-                    alt={step.label ?? 'Sticker'}
-                    className="object-contain"
-                    style={{
-                      width: dynamicFontSize * 1.5,
-                      height: dynamicFontSize * 1.5,
-                    }}
-                  />
-                </div>
-              ) : (
-                <div
-                  className={`rounded-lg ${getRoutineColorClasses(step.color ?? 'blue').bg} ${getRoutineColorClasses(step.color ?? 'blue').text}`}
-                  style={{ padding: '0.4em' }}
-                >
-                  {StepIcon && (
-                    <StepIcon size={dynamicFontSize * 1.5} strokeWidth={2.5} />
-                  )}
-                </div>
-              )}
-
-              {step.label && (
-                <span
-                  className="font-black uppercase text-slate-500 text-center leading-none"
-                  style={{ fontSize: '0.5em' }}
-                >
-                  {step.label}
-                </span>
-              )}
-              <div
-                className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
-                style={{ gap: '0.1em' }}
-              >
-                <Grab size={dynamicFontSize * 0.5} className="text-slate-300" />
-                <span
-                  className="font-black uppercase text-slate-400"
-                  style={{ fontSize: '0.4em' }}
-                >
-                  Drag
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-        {step.attachedWidget && (
-          <button
-            onClick={() =>
-              onAddWidget(
-                step.attachedWidget?.type as WidgetType,
-                step.attachedWidget?.config
-              )
-            }
-            className={`self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors ${isVisualCue ? 'self-center mx-auto' : ''}`}
-            style={{
-              padding: '0.5em 1em',
-              gap: '0.5em',
-              fontSize: '0.8em',
-            }}
-          >
-            <Rocket size={dynamicFontSize} />
-            Launch {step.attachedWidget.label}
-          </button>
-        )}
-      </div>
-    </div>
-  );
 };
 
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
@@ -565,7 +368,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             </button>
           </div>
         </div>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+        <div className="flex-1 grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
           {displayedRoutines.map((r) => {
             const Icon =
               (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
@@ -787,17 +590,174 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           style={{ gap: structure === 'visual-cue' ? '1em' : '1.5em' }}
         >
           {customSteps.map((step, i) => {
+            const StepIcon = step.icon
+              ? (Icons as unknown as Record<string, React.ElementType>)[
+                  step.icon
+                ]
+              : null;
             return (
               <React.Fragment key={step.id}>
-                <RoutineStepItem
-                  step={step}
-                  index={i}
-                  structure={structure}
-                  dynamicFontSize={dynamicFontSize}
-                  onDragStart={onDragStart}
-                  onStepClick={handleStepClick}
-                  onAddWidget={(type, config) => addWidget(type, { config })}
-                />
+                <div
+                  className={`
+                    flex animate-in slide-in-from-left duration-300 group
+                    ${structure === 'visual-cue' ? 'flex-col items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm text-center' : 'items-start'}
+                  `}
+                  style={{ gap: '1em' }}
+                >
+                  {structure === 'linear' && (
+                    <span
+                      className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                      style={{
+                        width: '2.5em',
+                        height: '2.5em',
+                        fontSize: '0.8em',
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                  )}
+                  {structure === 'cycle' && (
+                    <span
+                      className="bg-brand-blue-primary text-white rounded-full flex items-center justify-center shrink-0 shadow-lg"
+                      style={{
+                        width: '2.5em',
+                        height: '2.5em',
+                        fontSize: '0.8em',
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                  )}
+
+                  <div
+                    className={`flex-1 flex flex-col ${structure === 'visual-cue' ? 'w-full' : ''}`}
+                    style={{ gap: '0.5em' }}
+                  >
+                    <div
+                      className={`flex ${structure === 'visual-cue' ? 'flex-col items-center' : 'items-start justify-between'}`}
+                      style={{ gap: '1em' }}
+                    >
+                      {step.imageUrl && (
+                        <div
+                          className={`${structure === 'visual-cue' ? 'w-full aspect-square mb-2' : 'w-24 shrink-0'}`}
+                        >
+                          <img
+                            src={step.imageUrl}
+                            alt="Step Illustration"
+                            className="w-full h-full object-cover rounded-xl shadow-sm border border-slate-200"
+                          />
+                        </div>
+                      )}
+
+                      <p
+                        className={`font-bold text-brand-gray-darkest leading-relaxed pt-1 ${structure === 'visual-cue' ? 'text-xs' : 'text-sm'}`}
+                        style={{ fontSize: '1em' }}
+                      >
+                        {step.text}
+                      </p>
+
+                      {(step.stickerUrl ?? (StepIcon && step.icon)) && (
+                        <div
+                          draggable
+                          onDragStart={(e) =>
+                            onDragStart(
+                              e,
+                              step.icon as string,
+                              step.color ?? 'blue',
+                              step.label,
+                              step.stickerUrl
+                            )
+                          }
+                          onClick={() =>
+                            handleStepClick(
+                              step.icon as string,
+                              step.color ?? 'blue',
+                              step.label,
+                              step.stickerUrl
+                            )
+                          }
+                          className={`
+                            rounded-xl bg-white border-2 ${getRoutineStepBorderClass(step.color ?? 'blue')} shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker
+                            ${structure === 'visual-cue' ? 'mt-3 w-max' : ''}
+                          `}
+                          style={{ padding: '0.5em', gap: '0.25em' }}
+                          title="Drag or Click to add to whiteboard"
+                        >
+                          {step.stickerUrl ? (
+                            <div
+                              className="rounded-lg bg-transparent"
+                              style={{ padding: '0.4em' }}
+                            >
+                              <img
+                                src={step.stickerUrl}
+                                alt={step.label ?? 'Sticker'}
+                                className="object-contain"
+                                style={{
+                                  width: dynamicFontSize * 1.5,
+                                  height: dynamicFontSize * 1.5,
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`rounded-lg ${getRoutineColorClasses(step.color ?? 'blue').bg} ${getRoutineColorClasses(step.color ?? 'blue').text}`}
+                              style={{ padding: '0.4em' }}
+                            >
+                              {StepIcon && (
+                                <StepIcon
+                                  size={dynamicFontSize * 1.5}
+                                  strokeWidth={2.5}
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          {step.label && (
+                            <span
+                              className="font-black uppercase text-slate-500 text-center leading-none"
+                              style={{ fontSize: '0.5em' }}
+                            >
+                              {step.label}
+                            </span>
+                          )}
+                          <div
+                            className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
+                            style={{ gap: '0.1em' }}
+                          >
+                            <Grab
+                              size={dynamicFontSize * 0.5}
+                              className="text-slate-300"
+                            />
+                            <span
+                              className="font-black uppercase text-slate-400"
+                              style={{ fontSize: '0.4em' }}
+                            >
+                              Drag
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {step.attachedWidget && (
+                      <button
+                        onClick={() =>
+                          addWidget(step.attachedWidget?.type as WidgetType, {
+                            config: step.attachedWidget?.config,
+                          })
+                        }
+                        className={`self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors ${structure === 'visual-cue' ? 'self-center mx-auto' : ''}`}
+                        style={{
+                          padding: '0.5em 1em',
+                          gap: '0.5em',
+                          fontSize: '0.8em',
+                        }}
+                      >
+                        <Rocket size={dynamicFontSize} />
+                        Launch {step.attachedWidget.label}
+                      </button>
+                    )}
+                  </div>
+                </div>
                 {structure === 'cycle' && i < customSteps.length - 1 && (
                   <div className="flex justify-center -my-2 text-slate-300">
                     <ArrowDown size={dynamicFontSize * 1.5} />
