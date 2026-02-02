@@ -30,7 +30,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
 
     // Determine values, prioritizing props over global settings
     const finalTransparency =
-      propTransparency !== undefined ? propTransparency : globalStyle.windowTransparency;
+      propTransparency ?? globalStyle.windowTransparency;
 
     const isInvisible = allowInvisible && finalTransparency <= 0.001;
 
@@ -45,7 +45,9 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         ref={ref}
         className={`${isInvisible ? '' : 'backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)]'} ${finalRadiusClass} ${className}`}
         style={{
-          backgroundColor: isInvisible ? 'transparent' : `rgba(255, 255, 255, ${finalTransparency})`,
+          backgroundColor: isInvisible
+            ? 'transparent'
+            : `rgba(255, 255, 255, ${finalTransparency})`,
           ...style,
         }}
         {...props}
