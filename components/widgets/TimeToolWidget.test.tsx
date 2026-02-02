@@ -71,7 +71,7 @@ describe('TimeToolWidget', () => {
     const timeDisplay = screen.getByText('05:00');
     fireEvent.click(timeDisplay);
 
-    expect(screen.getByText('05')).toBeInTheDocument();
+    expect(screen.getByText('005')).toBeInTheDocument(); // 3-digit minutes
     expect(screen.getByText('00')).toBeInTheDocument();
     // Buttons for 1-9 should be present
     expect(screen.getByText('1')).toBeInTheDocument();
@@ -97,11 +97,12 @@ describe('TimeToolWidget', () => {
 
     fireEvent.click(screen.getByText('05:00'));
 
-    // Click '1' then '2' for minutes (activeField defaults to 'min')
+    // Initial is 005. Type 0, 1, 2 -> 050 -> 501 -> 012
+    fireEvent.click(screen.getByText('0'));
     fireEvent.click(screen.getByText('1'));
     fireEvent.click(screen.getByText('2'));
 
-    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByText('012')).toBeInTheDocument();
   });
 
   it('confirms edit and updates widget', () => {
@@ -109,7 +110,8 @@ describe('TimeToolWidget', () => {
 
     fireEvent.click(screen.getByText('05:00'));
 
-    // Set to 10:00
+    // Set to 010:00
+    fireEvent.click(screen.getByText('0'));
     fireEvent.click(screen.getByText('1'));
     fireEvent.click(screen.getByText('0'));
 
@@ -123,6 +125,73 @@ describe('TimeToolWidget', () => {
         config: expect.objectContaining({
           elapsedTime: 600,
           duration: 600,
+        }),
+      })
+    );
+  });
+
+  it('caps seconds at 59', () => {
+    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    fireEvent.click(screen.getByText('05:00'));
+
+    // Switch to seconds
+    fireEvent.click(screen.getByText('00'));
+
+    // Type 9, 9 -> 09 -> 59 (capped)
+    fireEvent.click(screen.getByText('9'));
+    fireEvent.click(screen.getByText('9'));
+
+    expect(screen.getByText('59')).toBeInTheDocument();
+  });
+
+  it('supports backspace functionality', () => {
+    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    fireEvent.click(screen.getByText('05:00'));
+
+    // Minutes is 005. Type 1 -> 051
+    fireEvent.click(screen.getByText('1'));
+    expect(screen.getByText('051')).toBeInTheDocument();
+
+    // Backspace -> 005
+    fireEvent.click(screen.getByLabelText('Backspace'));
+    expect(screen.getByText('005')).toBeInTheDocument();
+  });
+
+  it('cancels editing when clicking X button', () => {
+    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    fireEvent.click(screen.getByText('05:00'));
+
+    // Should be in editing mode
+    expect(screen.getByLabelText('Close keypad')).toBeInTheDocument();
+
+    // Click X
+    fireEvent.click(screen.getByLabelText('Close keypad'));
+
+    // Should be back to normal display
+    expect(screen.queryByLabelText('Close keypad')).not.toBeInTheDocument();
+    expect(screen.getByText('05:00')).toBeInTheDocument();
+  });
+
+  it('supports 3-digit minutes (e.g., 2 hours / 120 minutes)', () => {
+    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    fireEvent.click(screen.getByText('05:00'));
+
+    // Set minutes to 120
+    fireEvent.click(screen.getByText('1'));
+    fireEvent.click(screen.getByText('2'));
+    fireEvent.click(screen.getByText('0'));
+
+    expect(screen.getByText('120')).toBeInTheDocument();
+
+    // Confirm
+    fireEvent.click(screen.getByLabelText('Confirm time'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'timetool-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          elapsedTime: 120 * 60,
+          duration: 120 * 60,
         }),
       })
     );
