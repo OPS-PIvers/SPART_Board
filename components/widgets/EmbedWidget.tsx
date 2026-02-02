@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
@@ -6,8 +6,21 @@ import { convertToEmbedUrl } from '../../utils/urlHelpers';
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;
-  const { mode = 'url', url = '', html = '' } = config;
+  const { mode = 'url', url = '', html = '', refreshInterval = 0 } = config;
   const embedUrl = convertToEmbedUrl(url);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (refreshInterval > 0) {
+      const interval = setInterval(
+        () => {
+          setRefreshKey((prev) => prev + 1);
+        },
+        refreshInterval * 60 * 1000
+      );
+      return () => clearInterval(interval);
+    }
+  }, [refreshInterval]);
 
   const sandbox = React.useMemo(() => {
     let base = 'allow-scripts allow-forms allow-popups';
@@ -68,6 +81,8 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
       <iframe
+        key={refreshKey}
+        title="Embed Content"
         src={mode === 'url' ? embedUrl : undefined}
         srcDoc={mode === 'code' ? html : undefined}
         className="flex-1 w-full border-none"
@@ -82,7 +97,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as EmbedConfig;
-  const { mode = 'url', url = '', html = '' } = config;
+  const { mode = 'url', url = '', html = '', refreshInterval = 0 } = config;
 
   return (
     <div className="space-y-4">
@@ -182,6 +197,33 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         </div>
       )}
+
+      {/* Auto-Refresh Setting */}
+      <div className="pt-4 border-t border-slate-100">
+        <label
+          htmlFor="refresh-interval"
+          className="text-xxs  text-slate-500 uppercase mb-2 block tracking-widest"
+        >
+          Auto-Refresh
+        </label>
+        <select
+          id="refresh-interval"
+          value={refreshInterval}
+          onChange={(e) =>
+            updateWidget(widget.id, {
+              config: { ...config, refreshInterval: parseInt(e.target.value) },
+            })
+          }
+          className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-900"
+        >
+          <option value={0}>Disabled</option>
+          <option value={1}>Every 1 Minute</option>
+          <option value={5}>Every 5 Minutes</option>
+          <option value={15}>Every 15 Minutes</option>
+          <option value={30}>Every 30 Minutes</option>
+          <option value={60}>Every 1 Hour</option>
+        </select>
+      </div>
     </div>
   );
 };
