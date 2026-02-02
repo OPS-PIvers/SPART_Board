@@ -66,13 +66,9 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
 };
 
 const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
-  const ANGLE_OFFSET = 180; // Start angle for the gauge (Left)
-  const VOLUME_TO_ANGLE_RATIO = 1.8; // 180 degrees / 100 volume units
-  const degToRad = (degrees: number) => (degrees * Math.PI) / 180;
-
   // Map volume (0-100) to angle (180-360 degrees)
   // 180 = Left, 270 = Up, 360 = Right
-  const angle = ANGLE_OFFSET + volume * VOLUME_TO_ANGLE_RATIO;
+  const angle = 180 + volume * 1.8;
   const centerX = 50;
   const centerY = 55;
   const radius = 40;
@@ -86,13 +82,13 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
           const startVol = level.threshold;
           const endVol =
             i < POSTER_LEVELS.length - 1 ? POSTER_LEVELS[i + 1].threshold : 100;
-          const startAngle = ANGLE_OFFSET + startVol * VOLUME_TO_ANGLE_RATIO;
-          const endAngle = ANGLE_OFFSET + endVol * VOLUME_TO_ANGLE_RATIO;
+          const startAngle = 180 + startVol * 1.8;
+          const endAngle = 180 + endVol * 1.8;
 
-          const x1 = centerX + radius * Math.cos(degToRad(startAngle));
-          const y1 = centerY + radius * Math.sin(degToRad(startAngle));
-          const x2 = centerX + radius * Math.cos(degToRad(endAngle));
-          const y2 = centerY + radius * Math.sin(degToRad(endAngle));
+          const x1 = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
+          const y1 = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
+          const x2 = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+          const y2 = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
 
           return (
             <path
@@ -116,8 +112,8 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
         <line
           x1={centerX}
           y1={centerY}
-          x2={centerX + needleLen * Math.cos(degToRad(angle))}
-          y2={centerY + needleLen * Math.sin(degToRad(angle))}
+          x2={centerX + needleLen * Math.cos((angle * Math.PI) / 180)}
+          y2={centerY + needleLen * Math.sin((angle * Math.PI) / 180)}
           stroke={STANDARD_COLORS.slate}
           strokeWidth="2"
           strokeLinecap="round"
@@ -332,7 +328,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <PopcornBallsView volume={volume} width={w} height={h - 60} />
         )}
         {visual === 'line' && (
-          <div className="w-full h-full bg-black/20 rounded-2xl p-2">
+          <div className="w-full h-full bg-slate-900/80 backdrop-blur-sm rounded-xl p-2">
             <svg
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
