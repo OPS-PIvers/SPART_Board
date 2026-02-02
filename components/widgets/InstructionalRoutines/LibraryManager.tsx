@@ -9,9 +9,14 @@ import {
   Image as ImageIcon,
   X,
 } from 'lucide-react';
-import { InstructionalRoutine } from '../../../config/instructionalRoutines';
+import {
+  InstructionalRoutine,
+  RoutineStructure,
+  RoutineAudience,
+} from '../../../config/instructionalRoutines';
 import { IconPicker } from './IconPicker';
 import { ROUTINE_COLORS, ROUTINE_STEP_COLORS } from '../../../config/colors';
+import { ALL_GRADE_LEVELS } from '../../../config/widgetGradeLevels';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../config/firebase';
 import { useAuth } from '../../../context/useAuth';
@@ -38,7 +43,10 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
   const { uploadSticker } = useStorage();
-  const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(
+  const [uploadingStickerIndex, setUploadingStickerIndex] = useState<
+    number | null
+  >(null);
+  const [uploadingImageIndex, setUploadingImageIndex] = useState<number | null>(
     null
   );
   const [showPromptDialog, setShowPromptDialog] = useState(false);
@@ -93,9 +101,9 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       return;
     }
 
-    setUploadingStepIndex(index);
+    setUploadingStickerIndex(index);
     setProcessingMessage(
-      'Processing image... This may take a few seconds for large images.'
+      'Processing sticker... This may take a few seconds for large images.'
     );
     try {
       // Process image
@@ -135,7 +143,41 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       setTimeout(() => setErrorMessage(null), 3000);
       setProcessingMessage(null);
     } finally {
-      setUploadingStepIndex(null);
+      setUploadingStickerIndex(null);
+    }
+  };
+
+  const handleDisplayImageUpload = async (file: File, index: number) => {
+    if (!user || !file) return;
+
+    // Validate file size (max 5MB)
+    const maxFileSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxFileSizeBytes) {
+      setErrorMessage(
+        'The selected image is too large. Please choose an image smaller than 5MB.'
+      );
+      setTimeout(() => setErrorMessage(null), 4000);
+      return;
+    }
+
+    setUploadingImageIndex(index);
+    setProcessingMessage('Uploading display image...');
+    try {
+      const url = await uploadSticker(user.uid, file);
+
+      // Update step
+      const nextSteps = [...routine.steps];
+      nextSteps[index] = { ...nextSteps[index], imageUrl: url };
+      onChange({ ...routine, steps: nextSteps });
+
+      setProcessingMessage(null);
+    } catch (e) {
+      console.error('Image upload failed:', e);
+      setErrorMessage('Failed to upload image. Please try again.');
+      setTimeout(() => setErrorMessage(null), 3000);
+      setProcessingMessage(null);
+    } finally {
+      setUploadingImageIndex(null);
     }
   };
 
@@ -226,6 +268,92 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
+              Structure & Audience
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={routine.structure ?? 'linear'}
+                onChange={(e) =>
+                  onChange({
+                    ...routine,
+                    structure: e.target.value as RoutineStructure,
+                  })
+                }
+                className="bg-slate-50 border-none rounded-xl px-2 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 flex-1"
+              >
+                <option value="linear">Linear Steps</option>
+                <option value="cycle">Cycle Process</option>
+                <option value="visual-cue">Visual Cues</option>
+                <option value="components">Components</option>
+              </select>
+              <select
+                value={routine.audience ?? 'student'}
+                onChange={(e) =>
+                  onChange({
+                    ...routine,
+                    audience: e.target.value as RoutineAudience,
+                  })
+                }
+                className="bg-slate-50 border-none rounded-xl px-2 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 flex-1"
+              >
+                <option value="student">For Students</option>
+                <option value="teacher">For Teachers</option>
+              </select>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
+              Grade Levels
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {ALL_GRADE_LEVELS.map((level) => {
+                const isSelected = routine.gradeLevels?.includes(level);
+                return (
+                  <button
+                    key={level}
+                    onClick={() => {
+                      const current = routine.gradeLevels || [];
+                      const next = isSelected
+                        ? current.filter((l) => l !== level)
+                        : [...current, level];
+
+                      // Auto-update grades string for legacy support
+                      let gradesStr = 'Universal';
+                      if (
+                        next.length > 0 &&
+                        next.length < ALL_GRADE_LEVELS.length
+                      ) {
+                        gradesStr = next
+                          .map((l) => l.toUpperCase())
+                          .sort()
+                          .join(', ');
+                      } else if (next.length === 0) {
+                        gradesStr = 'None';
+                      }
+
+                      onChange({
+                        ...routine,
+                        gradeLevels: next,
+                        grades: gradesStr,
+                      });
+                    }}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                    }`}
+                  >
+                    {level}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-3 pt-4 border-t">
           <label className="text-xxs font-black uppercase text-slate-400 tracking-widest block mb-2">
             Default Steps
@@ -249,53 +377,107 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                       });
                     }}
                   />
-                  <label
-                    className="cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-colors relative group/upload"
-                    aria-label="Upload custom sticker image"
-                  >
-                    {uploadingStepIndex === i ? (
-                      <Loader2
-                        size={16}
-                        className="animate-spin text-blue-500"
-                      />
-                    ) : step.stickerUrl ? (
-                      <div className="relative">
-                        <img
-                          src={step.stickerUrl}
-                          alt="Sticker"
-                          className="w-6 h-6 object-contain"
+                  <div className="flex items-center gap-1">
+                    <label
+                      className="cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-colors relative group/upload"
+                      title="Upload custom sticker (transparent background)"
+                    >
+                      {uploadingStickerIndex === i ? (
+                        <Loader2
+                          size={16}
+                          className="animate-spin text-blue-500"
                         />
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const next = [...routine.steps];
-                            next[i] = { ...next[i], stickerUrl: undefined };
-                            onChange({ ...routine, steps: next });
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/upload:opacity-100 transition-opacity"
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    ) : (
-                      <ImageIcon
-                        size={16}
-                        className="text-slate-400 group-hover/upload:text-blue-500"
+                      ) : step.stickerUrl ? (
+                        <div className="relative">
+                          <img
+                            src={step.stickerUrl}
+                            alt="Sticker"
+                            className="w-6 h-6 object-contain"
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const next = [...routine.steps];
+                              next[i] = { ...next[i], stickerUrl: undefined };
+                              onChange({ ...routine, steps: next });
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/upload:opacity-100 transition-opacity"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ) : (
+                        <Sparkles
+                          size={16}
+                          className="text-slate-400 group-hover/upload:text-blue-500"
+                        />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0])
+                            void handleStickerUpload(e.target.files[0], i);
+                        }}
+                        disabled={
+                          uploadingStickerIndex !== null ||
+                          uploadingImageIndex !== null
+                        }
                       />
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0])
-                          void handleStickerUpload(e.target.files[0], i);
-                      }}
-                      disabled={uploadingStepIndex !== null}
-                      aria-label="Upload custom sticker image"
-                    />
-                  </label>
+                    </label>
+
+                    <label
+                      className="cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-colors relative group/upload-img"
+                      title="Upload display image"
+                    >
+                      {uploadingImageIndex === i ? (
+                        <Loader2
+                          size={16}
+                          className="animate-spin text-blue-500"
+                        />
+                      ) : step.imageUrl ? (
+                        <div className="relative">
+                          <img
+                            src={step.imageUrl}
+                            alt="Display"
+                            className="w-6 h-6 object-cover rounded"
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const next = [...routine.steps];
+                              next[i] = { ...next[i], imageUrl: undefined };
+                              onChange({ ...routine, steps: next });
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/upload-img:opacity-100 transition-opacity"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ) : (
+                        <ImageIcon
+                          size={16}
+                          className="text-slate-400 group-hover/upload-img:text-blue-500"
+                        />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0])
+                            void handleDisplayImageUpload(e.target.files[0], i);
+                        }}
+                        disabled={
+                          uploadingStickerIndex !== null ||
+                          uploadingImageIndex !== null
+                        }
+                      />
+                    </label>
+                  </div>
                   <input
                     type="text"
                     value={step.label ?? ''}
