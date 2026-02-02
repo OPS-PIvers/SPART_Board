@@ -58,14 +58,14 @@ export const Toggle: React.FC<ToggleProps> = ({
       {/* State Labels */}
       <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
         <span
-          className={`text-[8px] font-black leading-none text-white transition-opacity duration-200 ${
+          className={`text-xxxs font-black leading-none text-white transition-opacity duration-200 ${
             checked ? 'opacity-100' : 'opacity-0'
           }`}
         >
           ON
         </span>
         <span
-          className={`text-[8px] font-black leading-none text-slate-700 transition-opacity duration-200 ${
+          className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
             !checked ? 'opacity-100' : 'opacity-0'
           }`}
         >
