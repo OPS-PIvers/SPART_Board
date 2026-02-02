@@ -13,7 +13,6 @@ import { WidgetData, WidgetType, ScalingConfig } from '@/types';
 type WidgetComponentProps = {
   widget: WidgetData;
   isStudentView?: boolean;
-  scale?: number;
 };
 
 type SettingsComponentProps = {
@@ -74,7 +73,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   weather: lazyNamed(() => import('./WeatherWidget'), 'WeatherWidget'),
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleWidget'),
   calendar: lazyNamed(() => import('./CalendarWidget'), 'CalendarWidget'),
-  lunchCount: lazyNamed(() => import('./LunchCount'), 'LunchCountWidget'),
+  lunchCount: lazyNamed(() => import('./LunchCountWidget'), 'LunchCountWidget'),
   classes: lazy(() => import('./ClassesWidget')), // Default export
   instructionalRoutines: lazyNamed(
     () => import('./InstructionalRoutines/Widget'),
@@ -103,7 +102,6 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     () => import('./SmartNotebookWidget'),
     'SmartNotebookWidget'
   ),
-  recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearWidget'),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -125,7 +123,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   webcam: lazyNamed(() => import('./WebcamWidget'), 'WebcamSettings'),
   calendar: lazyNamed(() => import('./CalendarWidget'), 'CalendarSettings'),
   weather: lazyNamed(() => import('./WeatherWidget'), 'WeatherSettings'),
-  lunchCount: lazyNamed(() => import('./LunchCount'), 'LunchCountSettings'),
+  lunchCount: lazyNamed(
+    () => import('./LunchCountWidget'),
+    'LunchCountSettings'
+  ),
   poll: lazyNamed(() => import('./PollWidget'), 'PollSettings'),
   instructionalRoutines: lazyNamed(
     () => import('./InstructionalRoutines/Settings'),
@@ -149,22 +150,9 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
-  workSymbols: lazyNamed(
-    () => import('./WorkSymbolsWidget'),
-    'WorkSymbolsSettings'
-  ),
+  workSymbols: DefaultSettings,
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
-  recessGear: lazyNamed(
-    () => import('./RecessGearWidget'),
-    'RecessGearSettings'
-  ),
-};
-
-export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
-  baseWidth: 300,
-  baseHeight: 200,
-  canSpread: true,
 };
 
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
@@ -172,139 +160,160 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 280,
     baseHeight: 140,
     canSpread: true,
+    skipScaling: true,
   },
   'time-tool': {
     baseWidth: 420,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   traffic: {
     baseWidth: 120,
     baseHeight: 320,
     canSpread: false,
+    skipScaling: true,
   },
-  text: { baseWidth: 300, baseHeight: 250, canSpread: true },
+  text: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   checklist: {
     baseWidth: 280,
     baseHeight: 300,
     canSpread: true,
+    skipScaling: true,
   },
   random: {
     baseWidth: 300,
     baseHeight: 320,
     canSpread: true,
+    skipScaling: true,
   },
   dice: {
     baseWidth: 240,
     baseHeight: 240,
     canSpread: false,
+    skipScaling: true,
   },
   sound: {
     baseWidth: 300,
     baseHeight: 300,
     canSpread: true,
+    skipScaling: true,
   },
   webcam: {
     baseWidth: 400,
     baseHeight: 300,
     canSpread: true,
+    skipScaling: true,
   },
   embed: {
     baseWidth: 480,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   drawing: {
     baseWidth: 400,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
-  qr: { baseWidth: 200, baseHeight: 250, canSpread: false },
+  qr: { baseWidth: 200, baseHeight: 250, canSpread: false, skipScaling: true },
   scoreboard: {
     baseWidth: 320,
     baseHeight: 200,
     canSpread: true,
+    skipScaling: true,
   },
   workSymbols: {
     baseWidth: 320,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
-  poll: { baseWidth: 300, baseHeight: 250, canSpread: true },
+  poll: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   weather: {
     baseWidth: 250,
     baseHeight: 280,
     canSpread: true,
+    skipScaling: true,
   },
   schedule: {
     baseWidth: 300,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   calendar: {
     baseWidth: 300,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   lunchCount: {
     baseWidth: 500,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   classes: {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
+    skipScaling: true,
   },
   instructionalRoutines: {
     baseWidth: 400,
     baseHeight: 480,
     canSpread: true,
+    skipScaling: true,
   },
   miniApp: {
     baseWidth: 500,
     baseHeight: 600,
     canSpread: true,
+    skipScaling: true,
   },
   materials: {
     baseWidth: 340,
     baseHeight: 340,
     canSpread: true,
+    skipScaling: true,
   },
   stickers: {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
+    skipScaling: true,
   },
   sticker: { baseWidth: 200, baseHeight: 200, canSpread: false },
   'seating-chart': {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
+    skipScaling: true,
   },
   catalyst: {
     baseWidth: 320,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   'catalyst-instruction': {
     baseWidth: 280,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   'catalyst-visual': {
     baseWidth: 600,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   smartNotebook: {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
-  },
-  recessGear: {
-    baseWidth: 250,
-    baseHeight: 280,
-    canSpread: true,
+    skipScaling: true,
   },
 };
