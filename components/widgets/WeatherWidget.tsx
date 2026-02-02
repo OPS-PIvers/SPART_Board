@@ -303,26 +303,31 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   const getIcon = () => {
+    const iconClasses = 'w-20 h-20';
     switch (condition.toLowerCase()) {
       case 'cloudy':
       case 'clouds':
-        return <Cloud className="w-12 h-12 text-slate-400" />;
+        return <Cloud className={`${iconClasses} text-slate-400`} />;
       case 'rainy':
       case 'rain':
       case 'drizzle':
-        return <CloudRain className="w-12 h-12 text-blue-400" />;
+        return <CloudRain className={`${iconClasses} text-blue-400`} />;
       case 'snowy':
       case 'snow':
-        return <CloudSnow className="w-12 h-12 text-blue-200" />;
+        return <CloudSnow className={`${iconClasses} text-blue-200`} />;
       case 'windy':
       case 'squall':
       case 'tornado':
-        return <Wind className="w-12 h-12 text-slate-500" />;
+        return <Wind className={`${iconClasses} text-slate-500`} />;
       case 'sunny':
       case 'clear':
-        return <Sun className="w-12 h-12 text-amber-400 animate-spin-slow" />;
+        return (
+          <Sun className={`${iconClasses} text-amber-400 animate-spin-slow`} />
+        );
       default:
-        return <Sun className="w-12 h-12 text-amber-400 animate-spin-slow" />;
+        return (
+          <Sun className={`${iconClasses} text-amber-400 animate-spin-slow`} />
+        );
     }
   };
 
