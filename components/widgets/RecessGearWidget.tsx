@@ -43,12 +43,12 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
   const weatherConfig = weatherWidget?.config as WeatherConfig | undefined;
 
   const getRecessGear = () => {
-    if (!weatherConfig) return [];
+    if (!weatherConfig || weatherConfig.temp === undefined) return [];
 
     const temp =
       config.useFeelsLike && weatherConfig.feelsLike !== undefined
         ? weatherConfig.feelsLike
-        : (weatherConfig.temp ?? 72);
+        : weatherConfig.temp;
     const condition = weatherConfig.condition?.toLowerCase() ?? 'sunny';
 
     const gear: GearItem[] = [];
@@ -87,7 +87,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   const gearList = getRecessGear();
 
-  if (!weatherWidget) {
+  if (!weatherWidget || !weatherConfig || weatherConfig.temp === undefined) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-4">
         <div className="bg-slate-100 p-4 rounded-full">
@@ -107,7 +107,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`flex flex-col h-full p-4 gap-3 font-${globalStyle.fontFamily}`}
+      className={`flex flex-col h-full p-4 gap-3 font-${globalStyle.fontFamily} @container`}
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 overflow-y-auto no-scrollbar">
+      <div className="grid grid-cols-1 @[200px]:grid-cols-2 gap-2 overflow-y-auto no-scrollbar">
         {gearList.map((item, idx) => (
           <div
             key={`${item.label}-${idx}`}
