@@ -151,7 +151,10 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
-  workSymbols: DefaultSettings,
+  workSymbols: lazyNamed(
+    () => import('./WorkSymbolsWidget'),
+    'WorkSymbolsSettings'
+  ),
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
   recessGear: lazyNamed(

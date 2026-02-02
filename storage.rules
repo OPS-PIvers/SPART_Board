@@ -25,20 +25,27 @@ service firebase.storage {
     }
 
     match /users/{userId}/backgrounds/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read, write: if isAdmin();
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     match /users/{userId}/screenshots/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     match /users/{userId}/stickers/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /users/{userId}/display_images/{allPaths=**} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /users/{userId}/instructional/{allPaths=**} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     match /users/{userId}/notebooks/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     match /admin_backgrounds/{backgroundId}/{fileName} {

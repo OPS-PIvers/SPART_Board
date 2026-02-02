@@ -209,9 +209,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
         const proxies = [
-          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
           (u: string) =>
             `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+          (u: string) =>
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
         ];
 
         let data: EarthNetworksResponse | null = null;
@@ -301,26 +303,31 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   const getIcon = () => {
+    const iconClasses = 'w-20 h-20';
     switch (condition.toLowerCase()) {
       case 'cloudy':
       case 'clouds':
-        return <Cloud className="w-12 h-12 text-slate-400" />;
+        return <Cloud className={`${iconClasses} text-slate-400`} />;
       case 'rainy':
       case 'rain':
       case 'drizzle':
-        return <CloudRain className="w-12 h-12 text-blue-400" />;
+        return <CloudRain className={`${iconClasses} text-blue-400`} />;
       case 'snowy':
       case 'snow':
-        return <CloudSnow className="w-12 h-12 text-blue-200" />;
+        return <CloudSnow className={`${iconClasses} text-blue-200`} />;
       case 'windy':
       case 'squall':
       case 'tornado':
-        return <Wind className="w-12 h-12 text-slate-500" />;
+        return <Wind className={`${iconClasses} text-slate-500`} />;
       case 'sunny':
       case 'clear':
-        return <Sun className="w-12 h-12 text-amber-400 animate-spin-slow" />;
+        return (
+          <Sun className={`${iconClasses} text-amber-400 animate-spin-slow`} />
+        );
       default:
-        return <Sun className="w-12 h-12 text-amber-400 animate-spin-slow" />;
+        return (
+          <Sun className={`${iconClasses} text-amber-400 animate-spin-slow`} />
+        );
     }
   };
 
@@ -505,9 +512,11 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       // Use a list of proxies to improve reliability.
       const proxies = [
-        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
         (u: string) =>
           `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+        (u: string) =>
+          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
       ];
 
       let lastError: Error | null = null;

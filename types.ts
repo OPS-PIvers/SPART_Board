@@ -122,11 +122,15 @@ export interface CalendarEvent {
   title: string;
 }
 
+export type RoutineStructure = 'linear' | 'cycle' | 'visual-cue' | 'components';
+export type RoutineAudience = 'student' | 'teacher';
+
 export interface RoutineStep {
   id: string;
   text: string;
   icon?: string;
   stickerUrl?: string;
+  imageUrl?: string;
   color?: string;
   attachedWidget?: {
     type: WidgetType;
@@ -217,6 +221,7 @@ export interface EmbedConfig {
   url: string;
   mode?: string;
   html?: string;
+  refreshInterval?: number;
 }
 
 export interface PollConfig {
@@ -262,6 +267,7 @@ export interface WorkSymbolsConfig {
     | null;
   instructionalRoutine?: string; // Legacy/K-8
   activeRoutines?: string[]; // New: 9-12 Multi-select
+  layout?: 'secondary' | 'elementary';
 }
 
 export interface WeatherConfig {
@@ -331,6 +337,8 @@ export interface InstructionalRoutinesConfig {
   customSteps: RoutineStep[];
   favorites: string[];
   scaleMultiplier: number;
+  structure?: RoutineStructure;
+  audience?: RoutineAudience;
 }
 
 export interface TimeToolConfig {
