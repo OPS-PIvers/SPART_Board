@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DraggableSticker } from './DraggableSticker';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { WidgetData } from '@/types';
@@ -102,5 +102,39 @@ describe('DraggableSticker', () => {
     // Test delete action
     fireEvent.click(screen.getByText('Delete'));
     expect(mockRemoveWidget).toHaveBeenCalledWith('sticker-1');
+  });
+
+  it('removes sticker on widget-escape-press event', async () => {
+    render(
+      <DraggableSticker widget={mockWidget}>
+        <div>Sticker Content</div>
+      </DraggableSticker>
+    );
+
+    const event = new CustomEvent('widget-escape-press', {
+      detail: { widgetId: 'sticker-1' },
+    });
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
+
+    expect(mockRemoveWidget).toHaveBeenCalledWith('sticker-1');
+  });
+
+  it('does not remove sticker on widget-escape-press for a different ID', async () => {
+    render(
+      <DraggableSticker widget={mockWidget}>
+        <div>Sticker Content</div>
+      </DraggableSticker>
+    );
+
+    const event = new CustomEvent('widget-escape-press', {
+      detail: { widgetId: 'other-sticker' },
+    });
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
+
+    expect(mockRemoveWidget).not.toHaveBeenCalled();
   });
 });
