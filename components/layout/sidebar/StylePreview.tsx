@@ -30,13 +30,20 @@ export const StylePreview = ({
 
       {/* Window Preview */}
       <div
-        className={`relative z-10 w-full p-4 border border-white/30 shadow-lg backdrop-blur-md transition-all duration-300 ${
+        className={`relative z-10 w-full p-4 transition-all duration-300 ${
+          pendingStyle.windowTransparency <= 0.001
+            ? ''
+            : 'border border-white/30 shadow-lg backdrop-blur-md'
+        } ${
           pendingStyle.windowBorderRadius === 'none'
             ? 'rounded-none'
             : `rounded-${pendingStyle.windowBorderRadius}`
         }`}
         style={{
-          backgroundColor: `rgba(255, 255, 255, ${pendingStyle.windowTransparency})`,
+          backgroundColor:
+            pendingStyle.windowTransparency <= 0.001
+              ? 'transparent'
+              : `rgba(255, 255, 255, ${pendingStyle.windowTransparency})`,
         }}
       >
         <div
@@ -53,7 +60,11 @@ export const StylePreview = ({
 
       {/* Dock Preview */}
       <div
-        className={`relative z-10 px-6 py-2 border border-white/30 shadow-lg backdrop-blur-md flex flex-col items-center gap-2 transition-all duration-300 ${
+        className={`relative z-10 px-6 py-2 transition-all duration-300 flex flex-col items-center gap-2 ${
+          pendingStyle.dockTransparency <= 0.001
+            ? ''
+            : 'border border-white/30 shadow-lg backdrop-blur-md'
+        } ${
           pendingStyle.dockBorderRadius === 'none'
             ? 'rounded-none'
             : pendingStyle.dockBorderRadius === 'full'
@@ -61,7 +72,10 @@ export const StylePreview = ({
               : `rounded-${pendingStyle.dockBorderRadius}`
         }`}
         style={{
-          backgroundColor: `rgba(255, 255, 255, ${pendingStyle.dockTransparency})`,
+          backgroundColor:
+            pendingStyle.dockTransparency <= 0.001
+              ? 'transparent'
+              : `rgba(255, 255, 255, ${pendingStyle.dockTransparency})`,
         }}
       >
         <div className="text-xxs font-black uppercase text-slate-400 tracking-widest leading-none">
