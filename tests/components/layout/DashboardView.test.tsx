@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardView } from '../../../components/layout/DashboardView';
@@ -148,5 +149,82 @@ describe('DashboardView Gestures & Navigation', () => {
     render(<DashboardView />);
     fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true });
     expect(mockLoadDashboard).not.toHaveBeenCalled();
+  });
+
+  it('calls addWidget with correct config when spart-sticker with url is dropped', () => {
+    const { container } = render(<DashboardView />);
+
+    const dashboardRoot = container.querySelector('#dashboard-root');
+    if (!dashboardRoot) throw new Error('Dashboard root not found');
+
+    const spartStickerData = JSON.stringify({
+      icon: 'Share2',
+      color: 'green',
+      label: 'SHARE',
+      url: 'https://example.com/custom-sticker.png',
+    });
+
+    const dataTransfer = {
+      getData: vi.fn((type: string) => {
+        if (type === 'application/spart-sticker') return spartStickerData;
+        return '';
+      }),
+    };
+
+    fireEvent.drop(dashboardRoot, {
+      clientX: 500,
+      clientY: 500,
+      dataTransfer,
+    });
+
+    expect(mockAddWidget).toHaveBeenCalledWith(
+      'sticker',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          icon: undefined,
+          url: 'https://example.com/custom-sticker.png',
+          color: 'green',
+          label: 'SHARE',
+        }),
+      })
+    );
+  });
+
+  it('calls addWidget with icon when spart-sticker WITHOUT url is dropped', () => {
+    const { container } = render(<DashboardView />);
+
+    const dashboardRoot = container.querySelector('#dashboard-root');
+    if (!dashboardRoot) throw new Error('Dashboard root not found');
+
+    const spartStickerData = JSON.stringify({
+      icon: 'Share2',
+      color: 'green',
+      label: 'SHARE',
+    });
+
+    const dataTransfer = {
+      getData: vi.fn((type: string) => {
+        if (type === 'application/spart-sticker') return spartStickerData;
+        return '';
+      }),
+    };
+
+    fireEvent.drop(dashboardRoot, {
+      clientX: 500,
+      clientY: 500,
+      dataTransfer,
+    });
+
+    expect(mockAddWidget).toHaveBeenCalledWith(
+      'sticker',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          icon: 'Share2',
+          url: undefined,
+          color: 'green',
+          label: 'SHARE',
+        }),
+      })
+    );
   });
 });
