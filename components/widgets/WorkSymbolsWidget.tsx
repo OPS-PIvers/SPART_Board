@@ -357,16 +357,20 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   );
 };
 
+const LAYOUTS: {
+  id: 'secondary' | 'elementary';
+  label: string;
+  icon: typeof LayoutList;
+}[] = [
+  { id: 'secondary', label: 'Secondary', icon: LayoutList },
+  { id: 'elementary', label: 'Elementary', icon: LayoutGrid },
+];
+
 export const WorkSymbolsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as WorkSymbolsConfig;
-
-  const layouts = [
-    { id: 'secondary', label: 'Secondary', icon: LayoutList },
-    { id: 'elementary', label: 'Elementary', icon: LayoutGrid },
-  ];
 
   return (
     <div className="space-y-6">
@@ -375,14 +379,14 @@ export const WorkSymbolsSettings: React.FC<{ widget: WidgetData }> = ({
           Layout Mode
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {layouts.map((l) => (
+          {LAYOUTS.map((l) => (
             <button
               key={l.id}
               onClick={() =>
                 updateWidget(widget.id, {
                   config: {
                     ...config,
-                    layout: l.id as 'secondary' | 'elementary',
+                    layout: l.id,
                   },
                 })
               }
