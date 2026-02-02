@@ -48,7 +48,13 @@ interface DraggableWindowProps {
   globalStyle: GlobalStyle;
 }
 
-const ResizeHandleIcon = ({ className }: { className?: string }) => (
+const ResizeHandleIcon = ({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) => (
   <svg
     width="10"
     height="10"
@@ -56,6 +62,7 @@ const ResizeHandleIcon = ({ className }: { className?: string }) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
+    style={style}
     aria-hidden="true"
   >
     <path d="M8 2L2 8" stroke="currentColor" strokeLinecap="round" />
@@ -610,7 +617,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 onPointerDown={(e) => handleResizeStart(e, 'se')}
                 className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
-                <ResizeHandleIcon className="text-slate-400/80" />
+                <ResizeHandleIcon
+                  className="text-slate-400"
+                  style={{ opacity: transparency }}
+                />
               </div>
             </div>
 
@@ -696,7 +706,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 onPointerDown={(e) => handleResizeStart(e, 'se')}
                 className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
-                <ResizeHandleIcon className="text-slate-500/80" />
+                <ResizeHandleIcon
+                  className="text-slate-500"
+                  style={{ opacity: transparency }}
+                />
               </div>
             </div>
           </div>
