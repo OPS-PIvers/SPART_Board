@@ -25,9 +25,6 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     glow = false,
   } = widget.config as ClockConfig;
 
-  // Base font size for the clock at its base dimensions (280x140)
-  const baseFontSize = showSeconds ? 48 : 64;
-
   const hours = time.getHours();
   const displayHours = format24
     ? hours.toString().padStart(2, '0')
@@ -61,11 +58,9 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div
         className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
         style={{
-          fontSize: `${baseFontSize}px`,
+          fontSize: showSeconds ? '15cqmin' : '20cqmin',
           color: themeColor,
-          textShadow: glow
-            ? `0 0 ${baseFontSize / 4}px ${themeColor}66`
-            : 'none',
+          textShadow: glow ? `0 0 4cqmin ${themeColor}66` : 'none',
         }}
       >
         {clockStyle === 'lcd' && (

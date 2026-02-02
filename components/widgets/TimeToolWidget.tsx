@@ -261,10 +261,9 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative min-h-0">
         {isVisual && (
           <svg
-            className="absolute"
-            width="220"
-            height="220"
+            className="absolute p-4 max-h-full max-w-full"
             viewBox="0 0 220 220"
+            preserveAspectRatio="xMidYMid meet"
           >
             <circle
               className="opacity-10"
@@ -304,7 +303,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
           </svg>
         )}
         <div
-          className={` transition-all duration-500 tabular-nums select-none ${getStatusColor()} ${isVisual ? 'text-5xl' : 'text-7xl'}`}
+          className={` transition-all duration-500 tabular-nums select-none ${getStatusColor()} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
         >
           {formatTime(displayTime)}
         </div>

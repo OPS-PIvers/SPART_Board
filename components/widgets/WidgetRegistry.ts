@@ -156,9 +156,24 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
 };
 
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
-  clock: { baseWidth: 280, baseHeight: 140, canSpread: true },
-  'time-tool': { baseWidth: 420, baseHeight: 400, canSpread: true },
-  traffic: { baseWidth: 120, baseHeight: 320, canSpread: false },
+  clock: {
+    baseWidth: 280,
+    baseHeight: 140,
+    canSpread: true,
+    skipScaling: true,
+  },
+  'time-tool': {
+    baseWidth: 420,
+    baseHeight: 400,
+    canSpread: true,
+    skipScaling: true,
+  },
+  traffic: {
+    baseWidth: 120,
+    baseHeight: 320,
+    canSpread: false,
+    skipScaling: true,
+  },
   text: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   checklist: {
     baseWidth: 280,
@@ -172,7 +187,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     canSpread: true,
     skipScaling: true,
   },
-  dice: { baseWidth: 240, baseHeight: 240, canSpread: false },
+  dice: { baseWidth: 240, baseHeight: 240, canSpread: false, skipScaling: true },
   sound: { baseWidth: 300, baseHeight: 300, canSpread: true },
   webcam: { baseWidth: 400, baseHeight: 300, canSpread: true },
   embed: { baseWidth: 480, baseHeight: 350, canSpread: true },
