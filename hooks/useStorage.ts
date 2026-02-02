@@ -77,6 +77,32 @@ export const useStorage = () => {
     );
   };
 
+  const uploadDisplayImage = async (
+    userId: string,
+    file: File
+  ): Promise<string> => {
+    if (!isAdmin && driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `display-${Date.now()}-${file.name}`,
+          'Assets/DisplayImages'
+        );
+        await driveService.makePublic(driveFile.id);
+        return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    const timestamp = Date.now();
+    return uploadFile(
+      `users/${userId}/display_images/${timestamp}-${file.name}`,
+      file
+    );
+  };
+
   const uploadScreenshot = async (
     userId: string,
     blob: Blob
@@ -162,6 +188,7 @@ export const useStorage = () => {
     uploadFile,
     uploadBackgroundImage,
     uploadSticker,
+    uploadDisplayImage,
     uploadScreenshot,
     deleteFile,
     uploadAdminBackground,
