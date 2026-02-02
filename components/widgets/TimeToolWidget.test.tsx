@@ -1,21 +1,28 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+} from '@testing-library/react';
 import { TimeToolWidget } from './TimeToolWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { WidgetData, TimeToolConfig } from '../../types';
+import { WidgetData, TimeToolConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import * as TimeToolAudio from '../../utils/timeToolAudio';
 
 // Mock dependencies
 vi.mock('../../context/useDashboard');
 vi.mock('../../utils/timeToolAudio', () => ({
   playTimerAlert: vi.fn(),
-  resumeAudio: vi.fn(),
+  resumeAudio: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockUpdateWidget = vi.fn();
 const mockActiveDashboard = {
   widgets: [],
+  globalStyle: DEFAULT_GLOBAL_STYLE,
 };
 
 const mockDashboardContext = {
@@ -33,16 +40,19 @@ describe('TimeToolWidget', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.useRealTimers();
   });
 
-  const createWidget = (configOverride: Partial<TimeToolConfig> = {}): WidgetData => ({
+  const createWidget = (
+    configOverride: Partial<TimeToolConfig> = {}
+  ): WidgetData => ({
     id: 'test-id',
     type: 'timeTool',
     config: {
       mode: 'timer',
       duration: 300,
-      elapsedTime: 300, // For timer, this is remaining time? No, code says "elapsedTime" is current display time.
+      elapsedTime: 300,
       isRunning: false,
       startTime: null,
       visualType: 'digital',
@@ -63,7 +73,10 @@ describe('TimeToolWidget', () => {
     render(<TimeToolWidget widget={widget} />);
 
     expect(screen.getByText('05:00')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /timer/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /timer/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
     expect(screen.getByText('START')).toBeInTheDocument();
   });
 
@@ -71,8 +84,6 @@ describe('TimeToolWidget', () => {
     const widget = createWidget({ visualType: 'visual' });
     render(<TimeToolWidget widget={widget} />);
 
-    // In visual mode, the text size is smaller (text-5xl vs text-7xl), but text content is same.
-    // We can check if the SVG is present.
     expect(screen.getByText('05:00')).toBeInTheDocument();
     // SVG circles are present
     const svg = screen.getByText('05:00').parentElement?.querySelector('svg');
@@ -167,26 +178,6 @@ describe('TimeToolWidget', () => {
     });
     render(<TimeToolWidget widget={widget} />);
 
-    // Find reset button (RotateCcw icon usually doesn't have text, but we can look for parent button or use test-id if available.
-    // The code uses Lucide icons. We can find by role button and index or adding aria-label if needed.
-    // But looking at code: <RotateCcw size={20} /> is inside a button.
-    // We can try to find the button that contains the SVG or is the 2nd button in that row.
-    // Or we can rely on the class structure.
-
-    // Let's assume we can find it by the button grouping.
-    // The control bar has [START/PAUSE] and [RESET]
-    // The reset button is the one with RotateCcw.
-
-    const buttons = screen.getAllByRole('button');
-    // We might have many buttons.
-    // Let's use the fact it is next to START/PAUSE.
-
-    // Ideally we'd add aria-label to the button in the component, but let's try to find it via the icon if possible or structural.
-    // The reset button is the one with `bg-slate-400/10` and `flex-1`.
-    // Let's just assume it's the one after Start/Pause.
-
-    // Start/Pause is usually the biggest button.
-    // Let's find "START" button, then its sibling.
     const startBtn = screen.getByText('START');
     const resetBtn = startBtn.nextElementSibling;
 
@@ -275,6 +266,7 @@ describe('TimeToolWidget', () => {
       updateWidget: mockUpdateWidget,
       activeDashboard: {
         widgets: [widget, wsWidget],
+        globalStyle: DEFAULT_GLOBAL_STYLE,
       },
     });
 
@@ -290,6 +282,73 @@ describe('TimeToolWidget', () => {
       expect.objectContaining({
         config: expect.objectContaining({
           voiceLevel: 2,
+        }),
+      })
+    );
+  });
+
+  it('enters editing mode when clicking time display in timer mode', () => {
+    render(
+      <TimeToolWidget
+        widget={createWidget({ mode: 'timer', isRunning: false })}
+      />
+    );
+
+    const timeDisplay = screen.getByText('05:00');
+    fireEvent.click(timeDisplay);
+
+    expect(screen.getByText('05')).toBeInTheDocument();
+    expect(screen.getByText('00')).toBeInTheDocument();
+    // Buttons for 1-9 should be present
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('9')).toBeInTheDocument();
+  });
+
+  it('does not enter editing mode when running', () => {
+    render(
+      <TimeToolWidget
+        widget={createWidget({ mode: 'timer', isRunning: true })}
+      />
+    );
+
+    const timeDisplay = screen.getByText('05:00');
+    fireEvent.click(timeDisplay);
+
+    // Should NOT show the keypad (buttons 1-9)
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
+  });
+
+  it('updates edit values when clicking keypad', () => {
+    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+
+    fireEvent.click(screen.getByText('05:00'));
+
+    // Click '1' then '2' for minutes (activeField defaults to 'min')
+    fireEvent.click(screen.getByText('1'));
+    fireEvent.click(screen.getByText('2'));
+
+    expect(screen.getByText('12')).toBeInTheDocument();
+  });
+
+  it('confirms edit and updates widget', () => {
+    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+
+    fireEvent.click(screen.getByText('05:00'));
+
+    // Set to 10:00
+    fireEvent.click(screen.getByText('1'));
+    fireEvent.click(screen.getByText('0'));
+
+    // Confirm using aria-label
+    const confirmButton = screen.getByLabelText('Confirm time');
+    fireEvent.click(confirmButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          elapsedTime: 600,
+          duration: 600,
         }),
       })
     );
