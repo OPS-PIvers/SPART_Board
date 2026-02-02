@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { WorkSymbolsWidget } from './WorkSymbolsWidget';
+import { WorkSymbolsWidget, WorkSymbolsSettings } from './WorkSymbolsWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { DashboardContextValue } from '../../context/DashboardContextValue';
 import { WidgetData, WorkSymbolsConfig } from '../../types';
@@ -60,6 +60,72 @@ describe('WorkSymbolsWidget', () => {
       config: {
         ...mockWidget.config,
         voiceLevel: 0,
+      },
+    });
+  });
+
+  it('applies two-column grid layout for elementary', () => {
+    const elementaryWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        layout: 'elementary',
+      } as WorkSymbolsConfig,
+    };
+    render(<WorkSymbolsWidget widget={elementaryWidget} />);
+
+    // The main container should have 'grid grid-cols-2'
+    const volumeButton = screen.getByText('Volume').closest('button');
+    const container = volumeButton?.parentElement;
+    expect(container?.className).toContain('grid');
+    expect(container?.className).toContain('grid-cols-2');
+
+    // Volume button should have 'col-span-2'
+    expect(volumeButton?.className).toContain('col-span-2');
+  });
+});
+
+describe('WorkSymbolsSettings', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useDashboard as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+    } as Partial<DashboardContextValue>);
+  });
+
+  it('renders layout options', () => {
+    render(<WorkSymbolsSettings widget={mockWidget} />);
+    expect(screen.getByText('Secondary')).toBeDefined();
+    expect(screen.getByText('Elementary')).toBeDefined();
+  });
+
+  it('updates layout to elementary', () => {
+    render(<WorkSymbolsSettings widget={mockWidget} />);
+    fireEvent.click(screen.getByText('Elementary'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('work-symbols-1', {
+      config: {
+        ...mockWidget.config,
+        layout: 'elementary',
+      },
+    });
+  });
+
+  it('updates layout back to secondary', () => {
+    const elementaryWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        layout: 'elementary',
+      } as WorkSymbolsConfig,
+    };
+    render(<WorkSymbolsSettings widget={elementaryWidget} />);
+    fireEvent.click(screen.getByText('Secondary'));
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('work-symbols-1', {
+      config: {
+        ...mockWidget.config,
+        layout: 'secondary',
       },
     });
   });
