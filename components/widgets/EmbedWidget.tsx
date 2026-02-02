@@ -2,46 +2,7 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
-
-const convertToEmbedUrl = (url: string): string => {
-  if (!url) return '';
-  const embedUrl = url.trim();
-
-  // YouTube
-  const ytMatch =
-    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.exec(
-      embedUrl
-    );
-  if (ytMatch) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  }
-
-  // Google Docs
-  if (embedUrl.includes('docs.google.com/document')) {
-    return embedUrl.replace(/\/edit.*$/, '/preview');
-  }
-
-  // Google Slides
-  if (embedUrl.includes('docs.google.com/presentation')) {
-    return embedUrl.replace(/\/edit.*$/, '/embed');
-  }
-
-  // Google Sheets
-  if (embedUrl.includes('docs.google.com/spreadsheets')) {
-    return embedUrl.replace(/\/edit.*$/, '/preview');
-  }
-
-  // Google Forms
-  if (
-    embedUrl.includes('docs.google.com/forms') &&
-    !embedUrl.includes('embedded=true')
-  ) {
-    const separator = embedUrl.includes('?') ? '&' : '?';
-    return `${embedUrl}${separator}embedded=true`;
-  }
-
-  return embedUrl;
-};
+import { convertToEmbedUrl } from '../../utils/urlHelpers';
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;
@@ -80,13 +41,18 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
+  const sandbox =
+    mode === 'url'
+      ? 'allow-scripts allow-forms allow-popups allow-modals allow-same-origin'
+      : 'allow-scripts allow-forms allow-popups allow-modals';
+
   return (
     <div className="w-full h-full bg-transparent flex flex-col">
       <iframe
         src={mode === 'url' ? embedUrl : undefined}
         srcDoc={mode === 'code' ? html : undefined}
         className="flex-1 w-full border-none"
-        sandbox="allow-scripts allow-forms allow-popups"
+        sandbox={sandbox}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
       />
