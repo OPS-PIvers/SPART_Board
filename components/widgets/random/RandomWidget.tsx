@@ -146,10 +146,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const handleReset = () => {
     updateWidget(widget.id, {
       config: {
-        ...config,
         remainingStudents: [],
         lastResult: null,
-      },
+      } as unknown as WidgetConfig,
     });
     setDisplayResult('');
     setRotation(0);
