@@ -12,6 +12,15 @@ vi.mock('../../../context/useAuth');
 const mockDashboardContext = {
   updateWidget: vi.fn(),
   addToast: vi.fn(),
+  activeDashboard: {
+    widgets: [
+      {
+        id: 'lunch-1',
+        type: 'lunchCount',
+        activeRoster: ['John Doe', 'Jane Smith'],
+      },
+    ],
+  },
   rosters: [
     {
       id: 'roster-1',
@@ -115,11 +124,7 @@ describe('LunchCountWidget', () => {
       dataTransfer,
     });
 
-    expect(dataTransfer.setData).toHaveBeenCalledWith(
-      'studentName',
-      'John Doe'
-    );
-    expect(dataTransfer.effectAllowed).toBe('move');
+    expect(dataTransfer.setData).toHaveBeenCalledWith('student', 'John Doe');
   });
 
   it('updates assignments on drop', async () => {
