@@ -9,31 +9,42 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '../config/firebase';
-import { InstructionalRoutine } from '../config/instructionalRoutines';
+import {
+  InstructionalRoutine,
+  ROUTINES as DEFAULT_ROUTINES,
+} from '../config/instructionalRoutines';
 
 const COLLECTION_NAME = 'instructional_routines';
 
 export const useInstructionalRoutines = () => {
-  const [routines, setRoutines] = useState<InstructionalRoutine[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [routines, setRoutines] = useState<InstructionalRoutine[]>(
+    isAuthBypass ? DEFAULT_ROUTINES : []
+  );
+  const [loading, setLoading] = useState(!isAuthBypass);
 
   useEffect(() => {
     if (isAuthBypass) {
-      // In bypass mode, we might just use the static ones or a mock store
-      // For now, let's just return an empty list or mock some
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(timer);
+      return;
     }
 
     const routinesRef = collection(db, COLLECTION_NAME);
     const q = query(routinesRef, orderBy('name'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loaded: InstructionalRoutine[] = [];
+      const cloudRoutines: InstructionalRoutine[] = [];
       snapshot.forEach((doc) => {
-        loaded.push({ ...doc.data(), id: doc.id } as InstructionalRoutine);
+        cloudRoutines.push({
+          ...doc.data(),
+          id: doc.id,
+        } as InstructionalRoutine);
       });
-      setRoutines(loaded);
+
+      // Merge defaults with cloud routines
+      const routineMap = new Map<string, InstructionalRoutine>();
+      DEFAULT_ROUTINES.forEach((r) => routineMap.set(r.id, r));
+      cloudRoutines.forEach((r) => routineMap.set(r.id, r));
+
+      setRoutines(Array.from(routineMap.values()));
       setLoading(false);
     });
 

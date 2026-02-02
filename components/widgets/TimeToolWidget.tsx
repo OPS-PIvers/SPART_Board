@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   TimeToolConfig,
   WidgetData,
@@ -9,7 +9,6 @@ import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
-import { useScaledFont } from '../../hooks/useScaledFont';
 
 interface Props {
   widget: WidgetData;
@@ -19,27 +18,6 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
   const [showSoundPicker, setShowSoundPicker] = useState(false);
-
-  const { w, h } = widget;
-
-  // Dynamic sizing based on current window dimensions
-  const baseFontSize = useScaledFont(
-    w,
-    h,
-    config.visualType === 'visual' ? 0.8 : 1.2,
-    24,
-    200
-  );
-  const visualSize = useMemo(() => Math.min(w * 0.7, h * 0.55), [w, h]);
-  const strokeWidth = useMemo(
-    () => Math.max(4, visualSize * 0.05),
-    [visualSize]
-  );
-  const radius = useMemo(
-    () => (visualSize - strokeWidth) / 2,
-    [visualSize, strokeWidth]
-  );
-  const circumference = useMemo(() => 2 * Math.PI * radius, [radius]);
 
   // Local state for the smooth display time while running
   const [runningDisplayTime, setRunningDisplayTime] = useState(
@@ -198,13 +176,13 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col h-full rounded-[1.5rem] shadow-xl border border-white/10 transition-all duration-500 ${themeClass} w-full overflow-hidden`}
+      className={`flex flex-col h-full rounded-[2.5rem] shadow-xl border border-white/30 transition-all duration-500 ${themeClass} w-full`}
     >
       {/* Header: Digital/Visual Toggle & Themes */}
-      <div className="px-4 py-3 flex justify-between items-center shrink-0">
-        <div className="bg-slate-400/10 p-1 rounded-lg flex items-center relative w-28">
+      <div className="px-8 pt-6 flex justify-between items-center shrink-0">
+        <div className="bg-slate-400/10 p-1 rounded-xl flex items-center relative w-36">
           <div
-            className={`absolute w-[calc(50%-4px)] h-[calc(100%-8px)] bg-blue-500 rounded shadow-sm transition-transform duration-300 ${isVisual ? 'translate-x-full' : ''}`}
+            className={`absolute w-[calc(50%-4px)] h-[calc(100%-8px)] bg-blue-500 rounded-lg shadow-sm transition-transform duration-300 ${isVisual ? 'translate-x-full' : ''}`}
           />
           <button
             onClick={() =>
@@ -212,7 +190,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 config: { ...config, visualType: 'digital' },
               })
             }
-            className={`relative z-10 flex-1 py-0.5 text-[10px] font-bold uppercase transition-colors ${!isVisual ? 'text-white' : 'text-slate-400'}`}
+            className={`relative z-10 flex-1 py-1 text-xxs  uppercase transition-colors ${!isVisual ? 'text-white' : 'text-slate-400'}`}
           >
             Digital
           </button>
@@ -222,26 +200,26 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 config: { ...config, visualType: 'visual' },
               })
             }
-            className={`relative z-10 flex-1 py-0.5 text-[10px] font-bold uppercase transition-colors ${isVisual ? 'text-white' : 'text-slate-400'}`}
+            className={`relative z-10 flex-1 py-1 text-xxs  uppercase transition-colors ${isVisual ? 'text-white' : 'text-slate-400'}`}
           >
             Visual
           </button>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {(['light', 'dark', 'glass'] as const).map((t) => (
             <button
               key={t}
               onClick={() =>
                 updateWidget(widget.id, { config: { ...config, theme: t } })
               }
-              className={`w-3.5 h-3.5 rounded-full border border-black/20 shadow-sm transition-transform hover:scale-110 active:scale-95 ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-800' : 'bg-white/30'}`}
+              className={`w-4 h-4 rounded-full border border-black shadow-sm transition-transform hover:scale-110 active:scale-95 ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-800' : 'bg-white/30'}`}
             />
           ))}
         </div>
       </div>
 
       {/* Mode Tabs */}
-      <div className="px-4 flex gap-3 border-b border-white/10 shrink-0">
+      <div className="px-8 mt-4 flex gap-4 border-b border-white/5 shrink-0">
         <button
           onClick={() => {
             updateWidget(widget.id, {
@@ -256,7 +234,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             });
             setRunningDisplayTime(600);
           }}
-          className={`pb-1 text-[10px] font-bold uppercase tracking-wider transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
+          className={`pb-2 text-xxs  uppercase tracking-widest transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
         >
           Timer
         </button>
@@ -273,29 +251,28 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             });
             setRunningDisplayTime(0);
           }}
-          className={`pb-1 text-[10px] font-bold uppercase tracking-wider transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
+          className={`pb-2 text-xxs  uppercase tracking-widest transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-400'}`}
         >
           Stopwatch
         </button>
       </div>
 
       {/* Center: Time Display */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-0">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 relative min-h-0">
         {isVisual && (
           <svg
-            className="absolute"
-            width={visualSize}
-            height={visualSize}
-            viewBox={`0 0 ${visualSize} ${visualSize}`}
+            className="absolute p-4 max-h-full max-w-full"
+            viewBox="0 0 220 220"
+            preserveAspectRatio="xMidYMid meet"
           >
             <circle
               className="opacity-10"
               stroke="currentColor"
-              strokeWidth={strokeWidth}
+              strokeWidth="10"
               fill="transparent"
-              r={radius}
-              cx={visualSize / 2}
-              cy={visualSize / 2}
+              r="95"
+              cx="110"
+              cy="110"
             />
             <circle
               className="transition-all duration-300"
@@ -306,38 +283,37 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                     ? STANDARD_COLORS.amber
                     : STANDARD_COLORS.blue
               }
-              strokeWidth={strokeWidth}
+              strokeWidth="10"
               strokeLinecap="round"
               fill="transparent"
-              r={radius}
-              cx={visualSize / 2}
-              cy={visualSize / 2}
-              strokeDasharray={circumference}
+              r="95"
+              cx="110"
+              cy="110"
+              strokeDasharray="597"
               strokeDashoffset={
-                circumference -
+                597 -
                 (config.mode === 'timer' ? displayTime / config.duration : 1) *
-                  circumference
+                  597
               }
               style={{
-                transform: `rotate(-90deg)`,
+                transform: 'rotate(-90deg)',
                 transformOrigin: '50% 50%',
               }}
             />
           </svg>
         )}
         <div
-          className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()}`}
-          style={{ fontSize: baseFontSize }}
+          className={` transition-all duration-500 tabular-nums select-none ${getStatusColor()} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
         >
           {formatTime(displayTime)}
         </div>
         {!isVisual && config.mode === 'timer' && (
-          <div className="flex flex-wrap justify-center gap-1.5 mt-4 max-w-full">
+          <div className="flex gap-2 mt-4">
             {[60, 300, 600, 900, 1800].map((s) => (
               <button
                 key={s}
                 onClick={() => setTime(s)}
-                className="px-2 py-1 text-[10px] font-bold bg-slate-400/10 rounded-md hover:bg-slate-400/20 transition-colors whitespace-nowrap"
+                className="px-3 py-1 text-xxs  bg-slate-400/10 rounded-lg hover:bg-slate-400/20 transition-colors"
               >
                 {s >= 60 ? `${s / 60}m` : `${s}s`}
               </button>
@@ -347,32 +323,32 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Controls */}
-      <div className="px-4 pb-4 flex gap-2 shrink-0">
+      <div className="px-8 pb-6 flex gap-3 shrink-0">
         <button
           onClick={
             config.isRunning
               ? () => handleStop(runningDisplayTime)
               : handleStart
           }
-          className={`flex-[3] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 ${config.isRunning ? 'bg-slate-800 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'}`}
+          className={`flex-[3] py-4 rounded-2xl  text-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${config.isRunning ? 'bg-slate-800 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'}`}
         >
           {config.isRunning ? (
-            <Pause size={14} fill="currentColor" />
+            <Pause size={20} fill="currentColor" />
           ) : (
-            <Play size={14} fill="currentColor" />
+            <Play size={20} fill="currentColor" />
           )}
           {config.isRunning ? 'PAUSE' : 'START'}
         </button>
         <button
           onClick={handleReset}
-          className="flex-1 bg-slate-400/10 rounded-xl flex items-center justify-center hover:bg-slate-400/20 transition-all active:scale-95 text-slate-500"
+          className="flex-1 bg-slate-400/10 rounded-2xl flex items-center justify-center hover:bg-slate-400/20 transition-all active:scale-95"
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={20} />
         </button>
       </div>
 
       {/* Footer: Audio Selection */}
-      <div className="px-4 py-2 bg-black/5 border-t border-white/5 flex justify-end items-center relative shrink-0">
+      <div className="px-8 py-4 bg-black/5 border-t border-white/5 flex justify-end items-center relative shrink-0">
         <div className="relative">
           <button
             onClick={() => {
@@ -380,13 +356,13 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             }}
             className="flex items-center gap-2 text-slate-400 hover:text-blue-500 transition-colors"
           >
-            <Bell size={12} />
-            <span className="text-[10px] font-bold uppercase tracking-wider">
+            <Bell size={14} />
+            <span className="text-xxs  uppercase tracking-widest">
               {config.selectedSound}
             </span>
           </button>
           {showSoundPicker && (
-            <div className="absolute bottom-full right-0 mb-2 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700 p-1 z-50">
+            <div className="absolute bottom-full right-0 mb-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50">
               {(['Chime', 'Blip', 'Gong', 'Alert'] as const).map((s) => (
                 <button
                   key={s}
@@ -396,7 +372,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                     });
                     setShowSoundPicker(false);
                   }}
-                  className={`w-full text-left px-2 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${config.selectedSound === s ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xxs  uppercase transition-colors ${config.selectedSound === s ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                 >
                   {s}
                 </button>
