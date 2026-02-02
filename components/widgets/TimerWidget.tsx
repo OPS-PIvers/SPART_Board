@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimerConfig } from '@/types';
+import { useButtonAccessibility } from '@/hooks/useButtonAccessibility';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -177,15 +178,7 @@ export const TimerWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {!isEditing ? (
         <>
           <div
-            role="button"
-            tabIndex={0}
-            onClick={startEditing}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                startEditing();
-              }
-            }}
+            {...useButtonAccessibility(startEditing)}
             className={`font-mono font-bold leading-none select-none transition-all cursor-pointer tabular-nums hover:text-blue-500 ${
               isDone
                 ? 'text-red-600 scale-110 animate-pulse'

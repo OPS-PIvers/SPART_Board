@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/useAuth';
 import { useStorage } from '@/hooks/useStorage';
+import { useButtonAccessibility } from '@/hooks/useButtonAccessibility';
 import {
   collection,
   onSnapshot,
@@ -386,15 +387,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
               return (
                 <div
                   key={notebook.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSelect(notebook.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleSelect(notebook.id);
-                    }
-                  }}
+                  {...useButtonAccessibility(() => handleSelect(notebook.id))}
                   className="group relative aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all border border-slate-200"
                 >
                   {firstPageUrl ? (
