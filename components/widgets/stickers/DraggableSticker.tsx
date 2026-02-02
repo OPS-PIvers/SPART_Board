@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ArrowUp,
   ArrowDown,
@@ -36,6 +36,18 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
   const config = widget.config as StickerConfig;
   const rotation = config.rotation ?? 0;
+
+  useEffect(() => {
+    const handleEscapePress = (e: Event) => {
+      const customEvent = e as CustomEvent<{ widgetId: string }>;
+      if (customEvent.detail?.widgetId !== widget.id) return;
+      removeWidget(widget.id);
+    };
+
+    window.addEventListener('widget-escape-press', handleEscapePress);
+    return () =>
+      window.removeEventListener('widget-escape-press', handleEscapePress);
+  }, [widget.id, removeWidget]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // If clicking menu or handles, don't drag

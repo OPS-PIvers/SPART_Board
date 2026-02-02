@@ -190,4 +190,9 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 500,
     config: { activeNotebookId: null },
   },
+  recessGear: {
+    w: 250,
+    h: 280,
+    config: { linkedWeatherWidgetId: null, useFeelsLike: true },
+  },
 };
