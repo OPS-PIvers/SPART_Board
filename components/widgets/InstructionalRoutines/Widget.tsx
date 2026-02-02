@@ -357,7 +357,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             </button>
           </div>
         </div>
-        <div className="flex-1 grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
           {displayedRoutines.map((r) => {
             const Icon =
               (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
