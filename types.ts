@@ -220,6 +220,7 @@ export interface EmbedConfig {
   url: string;
   mode?: string;
   html?: string;
+  refreshInterval?: number;
 }
 
 export interface PollConfig {
