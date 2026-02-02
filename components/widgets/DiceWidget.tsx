@@ -97,15 +97,15 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // Calculate dice size based on widget dimensions and count
   const diceSize = useMemo(() => {
     const availableW = widget.w - 40;
-    const availableH = widget.h - 120; // Account for roll button and padding
+    const availableH = widget.h - 100; // Account for roll button and padding
 
     // Approximate size based on count (single row vs wrap)
     if (diceCount === 1) {
-      return Math.min(availableW, availableH, 160);
+      return Math.min(availableW, availableH, 400); // Increased from 160
     }
-    const maxW = availableW / Math.min(diceCount, 3) - 16;
-    const maxH = availableH / Math.ceil(diceCount / 3) - 16;
-    return Math.min(maxW, maxH, 120);
+    const maxW = availableW / Math.min(diceCount, 3) - 24;
+    const maxH = availableH / Math.ceil(diceCount / 3) - 24;
+    return Math.min(maxW, maxH, 300); // Increased from 120
   }, [widget.w, widget.h, diceCount]);
 
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
