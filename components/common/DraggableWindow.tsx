@@ -171,7 +171,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Don't drag if clicking interactive elements or resize handle
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(
-      'button, input, textarea, select, canvas, iframe, label, [role="button"], .resize-handle, [draggable="true"], [data-no-drag="true"], [contenteditable="true"]'
+      'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .resize-handle, .cursor-pointer, [draggable="true"], [data-no-drag="true"], [contenteditable="true"]'
     );
     if (isInteractive) return;
 
@@ -324,7 +324,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Avoid triggering when clicking interactive elements
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(
-      'button, input, textarea, select, canvas, iframe, label, [role="button"], [contenteditable="true"]'
+      'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .cursor-pointer, [contenteditable="true"]'
     );
     if (isInteractive) return;
 
