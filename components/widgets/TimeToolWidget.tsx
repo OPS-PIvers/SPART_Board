@@ -535,7 +535,7 @@ const DigitalMode: React.FC<{
       </button>
 
       {config.mode === 'timer' && (
-        <div className="flex flex-wrap items-center justify-center gap-[2cqmin] mt-[6cqmin]">
+        <div className="flex flex-wrap items-center justify-center gap-[2cqmin] mt-[2cqmin] mb-[6cqmin]">
           {[1, 5, 10, 30].map((m) => (
             <button
               key={m}
@@ -620,7 +620,7 @@ const VisualMode: React.FC<{
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-[2cqmin] mt-[4cqmin]">
+      <div className="flex flex-wrap items-center justify-center gap-[2cqmin] mt-[2cqmin] mb-[4cqmin]">
         {[1, 5, 10, 30].map((m) => (
           <button
             key={m}
