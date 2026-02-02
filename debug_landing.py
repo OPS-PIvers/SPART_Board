@@ -6,7 +6,7 @@ def debug_landing():
         page = browser.new_page()
         page.goto("http://localhost:3000")
         page.wait_for_timeout(5000)
-        page.screenshot(path="/home/jules/verification/debug_landing.png")
+        page.screenshot(path="verification/debug_landing.png")
         print(f"URL: {page.url}")
         print(f"Content: {page.content()[:1000]}")
         browser.close()

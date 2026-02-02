@@ -27,6 +27,8 @@ import {
 } from '../../../utils/imageProcessing';
 import { PromptDialog } from './PromptDialog';
 
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
 interface LibraryManagerProps {
   routine: InstructionalRoutine;
   onChange: (routine: InstructionalRoutine) => void;
@@ -42,7 +44,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
-  const { uploadSticker } = useStorage();
+  const { uploadSticker, uploadDisplayImage } = useStorage();
   const [uploadingStickerIndex, setUploadingStickerIndex] = useState<
     number | null
   >(null);
@@ -88,12 +90,14 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
     }
   };
 
-  const handleStickerUpload = async (file: File, index: number) => {
+  const handleImageUpload = async (
+    file: File,
+    index: number,
+    type: 'sticker' | 'display'
+  ) => {
     if (!user || !file) return;
 
-    // Validate file size (max 5MB)
-    const maxFileSizeBytes = 5 * 1024 * 1024;
-    if (file.size > maxFileSizeBytes) {
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
       setErrorMessage(
         'The selected image is too large. Please choose an image smaller than 5MB.'
       );
@@ -101,85 +105,70 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       return;
     }
 
-    setUploadingStickerIndex(index);
+    const setUploading =
+      type === 'sticker' ? setUploadingStickerIndex : setUploadingImageIndex;
+    setUploading(index);
+
     setProcessingMessage(
-      'Processing sticker... This may take a few seconds for large images.'
+      type === 'sticker'
+        ? 'Processing sticker... This may take a few seconds for large images.'
+        : 'Uploading display image...'
     );
+
     try {
-      // Process image
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
+      let finalFile = file;
 
-      const noBg = await removeBackground(dataUrl);
-      const trimmed = await trimImageWhitespace(noBg);
+      if (type === 'sticker') {
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
 
-      setProcessingMessage('Uploading sticker...');
+        const noBg = await removeBackground(dataUrl);
+        const trimmed = await trimImageWhitespace(noBg);
 
-      // Convert back to File
-      const response = await fetch(trimmed);
-      const blob = await response.blob();
-      const processedFile = new File(
-        [blob],
-        file.name.replace(/\.[^/.]+$/, '') + '.png',
-        { type: 'image/png' }
-      );
+        setProcessingMessage('Uploading sticker...');
+        const response = await fetch(trimmed);
+        const blob = await response.blob();
+        finalFile = new File(
+          [blob],
+          file.name.replace(/\.[^/.]+$/, '') + '.png',
+          {
+            type: 'image/png',
+          }
+        );
+      }
 
-      const url = await uploadSticker(user.uid, processedFile);
+      const url =
+        type === 'sticker'
+          ? await uploadSticker(user.uid, finalFile)
+          : await uploadDisplayImage(user.uid, finalFile);
 
-      // Update step
       const nextSteps = [...routine.steps];
-      nextSteps[index] = { ...nextSteps[index], stickerUrl: url };
+      nextSteps[index] = {
+        ...nextSteps[index],
+        [type === 'sticker' ? 'stickerUrl' : 'imageUrl']: url,
+      };
       onChange({ ...routine, steps: nextSteps });
-
       setProcessingMessage(null);
     } catch (e) {
-      console.error('Sticker upload failed:', e);
+      console.error(`${type} upload failed:`, e);
       setErrorMessage(
-        'Failed to upload sticker. Please check your image and try again.'
+        `Failed to upload ${type}. Please check your image and try again.`
       );
       setTimeout(() => setErrorMessage(null), 3000);
       setProcessingMessage(null);
     } finally {
-      setUploadingStickerIndex(null);
+      setUploading(null);
     }
   };
 
-  const handleDisplayImageUpload = async (file: File, index: number) => {
-    if (!user || !file) return;
+  const handleStickerUpload = (file: File, index: number) =>
+    handleImageUpload(file, index, 'sticker');
 
-    // Validate file size (max 5MB)
-    const maxFileSizeBytes = 5 * 1024 * 1024;
-    if (file.size > maxFileSizeBytes) {
-      setErrorMessage(
-        'The selected image is too large. Please choose an image smaller than 5MB.'
-      );
-      setTimeout(() => setErrorMessage(null), 4000);
-      return;
-    }
-
-    setUploadingImageIndex(index);
-    setProcessingMessage('Uploading display image...');
-    try {
-      const url = await uploadSticker(user.uid, file);
-
-      // Update step
-      const nextSteps = [...routine.steps];
-      nextSteps[index] = { ...nextSteps[index], imageUrl: url };
-      onChange({ ...routine, steps: nextSteps });
-
-      setProcessingMessage(null);
-    } catch (e) {
-      console.error('Image upload failed:', e);
-      setErrorMessage('Failed to upload image. Please try again.');
-      setTimeout(() => setErrorMessage(null), 3000);
-      setProcessingMessage(null);
-    } finally {
-      setUploadingImageIndex(null);
-    }
-  };
+  const handleDisplayImageUpload = (file: File, index: number) =>
+    handleImageUpload(file, index, 'display');
 
   return (
     <div className="flex flex-col h-full bg-slate-50 p-4 overflow-y-auto custom-scrollbar">
