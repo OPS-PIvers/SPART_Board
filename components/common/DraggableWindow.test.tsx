@@ -414,7 +414,7 @@ describe('DraggableWindow', () => {
     const event = new CustomEvent('widget-escape-press', {
       detail: { widgetId: 'test-widget' },
     });
-    await act(async () => {
+    act(() => {
       window.dispatchEvent(event);
     });
 
@@ -444,7 +444,7 @@ describe('DraggableWindow', () => {
     const event = new CustomEvent('widget-escape-press', {
       detail: { widgetId: 'test-widget' },
     });
-    await act(async () => {
+    act(() => {
       window.dispatchEvent(event);
     });
 
