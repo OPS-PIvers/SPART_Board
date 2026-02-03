@@ -8,6 +8,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   transparency?: number;
   cornerRadius?: string;
   globalStyle?: GlobalStyle;
+  allowInvisible?: boolean;
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -29,6 +30,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     // Determine values, prioritizing props over global settings
     const finalTransparency =
       propTransparency ?? globalStyle.windowTransparency;
+
     const finalRadiusClass = propCornerRadius
       ? `rounded-${propCornerRadius}`
       : globalStyle.windowBorderRadius === 'none'
