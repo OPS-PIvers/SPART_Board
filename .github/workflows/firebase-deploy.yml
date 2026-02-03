@@ -57,10 +57,13 @@ jobs:
         working-directory: functions
         run: pnpm run build
 
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Deploy to Firebase Hosting (Live)
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: spartboard
+          channelId: live
 
-      - name: Deploy to Firebase
-        run: pnpm exec firebase deploy --project spartboard
+      - name: Deploy Firebase Rules and Functions
+        run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard
