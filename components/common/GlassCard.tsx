@@ -61,7 +61,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
             ? 'none'
             : `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
           backdropFilter:
-            !isInvisible && finalTransparency > 0 && !disableBlur
+            !isInvisible && !disableBlur && finalTransparency > 0
               ? `blur(${12 * factor}px)`
               : 'none',
           ...style,
