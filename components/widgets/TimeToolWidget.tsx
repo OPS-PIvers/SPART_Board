@@ -223,6 +223,11 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
     if (percent <= 0.25) return 'text-amber-500';
     return config.theme === 'light' ? 'text-slate-900' : 'text-white';
   };
+  const fontSizeClass = isVisual
+    ? 'text-6xl'
+    : config.mode === 'stopwatch'
+      ? 'text-[7rem]'
+      : 'text-[8rem]';
 
   return (
     <div
@@ -437,7 +442,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             <button
               onClick={startEditing}
               data-testid="time-display"
-              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-6xl' : config.mode === 'stopwatch' ? 'text-[7rem]' : 'text-[8rem]'}`}
+              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${fontSizeClass}`}
               disabled={config.isRunning || config.mode !== 'timer'}
             >
               {formatTime(displayTime)}
