@@ -212,6 +212,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       style={{
         paddingTop: HEADER_HEIGHT,
         padding: PADDING,
+        containerType: 'size',
       }}
     >
       {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
