@@ -1,14 +1,15 @@
 import { render, screen } from '@testing-library/react';
-import { WeatherWidget } from './WeatherWidget';
-import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../types';
+import { WeatherWidget } from './Widget';
+import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../../types';
 import { vi, describe, it, expect } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
-vi.mock('../../context/useDashboard', () => ({
+vi.mock('../../../context/useDashboard', () => ({
   useDashboard: () => ({
     updateWidget: vi.fn(),
     addToast: vi.fn(),
+    activeDashboard: undefined, // Explicitly undefined to trigger default
   }),
 }));
 
@@ -36,7 +37,7 @@ const mockFeaturePermissions = [
   },
 ];
 
-vi.mock('../../context/useAuth', () => ({
+vi.mock('../../../context/useAuth', () => ({
   useAuth: () => ({
     featurePermissions: mockFeaturePermissions,
   }),
@@ -48,7 +49,7 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
 }));
 
-vi.mock('../../config/firebase', () => ({
+vi.mock('../../../config/firebase', () => ({
   db: {},
 }));
 
@@ -99,16 +100,5 @@ describe('WeatherWidget', () => {
     };
     render(<WeatherWidget widget={widget} />);
     expect(screen.getByText('It is hot!')).toBeInTheDocument();
-    // Should fallback to default icon logic since no imageUrl provided in range
-    // But logic says: "if (match.imageUrl) { displayImage = ... }"
-    // So if no imageUrl, it keeps default displayImage (clothing icon)
-    // Default for 90 is Short Sleeves.
-    // The message is replaced, but the image is NOT replaced if match.imageUrl is undefined?
-    // Let's check logic:
-    // let displayImage = <span ...>{clothing.icon}</span>;
-    // if (match.imageUrl) { displayImage = ... }
-    // So yes, it shows clothing icon.
-    // We can't easily test the icon character rendering in jsdom without inspecting text content.
-    // But we know 'It is hot!' is there.
   });
 });
