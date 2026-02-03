@@ -21,6 +21,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       transparency: propTransparency,
       cornerRadius: propCornerRadius,
       globalStyle: propGlobalStyle,
+      allowInvisible = false,
       disableBlur = false,
       style,
       ...props
@@ -32,6 +33,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     // Determine values, prioritizing props over global settings
     const finalTransparency =
       propTransparency ?? globalStyle.windowTransparency;
+
+    const isInvisible = allowInvisible && finalTransparency <= 0.001;
 
     const finalRadiusClass = propCornerRadius
       ? `rounded-${propCornerRadius}`
@@ -48,11 +51,17 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         ref={ref}
         className={`${finalRadiusClass} ${className}`}
         style={{
-          backgroundColor: `rgba(255, 255, 255, ${finalTransparency})`,
-          border: `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
-          boxShadow: `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
+          backgroundColor: isInvisible
+            ? 'transparent'
+            : `rgba(255, 255, 255, ${finalTransparency})`,
+          border: isInvisible
+            ? 'none'
+            : `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
+          boxShadow: isInvisible
+            ? 'none'
+            : `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
           backdropFilter:
-            !disableBlur && finalTransparency > 0
+            !isInvisible && !disableBlur && finalTransparency > 0
               ? `blur(${12 * factor}px)`
               : 'none',
           ...style,
@@ -60,7 +69,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         {...props}
       >
         {/* Glossy gradient overlay */}
-        {gradientOverlay && (
+        {gradientOverlay && !isInvisible && (
           <div
             className="absolute inset-0 pointer-events-none rounded-[inherit] -z-10"
             style={{

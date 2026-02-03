@@ -34,6 +34,7 @@ export const StylePreview = ({
         globalStyle={pendingStyle}
         transparency={pendingStyle.windowTransparency}
         cornerRadius={pendingStyle.windowBorderRadius}
+        allowInvisible={true}
         className="relative z-10 w-full p-4 transition-all duration-300"
       >
         <div
@@ -53,6 +54,7 @@ export const StylePreview = ({
         globalStyle={pendingStyle}
         transparency={pendingStyle.dockTransparency}
         cornerRadius={pendingStyle.dockBorderRadius}
+        allowInvisible={true}
         className="relative z-10 px-6 py-2 flex flex-col items-center gap-2 transition-all duration-300"
       >
         <div className="text-xxs font-black uppercase text-slate-400 tracking-widest leading-none">
