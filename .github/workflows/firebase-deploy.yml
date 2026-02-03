@@ -65,5 +65,10 @@ jobs:
           projectId: spartboard
           channelId: live
 
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+
       - name: Deploy Firebase Rules and Functions
         run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard
