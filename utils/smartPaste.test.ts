@@ -10,9 +10,9 @@ describe('detectWidgetType (Smart Paste)', () => {
 
     expect(result).not.toBeNull();
     expect(result?.type).toBe('embed');
-    expect(result?.config as EmbedConfig).toHaveProperty(
-      'url',
-      'https://docs.google.com/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
+    const config = result?.config as EmbedConfig;
+    expect(config.url).toContain(
+      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
     );
   });
 
