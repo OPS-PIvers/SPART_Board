@@ -5,6 +5,7 @@ import {
   fireEvent,
   act,
   cleanup,
+  waitFor,
 } from '@testing-library/react';
 import { TimeToolWidget } from './TimeToolWidget';
 import { useDashboard } from '../../context/useDashboard';
@@ -91,11 +92,12 @@ describe('TimeToolWidget', () => {
   });
 
   it('starts the timer', async () => {
+    vi.useRealTimers();
     const widget = createWidget({ elapsedTime: 300, isRunning: false });
     render(<TimeToolWidget widget={widget} />);
 
     const startButton = screen.getByText('START');
-    await act(async () => {
+    act(() => {
       fireEvent.click(startButton);
     });
 
@@ -103,15 +105,17 @@ describe('TimeToolWidget', () => {
     expect(TimeToolAudio.resumeAudio).toHaveBeenCalled();
 
     // Check updateWidget called with isRunning: true and startTime
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'test-id',
-      expect.objectContaining({
-        config: expect.objectContaining({
-          isRunning: true,
-          elapsedTime: 300,
-        }),
-      })
-    );
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'test-id',
+        expect.objectContaining({
+          config: expect.objectContaining({
+            isRunning: true,
+            elapsedTime: 300,
+          }),
+        })
+      );
+    });
   });
 
   it('updates display time while running (without calling updateWidget)', () => {

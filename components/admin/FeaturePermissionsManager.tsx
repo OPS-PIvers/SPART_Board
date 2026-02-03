@@ -43,6 +43,7 @@ import { LibraryManager } from '../widgets/InstructionalRoutines/LibraryManager'
 import { InstructionalRoutine } from '../../config/instructionalRoutines';
 import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
+import { Toggle } from '../common/Toggle';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const { routines, deleteRoutine, saveRoutine } = useInstructionalRoutines();
@@ -705,22 +706,19 @@ export const FeaturePermissionsManager: React.FC = () => {
                               <span className="text-xxs font-bold text-slate-500 uppercase">
                                 Show &quot;Feels Like&quot; Temperature
                               </span>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={config.showFeelsLike ?? false}
-                                  onChange={(e) =>
-                                    updatePermission(tool.type, {
-                                      config: {
-                                        ...config,
-                                        showFeelsLike: e.target.checked,
-                                      },
-                                    })
-                                  }
-                                  className="sr-only peer"
-                                />
-                                <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-blue-primary"></div>
-                              </label>
+                              <Toggle
+                                checked={config.showFeelsLike ?? false}
+                                onChange={(checked) =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...config,
+                                      showFeelsLike: checked,
+                                    },
+                                  })
+                                }
+                                size="xs"
+                                showLabels={false}
+                              />
                             </div>
 
                             <div>
@@ -1057,19 +1055,16 @@ export const FeaturePermissionsManager: React.FC = () => {
                 <span className="text-sm font-medium text-slate-700">
                   Feature Enabled
                 </span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={permission.enabled}
-                    onChange={(e) =>
-                      updatePermission(tool.type, {
-                        enabled: e.target.checked,
-                      })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-blue-lighter rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue-primary"></div>
-                </label>
+                <Toggle
+                  checked={permission.enabled}
+                  onChange={(checked) =>
+                    updatePermission(tool.type, {
+                      enabled: checked,
+                    })
+                  }
+                  size="md"
+                  showLabels={false}
+                />
               </div>
 
               {/* Access Level */}

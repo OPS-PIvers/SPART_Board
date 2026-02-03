@@ -33,3 +33,9 @@ Unifier is responsible for maintaining a consistent look and feel across all Sch
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## Journal
+
+## 2025-05-21 - [Standardized Toggle Components]
+**Drift:** Identified 5 instances of "Snowflake" toggle implementations (raw HTML/CSS checkboxes) in Admin Managers and Widgets (`FeaturePermissionsManager`, `BackgroundManager`, `GlobalPermissionsManager`, `QRWidget`, `SoundWidget`). These were duplicating code and using magic numbers for sizing.
+**Fix:** Enhanced the shared `Toggle` component with an `xs` size and `showLabels` prop. Refactored all identified instances to use the shared component, ensuring consistent styling and reducing technical debt.

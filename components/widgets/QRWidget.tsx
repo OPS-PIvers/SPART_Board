@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, QRConfig, TextConfig } from '../../types';
 import { Link, AlertCircle } from 'lucide-react';
+import { Toggle } from '../common/Toggle';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser === 'undefined') {
@@ -103,22 +104,20 @@ export const QRSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         <div className="flex items-center justify-between">
           <span className="text-xs text-indigo-800">Sync with Text Widget</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={config.syncWithTextWidget ?? false}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    syncWithTextWidget: e.target.checked,
-                  } as QRConfig,
-                })
-              }
-            />
-            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-          </label>
+          <Toggle
+            checked={config.syncWithTextWidget ?? false}
+            onChange={(checked) =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  syncWithTextWidget: checked,
+                } as QRConfig,
+              })
+            }
+            size="sm"
+            showLabels={false}
+            activeColor="bg-indigo-600"
+          />
         </div>
 
         {config.syncWithTextWidget && !hasTextWidget && (
