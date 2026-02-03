@@ -44,7 +44,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4 bg-transparent rounded-lg relative">
+    <div className="flex flex-col items-center justify-center h-full p-4 relative">
       {config.syncWithTextWidget && (
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 animate-in fade-in zoom-in">
           <Link className="w-3 h-3 text-indigo-500" />

@@ -23,6 +23,15 @@ const mockDashboardContext = {
     },
   ],
   activeRosterId: 'roster-1',
+  activeDashboard: {
+    widgets: [
+      {
+        id: 'lunch-1',
+        type: 'lunchCount',
+        activeRoster: ['John Doe', 'Jane Smith'],
+      },
+    ],
+  },
 };
 
 const mockAuthContext = {
@@ -115,10 +124,7 @@ describe('LunchCountWidget', () => {
       dataTransfer,
     });
 
-    expect(dataTransfer.setData).toHaveBeenCalledWith(
-      'studentName',
-      'John Doe'
-    );
+    expect(dataTransfer.setData).toHaveBeenCalledWith('student', 'John Doe');
     expect(dataTransfer.effectAllowed).toBe('move');
   });
 

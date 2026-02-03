@@ -332,7 +332,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <PopcornBallsView volume={volume} width={w} height={h - 60} />
         )}
         {visual === 'line' && (
-          <div className="w-full h-full bg-slate-900/80 backdrop-blur-sm rounded-xl p-2">
+          <div className="w-full h-full bg-black/20 rounded-2xl p-2">
             <svg
               viewBox="0 0 100 100"
               preserveAspectRatio="none"

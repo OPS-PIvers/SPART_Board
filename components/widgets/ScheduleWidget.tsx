@@ -172,9 +172,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div
-      className={`h-full flex flex-col p-4 bg-transparent rounded-lg ${getFontClass()}`}
-    >
+    <div className={`h-full flex flex-col p-4 ${getFontClass()}`}>
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
           <ScheduleRow
