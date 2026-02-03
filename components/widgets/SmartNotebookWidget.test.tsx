@@ -243,7 +243,12 @@ describe('SmartNotebookWidget', () => {
     const deleteButtons = screen
       .getAllByRole('button')
       .filter((btn) => btn.querySelector('svg.lucide-trash2'));
-    fireEvent.click(deleteButtons[0]);
+    // Filter to ensure we get the actual button, not the parent div role="button"
+    const actualDeleteBtn = deleteButtons.find(
+      (btn) => btn.tagName === 'BUTTON'
+    );
+    if (!actualDeleteBtn) throw new Error('Delete button not found');
+    fireEvent.click(actualDeleteBtn);
 
     await waitFor(() => {
       expect(mockDeleteFile).toHaveBeenCalledWith(

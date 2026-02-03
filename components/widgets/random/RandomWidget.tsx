@@ -9,7 +9,7 @@ import {
   SharedGroup,
 } from '../../../types';
 import { Button } from '../../common/Button';
-import { Users, RefreshCw, Layers, Target } from 'lucide-react';
+import { Users, RefreshCw, Layers, Target, RotateCcw } from 'lucide-react';
 import { useScaledFont } from '../../../hooks/useScaledFont';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
 import { RandomWheel } from './RandomWheel';
@@ -141,6 +141,17 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
     }
     return newArr;
+  };
+
+  const handleReset = () => {
+    updateWidget(widget.id, {
+      config: {
+        remainingStudents: [],
+        lastResult: null,
+      } as unknown as WidgetConfig,
+    });
+    setDisplayResult('');
+    setRotation(0);
   };
 
   const handlePick = async () => {
@@ -416,6 +427,25 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="h-full flex flex-col p-2 font-sans bg-transparent rounded-lg overflow-hidden relative">
+      {mode === 'single' && students.length > 0 && (
+        <div className="absolute top-2 left-8 flex items-center gap-1.5 z-10">
+          <button
+            onClick={handleReset}
+            disabled={
+              isSpinning || (remainingStudents.length === 0 && !displayResult)
+            }
+            className="p-2 hover:bg-slate-800/10 rounded-full text-slate-500 hover:text-brand-blue-primary transition-all disabled:opacity-30 disabled:pointer-events-none"
+            title="Reset student pool"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          {remainingStudents.length > 0 && (
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight bg-white/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-white/50 shadow-sm">
+              {remainingStudents.length} Left
+            </span>
+          )}
+        </div>
+      )}
       {activeRoster && rosterMode === 'class' && (
         <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
           <Target className="w-2.5 h-2.5 text-brand-blue-primary" />

@@ -6,7 +6,11 @@ import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { DEFAULT_GLOBAL_STYLE, LiveStudent } from '../../types';
+import {
+  DEFAULT_GLOBAL_STYLE,
+  LiveStudent,
+  SpartStickerDropPayload,
+} from '../../types';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -89,6 +93,31 @@ export const DashboardView: React.FC = () => {
   // Keyboard Navigation
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: Close top-most widget or blur input
+      if (e.key === 'Escape') {
+        const activeElement = document.activeElement as HTMLElement;
+        const isInput =
+          ['INPUT', 'TEXTAREA'].includes(activeElement?.tagName || '') ||
+          activeElement?.isContentEditable;
+
+        if (isInput) {
+          activeElement.blur();
+          return;
+        }
+
+        if (activeDashboard && activeDashboard.widgets.length > 0) {
+          const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
+          const topWidget = sorted[0];
+
+          // Dispatch custom event to notify the widget to close
+          const event = new CustomEvent('widget-escape-press', {
+            detail: { widgetId: topWidget.id },
+          });
+          window.dispatchEvent(event);
+        }
+        return;
+      }
+
       // Alt + M: Toggle minimize
       if (e.altKey && (e.key === 'm' || e.key === 'M')) {
         e.preventDefault();
@@ -112,7 +141,7 @@ export const DashboardView: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, dashboards, loadDashboard]);
+  }, [currentIndex, dashboards, loadDashboard, activeDashboard]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 4) {
@@ -215,11 +244,9 @@ export const DashboardView: React.FC = () => {
     if (spartStickerData) {
       e.preventDefault();
       try {
-        const { icon, color, label } = JSON.parse(spartStickerData) as {
-          icon: string;
-          color: string;
-          label?: string;
-        };
+        const { icon, color, label, url } = JSON.parse(
+          spartStickerData
+        ) as SpartStickerDropPayload;
         const w = 150;
         const h = 150;
         const x = e.clientX - w / 2;
@@ -230,7 +257,13 @@ export const DashboardView: React.FC = () => {
           y,
           w,
           h,
-          config: { icon, color, label, rotation: 0 },
+          config: {
+            icon: url ? undefined : icon,
+            url,
+            color,
+            label,
+            rotation: 0,
+          },
         });
       } catch (err) {
         console.error('Failed to parse spart-sticker data', err);

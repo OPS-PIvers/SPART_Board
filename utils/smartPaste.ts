@@ -1,4 +1,5 @@
 import { WidgetType, WidgetConfig } from '../types';
+import { convertToEmbedUrl } from './urlHelpers';
 
 /**
  * Detects the most appropriate widget type and initial configuration based on pasted text.
@@ -47,7 +48,10 @@ export function detectWidgetType(text: string): {
     if (isEmbed) {
       return {
         type: 'embed',
-        config: { url: normalizedUrl, mode: 'url' } as WidgetConfig,
+        config: {
+          url: convertToEmbedUrl(normalizedUrl),
+          mode: 'url',
+        } as WidgetConfig,
       };
     }
 
