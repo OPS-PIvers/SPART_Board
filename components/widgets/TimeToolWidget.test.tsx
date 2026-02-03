@@ -48,7 +48,7 @@ describe('TimeToolWidget', () => {
     configOverride: Partial<TimeToolConfig> = {}
   ): WidgetData => ({
     id: 'test-id',
-    type: 'timeTool',
+    type: 'time-tool',
     config: {
       mode: 'timer',
       duration: 300,
@@ -95,9 +95,11 @@ describe('TimeToolWidget', () => {
     render(<TimeToolWidget widget={widget} />);
 
     const startButton = screen.getByText('START');
-    await act(async () => {
+    act(() => {
       fireEvent.click(startButton);
     });
+    // Give async handleStart a chance to resolve
+    await Promise.resolve();
 
     // Check resumeAudio called
     expect(TimeToolAudio.resumeAudio).toHaveBeenCalled();
