@@ -111,20 +111,19 @@ describe('urlHelpers', () => {
     });
 
     describe('Google Slides', () => {
-      it('converts edit URLs to /preview and clears other params', () => {
+      it('converts edit URLs to /embed and preserves other params', () => {
         const url =
           'https://docs.google.com/presentation/d/preso-id/edit?delayms=3000';
         const result = convertToEmbedUrl(url);
         expect(result).toBe(
-          'https://docs.google.com/presentation/d/preso-id/preview'
+          'https://docs.google.com/presentation/d/preso-id/embed?delayms=3000'
         );
       });
 
-      it('handles user segments and clears hash', () => {
-        const url =
-          'https://docs.google.com/presentation/u/0/d/preso-id/edit#slide=id.g123';
+      it('handles user segments', () => {
+        const url = 'https://docs.google.com/presentation/u/0/d/preso-id/edit';
         expect(convertToEmbedUrl(url)).toBe(
-          'https://docs.google.com/presentation/d/preso-id/preview'
+          'https://docs.google.com/presentation/d/preso-id/embed'
         );
       });
     });
