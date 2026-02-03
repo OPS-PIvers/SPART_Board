@@ -62,7 +62,7 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full w-full bg-transparent p-3 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
+      className={`h-full w-full p-3 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
     >
       <div className="flex flex-wrap gap-2 h-full content-start justify-center">
         {displayItems.map((item) => {

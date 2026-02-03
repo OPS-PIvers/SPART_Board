@@ -142,7 +142,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   // --- Render Sub-views ---
 
   const renderVolumeView = () => (
-    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
+    <div className="flex flex-col h-full bg-transparent bg-transparent animate-in slide-in-from-right duration-200">
       <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
@@ -186,7 +186,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const renderGroupsView = () => (
-    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
+    <div className="flex flex-col h-full bg-transparent bg-transparent animate-in slide-in-from-right duration-200">
       <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
@@ -225,7 +225,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const renderInteractionView = () => (
-    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
+    <div className="flex flex-col h-full bg-transparent bg-transparent animate-in slide-in-from-right duration-200">
       <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
@@ -281,7 +281,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
+      className={`h-full bg-transparent p-3 gap-3 overflow-hidden bg-transparent animate-in fade-in duration-200 ${
         isElementary ? 'grid grid-cols-2' : 'flex flex-col'
       }`}
     >

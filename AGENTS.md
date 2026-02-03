@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This document provides comprehensive instructions and context for AI assistants working on the School Boards repository. It consolidates information from `CLAUDE.md`, `DEV_WORKFLOW.md`, and `LINTING_SETUP.md`.
+This document provides comprehensive instructions and context for AI assistants working on the SPART Board repository. It consolidates information from `CLAUDE.md`, `DEV_WORKFLOW.md`, and `LINTING_SETUP.md`.
 
 **Scope:** These instructions apply to the entire directory tree.
 
@@ -8,7 +8,7 @@ This document provides comprehensive instructions and context for AI assistants 
 
 ## 1. Project Overview
 
-**School Boards** is an interactive classroom management dashboard built with **React 19**, **TypeScript**, and **Vite**. It features a plugin-based widget system (timers, noise meters, drawing boards, etc.) and uses **Firebase** for backend services.
+**SPART Board** is an interactive classroom management dashboard built with **React 19**, **TypeScript**, and **Vite**. It features a plugin-based widget system (timers, noise meters, drawing boards, etc.) and uses **Firebase** for backend services.
 
 ### Key Features
 
