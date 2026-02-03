@@ -9,6 +9,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   cornerRadius?: string;
   globalStyle?: GlobalStyle;
   allowInvisible?: boolean;
+  disableBlur?: boolean;
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -20,6 +21,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       transparency: propTransparency,
       cornerRadius: propCornerRadius,
       globalStyle: propGlobalStyle,
+      disableBlur = false,
       style,
       ...props
     },
@@ -50,7 +52,9 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
           border: `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
           boxShadow: `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
           backdropFilter:
-            finalTransparency > 0 ? `blur(${12 * factor}px)` : 'none',
+            !disableBlur && finalTransparency > 0
+              ? `blur(${12 * factor}px)`
+              : 'none',
           ...style,
         }}
         {...props}

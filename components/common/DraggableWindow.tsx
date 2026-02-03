@@ -96,6 +96,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
     widget.flipped
   );
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
@@ -104,6 +105,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (widget.flipped && !shouldRenderSettings) {
       setShouldRenderSettings(true);
     }
+    // Set animating when flipped changes
+    setIsAnimating(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.flipped]);
 
@@ -424,6 +427,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onClick={handleWidgetClick}
         transparency={transparency}
         allowInvisible={true}
+        disableBlur={isAnimating}
         cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
           isMaximized ? 'border-none !shadow-none' : ''
@@ -446,6 +450,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         <div className="flip-container h-full rounded-[inherit] overflow-hidden">
           <div
             className={`flipper h-full ${widget.flipped ? 'flip-active' : ''}`}
+            onTransitionEnd={() => setIsAnimating(false)}
           >
             {/* Front Face */}
             <div
