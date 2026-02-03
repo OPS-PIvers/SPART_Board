@@ -9,9 +9,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { Play, Pause, RotateCcw, Bell, Delete, Check, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
-
-const cn = (...classes: (string | boolean | undefined | null)[]) =>
-  classes.filter(Boolean).join(' ');
+import { cn } from '../../utils/cn';
 
 interface Props {
   widget: WidgetData;
@@ -421,15 +419,13 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
         <div className="px-[8cqmin] pb-[4cqmin] flex gap-[3cqmin] items-center shrink-0">
           <Button
             variant={config.isRunning ? 'secondary' : 'hero'}
+            shape="pill"
             onClick={
               config.isRunning
                 ? () => handleStop(runningDisplayTime)
                 : handleStart
             }
-            className={cn(
-              'flex-[3] h-[14cqmin] !rounded-full shadow-xl font-black text-[4cqmin] tracking-widest transition-all duration-300',
-              !config.isRunning && 'bg-blue-600 hover:bg-blue-700'
-            )}
+            className="flex-[3] h-[14cqmin] shadow-xl font-black text-[4cqmin] tracking-widest transition-all duration-300"
             icon={
               config.isRunning ? (
                 <Pause className="w-[5cqmin] h-[5cqmin]" fill="currentColor" />
@@ -612,7 +608,7 @@ const VisualMode: React.FC<{
                 !config.isRunning && 'hover:scale-110 active:scale-95',
                 angle > 0 && 'drop-shadow-sm'
               )}
-              disabled={config.isRunning}
+              disabled={config.isRunning || config.mode !== 'timer'}
             >
               {formatTime(displayTime)}
             </button>
