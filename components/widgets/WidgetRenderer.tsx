@@ -1,4 +1,5 @@
-import React, { memo, Suspense, useMemo, useCallback } from 'react';
+/* eslint-disable react-hooks/refs */
+import React, { memo, Suspense, useMemo, useCallback, useRef } from 'react';
 import {
   WidgetData,
   DrawingConfig,
@@ -23,6 +24,14 @@ import {
   WIDGET_SETTINGS_COMPONENTS,
   WIDGET_SCALING_CONFIG,
 } from './WidgetRegistry';
+
+// Widgets that depend on their exact x/y position for internal logic (e.g. spawning items relative to self)
+// These should NOT use the stale-props optimization.
+const POSITION_AWARE_WIDGETS: WidgetType[] = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
@@ -144,6 +153,52 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
 
+  // OPTIMIZATION: Memoize the component type itself to ensure it handles prop equality checks.
+  // This is critical because many widgets are lazy-loaded and not explicitly wrapped in memo in their files.
+  // By wrapping here, we ensure that if contentWidget (props) is stable, the component does not re-render.
+  const MemoizedWidgetComponent = useMemo(() => {
+    if (!WidgetComponent) return null;
+    return memo(WidgetComponent);
+  }, [WidgetComponent]);
+
+  // OPTIMIZATION: Create a "content stable" widget object.
+  // Most widgets do not care about their x/y/z coordinates for rendering their internal content.
+  // However, dragging updates x/y every frame, causing the 'widget' object to be a new reference.
+  // We use this memoized object to pass to the inner component, preventing re-renders during dragging.
+  const prevWidgetRef = useRef<WidgetData>(widget);
+
+  const contentWidget = useMemo(() => {
+    if (POSITION_AWARE_WIDGETS.includes(widget.type)) {
+      prevWidgetRef.current = widget;
+      return widget;
+    }
+
+    const prev = prevWidgetRef.current;
+
+    // Check if any RELEVANT properties changed.
+    // We explicitly exclude x, y, and z from this check.
+    // If config, dimensions, or state flags change, we update.
+    const hasChanged =
+      prev.id !== widget.id ||
+      prev.w !== widget.w ||
+      prev.h !== widget.h ||
+      prev.flipped !== widget.flipped ||
+      prev.minimized !== widget.minimized ||
+      prev.maximized !== widget.maximized ||
+      prev.customTitle !== widget.customTitle ||
+      prev.isLive !== widget.isLive ||
+      prev.transparency !== widget.transparency ||
+      prev.annotation !== widget.annotation ||
+      prev.config !== widget.config; // Config reference change implies update
+
+    if (hasChanged) {
+      prevWidgetRef.current = widget;
+      return widget;
+    }
+
+    return prev;
+  }, [widget]);
+
   const getWidgetSettings = () => {
     if (SettingsComponent) {
       return (
@@ -178,11 +233,11 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const getWidgetContentInternal = useCallback(
     (w: number, h: number) => {
-      if (WidgetComponent) {
+      if (MemoizedWidgetComponent) {
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <WidgetComponent
-              widget={{ ...widget, w, h }}
+            <MemoizedWidgetComponent
+              widget={{ ...contentWidget, w, h }}
               isStudentView={isStudentView}
             />
           </Suspense>
@@ -194,7 +249,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         </div>
       );
     },
-    [WidgetComponent, widget, isStudentView]
+    [MemoizedWidgetComponent, contentWidget, isStudentView]
   );
 
   if (widget.type === 'sticker') {
