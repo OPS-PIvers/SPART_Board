@@ -2,7 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
-import { convertToEmbedUrl } from '../../utils/urlHelpers';
+
+const convertToEmbedUrl = (url: string): string => {
+  if (!url) return '';
+  const embedUrl = url.trim();
+
+  // YouTube
+  const ytMatch =
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.exec(
+      embedUrl
+    );
+  if (ytMatch) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  }
+
+  // Google Docs
+  if (embedUrl.includes('docs.google.com/document')) {
+    return embedUrl.replace(/\/edit.*$/, '/preview');
+  }
+
+  // Google Slides
+  if (embedUrl.includes('docs.google.com/presentation')) {
+    return embedUrl.replace(/\/edit.*$/, '/embed');
+  }
+
+  // Google Sheets
+  if (embedUrl.includes('docs.google.com/spreadsheets')) {
+    return embedUrl.replace(/\/edit.*$/, '/preview');
+  }
+
+  // Google Forms
+  if (
+    embedUrl.includes('docs.google.com/forms') &&
+    !embedUrl.includes('embedded=true')
+  ) {
+    const separator = embedUrl.includes('?') ? '&' : '?';
+    return `${embedUrl}${separator}embedded=true`;
+  }
+
+  return embedUrl;
+};
 
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;
@@ -22,30 +61,6 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     return () => clearInterval(interval);
   }, [refreshInterval]);
-
-  const sandbox = React.useMemo(() => {
-    let base = 'allow-scripts allow-forms allow-popups';
-    if (mode === 'url') {
-      base += ' allow-modals';
-      try {
-        const parsedUrl = new URL(
-          url.startsWith('http') ? url : `https://${url}`
-        );
-        const hostname = parsedUrl.hostname.toLowerCase();
-        const allowSameOriginHosts = new Set([
-          'docs.google.com',
-          'www.youtube.com',
-          'youtube.com',
-        ]);
-        if (allowSameOriginHosts.has(hostname)) {
-          base += ' allow-same-origin';
-        }
-      } catch (_e) {
-        // Fallback for malformed URLs
-      }
-    }
-    return base;
-  }, [mode, url]);
 
   if (mode === 'url' && !url) {
     return (
@@ -87,7 +102,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         src={mode === 'url' ? embedUrl : undefined}
         srcDoc={mode === 'code' ? html : undefined}
         className="flex-1 w-full border-none"
-        sandbox={sandbox}
+        sandbox="allow-scripts allow-forms allow-popups"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
       />

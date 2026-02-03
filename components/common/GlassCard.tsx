@@ -9,6 +9,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   cornerRadius?: string;
   globalStyle?: GlobalStyle;
   allowInvisible?: boolean;
+  selected?: boolean;
   disableBlur?: boolean;
 }
 
@@ -21,8 +22,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       transparency: propTransparency,
       cornerRadius: propCornerRadius,
       globalStyle: propGlobalStyle,
-      allowInvisible = false,
       disableBlur = false,
+      selected = false,
       style,
       ...props
     },
@@ -33,8 +34,6 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     // Determine values, prioritizing props over global settings
     const finalTransparency =
       propTransparency ?? globalStyle.windowTransparency;
-
-    const isInvisible = allowInvisible && finalTransparency <= 0.001;
 
     const finalRadiusClass = propCornerRadius
       ? `rounded-${propCornerRadius}`
@@ -51,17 +50,13 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         ref={ref}
         className={`${finalRadiusClass} ${className}`}
         style={{
-          backgroundColor: isInvisible
-            ? 'transparent'
-            : `rgba(255, 255, 255, ${finalTransparency})`,
-          border: isInvisible
-            ? 'none'
-            : `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
-          boxShadow: isInvisible
-            ? 'none'
+          backgroundColor: `rgba(255, 255, 255, ${finalTransparency})`,
+          border: `1px solid rgba(255, 255, 255, ${Math.min(1, 0.3 * factor)})`,
+          boxShadow: selected
+            ? `0 0 0 2px rgba(99, 102, 241, 0.5), 0 25px 50px -12px rgba(0, 0, 0, 0.25)`
             : `0 8px 32px 0 rgba(0, 0, 0, ${Math.min(1, 0.36 * factor)})`,
           backdropFilter:
-            !isInvisible && !disableBlur && finalTransparency > 0
+            !disableBlur && finalTransparency > 0
               ? `blur(${12 * factor}px)`
               : 'none',
           ...style,
@@ -69,7 +64,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         {...props}
       >
         {/* Glossy gradient overlay */}
-        {gradientOverlay && !isInvisible && (
+        {gradientOverlay && (
           <div
             className="absolute inset-0 pointer-events-none rounded-[inherit] -z-10"
             style={{

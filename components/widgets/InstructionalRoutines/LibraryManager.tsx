@@ -205,7 +205,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       </div>
 
       <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="text-xxxs font-black uppercase text-slate-400 ml-1">
               Routine Name

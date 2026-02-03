@@ -81,6 +81,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as DiceConfig;
+  const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = config.count ?? 1;
 
   const [values, setValues] = useState<number[]>(
