@@ -65,10 +65,14 @@ jobs:
           projectId: spartboard
           channelId: live
 
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+      - name: Create Service Account File
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
 
       - name: Deploy Firebase Rules and Functions
         run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
+
+      - name: Cleanup Service Account File
+        if: always()
+        run: rm -f service-account.json
