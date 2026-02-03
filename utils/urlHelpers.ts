@@ -53,6 +53,13 @@ export const convertToEmbedUrl = (url: string): string => {
           const docId = docIdMatch[1];
           parsed.pathname = `/document/d/${docId}/edit`;
           parsed.searchParams.set('rm', 'minimal');
+
+          // Extract tab parameter if present in original URL
+          const tabMatch = /[?&]tab=([^&]+)/.exec(trimmedUrl);
+          if (tabMatch) {
+            parsed.searchParams.set('tab', tabMatch[1]);
+          }
+
           return parsed.toString();
         }
       }

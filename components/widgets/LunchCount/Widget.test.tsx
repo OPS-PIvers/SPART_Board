@@ -24,12 +24,7 @@ const mockDashboardContext = {
   ],
   activeRosterId: 'roster-1',
   activeDashboard: {
-    widgets: [
-      {
-        id: 'lunch-1',
-        activeRoster: ['John Doe', 'Jane Smith'],
-      },
-    ],
+    widgets: [{ id: 'lunch-1', activeRoster: ['John Doe', 'Jane Smith'] }],
   },
 };
 

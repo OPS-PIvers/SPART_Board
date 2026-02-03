@@ -111,7 +111,11 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     // Reset values if count changes in settings
     if (values.length !== diceCount) {
-      setValues(new Array(diceCount).fill(1));
+      setValues(
+        new Array(diceCount)
+          .fill(1)
+          .map(() => Math.floor(Math.random() * 6) + 1)
+      );
     }
   }, [diceCount, values.length]);
 
