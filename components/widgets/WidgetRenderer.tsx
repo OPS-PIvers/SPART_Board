@@ -178,7 +178,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const PADDING = UI_CONSTANTS.WIDGET_PADDING;
 
   const getWidgetContentInternal = useCallback(
-    (w: number, h: number, _scale?: number) => {
+    (w: number, h: number, scale?: number) => {
       if (WidgetComponent) {
         return (
           <InnerWidgetRenderer
@@ -186,6 +186,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
             widget={widget}
             w={w}
             h={h}
+            scale={scale}
             isStudentView={isStudentView}
           />
         );
@@ -205,7 +206,17 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const scalingConfig = scaling ?? DEFAULT_SCALING_CONFIG;
 
-  const finalContent = (
+  const finalContent = scalingConfig.skipScaling ? (
+    <div
+      className="h-full w-full relative"
+      style={{
+        paddingTop: HEADER_HEIGHT,
+        padding: PADDING,
+      }}
+    >
+      {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
+    </div>
+  ) : (
     <ScalableWidget
       width={effectiveWidth}
       height={effectiveHeight}
@@ -289,6 +300,7 @@ interface InnerWidgetRendererProps {
   widget: WidgetData;
   w: number;
   h: number;
+  scale?: number;
   isStudentView: boolean;
 }
 
@@ -298,11 +310,16 @@ const InnerWidgetRenderer = memo(
     widget,
     w,
     h,
+    scale,
     isStudentView,
   }: InnerWidgetRendererProps) {
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <Component widget={{ ...widget, w, h }} isStudentView={isStudentView} />
+        <Component
+          widget={{ ...widget, w, h }}
+          scale={scale}
+          isStudentView={isStudentView}
+        />
       </Suspense>
     );
   },
@@ -311,6 +328,7 @@ const InnerWidgetRenderer = memo(
     if (prev.Component !== next.Component) return false;
     if (prev.w !== next.w) return false;
     if (prev.h !== next.h) return false;
+    if (prev.scale !== next.scale) return false;
     if (prev.isStudentView !== next.isStudentView) return false;
 
     // Check widget props - explicitly ignoring x, y, z

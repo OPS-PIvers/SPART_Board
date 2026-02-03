@@ -43,7 +43,7 @@ export const convertToEmbedUrl = (url: string): string => {
 
       // Google Docs
       if (
-        parsed.hostname === 'docs.google.com' &&
+        parsed.hostname.includes('docs.google.com') &&
         parsed.pathname.includes('/document/')
       ) {
         const docIdMatch = /\/document\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/.exec(
@@ -59,7 +59,7 @@ export const convertToEmbedUrl = (url: string): string => {
 
       // Google Slides
       if (
-        parsed.hostname === 'docs.google.com' &&
+        parsed.hostname.includes('docs.google.com') &&
         parsed.pathname.includes('/presentation/')
       ) {
         const slideIdMatch =
@@ -68,14 +68,16 @@ export const convertToEmbedUrl = (url: string): string => {
           );
         if (slideIdMatch) {
           const slideId = slideIdMatch[1];
-          parsed.pathname = `/presentation/d/${slideId}/embed`;
+          parsed.pathname = `/presentation/d/${slideId}/preview`;
+          parsed.search = '';
+          parsed.hash = '';
           return parsed.toString();
         }
       }
 
       // Google Sheets
       if (
-        parsed.hostname === 'docs.google.com' &&
+        parsed.hostname.includes('docs.google.com') &&
         parsed.pathname.includes('/spreadsheets/')
       ) {
         const sheetIdMatch =
@@ -91,7 +93,7 @@ export const convertToEmbedUrl = (url: string): string => {
 
       // Google Forms
       if (
-        parsed.hostname === 'docs.google.com' &&
+        parsed.hostname.includes('docs.google.com') &&
         parsed.pathname.includes('/forms/')
       ) {
         parsed.searchParams.set('embedded', 'true');
