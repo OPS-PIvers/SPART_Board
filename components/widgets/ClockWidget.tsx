@@ -53,7 +53,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-500 rounded-lg ${clockStyle === 'lcd' ? 'bg-black/5' : ''}`}
+      className={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-500 ${clockStyle === 'lcd' ? 'bg-black/5' : ''}`}
     >
       <div
         className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
