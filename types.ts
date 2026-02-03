@@ -751,11 +751,6 @@ export interface ScalingConfig {
    * Useful for widgets with flexible content like text or lists.
    */
   canSpread?: boolean;
-  /**
-   * If true, the universal ScalableWidget wrapper will be skipped.
-   * The widget will be responsible for its own responsiveness.
-   */
-  skipScaling?: boolean;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {

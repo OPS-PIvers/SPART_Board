@@ -22,6 +22,7 @@ import {
   WIDGET_COMPONENTS,
   WIDGET_SETTINGS_COMPONENTS,
   WIDGET_SCALING_CONFIG,
+  DEFAULT_SCALING_CONFIG,
 } from './WidgetRegistry';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
@@ -202,13 +203,15 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     return <StickerItemWidget widget={widget} />;
   }
 
+  const scalingConfig = scaling ?? DEFAULT_SCALING_CONFIG;
+
   const finalContent = (
     <ScalableWidget
       width={effectiveWidth}
       height={effectiveHeight}
-      baseWidth={scaling?.baseWidth ?? 300}
-      baseHeight={scaling?.baseHeight ?? 200}
-      canSpread={scaling?.canSpread ?? true}
+      baseWidth={scalingConfig.baseWidth}
+      baseHeight={scalingConfig.baseHeight}
+      canSpread={scalingConfig.canSpread ?? true}
       headerHeight={HEADER_HEIGHT}
       padding={PADDING}
     >
