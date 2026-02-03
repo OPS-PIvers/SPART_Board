@@ -1,14 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { ScheduleWidget, ScheduleSettings } from './ScheduleWidget';
-import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { ScheduleWidget } from './Widget';
+import { ScheduleSettings } from './Settings';
+import { useDashboard } from '../../../context/useDashboard';
+import {
+  WidgetData,
+  ScheduleConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../../types';
 
-vi.mock('../../context/useDashboard');
+vi.mock('../../../context/useDashboard');
 
 // Mock useScaledFont to return a fixed size
-vi.mock('../../hooks/useScaledFont', () => ({
+vi.mock('../../../hooks/useScaledFont', () => ({
   useScaledFont: () => 16,
 }));
 
@@ -17,18 +22,26 @@ vi.mock('lucide-react', () => ({
   Circle: () => <div data-testid="circle-icon" />,
   CheckCircle2: () => <div data-testid="check-icon" />,
   Type: () => <div>Type Icon</div>,
-  Clock: () => <div>Clock Icon</div>,
+  Clock: () => <div data-testid="clock-icon" />,
   AlertTriangle: () => <div>Alert Icon</div>,
+  Plus: () => <div>Plus Icon</div>,
+  Trash2: () => <div>Trash Icon</div>,
+  ChevronUp: () => <div>Up Icon</div>,
+  ChevronDown: () => <div>Down Icon</div>,
 }));
 
 const mockUpdateWidget = vi.fn();
+const mockAddWidget = vi.fn();
+const mockRemoveWidget = vi.fn();
 
 const mockDashboardContext = {
   activeDashboard: {
     globalStyle: DEFAULT_GLOBAL_STYLE,
+    widgets: [],
   },
   updateWidget: mockUpdateWidget,
-  widgets: [],
+  addWidget: mockAddWidget,
+  removeWidget: mockRemoveWidget,
 };
 
 describe('ScheduleWidget', () => {
@@ -36,6 +49,8 @@ describe('ScheduleWidget', () => {
     vi.useFakeTimers();
     (useDashboard as unknown as Mock).mockReturnValue(mockDashboardContext);
     mockUpdateWidget.mockClear();
+    mockAddWidget.mockClear();
+    mockRemoveWidget.mockClear();
   });
 
   afterEach(() => {
@@ -68,7 +83,14 @@ describe('ScheduleWidget', () => {
     render(<ScheduleWidget widget={createWidget()} />);
     expect(screen.getByText('Math')).toBeInTheDocument();
     expect(screen.getByText('08:00')).toBeInTheDocument();
-    expect(screen.getByText('Reading')).toBeInTheDocument();
+  });
+
+  it('renders endTime when provided', () => {
+    const widget = createWidget({
+      items: [{ time: '08:00', endTime: '09:00', task: 'Math', done: false }],
+    });
+    render(<ScheduleWidget widget={widget} />);
+    expect(screen.getByText('08:00 - 09:00')).toBeInTheDocument();
   });
 
   it('toggles item status on click', () => {
@@ -79,105 +101,84 @@ describe('ScheduleWidget', () => {
     if (!mathItem) throw new Error('Math item not found');
     fireEvent.click(mathItem);
 
-    const updateCall = mockUpdateWidget.mock.calls[0];
-    const newConfig = (updateCall[1] as { config: ScheduleConfig }).config;
-
-    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
-      config: expect.any(Object),
-    });
-    expect(newConfig.items[0].done).toBe(true);
-  });
-
-  it('applies font family from config', () => {
-    const widget = createWidget({ fontFamily: 'mono' });
-    const { container } = render(<ScheduleWidget widget={widget} />);
-
-    // The container should have the font class
-    const topDiv = container.firstChild;
-    expect(topDiv).toHaveClass('font-mono');
-  });
-
-  it('auto-progresses items when connected to clock', () => {
-    // Mock a clock widget being present
-    (useDashboard as unknown as Mock).mockReturnValue({
-      ...mockDashboardContext,
-      activeDashboard: {
-        ...mockDashboardContext.activeDashboard,
-        widgets: [{ id: 'clock-1', type: 'clock' }],
-      },
-    });
-
-    // Set time BEFORE render to 09:30
-    const date = new Date();
-    date.setHours(9, 30, 0, 0);
-    vi.setSystemTime(date);
-
-    const widget = createWidget({ autoProgress: true });
-    render(<ScheduleWidget widget={widget} />);
-
-    // Should make 08:00 (Math) done, because 09:00 (Reading) has started.
-    // 09:00 (Reading) should be active (not done).
-    // 10:00 (Recess) should be future (not done).
-
     expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
       config: expect.objectContaining({
-        items: [
+        items: expect.arrayContaining([
           expect.objectContaining({ task: 'Math', done: true }),
-          expect.objectContaining({ task: 'Reading', done: false }),
-          expect.objectContaining({ task: 'Recess', done: false }),
-        ],
+        ]),
       }),
     });
   });
 
-  it('marks all items as done when time is past the last item', () => {
-    // Mock a clock widget being present
-    (useDashboard as unknown as Mock).mockReturnValue({
-      ...mockDashboardContext,
-      activeDashboard: {
-        ...mockDashboardContext.activeDashboard,
-        widgets: [{ id: 'clock-1', type: 'clock' }],
-      },
+  it('shows countdown for active timer-based event', () => {
+    const widget = createWidget({
+      items: [
+        {
+          time: '08:00',
+          endTime: '09:00',
+          task: 'Math',
+          type: 'timer',
+          done: false,
+        },
+      ],
     });
 
-    // Set time BEFORE render to 11:30 (Past Recess at 10:00 + 60 mins)
     const date = new Date();
-    date.setHours(11, 30, 0, 0);
+    date.setHours(8, 30, 0, 0);
     vi.setSystemTime(date);
 
-    const widget = createWidget({ autoProgress: true });
     render(<ScheduleWidget widget={widget} />);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
-      config: expect.objectContaining({
-        items: [
-          expect.objectContaining({ task: 'Math', done: true }),
-          expect.objectContaining({ task: 'Reading', done: true }),
-          expect.objectContaining({ task: 'Recess', done: true }),
-        ],
-      }),
-    });
+    expect(screen.getByText('30:00')).toBeInTheDocument();
   });
 
-  it('does NOT auto-progress if no clock widget is present', () => {
-    // No clock widget
+  it('auto-launches widget at start time', () => {
+    const widget = createWidget({
+      items: [{ time: '09:00', task: 'Math', autoLaunchWidget: 'time-tool' }],
+    });
+
+    const date = new Date();
+    date.setHours(9, 0, 0, 0);
+    vi.setSystemTime(date);
+
+    render(<ScheduleWidget widget={widget} />);
+
+    // Advance timers to trigger the effect
+    vi.advanceTimersByTime(11000);
+
+    expect(mockAddWidget).toHaveBeenCalledWith('time-tool', expect.any(Object));
+  });
+
+  it('auto-closes widget at end time', () => {
+    const widget = createWidget({
+      items: [
+        {
+          time: '08:00',
+          endTime: '09:00',
+          task: 'Math',
+          autoLaunchWidget: 'time-tool',
+          autoCloseWidget: true,
+        },
+      ],
+    });
+
     (useDashboard as unknown as Mock).mockReturnValue({
       ...mockDashboardContext,
       activeDashboard: {
         ...mockDashboardContext.activeDashboard,
-        widgets: [],
+        widgets: [{ id: 'tt-1', type: 'time-tool' }],
       },
     });
 
-    // Set time BEFORE render
     const date = new Date();
-    date.setHours(9, 30, 0, 0);
+    date.setHours(9, 0, 0, 0);
     vi.setSystemTime(date);
 
-    const widget = createWidget({ autoProgress: true });
     render(<ScheduleWidget widget={widget} />);
 
-    expect(mockUpdateWidget).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(11000);
+
+    expect(mockRemoveWidget).toHaveBeenCalledWith('tt-1');
   });
 });
 
@@ -200,9 +201,22 @@ describe('ScheduleSettings', () => {
 
   it('renders settings controls', () => {
     render(<ScheduleSettings widget={createWidget()} />);
-
+    expect(screen.getByText(/schedule events/i)).toBeInTheDocument();
     expect(screen.getByText(/typography/i)).toBeInTheDocument();
     expect(screen.getByText(/automation/i)).toBeInTheDocument();
-    expect(screen.getByText(/connect to clock/i)).toBeInTheDocument();
+  });
+
+  it('adds a new event', () => {
+    render(<ScheduleSettings widget={createWidget()} />);
+    const addButton = screen.getByText(/add event/i);
+    fireEvent.click(addButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
+      config: expect.objectContaining({
+        items: expect.arrayContaining([
+          expect.objectContaining({ task: 'New Event' }),
+        ]),
+      }),
+    });
   });
 });

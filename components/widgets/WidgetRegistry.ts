@@ -71,7 +71,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   ),
   poll: lazyNamed(() => import('./PollWidget'), 'PollWidget'),
   weather: lazyNamed(() => import('./WeatherWidget'), 'WeatherWidget'),
-  schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleWidget'),
+  schedule: lazyNamed(() => import('./Schedule/Widget'), 'ScheduleWidget'),
   calendar: lazyNamed(() => import('./CalendarWidget'), 'CalendarWidget'),
   lunchCount: lazyNamed(() => import('./LunchCount'), 'LunchCountWidget'),
   classes: lazy(() => import('./ClassesWidget')), // Default export
@@ -152,7 +152,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./WorkSymbolsWidget'),
     'WorkSymbolsSettings'
   ),
-  schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
+  schedule: lazyNamed(() => import('./Schedule/Settings'), 'ScheduleSettings'),
   classes: DefaultSettings,
   recessGear: lazyNamed(
     () => import('./RecessGearWidget'),

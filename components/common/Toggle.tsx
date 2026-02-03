@@ -5,12 +5,13 @@ export interface ToggleProps {
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   /**
    * Tailwind class for the active background color.
    * Defaults to 'bg-brand-blue-primary'.
    */
   activeColor?: string;
+  showLabels?: boolean;
 }
 
 export const Toggle: React.FC<ToggleProps> = ({
@@ -20,8 +21,15 @@ export const Toggle: React.FC<ToggleProps> = ({
   className = '',
   size = 'md',
   activeColor = 'bg-brand-blue-primary',
+  showLabels = true,
 }) => {
   const sizes = {
+    xs: {
+      button: 'w-7 h-4',
+      knob: 'w-2.5 h-2.5',
+      translate: 'translate-x-3',
+      padding: 'top-[3px] left-[3px]',
+    },
     sm: {
       button: 'w-10 h-5',
       knob: 'w-3 h-3',
@@ -56,22 +64,24 @@ export const Toggle: React.FC<ToggleProps> = ({
       `}
     >
       {/* State Labels */}
-      <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
-        <span
-          className={`text-xxxs font-black leading-none text-white transition-opacity duration-200 ${
-            checked ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          ON
+      {showLabels && size !== 'xs' && (
+        <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
+          <span
+            className={`text-xxxs font-black leading-none text-white transition-opacity duration-200 ${
+              checked ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            ON
+          </span>
+          <span
+            className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
+              !checked ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            OFF
+          </span>
         </span>
-        <span
-          className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
-            !checked ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          OFF
-        </span>
-      </span>
+      )}
 
       <span
         className={`
