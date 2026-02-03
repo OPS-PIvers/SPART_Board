@@ -40,6 +40,62 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
     roster?.students.some((s) => s.lastName.trim() !== '') ?? false
   );
 
+  const handleToggleToLastNames = () => {
+    // When enabling last names, try to split full names on space
+    if (!showLastNames) {
+      const lines = firsts.split('\n');
+      const newFirsts: string[] = [];
+      const newLasts: string[] = [];
+
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed) {
+          const lastSpaceIndex = trimmed.lastIndexOf(' ');
+          if (lastSpaceIndex > 0) {
+            // Split on last space (common pattern: "First Middle Last")
+            newFirsts.push(trimmed.substring(0, lastSpaceIndex));
+            newLasts.push(trimmed.substring(lastSpaceIndex + 1));
+          } else {
+            // No space found, keep in first name
+            newFirsts.push(trimmed);
+            newLasts.push('');
+          }
+        } else {
+          newFirsts.push('');
+          newLasts.push('');
+        }
+      });
+
+      setFirsts(newFirsts.join('\n'));
+      setLasts(newLasts.join('\n'));
+      setShowLastNames(true);
+    }
+  };
+
+  const handleToggleToSingleField = () => {
+    // When disabling last names, merge first and last names
+    if (showLastNames) {
+      const fList = firsts.split('\n');
+      const lList = lasts.split('\n');
+      const merged: string[] = [];
+
+      const maxLength = Math.max(fList.length, lList.length);
+      for (let i = 0; i < maxLength; i++) {
+        const first = fList[i] ? fList[i].trim() : '';
+        const last = lList[i] ? lList[i].trim() : '';
+        if (first || last) {
+          merged.push([first, last].filter(Boolean).join(' '));
+        } else {
+          merged.push('');
+        }
+      }
+
+      setFirsts(merged.join('\n'));
+      setLasts('');
+      setShowLastNames(false);
+    }
+  };
+
   const handleSave = () => {
     if (!name.trim()) return;
 
@@ -103,7 +159,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
             </label>
             {!showLastNames && (
               <button
-                onClick={() => setShowLastNames(true)}
+                onClick={handleToggleToLastNames}
                 className="text-xxs text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider"
               >
                 + Add Last Name
@@ -128,7 +184,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
                 Last Names
               </label>
               <button
-                onClick={() => setShowLastNames(false)}
+                onClick={handleToggleToSingleField}
                 className="text-xxs text-slate-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors"
               >
                 Remove
