@@ -196,7 +196,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               </div>
               <input
                 type="range"
-                min="0.05"
+                min="0"
                 max="1"
                 step="0.05"
                 value={pendingStyle.windowTransparency}
@@ -257,7 +257,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
               </div>
               <input
                 type="range"
-                min="0.05"
+                min="0"
                 max="1"
                 step="0.05"
                 value={pendingStyle.dockTransparency}

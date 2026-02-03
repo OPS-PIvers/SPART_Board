@@ -60,7 +60,7 @@ const DiceFace: React.FC<{
                   relative bg-white/40 backdrop-blur-md rounded-2xl shadow-lg border-2 border-white/40
                   flex items-center justify-center
                   transition-all duration-300
-                  w-[25cqmin] h-[25cqmin] max-w-[160px] max-h-[160px]
+                  w-[100px] h-[100px] max-w-[160px] max-h-[160px]
                   ${isRolling ? 'scale-110 rotate-12 shadow-indigo-500/20 shadow-2xl' : 'scale-100 rotate-0'}
                 `}
     >
@@ -119,7 +119,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4 gap-4 overflow-hidden">
-      <div className="flex flex-wrap justify-center gap-[5cqmin] max-h-[70%] overflow-y-auto no-scrollbar">
+      <div className="flex flex-wrap justify-center gap-4 max-h-[70%] overflow-y-auto no-scrollbar">
         {values.map((v, i) => (
           <DiceFace key={i} value={v} isRolling={isRolling} />
         ))}

@@ -24,6 +24,7 @@ const mockDashboardContext = {
   ],
   activeRosterId: 'roster-1',
   activeDashboard: {
+    id: 'dash-1',
     widgets: [
       {
         id: 'lunch-1',
