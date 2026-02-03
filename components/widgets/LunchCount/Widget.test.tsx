@@ -109,6 +109,37 @@ describe('LunchCountWidget', () => {
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
+  it('correctly shows students when activeRoster is missing from widget but present in context', async () => {
+    // Override mock to remove activeRoster from widget
+    const contextWithoutWidgetRoster = {
+      ...mockDashboardContext,
+      activeDashboard: {
+        id: 'dash-1',
+        widgets: [
+          {
+            id: 'lunch-1',
+            type: 'lunchCount',
+            // activeRoster is missing here
+          },
+        ],
+      },
+    };
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      contextWithoutWidgetRoster
+    );
+
+    render(<LunchCountWidget widget={createWidget()} />);
+
+    // It should NOT show the empty state message anymore
+    expect(
+      screen.queryByText('All students accounted for!')
+    ).not.toBeInTheDocument();
+
+    // It should now show the students
+    expect(await screen.findByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+  });
+
   it('allows dragging student chips', async () => {
     render(<LunchCountWidget widget={createWidget()} />);
 

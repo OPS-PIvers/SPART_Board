@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import { WidgetData, LunchCountConfig, DashboardWidget } from '../../../types';
@@ -10,7 +10,8 @@ import { useNutrislice } from './useNutrislice';
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addToast, activeDashboard } = useDashboard();
+  const { updateWidget, addToast, activeDashboard, rosters, activeRosterId } =
+    useDashboard();
   const { user } = useAuth();
   const config = widget.config as LunchCountConfig;
   const {
@@ -30,13 +31,41 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const currentRosterNames = useMemo(() => {
+    if (rosterMode !== 'class') return [];
+    const r = rosters.find((r) => r.id === activeRosterId);
+    return r
+      ? r.students.map((s) => `${s.firstName} ${s.lastName}`.trim())
+      : [];
+  }, [rosters, activeRosterId, rosterMode]);
+
+  // Nexus Pattern: Sync with Active Roster to persist names on the widget
+  // and make them available to other views (like student view)
+  useEffect(() => {
+    if (rosterMode !== 'class') return;
+
+    const existingRoster = (widget as DashboardWidget).activeRoster ?? [];
+
+    if (JSON.stringify(currentRosterNames) !== JSON.stringify(existingRoster)) {
+      updateWidget(widget.id, {
+        activeRoster: currentRosterNames,
+      } as Partial<DashboardWidget>);
+    }
+  }, [rosterMode, currentRosterNames, widget, updateWidget]);
+
   const activeRoster = useMemo((): string[] => {
     if (rosterMode === 'custom') return roster;
+
+    // Favor immediate context data if in class mode, fallback to persisted widget data
+    if (rosterMode === 'class' && currentRosterNames.length > 0) {
+      return currentRosterNames;
+    }
+
     const dashboardWidget = activeDashboard?.widgets.find(
       (w) => w.id === widget.id
     ) as DashboardWidget | undefined;
     return dashboardWidget?.activeRoster ?? [];
-  }, [rosterMode, roster, widget.id, activeDashboard]);
+  }, [rosterMode, roster, widget.id, activeDashboard, currentRosterNames]);
 
   const stats = useMemo(() => {
     const total = activeRoster.length;
@@ -98,18 +127,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="flex flex-col h-full bg-transparent p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex justify-between items-center shrink-0">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex flex-col">
-          <h3 className="text-xxs font-black text-slate-400 uppercase tracking-widest">
-            Daily Lunch Count
-          </h3>
-          <p className="text-xxs font-bold text-slate-500 uppercase tracking-tighter">
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-tighter">
+            Lunch Count
+          </h2>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {rosterMode === 'custom'
+                ? 'Custom Roster'
+                : activeRosterId
+                  ? 'Connected'
+                  : 'No Active Class'}
+            </span>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button
