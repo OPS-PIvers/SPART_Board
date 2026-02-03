@@ -12,21 +12,21 @@ You are a technical assistant. Execute the following steps to ensure the workspa
 
 ### PHASE 3: Sync Current Branch
 3. Run `git branch --show-current` to get the current branch name.
-4. Attempt to rebase onto its remote counterpart to catch any remote changes: `git rebase origin/$(git branch --show-current)`.
-    - If conflicts occur: Resolve them immediately (imports, simple logic) or `git rebase --abort` if they are too complex.
+4. Attempt to merge from its remote counterpart to catch any remote changes: `git merge origin/$(git branch --show-current)`.
+    - If conflicts occur: Resolve them immediately (imports, simple logic) or `git merge --abort` if they are too complex.
 
 ### PHASE 4: Sync with Main
-5. Run `git rebase origin/main`.
-    - **If rebase fails**: 
+5. Run `git merge origin/main`.
+    - **If merge conflicts occur**: 
         - Analyze the conflicts. 
         - Resolve the conflicts immediately (imports, logic, etc.) without asking the user.
-        - Run `git add .` and `git rebase --continue`.
-        - If you get stuck in a conflict loop, explain the blockage and stop.
+        - Run `git add .` and `git commit -m "chore: merge origin/main into $(git branch --show-current)"`.
+        - If you get stuck, explain the blockage and stop.
 
 ### PHASE 5: Finalize
 6. If you ran `git stash` earlier, run `git stash pop`.
-7. Run `git push --force-with-lease origin $(git branch --show-current)`.
+7. Run `git push origin $(git branch --show-current)`.
     - Note: This ensures the remote preview is updated with the synced state.
 
-8. Report: "Synchronization complete. Your workspace is now up-to-date with both 'main' and your remote branch."
+8. Report: "Synchronization complete. Your workspace is now up-to-date with both 'main' and your remote branch using a robust merge strategy."
 """

@@ -500,7 +500,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-transparent">
+    <div className="h-full flex flex-col">
       {/* Toolbar */}
       <div className="h-12 bg-white/30 backdrop-blur-sm border-b border-white/20 flex items-center px-2 justify-between shrink-0">
         <div className="flex bg-white/20 p-1 rounded-lg">

@@ -374,7 +374,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col items-center justify-between h-full p-4 gap-2 relative font-${globalStyle.fontFamily}`}
+      className={`flex flex-col items-center justify-between h-full p-4 gap-2 font-${globalStyle.fontFamily}`}
     >
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="text-xxs font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
@@ -679,7 +679,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+      <div className="flex items-center justify-between p-3 bg-white/20 rounded-xl border border-white/10">
         <div className="flex flex-col gap-0.5">
           <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
             Prioritize Feels Like

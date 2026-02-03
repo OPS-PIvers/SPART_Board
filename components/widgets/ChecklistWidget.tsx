@@ -203,7 +203,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full w-full bg-transparent relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
+      className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
     >
       <div className="flex-1 overflow-y-auto py-1 px-2 custom-scrollbar">
         <ul style={{ gap: `${baseFontSize / 3}px` }} className="flex flex-col">

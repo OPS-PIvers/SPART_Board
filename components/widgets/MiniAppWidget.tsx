@@ -400,7 +400,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // --- RENDER: RUNNING MODE ---
   if (activeApp) {
     return (
-      <div className="w-full h-full bg-transparent flex flex-col relative rounded-2xl overflow-hidden">
+      <div className="w-full h-full flex flex-col relative overflow-hidden">
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
@@ -422,7 +422,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // --- RENDER: EDITOR MODE ---
   if (view === 'editor') {
     return (
-      <div className="w-full h-full bg-transparent flex flex-col rounded-2xl overflow-hidden">
+      <div className="w-full h-full flex flex-col overflow-hidden">
         <div className="p-4 border-b border-white/20 flex items-center justify-between bg-white/30 backdrop-blur-sm">
           <h3 className=" text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2 font-black">
             <Code2 className="w-4 h-4 text-indigo-500" />
@@ -550,8 +550,8 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="w-full h-full bg-transparent flex flex-col">
-      <div className="p-5 border-b border-white/20 flex items-center justify-between bg-white/30 backdrop-blur-sm shrink-0 rounded-t-2xl">
+    <div className="w-full h-full flex flex-col">
+      <div className="p-5 border-b border-white/20 flex items-center justify-between bg-white/30 backdrop-blur-sm shrink-0">
         {' '}
         <div>
           <h2 className="font-black text-lg text-slate-800 tracking-tight uppercase">
@@ -626,7 +626,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-white/20 backdrop-blur-sm border-t border-white/20 text-[10px] font-black text-slate-500 text-center  uppercase tracking-widest shrink-0 rounded-b-2xl">
+      <div className="p-3 bg-white/20 backdrop-blur-sm border-t border-white/20 text-[10px] font-black text-slate-500 text-center  uppercase tracking-widest shrink-0">
         Drag to reorder • Runs Locally
       </div>
     </div>
