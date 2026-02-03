@@ -332,7 +332,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
         lastError = e instanceof Error ? e : new Error(String(e));
-
       }
     }
     throw lastError ?? new Error('All proxies failed');
