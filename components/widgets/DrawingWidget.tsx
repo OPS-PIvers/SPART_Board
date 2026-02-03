@@ -423,11 +423,7 @@ export const DrawingWidget: React.FC<{
   }
 
   return (
-    <div
-      className={`h-full flex flex-col ${
-        isStudentView ? 'bg-transparent' : 'bg-transparent'
-      } rounded-lg overflow-hidden`}
-    >
+    <div className="h-full flex flex-col overflow-hidden">
       <div
         className={`flex-1 relative ${
           isStudentView ? 'bg-transparent' : 'bg-white/5'

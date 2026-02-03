@@ -69,6 +69,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     [widget.id, config, assignments, updateWidget]
   );
 
+  const handleDragStart = useCallback((e: React.DragEvent, student: string) => {
+    e.dataTransfer.setData('student', student);
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
   const handleSubmitReport = async (notes: string, extraPizza?: number) => {
     setIsSubmitting(true);
     try {
@@ -96,7 +101,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const unassignedStudents = activeRoster.filter((s) => !assignments[s]);
 
   return (
-    <div className="flex flex-col h-full bg-transparent p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
+    <div className="flex flex-col h-full p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex justify-between items-center shrink-0">
         <div className="flex flex-col">
@@ -170,10 +175,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={student}
                   draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('student', student);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
+                  onDragStart={(e) => handleDragStart(e, student)}
                   onClick={() => handleDrop(student, null)}
                   className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-orange-200 rounded-lg text-xxs font-bold text-orange-900 shadow-sm cursor-grab active:cursor-grabbing"
                 >
@@ -213,10 +215,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={student}
                   draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('student', student);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
+                  onDragStart={(e) => handleDragStart(e, student)}
                   onClick={() => handleDrop(student, null)}
                   className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-emerald-200 rounded-lg text-xxs font-bold text-emerald-900 shadow-sm cursor-grab active:cursor-grabbing"
                 >
@@ -256,10 +255,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={student}
                   draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('student', student);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
+                  onDragStart={(e) => handleDragStart(e, student)}
                   onClick={() => handleDrop(student, null)}
                   className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-blue-200 rounded-lg text-xxs font-bold text-blue-900 shadow-sm cursor-grab active:cursor-grabbing"
                 >
@@ -288,10 +284,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               <div
                 key={student}
                 draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('student', student);
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
+                onDragStart={(e) => handleDragStart(e, student)}
                 className="px-4 py-2 bg-white/60 backdrop-blur-sm border-b-2 border-white/40 rounded-xl text-xs font-black text-slate-700 shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
               >
                 {student}
