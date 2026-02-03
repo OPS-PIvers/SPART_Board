@@ -84,7 +84,9 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = config.count ?? 1;
 
-  const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
+  const [values, setValues] = useState<number[]>(
+    new Array(diceCount).fill(1).map(() => Math.floor(Math.random() * 6) + 1)
+  );
   const [isRolling, setIsRolling] = useState(false);
 
   const roll = async () => {
