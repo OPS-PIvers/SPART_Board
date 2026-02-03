@@ -4,9 +4,10 @@ import {
   WidgetData,
   WorkSymbolsConfig,
   WidgetConfig,
+  TrafficConfig,
 } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
-import { Play, Pause, RotateCcw, Bell, Delete, Check, X } from 'lucide-react';
+import { Play, Pause, RotateCcw, Bell, Delete, Check, X, Zap } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
 
@@ -65,6 +66,21 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       },
     });
     setRunningDisplayTime(displayTime);
+
+    // Nexus: Auto-set Traffic Light to Green
+    if (config.timerTrafficLightControl && activeDashboard) {
+      const trafficWidget = activeDashboard.widgets.find(
+        (w) => w.type === 'traffic'
+      );
+      if (trafficWidget) {
+        const trafficConfig = trafficWidget.config as TrafficConfig;
+        if (trafficConfig.active !== 'green') {
+          updateWidget(trafficWidget.id, {
+            config: { ...trafficConfig, active: 'green' } as WidgetConfig,
+          });
+        }
+      }
+    }
   };
 
   const handleReset = () => {
@@ -115,6 +131,50 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
                 updateWidget(wsWidget.id, {
                   config: newConfig as unknown as WidgetConfig,
                 });
+              }
+            }
+
+            // Nexus: Auto-set Traffic Light to Red
+            if (config.timerTrafficLightControl && activeDashboard) {
+              const trafficWidget = activeDashboard.widgets.find(
+                (w) => w.type === 'traffic'
+              );
+              if (trafficWidget) {
+                const trafficConfig = trafficWidget.config as TrafficConfig;
+                if (trafficConfig.active !== 'red') {
+                  updateWidget(trafficWidget.id, {
+                    config: {
+                      ...trafficConfig,
+                      active: 'red',
+                    } as WidgetConfig,
+                  });
+                }
+              }
+            }
+          } else if (
+            config.timerTrafficLightControl &&
+            activeDashboard &&
+            config.duration > 0
+          ) {
+            // Nexus: Yellow Light Warning (at 20% remaining)
+            const ratio = next / config.duration;
+            if (ratio <= 0.2 && ratio > 0) {
+              const trafficWidget = activeDashboard.widgets.find(
+                (w) => w.type === 'traffic'
+              );
+              if (trafficWidget) {
+                const trafficConfig = trafficWidget.config as TrafficConfig;
+                if (trafficConfig.active !== 'yellow') {
+                  // Check if we are already in red state (prevent flapping if manual override)
+                  // Actually if it's yellow we want yellow.
+                  // Just set it.
+                  updateWidget(trafficWidget.id, {
+                    config: {
+                      ...trafficConfig,
+                      active: 'yellow',
+                    } as WidgetConfig,
+                  });
+                }
               }
             }
           }
@@ -525,14 +585,19 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
-  const { timerEndVoiceLevel } = config;
+  const { timerEndVoiceLevel, timerTrafficLightControl } = config;
 
   const hasWorkSymbols = activeDashboard?.widgets.some(
     (w) => w.type === 'workSymbols'
   );
 
+  const hasTrafficLight = activeDashboard?.widgets.some(
+    (w) => w.type === 'traffic'
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Work Symbols Automation */}
       <div>
         <label className="text-xxs font-black text-slate-400 uppercase tracking-widest mb-3 block">
           Timer Completion Action
@@ -583,6 +648,53 @@ export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Traffic Light Automation */}
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-3">
+        <div className="flex items-center gap-2 text-indigo-900">
+          <Zap className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Auto-Control Traffic Light
+          </span>
+        </div>
+
+        {!hasTrafficLight && (
+          <div className="text-xxs text-indigo-400 font-medium bg-white/50 p-2 rounded-lg">
+            Tip: Add a Traffic Light widget to use this feature.
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-indigo-800">Enable Automation</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={timerTrafficLightControl ?? false}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    timerTrafficLightControl: e.target.checked,
+                  },
+                })
+              }
+              disabled={!hasTrafficLight}
+            />
+            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        {timerTrafficLightControl && (
+          <div className="text-xxs text-indigo-500 font-medium animate-in fade-in slide-in-from-top-1">
+            Timer Start → <span className="text-green-600 font-bold">Green</span>
+            <br />
+            20% Remaining → <span className="text-amber-500 font-bold">Yellow</span>
+            <br />
+            Timer End → <span className="text-red-500 font-bold">Red</span>
           </div>
         )}
       </div>

@@ -351,6 +351,7 @@ export interface TimeToolConfig {
   startTime?: number | null; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
+  timerTrafficLightControl?: boolean; // Nexus: Auto-set Traffic Light (Green -> Yellow -> Red)
 }
 
 // 1. Define the Data Model for a Mini App
