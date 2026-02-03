@@ -426,7 +426,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="h-full flex flex-col p-2 font-sans overflow-hidden relative">
+    <div className="h-full flex flex-col p-2 font-sans bg-transparent rounded-lg overflow-hidden relative">
       {mode === 'single' && students.length > 0 && (
         <div className="absolute top-2 left-8 flex items-center gap-1.5 z-10">
           <button

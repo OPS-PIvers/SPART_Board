@@ -135,7 +135,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         {gearList.map((item, idx) => (
           <div
             key={`${item.label}-${idx}`}
-            className="flex items-center gap-3 p-3 bg-white/40 border border-white/20 rounded-xl hover:border-emerald-200 transition-colors"
+            className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-emerald-200 transition-colors"
           >
             <span className="text-2xl">{item.icon}</span>
             <div className="flex flex-col min-w-0">
@@ -173,7 +173,7 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
-      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-4">
+      <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-4">
         <div className="flex items-center gap-2 text-emerald-900">
           <Info className="w-4 h-4" />
           <span className="text-xs font-black uppercase tracking-wider">
@@ -187,7 +187,7 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-white/20 rounded-xl border border-white/10">
+        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div className="flex flex-col gap-0.5">
             <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
               Use &quot;Feels Like&quot; Temp
