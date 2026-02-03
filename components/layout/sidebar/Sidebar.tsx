@@ -1010,7 +1010,7 @@ export const Sidebar: React.FC = () => {
 
                     <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
                       Your boards and assets are automatically backed up to your
-                      &quot;School Boards&quot; folder in Drive.
+                      &quot;SPART Board&quot; folder in Drive.
                     </p>
 
                     <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">

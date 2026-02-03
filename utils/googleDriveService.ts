@@ -106,7 +106,7 @@ export class GoogleDriveService {
    * Get the main app folder.
    */
   async getAppFolder(): Promise<string> {
-    return this.getOrCreateFolder('School Boards');
+    return this.getOrCreateFolder('SPART Board');
   }
 
   /**

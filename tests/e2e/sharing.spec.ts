@@ -31,7 +31,7 @@ test.describe('Board Sharing', () => {
 
   test('can share and import a board', async ({ page }) => {
     await page.getByTitle('Open Menu').click();
-    await expect(page.getByText('School Boards')).toBeVisible();
+    await expect(page.getByText('SPART Board')).toBeVisible();
     await page
       .getByRole('button', { name: 'Boards Manage and switch between' })
       .click();
