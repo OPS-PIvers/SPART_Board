@@ -87,7 +87,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   globalStyle,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [_isResizing, setIsResizing] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTools, setShowTools] = useState(false);
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
@@ -332,6 +332,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
+  const isSelected = !isMaximized && (showTools || isDragging || isResizing);
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
@@ -428,10 +429,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         transparency={transparency}
         allowInvisible={true}
         disableBlur={isAnimating}
+        selected={isSelected}
         cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
           isMaximized ? 'border-none !shadow-none' : ''
-        } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
+        } `}
         style={{
           left: isMaximized ? 0 : widget.x,
           top: isMaximized ? 0 : widget.y,
@@ -635,7 +637,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               >
                 <ResizeHandleIcon
                   className="text-slate-400"
-                  style={{ opacity: transparency }}
+                  style={{ opacity: isSelected ? 1 : transparency }}
                 />
               </div>
             </div>
@@ -724,7 +726,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               >
                 <ResizeHandleIcon
                   className="text-slate-500"
-                  style={{ opacity: transparency }}
+                  style={{ opacity: isSelected ? 1 : transparency }}
                 />
               </div>
             </div>
