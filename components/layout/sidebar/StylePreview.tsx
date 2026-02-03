@@ -1,5 +1,6 @@
 import React from 'react';
 import { GlobalStyle } from '../../../types';
+import { GlassCard } from '../../common/GlassCard';
 
 export const StylePreview = ({
   pendingStyle,
@@ -29,22 +30,11 @@ export const StylePreview = ({
       />
 
       {/* Window Preview */}
-      <div
-        className={`relative z-10 w-full p-4 transition-all duration-300 ${
-          pendingStyle.windowTransparency <= 0.001
-            ? ''
-            : 'border border-white/30 shadow-lg backdrop-blur-md'
-        } ${
-          pendingStyle.windowBorderRadius === 'none'
-            ? 'rounded-none'
-            : `rounded-${pendingStyle.windowBorderRadius}`
-        }`}
-        style={{
-          backgroundColor:
-            pendingStyle.windowTransparency <= 0.001
-              ? 'transparent'
-              : `rgba(255, 255, 255, ${pendingStyle.windowTransparency})`,
-        }}
+      <GlassCard
+        globalStyle={pendingStyle}
+        transparency={pendingStyle.windowTransparency}
+        cornerRadius={pendingStyle.windowBorderRadius}
+        className="relative z-10 w-full p-4 transition-all duration-300"
       >
         <div
           className={`text-center space-y-1 font-${pendingStyle.fontFamily}`}
@@ -56,27 +46,14 @@ export const StylePreview = ({
             The quick brown fox jumps over the lazy dog.
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Dock Preview */}
-      <div
-        className={`relative z-10 px-6 py-2 transition-all duration-300 flex flex-col items-center gap-2 ${
-          pendingStyle.dockTransparency <= 0.001
-            ? ''
-            : 'border border-white/30 shadow-lg backdrop-blur-md'
-        } ${
-          pendingStyle.dockBorderRadius === 'none'
-            ? 'rounded-none'
-            : pendingStyle.dockBorderRadius === 'full'
-              ? 'rounded-full'
-              : `rounded-${pendingStyle.dockBorderRadius}`
-        }`}
-        style={{
-          backgroundColor:
-            pendingStyle.dockTransparency <= 0.001
-              ? 'transparent'
-              : `rgba(255, 255, 255, ${pendingStyle.dockTransparency})`,
-        }}
+      <GlassCard
+        globalStyle={pendingStyle}
+        transparency={pendingStyle.dockTransparency}
+        cornerRadius={pendingStyle.dockBorderRadius}
+        className="relative z-10 px-6 py-2 flex flex-col items-center gap-2 transition-all duration-300"
       >
         <div className="text-xxs font-black uppercase text-slate-400 tracking-widest leading-none">
           Dock Preview
@@ -111,7 +88,7 @@ export const StylePreview = ({
             </span>
           </div>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };
