@@ -161,6 +161,12 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
 };
 
+export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
+  baseWidth: 300,
+  baseHeight: 200,
+  canSpread: true,
+};
+
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   clock: {
     baseWidth: 280,
