@@ -11,6 +11,8 @@ import {
   Heart,
   MessagesSquare,
   CheckCircle2,
+  LayoutGrid,
+  LayoutList,
 } from 'lucide-react';
 
 // --- Constants & Data ---
@@ -275,15 +277,21 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
     (i) => i.id === interactionMode
   );
 
+  const isElementary = config.layout === 'elementary';
+
   return (
-    <div className="flex flex-col h-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200">
+    <div
+      className={`h-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
+        isElementary ? 'grid grid-cols-2' : 'flex flex-col'
+      }`}
+    >
       <button
         onClick={() => setActiveCategory('volume')}
         className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
           selectedVolume
             ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
             : 'bg-white/40 border-white/50 text-slate-600 hover:border-white/80 shadow-sm'
-        }`}
+        } ${isElementary ? 'col-span-2' : ''}`}
       >
         <div
           className={`p-3 rounded-xl ${selectedVolume ? 'bg-white/50' : 'bg-white/20'}`}
@@ -345,6 +353,61 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
       </button>
+    </div>
+  );
+};
+
+const LAYOUTS: {
+  id: 'secondary' | 'elementary';
+  label: string;
+  icon: typeof LayoutList;
+}[] = [
+  { id: 'secondary', label: 'Secondary', icon: LayoutList },
+  { id: 'elementary', label: 'Elementary', icon: LayoutGrid },
+];
+
+export const WorkSymbolsSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
+  const { updateWidget } = useDashboard();
+  const config = widget.config as WorkSymbolsConfig;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          Layout Mode
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {LAYOUTS.map((l) => (
+            <button
+              key={l.id}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    layout: l.id,
+                  },
+                })
+              }
+              className={`p-3 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+                (config.layout ?? 'secondary') === l.id
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+              }`}
+            >
+              <l.icon size={20} />
+              <span className="text-xxs font-bold uppercase tracking-tight">
+                {l.label}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xxxs text-slate-400 leading-relaxed">
+          Secondary uses a single column list. Elementary uses a two-column
+          grid.
+        </p>
+      </div>
     </div>
   );
 };

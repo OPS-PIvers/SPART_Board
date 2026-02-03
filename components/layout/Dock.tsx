@@ -897,6 +897,7 @@ export const Dock: React.FC = () => {
   return (
     <div
       ref={dockContainerRef}
+      data-testid="dock"
       data-screenshot="exclude"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-dock flex flex-col items-center gap-4"
     >
@@ -1001,6 +1002,7 @@ export const Dock: React.FC = () => {
             <GlassCard
               globalStyle={globalStyle}
               transparency={globalStyle.dockTransparency}
+              allowInvisible={true}
               cornerRadius={
                 globalStyle.dockBorderRadius === 'full'
                   ? 'full'

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LunchCountWidget } from './LunchCountWidget';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { WidgetData, LunchCountConfig } from '../../types';
+import { LunchCountWidget } from './Widget';
+import { useDashboard } from '../../../context/useDashboard';
+import { useAuth } from '../../../context/useAuth';
+import { WidgetData, LunchCountConfig } from '../../../types';
 
 // Mock dependencies
-vi.mock('../../context/useDashboard');
-vi.mock('../../context/useAuth');
+vi.mock('../../../context/useDashboard');
+vi.mock('../../../context/useAuth');
 
 const mockDashboardContext = {
   updateWidget: vi.fn(),
@@ -23,6 +23,16 @@ const mockDashboardContext = {
     },
   ],
   activeRosterId: 'roster-1',
+  activeDashboard: {
+    id: 'dash-1',
+    widgets: [
+      {
+        id: 'lunch-1',
+        type: 'lunchCount',
+        activeRoster: ['John Doe', 'Jane Smith'],
+      },
+    ],
+  },
 };
 
 const mockAuthContext = {
@@ -115,10 +125,7 @@ describe('LunchCountWidget', () => {
       dataTransfer,
     });
 
-    expect(dataTransfer.setData).toHaveBeenCalledWith(
-      'studentName',
-      'John Doe'
-    );
+    expect(dataTransfer.setData).toHaveBeenCalledWith('student', 'John Doe');
     expect(dataTransfer.effectAllowed).toBe('move');
   });
 

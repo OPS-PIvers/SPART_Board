@@ -66,42 +66,66 @@ const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
 };
 
 const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
-  const rotation = -90 + volume * 1.8; // -90 to +90 degrees
+  const ANGLE_OFFSET = 180; // Start angle for the gauge (Left)
+  const VOLUME_TO_ANGLE_RATIO = 1.8; // 180 degrees / 100 volume units
+  const degToRad = (degrees: number) => (degrees * Math.PI) / 180;
+
+  // Map volume (0-100) to angle (180-360 degrees)
+  // 180 = Left, 270 = Up, 360 = Right
+  const angle = ANGLE_OFFSET + volume * VOLUME_TO_ANGLE_RATIO;
+  const centerX = 50;
+  const centerY = 55;
+  const radius = 40;
+  const needleLen = 35;
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
       <svg viewBox="0 0 100 60" className="w-full h-auto drop-shadow-sm">
         {/* Arcs */}
-        {POSTER_LEVELS.map((level, i) => (
-          <path
-            key={i}
-            d={`M ${20 + i * 12} 55 A 40 40 0 0 1 ${32 + i * 12} 55`}
-            fill="none"
-            stroke={level.color}
-            strokeWidth="8"
-            className="opacity-20"
-          />
-        ))}
+        {POSTER_LEVELS.map((level, i) => {
+          const startVol = level.threshold;
+          const endVol =
+            i < POSTER_LEVELS.length - 1 ? POSTER_LEVELS[i + 1].threshold : 100;
+          const startAngle = ANGLE_OFFSET + startVol * VOLUME_TO_ANGLE_RATIO;
+          const endAngle = ANGLE_OFFSET + endVol * VOLUME_TO_ANGLE_RATIO;
+
+          const x1 = centerX + radius * Math.cos(degToRad(startAngle));
+          const y1 = centerY + radius * Math.sin(degToRad(startAngle));
+          const x2 = centerX + radius * Math.cos(degToRad(endAngle));
+          const y2 = centerY + radius * Math.sin(degToRad(endAngle));
+
+          return (
+            <path
+              key={i}
+              d={`M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`}
+              fill="none"
+              stroke={level.color}
+              strokeWidth="8"
+              className="opacity-20"
+            />
+          );
+        })}
         {/* Main Background Arc */}
         <path
           d="M 10 55 A 40 40 0 0 1 90 55"
           fill="none"
-          className="stroke-white/20"
+          className="stroke-white/10"
           strokeWidth="8"
         />
         {/* Needle */}
         <line
-          x1="50"
-          y1="55"
-          x2={50 + 35 * Math.cos(((rotation - 90) * Math.PI) / 180)}
-          y2={55 + 35 * Math.sin(((rotation - 90) * Math.PI) / 180)}
+          x1={centerX}
+          y1={centerY}
+          x2={centerX + needleLen * Math.cos(degToRad(angle))}
+          y2={centerY + needleLen * Math.sin(degToRad(angle))}
           stroke={STANDARD_COLORS.slate}
           strokeWidth="2"
           strokeLinecap="round"
           className="transition-all duration-150 stroke-slate-800"
         />
         <circle
-          cx="50"
-          cy="55"
+          cx={centerX}
+          cy={centerY}
           r="3"
           fill={STANDARD_COLORS.slate}
           className="fill-slate-800"
@@ -111,7 +135,11 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
   );
 };
 
-const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
+const PopcornBallsView: React.FC<{
+  volume: number;
+  width: number;
+  height: number;
+}> = ({ volume, width, height }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const balls = useRef<{ x: number; y: number; vy: number; color: string }[]>(
     []
@@ -123,41 +151,41 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     volumeRef.current = volume;
   }, [volume]);
 
+  // Handle resizing and ball re-initialization
+  useEffect(() => {
+    balls.current = []; // Reset balls on resize to reposition them
+    for (let i = 0; i < 30; i++) {
+      balls.current.push({
+        x: Math.random() * width,
+        y: height - 10,
+        vy: 0,
+        color:
+          POSTER_LEVELS[Math.floor(Math.random() * POSTER_LEVELS.length)].color,
+      });
+    }
+  }, [width, height]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Initialize balls if empty
-    if (balls.current.length === 0) {
-      for (let i = 0; i < 20; i++) {
-        balls.current.push({
-          x: Math.random() * canvas.width,
-          y: canvas.height - 10,
-          vy: 0,
-          color:
-            POSTER_LEVELS[Math.floor(Math.random() * POSTER_LEVELS.length)]
-              .color,
-        });
-      }
-    }
-
     let animId: number;
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const impulse = (volumeRef.current / 100) * 15;
+      ctx.clearRect(0, 0, width, height);
+      const impulse = (volumeRef.current / 100) * (height * 0.1);
 
       balls.current.forEach((b) => {
         // Physics logic
-        if (b.y >= canvas.height - 10 && impulse > 2) {
+        if (b.y >= height - 10 && impulse > 2) {
           b.vy = -impulse * (0.5 + Math.random());
         }
         b.vy += 0.5; // Gravity
         b.y += b.vy;
 
-        if (b.y > canvas.height - 10) {
-          b.y = canvas.height - 10;
+        if (b.y > height - 10) {
+          b.y = height - 10;
           b.vy = 0;
         }
 
@@ -170,14 +198,14 @@ const PopcornBallsView: React.FC<{ volume: number }> = ({ volume }) => {
     };
     render();
     return () => cancelAnimationFrame(animId);
-  }, []);
+  }, [width, height]);
 
   return (
     <canvas
       ref={canvasRef}
       className="w-full h-full"
-      width={300}
-      height={200}
+      width={width}
+      height={height}
     />
   );
 };
@@ -191,6 +219,8 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number>(null);
+
+  const { w, h } = widget;
 
   // Add type definition for webkitAudioContext
   interface CustomWindow extends Window {
@@ -294,11 +324,13 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   return (
-    <div className="flex flex-col h-full p-4 gap-3 bg-transparent">
-      <div className="flex-1 min-h-0 relative">
+    <div className="flex flex-col h-full p-4 gap-3 bg-transparent w-full">
+      <div className="flex-1 min-h-0 relative w-full">
         {visual === 'thermometer' && <ThermometerView volume={volume} />}
         {visual === 'speedometer' && <SpeedometerView volume={volume} />}
-        {visual === 'balls' && <PopcornBallsView volume={volume} />}
+        {visual === 'balls' && (
+          <PopcornBallsView volume={volume} width={w} height={h - 60} />
+        )}
         {visual === 'line' && (
           <div className="w-full h-full bg-slate-900/80 backdrop-blur-sm rounded-xl p-2">
             <svg
@@ -319,9 +351,9 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         )}
       </div>
-      <div className="text-center">
+      <div className="text-center shrink-0">
         <span
-          className="text-xs  uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm transition-colors duration-300"
+          className="text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-white shadow-sm transition-colors duration-300"
           style={{ backgroundColor: level.color }}
         >
           {level.label}

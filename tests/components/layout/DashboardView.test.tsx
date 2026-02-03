@@ -149,4 +149,83 @@ describe('DashboardView Gestures & Navigation', () => {
     fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true });
     expect(mockLoadDashboard).not.toHaveBeenCalled();
   });
+
+  it('calls addWidget with correct config when spart-sticker with url is dropped', () => {
+    const { container } = render(<DashboardView />);
+
+    const dashboardRoot = container.querySelector('#dashboard-root');
+    if (!dashboardRoot) throw new Error('Dashboard root not found');
+
+    const spartStickerData = JSON.stringify({
+      icon: 'Share2',
+      color: 'green',
+      label: 'SHARE',
+      url: 'https://example.com/custom-sticker.png',
+    });
+
+    const dataTransfer = {
+      getData: vi.fn((type: string) => {
+        if (type === 'application/spart-sticker') return spartStickerData;
+        return '';
+      }),
+    };
+
+    fireEvent.drop(dashboardRoot, {
+      clientX: 500,
+      clientY: 500,
+      dataTransfer,
+    });
+
+    expect(mockAddWidget).toHaveBeenCalledWith(
+      'sticker',
+      expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        config: expect.objectContaining({
+          icon: undefined,
+          url: 'https://example.com/custom-sticker.png',
+          color: 'green',
+          label: 'SHARE',
+        }),
+      })
+    );
+  });
+
+  it('calls addWidget with icon when spart-sticker WITHOUT url is dropped', () => {
+    const { container } = render(<DashboardView />);
+
+    const dashboardRoot = container.querySelector('#dashboard-root');
+    if (!dashboardRoot) throw new Error('Dashboard root not found');
+
+    const spartStickerData = JSON.stringify({
+      icon: 'Share2',
+      color: 'green',
+      label: 'SHARE',
+    });
+
+    const dataTransfer = {
+      getData: vi.fn((type: string) => {
+        if (type === 'application/spart-sticker') return spartStickerData;
+        return '';
+      }),
+    };
+
+    fireEvent.drop(dashboardRoot, {
+      clientX: 500,
+      clientY: 500,
+      dataTransfer,
+    });
+
+    expect(mockAddWidget).toHaveBeenCalledWith(
+      'sticker',
+      expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        config: expect.objectContaining({
+          icon: 'Share2',
+          url: undefined,
+          color: 'green',
+          label: 'SHARE',
+        }),
+      })
+    );
+  });
 });

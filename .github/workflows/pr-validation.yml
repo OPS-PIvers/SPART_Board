@@ -27,11 +27,7 @@ jobs:
             functions/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install functions dependencies
-        working-directory: functions
-        run: pnpm install --frozen-lockfile
+        run: pnpm run install:ci
 
       - name: Run linter
         run: pnpm run lint
@@ -40,11 +36,7 @@ jobs:
         run: pnpm run format:check
 
       - name: Run type check
-        run: pnpm run type-check
-
-      - name: Run functions type check
-        working-directory: functions
-        run: pnpm run type-check
+        run: pnpm run type-check:all
 
   test:
     runs-on: ubuntu-latest
@@ -61,10 +53,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm run install:ci
 
       - name: Run unit tests
         run: pnpm test
@@ -98,14 +92,10 @@ jobs:
             functions/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install functions dependencies
-        working-directory: functions
-        run: pnpm install --frozen-lockfile
+        run: pnpm run install:ci
 
       - name: Build project
-        run: pnpm run build
+        run: pnpm run build:all
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'test-key' }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN || 'test.firebaseapp.com' }}
@@ -115,10 +105,6 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || '1:123456789:web:abc123' }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || 'test-key' }}
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
-
-      - name: Build functions
-        working-directory: functions
-        run: pnpm run build
 
   summary:
     needs: [quality, test, build]

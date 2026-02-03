@@ -8,7 +8,6 @@ import {
   RandomGroup,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
-import { useScaledFont } from '../../hooks/useScaledFont';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
 import { Button } from '../common/Button';
@@ -102,8 +101,6 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
     [widget.id, updateWidget]
   );
 
-  const scoreFontSize = useScaledFont(widget.w, widget.h, 0.5, 24, 120);
-
   return (
     <div
       className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily}`}
@@ -113,7 +110,6 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
           key={team.id}
           team={team}
           onUpdateScore={handleUpdateScore}
-          scoreFontSize={scoreFontSize}
         />
       ))}
       {teams.length === 0 && (
