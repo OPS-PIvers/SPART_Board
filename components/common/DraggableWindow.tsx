@@ -21,8 +21,8 @@ import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
-
 import { Z_INDEX } from '../../config/zIndex';
+import { UI_CONSTANTS } from '../../config/layout';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -48,7 +48,13 @@ interface DraggableWindowProps {
   globalStyle: GlobalStyle;
 }
 
-const ResizeHandleIcon = ({ className }: { className?: string }) => (
+const ResizeHandleIcon = ({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) => (
   <svg
     width="10"
     height="10"
@@ -56,6 +62,7 @@ const ResizeHandleIcon = ({ className }: { className?: string }) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
+    style={style}
     aria-hidden="true"
   >
     <path d="M8 2L2 8" stroke="currentColor" strokeLinecap="round" />
@@ -80,7 +87,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   globalStyle,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [_isResizing, setIsResizing] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTools, setShowTools] = useState(false);
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
@@ -89,6 +96,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
     widget.flipped
   );
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
@@ -97,6 +105,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (widget.flipped && !shouldRenderSettings) {
       setShouldRenderSettings(true);
     }
+    // Set animating when flipped changes
+    setIsAnimating(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.flipped]);
 
@@ -322,6 +332,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
+  const isSelected = !isMaximized && (showTools || isDragging || isResizing);
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
@@ -416,10 +427,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onPointerDown={handlePointerDown}
         onClick={handleWidgetClick}
         transparency={transparency}
+        allowInvisible={true}
+        disableBlur={isAnimating}
+        selected={isSelected}
         cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
           isMaximized ? 'border-none !shadow-none' : ''
-        } ${isDragging ? 'shadow-2xl ring-2 ring-blue-400/50' : ''}`}
+        } `}
         style={{
           left: isMaximized ? 0 : widget.x,
           top: isMaximized ? 0 : widget.y,
@@ -438,6 +452,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         <div className="flip-container h-full rounded-[inherit] overflow-hidden">
           <div
             className={`flipper h-full ${widget.flipped ? 'flip-active' : ''}`}
+            onTransitionEnd={() => setIsAnimating(false)}
           >
             {/* Front Face */}
             <div
@@ -448,6 +463,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 touchAction: 'none',
               }}
             >
+              {/* Universal Drag Handle */}
+              <div
+                className="w-full flex-shrink-0 flex items-center px-3 cursor-move group/drag-handle hover:bg-slate-400/5 transition-colors"
+                style={{ height: UI_CONSTANTS.WIDGET_HEADER_HEIGHT }}
+              >
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover/drag-handle:opacity-100 transition-opacity truncate pointer-events-none">
+                  {widget.customTitle ?? title}
+                </span>
+              </div>
+
               {showConfirm && (
                 <div
                   className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
@@ -610,7 +635,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 onPointerDown={(e) => handleResizeStart(e, 'se')}
                 className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
-                <ResizeHandleIcon className="text-slate-400/80" />
+                <ResizeHandleIcon
+                  className="text-slate-400"
+                  style={{ opacity: isSelected ? 1 : transparency }}
+                />
               </div>
             </div>
 
@@ -696,7 +724,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 onPointerDown={(e) => handleResizeStart(e, 'se')}
                 className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
               >
-                <ResizeHandleIcon className="text-slate-500/80" />
+                <ResizeHandleIcon
+                  className="text-slate-500"
+                  style={{ opacity: isSelected ? 1 : transparency }}
+                />
               </div>
             </div>
           </div>

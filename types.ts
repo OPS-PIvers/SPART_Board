@@ -752,8 +752,8 @@ export interface ScalingConfig {
    */
   canSpread?: boolean;
   /**
-   * If true, the universal ScalableWidget wrapper will be skipped.
-   * The widget will be responsible for its own responsiveness.
+   * If true, skips the automatic JS-based scaling.
+   * Modern widgets should use CSS Container Queries instead.
    */
   skipScaling?: boolean;
 }

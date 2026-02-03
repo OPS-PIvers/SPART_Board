@@ -1,8 +1,8 @@
-# Copilot Instructions for Classroom Dashboard Pro
+# Copilot Instructions for SPART Board
 
 ## Project Overview
 
-**Classroom Dashboard Pro** is a React 19 + TypeScript + Vite application providing 20+ interactive classroom management widgets (timers, noise meters, drawing boards, polls, etc.) with Firebase backend. The project uses a **flat file structure** (no `src/` directory) with all source files at root level.
+**SPART Board** is a React 19 + TypeScript + Vite application providing 20+ interactive classroom management widgets (timers, noise meters, drawing boards, polls, etc.) with Firebase backend. The project uses a **flat file structure** (no `src/` directory) with all source files at root level.
 
 **Tech Stack:** React 19, TypeScript 5.8, Vite 6, Firebase (Auth/Firestore/Storage), Tailwind CSS, ESLint 9 (flat config), Prettier, Husky
 **Runtime:** Node.js v20+ (tested with v20.19.6), npm 10+

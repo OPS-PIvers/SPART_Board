@@ -22,6 +22,7 @@ import {
   WIDGET_COMPONENTS,
   WIDGET_SETTINGS_COMPONENTS,
   WIDGET_SCALING_CONFIG,
+  DEFAULT_SCALING_CONFIG,
 } from './WidgetRegistry';
 
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
@@ -177,7 +178,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const PADDING = UI_CONSTANTS.WIDGET_PADDING;
 
   const getWidgetContentInternal = useCallback(
-    (w: number, h: number) => {
+    (w: number, h: number, _scale?: number) => {
       if (WidgetComponent) {
         return (
           <InnerWidgetRenderer
@@ -202,24 +203,23 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     return <StickerItemWidget widget={widget} />;
   }
 
-  const finalContent =
-    scaling && !scaling.skipScaling ? (
-      <ScalableWidget
-        width={effectiveWidth}
-        height={effectiveHeight}
-        baseWidth={scaling.baseWidth}
-        baseHeight={scaling.baseHeight}
-        canSpread={scaling.canSpread}
-        headerHeight={HEADER_HEIGHT}
-        padding={PADDING}
-      >
-        {({ internalW, internalH }) =>
-          getWidgetContentInternal(internalW, internalH)
-        }
-      </ScalableWidget>
-    ) : (
-      getWidgetContentInternal(effectiveWidth, effectiveHeight)
-    );
+  const scalingConfig = scaling ?? DEFAULT_SCALING_CONFIG;
+
+  const finalContent = (
+    <ScalableWidget
+      width={effectiveWidth}
+      height={effectiveHeight}
+      baseWidth={scalingConfig.baseWidth}
+      baseHeight={scalingConfig.baseHeight}
+      canSpread={scalingConfig.canSpread ?? true}
+      headerHeight={HEADER_HEIGHT}
+      padding={PADDING}
+    >
+      {({ internalW, internalH, scale }) =>
+        getWidgetContentInternal(internalW, internalH, scale)
+      }
+    </ScalableWidget>
+  );
 
   if (isStudentView) {
     const isDrawing = widget.type === 'drawing';

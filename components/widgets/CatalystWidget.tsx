@@ -83,7 +83,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-transparent rounded-2xl overflow-hidden group">
+    <div className="flex flex-col h-full overflow-hidden group">
       {/* Header Tabs */}
       <div className="flex bg-white/20 border-b border-white/30 backdrop-blur-sm">
         {categories.map((cat) => {

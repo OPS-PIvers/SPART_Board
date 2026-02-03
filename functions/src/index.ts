@@ -496,7 +496,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     );
 
     const prompt = `
-      As a Jules Agent, your task is to implement a new widget for the School Boards application. 
+      As a Jules Agent, your task is to implement a new widget for the SPART Board application.
       
       Widget Name: ${widgetName}
       Features Requested: ${description}
