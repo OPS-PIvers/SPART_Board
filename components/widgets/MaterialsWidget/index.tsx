@@ -19,11 +19,11 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as MaterialsConfig;
   const selectedItems = React.useMemo(
-    () => new Set(config.selectedItems || []),
+    () => new Set(config.selectedItems ?? []),
     [config.selectedItems]
   );
   const activeItems = React.useMemo(
-    () => new Set(config.activeItems || []),
+    () => new Set(config.activeItems ?? []),
     [config.activeItems]
   );
 
@@ -51,9 +51,9 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
   const numItems = displayItems.length;
   // Calculate columns based on physical width (internalW * scale)
   // Threshold of 140px per card ensures 2 columns at 340px width and 1 column at ~200px
-  const physicalWidth = widget.w * (scale || 1);
+  const physicalWidth = widget.w * (scale ?? 1);
   const cols = Math.max(1, Math.min(6, Math.floor(physicalWidth / 140)));
-  const actualCols = Math.min(cols, numItems || 1);
+  const actualCols = Math.min(cols, numItems ?? 1);
 
   // Item width calculation with gap adjustment (gap-2 = 0.5rem)
   const gapSize = 0.5;
@@ -103,7 +103,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                 strokeWidth={isActive ? 2.5 : 2}
               />
               <span
-                className="uppercase tracking-wide text-center font-bold leading-tight overflow-hidden text-ellipsis w-full"
+                className="uppercase tracking-wide text-center font-bold leading-tight truncate w-full"
                 style={{ fontSize: `${labelSize}px` }}
               >
                 {item.label}
