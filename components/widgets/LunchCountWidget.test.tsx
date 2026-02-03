@@ -94,6 +94,7 @@ describe('LunchCountWidget', () => {
 
   it('renders student chips from roster', async () => {
     render(<LunchCountWidget widget={createWidget()} />);
+    screen.debug();
 
     expect(await screen.findByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();

@@ -1,15 +1,15 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import ClassesWidget from '@/components/widgets/ClassesWidget';
-import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
-import { useDashboard } from '@/context/useDashboard';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import ClassesWidget from '../../../components/widgets/ClassesWidget';
+import { useDashboard } from '../../../context/useDashboard';
 
-vi.mock('@/context/useDashboard', () => ({
-  useDashboard: vi.fn(),
-}));
+vi.mock('../../../context/useDashboard');
 
 describe('ClassesWidget RosterEditor', () => {
   const mockAddRoster = vi.fn();
   const mockUpdateRoster = vi.fn();
+  const mockDeleteRoster = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -17,95 +17,105 @@ describe('ClassesWidget RosterEditor', () => {
       rosters: [],
       addRoster: mockAddRoster,
       updateRoster: mockUpdateRoster,
-      deleteRoster: vi.fn(),
-      activeRosterId: null,
-      setActiveRoster: vi.fn(),
-      addToast: vi.fn(),
+      deleteRoster: mockDeleteRoster,
     });
   });
 
-  it('renders one name field by default and does NOT split on paste', () => {
-    render(
-      <ClassesWidget
-        widget={{
-          id: 'w1',
-          type: 'classes',
-          x: 0,
-          y: 0,
-          w: 4,
-          h: 4,
-          z: 0,
-          flipped: false,
-          config: {},
-        }}
-      />
-    );
+  it('renders single name field by default', async () => {
+    const user = userEvent.setup();
+    render(<ClassesWidget widget={{ id: '1', type: 'classes', x: 0, y: 0, w: 6, h: 4 }} />);
 
-    // Switch to edit view
-    fireEvent.click(screen.getByText(/Create New Class/i));
+    // Open add modal
+    await user.click(screen.getByRole('button', { name: /create new class/i }));
 
-    // Check for "Names (One per line)" and NO "Last Names"
-    expect(screen.getByText(/Names \(One per line\)/i)).toBeInTheDocument();
-    // Using exact match to avoid matching "+ Add Last Name" button
-    expect(screen.queryByText('Last Names')).not.toBeInTheDocument();
-
-    const nameArea = screen.getByPlaceholderText(
-      /Paste full names or group names here.../i
-    );
-
-    // Simulate paste
-    fireEvent.paste(nameArea, {
-      clipboardData: {
-        getData: () => 'John Doe\nJane Smith',
-      },
-    });
-
-    // New behavior: it should NOT split, just paste as is (handled by default textarea behavior)
-    // Wait, in JSDOM fireEvent.paste doesn't actually update the value unless there's a handler.
-    // But since we removed our handler, we should verify it DOES NOT have the split values if we manually set it or just check that the handler is gone.
-    // Actually, we can just simulate the change event that would follow a paste in a real browser,
-    // or just verify the toggle behavior.
-
-    // If we want to test that it DOES NOT split, we can check if it stays as what we put in if we use userEvent or similar.
-    // But since we are using fireEvent.paste, and it doesn't have an onPaste handler anymore,
-    // it won't do anything in JSDOM.
-
-    // Let's verify the toggle instead.
+    expect(screen.getByPlaceholderText(/class name/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/paste full names or group names here/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/first names/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/last names/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /\+ add last name/i })).toBeInTheDocument();
   });
 
-  it('toggles last name field when button is clicked', () => {
-    render(
-      <ClassesWidget
-        widget={{
-          id: 'w1',
-          type: 'classes',
-          x: 0,
-          y: 0,
-          w: 4,
-          h: 4,
-          z: 0,
-          flipped: false,
-          config: {},
-        }}
-      />
+  it('toggles to dual name fields', async () => {
+    const user = userEvent.setup();
+    render(<ClassesWidget widget={{ id: '1', type: 'classes', x: 0, y: 0, w: 6, h: 4 }} />);
+
+    await user.click(screen.getByRole('button', { name: /create new class/i }));
+
+    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+
+    expect(screen.getByPlaceholderText(/first names/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/last names/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
+  });
+
+  it('saves correctly in single field mode', async () => {
+    const user = userEvent.setup();
+    render(<ClassesWidget widget={{ id: '1', type: 'classes', x: 0, y: 0, w: 6, h: 4 }} />);
+
+    await user.click(screen.getByRole('button', { name: /create new class/i }));
+
+    const nameInput = screen.getByPlaceholderText(/class name/i);
+    await user.type(nameInput, 'New Class');
+
+    const namesTextarea = screen.getByPlaceholderText(/paste full names or group names here/i);
+    await user.type(namesTextarea, 'Alice\nBob');
+
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockAddRoster).toHaveBeenCalled();
+    });
+
+    expect(mockAddRoster).toHaveBeenCalledWith(
+      'New Class',
+      [
+        expect.objectContaining({ firstName: 'Alice', lastName: '' }),
+        expect.objectContaining({ firstName: 'Bob', lastName: '' }),
+      ]
     );
+  });
 
-    fireEvent.click(screen.getByText(/Create New Class/i));
+  it('saves correctly in dual field mode', async () => {
+    const user = userEvent.setup();
+    const existingRoster = { id: 'roster-1', name: 'Existing Class', students: [] };
+    (useDashboard as Mock).mockReturnValue({
+      rosters: [existingRoster],
+      addRoster: mockAddRoster,
+      updateRoster: mockUpdateRoster,
+      deleteRoster: mockDeleteRoster,
+    });
 
-    // Initially hidden
-    expect(screen.queryByText(/Last Names/i)).not.toBeInTheDocument();
+    render(<ClassesWidget widget={{ id: '1', type: 'classes', x: 0, y: 0, w: 6, h: 4 }} />);
 
-    // Click Add Last Name
-    fireEvent.click(screen.getByText(/\+ Add Last Name/i));
+    // Open edit modal
+    await user.click(screen.getByRole('button', { name: /edit class/i }));
 
-    // Now visible
-    expect(screen.getByText(/First Names/i)).toBeInTheDocument();
-    expect(screen.getByText(/Last Names/i)).toBeInTheDocument();
+    // Toggle to last names
+    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
 
-    // Click Remove
-    fireEvent.click(screen.getByText(/Remove/i));
+    const firstsTextarea = screen.getByPlaceholderText(/first names/i);
+    await user.type(firstsTextarea, 'Alice\nBob');
 
-    // Hidden again
-    expect(screen.queryByText(/Last Names/i)).not.toBeInTheDocument();
+    const lastsTextarea = screen.getByPlaceholderText(/last names/i);
+    await user.type(lastsTextarea, 'Smith\nJones');
+
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockUpdateRoster).toHaveBeenCalled();
+    });
+
+    expect(mockUpdateRoster).toHaveBeenCalledWith(
+      'roster-1',
+      expect.objectContaining({
+        name: 'Existing Class',
+        students: [
+          expect.objectContaining({ firstName: 'Alice', lastName: 'Smith' }),
+          expect.objectContaining({ firstName: 'Bob', lastName: 'Jones' }),
+        ],
+      })
+    );
   });
 });

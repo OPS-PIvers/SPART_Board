@@ -352,10 +352,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   const currentRoster = useMemo(() => {
     if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) =>
+      const result = activeRoster.students.map((s) =>
         `${s.firstName} ${s.lastName}`.trim()
       );
+      console.log('LunchCount currentRoster:', result);
+      return result;
     }
+    console.log('LunchCount activeRoster not found or mode not class', {
+      rosterMode,
+      activeRoster: !!activeRoster,
+    });
     return roster;
   }, [activeRoster, roster, rosterMode]);
 
