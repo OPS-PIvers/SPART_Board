@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LunchCountWidget } from './LunchCountWidget';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { WidgetData, LunchCountConfig } from '../../types';
+import { LunchCountWidget } from './Widget';
+import { useDashboard } from '../../../context/useDashboard';
+import { useAuth } from '../../../context/useAuth';
+import { WidgetData, LunchCountConfig } from '../../../types';
 
 // Mock dependencies
-vi.mock('../../context/useDashboard');
-vi.mock('../../context/useAuth');
+vi.mock('../../../context/useDashboard');
+vi.mock('../../../context/useAuth');
 
 const mockDashboardContext = {
   updateWidget: vi.fn(),
@@ -94,7 +94,6 @@ describe('LunchCountWidget', () => {
 
   it('renders student chips from roster', async () => {
     render(<LunchCountWidget widget={createWidget()} />);
-    screen.debug();
 
     expect(await screen.findByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();

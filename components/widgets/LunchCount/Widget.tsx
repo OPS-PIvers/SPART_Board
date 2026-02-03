@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
+import { useDashboard } from '../../../context/useDashboard';
+import { useAuth } from '../../../context/useAuth';
 import {
   WidgetData,
   LunchCountConfig,
   LunchMenuDay,
   LunchCountGlobalConfig,
-} from '../../types';
-import { RosterModeControl } from '../common/RosterModeControl';
-import { Button } from '../common/Button';
-import { Toggle } from '../common/Toggle';
+} from '../../../types';
+import { RosterModeControl } from '../../common/RosterModeControl';
+import { Button } from '../../common/Button';
+import { Toggle } from '../../common/Toggle';
 import {
   Users,
   RefreshCw,
@@ -329,17 +329,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
         const jsonContent = JSON.parse(trimmedText) as NutrisliceWeek;
 
-        console.warn('[LunchCountWidget] Fetched Nutrislice Data successfully');
-
         if (jsonContent && jsonContent.days) return jsonContent;
       } catch (e) {
         lastError = e instanceof Error ? e : new Error(String(e));
 
-        // Use console.warn as required by lint rules
-
-        console.warn(
-          `[LunchCountWidget] Proxy attempt failed: ${lastError.message}`
-        );
       }
     }
     throw lastError ?? new Error('All proxies failed');
@@ -352,16 +345,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   const currentRoster = useMemo(() => {
     if (rosterMode === 'class' && activeRoster) {
-      const result = activeRoster.students.map((s) =>
+      return activeRoster.students.map((s) =>
         `${s.firstName} ${s.lastName}`.trim()
       );
-      console.log('LunchCount currentRoster:', result);
-      return result;
     }
-    console.log('LunchCount activeRoster not found or mode not class', {
-      rosterMode,
-      activeRoster: !!activeRoster,
-    });
     return roster;
   }, [activeRoster, roster, rosterMode]);
 
