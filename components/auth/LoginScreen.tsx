@@ -1,3 +1,4 @@
+import { APP_NAME } from '../../config/constants';
 import React from 'react';
 import { LogIn, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
@@ -27,7 +28,7 @@ export const LoginScreen: React.FC = () => {
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-brand-blue-primary to-brand-blue-dark">
       <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full text-center">
-        <h1 className="text-4xl font-black text-slate-800 mb-4">SPART Board</h1>
+        <h1 className="text-4xl font-black text-slate-800 mb-4">{APP_NAME}</h1>
         <p className="text-slate-500 mb-8 font-medium">
           Sign in to access your boards
         </p>
