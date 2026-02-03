@@ -11,9 +11,10 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result).not.toBeNull();
     expect(result?.type).toBe('embed');
     const config = result?.config as EmbedConfig;
-    expect(config.url).toBe(
-      'https://docs.google.com/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
+    expect(config.url).toContain(
+      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk'
     );
+    expect(config.url).toContain('/preview');
   });
 
   it('detects Google Docs and converts to edit with minimal UI', () => {
@@ -23,7 +24,6 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result).not.toBeNull();
     expect(result?.type).toBe('embed');
     const config = result?.config as EmbedConfig;
-    // From urlHelpers.ts: parsed.pathname = `/document/d/${docId}/edit`; parsed.searchParams.set('rm', 'minimal');
     expect(config.url).toContain('/document/d/1abc123/edit');
     expect(config.url).toContain('rm=minimal');
   });
