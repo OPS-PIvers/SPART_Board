@@ -31,7 +31,6 @@ export default defineConfig({
           ],
           'imgly-bg-removal': ['@imgly/background-removal'],
           utils: ['html-to-image', 'jszip'],
-          icons: ['lucide-react'],
         },
       },
     },

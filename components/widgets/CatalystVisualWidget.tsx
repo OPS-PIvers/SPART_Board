@@ -2,7 +2,7 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CatalystVisualConfig } from '../../types';
 import { DraggableWindow } from '../common/DraggableWindow';
-import * as Icons from 'lucide-react';
+import { getIcon } from '../../utils/icons';
 import {
   Hand,
   Megaphone,
@@ -24,7 +24,7 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
   } = useDashboard();
   const config = widget.config as CatalystVisualConfig;
 
-  const getIcon = (iconName: string) => {
+  const renderIcon = (iconName: string) => {
     const icons: Record<string, React.ElementType> = {
       Hand: Hand,
       Megaphone: Megaphone,
@@ -32,11 +32,8 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
       ListTodo: ListTodo,
       Zap: Zap,
     };
-    const Icon =
-      icons[iconName] ??
-      (Icons as unknown as Record<string, React.ElementType>)[iconName] ??
-      HelpCircle;
-    return <Icon className="w-32 h-32" />;
+    const Icon = icons[iconName] ?? getIcon(iconName) ?? HelpCircle;
+    return React.createElement(Icon, { className: 'w-32 h-32' });
   };
 
   const colors: Record<string, string> = {
@@ -74,7 +71,9 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
       <div
         className={`h-full flex flex-col items-center justify-center p-6 ${theme} border-4 border-double rounded-b-xl`}
       >
-        <div className="mb-4 animate-pulse">{getIcon(config.icon ?? '')}</div>
+        <div className="mb-4 animate-pulse">
+          {renderIcon(config.icon ?? '')}
+        </div>
         <h2 className="text-2xl font-black text-center uppercase tracking-wider leading-tight">
           {title}
         </h2>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import * as Icons from 'lucide-react';
+import { getIcon } from '../../../utils/icons';
+import { HelpCircle, X } from 'lucide-react';
 import { COMMON_INSTRUCTIONAL_ICONS } from '../../../config/instructionalIcons';
 import { getRoutineColorClasses } from './colorHelpers';
 
@@ -18,17 +19,12 @@ export const IconPicker: React.FC<{
         className={`p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-center ${colorClasses.text} ${colorClasses.bg}`}
         title="Select Icon"
       >
-        {(Icons as unknown as Record<string, React.ElementType>)[
-          currentIcon
-        ] ? (
-          React.createElement(
-            (Icons as unknown as Record<string, React.ElementType>)[
-              currentIcon
-            ],
-            { size: 16 }
-          )
+        {getIcon(currentIcon) ? (
+          React.createElement(getIcon(currentIcon) as React.ElementType, {
+            size: 16,
+          })
         ) : (
-          <Icons.HelpCircle size={16} />
+          <HelpCircle size={16} />
         )}
       </button>
 
@@ -42,14 +38,12 @@ export const IconPicker: React.FC<{
               onClick={() => setIsOpen(false)}
               className="text-slate-400 hover:text-slate-600"
             >
-              <Icons.X size={14} />
+              <X size={14} />
             </button>
           </div>
           <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
             {COMMON_INSTRUCTIONAL_ICONS.map((icon) => {
-              const IconComp = (
-                Icons as unknown as Record<string, React.ElementType>
-              )[icon];
+              const IconComp = getIcon(icon);
               if (!IconComp) return null;
               return (
                 <button

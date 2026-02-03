@@ -13,7 +13,7 @@ import {
   ROUTINES as DEFAULT_ROUTINES,
   InstructionalRoutine,
 } from '../../../config/instructionalRoutines';
-import * as Icons from 'lucide-react';
+import { getIcon } from '../../../utils/icons';
 import {
   Star,
   Trash2,
@@ -25,6 +25,9 @@ import {
   ArrowDown,
   RefreshCw,
   Info,
+  Key,
+  MessageSquare,
+  HelpCircle,
 } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 import { LibraryManager } from './LibraryManager';
@@ -196,9 +199,7 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
   onStepClick,
   onAddWidget,
 }) => {
-  const StepIcon = step.icon
-    ? (Icons as unknown as Record<string, React.ElementType>)[step.icon]
-    : null;
+  const StepIcon = step.icon ? getIcon(step.icon) : null;
 
   const isVisualCue = structure === 'visual-cue';
 
@@ -309,9 +310,11 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
                   className={`rounded-lg ${getRoutineColorClasses(step.color ?? 'blue').bg} ${getRoutineColorClasses(step.color ?? 'blue').text}`}
                   style={{ padding: '0.4em' }}
                 >
-                  {StepIcon && (
-                    <StepIcon size={dynamicFontSize * 1.5} strokeWidth={2.5} />
-                  )}
+                  {StepIcon &&
+                    React.createElement(StepIcon, {
+                      size: dynamicFontSize * 1.5,
+                      strokeWidth: 2.5,
+                    })}
                 </div>
               )}
 
@@ -567,9 +570,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
           {displayedRoutines.map((r) => {
-            const Icon =
-              (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
-              Icons.HelpCircle;
+            const Icon = getIcon(r.icon) ?? HelpCircle;
             const isFav = favorites.includes(r.id);
             const colors =
               ROUTINE_COLORS[r.color || 'blue'] || ROUTINE_COLORS.blue;
@@ -583,7 +584,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   <div
                     className={`p-3 rounded-full mb-3 transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
                   >
-                    <Icon size={28} strokeWidth={2} />
+                    {React.createElement(Icon, { size: 28, strokeWidth: 2 })}
                   </div>
                   <div className="flex flex-col gap-1 w-full">
                     <div className="text-[11px] font-black text-slate-800 uppercase leading-tight tracking-wide">
@@ -651,10 +652,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const RoutineIcon =
-    (Icons as unknown as Record<string, React.ElementType>)[
-      selectedRoutine.icon
-    ] ?? Icons.HelpCircle;
+  const RoutineIcon = getIcon(selectedRoutine.icon) ?? HelpCircle;
 
   const launchBloomsResource = (type: 'keyWords' | 'questionStarters') => {
     const title =
@@ -752,7 +750,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           className="bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm flex items-center justify-center"
           style={{ padding: '1em' }}
         >
-          <RoutineIcon style={{ width: '2em', height: '2em' }} />
+          {React.createElement(RoutineIcon, {
+            style: { width: '2em', height: '2em' },
+          })}
         </div>
       </div>
 
@@ -766,15 +766,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
             style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
           >
-            <Icons.Key size={dynamicFontSize * 1.2} /> Key Words
+            <Key size={dynamicFontSize * 1.2} /> Key Words
           </button>
           <button
             onClick={() => launchBloomsResource('questionStarters')}
             className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
             style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
           >
-            <Icons.MessageSquare size={dynamicFontSize * 1.2} /> Sentence
-            Starters
+            <MessageSquare size={dynamicFontSize * 1.2} /> Sentence Starters
           </button>
         </div>
       )}

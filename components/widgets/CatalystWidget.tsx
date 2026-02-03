@@ -11,8 +11,15 @@ import {
   CatalystRoutine,
   RoutineCategory,
 } from '../../config/catalystRoutines';
-import * as Icons from 'lucide-react';
-import { LayoutGrid, Brain, Settings2, HelpCircle } from 'lucide-react';
+import { getIcon } from '../../utils/icons';
+import {
+  LayoutGrid,
+  Brain,
+  Settings2,
+  HelpCircle,
+  Zap,
+  Command,
+} from 'lucide-react';
 
 export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -118,10 +125,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
         {filteredRoutines.map((routine) => {
-          const ActionIcon =
-            (Icons as unknown as Record<string, React.ElementType>)[
-              routine.icon
-            ] ?? Icons.Zap;
+          const ActionIcon = getIcon(routine.icon) ?? Zap;
           return (
             <div
               key={routine.id}
@@ -169,7 +173,7 @@ export const CatalystSettings: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="p-4 text-center space-y-4">
       <div className="p-8 bg-blue-50 rounded-3xl border-2 border-dashed border-blue-200">
-        <Icons.Command className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+        <Command className="w-12 h-12 text-blue-400 mx-auto mb-3" />
         <h3 className="font-black text-blue-800 uppercase tracking-widest text-sm">
           Command Center
         </h3>
