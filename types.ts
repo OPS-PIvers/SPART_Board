@@ -751,6 +751,11 @@ export interface ScalingConfig {
    * Useful for widgets with flexible content like text or lists.
    */
   canSpread?: boolean;
+  /**
+   * If true, skips the automatic JS-based scaling.
+   * Modern widgets should use CSS Container Queries instead.
+   */
+  skipScaling?: boolean;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {

@@ -55,7 +55,7 @@ describe('TextWidget', () => {
     const { container } = render(<TextWidget widget={mockWidget} />);
     const contentDiv = container.querySelector('.relative.z-10') as HTMLElement;
     expect(contentDiv.style.fontSize).toBeDefined();
-    expect(contentDiv.style.fontSize).toContain('px');
+    expect(contentDiv.style.fontSize).toContain('cqmin');
   });
 
   it('updates content on blur', () => {

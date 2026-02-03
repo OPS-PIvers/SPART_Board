@@ -68,7 +68,7 @@ export const convertToEmbedUrl = (url: string): string => {
           );
         if (slideIdMatch) {
           const slideId = slideIdMatch[1];
-          parsed.pathname = `/presentation/d/${slideId}/preview`;
+          parsed.pathname = `/presentation/d/${slideId}/embed`;
           return parsed.toString();
         }
       }

@@ -226,10 +226,10 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col h-full rounded-3xl shadow-xl border border-white/30 transition-all duration-500 ${themeClass} w-full`}
+      className={`flex flex-col h-full rounded-[2.5rem] shadow-xl border border-white/30 transition-all duration-500 ${themeClass} w-full`}
     >
       {/* Header: Digital/Visual Toggle & Themes */}
-      <div className="px-3 pt-3 flex justify-between items-center shrink-0">
+      <div className="px-8 pt-6 flex justify-between items-center shrink-0">
         <div className="bg-slate-400/10 p-1 rounded-xl flex items-center relative w-36">
           <div
             className={`absolute w-[calc(50%-4px)] h-[calc(100%-8px)] bg-blue-500 rounded-lg shadow-sm transition-transform duration-300 ${isVisual ? 'translate-x-full' : ''}`}
@@ -270,7 +270,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
       {/* Mode Tabs */}
       <div
-        className="px-3 mt-2 flex gap-4 border-b border-white/5 shrink-0"
+        className="px-8 mt-4 flex gap-4 border-b border-white/5 shrink-0"
         role="tablist"
       >
         <button
@@ -437,7 +437,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             <button
               onClick={startEditing}
               data-testid="time-display"
-              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} text-[10rem]`}
+              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
               disabled={config.isRunning || config.mode !== 'timer'}
             >
               {formatTime(displayTime)}
@@ -460,7 +460,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Controls */}
-      <div className="px-3 pb-3 flex gap-3 shrink-0">
+      <div className="px-8 pb-6 flex gap-3 shrink-0">
         <button
           onClick={
             config.isRunning
@@ -485,7 +485,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
       </div>
 
       {/* Footer: Audio Selection */}
-      <div className="px-3 py-2 bg-black/5 border-t border-white/5 flex justify-end items-center relative shrink-0">
+      <div className="px-8 py-4 bg-black/5 border-t border-white/5 flex justify-end items-center relative shrink-0">
         <div className="relative">
           <button
             onClick={() => {

@@ -1,5 +1,5 @@
 {
-  "name": "School Boards - Full AI Workspace",
+  "name": "SPART Board - Full AI Workspace",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
 
   "features": {
@@ -18,7 +18,7 @@
 
   // AUTO-START
   // Automatically clears the terminal and starts Gemini
-  "postAttachCommand": "clear && echo 'Welcome to School Boards AI! Starting Gemini...' && gemini",
+  "postAttachCommand": "clear && echo 'Welcome to SPART Board AI! Starting Gemini...' && gemini",
 
   // PORT FORWARDING
   // Automatically forwards the Vite dev server port and labels it

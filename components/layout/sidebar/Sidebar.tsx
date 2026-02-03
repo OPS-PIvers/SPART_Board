@@ -1,3 +1,4 @@
+import { APP_NAME } from '../../../config/constants';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Plus,
@@ -1010,7 +1011,7 @@ export const Sidebar: React.FC = () => {
 
                     <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
                       Your boards and assets are automatically backed up to your
-                      &quot;School Boards&quot; folder in Drive.
+                      {`"${APP_NAME}"`} folder in Drive.
                     </p>
 
                     <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
