@@ -358,9 +358,6 @@ const InnerWidgetRenderer = memo(
     if (pw.isLive !== nw.isLive) return false;
     if (pw.transparency !== nw.transparency) return false;
     if (pw.annotation !== nw.annotation) return false;
-    if (pw.isLive !== nw.isLive) return false;
-    if (pw.transparency !== nw.transparency) return false;
-    if (pw.annotation !== nw.annotation) return false;
     if (pw.config !== nw.config) return false;
 
     return true;
