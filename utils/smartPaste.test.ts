@@ -12,7 +12,7 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result?.type).toBe('embed');
     expect(result?.config as EmbedConfig).toHaveProperty(
       'url',
-      'https://docs.google.com/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
+      'https://docs.google.com/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/embed?slide=id.g3c33466b1b1_0_0#slide=id.g3c33466b1b1_0_0'
     );
   });
 

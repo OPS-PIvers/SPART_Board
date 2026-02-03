@@ -47,11 +47,12 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
     [selectedItems]
   );
 
-  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 9, 14);
+  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 9, 24);
+  const iconSize = useScaledFont(widget.w, widget.h, 1.0, 24, 80);
 
   if (displayItems.length === 0) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none">
+      <div className="h-full w-full flex flex-col items-center justify-center p-0.5 text-center text-slate-400 select-none">
         <p className="text-sm  mb-1">No materials selected</p>
         <p className="text-xs opacity-70">
           Open settings to choose class materials
@@ -62,16 +63,16 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full w-full p-3 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
+      className={`h-full w-full p-0.5 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
     >
-      <div className="flex flex-wrap gap-2 h-full content-start justify-center">
+      <div className="flex flex-wrap gap-1.5 h-full items-center justify-center content-center">
         {displayItems.map((item) => {
           const isActive = activeItems.has(item.id);
           return (
             <button
               key={item.id}
               onClick={() => toggleActive(item.id)}
-              className={`flex-grow min-w-[90px] max-w-[140px] aspect-square flex flex-col items-center justify-center gap-2 p-2 rounded-2xl border-2 transition-all duration-300 ${
+              className={`flex-grow min-w-[60px] aspect-square flex flex-col items-center justify-center gap-2 p-1.5 rounded-2xl border-2 transition-all duration-300 ${
                 isActive
                   ? `${item.color} ${
                       item.textColor ?? 'text-white'
@@ -80,7 +81,8 @@ export const MaterialsWidget: React.FC<{ widget: WidgetData }> = ({
               }`}
             >
               <item.icon
-                className={`w-8 h-8 md:w-10 md:h-10 transition-transform duration-300 ${
+                style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
+                className={`transition-transform duration-300 ${
                   isActive ? 'scale-110' : 'scale-100'
                 }`}
                 strokeWidth={isActive ? 2.5 : 2}
