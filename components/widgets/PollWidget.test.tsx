@@ -3,7 +3,7 @@ import { PollSettings, PollWidget } from './PollWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
-import { WidgetData } from '../../types';
+import { PollConfig, WidgetData } from '../../types';
 import { GeneratedPoll } from '../../utils/ai';
 
 // Mock useDashboard
@@ -88,8 +88,9 @@ describe('PollWidget (View)', () => {
   it('handles voting interaction', () => {
     render(<PollWidget widget={mockWidget} />);
 
-    const redOption = screen.getByText('Red').closest('button');
-    fireEvent.click(redOption!);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const redOption = screen.getByText('Red').closest('button')!;
+    fireEvent.click(redOption);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
       config: {
@@ -177,14 +178,17 @@ describe('PollSettings', () => {
     const magicBtn = screen.getByTestId('magic-btn');
     fireEvent.click(magicBtn);
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', expect.objectContaining({
-      config: expect.objectContaining({
-        question: 'Magic Question?',
-        options: expect.arrayContaining([
-            expect.objectContaining({ label: 'Opt1' })
-        ])
-      }),
-    }));
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'poll-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          question: 'Magic Question?',
+          options: expect.arrayContaining([
+            expect.objectContaining({ label: 'Opt1' }),
+          ]) as unknown,
+        }) as PollConfig,
+      })
+    );
     expect(mockAddToast).toHaveBeenCalledWith(
       'Poll generated magically!',
       'success'
@@ -199,7 +203,9 @@ describe('PollSettings', () => {
     fireEvent.blur(input);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
-      config: expect.objectContaining({ question: 'New Question' }),
+      config: expect.objectContaining({
+        question: 'New Question',
+      }) as PollConfig,
     });
   });
 
@@ -212,10 +218,10 @@ describe('PollSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
       config: expect.objectContaining({
         options: [
-            { label: 'Option A', votes: 10 },
-            { label: 'Option 2', votes: 0 }
+          { label: 'Option A', votes: 10 },
+          { label: 'Option 2', votes: 0 },
         ],
-      }),
+      }) as PollConfig,
     });
   });
 
@@ -226,7 +232,7 @@ describe('PollSettings', () => {
     fireEvent.click(removeButton);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
-      config: expect.objectContaining({ options: [] }),
+      config: expect.objectContaining({ options: [] }) as PollConfig,
     });
   });
 
@@ -240,7 +246,7 @@ describe('PollSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
       config: expect.objectContaining({
         options: [{ label: 'Updated Option', votes: 10 }],
-      }),
+      }) as PollConfig,
     });
   });
 
@@ -252,10 +258,10 @@ describe('PollSettings', () => {
 
     expect(window.confirm).toHaveBeenCalled();
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
-        config: expect.objectContaining({
-          options: [{ label: 'Option A', votes: 0 }],
-        }),
-      });
+      config: expect.objectContaining({
+        options: [{ label: 'Option A', votes: 0 }],
+      }) as PollConfig,
+    });
   });
 
   it('imports from roster', () => {
@@ -290,14 +296,19 @@ describe('PollSettings', () => {
           { label: 'John Doe', votes: 0 },
           { label: 'Jane Smith', votes: 0 },
         ],
-      }),
+      }) as PollConfig,
     });
-    expect(mockAddToast).toHaveBeenCalledWith('Imported 2 students!', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Imported 2 students!',
+      'success'
+    );
   });
 
   it('exports to CSV', () => {
     // Mock URL.createObjectURL
-    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
+    const createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:url');
     const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL');
 
     // Spy on appendChild/removeChild
@@ -318,11 +329,16 @@ describe('PollSettings', () => {
     )?.[0] as HTMLAnchorElement;
 
     expect(anchor).toBeDefined();
-    expect(anchor.getAttribute('download')).toContain('Poll_Results_');
-    expect(anchor.getAttribute('href')).toBe('blob:url');
-    expect(clickSpy).toHaveBeenCalled();
-    expect(removeChildSpy).toHaveBeenCalledWith(anchor);
-    expect(mockAddToast).toHaveBeenCalledWith('Results exported to CSV', 'success');
+    if (anchor) {
+      expect(anchor.getAttribute('download')).toContain('Poll_Results_');
+      expect(anchor.getAttribute('href')).toBe('blob:url');
+      expect(clickSpy).toHaveBeenCalled();
+      expect(removeChildSpy).toHaveBeenCalledWith(anchor);
+    }
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Results exported to CSV',
+      'success'
+    );
 
     // Restore
     createObjectURLSpy.mockRestore();
