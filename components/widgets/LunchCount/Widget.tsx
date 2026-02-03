@@ -46,7 +46,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
     const existingRoster = (widget as DashboardWidget).activeRoster ?? [];
 
-    if (JSON.stringify(currentRosterNames) !== JSON.stringify(existingRoster)) {
+    const areRostersOutOfSync =
+      currentRosterNames.length !== existingRoster.length ||
+      currentRosterNames.some((name, i) => name !== existingRoster[i]);
+    if (areRostersOutOfSync) {
       updateWidget(widget.id, {
         activeRoster: currentRosterNames,
       } as Partial<DashboardWidget>);
