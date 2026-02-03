@@ -541,6 +541,12 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                               ? RecessGearConfig
                                                               : never;
 
+export interface WidgetComponentProps {
+  widget: WidgetData;
+  isStudentView?: boolean;
+  scale?: number;
+}
+
 export interface WidgetData {
   id: string;
   type: WidgetType;

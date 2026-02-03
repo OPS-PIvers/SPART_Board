@@ -7,15 +7,14 @@
  */
 
 import React, { lazy } from 'react';
-import { WidgetData, WidgetType, ScalingConfig } from '@/types';
+import {
+  WidgetData,
+  WidgetType,
+  ScalingConfig,
+  WidgetComponentProps,
+} from '@/types';
 
 // Component type definitions to ensure type safety
-type WidgetComponentProps = {
-  widget: WidgetData;
-  isStudentView?: boolean;
-  scale?: number;
-};
-
 type SettingsComponentProps = {
   widget: WidgetData;
 };
