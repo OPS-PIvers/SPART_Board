@@ -113,7 +113,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {items.map((item: ScheduleItem, i: number) => (
           <ScheduleRow
-            key={i}
+            key={item.id}
             index={i}
             item={item}
             isActive={i === activeIndex}

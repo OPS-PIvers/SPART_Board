@@ -96,8 +96,8 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 350,
     config: {
       items: [
-        { time: '08:00', task: 'Morning Meeting' },
-        { time: '09:00', task: 'Math' },
+        { id: '1', time: '08:00', task: 'Morning Meeting' },
+        { id: '2', time: '09:00', task: 'Math' },
       ],
     },
   },

@@ -112,6 +112,7 @@ export interface PollOption {
 }
 
 export interface ScheduleItem {
+  id: string;
   endTime?: string;
   type?: 'clock' | 'timer';
   autoLaunchWidget?: WidgetType;

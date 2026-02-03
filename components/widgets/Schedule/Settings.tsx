@@ -60,13 +60,18 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     if (lastItem) {
       const [h, m] = lastItem.time.split(':').map(Number);
       const total = h * 60 + m + 30;
-      nextTime = `${Math.floor(total / 60)
+      nextTime = `${(Math.floor(total / 60) % 24)
         .toString()
         .padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
     }
     updateItems([
       ...items,
-      { time: nextTime, task: 'New Event', type: 'clock' },
+      {
+        id: crypto.randomUUID(),
+        time: nextTime,
+        task: 'New Event',
+        type: 'clock',
+      },
     ]);
   };
 
@@ -106,7 +111,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-3">
           {items.map((item, i) => (
             <div
-              key={i}
+              key={item.id}
               className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-3"
             >
               <div className="flex gap-2">

@@ -1,12 +1,15 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { ScheduleConfig, WidgetData } from '../../../types';
+
+const DEFAULT_EVENT_DURATION_MINUTES = 60;
 
 export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
   const { updateWidget, activeDashboard, addWidget, removeWidget } =
     useDashboard();
   const { items = [], autoProgress = false } = config;
 
+  const [now, setNow] = useState(new Date());
   const lastTriggeredMinute = useRef<number>(-1);
 
   const parseTime = useCallback((t: string) => {
@@ -24,8 +27,8 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
 
   useEffect(() => {
     const checkEvents = () => {
-      const now = new Date();
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentTime = new Date();
+      const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
       let itemsChanged = false;
       const newItems = [...items];
@@ -41,7 +44,7 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
             if (index < items.length - 1) {
               calculatedEndTime = parseTime(items[index + 1].time);
             } else {
-              calculatedEndTime = startTime + 60;
+              calculatedEndTime = startTime + DEFAULT_EVENT_DURATION_MINUTES;
             }
           }
 
@@ -120,7 +123,6 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
   ]);
 
   const activeIndex = useMemo(() => {
-    const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     for (let i = 0; i < items.length; i++) {
@@ -132,7 +134,7 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
         if (i < items.length - 1) {
           end = parseTime(items[i + 1].time);
         } else {
-          end = start + 60;
+          end = start + DEFAULT_EVENT_DURATION_MINUTES;
         }
       }
 
@@ -141,31 +143,40 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
       }
     }
     return -1;
-  }, [items, parseTime]);
+  }, [items, parseTime, now]);
 
-  const countdown = useMemo(() => {
+  const activeEndTimeSeconds = useMemo(() => {
     if (activeIndex === -1) return null;
     const item = items[activeIndex];
     if (item.type !== 'timer') return null;
-
-    const now = new Date();
-    const nowSeconds =
-      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
     let endMinutes = item.endTime ? parseTime(item.endTime) : -1;
     if (endMinutes === -1) {
       if (activeIndex < items.length - 1) {
         endMinutes = parseTime(items[activeIndex + 1].time);
       } else {
-        endMinutes = parseTime(item.time) + 60;
+        const startMinutes = parseTime(item.time);
+        if (startMinutes !== -1) {
+          endMinutes = startMinutes + DEFAULT_EVENT_DURATION_MINUTES;
+        }
       }
     }
+    return endMinutes !== -1 ? endMinutes * 60 : null;
+  }, [activeIndex, items, parseTime]);
 
-    const endSeconds = endMinutes * 60;
-    const remaining = endSeconds - nowSeconds;
+  useEffect(() => {
+    if (activeEndTimeSeconds === null) return;
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, [activeEndTimeSeconds]);
 
+  const countdown = useMemo(() => {
+    if (activeEndTimeSeconds === null) return null;
+    const nowSeconds =
+      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const remaining = activeEndTimeSeconds - nowSeconds;
     return remaining > 0 ? formatCountdown(remaining) : '0:00';
-  }, [items, activeIndex, parseTime]);
+  }, [activeEndTimeSeconds, now]);
 
   const toggleDone = useCallback(
     (idx: number) => {

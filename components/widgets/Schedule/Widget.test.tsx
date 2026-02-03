@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+} from '@testing-library/react';
 import { ScheduleWidget } from './Widget';
 import { ScheduleSettings } from './Settings';
 import { useDashboard } from '../../../context/useDashboard';
@@ -70,9 +76,9 @@ describe('ScheduleWidget', () => {
       flipped: false,
       config: {
         items: [
-          { time: '08:00', task: 'Math', done: false },
-          { time: '09:00', task: 'Reading', done: false },
-          { time: '10:00', task: 'Recess', done: false },
+          { id: '1', time: '08:00', task: 'Math', done: false },
+          { id: '2', time: '09:00', task: 'Reading', done: false },
+          { id: '3', time: '10:00', task: 'Recess', done: false },
         ],
         ...config,
       },
@@ -87,7 +93,9 @@ describe('ScheduleWidget', () => {
 
   it('renders endTime when provided', () => {
     const widget = createWidget({
-      items: [{ time: '08:00', endTime: '09:00', task: 'Math', done: false }],
+      items: [
+        { id: '1', time: '08:00', endTime: '09:00', task: 'Math', done: false },
+      ],
     });
     render(<ScheduleWidget widget={widget} />);
     expect(screen.getByText('08:00 - 09:00')).toBeInTheDocument();
@@ -114,6 +122,7 @@ describe('ScheduleWidget', () => {
     const widget = createWidget({
       items: [
         {
+          id: '1',
           time: '08:00',
           endTime: '09:00',
           task: 'Math',
@@ -130,11 +139,20 @@ describe('ScheduleWidget', () => {
     render(<ScheduleWidget widget={widget} />);
 
     expect(screen.getByText('30:00')).toBeInTheDocument();
+
+    // Advance time by 1 second
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText('29:59')).toBeInTheDocument();
   });
 
   it('auto-launches widget at start time', () => {
     const widget = createWidget({
-      items: [{ time: '09:00', task: 'Math', autoLaunchWidget: 'time-tool' }],
+      items: [
+        { id: '1', time: '09:00', task: 'Math', autoLaunchWidget: 'time-tool' },
+      ],
     });
 
     const date = new Date();
@@ -144,7 +162,9 @@ describe('ScheduleWidget', () => {
     render(<ScheduleWidget widget={widget} />);
 
     // Advance timers to trigger the effect
-    vi.advanceTimersByTime(11000);
+    act(() => {
+      vi.advanceTimersByTime(11000);
+    });
 
     expect(mockAddWidget).toHaveBeenCalledWith('time-tool', expect.any(Object));
   });
@@ -153,6 +173,7 @@ describe('ScheduleWidget', () => {
     const widget = createWidget({
       items: [
         {
+          id: '1',
           time: '08:00',
           endTime: '09:00',
           task: 'Math',
@@ -176,7 +197,9 @@ describe('ScheduleWidget', () => {
 
     render(<ScheduleWidget widget={widget} />);
 
-    vi.advanceTimersByTime(11000);
+    act(() => {
+      vi.advanceTimersByTime(11000);
+    });
 
     expect(mockRemoveWidget).toHaveBeenCalledWith('tt-1');
   });
