@@ -2,7 +2,7 @@
   "name": "school-boards",
   "description": "School Boards Application",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "packageManager": "pnpm@10.26.0",
   "type": "module",
   "scripts": {
