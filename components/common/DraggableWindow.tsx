@@ -21,8 +21,8 @@ import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
-
 import { Z_INDEX } from '../../config/zIndex';
+import { UI_CONSTANTS } from '../../config/layout';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -438,6 +438,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 touchAction: 'none',
               }}
             >
+              {/* Universal Drag Handle */}
+              <div
+                className="w-full flex-shrink-0 flex items-center px-3 cursor-move group/drag-handle hover:bg-slate-400/5 transition-colors"
+                style={{ height: UI_CONSTANTS.WIDGET_HEADER_HEIGHT }}
+              >
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover/drag-handle:opacity-100 transition-opacity truncate pointer-events-none">
+                  {widget.customTitle ?? title}
+                </span>
+              </div>
+
               {showConfirm && (
                 <div
                   className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
