@@ -142,6 +142,7 @@ describe('LunchCountWidget', () => {
       getData: vi.fn().mockReturnValue('John Doe'),
     };
 
+    fireEvent.dragStart(hotLunchContainer, { dataTransfer }); // This line seems suspicious but matches original test flow
     fireEvent.drop(hotLunchContainer, { dataTransfer });
 
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
