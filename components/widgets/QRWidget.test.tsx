@@ -41,7 +41,7 @@ describe('QRWidget', () => {
     const widget = createMockWidget();
     render(<QRWidget widget={widget} />);
 
-    const img = screen.getByAltText('QR Code');
+    const img = screen.getByAltText('QR Code') as HTMLImageElement;
     expect(img).toBeInTheDocument();
     expect(img.src).toContain(encodeURIComponent('https://example.com'));
     expect(screen.getByText('https://example.com')).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe('QRWidget', () => {
     const widget = createMockWidget({ url });
     render(<QRWidget widget={widget} />);
 
-    const img = screen.getByAltText('QR Code');
+    const img = screen.getByAltText('QR Code') as HTMLImageElement;
     expect(img.src).toContain(encodeURIComponent(url));
     expect(screen.getByText(url)).toBeInTheDocument();
   });
