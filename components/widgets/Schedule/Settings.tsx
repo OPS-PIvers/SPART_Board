@@ -68,16 +68,28 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   const addItem = () => {
     const lastItem = items[items.length - 1];
     let nextTime = '08:00';
-    if (lastItem) {
-      const [h, m] = lastItem.time.split(':').map(Number);
-      const total = h * 60 + m + 30;
-      // Cap at 23:59 to avoid wrapping into next day
-      const cappedTotal = Math.min(total, 23 * 60 + 59);
-      const hours = Math.floor(cappedTotal / 60);
-      const minutes = cappedTotal % 60;
-      nextTime = `${hours.toString().padStart(2, '0')}:${minutes
-        .toString()
-        .padStart(2, '0')}`;
+    if (lastItem && typeof lastItem.time === 'string') {
+      const parts = lastItem.time.split(':');
+      if (parts.length === 2) {
+        const [rawHours, rawMinutes] = parts;
+        const hoursNumber = Number(rawHours);
+        const minutesNumber = Number(rawMinutes);
+        if (Number.isFinite(hoursNumber) && Number.isFinite(minutesNumber)) {
+          const safeHours = Math.max(0, Math.min(23, Math.floor(hoursNumber)));
+          const safeMinutes = Math.max(
+            0,
+            Math.min(59, Math.floor(minutesNumber))
+          );
+          const total = safeHours * 60 + safeMinutes + 30;
+          // Cap at 23:59 to avoid wrapping into next day
+          const cappedTotal = Math.min(total, 23 * 60 + 59);
+          const hours = Math.floor(cappedTotal / 60);
+          const minutes = cappedTotal % 60;
+          nextTime = `${hours.toString().padStart(2, '0')}:${minutes
+            .toString()
+            .padStart(2, '0')}`;
+        }
+      }
     }
     updateItems([
       ...items,
@@ -156,16 +168,32 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     <input
                       type="time"
                       value={item.time}
-                      onChange={(e) => editItem(i, { time: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const updates: Partial<ScheduleItem> = { time: val };
+                        if (item.endTime && val >= item.endTime) {
+                          updates.endTime = undefined;
+                        }
+                        editItem(i, updates);
+                      }}
                       className="text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg p-1 w-24"
                     />
                     <span className="text-slate-300 flex items-center">to</span>
                     <input
                       type="time"
                       value={item.endTime ?? ''}
-                      onChange={(e) =>
-                        editItem(i, { endTime: e.target.value || undefined })
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (!value) {
+                          editItem(i, { endTime: undefined });
+                          return;
+                        }
+                        if (item.time && value <= item.time) {
+                          editItem(i, { endTime: item.time });
+                          return;
+                        }
+                        editItem(i, { endTime: value });
+                      }}
                       placeholder="End Time"
                       className="text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg p-1 w-24"
                     />

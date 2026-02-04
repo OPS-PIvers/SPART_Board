@@ -7,10 +7,16 @@ const DEFAULT_EVENT_DURATION_MINUTES = 60;
 export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
   const { updateWidget, activeDashboard, addWidget, removeWidget } =
     useDashboard();
-  const { items = [], autoProgress = false } = config;
+  const { items = [] } = config;
 
   const [now, setNow] = useState(new Date());
   const lastTriggeredMinute = useRef<number>(-1);
+
+  // Use refs for stable access in the effect without re-running it
+  const configRef = useRef(config);
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const parseTime = useCallback((t: string) => {
     if (!t || !t.includes(':')) return -1;
@@ -28,103 +34,106 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
   useEffect(() => {
     const checkEvents = () => {
       const currentTime = new Date();
+      // Always update 'now' state to keep activeIndex and countdown fresh
+      setNow(currentTime);
+
       const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
-      // Fix race condition: check if we already triggered for this minute
+      // Fix race condition and redundant checks for per-minute actions
       if (nowMinutes === lastTriggeredMinute.current) {
-        // Still check for autoProgress if needed, but not launches
-        // Actually autoProgress should also be once per minute ideally
-      } else {
-        // Update first to prevent rapid succession re-triggers
-        lastTriggeredMinute.current = nowMinutes;
+        return;
+      }
 
-        let itemsChanged = false;
-        const newItems = [...items];
+      lastTriggeredMinute.current = nowMinutes;
 
-        items.forEach((item, index) => {
-          const startTime = parseTime(item.time);
-          const endTime = item.endTime ? parseTime(item.endTime) : -1;
+      const currentConfig = configRef.current;
+      const currentItems = currentConfig.items ?? [];
+      const currentAutoProgress = currentConfig.autoProgress ?? false;
+      let itemsChanged = false;
+      const newItems = [...currentItems];
 
-          // Auto-Progress logic
-          if (autoProgress) {
-            let calculatedEndTime = endTime;
-            if (calculatedEndTime === -1) {
-              if (index < items.length - 1) {
-                calculatedEndTime = parseTime(items[index + 1].time);
-              } else {
-                calculatedEndTime = startTime + DEFAULT_EVENT_DURATION_MINUTES;
-              }
-            }
+      currentItems.forEach((item, index) => {
+        const startTime = parseTime(item.time);
+        const endTime = item.endTime ? parseTime(item.endTime) : -1;
 
-            const shouldBeDone = nowMinutes >= calculatedEndTime;
-            if (item.done !== shouldBeDone) {
-              newItems[index] = { ...item, done: shouldBeDone };
-              itemsChanged = true;
+        // Auto-Progress logic
+        if (currentAutoProgress) {
+          let calculatedEndTime = endTime;
+          if (calculatedEndTime === -1) {
+            if (index < currentItems.length - 1) {
+              calculatedEndTime = parseTime(currentItems[index + 1].time);
+            } else {
+              calculatedEndTime = startTime + DEFAULT_EVENT_DURATION_MINUTES;
             }
           }
 
-          // Auto-Launch
-          if (startTime === nowMinutes && item.autoLaunchWidget) {
-            const exists = activeDashboard?.widgets.some(
-              (w) => w.type === item.autoLaunchWidget
-            );
-            if (!exists) {
-              const overrides: Partial<WidgetData> = {};
-              if (
-                item.type === 'timer' &&
-                item.autoLaunchWidget === 'time-tool' &&
-                endTime > startTime
-              ) {
-                overrides.config = {
-                  mode: 'timer',
-                  visualType: 'digital',
-                  theme: 'light',
-                  duration: (endTime - startTime) * 60,
-                  elapsedTime: (endTime - startTime) * 60,
-                  isRunning: true,
-                  startTime: Date.now(),
-                  selectedSound: 'Gong',
-                } as TimeToolConfig;
-              }
-              addWidget(item.autoLaunchWidget, overrides);
-            }
+          const shouldBeDone = nowMinutes >= calculatedEndTime;
+          if (item.done !== shouldBeDone) {
+            newItems[index] = { ...item, done: shouldBeDone };
+            itemsChanged = true;
           }
-
-          // Auto-Close
-          if (
-            endTime === nowMinutes &&
-            item.autoCloseWidget &&
-            item.autoLaunchWidget
-          ) {
-            const target = activeDashboard?.widgets.find(
-              (w) => w.type === item.autoLaunchWidget
-            );
-            if (target) {
-              removeWidget(target.id);
-            }
-          }
-        });
-
-        if (itemsChanged) {
-          updateWidget(widgetId, {
-            config: { ...config, items: newItems } as ScheduleConfig,
-          });
         }
+
+        // Auto-Launch
+        if (startTime === nowMinutes && item.autoLaunchWidget) {
+          const exists = activeDashboard?.widgets.some(
+            (w) => w.type === item.autoLaunchWidget
+          );
+          if (!exists) {
+            const overrides: Partial<WidgetData> = {};
+            if (
+              item.type === 'timer' &&
+              item.autoLaunchWidget === 'time-tool' &&
+              endTime > startTime
+            ) {
+              overrides.config = {
+                mode: 'timer',
+                visualType: 'digital',
+                theme: 'light',
+                duration: (endTime - startTime) * 60,
+                elapsedTime: 0,
+                isRunning: true,
+                startTime: Date.now(),
+                selectedSound: 'Gong',
+              } as TimeToolConfig;
+            }
+            addWidget(item.autoLaunchWidget, overrides);
+          }
+        }
+
+        // Auto-Close
+        if (
+          endTime === nowMinutes &&
+          item.autoCloseWidget &&
+          item.autoLaunchWidget
+        ) {
+          const matchingWidgets =
+            activeDashboard?.widgets.filter(
+              (w) => w.type === item.autoLaunchWidget
+            ) ?? [];
+
+          if (matchingWidgets.length === 1 && matchingWidgets[0]) {
+            removeWidget(matchingWidgets[0].id);
+          }
+        }
+      });
+
+      if (itemsChanged) {
+        updateWidget(widgetId, {
+          config: { ...currentConfig, items: newItems } as ScheduleConfig,
+        });
       }
     };
 
-    const interval = setInterval(checkEvents, 1000); // Check every 1s for responsiveness
+    const interval = setInterval(checkEvents, 1000);
     checkEvents();
     return () => clearInterval(interval);
   }, [
-    items,
-    autoProgress,
     activeDashboard?.widgets,
     addWidget,
     removeWidget,
     updateWidget,
     widgetId,
-    config,
     parseTime,
   ]);
 
@@ -134,6 +143,8 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const start = parseTime(item.time);
+      if (start === -1) continue;
+
       let end = item.endTime ? parseTime(item.endTime) : -1;
 
       if (end === -1) {
@@ -151,10 +162,13 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
     return -1;
   }, [items, parseTime, now]);
 
-  const activeEndTimeSeconds = useMemo(() => {
+  const countdown = useMemo(() => {
     if (activeIndex === -1) return null;
     const item = items[activeIndex];
-    if (item.type !== 'timer') return null;
+    if (!item || item.type !== 'timer') return null;
+
+    const nowSeconds =
+      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
     let endMinutes = item.endTime ? parseTime(item.endTime) : -1;
     if (endMinutes === -1) {
@@ -167,22 +181,14 @@ export const useSchedule = (widgetId: string, config: ScheduleConfig) => {
         }
       }
     }
-    return endMinutes !== -1 ? endMinutes * 60 : null;
-  }, [activeIndex, items, parseTime]);
 
-  useEffect(() => {
-    if (activeEndTimeSeconds === null) return;
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, [activeEndTimeSeconds]);
+    if (endMinutes === -1) return null;
 
-  const countdown = useMemo(() => {
-    if (activeEndTimeSeconds === null) return null;
-    const nowSeconds =
-      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    const remaining = activeEndTimeSeconds - nowSeconds;
+    const endSeconds = endMinutes * 60;
+    const remaining = endSeconds - nowSeconds;
+
     return remaining > 0 ? formatCountdown(remaining) : '0:00';
-  }, [activeEndTimeSeconds, now, formatCountdown]);
+  }, [activeIndex, items, now, parseTime, formatCountdown]);
 
   const toggleDone = useCallback(
     (idx: number) => {
