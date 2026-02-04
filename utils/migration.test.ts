@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { migrateWidget, migrateLocalStorageToFirestore } from './migration';
-import { WidgetData, Dashboard, TextConfig } from '../types';
+import { WidgetData, Dashboard, TextConfig, ScheduleConfig } from '../types';
 
 describe('migration', () => {
   describe('migrateWidget', () => {
@@ -127,5 +127,33 @@ describe('migration', () => {
       ).rejects.toThrow();
       expect(saveDashboard).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('migrateWidget (Schedule)', () => {
+  it('adds IDs to schedule items that lack them', () => {
+    const widget: WidgetData = {
+      id: 'w1',
+      type: 'schedule',
+      x: 0,
+      y: 0,
+      w: 300,
+      h: 350,
+      z: 1,
+      flipped: false,
+      config: {
+        items: [
+          { time: '08:00', task: 'Math' },
+          { id: 'existing', time: '09:00', task: 'Reading' },
+        ],
+      } as ScheduleConfig,
+    };
+
+    const migrated = migrateWidget(widget);
+    const config = migrated.config as ScheduleConfig;
+
+    expect(config.items[0].id).toBeDefined();
+    expect(typeof config.items[0].id).toBe('string');
+    expect(config.items[1].id).toBe('existing');
   });
 });

@@ -163,7 +163,7 @@ describe('ScheduleWidget', () => {
 
     // Advance timers to trigger the effect
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(2000);
     });
 
     expect(mockAddWidget).toHaveBeenCalledWith('time-tool', expect.any(Object));
@@ -198,10 +198,34 @@ describe('ScheduleWidget', () => {
     render(<ScheduleWidget widget={widget} />);
 
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(2000);
     });
 
     expect(mockRemoveWidget).toHaveBeenCalledWith('tt-1');
+  });
+
+  it('auto-progresses items based on current time', () => {
+    const widget = createWidget({ autoProgress: true });
+
+    // 09:30 is past 09:00 (Reading start)
+    const date = new Date();
+    date.setHours(9, 30, 0, 0);
+    vi.setSystemTime(date);
+
+    render(<ScheduleWidget widget={widget} />);
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
+      config: expect.objectContaining({
+        items: expect.arrayContaining([
+          expect.objectContaining({ task: 'Math', done: true }),
+          expect.objectContaining({ task: 'Reading', done: false }),
+        ]),
+      }),
+    });
   });
 });
 
@@ -216,7 +240,10 @@ describe('ScheduleSettings', () => {
       id: 'schedule-1',
       type: 'schedule',
       config: {
-        items: [],
+        items: [
+          { id: '1', time: '08:00', task: 'Math', done: false },
+          { id: '2', time: '09:00', task: 'Reading', done: false },
+        ],
         ...config,
       },
     } as WidgetData;
@@ -230,7 +257,7 @@ describe('ScheduleSettings', () => {
   });
 
   it('adds a new event', () => {
-    render(<ScheduleSettings widget={createWidget()} />);
+    render(<ScheduleSettings widget={createWidget({ items: [] })} />);
     const addButton = screen.getByText(/add event/i);
     fireEvent.click(addButton);
 
@@ -239,6 +266,33 @@ describe('ScheduleSettings', () => {
         items: expect.arrayContaining([
           expect.objectContaining({ task: 'New Event' }),
         ]),
+      }),
+    });
+  });
+
+  it('deletes an event', () => {
+    render(<ScheduleSettings widget={createWidget()} />);
+    const removeButtons = screen.getAllByTitle(/remove event/i);
+    fireEvent.click(removeButtons[0]);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
+      config: expect.objectContaining({
+        items: [expect.objectContaining({ id: '2' })],
+      }),
+    });
+  });
+
+  it('moves an event down', () => {
+    render(<ScheduleSettings widget={createWidget()} />);
+    const moveButtons = screen.getAllByTitle(/move event down/i);
+    fireEvent.click(moveButtons[0]);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('schedule-1', {
+      config: expect.objectContaining({
+        items: [
+          expect.objectContaining({ id: '2' }),
+          expect.objectContaining({ id: '1' }),
+        ],
       }),
     });
   });

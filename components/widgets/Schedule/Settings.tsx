@@ -23,17 +23,28 @@ const AVAILABLE_TOOLS: { type: WidgetType; label: string }[] = [
   { type: 'time-tool', label: 'Timer/Stopwatch' },
   { type: 'traffic', label: 'Traffic Light' },
   { type: 'workSymbols', label: 'Work Symbols' },
-  { type: 'sound', label: 'Sound' },
+  { type: 'text', label: 'Text/Sticky Note' },
+  { type: 'embed', label: 'Embed Website' },
+  { type: 'sound', label: 'Sound Level' },
   { type: 'dice', label: 'Dice' },
-  { type: 'random', label: 'Random' },
+  { type: 'random', label: 'Random Picker' },
   { type: 'poll', label: 'Poll' },
   { type: 'checklist', label: 'Checklist' },
   { type: 'drawing', label: 'Drawing' },
   { type: 'qr', label: 'QR Code' },
   { type: 'weather', label: 'Weather' },
+  { type: 'calendar', label: 'Calendar' },
   { type: 'lunchCount', label: 'Lunch Count' },
+  { type: 'classes', label: 'Classes/Roster' },
   { type: 'instructionalRoutines', label: 'Routines' },
   { type: 'materials', label: 'Materials' },
+  { type: 'webcam', label: 'Webcam' },
+  { type: 'scoreboard', label: 'Scoreboard' },
+  { type: 'miniApp', label: 'Mini App' },
+  { type: 'stickers', label: 'Stickers' },
+  { type: 'seating-chart', label: 'Seating Chart' },
+  { type: 'smartNotebook', label: 'Smart Notebook' },
+  { type: 'recessGear', label: 'Recess Gear' },
 ];
 
 export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
@@ -60,9 +71,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     if (lastItem) {
       const [h, m] = lastItem.time.split(':').map(Number);
       const total = h * 60 + m + 30;
-      nextTime = `${(Math.floor(total / 60) % 24)
+      // Cap at 23:59 to avoid wrapping into next day
+      const cappedTotal = Math.min(total, 23 * 60 + 59);
+      const hours = Math.floor(cappedTotal / 60);
+      const minutes = cappedTotal % 60;
+      nextTime = `${hours.toString().padStart(2, '0')}:${minutes
         .toString()
-        .padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+        .padStart(2, '0')}`;
     }
     updateItems([
       ...items,
@@ -120,6 +135,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     onClick={() => moveItem(i, 'up')}
                     disabled={i === 0}
                     className="text-slate-300 hover:text-indigo-500 disabled:opacity-30"
+                    aria-label="Move event up"
+                    title="Move event up"
                   >
                     <ChevronUp size={14} />
                   </button>
@@ -127,6 +144,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     onClick={() => moveItem(i, 'down')}
                     disabled={i === items.length - 1}
                     className="text-slate-300 hover:text-indigo-500 disabled:opacity-30"
+                    aria-label="Move event down"
+                    title="Move event down"
                   >
                     <ChevronDown size={14} />
                   </button>
@@ -144,7 +163,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     <input
                       type="time"
                       value={item.endTime ?? ''}
-                      onChange={(e) => editItem(i, { endTime: e.target.value })}
+                      onChange={(e) =>
+                        editItem(i, { endTime: e.target.value || undefined })
+                      }
                       placeholder="End Time"
                       className="text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg p-1 w-24"
                     />
@@ -152,6 +173,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     <button
                       onClick={() => removeItem(i)}
                       className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                      aria-label="Remove event"
+                      title="Remove event"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -190,12 +213,15 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                       </label>
                       <select
                         value={item.autoLaunchWidget ?? ''}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const val = e.target.value || undefined;
                           editItem(i, {
-                            autoLaunchWidget: (e.target.value ||
-                              undefined) as WidgetType,
-                          })
-                        }
+                            autoLaunchWidget: val as WidgetType,
+                            autoCloseWidget: val
+                              ? item.autoCloseWidget
+                              : undefined,
+                          });
+                        }}
                         className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5"
                       >
                         <option value="">None</option>

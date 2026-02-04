@@ -1,4 +1,10 @@
-import { Dashboard, WidgetData, TimeToolConfig, TextConfig } from '../types';
+import {
+  Dashboard,
+  WidgetData,
+  TimeToolConfig,
+  TextConfig,
+  ScheduleConfig,
+} from '../types';
 import { sanitizeHtml } from './security';
 
 interface LegacyConfig {
@@ -18,6 +24,26 @@ export const migrateWidget = (widget: WidgetData): WidgetData => {
           ...config,
           content: sanitizeHtml(config.content),
         } as TextConfig,
+      };
+    }
+  }
+
+  // Schedule Widget Migration: Ensure all items have a unique ID
+  if (type === 'schedule') {
+    const config = widget.config as ScheduleConfig;
+    if (config.items && Array.isArray(config.items)) {
+      const migratedItems = config.items.map((item) => {
+        if (!item.id) {
+          return { ...item, id: crypto.randomUUID() };
+        }
+        return item;
+      });
+      return {
+        ...widget,
+        config: {
+          ...config,
+          items: migratedItems,
+        } as ScheduleConfig,
       };
     }
   }
