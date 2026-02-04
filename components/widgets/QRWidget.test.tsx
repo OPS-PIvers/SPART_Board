@@ -1,20 +1,18 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { QRWidget, QRSettings } from './QRWidget';
-import { WidgetData, QRConfig } from '../../types';
+import { WidgetData, QRConfig, TextConfig } from '../../types';
+import { useDashboard } from '../../context/useDashboard';
 
-// Mock the context
+// Mock the context using the standard pattern
+vi.mock('../../context/useDashboard', () => ({
+  useDashboard: vi.fn(),
+}));
+
 const mockUpdateWidget = vi.fn();
 const mockActiveDashboard = {
   widgets: [] as WidgetData[],
 };
-
-vi.mock('../../context/useDashboard', () => ({
-  useDashboard: () => ({
-    activeDashboard: mockActiveDashboard,
-    updateWidget: mockUpdateWidget,
-  }),
-}));
 
 const createMockWidget = (config: Partial<QRConfig> = {}): WidgetData => ({
   id: 'test-widget-id',
@@ -26,6 +24,8 @@ const createMockWidget = (config: Partial<QRConfig> = {}): WidgetData => ({
   z: 1,
   flipped: false,
   config: {
+    // Default URL in QRWidget.tsx is 'https://google.com', but we can override it here.
+    // We will test the fallback explicitly in a separate test.
     url: 'https://example.com',
     ...config,
   },
@@ -35,9 +35,13 @@ describe('QRWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockActiveDashboard.widgets = [];
+    (useDashboard as Mock).mockReturnValue({
+      activeDashboard: mockActiveDashboard,
+      updateWidget: mockUpdateWidget,
+    });
   });
 
-  it('renders with default URL', () => {
+  it('renders with default URL provided in config', () => {
     const widget = createMockWidget();
     render(<QRWidget widget={widget} />);
 
@@ -48,6 +52,21 @@ describe('QRWidget', () => {
       expect.stringContaining(encodeURIComponent('https://example.com'))
     );
     expect(screen.getByText('https://example.com')).toBeInTheDocument();
+  });
+
+  it('renders with fallback URL when config.url is missing', () => {
+    // Create widget with explicit undefined url to trigger fallback
+    const widget = createMockWidget({ url: undefined });
+    render(<QRWidget widget={widget} />);
+
+    // Default fallback in QRWidget.tsx is 'https://google.com'
+    const fallbackUrl = 'https://google.com';
+    const img = screen.getByAltText('QR Code');
+    expect(img).toHaveAttribute(
+      'src',
+      expect.stringContaining(encodeURIComponent(fallbackUrl))
+    );
+    expect(screen.getByText(fallbackUrl)).toBeInTheDocument();
   });
 
   it('renders with custom URL', () => {
@@ -76,12 +95,49 @@ describe('QRWidget', () => {
 
     expect(screen.queryByText('Linked')).not.toBeInTheDocument();
   });
+
+  it('syncs URL from Text Widget via Nexus Connection', async () => {
+    const targetText = 'Synced Text Content';
+    // Mock a text widget in the dashboard
+    mockActiveDashboard.widgets = [
+      {
+        id: 'text-widget-1',
+        type: 'text',
+        config: { content: targetText } as TextConfig,
+      } as WidgetData,
+    ];
+
+    // QR Widget configured to sync
+    const widget = createMockWidget({
+      syncWithTextWidget: true,
+      url: 'Old URL',
+    });
+
+    render(<QRWidget widget={widget} />);
+
+    // Expect updateWidget to be called to sync the URL
+    await waitFor(() => {
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'test-widget-id',
+        expect.objectContaining({
+          config: expect.objectContaining({
+            url: targetText,
+            syncWithTextWidget: true,
+          }) as unknown,
+        })
+      );
+    });
+  });
 });
 
 describe('QRSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockActiveDashboard.widgets = [];
+    (useDashboard as Mock).mockReturnValue({
+      activeDashboard: mockActiveDashboard,
+      updateWidget: mockUpdateWidget,
+    });
   });
 
   // Note: Using fireEvent instead of userEvent here because the component is fully controlled
