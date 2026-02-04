@@ -340,7 +340,9 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
             variant="secondary"
             onClick={importFromPoll}
             disabled={!pollWidget}
-            title={!pollWidget ? 'Add a Poll widget first' : 'Import Poll Results'}
+            title={
+              !pollWidget ? 'Add a Poll widget first' : 'Import Poll Results'
+            }
             icon={<RefreshCw className="w-3 h-3" />}
           >
             Add Votes
