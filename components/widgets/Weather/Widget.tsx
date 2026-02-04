@@ -1,10 +1,8 @@
 import React from 'react';
 import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
 import {
   WidgetData,
   WeatherConfig,
-  WeatherGlobalConfig,
   DEFAULT_GLOBAL_STYLE,
 } from '../../../types';
 import { useScaledFont } from '../../../hooks/useScaledFont';
@@ -23,7 +21,6 @@ import {
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-  const { featurePermissions } = useAuth();
   const config = widget.config as WeatherConfig;
   const {
     temp = 72,
@@ -35,14 +32,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     showFeelsLike: localShowFeelsLike,
   } = config;
 
-  const { isSyncing, handleRefresh } = useWeather(widget);
-
-  const weatherPermission = featurePermissions.find(
-    (p) => p.widgetType === 'weather'
-  );
-  const globalConfig = weatherPermission?.config as
-    | WeatherGlobalConfig
-    | undefined;
+  const { isSyncing, handleRefresh, globalConfig } = useWeather(widget);
 
   // Use local config if set, otherwise fallback to global config
   const showFeelsLike =

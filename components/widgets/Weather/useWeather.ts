@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useDashboard } from '../../../context/useDashboard';
@@ -29,6 +29,12 @@ export const useWeather = (widget: WidgetData) => {
     city = '',
   } = config;
 
+  // Use a ref to store the latest config to avoid infinite loops in useEffect/useCallback
+  const configRef = useRef(config);
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
   const [isSyncing, setIsSyncing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -56,7 +62,7 @@ export const useWeather = (widget: WidgetData) => {
           const data = snap.data() as GlobalWeatherData;
           updateWidget(widget.id, {
             config: {
-              ...config,
+              ...configRef.current,
               temp: data.temp,
               feelsLike: data.feelsLike,
               condition: data.condition,
@@ -71,7 +77,7 @@ export const useWeather = (widget: WidgetData) => {
     };
 
     void fetchInitial();
-  }, [isAuto, globalConfig?.fetchingStrategy, widget.id, config, updateWidget]);
+  }, [isAuto, globalConfig?.fetchingStrategy, widget.id, updateWidget]);
 
   // Admin Proxy Subscription
   useEffect(() => {
@@ -92,7 +98,7 @@ export const useWeather = (widget: WidgetData) => {
           ) {
             updateWidget(widget.id, {
               config: {
-                ...config,
+                ...configRef.current,
                 temp: data.temp,
                 feelsLike: data.feelsLike,
                 condition: data.condition,
@@ -118,7 +124,6 @@ export const useWeather = (widget: WidgetData) => {
     feelsLike,
     condition,
     lastSync,
-    config,
   ]);
 
   const fetchEarthNetworksWeather = useCallback(async () => {
@@ -167,9 +172,6 @@ export const useWeather = (widget: WidgetData) => {
 
           try {
             data = JSON.parse(trimmed) as EarthNetworksResponse;
-            console.warn(
-              '[WeatherWidget] Fetched Earth Networks Data successfully'
-            );
           } catch (_) {
             /* try next */
           }
@@ -177,7 +179,7 @@ export const useWeather = (widget: WidgetData) => {
           if (data && data.o) break;
         } catch (e) {
           lastError = e instanceof Error ? e : new Error(String(e));
-          console.warn(
+          console.error(
             `[WeatherWidget] Proxy attempt failed: ${lastError.message}`
           );
         }
@@ -198,15 +200,13 @@ export const useWeather = (widget: WidgetData) => {
 
       updateWidget(widget.id, {
         config: {
-          ...config,
+          ...configRef.current,
           temp: obs.t,
           feelsLike: obs.fl ?? obs.t,
           condition: newCondition,
           locationName: STATION_CONFIG.name,
           lastSync: Date.now(),
-          // Ensure isAuto is true if this was manually triggered to switch to auto
-          // But maybe we shouldn't force it here if it's just a refresh.
-          // The original code in WeatherSettings did force isAuto: true.
+          isAuto: true,
         },
       });
 
@@ -222,7 +222,7 @@ export const useWeather = (widget: WidgetData) => {
       setLoading(false);
       setIsSyncing(false);
     }
-  }, [loading, isSyncing, config, widget.id, updateWidget, addToast]);
+  }, [loading, isSyncing, widget.id, updateWidget, addToast]);
 
   const fetchWeather = useCallback(
     async (params: string) => {
@@ -255,7 +255,7 @@ export const useWeather = (widget: WidgetData) => {
 
         updateWidget(widget.id, {
           config: {
-            ...config,
+            ...configRef.current,
             temp: data.main.temp,
             feelsLike: data.main.feels_like,
             condition: data.weather[0].main.toLowerCase(),
@@ -274,7 +274,7 @@ export const useWeather = (widget: WidgetData) => {
         setIsSyncing(false);
       }
     },
-    [hasApiKey, systemKey, config, widget.id, updateWidget, addToast]
+    [hasApiKey, systemKey, widget.id, updateWidget, addToast]
   );
 
   const handleRefresh = useCallback(async () => {
