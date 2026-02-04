@@ -563,6 +563,7 @@ export const BackgroundManager: React.FC = () => {
                       size="xs"
                       activeColor="bg-green-500"
                       showLabels={false}
+                      variant="transparent"
                     />
                   </div>
                 </div>

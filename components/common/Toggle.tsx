@@ -16,6 +16,12 @@ export interface ToggleProps {
    * Defaults to true.
    */
   showLabels?: boolean;
+  /**
+   * Visual style variant.
+   * 'standard' - Opaque background (default)
+   * 'transparent' - Semi-transparent background for dark containers
+   */
+  variant?: 'standard' | 'transparent';
 }
 
 export const Toggle: React.FC<ToggleProps> = ({
@@ -26,6 +32,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   size = 'md',
   activeColor = 'bg-brand-blue-primary',
   showLabels = true,
+  variant = 'standard',
 }) => {
   const sizes = {
     xs: {
@@ -49,6 +56,8 @@ export const Toggle: React.FC<ToggleProps> = ({
   };
 
   const currentSize = sizes[size];
+  const inactiveColor =
+    variant === 'transparent' ? 'bg-white/30' : 'bg-slate-300';
 
   return (
     <button
@@ -61,7 +70,7 @@ export const Toggle: React.FC<ToggleProps> = ({
         ${currentSize.button}
         rounded-full relative transition-all duration-200 ease-in-out
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue-primary
-        ${checked ? activeColor : 'bg-slate-300'}
+        ${checked ? activeColor : inactiveColor}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
         flex-shrink-0
@@ -78,9 +87,9 @@ export const Toggle: React.FC<ToggleProps> = ({
             ON
           </span>
           <span
-            className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
-              !checked ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`text-xxxs font-black leading-none transition-opacity duration-200 ${
+              variant === 'transparent' ? 'text-white' : 'text-slate-900'
+            } ${!checked ? 'opacity-100' : 'opacity-0'}`}
           >
             OFF
           </span>
