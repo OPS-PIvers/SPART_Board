@@ -6,7 +6,7 @@ import {
   getDocs,
   deleteDoc,
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db, isAuthBypass } from '../../config/firebase';
 import {
   FeaturePermission,
   AccessLevel,
@@ -78,6 +78,10 @@ export const FeaturePermissionsManager: React.FC = () => {
   }, []);
 
   const loadPermissions = useCallback(async () => {
+    if (isAuthBypass) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const snapshot = await getDocs(collection(db, 'feature_permissions'));
