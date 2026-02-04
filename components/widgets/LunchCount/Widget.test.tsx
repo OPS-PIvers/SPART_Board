@@ -188,4 +188,34 @@ describe('LunchCountWidget', () => {
     );
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   });
+
+  it('should not clear persisted roster if global rosters are empty (loading state)', () => {
+    // Roster is persisted on the widget
+    const widgetWithRoster = {
+      ...createWidget(),
+      activeRoster: ['Persisted Student'],
+    } as unknown as WidgetData;
+
+    // Context has activeRosterId but rosters array is empty (loading)
+    const contextLoading = {
+      ...mockDashboardContext,
+      rosters: [],
+      activeDashboard: { id: 'dash-1', widgets: [] },
+      activeRosterId: 'roster-1',
+    };
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      contextLoading
+    );
+
+    render(<LunchCountWidget widget={widgetWithRoster} />);
+
+    // Roster should still be visible (falling back to persisted data)
+    expect(screen.getByText('Persisted Student')).toBeInTheDocument();
+
+    // updateWidget should NOT have been called to clear it
+    expect(mockDashboardContext.updateWidget).not.toHaveBeenCalledWith(
+      'lunch-1',
+      expect.objectContaining({ activeRoster: [] })
+    );
+  });
 });

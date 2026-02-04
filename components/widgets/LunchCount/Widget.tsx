@@ -31,30 +31,44 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentRosterNames = useMemo(() => {
-    if (rosterMode !== 'class') return [];
-    const r = rosters.find((r) => r.id === activeRosterId);
-    return r
-      ? r.students.map((s) => `${s.firstName} ${s.lastName}`.trim())
-      : [];
+  const activeRosterFromContext = useMemo(() => {
+    if (rosterMode !== 'class' || !activeRosterId) return null;
+    return rosters.find((r) => r.id === activeRosterId) ?? null;
   }, [rosters, activeRosterId, rosterMode]);
 
+  const currentRosterNames = useMemo(() => {
+    return activeRosterFromContext
+      ? activeRosterFromContext.students.map((s) =>
+          `${s.firstName} ${s.lastName}`.trim()
+        )
+      : [];
+  }, [activeRosterFromContext]);
+
   // Nexus Pattern: Sync with Active Roster to persist names on the widget
-  // and make them available to other views (like student view)
+  // and make them available to other views (like student view).
+  // We only sync if a roster was actually found to avoid clearing it during load.
+  const persistedRoster = (widget as DashboardWidget).activeRoster;
   useEffect(() => {
-    if (rosterMode !== 'class') return;
+    if (rosterMode !== 'class' || !activeRosterFromContext) return;
 
-    const existingRoster = (widget as DashboardWidget).activeRoster ?? [];
-
+    const existingRoster = persistedRoster ?? [];
     const areRostersOutOfSync =
       currentRosterNames.length !== existingRoster.length ||
       currentRosterNames.some((name, i) => name !== existingRoster[i]);
+
     if (areRostersOutOfSync) {
       updateWidget(widget.id, {
         activeRoster: currentRosterNames,
       } as Partial<DashboardWidget>);
     }
-  }, [rosterMode, currentRosterNames, widget, updateWidget]);
+  }, [
+    rosterMode,
+    currentRosterNames,
+    activeRosterFromContext,
+    widget.id,
+    persistedRoster,
+    updateWidget,
+  ]);
 
   const activeRoster = useMemo((): string[] => {
     if (rosterMode === 'custom') return roster;
@@ -67,8 +81,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     const dashboardWidget = activeDashboard?.widgets.find(
       (w) => w.id === widget.id
     ) as DashboardWidget | undefined;
-    return dashboardWidget?.activeRoster ?? [];
-  }, [rosterMode, roster, widget.id, activeDashboard, currentRosterNames]);
+    return (
+      dashboardWidget?.activeRoster ??
+      (widget as DashboardWidget).activeRoster ??
+      []
+    );
+  }, [rosterMode, roster, widget, activeDashboard, currentRosterNames]);
 
   const stats = useMemo(() => {
     const total = activeRoster.length;
@@ -127,6 +145,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   const unassignedStudents = activeRoster.filter((s) => !assignments[s]);
 
+  const isConnected =
+    rosterMode === 'custom' ||
+    (rosterMode === 'class' && !!activeRosterFromContext);
+
   return (
     <div className="flex flex-col h-full bg-transparent p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
       {/* Header */}
@@ -136,13 +158,17 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             Lunch Count
           </h2>
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <div
+              className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}
+            />
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               {rosterMode === 'custom'
                 ? 'Custom Roster'
-                : activeRosterId
+                : activeRosterFromContext
                   ? 'Connected'
-                  : 'No Active Class'}
+                  : activeRosterId
+                    ? 'Connecting...'
+                    : 'No Active Class'}
             </span>
           </div>
         </div>
