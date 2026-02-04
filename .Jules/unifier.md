@@ -33,3 +33,7 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## 2024-05-22 - Standardized Toggle Switches
+**Drift:** Multiple admin components (FeaturePermissions, BackgroundManager) and widgets (QR, Sound) were using custom, inconsistent HTML/CSS checkbox implementations instead of the shared component.
+**Fix:** Enhanced `components/common/Toggle.tsx` with `xs` size and `showLabels` prop, and replaced all custom implementations with the shared component.

@@ -8,6 +8,7 @@ import {
 } from '../../types';
 import { Thermometer, Gauge, Activity, Citrus, Zap } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
+import { Toggle } from '../common/Toggle';
 
 // Poster Colors Mapping
 const POSTER_LEVELS = [
@@ -448,20 +449,18 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
         <div className="flex items-center justify-between">
           <span className="text-xs text-indigo-800">Enable Automation</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={autoTrafficLight ?? false}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, autoTrafficLight: e.target.checked },
-                })
-              }
-              disabled={!hasTrafficLight}
-            />
-            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-          </label>
+          <Toggle
+            checked={autoTrafficLight ?? false}
+            onChange={(checked: boolean) =>
+              updateWidget(widget.id, {
+                config: { ...config, autoTrafficLight: checked },
+              })
+            }
+            disabled={!hasTrafficLight}
+            size="sm"
+            activeColor="bg-indigo-600"
+            showLabels={false}
+          />
         </div>
 
         {autoTrafficLight && (

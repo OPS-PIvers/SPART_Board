@@ -5,12 +5,17 @@ export interface ToggleProps {
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   /**
    * Tailwind class for the active background color.
    * Defaults to 'bg-brand-blue-primary'.
    */
   activeColor?: string;
+  /**
+   * Whether to show "ON" and "OFF" labels inside the toggle.
+   * Defaults to true.
+   */
+  showLabels?: boolean;
 }
 
 export const Toggle: React.FC<ToggleProps> = ({
@@ -20,8 +25,15 @@ export const Toggle: React.FC<ToggleProps> = ({
   className = '',
   size = 'md',
   activeColor = 'bg-brand-blue-primary',
+  showLabels = true,
 }) => {
   const sizes = {
+    xs: {
+      button: 'w-8 h-4',
+      knob: 'w-3 h-3',
+      translate: 'translate-x-4',
+      padding: 'top-0.5 left-0.5',
+    },
     sm: {
       button: 'w-10 h-5',
       knob: 'w-3 h-3',
@@ -56,22 +68,24 @@ export const Toggle: React.FC<ToggleProps> = ({
       `}
     >
       {/* State Labels */}
-      <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
-        <span
-          className={`text-xxxs font-black leading-none text-white transition-opacity duration-200 ${
-            checked ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          ON
+      {showLabels && (
+        <span className="absolute inset-0 flex items-center justify-between px-1.5 pointer-events-none select-none">
+          <span
+            className={`text-xxxs font-black leading-none text-white transition-opacity duration-200 ${
+              checked ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            ON
+          </span>
+          <span
+            className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
+              !checked ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            OFF
+          </span>
         </span>
-        <span
-          className={`text-xxxs font-black leading-none text-slate-900 transition-opacity duration-200 ${
-            !checked ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          OFF
-        </span>
-      </span>
+      )}
 
       <span
         className={`
