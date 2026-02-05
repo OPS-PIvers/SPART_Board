@@ -3,6 +3,7 @@
 **Gap:** `hooks/useStorage.ts` had extremely low coverage (1.35%), leaving critical file upload logic (Firebase & Google Drive) untested.
 
 **Fix:** Created `tests/hooks/useStorage.test.ts` using Vitest.
+
 - Mocked `firebase/storage` (including `getStorage`, `ref`, `uploadBytes`, `getDownloadURL`, `deleteObject`).
 - Mocked `context/useAuth` and `hooks/useGoogleDrive`.
 - Added tests for `uploadFile` (Firebase path).
