@@ -6,7 +6,6 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteObject,
-  getStorage,
 } from 'firebase/storage';
 import { useAuth } from '../../context/useAuth';
 import { useGoogleDrive } from '../../hooks/useGoogleDrive';
@@ -65,7 +64,10 @@ describe('useStorage', () => {
         url = await result.current.uploadFile('path/to/file.png', mockFile);
       });
 
-      expect(mockRef).toHaveBeenCalledWith(expect.anything(), 'path/to/file.png');
+      expect(mockRef).toHaveBeenCalledWith(
+        expect.anything(),
+        'path/to/file.png'
+      );
       expect(mockUploadBytes).toHaveBeenCalledWith('mock-ref', mockFile);
       expect(mockGetDownloadURL).toHaveBeenCalledWith('mock-snapshot-ref');
       expect(url).toBe('https://firebase.storage/url');
@@ -73,17 +75,17 @@ describe('useStorage', () => {
     });
 
     it('should handle errors and reset uploading state', async () => {
-        const { result } = renderHook(() => useStorage());
-        mockUploadBytes.mockRejectedValue(new Error('Upload failed'));
+      const { result } = renderHook(() => useStorage());
+      mockUploadBytes.mockRejectedValue(new Error('Upload failed'));
 
-        await expect(
-          act(async () => {
-            await result.current.uploadFile('path/to/fail.png', mockFile);
-          })
-        ).rejects.toThrow('Upload failed');
+      await expect(
+        act(async () => {
+          await result.current.uploadFile('path/to/fail.png', mockFile);
+        })
+      ).rejects.toThrow('Upload failed');
 
-        expect(result.current.uploading).toBe(false);
-      });
+      expect(result.current.uploading).toBe(false);
+    });
   });
 
   describe('uploadBackgroundImage', () => {
@@ -155,16 +157,21 @@ describe('useStorage', () => {
         await result.current.deleteFile('path/to/delete.png');
       });
 
-      expect(mockRef).toHaveBeenCalledWith(expect.anything(), 'path/to/delete.png');
+      expect(mockRef).toHaveBeenCalledWith(
+        expect.anything(),
+        'path/to/delete.png'
+      );
       expect(mockDeleteObject).toHaveBeenCalledWith('mock-ref');
     });
 
     it('should ignore Google Drive links (for now)', async () => {
       const { result } = renderHook(() => useStorage());
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(vi.fn());
 
       await act(async () => {
-        await result.current.deleteFile('https://lh3.googleusercontent.com/some-image');
+        await result.current.deleteFile(
+          'https://lh3.googleusercontent.com/some-image'
+        );
       });
 
       expect(mockDeleteObject).not.toHaveBeenCalled();
