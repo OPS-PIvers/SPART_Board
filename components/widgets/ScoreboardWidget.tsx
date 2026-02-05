@@ -7,9 +7,10 @@ import {
   RandomConfig,
   RandomGroup,
   DEFAULT_GLOBAL_STYLE,
+  PollConfig,
 } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
-import { Plus, Trash2, Users, RefreshCw, Trophy } from 'lucide-react';
+import { Plus, Trash2, Users, RefreshCw, Trophy, BarChart } from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
 
@@ -137,6 +138,39 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     () => activeDashboard?.widgets.find((w) => w.type === 'random'),
     [activeDashboard]
   );
+
+  // Find Poll Widget
+  const pollWidget = useMemo(
+    () => activeDashboard?.widgets.find((w) => w.type === 'poll'),
+    [activeDashboard]
+  );
+
+  const importFromPoll = () => {
+    if (!pollWidget) {
+      addToast('No Poll widget found!', 'error');
+      return;
+    }
+
+    const pollConfig = pollWidget.config as PollConfig;
+    const options = pollConfig.options || [];
+
+    if (options.length === 0) {
+      addToast('Poll has no options to import.', 'info');
+      return;
+    }
+
+    const newTeams: ScoreboardTeam[] = options.map((opt, i) => ({
+      id: crypto.randomUUID(),
+      name: opt.label,
+      score: opt.votes,
+      color: TEAM_COLORS[i % TEAM_COLORS.length],
+    }));
+
+    updateWidget(widget.id, {
+      config: { ...config, teams: newTeams },
+    });
+    addToast(`Imported ${newTeams.length} teams from Poll!`, 'success');
+  };
 
   const importFromRandom = () => {
     if (!randomWidget) {
@@ -275,6 +309,34 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         {!randomWidget && (
           <div className="text-xxs text-indigo-400 font-medium">
             Tip: Add a Randomizer widget and create groups to import them here.
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-indigo-900">
+            <BarChart className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-wider">
+              Import from Poll
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={importFromPoll}
+            disabled={!pollWidget}
+            title={
+              !pollWidget ? 'Add a Poll widget first' : 'Import Poll Results'
+            }
+            icon={<RefreshCw className="w-3 h-3" />}
+          >
+            Import Poll
+          </Button>
+        </div>
+        {!pollWidget && (
+          <div className="text-xxs text-indigo-400 font-medium">
+            Tip: Add a Poll widget and collect votes to import them here.
           </div>
         )}
       </div>
