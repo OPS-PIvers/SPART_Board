@@ -35,3 +35,9 @@
 **Weed:** `Sidebar.tsx` was over 1400 lines and contained a large inner component definition (`SortableDashboardItem`) and duplicated background fetching logic found in `useBackgrounds`.
 **Root Cause:** Component grew organically as features were added (boards, backgrounds, widgets) without separating concerns.
 **Plan:** Extract sub-components and leverage existing hooks to reduce file size and improve readability/maintainability.
+
+## 2026-02-05 - Refactor WeatherWidget
+
+**Weed:** `WeatherWidget.tsx` was ~900 lines, containing mixed concerns: multiple API fetchers (OpenWeather, Earth Networks, Proxy), Firebase subscription logic, Settings UI, and the main Widget View.
+**Root Cause:** "God Component" pattern; features (Earth Networks support, Admin Proxy) were added inline, increasing complexity and duplicating fetching logic between the widget and settings.
+**Plan:** decomposed into `components/widgets/Weather/` directory. Extracted interfaces to `types.ts`, constants to `constants.ts`, and complex data fetching/syncing logic to `useWeather.ts`. Split UI into `Widget.tsx` and `Settings.tsx`.
