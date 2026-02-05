@@ -199,7 +199,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   dice: {
     baseWidth: 240,
     baseHeight: 240,
-    canSpread: true,
+    canSpread: false,
     skipScaling: true,
   },
   sound: {
@@ -225,7 +225,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseHeight: 350,
     canSpread: true,
   },
-  qr: { baseWidth: 200, baseHeight: 250, canSpread: true, skipScaling: true },
+  qr: { baseWidth: 200, baseHeight: 250, canSpread: false, skipScaling: true },
   scoreboard: {
     baseWidth: 320,
     baseHeight: 200,
