@@ -374,7 +374,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col items-center justify-between h-full p-4 gap-2 font-${globalStyle.fontFamily}`}
+      className={`flex flex-col items-center justify-between h-full p-2 gap-2 font-${globalStyle.fontFamily}`}
     >
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="text-xxs font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">

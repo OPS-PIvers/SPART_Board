@@ -96,7 +96,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const unassignedStudents = activeRoster.filter((s) => !assignments[s]);
 
   return (
-    <div className="flex flex-col h-full bg-transparent p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
+    <div className="flex flex-col h-full bg-transparent p-2 gap-2 overflow-hidden animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex justify-between items-center shrink-0">
         <div className="flex flex-col">

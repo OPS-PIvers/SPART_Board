@@ -210,7 +210,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     <div
       className="h-full w-full relative"
       style={{
-        paddingTop: HEADER_HEIGHT,
         padding: PADDING,
         containerType: 'size',
       }}

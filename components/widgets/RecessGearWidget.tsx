@@ -107,7 +107,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`flex flex-col h-full p-4 gap-3 font-${globalStyle.fontFamily} @container`}
+      className={`flex flex-col h-full p-2 gap-2 font-${globalStyle.fontFamily} @container`}
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <div className="flex items-center gap-2">

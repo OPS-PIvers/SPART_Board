@@ -10,7 +10,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const events = config.events ?? [];
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col p-2">
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {events.map((event, i: number) => (
           <div
