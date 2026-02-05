@@ -27,22 +27,41 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
   headerHeight = 0,
   children,
 }) => {
-  const { scale, internalW, internalH } = useMemo(() => {
+  const { scale, renderScale, internalW, internalH } = useMemo(() => {
     const availableW = Math.max(10, width - padding * 2);
     const availableH = Math.max(10, height - headerHeight - padding * 2);
 
     if (baseWidth <= 0 || baseHeight <= 0) {
-      return { scale: 1, internalW: availableW, internalH: availableH };
+      return {
+        scale: 1,
+        renderScale: 1,
+        internalW: availableW,
+        internalH: availableH,
+      };
     }
 
     const scaleX = availableW / baseWidth;
     const scaleY = availableH / baseHeight;
     const scale = Math.min(scaleX, scaleY);
 
+    if (canSpread) {
+      // Cap the CSS transform at 1.0 to prevent upscaling blur.
+      // When scale >= 1, render at full available resolution with no transform.
+      // When scale < 1, render at larger virtual size and downscale (still crisp).
+      const renderScale = Math.min(scale, 1);
+      return {
+        scale,
+        renderScale,
+        internalW: availableW / renderScale,
+        internalH: availableH / renderScale,
+      };
+    }
+
     return {
       scale,
-      internalW: canSpread ? availableW / scale : baseWidth,
-      internalH: canSpread ? availableH / scale : baseHeight,
+      renderScale: scale,
+      internalW: baseWidth,
+      internalH: baseHeight,
     };
   }, [width, height, baseWidth, baseHeight, canSpread, padding, headerHeight]);
 
@@ -72,7 +91,7 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
         style={{
           width: internalW,
           height: internalH,
-          transform: `scale(${scale})`,
+          transform: `scale(${renderScale})`,
           transformOrigin: 'center center',
           display: 'flex',
           flexDirection: 'column',

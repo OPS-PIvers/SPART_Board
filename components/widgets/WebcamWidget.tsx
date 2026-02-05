@@ -101,7 +101,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   return (
-    <div className="relative h-full w-full bg-slate-950 overflow-hidden rounded-3xl group">
+    <div className="relative h-full w-full bg-slate-950 overflow-hidden group">
       {error ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white/50 gap-4">
           <Camera className="w-12 h-12 opacity-20" />

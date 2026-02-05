@@ -116,7 +116,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
         {filteredRoutines.map((routine) => {
           const ActionIcon =
             (Icons as unknown as Record<string, React.ElementType>)[

@@ -324,7 +324,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   return (
-    <div className="flex flex-col h-full p-4 gap-3 bg-transparent w-full">
+    <div className="flex flex-col h-full p-2 gap-2 bg-transparent w-full">
       <div className="flex-1 min-h-0 relative w-full">
         {visual === 'thermometer' && <ThermometerView volume={volume} />}
         {visual === 'speedometer' && <SpeedometerView volume={volume} />}

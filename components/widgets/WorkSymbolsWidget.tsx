@@ -281,7 +281,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className={`h-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
+      className={`h-full bg-transparent p-2 gap-2 overflow-hidden animate-in fade-in duration-200 ${
         isElementary ? 'grid grid-cols-2' : 'flex flex-col'
       }`}
     >
