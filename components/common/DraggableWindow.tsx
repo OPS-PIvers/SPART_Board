@@ -39,6 +39,7 @@ interface DraggableWindowProps {
   title: string;
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
+  isPositionAware?: boolean;
   headerActions?: React.ReactNode;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   removeWidget: (id: string) => void;
@@ -78,6 +79,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   title,
   style,
   skipCloseConfirmation = false,
+  isPositionAware = false,
   headerActions,
   updateWidget,
   removeWidget,
@@ -218,10 +220,20 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      if (isPositionAware) {
+        updateWidget(widget.id, {
+          x: newX,
+          y: newY,
+        });
+      } else if (windowRef.current) {
+        // Direct DOM manipulation for performance
+        // This avoids triggering React renders on every mouse move
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -232,6 +244,16 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      // Finalize position if we were using direct DOM manipulation
+      if (!isPositionAware) {
+        const newX = upEvent.clientX - startX;
+        const newY = upEvent.clientY - startY;
+        updateWidget(widget.id, {
+          x: newX,
+          y: newY,
+        });
+      }
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {
@@ -300,12 +322,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
       }
 
-      updateWidget(widget.id, {
-        w: newW,
-        h: newH,
-        x: newX,
-        y: newY,
-      });
+      if (isPositionAware) {
+        updateWidget(widget.id, {
+          w: newW,
+          h: newH,
+          x: newX,
+          y: newY,
+        });
+      } else if (windowRef.current) {
+        windowRef.current.style.width = `${newW}px`;
+        windowRef.current.style.height = `${newH}px`;
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -316,6 +345,45 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      // Finalize size/pos if using direct DOM manipulation
+      if (!isPositionAware) {
+        const dx = upEvent.clientX - startX;
+        const dy = upEvent.clientY - startY;
+
+        let newW = startW;
+        let newH = startH;
+        let newX = startPosX;
+        let newY = startPosY;
+
+        if (direction.includes('e')) {
+          newW = Math.max(150, startW + dx);
+        }
+        if (direction.includes('w')) {
+          const potentialW = startW - dx;
+          if (potentialW >= 150) {
+            newW = potentialW;
+            newX = startPosX + dx;
+          }
+        }
+        if (direction.includes('s')) {
+          newH = Math.max(100, startH + dy);
+        }
+        if (direction.includes('n')) {
+          const potentialH = startH - dy;
+          if (potentialH >= 100) {
+            newH = potentialH;
+            newY = startPosY + dy;
+          }
+        }
+
+        updateWidget(widget.id, {
+          w: newW,
+          h: newH,
+          x: newX,
+          y: newY,
+        });
+      }
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {
