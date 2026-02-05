@@ -165,6 +165,13 @@ describe('useStorage', () => {
     });
 
     it('should ignore Google Drive links (for now)', async () => {
+      mockUseAuth.mockReturnValue({ isAdmin: false });
+      const mockDriveService = {
+        uploadFile: vi.fn(),
+        makePublic: vi.fn(),
+      };
+      mockUseGoogleDrive.mockReturnValue({ driveService: mockDriveService });
+
       const { result } = renderHook(() => useStorage());
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(vi.fn());
 
@@ -175,6 +182,9 @@ describe('useStorage', () => {
       });
 
       expect(mockDeleteObject).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Deletion of Drive assets by URL is not yet fully implemented'
+      );
       consoleSpy.mockRestore();
     });
   });
