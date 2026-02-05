@@ -17,6 +17,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { classLinkService } from '../../utils/classlinkService';
+import { Button } from '../common/Button';
 
 interface Props {
   widget: WidgetData;
@@ -128,12 +129,9 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
   return (
     <div className="flex flex-col h-full p-2">
       <div className="flex justify-between items-center mb-3">
-        <button
-          onClick={onBack}
-          className="text-xs text-slate-500 hover:text-blue-600  uppercase tracking-wider"
-        >
+        <Button variant="ghost" size="sm" onClick={onBack}>
           &larr; Back
-        </button>
+        </Button>
         <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
           <input
             className=" border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0"
@@ -141,12 +139,14 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <button
+          <Button
             onClick={handleSave}
-            className="bg-green-600 text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs  hover:bg-green-700 shadow-sm transition-colors"
+            variant="success"
+            size="sm"
+            icon={<Save size={14} />}
           >
-            <Save size={14} /> Save
-          </button>
+            Save
+          </Button>
         </div>
       </div>
       <div
@@ -291,40 +291,44 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 This cannot be undone.
               </p>
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-700 text-white text-xs  hover:bg-slate-600 transition-colors"
+                  variant="secondary"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={async () => {
                     if (confirmDeleteId) {
                       await deleteRoster(confirmDeleteId);
                       setConfirmDeleteId(null);
                     }
                   }}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs  hover:bg-red-700 transition-colors"
+                  variant="danger"
                   title="Confirm deletion"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             </div>
           )}
           <div className="flex gap-2 mb-2">
-            <button
+            <Button
               onClick={() => {
                 setEditingId(null);
                 setView('edit');
               }}
-              className="flex-1 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm  shadow-sm"
+              variant="primary"
+              size="md"
+              className="flex-1"
+              icon={<Plus size={16} />}
             >
-              <Plus size={16} /> Create New Class
-            </button>
-            <button
+              Create New Class
+            </Button>
+            <Button
               onClick={handleFetchClassLink}
-              className="bg-white/40 text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
+              variant="secondary"
+              className="bg-white/40 border border-slate-200"
               title="Sync from ClassLink"
             >
               <RefreshCw
@@ -332,7 +336,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 className={classLinkLoading ? 'animate-spin' : ''}
               />
               ClassLink
-            </button>
+            </Button>
           </div>
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {rosters.length === 0 && (
@@ -371,23 +375,25 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <Button
                     onClick={() => {
                       setEditingId(r.id);
                       setView('edit');
                     }}
-                    className="p-2 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                    variant="ghost"
+                    size="icon"
                     title="Edit Class"
                   >
                     <Edit2 size={16} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setConfirmDeleteId(r.id)}
-                    className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded transition-colors"
+                    variant="ghost-danger"
+                    size="icon"
                     title="Delete Class"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -407,12 +413,9 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
       {view === 'classlink' && (
         <div className="flex flex-col h-full p-2">
           <div className="flex justify-between items-center mb-3">
-            <button
-              onClick={() => setView('list')}
-              className="text-xs text-slate-500 hover:text-blue-600  uppercase tracking-wider"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setView('list')}>
               &larr; Cancel
-            </button>
+            </Button>
             <h3 className=" text-slate-800 text-sm">ClassLink Rosters</h3>
             <div className="w-10"></div>
           </div>
@@ -440,12 +443,15 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                         {classLinkStudents[cls.sourcedId]?.length || 0} Students
                       </div>
                     </div>
-                    <button
+                    <Button
                       onClick={() => importClassLinkClass(cls)}
-                      className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs  hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1"
+                      variant="ghost"
+                      size="sm"
+                      className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white"
+                      icon={<ExternalLink size={14} />}
                     >
-                      <ExternalLink size={14} /> Import
-                    </button>
+                      Import
+                    </Button>
                   </div>
                 ))
               )}
