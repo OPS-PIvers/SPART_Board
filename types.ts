@@ -373,7 +373,8 @@ export interface MaterialsConfig {
 }
 
 export interface CatalystConfig {
-  activeTab: 'attention' | 'engage' | 'setup' | 'support';
+  activeCategory: string | null;
+  activeStrategyId: string | null;
 }
 
 export interface CatalystInstructionConfig {

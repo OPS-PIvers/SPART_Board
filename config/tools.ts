@@ -21,9 +21,9 @@ import {
   Backpack,
   Sticker,
   Armchair,
-  Rocket,
   LayoutGrid,
   Shirt,
+  Zap,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -105,9 +105,9 @@ export const TOOLS: ToolMetadata[] = [
   },
   {
     type: 'catalyst',
-    icon: Rocket,
+    icon: Zap,
     label: 'Catalyst',
-    color: 'bg-blue-600',
+    color: 'bg-indigo-600',
   },
   {
     type: 'smartNotebook',

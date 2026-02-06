@@ -365,8 +365,8 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     canSpread: true,
   },
   catalyst: {
-    baseWidth: 320,
-    baseHeight: 400,
+    baseWidth: 450,
+    baseHeight: 600,
     canSpread: true,
     skipScaling: true,
   },

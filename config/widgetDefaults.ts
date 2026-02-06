@@ -171,9 +171,12 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     },
   },
   catalyst: {
-    w: 320,
-    h: 400,
-    config: { activeTab: 'attention' },
+    w: 450,
+    h: 600,
+    config: {
+      activeCategory: null,
+      activeStrategyId: null,
+    },
   },
   'catalyst-instruction': {
     w: 280,
