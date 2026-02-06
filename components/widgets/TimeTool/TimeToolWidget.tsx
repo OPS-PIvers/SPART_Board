@@ -176,7 +176,7 @@ const Keypad: React.FC<{
           className={`px-6 py-3 rounded-2xl border-4 transition-all ${
             activeField === 'sec'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-110 shadow-lg'
-              : 'border-transparent text-slate-300 opacity-40 hover:opacity-100'
+              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
           }`}
         >
           {editValues.sec}
@@ -538,8 +538,8 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as TimeToolConfig;
   const { timerEndVoiceLevel } = config;
 
-  const hasWorkSymbols = activeDashboard?.widgets.some(
-    (w) => w.type === 'workSymbols'
+  const hasExpectations = activeDashboard?.widgets.some(
+    (w) => w.type === 'expectations'
   );
 
   return (
@@ -550,12 +550,12 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
           Timer End Action
         </label>
 
-        {!hasWorkSymbols ? (
+        {!hasExpectations ? (
           <div className="text-xs text-brand-red-primary bg-brand-red-lighter/20 p-4 rounded-2xl border border-brand-red-lighter/30 flex items-start gap-3">
             <span className="text-xl mt-0.5">💡</span>
             <p className="font-bold leading-snug">
-              Pro Tip: Add a &quot;Work Symbols&quot; widget to enable automatic
-              voice level changes when the timer hits zero!
+              Pro Tip: Add an &quot;Expectations&quot; widget to enable
+              automatic voice level changes when the timer hits zero!
             </p>
           </div>
         ) : (

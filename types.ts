@@ -12,7 +12,7 @@ export type WidgetType =
   | 'poll'
   | 'webcam'
   | 'scoreboard'
-  | 'workSymbols'
+  | 'expectations'
   | 'weather'
   | 'schedule'
   | 'calendar'
@@ -255,7 +255,7 @@ export interface ScoreboardConfig {
   teams?: ScoreboardTeam[];
 }
 
-export interface WorkSymbolsConfig {
+export interface ExpectationsConfig {
   voiceLevel: number | null; // 0, 1, 2, 3, or 4
   workMode: 'individual' | 'partner' | 'group' | null;
   interactionMode:
@@ -457,7 +457,7 @@ export type WidgetConfig =
   | PollConfig
   | WebcamConfig
   | ScoreboardConfig
-  | WorkSymbolsConfig
+  | ExpectationsConfig
   | WeatherConfig
   | ScheduleConfig
   | CalendarConfig
@@ -503,8 +503,8 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                         ? WebcamConfig
                         : T extends 'scoreboard'
                           ? ScoreboardConfig
-                          : T extends 'workSymbols'
-                            ? WorkSymbolsConfig
+                          : T extends 'expectations'
+                            ? ExpectationsConfig
                             : T extends 'weather'
                               ? WeatherConfig
                               : T extends 'schedule'

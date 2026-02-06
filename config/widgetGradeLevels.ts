@@ -27,7 +27,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
 
   // Classroom Management
   traffic: ['k-2', '3-5'],
-  workSymbols: ALL_GRADE_LEVELS,
+  expectations: ALL_GRADE_LEVELS,
   sound: ALL_GRADE_LEVELS,
 
   // Content & Communication

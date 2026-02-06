@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   TimeToolConfig,
   WidgetData,
-  WorkSymbolsConfig,
+  ExpectationsConfig,
   WidgetConfig,
 } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
@@ -113,11 +113,11 @@ export const useTimeTool = (widget: WidgetData) => {
               activeDashboard
             ) {
               const wsWidget = activeDashboard.widgets.find(
-                (w) => w.type === 'workSymbols'
+                (w) => w.type === 'expectations'
               );
               if (wsWidget) {
-                const wsConfig = wsWidget.config as WorkSymbolsConfig;
-                const newConfig: WorkSymbolsConfig = {
+                const wsConfig = wsWidget.config as ExpectationsConfig;
+                const newConfig: ExpectationsConfig = {
                   ...wsConfig,
                   voiceLevel: config.timerEndVoiceLevel,
                 };

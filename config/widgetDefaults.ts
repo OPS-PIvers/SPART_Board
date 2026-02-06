@@ -81,7 +81,7 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     h: 200,
     config: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
   },
-  workSymbols: {
+  expectations: {
     w: 320,
     h: 350,
     config: { voiceLevel: null, workMode: null, interactionMode: null },

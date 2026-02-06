@@ -68,9 +68,9 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   drawing: lazyNamed(() => import('./DrawingWidget'), 'DrawingWidget'),
   qr: lazyNamed(() => import('./QRWidget'), 'QRWidget'),
   scoreboard: lazyNamed(() => import('./ScoreboardWidget'), 'ScoreboardWidget'),
-  workSymbols: lazyNamed(
-    () => import('./WorkSymbolsWidget'),
-    'WorkSymbolsWidget'
+  expectations: lazyNamed(
+    () => import('./ExpectationsWidget'),
+    'ExpectationsWidget'
   ),
   poll: lazyNamed(() => import('./PollWidget'), 'PollWidget'),
   weather: lazyNamed(() => import('./WeatherWidget'), 'WeatherWidget'),
@@ -154,9 +154,9 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   ),
   smartNotebook: DefaultSettings,
   traffic: DefaultSettings,
-  workSymbols: lazyNamed(
-    () => import('./WorkSymbolsWidget'),
-    'WorkSymbolsSettings'
+  expectations: lazyNamed(
+    () => import('./ExpectationsWidget'),
+    'ExpectationsSettings'
   ),
   schedule: lazyNamed(() => import('./ScheduleWidget'), 'ScheduleSettings'),
   classes: DefaultSettings,
@@ -286,7 +286,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     skipScaling: true,
     padding: 0,
   },
-  workSymbols: {
+  expectations: {
     baseWidth: 320,
     baseHeight: 350,
     canSpread: true,

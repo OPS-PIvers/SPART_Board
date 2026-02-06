@@ -42,7 +42,7 @@ export const STUDENT_VIEW_WIDGET_COMPATIBILITY: StudentViewWidgetCompatibilityCo
     notCompatible: [
       'checklist',
       'scoreboard',
-      'workSymbols',
+      'expectations',
       'lunchCount',
       'classes',
       'sound',

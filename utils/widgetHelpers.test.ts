@@ -89,7 +89,7 @@ describe('widgetHelpers', () => {
         'poll',
         'webcam',
         'scoreboard',
-        'workSymbols',
+        'expectations',
         'weather',
         'schedule',
         'calendar',

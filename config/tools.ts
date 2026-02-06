@@ -53,9 +53,9 @@ export const TOOLS: ToolMetadata[] = [
   { type: 'webcam', icon: Video, label: 'Camera', color: 'bg-gray-800' },
   { type: 'scoreboard', icon: Trophy, label: 'Scores', color: 'bg-yellow-600' },
   {
-    type: 'workSymbols',
+    type: 'expectations',
     icon: LayoutGrid,
-    label: 'Work Symbols',
+    label: 'Expectations',
     color: 'bg-emerald-600',
   },
   { type: 'weather', icon: CloudSun, label: 'Weather', color: 'bg-sky-400' },

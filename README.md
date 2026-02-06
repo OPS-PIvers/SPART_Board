@@ -8,7 +8,7 @@ SPART Board is an interactive, widget-based application built with **React 19**,
 
 ## ✨ Key Features
 
-- **🧩 Widget System:** 21+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, Traffic Lights, Work Symbols, and more.
+- **🧩 Widget System:** 21+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, Traffic Lights, Expectations, and more.
 - **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
 - **🔐 Authentication:** Secure Google Sign-In integration.
 - **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.

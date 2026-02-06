@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, WorkSymbolsConfig } from '../../types';
+import { WidgetData, ExpectationsConfig } from '../../types';
 import {
   Volume2,
   Users,
@@ -56,7 +56,7 @@ const VOLUME_OPTIONS = [
 ];
 
 const GROUP_OPTIONS: {
-  id: WorkSymbolsConfig['workMode'];
+  id: ExpectationsConfig['workMode'];
   label: string;
   icon: typeof User;
   color: string;
@@ -86,7 +86,7 @@ const GROUP_OPTIONS: {
 ];
 
 const INTERACTION_OPTIONS: {
-  id: WorkSymbolsConfig['interactionMode'];
+  id: ExpectationsConfig['interactionMode'];
   label: string;
   icon: typeof Heart;
   color: string;
@@ -124,20 +124,18 @@ const INTERACTION_OPTIONS: {
 
 import { WidgetLayout } from './WidgetLayout';
 
-// ... (Constants & Data stay the same)
-
-export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
+export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config as WorkSymbolsConfig;
+  const config = widget.config as ExpectationsConfig;
   const { voiceLevel = null, workMode = null, interactionMode = null } = config;
 
   const [activeCategory, setActiveCategory] = useState<
     'volume' | 'groups' | 'interaction' | null
   >(null);
 
-  const updateConfig = (newConfig: Partial<WorkSymbolsConfig>) => {
+  const updateConfig = (newConfig: Partial<ExpectationsConfig>) => {
     updateWidget(widget.id, {
       config: { ...config, ...newConfig },
     });
@@ -438,11 +436,11 @@ const LAYOUTS: {
   { id: 'elementary', label: 'Elementary', icon: LayoutGrid },
 ];
 
-export const WorkSymbolsSettings: React.FC<{ widget: WidgetData }> = ({
+export const ExpectationsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const config = widget.config as WorkSymbolsConfig;
+  const config = widget.config as ExpectationsConfig;
 
   return (
     <div className="space-y-6">

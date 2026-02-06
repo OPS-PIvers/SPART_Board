@@ -40,6 +40,14 @@ export const migrateWidget = (widget: WidgetData): WidgetData => {
       } as TimeToolConfig,
     };
   }
+
+  if (type === 'workSymbols') {
+    return {
+      ...widget,
+      type: 'expectations',
+    };
+  }
+
   return widget;
 };
 

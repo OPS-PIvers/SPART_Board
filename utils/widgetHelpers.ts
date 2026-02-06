@@ -26,7 +26,7 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'sound') return 'Noise Meter';
   if (widget.type === 'checklist') return 'Task List';
   if (widget.type === 'random') return 'Selector';
-  if (widget.type === 'workSymbols') return 'Work Symbols';
+  if (widget.type === 'expectations') return 'Expectations';
   if (widget.type === 'calendar') return 'Class Events';
   if (widget.type === 'lunchCount') return 'Lunch Orders';
   if (widget.type === 'classes') return 'Class Roster';
@@ -84,7 +84,7 @@ export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
     },
     webcam: {},
     scoreboard: { scoreA: 0, scoreB: 0, teamA: 'Team 1', teamB: 'Team 2' },
-    workSymbols: { voiceLevel: null, workMode: null, interactionMode: null },
+    expectations: { voiceLevel: null, workMode: null, interactionMode: null },
     weather: { temp: 72, condition: 'sunny' },
     schedule: { items: [] },
     calendar: { events: [] },

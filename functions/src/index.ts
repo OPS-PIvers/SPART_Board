@@ -365,7 +365,7 @@ export const generateWithAI = functionsV1
           - poll: Multiple choice poll
           - webcam: Live camera feed
           - scoreboard: Point tracker
-          - workSymbols: Classroom expectations icons
+          - expectations: Classroom expectations icons
           - weather: Local weather display
           - schedule: Daily class schedule
           - calendar: Monthly events

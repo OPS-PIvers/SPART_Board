@@ -236,7 +236,7 @@ Migrate widgets in priority order based on usage/visibility.
 - [x] **webcam** (Done)
 - [x] **sound** (Done)
 - [x] **embed** (Done)
-- [x] **workSymbols** (Done)
+- [x] **expectations** (Done)
 - [x] **materials** (Done)
 - [x] **classes** (Done)
 - [x] **lunchCount** (Done)
@@ -526,7 +526,7 @@ export const ScoreboardWidget = ({ widget }) => {
 - [ ] webcam - Video feed + controls
 - [ ] sound - Sound meter + controls
 - [ ] embed - Iframe wrapper
-- [ ] workSymbols - Symbol selector
+- [ ] expectations - Symbol selector
 - [ ] materials - Material list
 - [ ] classes - Class roster
 - [ ] lunchCount - Lunch counter
