@@ -57,7 +57,7 @@ describe('RecessGearWidget', () => {
     expect(screen.getByText(/Hat & Gloves/i)).toBeInTheDocument();
     expect(screen.getByText(/Snow Boots/i)).toBeInTheDocument();
     expect(screen.getByText(/Snow Pants/i)).toBeInTheDocument();
-    expect(screen.getByText(/Linked to North Pole/i)).toBeInTheDocument();
+    expect(screen.getByText(/North Pole/i)).toBeInTheDocument();
   });
 
   it('renders helpful message when no weather widget is present', () => {
@@ -189,7 +189,7 @@ describe('RecessGearWidget', () => {
 
     // Should show Heavy Coat (from 10 degrees) and link to Right Place
     expect(screen.getByText(/Heavy Coat/i)).toBeInTheDocument();
-    expect(screen.getByText(/Linked to Right Place/i)).toBeInTheDocument();
+    expect(screen.getByText(/Right Place/i)).toBeInTheDocument();
   });
 
   it('renders settings panel correctly', () => {

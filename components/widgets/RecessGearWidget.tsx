@@ -1,11 +1,6 @@
 import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import {
-  WidgetData,
-  RecessGearConfig,
-  WeatherConfig,
-  DEFAULT_GLOBAL_STYLE,
-} from '../../types';
+import { WidgetData, RecessGearConfig, WeatherConfig } from '../../types';
 import {
   Shirt,
   Thermometer,
@@ -21,11 +16,12 @@ interface GearItem {
   category: 'clothing' | 'footwear' | 'accessory';
 }
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { activeDashboard } = useDashboard();
-  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as RecessGearConfig;
 
   const widgets = activeDashboard?.widgets;
@@ -89,75 +85,92 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (!weatherWidget || !weatherConfig || weatherConfig.temp === undefined) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-4">
-        <div className="bg-slate-100 p-4 rounded-full">
-          <AlertCircle className="w-8 h-8 text-slate-400" />
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm font-black text-slate-600 uppercase tracking-tight">
-            No Weather Data
-          </p>
-          <p className="text-xxs text-slate-400 leading-tight">
-            Add a Weather widget to automatically see required recess gear.
-          </p>
-        </div>
-      </div>
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-4">
+            <div className="bg-slate-100 p-4 rounded-full">
+              <AlertCircle className="w-8 h-8 text-slate-400" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-black text-slate-600 uppercase tracking-tight">
+                No Weather Data
+              </p>
+              <p className="text-xxs text-slate-400 leading-tight">
+                Add a Weather widget to automatically see required recess gear.
+              </p>
+            </div>
+          </div>
+        }
+      />
     );
   }
 
   return (
-    <div
-      className={`flex flex-col h-full p-2 gap-2 font-${globalStyle.fontFamily} @container`}
-    >
-      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="bg-emerald-100 p-1.5 rounded-lg">
-            <Shirt className="w-4 h-4 text-emerald-600" />
-          </div>
-          <span className="text-xxs font-black uppercase tracking-widest text-slate-400">
-            Recess Gear
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 rounded-full border border-slate-100">
-          <Thermometer className="w-2.5 h-2.5 text-slate-400" />
-          <span className="text-[10px] font-bold text-slate-600">
-            {Math.round(
-              (config.useFeelsLike && weatherConfig.feelsLike !== undefined
-                ? weatherConfig.feelsLike
-                : weatherConfig.temp) ?? 72
-            )}
-            °
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 @[200px]:grid-cols-2 gap-2 overflow-y-auto no-scrollbar">
-        {gearList.map((item, idx) => (
-          <div
-            key={`${item.label}-${idx}`}
-            className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-emerald-200 transition-colors"
-          >
-            <span className="text-2xl">{item.icon}</span>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-black text-slate-700 uppercase leading-tight">
-                {item.label}
-              </span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">
-                {item.category}
-              </span>
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-white/50 backdrop-blur-sm shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="bg-emerald-50 p-1.5 rounded-lg border border-emerald-100 shadow-sm">
+              <Shirt className="w-4 h-4 text-emerald-600" />
             </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Recess Gear
+            </span>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-auto pt-2 flex items-center justify-between text-[8px] font-bold text-slate-300 uppercase tracking-widest border-t border-slate-50">
-        <div className="flex items-center gap-1">
-          <LinkIcon className="w-2 h-2" />
-          Linked to {weatherConfig.locationName ?? 'Weather'}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-full border border-emerald-100 shadow-sm">
+            <Thermometer className="w-3 h-3 text-emerald-600" />
+            <span className="text-[10px] font-black text-emerald-700 tracking-tight">
+              {Math.round(
+                (config.useFeelsLike && weatherConfig.feelsLike !== undefined
+                  ? weatherConfig.feelsLike
+                  : weatherConfig.temp) ?? 72
+              )}
+              °
+            </span>
+          </div>
         </div>
-        <span>Automatic</span>
-      </div>
-    </div>
+      }
+      content={
+        <div className="flex-1 w-full h-full overflow-y-auto p-4 custom-scrollbar bg-slate-50/30">
+          <div className="grid grid-cols-1 @[240px]:grid-cols-2 gap-3">
+            {gearList.map((item, idx) => (
+              <div
+                key={`${item.label}-${idx}`}
+                className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-emerald-200 hover:shadow-md transition-all group"
+              >
+                <span className="text-3xl group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm">
+                  {item.icon}
+                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-black text-slate-700 uppercase leading-tight tracking-tight">
+                    {item.label}
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">
+                    {item.category}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      }
+      footer={
+        <div className="px-4 py-2.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">
+          <div className="flex items-center gap-1.5 truncate max-w-[70%]">
+            <LinkIcon className="w-2.5 h-2.5 opacity-60" />
+            <span className="truncate">
+              {weatherConfig.locationName ?? 'Weather'} Source
+            </span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />
+            <span>Auto</span>
+          </div>
+        </div>
+      }
+    />
   );
 };
 

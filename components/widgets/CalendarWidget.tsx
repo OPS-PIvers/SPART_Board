@@ -2,7 +2,8 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CalendarConfig } from '../../types';
 import { Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
-import { useScaledFont } from '../../hooks/useScaledFont';
+
+import { WidgetLayout } from './WidgetLayout';
 
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -10,50 +11,53 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as CalendarConfig;
   const events = config.events ?? [];
 
-  const dateFontSize = useScaledFont(widget.w, widget.h, 0.3, 12, 28);
-  const titleFontSize = useScaledFont(widget.w, widget.h, 0.25, 12, 28);
-  const labelFontSize = useScaledFont(widget.w, widget.h, 0.15, 8, 16);
-
   return (
-    <div className="h-full flex flex-col p-2">
-      <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
-        {events.map((event, i: number) => (
-          <div
-            key={i}
-            className="group relative flex gap-3 p-3 bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50"
-          >
-            <div className="flex flex-col items-center justify-center min-w-[50px] py-1 border-r border-rose-200">
-              <span
-                className="uppercase text-rose-400"
-                style={{ fontSize: `${labelFontSize}px` }}
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div className="h-full w-full flex flex-col p-4 overflow-hidden">
+          <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+            {events.map((event, i: number) => (
+              <div
+                key={i}
+                className="group relative flex gap-3 p-3 bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50 shadow-sm"
               >
-                Day
-              </span>
-              <span
-                className="text-rose-600"
-                style={{ fontSize: `${dateFontSize}px` }}
-              >
-                {event.date}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <span
-                className="text-slate-700 leading-tight"
-                style={{ fontSize: `${titleFontSize}px` }}
-              >
-                {event.title}
-              </span>
-            </div>
+                <div className="flex flex-col items-center justify-center min-w-[min(60px,25cqw)] py-1 border-r border-rose-200 pr-3 shrink-0">
+                  <span
+                    className="uppercase text-rose-400 font-black"
+                    style={{ fontSize: 'min(3cqw, 2.5cqh)' }}
+                  >
+                    Day
+                  </span>
+                  <span
+                    className="text-rose-600 font-black"
+                    style={{ fontSize: 'min(5cqw, 4.5cqh)' }}
+                  >
+                    {event.date}
+                  </span>
+                </div>
+                <div className="flex items-center min-w-0">
+                  <span
+                    className="text-slate-700 font-bold leading-tight truncate"
+                    style={{ fontSize: 'min(4.5cqw, 4cqh)' }}
+                  >
+                    {event.title}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {events.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-20 py-10">
+                <CalendarIcon className="w-12 h-12" />
+                <span className="text-xs font-black uppercase tracking-widest">
+                  No Events
+                </span>
+              </div>
+            )}
           </div>
-        ))}
-        {events.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-10 opacity-20">
-            <CalendarIcon className="w-8 h-8 mb-2" />
-            <p className="text-xxs uppercase tracking-widest">No Events</p>
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      }
+    />
   );
 };
 

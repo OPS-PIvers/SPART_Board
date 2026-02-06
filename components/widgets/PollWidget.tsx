@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
-import { useScaledFont } from '../../hooks/useScaledFont';
 import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import {
   RotateCcw,
@@ -15,6 +14,8 @@ import {
 import { Button } from '../common/Button';
 import { MagicInput } from '../common/MagicInput';
 import { generatePoll, GeneratedPoll } from '../../utils/ai';
+
+import { WidgetLayout } from './WidgetLayout';
 
 export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -45,58 +46,65 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const total = options.reduce((sum, o) => sum + o.votes, 0);
 
-  const questionSize = useScaledFont(widget.w, widget.h, 0.4, 14, 32);
-  const labelSize = useScaledFont(widget.w, widget.h, 0.25, 10, 18);
-
   return (
-    <div className={`flex flex-col h-full p-2 font-${globalStyle.fontFamily}`}>
-      <div
-        className="font-black uppercase text-slate-800 mb-4 tracking-tight border-b pb-2"
-        style={{ fontSize: `${questionSize}px` }}
-      >
-        {question}
-      </div>
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="px-4 pt-4 pb-2 border-b border-slate-100">
+          <div
+            className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
+            style={{ fontSize: 'min(6cqw, 4cqh)', lineHeight: 1.1 }}
+          >
+            {question}
+          </div>
+        </div>
+      }
+      content={
+        <div className="w-full h-full p-4 overflow-y-auto custom-scrollbar space-y-3">
+          {options.map((o, i: number) => {
+            const percent =
+              total === 0 ? 0 : Math.round((o.votes / total) * 100);
 
-      <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
-        {options.map((o, i: number) => {
-          const percent = total === 0 ? 0 : Math.round((o.votes / total) * 100);
-
-          return (
-            <button
-              key={i}
-              onClick={() => {
-                vote(i);
-              }}
-              className="w-full text-left group"
-            >
-              <div
-                className="flex justify-between mb-1 uppercase tracking-wider text-slate-600"
-                style={{ fontSize: `${labelSize}px` }}
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  vote(i);
+                }}
+                className="w-full text-left group"
               >
-                <span>{o.label}</span>
-
-                <span>
-                  {o.votes} ({percent}%)
-                </span>
-              </div>
-
-              <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
                 <div
-                  className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <button
-        onClick={handleReset}
-        className="mt-4 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors"
-      >
-        <RotateCcw className="w-3 h-3" /> Reset Poll
-      </button>
-    </div>
+                  className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
+                  style={{ fontSize: 'min(3.5cqw, 2.5cqh)' }}
+                >
+                  <span className="font-bold truncate pr-4">{o.label}</span>
+                  <span className="font-mono whitespace-nowrap">
+                    {o.votes} ({percent}%)
+                  </span>
+                </div>
+
+                <div className="h-[min(4cqw,3cqh)] min-h-[12px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
+                  <div
+                    className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      }
+      footer={
+        <div className="px-4 pb-2">
+          <button
+            onClick={handleReset}
+            className="w-full flex items-center justify-center gap-2 py-2 text-[min(10px,3cqmin)] font-black uppercase text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+          >
+            <RotateCcw className="w-3 h-3" /> Reset Poll
+          </button>
+        </div>
+      }
+    />
   );
 };
 

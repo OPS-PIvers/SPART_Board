@@ -362,6 +362,10 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
   );
 };
 
+import { WidgetLayout } from '../WidgetLayout';
+
+// ... (RoutineStepItem stays the same)
+
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -538,115 +542,121 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (!selectedRoutineId || !selectedRoutine) {
     return (
-      <div className="flex flex-col h-full p-3 overflow-hidden">
-        <div className="flex justify-between items-center mb-3 shrink-0">
-          <div className="text-xxs font-black uppercase text-slate-400 tracking-widest">
-            Library ({gradeFilter.toUpperCase()})
-          </div>
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <button
-                onClick={() => setIsManagingLibrary(true)}
-                className="flex items-center gap-1 text-xxs font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
-                title="Manage global routine library"
-              >
-                <Settings size={12} />
-                Manage
-              </button>
-            )}
-            <button
-              onClick={clearAllStickers}
-              className="flex items-center gap-1 text-xxs font-black uppercase text-red-500 hover:text-red-600 transition-colors"
-              title="Remove all stickers from board"
-            >
-              <Trash2 size={12} />
-              Clear Board
-            </button>
-          </div>
-        </div>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 overflow-y-auto custom-scrollbar pr-1 pb-2">
-          {displayedRoutines.map((r) => {
-            const Icon =
-              (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
-              Icons.HelpCircle;
-            const isFav = favorites.includes(r.id);
-            const colors =
-              ROUTINE_COLORS[r.color || 'blue'] || ROUTINE_COLORS.blue;
-
-            return (
-              <div key={r.id} className="relative group/card h-full">
+      <WidgetLayout
+        padding="p-0"
+        header={
+          <div className="flex justify-between items-center p-3 border-b border-slate-100 bg-slate-50/50 shrink-0">
+            <div className="text-[min(10px,3cqmin)] font-black uppercase text-slate-400 tracking-widest">
+              Library ({gradeFilter.toUpperCase()})
+            </div>
+            <div className="flex items-center gap-3">
+              {isAdmin && (
                 <button
-                  onClick={() => selectRoutine(r)}
-                  className={`w-full h-full relative p-4 border rounded-xl bg-white shadow-sm transition-all duration-300 flex flex-col items-center text-center group-hover/card:shadow-md group-hover/card:-translate-y-1 ${colors.border} ${colors.hoverBorder}`}
+                  onClick={() => setIsManagingLibrary(true)}
+                  className="flex items-center gap-1 text-[min(10px,3cqmin)] font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
+                  title="Manage global routine library"
                 >
-                  <div
-                    className={`p-3 rounded-full mb-3 transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
-                  >
-                    <Icon size={28} strokeWidth={2} />
-                  </div>
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className="text-[11px] font-black text-slate-800 uppercase leading-tight tracking-wide">
-                      {r.name}
-                    </div>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                      {r.grades}
-                    </div>
-                  </div>
+                  <Settings size={12} />
+                  Manage
                 </button>
-                <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+              )}
+              <button
+                onClick={clearAllStickers}
+                className="flex items-center gap-1 text-[min(10px,3cqmin)] font-black uppercase text-red-500 hover:text-red-600 transition-colors"
+                title="Remove all stickers from board"
+              >
+                <Trash2 size={12} />
+                Clear Board
+              </button>
+            </div>
+          </div>
+        }
+        content={
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar p-3 pb-4">
+            {displayedRoutines.map((r) => {
+              const Icon =
+                (Icons as unknown as Record<string, React.ElementType>)[
+                  r.icon
+                ] ?? Icons.HelpCircle;
+              const isFav = favorites.includes(r.id);
+              const colors =
+                ROUTINE_COLORS[r.color || 'blue'] || ROUTINE_COLORS.blue;
+
+              return (
+                <div key={r.id} className="relative group/card h-full">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const next = isFav
-                        ? favorites.filter((f) => f !== r.id)
-                        : [...favorites, r.id];
-                      updateWidget(widget.id, {
-                        config: { ...config, favorites: next },
-                      });
-                    }}
-                    className={`p-1.5 rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform ${
-                      isFav
-                        ? 'text-amber-400'
-                        : 'text-slate-300 hover:text-slate-400'
-                    }`}
+                    onClick={() => selectRoutine(r)}
+                    className={`w-full h-full relative p-4 border rounded-2xl bg-white shadow-sm transition-all duration-300 flex flex-col items-center text-center group-hover/card:shadow-md group-hover/card:-translate-y-1 ${colors.border} ${colors.hoverBorder}`}
                   >
-                    <Star size={12} className={isFav ? 'fill-current' : ''} />
+                    <div
+                      className={`p-3 rounded-full mb-3 transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
+                    >
+                      <Icon size={28} strokeWidth={2} />
+                    </div>
+                    <div className="flex flex-col gap-1 w-full">
+                      <div className="text-[11px] font-black text-slate-800 uppercase leading-tight tracking-wide">
+                        {r.name}
+                      </div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        {r.grades}
+                      </div>
+                    </div>
                   </button>
-                  {isAdmin && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingRoutine(r);
-                          setIsManagingLibrary(true);
-                        }}
-                        className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-blue-400 hover:text-blue-600 hover:scale-110 transition-transform"
-                      >
-                        <PlusCircle size={12} />
-                      </button>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (
-                            confirm(
-                              'Delete this template from the global library?'
-                            )
-                          ) {
-                            await deleteRoutine(r.id);
-                          }
-                        }}
-                        className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-red-300 hover:text-red-500 hover:scale-110 transition-transform"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </>
-                  )}
+                  <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const next = isFav
+                          ? favorites.filter((f) => f !== r.id)
+                          : [...favorites, r.id];
+                        updateWidget(widget.id, {
+                          config: { ...config, favorites: next },
+                        });
+                      }}
+                      className={`p-1.5 rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform ${
+                        isFav
+                          ? 'text-amber-400'
+                          : 'text-slate-300 hover:text-slate-400'
+                      }`}
+                    >
+                      <Star size={12} className={isFav ? 'fill-current' : ''} />
+                    </button>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingRoutine(r);
+                            setIsManagingLibrary(true);
+                          }}
+                          className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-blue-400 hover:text-blue-600 hover:scale-110 transition-transform"
+                        >
+                          <PlusCircle size={12} />
+                        </button>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (
+                              confirm(
+                                'Delete this template from the global library?'
+                              )
+                            ) {
+                              await deleteRoutine(r.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-red-300 hover:text-red-500 hover:scale-110 transition-transform"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              );
+            })}
+          </div>
+        }
+      />
     );
   }
 
@@ -692,138 +702,143 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   const audience = config.audience ?? selectedRoutine.audience ?? 'student';
 
   return (
-    <div
-      className="flex flex-col h-full animate-in fade-in duration-200 overflow-hidden relative"
-      style={{
-        fontSize: `${dynamicFontSize}px`,
-        padding: '1em',
-      }}
-    >
-      <div
-        className="flex items-center shrink-0 border-b border-brand-blue-lighter"
-        style={{
-          gap: '0.75em',
-          marginBottom: '0.75em',
-          paddingBottom: '0.75em',
-        }}
-      >
-        <button
-          onClick={() =>
-            updateWidget(widget.id, {
-              config: { ...config, selectedRoutineId: null },
-            })
-          }
-          className="rounded-full transition-colors hover:bg-slate-100"
-          style={{ padding: '0.5em' }}
-          title="Back to Library"
-        >
-          <ArrowLeft size={dynamicFontSize * 1.5} className="text-slate-600" />
-        </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h2
-              className="text-brand-blue-primary leading-tight font-bold"
-              style={{ fontSize: '1.4em' }}
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex flex-col shrink-0 border-b border-brand-blue-lighter bg-slate-50/30">
+          <div
+            className="flex items-center p-3"
+            style={{
+              gap: '0.75em',
+            }}
+          >
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, selectedRoutineId: null },
+                })
+              }
+              className="rounded-full transition-colors hover:bg-slate-100"
+              style={{ padding: '0.5em' }}
+              title="Back to Library"
             >
-              {selectedRoutine.name}
-            </h2>
-            {audience === 'teacher' && (
+              <ArrowLeft
+                size={dynamicFontSize * 1.5}
+                className="text-slate-600"
+              />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h2
+                  className="text-brand-blue-primary leading-tight font-black truncate uppercase tracking-tight"
+                  style={{ fontSize: '1.4em' }}
+                >
+                  {selectedRoutine.name}
+                </h2>
+                {audience === 'teacher' && (
+                  <span
+                    className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter flex items-center gap-1 shrink-0"
+                    style={{ fontSize: '0.5em' }}
+                  >
+                    <Info size={dynamicFontSize * 0.8} /> Teacher Focus
+                  </span>
+                )}
+              </div>
               <span
-                className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter flex items-center gap-1 shrink-0"
-                style={{ fontSize: '0.5em' }}
+                className="text-brand-blue-light uppercase tracking-widest block mt-[0.2em] font-bold"
+                style={{ fontSize: '0.6em' }}
               >
-                <Info size={dynamicFontSize * 0.8} /> Teacher Focus
+                {selectedRoutine.grades} Protocol •{' '}
+                {structure.replace('-', ' ')}
               </span>
-            )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={clearAllStickers}
+                className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
+                style={{ padding: '0.6em' }}
+                title="Clear all stickers from board"
+              >
+                <Trash2 size={dynamicFontSize * 1.25} />
+              </button>
+              <div
+                className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
+                style={{ padding: '0.8em' }}
+              >
+                <RoutineIcon style={{ width: '1.8em', height: '1.8em' }} />
+              </div>
+            </div>
           </div>
-          <span
-            className="text-brand-blue-light uppercase tracking-widest block mt-[0.2em]"
-            style={{ fontSize: '0.6em' }}
-          >
-            {selectedRoutine.grades} Protocol • {structure.replace('-', ' ')}
-          </span>
-        </div>
-        <button
-          onClick={clearAllStickers}
-          className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center"
-          style={{ padding: '0.6em' }}
-          title="Clear all stickers from board"
-        >
-          <Trash2 size={dynamicFontSize * 1.25} />
-        </button>
-        <div
-          className="bg-brand-blue-lighter text-brand-red-primary rounded-3xl shadow-sm flex items-center justify-center"
-          style={{ padding: '1em' }}
-        >
-          <RoutineIcon style={{ width: '2em', height: '2em' }} />
-        </div>
-      </div>
 
-      {selectedRoutine.id === 'blooms-analysis' && (
-        <div
-          className="flex shrink-0 px-1"
-          style={{ gap: '0.75em', marginBottom: '0.75em' }}
-        >
-          <button
-            onClick={() => launchBloomsResource('keyWords')}
-            className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
-            style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
-          >
-            <Icons.Key size={dynamicFontSize * 1.2} /> Key Words
-          </button>
-          <button
-            onClick={() => launchBloomsResource('questionStarters')}
-            className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center"
-            style={{ padding: '1em', gap: '0.5em', fontSize: '0.7em' }}
-          >
-            <Icons.MessageSquare size={dynamicFontSize * 1.2} /> Sentence
-            Starters
-          </button>
+          {selectedRoutine.id === 'blooms-analysis' && (
+            <div className="flex shrink-0 px-3 pb-3" style={{ gap: '0.75em' }}>
+              <button
+                onClick={() => launchBloomsResource('keyWords')}
+                className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center shadow-sm"
+                style={{ padding: '0.8em', gap: '0.5em', fontSize: '0.7em' }}
+              >
+                <Icons.Key size={dynamicFontSize * 1.2} /> Key Words
+              </button>
+              <button
+                onClick={() => launchBloomsResource('questionStarters')}
+                className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center shadow-sm"
+                style={{ padding: '0.8em', gap: '0.5em', fontSize: '0.7em' }}
+              >
+                <Icons.MessageSquare size={dynamicFontSize * 1.2} /> Starters
+              </button>
+            </div>
+          )}
         </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      }
+      content={
         <div
-          className={`
-            ${structure === 'visual-cue' ? 'grid grid-cols-2' : 'flex flex-col'}
-          `}
-          style={{ gap: structure === 'visual-cue' ? '0.75em' : '1em' }}
+          className="flex-1 overflow-y-auto custom-scrollbar p-4"
+          style={{
+            fontSize: `${dynamicFontSize}px`,
+          }}
         >
-          {customSteps.map((step, i) => {
-            return (
-              <React.Fragment key={step.id}>
-                <RoutineStepItem
-                  step={step}
-                  index={i}
-                  structure={structure}
-                  dynamicFontSize={dynamicFontSize}
-                  onDragStart={onDragStart}
-                  onStepClick={handleStepClick}
-                  onAddWidget={(type, config) => addWidget(type, { config })}
-                />
-                {structure === 'cycle' && i < customSteps.length - 1 && (
-                  <div className="flex justify-center -my-2 text-slate-300">
-                    <ArrowDown size={dynamicFontSize * 1.5} />
-                  </div>
-                )}
-                {structure === 'cycle' && i === customSteps.length - 1 && (
-                  <div className="flex justify-center mt-2">
-                    <div className="flex flex-col items-center gap-1 text-blue-500/50">
-                      <RefreshCw
-                        size={dynamicFontSize * 1.5}
-                        className="animate-spin-slow"
-                      />
-                      <span className="text-xxs font-black uppercase tracking-widest">
-                        Repeat
-                      </span>
+          <div
+            className={`
+              ${structure === 'visual-cue' ? 'grid grid-cols-2' : 'flex flex-col'}
+            `}
+            style={{ gap: structure === 'visual-cue' ? '0.75em' : '1em' }}
+          >
+            {customSteps.map((step, i) => {
+              return (
+                <React.Fragment key={step.id}>
+                  <RoutineStepItem
+                    step={step}
+                    index={i}
+                    structure={structure}
+                    dynamicFontSize={dynamicFontSize}
+                    onDragStart={onDragStart}
+                    onStepClick={handleStepClick}
+                    onAddWidget={(type, config) => addWidget(type, { config })}
+                  />
+                  {structure === 'cycle' && i < customSteps.length - 1 && (
+                    <div className="flex justify-center -my-2 text-slate-300">
+                      <ArrowDown size={dynamicFontSize * 1.5} />
                     </div>
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
+                  )}
+                  {structure === 'cycle' && i === customSteps.length - 1 && (
+                    <div className="flex justify-center mt-2">
+                      <div className="flex flex-col items-center gap-1 text-blue-500/50">
+                        <RefreshCw
+                          size={dynamicFontSize * 1.5}
+                          className="animate-spin-slow"
+                        />
+                        <span className="text-xxs font-black uppercase tracking-widest">
+                          Repeat
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </div>
+      }
+    />
   );
 };

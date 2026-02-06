@@ -94,18 +94,18 @@ export const ScoreboardItem = React.memo(
 
     return (
       <div
-        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-slate-200 relative group`}
+        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-slate-200 relative group transition-all hover:shadow-md`}
         style={{ containerType: 'size' }}
       >
         <div
           className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
-          style={{ fontSize: '10cqmin' }}
+          style={{ fontSize: 'min(10cqw, 8cqh)' }}
         >
           {team.name}
         </div>
         <div
           className={`font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
-          style={{ fontSize: `35cqmin`, lineHeight: 1 }}
+          style={{ fontSize: `min(40cqw, 50cqh)`, lineHeight: 1 }}
         >
           {team.score}
         </div>

@@ -4,6 +4,8 @@ import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
 import { convertToEmbedUrl } from '../../utils/urlHelpers';
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;
   const { mode = 'url', url = '', html = '', refreshInterval = 0 } = config;
@@ -49,49 +51,64 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   if (mode === 'url' && !url) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
-        <Globe className="w-12 h-12 opacity-20" />
-        <div>
-          <p className="text-sm  uppercase tracking-widest mb-1">
-            No URL Provided
-          </p>
-          <p className="text-xs">
-            Flip this widget to add a link to a website, video, or document.
-          </p>
-        </div>
-      </div>
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
+            <Globe className="w-12 h-12 opacity-20" />
+            <div>
+              <p className="text-sm  uppercase tracking-widest mb-1 font-black">
+                No URL Provided
+              </p>
+              <p className="text-xs">
+                Flip this widget to add a link to a website, video, or document.
+              </p>
+            </div>
+          </div>
+        }
+      />
     );
   }
 
   if (mode === 'code' && !html) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
-        <Code className="w-12 h-12 opacity-20" />
-        <div>
-          <p className="text-sm  uppercase tracking-widest mb-1">
-            No Code Provided
-          </p>
-          <p className="text-xs">
-            Flip this widget and paste your HTML/CSS/JS code to run it here.
-          </p>
-        </div>
-      </div>
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
+            <Code className="w-12 h-12 opacity-20" />
+            <div>
+              <p className="text-sm  uppercase tracking-widest mb-1 font-black">
+                No Code Provided
+              </p>
+              <p className="text-xs">
+                Flip this widget and paste your HTML/CSS/JS code to run it here.
+              </p>
+            </div>
+          </div>
+        }
+      />
     );
   }
 
   return (
-    <div className="w-full h-full bg-transparent flex flex-col">
-      <iframe
-        key={refreshKey}
-        title="Embed Content"
-        src={mode === 'url' ? embedUrl : undefined}
-        srcDoc={mode === 'code' ? html : undefined}
-        className="flex-1 w-full border-none"
-        sandbox={sandbox}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-      />
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div className="w-full h-full bg-transparent flex flex-col overflow-hidden">
+          <iframe
+            key={refreshKey}
+            title="Embed Content"
+            src={mode === 'url' ? embedUrl : undefined}
+            srcDoc={mode === 'code' ? html : undefined}
+            className="flex-1 w-full h-full border-none"
+            sandbox={sandbox}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      }
+    />
   );
 };
 

@@ -21,6 +21,8 @@ const DEFAULT_STICKERS = [
   `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50"><rect width="200" height="50" rx="10" fill="%233b82f6"/><text x="100" y="35" font-family="sans-serif" font-size="30" font-weight="bold" fill="white" text-anchor="middle">GREAT JOB!</text></svg>`,
 ];
 
+import { WidgetLayout } from '../WidgetLayout';
+
 export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -179,132 +181,144 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-        <span className="text-slate-700">Sticker Collection</span>
-        <div className="flex gap-2">
-          <button
-            onClick={clearAllStickers}
-            className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-2.5 py-1.5 rounded-full hover:bg-red-100 transition-colors uppercase font-bold tracking-wider"
-            title="Clear all stickers from board"
-          >
-            <Eraser size={12} />
-            Clear Board
-          </button>
-          <label
-            className={`flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs cursor-pointer hover:bg-blue-100 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-          >
-            {uploading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Upload size={14} />
-            )}
-            {uploading ? 'Processing...' : 'Upload'}
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              className="hidden"
-              onChange={handleUpload}
-              disabled={uploading}
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-        {/* Drop/Paste Zone - Integrated and obvious */}
-        <div
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          className={`mb-6 p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center gap-2 transition-all hover:bg-blue-50 hover:border-blue-200 group ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {uploading ? (
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
-          ) : (
-            <div className="flex items-center gap-3">
-              <Upload className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight">
-                  Click, Drag, or Paste
-                </p>
-                <p className="text-[9px] text-slate-400">
-                  to add custom stickers
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Defaults */}
-        <div className="mb-6">
-          <h4 className="text-xs text-slate-400 uppercase tracking-wider mb-3">
-            Essentials
-          </h4>
-          <div className="grid grid-cols-4 gap-4">
-            {DEFAULT_STICKERS.map((url, i) => (
-              <div
-                key={i}
-                draggable
-                data-no-drag="true"
-                onDragStart={(e) => handleDragStart(e, url)}
-                onClick={() => handleStickerClick(url)}
-                className="aspect-square flex items-center justify-center bg-slate-50 rounded-xl hover:bg-blue-50 hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200"
-                title="Drag or Click to add"
-              >
-                <img
-                  src={url}
-                  alt="Sticker"
-                  className="w-12 h-12 object-contain pointer-events-none"
-                />
-              </div>
-            ))}
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-sm z-10 shrink-0">
+          <span className="text-slate-700 font-black uppercase tracking-widest text-xs">
+            Sticker Collection
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={clearAllStickers}
+              className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-3 py-1.5 rounded-full hover:bg-red-100 transition-colors uppercase font-black tracking-widest border border-red-100 shadow-sm"
+              title="Clear all stickers from board"
+            >
+              <Eraser size={12} />
+              Clear
+            </button>
+            <label
+              className={`flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              {uploading ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Upload size={12} />
+              )}
+              {uploading ? 'Wait...' : 'Upload'}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleUpload}
+                disabled={uploading}
+              />
+            </label>
           </div>
         </div>
+      }
+      content={
+        <div className="flex-1 w-full h-full overflow-y-auto p-4 custom-scrollbar bg-slate-50/30">
+          {/* Drop/Paste Zone - Integrated and obvious */}
+          <div
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            className={`mb-6 p-5 border-2 border-dashed border-slate-200 rounded-2xl bg-white flex flex-col items-center justify-center gap-2 transition-all hover:bg-blue-50 hover:border-blue-200 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-blue-100 transition-colors">
+                  <Upload className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight">
+                    Drop or Paste Image
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    to add custom stickers
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
-        {/* Custom */}
-        {customStickers.length > 0 && (
-          <div>
-            <h4 className="text-xs text-slate-400 uppercase tracking-wider mb-3">
-              My Stickers
+          {/* Defaults */}
+          <div className="mb-8">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">
+              Essentials
             </h4>
             <div className="grid grid-cols-4 gap-4">
-              {customStickers.map((url, i) => (
+              {DEFAULT_STICKERS.map((url, i) => (
                 <div
                   key={i}
                   draggable
                   data-no-drag="true"
                   onDragStart={(e) => handleDragStart(e, url)}
                   onClick={() => handleStickerClick(url)}
-                  className="group relative aspect-square flex items-center justify-center bg-slate-50 rounded-xl hover:bg-blue-50 transition-all cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200"
+                  className="aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200 group"
                   title="Drag or Click to add"
                 >
                   <img
                     src={url}
-                    alt="Custom Sticker"
-                    className="w-full h-full object-contain p-2 pointer-events-none"
+                    alt="Sticker"
+                    className="w-10 h-10 object-contain pointer-events-none group-hover:rotate-12 transition-transform"
                   />
-                  <button
-                    onClick={() => removeCustomSticker(i)}
-                    className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-10"
-                    title="Delete Sticker"
-                  >
-                    <Trash2 size={10} />
-                  </button>
                 </div>
               ))}
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="px-4 py-2 bg-slate-50 border-t flex items-center gap-2">
-        <MousePointer2 size={12} className="text-slate-400" />
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center flex-1">
-          Drag stickers from library to the board
-        </span>
-      </div>
-    </div>
+          {/* Custom */}
+          {customStickers.length > 0 && (
+            <div>
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">
+                My Collection
+              </h4>
+              <div className="grid grid-cols-4 gap-4">
+                {customStickers.map((url, i) => (
+                  <div
+                    key={i}
+                    draggable
+                    data-no-drag="true"
+                    onDragStart={(e) => handleDragStart(e, url)}
+                    onClick={() => handleStickerClick(url)}
+                    className="group relative aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200"
+                    title="Drag or Click to add"
+                  >
+                    <img
+                      src={url}
+                      alt="Custom Sticker"
+                      className="w-full h-full object-contain p-2.5 pointer-events-none"
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCustomSticker(i);
+                      }}
+                      className="absolute -top-1.5 -right-1.5 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
+                      title="Delete Sticker"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      }
+      footer={
+        <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center gap-3 shrink-0">
+          <MousePointer2 size={12} className="text-slate-400" />
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center flex-1">
+            Drag stickers from library to the board
+          </span>
+        </div>
+      }
+    />
   );
 };

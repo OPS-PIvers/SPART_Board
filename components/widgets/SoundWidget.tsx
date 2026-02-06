@@ -212,6 +212,8 @@ const PopcornBallsView: React.FC<{
 
 // --- Main Widget ---
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const [volume, setVolume] = useState(0);
@@ -324,42 +326,50 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   return (
-    <div className="flex flex-col h-full p-2 gap-2 bg-transparent w-full">
-      <div className="flex-1 min-h-0 relative w-full">
-        {visual === 'thermometer' && <ThermometerView volume={volume} />}
-        {visual === 'speedometer' && <SpeedometerView volume={volume} />}
-        {visual === 'balls' && (
-          <PopcornBallsView volume={volume} width={w} height={h - 60} />
-        )}
-        {visual === 'line' && (
-          <div className="w-full h-full bg-black/20 rounded-2xl p-2">
-            <svg
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              className="w-full h-full overflow-visible"
-            >
-              <polyline
-                fill="none"
-                stroke={level.color}
-                strokeWidth="3"
-                points={history
-                  .map((v, i) => `${(i / 49) * 100},${100 - v}`)
-                  .join(' ')}
-                className="transition-colors duration-300"
-              />
-            </svg>
-          </div>
-        )}
-      </div>
-      <div className="text-center shrink-0">
-        <span
-          className="text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-white shadow-sm transition-colors duration-300"
-          style={{ backgroundColor: level.color }}
-        >
-          {level.label}
-        </span>
-      </div>
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div className="flex-1 min-h-0 relative w-full h-full p-2">
+          {visual === 'thermometer' && <ThermometerView volume={volume} />}
+          {visual === 'speedometer' && <SpeedometerView volume={volume} />}
+          {visual === 'balls' && (
+            <PopcornBallsView volume={volume} width={w} height={h - 60} />
+          )}
+          {visual === 'line' && (
+            <div className="w-full h-full bg-black/20 rounded-2xl p-2">
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="w-full h-full overflow-visible"
+              >
+                <polyline
+                  fill="none"
+                  stroke={level.color}
+                  strokeWidth="3"
+                  points={history
+                    .map((v, i) => `${(i / 49) * 100},${100 - v}`)
+                    .join(' ')}
+                  className="transition-colors duration-300"
+                />
+              </svg>
+            </div>
+          )}
+        </div>
+      }
+      footer={
+        <div className="text-center pb-3">
+          <span
+            className="font-black uppercase tracking-widest px-6 py-2 rounded-full text-white shadow-md transition-all duration-300 inline-block border-2 border-white/20"
+            style={{
+              backgroundColor: level.color,
+              fontSize: 'min(12px, 3.5cqmin)',
+            }}
+          >
+            {level.label}
+          </span>
+        </div>
+      }
+    />
   );
 };
 

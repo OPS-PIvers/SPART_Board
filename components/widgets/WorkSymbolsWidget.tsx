@@ -122,6 +122,10 @@ const INTERACTION_OPTIONS: {
   },
 ];
 
+import { WidgetLayout } from './WidgetLayout';
+
+// ... (Constants & Data stay the same)
+
 export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -142,127 +146,142 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   // --- Render Sub-views ---
 
   const renderVolumeView = () => (
-    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
-      <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
-        <button
-          onClick={() => setActiveCategory(null)}
-          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
-          Volume Level
-        </h3>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
-        {VOLUME_OPTIONS.map((v) => (
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
           <button
-            key={v.id}
-            onClick={() =>
-              updateConfig({ voiceLevel: voiceLevel === v.id ? null : v.id })
-            }
-            className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
-              voiceLevel === v.id
-                ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
-                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-            }`}
+            onClick={() => setActiveCategory(null)}
+            className="p-1 hover:bg-slate-100 rounded-lg mr-2"
           >
-            <span className="text-2xl font-black opacity-40 w-6">{v.id}</span>
-            <div className="text-left">
-              <div className="font-black uppercase text-sm leading-tight">
-                {v.label}
-              </div>
-              <div className="text-[10px] font-bold opacity-60 uppercase">
-                {v.sub}
-              </div>
-            </div>
-            {voiceLevel === v.id && (
-              <CheckCircle2 className="ml-auto" size={18} />
-            )}
+            <ArrowLeft size={18} />
           </button>
-        ))}
-      </div>
-    </div>
+          <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
+            Volume Level
+          </h3>
+        </div>
+      }
+      content={
+        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200">
+          {VOLUME_OPTIONS.map((v) => (
+            <button
+              key={v.id}
+              onClick={() =>
+                updateConfig({ voiceLevel: voiceLevel === v.id ? null : v.id })
+              }
+              className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
+                voiceLevel === v.id
+                  ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+              }`}
+            >
+              <span className="text-2xl font-black opacity-40 w-6">{v.id}</span>
+              <div className="text-left">
+                <div className="font-black uppercase text-sm leading-tight">
+                  {v.label}
+                </div>
+                <div className="text-[10px] font-bold opacity-60 uppercase">
+                  {v.sub}
+                </div>
+              </div>
+              {voiceLevel === v.id && (
+                <CheckCircle2 className="ml-auto" size={18} />
+              )}
+            </button>
+          ))}
+        </div>
+      }
+    />
   );
 
   const renderGroupsView = () => (
-    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
-      <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
-        <button
-          onClick={() => setActiveCategory(null)}
-          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
-          Group Size
-        </h3>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
-        {GROUP_OPTIONS.map((g) => (
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
           <button
-            key={g.id}
-            onClick={() =>
-              updateConfig({ workMode: workMode === g.id ? null : g.id })
-            }
-            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-              workMode === g.id
-                ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
-                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-            }`}
+            onClick={() => setActiveCategory(null)}
+            className="p-1 hover:bg-slate-100 rounded-lg mr-2"
           >
-            <g.icon size={24} strokeWidth={2.5} />
-            <span className="font-black uppercase text-sm tracking-wide">
-              {g.label}
-            </span>
-            {workMode === g.id && (
-              <CheckCircle2 className="ml-auto" size={18} />
-            )}
+            <ArrowLeft size={18} />
           </button>
-        ))}
-      </div>
-    </div>
+          <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
+            Group Size
+          </h3>
+        </div>
+      }
+      content={
+        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200">
+          {GROUP_OPTIONS.map((g) => (
+            <button
+              key={g.id}
+              onClick={() =>
+                updateConfig({ workMode: workMode === g.id ? null : g.id })
+              }
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                workMode === g.id
+                  ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+              }`}
+            >
+              <g.icon size={24} strokeWidth={2.5} />
+              <span className="font-black uppercase text-sm tracking-wide">
+                {g.label}
+              </span>
+              {workMode === g.id && (
+                <CheckCircle2 className="ml-auto" size={18} />
+              )}
+            </button>
+          ))}
+        </div>
+      }
+    />
   );
 
   const renderInteractionView = () => (
-    <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
-      <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
-        <button
-          onClick={() => setActiveCategory(null)}
-          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
-          Interaction
-        </h3>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
-        {INTERACTION_OPTIONS.map((i) => (
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
           <button
-            key={i.id}
-            onClick={() =>
-              updateConfig({
-                interactionMode: interactionMode === i.id ? null : i.id,
-              })
-            }
-            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-              interactionMode === i.id
-                ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
-                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-            }`}
+            onClick={() => setActiveCategory(null)}
+            className="p-1 hover:bg-slate-100 rounded-lg mr-2"
           >
-            <i.icon size={24} strokeWidth={2.5} />
-            <span className="font-black uppercase text-sm tracking-wide">
-              {i.label}
-            </span>
-            {interactionMode === i.id && (
-              <CheckCircle2 className="ml-auto" size={18} />
-            )}
+            <ArrowLeft size={18} />
           </button>
-        ))}
-      </div>
-    </div>
+          <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
+            Interaction
+          </h3>
+        </div>
+      }
+      content={
+        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200">
+          {INTERACTION_OPTIONS.map((i) => (
+            <button
+              key={i.id}
+              onClick={() =>
+                updateConfig({
+                  interactionMode: interactionMode === i.id ? null : i.id,
+                })
+              }
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                interactionMode === i.id
+                  ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+              }`}
+            >
+              <i.icon size={24} strokeWidth={2.5} />
+              <span className="font-black uppercase text-sm tracking-wide">
+                {i.label}
+              </span>
+              {interactionMode === i.id && (
+                <CheckCircle2 className="ml-auto" size={18} />
+              )}
+            </button>
+          ))}
+        </div>
+      }
+    />
   );
 
   // --- Main Category Picker ---
@@ -280,80 +299,133 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
   const isElementary = config.layout === 'elementary';
 
   return (
-    <div
-      className={`h-full bg-transparent p-2 gap-2 overflow-hidden animate-in fade-in duration-200 ${
-        isElementary ? 'grid grid-cols-2' : 'flex flex-col'
-      }`}
-    >
-      <button
-        onClick={() => setActiveCategory('volume')}
-        className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
-          selectedVolume
-            ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
-            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-        } ${isElementary ? 'col-span-2' : ''}`}
-      >
+    <WidgetLayout
+      padding="p-0"
+      content={
         <div
-          className={`p-3 rounded-xl ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
+          className={`h-full w-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
+            isElementary ? 'grid grid-cols-2' : 'flex flex-col'
+          }`}
         >
-          <Volume2 size={24} strokeWidth={2.5} />
-        </div>
-        <div className="text-left flex-1">
-          <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">
-            Volume
-          </div>
-          <div className="font-black uppercase text-sm tracking-tight">
-            {selectedVolume ? selectedVolume.label : 'Not Set'}
-          </div>
-        </div>
-      </button>
+          <button
+            onClick={() => setActiveCategory('volume')}
+            className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+              selectedVolume
+                ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
+                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
+            } ${isElementary ? 'col-span-2' : ''}`}
+          >
+            <div
+              className={`p-3 rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
+              style={{
+                width: 'min(15cqw, 15cqh)',
+                height: 'min(15cqw, 15cqh)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Volume2
+                style={{ width: '100%', height: '100%' }}
+                strokeWidth={2.5}
+              />
+            </div>
+            <div className="text-left flex-1 min-w-0">
+              <div
+                className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
+                style={{ fontSize: 'min(3cqw, 3cqh)' }}
+              >
+                Volume
+              </div>
+              <div
+                className="font-black uppercase tracking-tight truncate"
+                style={{ fontSize: 'min(5cqw, 5cqh)' }}
+              >
+                {selectedVolume ? selectedVolume.label : 'Not Set'}
+              </div>
+            </div>
+          </button>
 
-      <button
-        onClick={() => setActiveCategory('groups')}
-        className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
-          selectedGroup
-            ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
-            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-        }`}
-      >
-        <div
-          className={`p-3 rounded-xl ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
-        >
-          <Users size={24} strokeWidth={2.5} />
-        </div>
-        <div className="text-left flex-1">
-          <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">
-            Group Size
-          </div>
-          <div className="font-black uppercase text-sm tracking-tight">
-            {selectedGroup ? selectedGroup.label : 'Not Set'}
-          </div>
-        </div>
-      </button>
+          <button
+            onClick={() => setActiveCategory('groups')}
+            className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+              selectedGroup
+                ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
+                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
+            }`}
+          >
+            <div
+              className={`p-3 rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
+              style={{
+                width: 'min(15cqw, 15cqh)',
+                height: 'min(15cqw, 15cqh)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Users
+                style={{ width: '100%', height: '100%' }}
+                strokeWidth={2.5}
+              />
+            </div>
+            <div className="text-left flex-1 min-w-0">
+              <div
+                className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
+                style={{ fontSize: 'min(3cqw, 3cqh)' }}
+              >
+                Group Size
+              </div>
+              <div
+                className="font-black uppercase tracking-tight truncate"
+                style={{ fontSize: 'min(5cqw, 5cqh)' }}
+              >
+                {selectedGroup ? selectedGroup.label : 'Not Set'}
+              </div>
+            </div>
+          </button>
 
-      <button
-        onClick={() => setActiveCategory('interaction')}
-        className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
-          selectedInteraction
-            ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
-            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
-        }`}
-      >
-        <div
-          className={`p-3 rounded-xl ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
-        >
-          <MessagesSquare size={24} strokeWidth={2.5} />
+          <button
+            onClick={() => setActiveCategory('interaction')}
+            className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+              selectedInteraction
+                ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
+                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
+            }`}
+          >
+            <div
+              className={`p-3 rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
+              style={{
+                width: 'min(15cqw, 15cqh)',
+                height: 'min(15cqw, 15cqh)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MessagesSquare
+                style={{ width: '100%', height: '100%' }}
+                strokeWidth={2.5}
+              />
+            </div>
+            <div className="text-left flex-1 min-w-0">
+              <div
+                className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
+                style={{ fontSize: 'min(3cqw, 3cqh)' }}
+              >
+                Interaction
+              </div>
+              <div
+                className="font-black uppercase tracking-tight truncate"
+                style={{ fontSize: 'min(5cqw, 5cqh)' }}
+              >
+                {selectedInteraction ? selectedInteraction.label : 'Not Set'}
+              </div>
+            </div>
+          </button>
         </div>
-        <div className="text-left flex-1">
-          <div className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">
-            Interaction
-          </div>
-          <div className="font-black uppercase text-sm tracking-tight">
-            {selectedInteraction ? selectedInteraction.label : 'Not Set'}
-          </div>
-        </div>
-      </button>
-    </div>
+      }
+    />
   );
 };
 

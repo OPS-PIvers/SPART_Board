@@ -14,6 +14,8 @@ import {
 import * as Icons from 'lucide-react';
 import { LayoutGrid, Brain, Settings2, HelpCircle } from 'lucide-react';
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -83,83 +85,85 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden group">
-      {/* Header Tabs */}
-      <div className="flex bg-slate-50 border-b border-slate-200">
-        {categories.map((cat) => {
-          const Icon = cat.icon;
-          const isActive = activeTab === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    activeTab: cat.id as CatalystConfig['activeTab'],
-                  },
-                })
-              }
-              className={`flex-1 flex flex-col items-center gap-1 py-3 px-1 transition-all ${
-                isActive
-                  ? 'bg-white text-blue-600 border-b-2 border-blue-600 shadow-[inset_0_-2px_0_0_#2563eb]'
-                  : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
-              }`}
-            >
-              <Icon size={18} />
-              <span className="text-[10px] font-black uppercase tracking-tighter">
-                {cat.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-        {filteredRoutines.map((routine) => {
-          const ActionIcon =
-            (Icons as unknown as Record<string, React.ElementType>)[
-              routine.icon
-            ] ?? Icons.Zap;
-          return (
-            <div
-              key={routine.id}
-              className="group bg-white rounded-2xl p-4 border border-slate-200 hover:border-blue-200 hover:bg-slate-50 transition-all shadow-sm"
-            >
-              <div className="flex items-center gap-3 mb-1">
-                <div className="p-2 rounded-xl bg-blue-100 text-blue-600 shadow-sm">
-                  <ActionIcon size={20} />
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex bg-slate-50/50 border-b border-slate-200 shrink-0">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = activeTab === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      activeTab: cat.id as CatalystConfig['activeTab'],
+                    },
+                  })
+                }
+                className={`flex-1 flex flex-col items-center gap-1 py-3 px-1 transition-all ${
+                  isActive
+                    ? 'bg-white text-blue-600 border-b-2 border-blue-600 shadow-[inset_0_-2px_0_0_#2563eb]'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                <Icon size={18} />
+                <span className="text-[min(9px,2.5cqmin)] font-black uppercase tracking-tighter">
+                  {cat.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      }
+      content={
+        <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar p-3 space-y-2">
+          {filteredRoutines.map((routine) => {
+            const ActionIcon =
+              (Icons as unknown as Record<string, React.ElementType>)[
+                routine.icon
+              ] ?? Icons.Zap;
+            return (
+              <div
+                key={routine.id}
+                className="group bg-white rounded-2xl p-4 border border-slate-200 hover:border-blue-200 hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="p-2 rounded-xl bg-blue-100 text-blue-600 shadow-sm">
+                    <ActionIcon size={20} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-black text-sm text-slate-700 leading-tight truncate uppercase tracking-tight">
+                      {routine.title}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+                      {routine.shortDesc}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-black text-sm text-slate-700 leading-tight">
-                    {routine.title}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500">
-                    {routine.shortDesc}
-                  </span>
+
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => handleTeacherMode(routine)}
+                    className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
+                  >
+                    Guide
+                  </button>
+                  <button
+                    onClick={() => handleGoMode(routine)}
+                    className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                  >
+                    Go Mode
+                  </button>
                 </div>
               </div>
-
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => handleTeacherMode(routine)}
-                  className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
-                >
-                  Guide
-                </button>
-                <button
-                  onClick={() => handleGoMode(routine)}
-                  className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
-                >
-                  Go Mode
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      }
+    />
   );
 };
 

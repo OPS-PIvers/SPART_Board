@@ -5,11 +5,12 @@ import {
   WidgetComponentProps,
 } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
-import { useScaledFont } from '../../../hooks/useScaledFont';
 import { MATERIAL_ITEMS } from './constants';
 import { MaterialsSettings } from './Settings';
 
 export { MaterialsSettings };
+
+import { WidgetLayout } from '../WidgetLayout';
 
 export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
   widget,
@@ -62,56 +63,63 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
     gapFactor * gapSize
   ).toFixed(2)}rem)`;
 
-  // Adjust label size calculation to be slightly more responsive
-  const labelSize = useScaledFont(widget.w, widget.h, 0.2, 8, 16);
-
   if (displayItems.length === 0) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none">
-        <p className="text-sm mb-1">No materials selected</p>
-        <p className="text-xs opacity-70">
-          Open settings to choose class materials
-        </p>
-      </div>
+      <WidgetLayout
+        padding="p-0"
+        content={
+          <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none opacity-40">
+            <p className="text-sm font-bold uppercase tracking-widest mb-1">
+              No materials selected
+            </p>
+            <p className="text-xs">Open settings to choose class materials</p>
+          </div>
+        }
+      />
     );
   }
 
   return (
-    <div
-      className={`h-full w-full p-1 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
-    >
-      <div className="flex flex-wrap gap-2 h-full content-start justify-center">
-        {displayItems.map((item) => {
-          const isActive = activeItems.has(item.id);
-          return (
-            <button
-              key={item.id}
-              onClick={() => toggleActive(item.id)}
-              style={{ flexBasis: itemWidth, maxWidth: itemWidth }}
-              className={`aspect-square flex flex-col items-center justify-center gap-1 p-2 rounded-2xl border-2 transition-all duration-300 ${
-                isActive
-                  ? `${item.color} ${
-                      item.textColor ?? 'text-white'
-                    } border-transparent shadow-lg scale-[1.02] z-10`
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-              }`}
-            >
-              <item.icon
-                className={`w-1/2 h-1/2 transition-transform duration-300 ${
-                  isActive ? 'scale-110' : 'scale-100'
-                }`}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <span
-                className="uppercase tracking-wide text-center font-bold leading-tight truncate w-full"
-                style={{ fontSize: `${labelSize}px` }}
-              >
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div
+          className={`h-full w-full p-3 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
+        >
+          <div className="flex flex-wrap gap-2 h-full content-start justify-center">
+            {displayItems.map((item) => {
+              const isActive = activeItems.has(item.id);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => toggleActive(item.id)}
+                  style={{ flexBasis: itemWidth, maxWidth: itemWidth }}
+                  className={`aspect-square flex flex-col items-center justify-center gap-1 p-2 rounded-2xl border-2 transition-all duration-300 ${
+                    isActive
+                      ? `${item.color} ${
+                          item.textColor ?? 'text-white'
+                        } border-transparent shadow-lg scale-[1.02] z-10`
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+                  }`}
+                >
+                  <item.icon
+                    className={`w-1/2 h-1/2 transition-transform duration-300 ${
+                      isActive ? 'scale-110' : 'scale-100'
+                    }`}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  <span
+                    className="uppercase tracking-wide text-center font-black leading-tight truncate w-full"
+                    style={{ fontSize: 'min(3.5cqw, 3cqh)' }}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      }
+    />
   );
 };

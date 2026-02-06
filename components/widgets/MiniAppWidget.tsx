@@ -18,6 +18,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { generateMiniAppCode } from '@/utils/ai';
+import { WidgetLayout } from './WidgetLayout';
 import {
   DndContext,
   closestCenter,
@@ -398,236 +399,253 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   // --- RENDER: RUNNING MODE ---
+  // --- RENDER: RUNNING MODE ---
   if (activeApp) {
     return (
-      <div className="w-full h-full flex flex-col relative overflow-hidden">
-        <div className="absolute top-2 right-2 z-10">
-          <button
-            onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xxs  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-slate-700 font-black"
-          >
-            <LayoutGrid className="w-3 h-3" /> Library
-          </button>
-        </div>
-        <iframe
-          srcDoc={activeApp.html}
-          className="flex-1 w-full border-none bg-white" // Keep bg-white for iframe content visibility
-          sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"
-          title={activeApp.title}
-        />
-      </div>
+      <WidgetLayout
+        padding="p-0"
+        header={
+          <div className="absolute top-2 right-2 z-10">
+            <button
+              onClick={handleCloseActive}
+              className="px-3 py-1.5 bg-slate-900/80 backdrop-blur-sm hover:bg-slate-900 text-white rounded-lg text-xxs uppercase tracking-wider flex items-center gap-2 shadow-lg border border-slate-700 font-black transition-all"
+            >
+              <LayoutGrid className="w-3 h-3" /> Library
+            </button>
+          </div>
+        }
+        content={
+          <div className="w-full h-full flex flex-col relative overflow-hidden">
+            <iframe
+              srcDoc={activeApp.html}
+              className="flex-1 w-full border-none bg-white" // Keep bg-white for iframe content visibility
+              sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"
+              title={activeApp.title}
+            />
+          </div>
+        }
+      />
     );
   }
 
   // --- RENDER: EDITOR MODE ---
   if (view === 'editor') {
     return (
-      <div className="w-full h-full flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <h3 className=" text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2 font-black">
-            <Code2 className="w-4 h-4 text-indigo-500" />
-            {editingId ? 'Edit App' : 'New Mini-App'}
-          </h3>
-          <button
-            onClick={() => setView('list')}
-            className="text-slate-500 hover:text-slate-700"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
-          {showPromptInput && (
-            <div
-              className="absolute inset-0 z-20 bg-white flex items-center justify-center p-6 animate-in fade-in duration-200"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') setShowPromptInput(false);
-              }}
+      <WidgetLayout
+        padding="p-0"
+        header={
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+            <h3 className="text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2 font-black">
+              <Code2 className="w-4 h-4 text-indigo-500" />
+              {editingId ? 'Edit App' : 'New Mini-App'}
+            </h3>
+            <button
+              onClick={() => setView('list')}
+              className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
             >
-              <div className="w-full max-w-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-black text-indigo-600 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5" /> Magic Generator
-                  </h4>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        }
+        content={
+          <div className="flex-1 w-full h-full flex flex-col p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
+            {showPromptInput && (
+              <div
+                className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowPromptInput(false);
+                }}
+              >
+                <div className="w-full max-w-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-black text-indigo-600 flex items-center gap-2 uppercase tracking-tight">
+                      <Sparkles className="w-5 h-5" /> Magic Generator
+                    </h4>
+                    <button
+                      onClick={() => setShowPromptInput(false)}
+                      className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600"
+                      aria-label="Close Magic Generator"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest opacity-60">
+                    Describe the mini-app you want to build.
+                  </p>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="e.g. A team randomizer for 5 groups with a spinning wheel animation and confetti effect."
+                    className="w-full h-32 p-4 bg-white border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none shadow-inner"
+                    autoFocus
+                    aria-label="Describe your mini-app"
+                  />
                   <button
-                    onClick={() => setShowPromptInput(false)}
-                    className="text-slate-400 hover:text-slate-600"
-                    aria-label="Close Magic Generator"
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !prompt.trim()}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
                   >
-                    <X className="w-5 h-5" />
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />{' '}
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" /> Generate Code
+                      </>
+                    )}
                   </button>
                 </div>
-                <p className="text-xs text-slate-500">
-                  Describe the mini-app you want to build. Be specific about
-                  features and style.
-                </p>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g. A team randomizer for 5 groups with a spinning wheel animation and confetti effect."
-                  className="w-full h-32 p-4 bg-white border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none shadow-inner"
-                  autoFocus
-                  aria-label="Describe your mini-app"
-                />
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || !prompt.trim()}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" /> Generate Code
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
-                App Title
-              </label>
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="e.g. Lunch Randomizer"
-                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-              />
-            </div>
-            {canAccessFeature('gemini-functions') && (
-              <div className="pt-6">
-                <button
-                  onClick={() => setShowPromptInput(true)}
-                  className="h-[46px] px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
-                  title="Generate with AI"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span className="hidden sm:inline">Magic</span>
-                </button>
               </div>
             )}
-          </div>
-          <div className="flex-1 flex flex-col min-h-[300px]">
-            <label className="block text-xxs font-black  uppercase text-slate-400 tracking-widest mb-1">
-              HTML Code
-            </label>
-            <textarea
-              value={editCode}
-              onChange={(e) => setEditCode(e.target.value)}
-              className="flex-1 w-full p-3 bg-slate-900/90 text-emerald-400 font-mono text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed custom-scrollbar shadow-xl"
-              spellCheck={false}
-              placeholder="Paste your HTML, CSS, and JS here..."
-            />
-            <p className="mt-2 text-[10px] text-slate-500 italic font-medium">
-              Paste your HTML, CSS, and JS code directly into the editor above.
-            </p>
-          </div>
-        </div>
 
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex gap-2">
-          <button
-            onClick={() => setView('list')}
-            className="px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
-          >
-            <Save className="w-4 h-4" /> Save App
-          </button>
-        </div>
-      </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+                  App Title
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="e.g. Lunch Randomizer"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+                />
+              </div>
+              {canAccessFeature('gemini-functions') && (
+                <div className="pt-5">
+                  <button
+                    onClick={() => setShowPromptInput(true)}
+                    className="h-[46px] px-4 bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 active:scale-95"
+                    title="Generate with AI"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">Magic</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex-1 flex flex-col min-h-[250px]">
+              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+                HTML Code
+              </label>
+              <textarea
+                value={editCode}
+                onChange={(e) => setEditCode(e.target.value)}
+                className="flex-1 w-full p-4 bg-slate-900 text-emerald-400 font-mono text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed custom-scrollbar shadow-inner"
+                spellCheck={false}
+                placeholder="Paste your HTML, CSS, and JS here..."
+              />
+            </div>
+          </div>
+        }
+        footer={
+          <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex gap-3">
+            <button
+              onClick={() => setView('list')}
+              className="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-colors border border-slate-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Save className="w-4 h-4" /> Save App
+            </button>
+          </div>
+        }
+      />
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-        <div>
-          <h2 className="font-black text-lg text-slate-800 tracking-tight uppercase">
-            App Library
-          </h2>
-          <div className="flex items-center gap-3 mt-1">
-            <button
-              onClick={handleExport}
-              className="text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
-            >
-              <Download className="w-3 h-3" /> Export
-            </button>
-            <span className="text-slate-300 text-xxs">•</span>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
-            >
-              <Upload className="w-3 h-3" /> Import
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImport}
-              accept=".json"
-              className="hidden"
-            />
-          </div>
-        </div>
-        <button
-          onClick={handleCreate}
-          className="p-2 bg-white text-indigo-600 hover:bg-slate-50 rounded-xl transition-colors shadow-sm border border-slate-200"
-          title="Create New App"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
-        {library.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[200px]">
-            <div className="p-4 bg-white rounded-full border border-slate-200 shadow-sm">
-              <Box className="w-8 h-8 opacity-40" />
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0">
+          <div>
+            <h2 className="font-black text-lg text-slate-800 tracking-tight uppercase">
+              App Library
+            </h2>
+            <div className="flex items-center gap-3 mt-1.5">
+              <button
+                onClick={handleExport}
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              >
+                <Download className="w-3 h-3" /> Export
+              </button>
+              <span className="text-slate-200 text-xxs font-bold">•</span>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+              >
+                <Upload className="w-3 h-3" /> Import
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImport}
+                accept=".json"
+                className="hidden"
+              />
             </div>
-            <p className="text-sm font-bold uppercase tracking-widest">
-              No apps saved yet
-            </p>
-            <p className="text-xs max-w-[200px] text-center opacity-70 font-medium">
-              Import a file or create your first mini-app to get started.
-            </p>
           </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+          <button
+            onClick={handleCreate}
+            className="p-3 bg-white text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm border border-slate-200 hover:border-indigo-200 active:scale-95"
+            title="Create New App"
           >
-            <SortableContext
-              items={library.map((item) => item.id)}
-              strategy={verticalListSortingStrategy}
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
+      }
+      content={
+        <div className="flex-1 w-full h-full overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
+          {library.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 opacity-40 py-12">
+              <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                <Box className="w-10 h-10 stroke-slate-300" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-black uppercase tracking-widest mb-1">
+                  No apps saved yet
+                </p>
+                <p className="text-xs font-bold uppercase tracking-tighter">
+                  Import a file or create your first mini-app.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              {library.map((app) => (
-                <SortableItem
-                  key={app.id}
-                  app={app}
-                  onRun={handleRun}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        )}
-      </div>
-
-      <div className="p-3 bg-slate-50 border-t border-slate-200 text-[10px] font-black text-slate-500 text-center  uppercase tracking-widest shrink-0">
-        Drag to reorder • Runs Locally
-      </div>
-    </div>
+              <SortableContext
+                items={library.map((item) => item.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {library.map((app) => (
+                  <SortableItem
+                    key={app.id}
+                    app={app}
+                    onRun={handleRun}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
+        </div>
+      }
+      footer={
+        <div className="p-3 bg-slate-50/50 border-t border-slate-200 text-[10px] font-black text-slate-400 text-center uppercase tracking-widest shrink-0">
+          Drag to reorder • Runs in secure sandbox
+        </div>
+      }
+    />
   );
 };

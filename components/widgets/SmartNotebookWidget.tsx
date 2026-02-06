@@ -26,6 +26,8 @@ import {
 import { db } from '@/config/firebase';
 import { parseNotebookFile } from '@/utils/notebookParser';
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -237,192 +239,214 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       activeNotebook.assetUrls && activeNotebook.assetUrls.length > 0;
 
     return (
-      <div className="w-full h-full flex flex-col relative overflow-hidden">
-        {/* Toolbar */}
-        <div className="absolute top-2 right-2 left-2 z-10 flex justify-between items-start pointer-events-none">
-          <div className="bg-white rounded-lg px-3 py-2 shadow-sm pointer-events-auto border border-slate-200">
-            <h3 className="text-xs font-bold text-slate-700 truncate max-w-[200px]">
-              {activeNotebook.title}
-            </h3>
-            <p className="text-[10px] text-slate-500">
-              {currentPage + 1} / {activeNotebook.pageUrls.length}
-            </p>
-          </div>
-
-          <div className="flex gap-2 pointer-events-auto">
-            {hasAssets && (
-              <button
-                onClick={() => setShowAssets(!showAssets)}
-                className={`p-2 rounded-lg shadow-lg transition-all ${
-                  showAssets
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-slate-700 hover:bg-slate-100'
-                }`}
-                title="Toggle Assets"
-              >
-                <FileText className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={handleClose}
-              className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-lg transition-all"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Slide */}
-          <div className="flex-1 flex items-center justify-center p-4">
-            <img
-              src={activeNotebook.pageUrls[currentPage]}
-              alt={`Page ${currentPage + 1}`}
-              className="max-w-full max-h-full object-contain shadow-lg bg-white"
-            />
-          </div>
-
-          {/* Assets Panel */}
-          {showAssets && hasAssets && (
-            <div className="w-1/3 max-w-[200px] min-w-[120px] bg-white border-l border-slate-200 shadow-xl overflow-y-auto p-2 custom-scrollbar z-20 flex flex-col gap-2">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">
-                Assets
-              </h4>
-              <p className="text-[9px] text-center text-slate-400 mb-2">
-                Drag to board
+      <WidgetLayout
+        padding="p-0"
+        header={
+          <div className="p-4 border-b border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-between shrink-0">
+            <div>
+              <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest truncate max-w-[200px]">
+                {activeNotebook.title}
+              </h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">
+                Page {currentPage + 1} of {activeNotebook.pageUrls.length}
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {activeNotebook.assetUrls?.map((url, index) => (
-                  <div
-                    key={url}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, url)}
-                    className="aspect-square bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-indigo-500 hover:bg-indigo-50 transition-all"
-                  >
-                    <img
-                      src={url}
-                      alt={`Asset ${index}`}
-                      className="max-w-full max-h-full p-1 object-contain pointer-events-none"
-                    />
-                  </div>
-                ))}
+            </div>
+
+            <div className="flex gap-2">
+              {hasAssets && (
+                <button
+                  onClick={() => setShowAssets(!showAssets)}
+                  className={`p-2 rounded-xl transition-all shadow-sm border ${
+                    showAssets
+                      ? 'bg-indigo-600 text-white border-indigo-700'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                  title="Toggle Assets"
+                >
+                  <FileText className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={handleClose}
+                className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition-all border border-slate-700 active:scale-95"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        }
+        content={
+          <div className="flex-1 w-full h-full flex overflow-hidden bg-slate-100">
+            {/* Slide */}
+            <div className="flex-1 flex items-center justify-center p-4">
+              <img
+                src={activeNotebook.pageUrls[currentPage]}
+                alt={`Page ${currentPage + 1}`}
+                className="max-w-full max-h-full object-contain shadow-2xl bg-white rounded-sm"
+              />
+            </div>
+
+            {/* Assets Panel */}
+            {showAssets && hasAssets && (
+              <div className="w-1/3 max-w-[240px] min-w-[160px] bg-white border-l border-slate-200 shadow-xl overflow-y-auto p-3 custom-scrollbar z-20 flex flex-col gap-3">
+                <div className="text-center">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    Assets
+                  </h4>
+                  <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-tighter animate-pulse">
+                    Drag to board
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {activeNotebook.assetUrls?.map((url, index) => (
+                    <div
+                      key={url}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, url)}
+                      className="aspect-square bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center cursor-grab active:cursor-grabbing hover:border-indigo-300 hover:bg-indigo-50/50 transition-all shadow-sm group"
+                    >
+                      <img
+                        src={url}
+                        alt={`Asset ${index}`}
+                        className="max-w-full max-h-full p-2 object-contain pointer-events-none group-hover:scale-110 transition-transform"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        }
+        footer={
+          <div className="p-4 border-t border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-center gap-6 shrink-0">
+            <button
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all shadow-sm active:scale-90"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col items-center min-w-[80px]">
+              <span className="text-xs font-black text-slate-700 tracking-widest uppercase">
+                {currentPage + 1} / {activeNotebook.pageUrls.length}
+              </span>
+              <div className="w-full h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                <div
+                  className="h-full bg-indigo-500 transition-all duration-300"
+                  style={{
+                    width: `${((currentPage + 1) / activeNotebook.pageUrls.length) * 100}%`,
+                  }}
+                />
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200">
-          <button
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-            className="p-2 hover:bg-slate-100 rounded-full disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="text-xs font-mono w-12 text-center text-slate-600">
-            {currentPage + 1} / {activeNotebook.pageUrls.length}
-          </span>
-          <button
-            disabled={currentPage === activeNotebook.pageUrls.length - 1}
-            onClick={() =>
-              setCurrentPage((p) =>
-                Math.min(activeNotebook.pageUrls.length - 1, p + 1)
-              )
-            }
-            className="p-2 hover:bg-slate-100 rounded-full disabled:opacity-30 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+            <button
+              disabled={currentPage === activeNotebook.pageUrls.length - 1}
+              onClick={() =>
+                setCurrentPage((p) =>
+                  Math.min(activeNotebook.pageUrls.length - 1, p + 1)
+                )
+              }
+              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all shadow-sm active:scale-90"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+        }
+      />
     );
   }
 
   // Library
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-        <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-          <Book className="w-4 h-4 text-indigo-500" /> Notebook Library
-        </h2>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isImporting}
-          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
-        >
-          {isImporting ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <Upload className="w-3 h-3" />
-          )}
-          Import
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleImport}
-          accept=".notebook"
-          className="hidden"
-        />
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-        {notebooks.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[200px]">
-            <div className="p-4 bg-slate-50 rounded-full">
-              <FileText className="w-8 h-8 opacity-50" />
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-sm shrink-0">
+          <h2 className="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+            <Book className="w-5 h-5 text-indigo-500" /> Notebooks
+          </h2>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 active:scale-95"
+          >
+            {isImporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            Import
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImport}
+            accept=".notebook"
+            className="hidden"
+          />
+        </div>
+      }
+      content={
+        <div className="flex-1 w-full h-full overflow-y-auto p-5 custom-scrollbar bg-slate-50/30">
+          {notebooks.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 py-12">
+              <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                <FileText className="w-10 h-10 opacity-30" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-black uppercase tracking-widest mb-1">
+                  Library is empty
+                </p>
+                <p className="text-xs font-bold uppercase tracking-tighter opacity-60">
+                  Import a .notebook file to begin.
+                </p>
+              </div>
             </div>
-            <p className="text-sm">No notebooks yet</p>
-            <p className="text-xs max-w-[200px] text-center opacity-70">
-              Import a .notebook file to get started.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {notebooks.map((notebook) => {
-              const firstPageUrl = notebook.pageUrls?.[0];
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {notebooks.map((notebook) => {
+                const firstPageUrl = notebook.pageUrls?.[0];
 
-              return (
-                <div
-                  key={notebook.id}
-                  {...getButtonAccessibilityProps(() =>
-                    handleSelect(notebook.id)
-                  )}
-                  className="group relative aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all border border-slate-200"
-                >
-                  {firstPageUrl ? (
-                    <img
-                      src={firstPageUrl}
-                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                      alt={notebook.title}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 text-xs">
-                      No preview available
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
-                    <p className="text-white text-xs font-bold truncate">
-                      {notebook.title}
-                    </p>
-                    <p className="text-white/70 text-[10px]">
-                      {notebook.pageUrls.length} pages
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => handleDelete(e, notebook.id)}
-                    className="absolute top-2 right-2 p-1.5 bg-white text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50"
+                return (
+                  <div
+                    key={notebook.id}
+                    {...getButtonAccessibilityProps(() =>
+                      handleSelect(notebook.id)
+                    )}
+                    className="group relative aspect-[4/3] bg-white rounded-2xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all border border-slate-200 shadow-sm"
                   >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+                    {firstPageUrl ? (
+                      <img
+                        src={firstPageUrl}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                        alt={notebook.title}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300 text-xs font-black uppercase tracking-widest">
+                        No Preview
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent p-4 pt-10">
+                      <p className="text-white text-xs font-black uppercase tracking-tight truncate">
+                        {notebook.title}
+                      </p>
+                      <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-0.5">
+                        {notebook.pageUrls.length} pages
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => handleDelete(e, notebook.id)}
+                      className="absolute top-2 right-2 p-2 bg-white/90 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-xl scale-75 group-hover:scale-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      }
+    />
   );
 };

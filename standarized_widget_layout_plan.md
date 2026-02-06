@@ -220,34 +220,34 @@ Migrate widgets in priority order based on usage/visibility.
 - [x] **random** (Done)
 - [x] **traffic** (Done)
 
-#### Medium Priority (Batch 2)
+#### Medium Priority (Batch 2) (COMPLETED ✅)
 
-- [ ] **qr**
-- [ ] **text**
-- [ ] **checklist**
-- [ ] **poll**
-- [ ] **scoreboard**
+- [x] **qr** (Done)
+- [x] **text** (Done)
+- [x] **checklist** (Done)
+- [x] **poll** (Done)
+- [x] **scoreboard** (Done)
 
-#### Lower Priority (Batch 3)
+#### Lower Priority (Batch 3) (COMPLETED ✅)
 
-- [ ] **weather**
-- [ ] **schedule**
-- [ ] **calendar**
-- [ ] **webcam**
-- [ ] **sound**
-- [ ] **embed**
-- [ ] **workSymbols**
-- [ ] **materials**
-- [ ] **classes**
-- [ ] **lunchCount**
-- [ ] **instructionalRoutines**
-- [ ] **catalyst**
-- [ ] **catalyst-instruction**
-- [ ] **catalyst-visual**
-- [ ] **miniApp**
-- [ ] **stickers**
-- [ ] **smartNotebook**
-- [ ] **recessGear**
+- [x] **weather** (Done)
+- [x] **schedule** (Done)
+- [x] **calendar** (Done)
+- [x] **webcam** (Done)
+- [x] **sound** (Done)
+- [x] **embed** (Done)
+- [x] **workSymbols** (Done)
+- [x] **materials** (Done)
+- [x] **classes** (Done)
+- [x] **lunchCount** (Done)
+- [x] **instructionalRoutines** (Done)
+- [x] **catalyst** (Done)
+- [x] **catalyst-instruction** (Done)
+- [x] **catalyst-visual** (Done)
+- [x] **miniApp** (Done)
+- [x] **stickers** (Done)
+- [x] **smartNotebook** (Done)
+- [x] **recessGear** (Done)
 
 ### Phase 3: Optimization (2-4 hours)
 

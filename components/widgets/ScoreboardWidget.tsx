@@ -49,6 +49,8 @@ const DEFAULT_TEAMS: ScoreboardTeam[] = [
   { id: 'team-b', name: 'Team B', score: 0, color: 'bg-red-500' },
 ];
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -102,25 +104,30 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   return (
-    <div
-      className={`grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] auto-rows-[1fr] h-full gap-2 p-2 bg-transparent overflow-y-auto font-${globalStyle.fontFamily}`}
-    >
-      {teams.map((team) => (
-        <ScoreboardItem
-          key={team.id}
-          team={team}
-          onUpdateScore={handleUpdateScore}
-        />
-      ))}
-      {teams.length === 0 && (
-        <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2">
-          <Trophy className="w-8 h-8 opacity-20" />
-          <span className="text-xs font-bold uppercase tracking-widest">
-            No Teams
-          </span>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div
+          className={`grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full gap-3 p-3 bg-transparent overflow-y-auto custom-scrollbar font-${globalStyle.fontFamily}`}
+        >
+          {teams.map((team) => (
+            <ScoreboardItem
+              key={team.id}
+              team={team}
+              onUpdateScore={handleUpdateScore}
+            />
+          ))}
+          {teams.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2 h-full">
+              <Trophy className="w-12 h-12 opacity-20" />
+              <span className="text-sm font-black uppercase tracking-widest">
+                No Teams
+              </span>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      }
+    />
   );
 };
 

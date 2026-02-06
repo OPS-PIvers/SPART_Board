@@ -7,15 +7,7 @@ import {
   ClassLinkStudent,
 } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
-import {
-  Plus,
-  Trash2,
-  Save,
-  Star,
-  Edit2,
-  RefreshCw,
-  ExternalLink,
-} from 'lucide-react';
+import { Plus, Trash2, Save, Star, Edit2, RefreshCw } from 'lucide-react';
 import { classLinkService } from '../../utils/classlinkService';
 
 interface Props {
@@ -27,6 +19,8 @@ interface EditorProps {
   onSave: (name: string, students: Student[]) => void;
   onBack: () => void;
 }
+
+import { WidgetLayout } from './WidgetLayout';
 
 const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
   const [name, setName] = useState(roster?.name ?? '');
@@ -126,80 +120,85 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
   };
 
   return (
-    <div className="flex flex-col h-full p-2">
-      <div className="flex justify-between items-center mb-3">
-        <button
-          onClick={onBack}
-          className="text-xs text-slate-500 hover:text-blue-600  uppercase tracking-wider"
-        >
-          &larr; Back
-        </button>
-        <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
-          <input
-            className=" border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0"
-            placeholder="Class Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className="flex justify-between items-center p-3 border-b border-slate-100 bg-slate-50/50">
           <button
-            onClick={handleSave}
-            className="bg-green-600 text-white px-3 py-1.5 rounded flex gap-1 items-center text-xs  hover:bg-green-700 shadow-sm transition-colors"
+            onClick={onBack}
+            className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
           >
-            <Save size={14} /> Save
+            &larr; Back
           </button>
-        </div>
-      </div>
-      <div
-        className={`grid ${showLastNames ? 'grid-cols-2' : 'grid-cols-1'} gap-3 flex-1 min-h-0`}
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex justify-between items-end mb-1">
-            <label className="text-xxs  text-slate-500 uppercase tracking-widest">
-              {showLastNames ? 'First Names' : 'Names (One per line)'}
-            </label>
-            {!showLastNames && (
-              <button
-                onClick={handleToggleToLastNames}
-                className="text-xxs text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider"
-              >
-                + Add Last Name
-              </button>
-            )}
+          <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
+            <input
+              className="border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0 text-sm font-bold"
+              placeholder="Class Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <button
+              onClick={handleSave}
+              className="bg-green-600 text-white px-3 py-1.5 rounded-lg flex gap-1 items-center text-xs font-bold hover:bg-green-700 shadow-sm transition-colors"
+            >
+              <Save size={14} /> Save
+            </button>
           </div>
-          <textarea
-            className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-            value={firsts}
-            onChange={(e) => setFirsts(e.target.value)}
-            placeholder={
-              showLastNames
-                ? 'Paste first names...'
-                : 'Paste full names or group names here...'
-            }
-          />
         </div>
-        {showLastNames && (
+      }
+      content={
+        <div
+          className={`grid ${showLastNames ? 'grid-cols-2' : 'grid-cols-1'} gap-3 w-full h-full p-3`}
+        >
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-end mb-1">
-              <label className="text-xxs  text-slate-500 uppercase tracking-widest">
-                Last Names
+              <label className="text-xxs  text-slate-500 uppercase tracking-widest font-black">
+                {showLastNames ? 'First Names' : 'Names (One per line)'}
               </label>
-              <button
-                onClick={handleToggleToSingleField}
-                className="text-xxs text-slate-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors"
-              >
-                Remove
-              </button>
+              {!showLastNames && (
+                <button
+                  onClick={handleToggleToLastNames}
+                  className="text-xxs text-blue-600 hover:text-blue-700 font-black uppercase tracking-wider"
+                >
+                  + Add Last Name
+                </button>
+              )}
             </div>
             <textarea
-              className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-              value={lasts}
-              onChange={(e) => setLasts(e.target.value)}
-              placeholder="Paste last names..."
+              className="flex-1 border border-slate-200 focus:border-blue-400 p-3 rounded-xl resize-none text-xs font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all custom-scrollbar bg-slate-50/30"
+              value={firsts}
+              onChange={(e) => setFirsts(e.target.value)}
+              placeholder={
+                showLastNames
+                  ? 'Paste first names...'
+                  : 'Paste full names or group names here...'
+              }
             />
           </div>
-        )}
-      </div>
-    </div>
+          {showLastNames && (
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-end mb-1">
+                <label className="text-xxs  text-slate-500 uppercase tracking-widest font-black">
+                  Last Names
+                </label>
+                <button
+                  onClick={handleToggleToSingleField}
+                  className="text-xxs text-slate-400 hover:text-red-500 font-black uppercase tracking-wider transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+              <textarea
+                className="flex-1 border border-slate-200 focus:border-blue-400 p-3 rounded-xl resize-none text-xs font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all custom-scrollbar bg-slate-50/30"
+                value={lasts}
+                onChange={(e) => setLasts(e.target.value)}
+                placeholder="Paste last names..."
+              />
+            </div>
+          )}
+        </div>
+      }
+    />
   );
 };
 
@@ -282,116 +281,141 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {view === 'list' && (
-        <div className="flex flex-col h-full p-2">
-          {confirmDeleteId && (
-            <div className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200">
-              <p className="text-white font-semibold mb-4 text-sm">
-                Delete roster &quot;
-                {rosters.find((r) => r.id === confirmDeleteId)?.name}&quot;?
-                This cannot be undone.
-              </p>
+        <WidgetLayout
+          padding="p-0"
+          header={
+            <div className="p-3 border-b border-slate-100 bg-slate-50/50">
               <div className="flex gap-2">
                 <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-700 text-white text-xs  hover:bg-slate-600 transition-colors"
+                  onClick={() => {
+                    setEditingId(null);
+                    setView('edit');
+                  }}
+                  className="flex-1 bg-blue-600 text-white p-2.5 rounded-xl font-black flex items-center justify-center gap-2 hover:bg-blue-700 text-xs shadow-md shadow-blue-500/20 transition-all"
                 >
-                  Cancel
+                  <Plus size={16} /> Create New Class
                 </button>
                 <button
-                  onClick={async () => {
-                    if (confirmDeleteId) {
-                      await deleteRoster(confirmDeleteId);
-                      setConfirmDeleteId(null);
-                    }
-                  }}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs  hover:bg-red-700 transition-colors"
-                  title="Confirm deletion"
+                  onClick={handleFetchClassLink}
+                  className="bg-white text-slate-700 border border-slate-200 p-2.5 rounded-xl font-black flex items-center justify-center gap-2 hover:bg-slate-50 text-xs shadow-sm transition-all"
+                  title="Sync from ClassLink"
                 >
-                  Delete
+                  <RefreshCw
+                    size={16}
+                    className={classLinkLoading ? 'animate-spin' : ''}
+                  />
+                  ClassLink
                 </button>
               </div>
             </div>
-          )}
-          <div className="flex gap-2 mb-2">
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setView('edit');
-              }}
-              className="flex-1 bg-blue-600 text-white p-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 text-sm  shadow-sm"
-            >
-              <Plus size={16} /> Create New Class
-            </button>
-            <button
-              onClick={handleFetchClassLink}
-              className="bg-white text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
-              title="Sync from ClassLink"
-            >
-              <RefreshCw
-                size={16}
-                className={classLinkLoading ? 'animate-spin' : ''}
-              />
-              ClassLink
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-            {rosters.length === 0 && (
-              <div className="text-center text-slate-400 py-8 text-sm italic">
-                No classes yet.
-                <br />
-                Create one to get started!
-              </div>
-            )}
-            {rosters.map((r) => (
-              <div
-                key={r.id}
-                className={`p-3 border rounded-lg bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <button
-                    onClick={() =>
-                      setActiveRoster(activeRosterId === r.id ? null : r.id)
-                    }
-                    className={`transition-colors ${activeRosterId === r.id ? 'text-yellow-500 hover:text-yellow-600' : 'text-slate-300 hover:text-yellow-400'}`}
-                    title={
-                      activeRosterId === r.id ? 'Active Class' : 'Set as Active'
-                    }
-                  >
-                    <Star
-                      fill={activeRosterId === r.id ? 'currentColor' : 'none'}
-                      size={20}
-                    />
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <div className=" text-slate-800 truncate">{r.name}</div>
-                    <div className="text-xs text-slate-500 ">
-                      {r.students.length} Students
-                    </div>
+          }
+          content={
+            <div className="w-full h-full flex flex-col relative overflow-hidden">
+              {confirmDeleteId && (
+                <div className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm">
+                  <p className="text-white font-bold mb-4 text-sm uppercase tracking-tight">
+                    Delete roster &quot;
+                    {rosters.find((r) => r.id === confirmDeleteId)?.name}&quot;?
+                    <br />
+                    <span className="text-red-400 text-xxs font-black tracking-widest">
+                      This cannot be undone.
+                    </span>
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="px-6 py-2 rounded-xl bg-slate-700 text-white text-xs font-black hover:bg-slate-600 transition-colors uppercase tracking-widest"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirmDeleteId) {
+                          await deleteRoster(confirmDeleteId);
+                          setConfirmDeleteId(null);
+                        }
+                      }}
+                      className="px-6 py-2 rounded-xl bg-red-600 text-white text-xs font-black hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20 uppercase tracking-widest"
+                      title="Confirm deletion"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => {
-                      setEditingId(r.id);
-                      setView('edit');
-                    }}
-                    className="p-2 hover:bg-slate-100 text-slate-600 rounded transition-colors"
-                    title="Edit Class"
+              )}
+              <div className="flex-1 overflow-y-auto space-y-2 p-3 custom-scrollbar">
+                {rosters.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 opacity-40">
+                    <Star size={40} className="stroke-slate-300" />
+                    <div className="text-center">
+                      <p className="text-sm font-black uppercase tracking-widest">
+                        No classes yet.
+                      </p>
+                      <p className="text-xs font-bold">
+                        Create one to get started!
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {rosters.map((r) => (
+                  <div
+                    key={r.id}
+                    className={`p-3.5 border rounded-2xl bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-500/5' : 'border-slate-200'}`}
                   >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(r.id)}
-                    className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded transition-colors"
-                    title="Delete Class"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <button
+                        onClick={() =>
+                          setActiveRoster(activeRosterId === r.id ? null : r.id)
+                        }
+                        className={`transition-colors ${activeRosterId === r.id ? 'text-yellow-500 hover:text-yellow-600' : 'text-slate-200 hover:text-yellow-400'}`}
+                        title={
+                          activeRosterId === r.id
+                            ? 'Active Class'
+                            : 'Set as Active'
+                        }
+                      >
+                        <Star
+                          fill={
+                            activeRosterId === r.id ? 'currentColor' : 'none'
+                          }
+                          size={24}
+                          strokeWidth={2.5}
+                        />
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-slate-800 font-black truncate text-sm uppercase tracking-tight">
+                          {r.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                          {r.students.length} Students
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingId(r.id);
+                          setView('edit');
+                        }}
+                        className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors"
+                        title="Edit Class"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(r.id)}
+                        className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
+                        title="Delete Class"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          }
+        />
       )}
 
       {view === 'edit' && (
@@ -404,53 +428,66 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
       )}
 
       {view === 'classlink' && (
-        <div className="flex flex-col h-full p-2">
-          <div className="flex justify-between items-center mb-3">
-            <button
-              onClick={() => setView('list')}
-              className="text-xs text-slate-500 hover:text-blue-600  uppercase tracking-wider"
-            >
-              &larr; Cancel
-            </button>
-            <h3 className=" text-slate-800 text-sm">ClassLink Rosters</h3>
-            <div className="w-10"></div>
-          </div>
-
-          {classLinkLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3">
-              <RefreshCw size={32} className="animate-spin text-blue-500" />
-              <p className="text-sm ">Connecting to ClassLink...</p>
+        <WidgetLayout
+          padding="p-0"
+          header={
+            <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <button
+                onClick={() => setView('list')}
+                className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
+              >
+                &larr; Cancel
+              </button>
+              <h3 className="text-slate-800 text-xs font-black uppercase tracking-widest">
+                ClassLink Rosters
+              </h3>
+              <div className="w-10"></div>
             </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {classLinkClasses.length === 0 ? (
-                <div className="text-center text-slate-400 py-8 text-sm italic">
-                  No classes found in ClassLink.
+          }
+          content={
+            <div className="w-full h-full flex flex-col p-3 overflow-hidden">
+              {classLinkLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
+                  <RefreshCw size={40} className="animate-spin text-blue-500" />
+                  <p className="text-sm font-black uppercase tracking-widest opacity-60">
+                    Connecting to ClassLink...
+                  </p>
                 </div>
               ) : (
-                classLinkClasses.map((cls) => (
-                  <div
-                    key={cls.sourcedId}
-                    className="p-3 border border-slate-200 rounded-lg bg-white flex justify-between items-center hover:shadow-md transition-shadow"
-                  >
-                    <div>
-                      <div className=" text-slate-800">{cls.title}</div>
-                      <div className="text-xs text-slate-500 ">
-                        {classLinkStudents[cls.sourcedId]?.length || 0} Students
-                      </div>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {classLinkClasses.length === 0 ? (
+                    <div className="text-center text-slate-400 py-12 text-sm italic font-bold opacity-40">
+                      No classes found in ClassLink.
                     </div>
-                    <button
-                      onClick={() => importClassLinkClass(cls)}
-                      className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs  hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1"
-                    >
-                      <ExternalLink size={14} /> Import
-                    </button>
-                  </div>
-                ))
+                  ) : (
+                    classLinkClasses.map((cls) => (
+                      <div
+                        key={cls.sourcedId}
+                        className="p-4 border border-slate-200 rounded-2xl bg-white flex justify-between items-center hover:shadow-md transition-all hover:border-blue-200 group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="text-slate-800 font-black uppercase tracking-tight truncate">
+                            {cls.title}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                            {classLinkStudents[cls.sourcedId]?.length || 0}{' '}
+                            Students
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => importClassLinkClass(cls)}
+                          className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:shadow-md"
+                        >
+                          Import
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
+          }
+        />
       )}
     </div>
   );

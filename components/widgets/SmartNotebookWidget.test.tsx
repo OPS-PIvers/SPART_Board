@@ -66,8 +66,8 @@ describe('SmartNotebookWidget', () => {
 
     render(<SmartNotebookWidget widget={mockWidget} />);
 
-    expect(screen.getByText('Notebook Library')).toBeInTheDocument();
-    expect(screen.getByText('No notebooks yet')).toBeInTheDocument();
+    expect(screen.getByText('Notebooks')).toBeInTheDocument();
+    expect(screen.getByText('Library is empty')).toBeInTheDocument();
     // Use getAllByText because button and input might have similar text or just find by role
     expect(screen.getByRole('button', { name: /Import/i })).toBeInTheDocument();
   });

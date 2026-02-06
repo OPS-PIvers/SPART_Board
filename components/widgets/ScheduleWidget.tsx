@@ -1,6 +1,5 @@
 import React, { useCallback, useRef, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { useScaledFont } from '../../hooks/useScaledFont';
 import {
   WidgetData,
   ScheduleItem,
@@ -20,31 +19,37 @@ interface ScheduleRowProps {
 }
 
 const ScheduleRow = React.memo<ScheduleRowProps>(
-  ({ item, index, onToggle, timeSize, taskSize, iconSize }) => {
+  ({ item, index, onToggle }) => {
     return (
       <button
         onClick={() => onToggle(index)}
         className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${
           item.done
             ? 'bg-slate-100 border-slate-200 opacity-60'
-            : 'bg-white border-slate-200'
+            : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
         {item.done ? (
-          <CheckCircle2 className="text-green-500 shrink-0" size={iconSize} />
+          <CheckCircle2
+            className="text-green-500 shrink-0"
+            style={{ width: 'min(6cqw, 10cqh)', height: 'min(6cqw, 10cqh)' }}
+          />
         ) : (
-          <Circle className="text-indigo-300 shrink-0" size={iconSize} />
+          <Circle
+            className="text-indigo-300 shrink-0"
+            style={{ width: 'min(6cqw, 10cqh)', height: 'min(6cqw, 10cqh)' }}
+          />
         )}
-        <div className="flex flex-col items-start">
+        <div className="flex flex-col items-start min-w-0">
           <span
             className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-            style={{ fontSize: `${timeSize}px` }}
+            style={{ fontSize: 'min(3.5cqw, 5cqh)' }}
           >
             {item.time}
           </span>
           <span
-            className={`font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-            style={{ fontSize: `${taskSize}px` }}
+            className={`font-bold leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+            style={{ fontSize: 'min(4.5cqw, 7cqh)' }}
           >
             {item.task}
           </span>
@@ -55,6 +60,8 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
 );
 
 ScheduleRow.displayName = 'ScheduleRow';
+
+import { WidgetLayout } from './WidgetLayout';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -159,10 +166,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     return () => clearInterval(interval);
   }, [autoProgress, hasClock, widget.id, updateWidget]);
 
-  const taskSize = useScaledFont(widget.w, widget.h, 0.35, 14, 36);
-  const timeSize = useScaledFont(widget.w, widget.h, 0.2, 10, 22);
-  const iconSize = useScaledFont(widget.w, widget.h, 0.3, 16, 32);
-
   const getFontClass = () => {
     if (fontFamily === 'global') {
       return `font-${globalStyle.fontFamily}`;
@@ -174,21 +177,36 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   return (
-    <div className={`h-full flex flex-col p-2 ${getFontClass()}`}>
-      <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
-        {items.map((item: ScheduleItem, i: number) => (
-          <ScheduleRow
-            key={i}
-            index={i}
-            item={item}
-            onToggle={toggle}
-            timeSize={timeSize}
-            taskSize={taskSize}
-            iconSize={iconSize}
-          />
-        ))}
-      </div>
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div
+          className={`h-full w-full flex flex-col p-4 overflow-hidden ${getFontClass()}`}
+        >
+          <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+            {items.map((item: ScheduleItem, i: number) => (
+              <ScheduleRow
+                key={i}
+                index={i}
+                item={item}
+                onToggle={toggle}
+                timeSize={14} // These will be used as base for min(cqw, cqh) in Row
+                taskSize={18}
+                iconSize={20}
+              />
+            ))}
+            {items.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-20 py-10">
+                <Clock className="w-12 h-12" />
+                <span className="text-xs font-black uppercase tracking-widest">
+                  No Schedule
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      }
+    />
   );
 };
 

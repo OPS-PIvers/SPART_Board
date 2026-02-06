@@ -5,6 +5,8 @@ import { STICKY_NOTE_COLORS } from '../../config/colors';
 import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 import { sanitizeHtml } from '../../utils/security';
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
@@ -16,30 +18,38 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   } = config;
 
   return (
-    <div
-      className={`h-full w-full p-2 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
-    >
-      {/* Background color overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-20"
-        style={{ backgroundColor: bgColor }}
-      />
-      <div
-        className="relative z-10 h-full w-full outline-none"
-        style={{ fontSize: `${fontSize * 0.4}cqmin` }}
-        contentEditable
-        suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: content }}
-        onBlur={(e) =>
-          updateWidget(widget.id, {
-            config: {
-              ...config,
-              content: sanitizeHtml(e.currentTarget.innerHTML),
-            } as TextConfig,
-          })
-        }
-      />
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div
+          className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
+        >
+          {/* Background color overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{ backgroundColor: bgColor }}
+          />
+          <div
+            className="relative z-10 h-full w-full outline-none"
+            style={{
+              fontSize: `min(${fontSize * 0.4}cqw, ${fontSize * 0.8}cqh)`,
+              lineHeight: 1.5,
+            }}
+            contentEditable
+            suppressContentEditableWarning
+            dangerouslySetInnerHTML={{ __html: content }}
+            onBlur={(e) =>
+              updateWidget(widget.id, {
+                config: {
+                  ...config,
+                  content: sanitizeHtml(e.currentTarget.innerHTML),
+                } as TextConfig,
+              })
+            }
+          />
+        </div>
+      }
+    />
   );
 };
 

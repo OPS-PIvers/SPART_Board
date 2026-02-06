@@ -10,6 +10,8 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -27,7 +29,12 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
       icons[iconName] ??
       (Icons as unknown as Record<string, React.ElementType>)[iconName] ??
       HelpCircle;
-    return <Icon className="w-32 h-32" />;
+    return (
+      <Icon
+        className="animate-pulse"
+        style={{ width: 'min(40cqw, 40cqh)', height: 'min(40cqw, 40cqh)' }}
+      />
+    );
   };
 
   const colors: Record<string, string> = {
@@ -43,14 +50,22 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
   const title = config.title ?? 'Visual Anchor';
 
   return (
-    <div
-      className={`h-full flex flex-col items-center justify-center p-3 ${theme} border-2 border-double`}
-    >
-      <div className="mb-4 animate-pulse">{getIcon(config.icon ?? '')}</div>
-      <h2 className="text-2xl font-black text-center uppercase tracking-wider leading-tight">
-        {title}
-      </h2>
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div
+          className={`h-full w-full flex flex-col items-center justify-center p-6 ${theme} border-2 border-double border-current gap-[5cqh]`}
+        >
+          <div className="shrink-0">{getIcon(config.icon ?? '')}</div>
+          <h2
+            className="font-black text-center uppercase tracking-wider leading-tight w-full"
+            style={{ fontSize: 'min(8cqw, 6cqh)' }}
+          >
+            {title}
+          </h2>
+        </div>
+      }
+    />
   );
 };
 

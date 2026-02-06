@@ -92,9 +92,9 @@ describe('ScheduleWidget', () => {
     const widget = createWidget({ fontFamily: 'mono' });
     const { container } = render(<ScheduleWidget widget={widget} />);
 
-    // The container should have the font class
-    const topDiv = container.firstChild;
-    expect(topDiv).toHaveClass('font-mono');
+    // The inner container should have the font class
+    const contentDiv = container.querySelector('.font-mono');
+    expect(contentDiv).toBeInTheDocument();
   });
 
   it('auto-progresses items when connected to clock', () => {

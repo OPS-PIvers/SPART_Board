@@ -12,6 +12,8 @@ const stripHtml = (html: string) => {
   return doc.body.textContent || '';
 };
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard, updateWidget } = useDashboard();
   const config = widget.config as QRConfig;
@@ -41,29 +43,44 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   // Use a simple public API for QR codes
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(
+    url
+  )}`;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-2 relative">
-      {config.syncWithTextWidget && (
-        <div className="absolute top-2 right-2 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 animate-in fade-in zoom-in">
-          <Link className="w-3 h-3 text-indigo-500" />
-          <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">
-            Linked
-          </span>
+    <WidgetLayout
+      padding="p-0"
+      header={
+        config.syncWithTextWidget ? (
+          <div className="flex justify-end p-2 pb-0">
+            <div className="flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 animate-in fade-in zoom-in shadow-sm">
+              <Link className="w-3 h-3 text-indigo-500" />
+              <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wide">
+                Linked
+              </span>
+            </div>
+          </div>
+        ) : undefined
+      }
+      content={
+        <div className="w-full h-full flex items-center justify-center p-3">
+          <div className="bg-white p-3 rounded-2xl shadow-inner w-full h-full flex items-center justify-center border border-slate-100 overflow-hidden">
+            <img
+              src={qrUrl}
+              alt="QR Code"
+              className="w-full h-full object-contain mix-blend-multiply transition-transform hover:scale-105 duration-500"
+            />
+          </div>
         </div>
-      )}
-      <div className="bg-white p-2 rounded-xl mb-2 shadow-inner flex-1 min-h-0 flex items-center justify-center">
-        <img
-          src={qrUrl}
-          alt="QR Code"
-          className="max-w-full max-h-full object-contain mix-blend-multiply"
-        />
-      </div>
-      <div className="text-xxs font-mono text-slate-400 break-all text-center max-w-full overflow-hidden px-2 shrink-0">
-        {url}
-      </div>
-    </div>
+      }
+      footer={
+        <div className="px-3 pb-3">
+          <div className="text-[min(12px,3.5cqmin)] font-mono text-slate-400 break-all text-center max-w-full overflow-hidden py-1.5 px-3 bg-slate-50/50 rounded-lg border border-slate-100/50">
+            {url}
+          </div>
+        </div>
+      }
+    />
   );
 };
 
