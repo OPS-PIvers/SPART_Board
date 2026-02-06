@@ -322,7 +322,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     padding: 0,
   },
   lunchCount: {
-    baseWidth: 500,
+    baseWidth: 600,
     baseHeight: 400,
     canSpread: true,
     skipScaling: true,

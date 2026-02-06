@@ -112,7 +112,7 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     },
   },
   lunchCount: {
-    w: 500,
+    w: 600,
     h: 400,
     config: {
       schoolSite: 'schumann-elementary',

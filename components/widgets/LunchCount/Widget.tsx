@@ -15,7 +15,7 @@ import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import { WidgetData, LunchCountConfig } from '../../../types';
 import { Button } from '../../common/Button';
-import { RefreshCw, Undo2, CheckCircle2, Box } from 'lucide-react';
+import { RefreshCw, Undo2, CheckCircle2, Box, Users } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
 import { useNutrislice } from './useNutrislice';
 import { DraggableStudent } from './components/DraggableStudent';
@@ -147,8 +147,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const unassignedStudents = activeRoster.filter((s) => !assignments[s]);
-
   const dropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
       styles: {
@@ -158,6 +156,9 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       },
     }),
   };
+
+  const studentItemClass =
+    'px-3 py-1.5 bg-white border-b-2 border-slate-200 rounded-xl text-[min(11px,3.5cqmin)] font-black text-slate-700 shadow-sm hover:border-brand-blue-primary hover:-translate-y-0.5 transition-all active:scale-90';
 
   return (
     <DndContext
@@ -201,7 +202,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 }
                 variant="ghost"
                 size="sm"
-                className="p-2 h-8 w-8 rounded-xl text-slate-400 hover:text-red-500 bg-white border border-slate-200"
+                className="p-2 h-8 w-8 rounded-xl text-slate-400 hover:text-brand-red-primary bg-white border border-slate-200"
               >
                 <Undo2 className="w-4 h-4" />
               </Button>
@@ -210,26 +211,27 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         }
         content={
           <div className="flex flex-col h-full w-full p-3 gap-3 overflow-hidden animate-in fade-in duration-300">
-            {/* Main Grid */}
+            {/* Top Grid: 3 Zones */}
             <div className="grid grid-cols-3 gap-3 shrink-0">
               {/* Hot Lunch Drop Zone */}
               <DroppableZone
                 id="hot"
-                className="bg-orange-50 border-2 border-dashed border-orange-300 rounded-2xl p-3 flex flex-col min-h-[140px] transition-all hover:scale-[1.01] group"
-                activeClassName="border-solid border-orange-500 bg-orange-100/50 scale-[1.02]"
+                data-testid="hot-zone"
+                className="bg-brand-red-lighter/10 border-2 border-dashed border-brand-red-lighter rounded-2xl p-3 flex flex-col min-h-[140px] transition-all group"
+                activeClassName="border-solid border-brand-red-primary bg-brand-red-lighter/30 scale-[1.02]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-col">
-                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-orange-600 tracking-tighter">
+                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-brand-red-primary tracking-tighter">
                       Hot Lunch
                     </span>
-                    <span className="bg-orange-500 text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
+                    <span className="bg-brand-red-primary text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
                       {stats.hotLunch}
                     </span>
                   </div>
-                  <Box className="w-3.5 h-3.5 text-orange-400 group-hover:scale-110 transition-transform" />
+                  <Box className="w-3.5 h-3.5 text-brand-red-primary opacity-40 group-hover:scale-110 transition-transform" />
                 </div>
-                <div className="text-[min(9px,2.5cqmin)] font-bold text-orange-800 leading-tight mb-3 line-clamp-2 italic">
+                <div className="text-[min(9px,2.5cqmin)] font-bold text-brand-red-dark leading-tight mb-3 line-clamp-2 italic opacity-60">
                   {cachedMenu?.hotLunch ?? 'Loading menu...'}
                 </div>
                 <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
@@ -241,7 +243,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         id={student}
                         name={student}
                         onClick={() => updateAssignment(student, null)}
-                        className="px-2 py-1 bg-white border border-orange-200 rounded-lg text-[min(9px,2.5cqmin)] font-bold text-orange-900 shadow-sm"
+                        className={studentItemClass}
                       />
                     ))}
                 </div>
@@ -250,7 +252,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               {/* Bento Box Drop Zone */}
               <DroppableZone
                 id="bento"
-                className="bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl p-3 flex flex-col min-h-[140px] transition-all hover:scale-[1.01] group"
+                className="bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl p-3 flex flex-col min-h-[140px] transition-all group"
                 activeClassName="border-solid border-emerald-500 bg-emerald-100/50 scale-[1.02]"
               >
                 <div className="flex justify-between items-start mb-2">
@@ -264,7 +266,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   </div>
                   <Box className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
                 </div>
-                <div className="text-[min(9px,2.5cqmin)] font-bold text-emerald-800 leading-tight mb-3 line-clamp-2 italic">
+                <div className="text-[min(9px,2.5cqmin)] font-bold text-emerald-800 leading-tight mb-3 line-clamp-2 italic opacity-60">
                   {cachedMenu?.bentoBox ?? 'Loading menu...'}
                 </div>
                 <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
@@ -276,7 +278,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         id={student}
                         name={student}
                         onClick={() => updateAssignment(student, null)}
-                        className="px-2 py-1 bg-white border border-emerald-200 rounded-lg text-[min(9px,2.5cqmin)] font-bold text-emerald-900 shadow-sm"
+                        className={studentItemClass}
                       />
                     ))}
                 </div>
@@ -285,22 +287,22 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               {/* Home Lunch Drop Zone */}
               <DroppableZone
                 id="home"
-                className="bg-blue-50 border-2 border-dashed border-blue-300 rounded-2xl p-3 flex flex-col min-h-[140px] transition-all hover:scale-[1.01] group"
-                activeClassName="border-solid border-blue-500 bg-blue-100/50 scale-[1.02]"
+                className="bg-brand-blue-lighter/20 border-2 border-dashed border-brand-blue-lighter rounded-2xl p-3 flex flex-col min-h-[140px] transition-all group"
+                activeClassName="border-solid border-brand-blue-primary bg-brand-blue-lighter/40 scale-[1.02]"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-col">
-                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-blue-600 tracking-tighter">
+                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-brand-blue-primary tracking-tighter">
                       Home / Other
                     </span>
-                    <span className="bg-blue-500 text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
+                    <span className="bg-brand-blue-primary text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
                       {stats.homeLunch}
                     </span>
                   </div>
-                  <Box className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+                  <Box className="w-3.5 h-3.5 text-brand-blue-primary opacity-40 group-hover:scale-110 transition-transform" />
                 </div>
-                <div className="text-[min(9px,2.5cqmin)] font-bold text-blue-800 leading-tight mb-3 italic">
-                  Field Trips or Absent students.
+                <div className="text-[min(9px,2.5cqmin)] font-bold text-brand-blue-dark leading-tight mb-3 italic opacity-60">
+                  Field Trips / Absent
                 </div>
                 <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
                   {activeRoster
@@ -311,37 +313,48 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         id={student}
                         name={student}
                         onClick={() => updateAssignment(student, null)}
-                        className="px-2 py-1 bg-white border border-blue-200 rounded-lg text-[min(9px,2.5cqmin)] font-bold text-blue-900 shadow-sm"
+                        className={studentItemClass}
                       />
                     ))}
                 </div>
               </DroppableZone>
             </div>
 
-            {/* Roster Area */}
+            {/* Bottom Area: All Unassigned Students */}
             <div className="flex-1 flex flex-col min-h-0">
               <DroppableZone
                 id="unassigned"
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-y-auto custom-scrollbar shadow-inner"
-                activeClassName="bg-slate-100 border-indigo-300 ring-2 ring-indigo-100"
+                className="flex-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-4 overflow-y-auto custom-scrollbar shadow-inner"
+                activeClassName="bg-slate-100 border-brand-blue-primary ring-4 ring-brand-blue-lighter/20"
               >
-                <div className="text-[min(10px,3cqmin)] font-black uppercase text-slate-400 mb-4 tracking-widest text-center">
-                  Unassigned ({unassignedStudents.length})
-                </div>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {unassignedStudents.map((student) => (
-                    <DraggableStudent
-                      key={student}
-                      id={student}
-                      name={student}
-                      className="px-3 py-1.5 bg-white border-b-2 border-slate-200 rounded-xl text-[min(11px,3.5cqmin)] font-black text-slate-700 shadow-sm hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
-                    />
-                  ))}
-                  {unassignedStudents.length === 0 && (
-                    <div className="text-xs text-slate-400 italic py-4 font-bold uppercase tracking-widest opacity-60">
-                      All set!
-                    </div>
-                  )}
+                <div className="flex flex-col items-center h-full">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-4 h-4 text-slate-300" />
+                    <span className="text-[min(10px,3cqmin)] font-black uppercase text-slate-400 tracking-widest">
+                      Unassigned ({stats.remaining})
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap justify-center gap-2 w-full">
+                    {activeRoster
+                      .filter((s) => !assignments[s])
+                      .map((student) => (
+                        <DraggableStudent
+                          key={student}
+                          id={student}
+                          name={student}
+                          className={studentItemClass}
+                        />
+                      ))}
+                    {stats.remaining === 0 && stats.total > 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 opacity-30 grayscale animate-in zoom-in-95 duration-500">
+                        <CheckCircle2 className="w-12 h-12 text-brand-blue-primary mb-3" />
+                        <span className="text-sm font-black uppercase tracking-[0.2em]">
+                          Roster Complete
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </DroppableZone>
             </div>
@@ -365,7 +378,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   Submit Report
                 </div>
               ) : (
-                `Assign ${stats.remaining} More`
+                <div className="flex items-center justify-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Assign {stats.remaining} More Students
+                </div>
               )}
             </Button>
 
@@ -396,7 +412,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         {activeId ? (
           <div
             data-no-drag="true"
-            className="px-3 py-1.5 bg-brand-blue-primary border-b-2 border-brand-blue-dark rounded-xl text-[min(11px,3.5cqmin)] font-black text-white shadow-xl scale-110 opacity-90 cursor-grabbing pointer-events-none"
+            className="px-4 py-2 bg-brand-blue-primary border-b-4 border-brand-blue-dark rounded-2xl text-[min(12px,4cqmin)] font-black text-white shadow-2xl scale-110 opacity-95 cursor-grabbing pointer-events-none"
           >
             {activeId}
           </div>

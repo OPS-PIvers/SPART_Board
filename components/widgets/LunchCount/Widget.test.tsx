@@ -128,7 +128,7 @@ describe('LunchCountWidget', () => {
     render(<LunchCountWidget widget={createWidget()} />);
 
     const chip = await screen.findByText('John Doe');
-    const hotLunchZone = screen.getByText('Hot Lunch').closest('.bg-orange-50');
+    const hotLunchZone = screen.getByTestId('hot-zone');
     expect(hotLunchZone).toBeInTheDocument();
 
     // dnd-kit uses pointer events. In a real environment we'd use user-event,

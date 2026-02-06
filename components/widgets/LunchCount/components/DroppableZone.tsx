@@ -1,10 +1,9 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 
-interface DroppableZoneProps {
+interface DroppableZoneProps extends React.HTMLAttributes<HTMLDivElement> {
   id: string;
   children: React.ReactNode;
-  className?: string;
   activeClassName?: string;
 }
 
@@ -13,6 +12,7 @@ export const DroppableZone: React.FC<DroppableZoneProps> = ({
   children,
   className,
   activeClassName,
+  ...props
 }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: id,
@@ -22,6 +22,7 @@ export const DroppableZone: React.FC<DroppableZoneProps> = ({
     <div
       ref={setNodeRef}
       className={`${className} ${isOver ? activeClassName : ''}`}
+      {...props}
     >
       {children}
     </div>
