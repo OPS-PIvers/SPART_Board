@@ -1,15 +1,21 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { InstructionalRoutinesWidget } from './Widget';
 import { InstructionalRoutinesSettings } from './Settings';
 import { vi, describe, it, expect } from 'vitest';
 import { WidgetData } from '../../../types';
 
+const mocks = vi.hoisted(() => ({
+  addWidget: vi.fn(),
+  updateWidget: vi.fn(),
+  clearAllStickers: vi.fn(),
+}));
+
 vi.mock('../../../context/useDashboard', () => ({
   useDashboard: () => ({
-    updateWidget: vi.fn(),
+    updateWidget: mocks.updateWidget,
     gradeFilter: 'all',
-    addWidget: vi.fn(),
-    clearAllStickers: vi.fn(),
+    addWidget: mocks.addWidget,
+    clearAllStickers: mocks.clearAllStickers,
   }),
 }));
 
@@ -48,6 +54,31 @@ describe('InstructionalRoutinesWidget', () => {
   it('renders correctly in library mode', () => {
     render(<InstructionalRoutinesWidget widget={mockWidget} />);
     expect(screen.getByText(/Library/i)).toBeInTheDocument();
+  });
+
+  it('generates HTML with standardized classes when launching Blooms resource', () => {
+    const bloomsWidget = {
+      ...mockWidget,
+      config: {
+        ...mockWidget.config,
+        selectedRoutineId: 'blooms-analysis',
+      }
+    };
+
+    render(<InstructionalRoutinesWidget widget={bloomsWidget} />);
+
+    // Find the Key Words button
+    const keyWordsBtn = screen.getByText(/Key Words/i);
+    fireEvent.click(keyWordsBtn);
+
+    expect(mocks.addWidget).toHaveBeenCalled();
+    const callArgs = mocks.addWidget.mock.lastCall;
+    const type = callArgs![0];
+    const config = callArgs![1].config;
+
+    expect(type).toBe('text');
+    // Expect the standardized class
+    expect(config.content).toContain('text-brand-blue-primary');
   });
 });
 
