@@ -39,6 +39,7 @@ interface DraggableWindowProps {
   title: string;
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
+  isPositionAware?: boolean; // OPTIMIZATION: If true, updates state on every move. If false, only on drag end.
   headerActions?: React.ReactNode;
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   removeWidget: (id: string) => void;
@@ -78,6 +79,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   title,
   style,
   skipCloseConfirmation = false,
+  isPositionAware = false,
   headerActions,
   updateWidget,
   removeWidget,
@@ -218,14 +220,36 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      // OPTIMIZATION: For standard widgets, update DOM directly to avoid React re-renders during drag.
+      // Position-aware widgets (like Catalyst) need state updates to inform other widgets via Nexus.
+      if (!isPositionAware) {
+        if (windowRef.current) {
+          windowRef.current.style.left = `${newX}px`;
+          windowRef.current.style.top = `${newY}px`;
+        }
+      } else {
+        updateWidget(widget.id, {
+          x: newX,
+          y: newY,
+        });
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
       if (upEvent.pointerId !== e.pointerId) return;
+
+      // Finalize position for optimized widgets
+      if (!isPositionAware) {
+        const finalX = upEvent.clientX - startX;
+        const finalY = upEvent.clientY - startY;
+        updateWidget(widget.id, {
+          x: finalX,
+          y: finalY,
+        });
+      }
 
       setIsDragging(false);
       document.body.classList.remove('is-dragging-widget');

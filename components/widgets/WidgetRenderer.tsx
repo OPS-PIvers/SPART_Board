@@ -25,6 +25,12 @@ import {
   DEFAULT_SCALING_CONFIG,
 } from './WidgetRegistry';
 
+const POSITION_AWARE_WIDGETS = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
+
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
 const LoadingFallback = () => (
@@ -254,6 +260,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       skipCloseConfirmation={
         widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
       }
+      isPositionAware={POSITION_AWARE_WIDGETS.includes(widget.type)}
       updateWidget={updateWidget}
       removeWidget={removeWidget}
       duplicateWidget={duplicateWidget}
@@ -339,11 +346,7 @@ const InnerWidgetRenderer = memo(
     if (pw.type !== nw.type) return false; // Defensive check for type change
 
     // If the widget type is position-aware, we MUST re-render if x or y changed.
-    const isPositionAware = [
-      'catalyst',
-      'catalyst-instruction',
-      'catalyst-visual',
-    ].includes(nw.type);
+    const isPositionAware = POSITION_AWARE_WIDGETS.includes(nw.type);
 
     if (isPositionAware) {
       if (pw.x !== nw.x) return false;

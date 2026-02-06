@@ -175,7 +175,7 @@ describe('DraggableWindow', () => {
     });
   });
 
-  it('updates position on pointer drag', () => {
+  it('updates position directly on DOM during drag and syncs state on drag end (standard)', () => {
     const { container } = render(
       <DraggableWindow
         widget={mockWidget}
@@ -192,13 +192,11 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    // The drag handle is now the .front div itself
     const frontFace = container.querySelector(
       '.front'
     ) as HTMLElementWithCapture;
     if (!frontFace) throw new Error('Front face not found');
 
-    // Mock capture methods on the handle itself since it's the currentTarget
     frontFace.setPointerCapture = vi.fn();
     frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
     frontFace.releasePointerCapture = vi.fn();
@@ -217,7 +215,69 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    // Standard widget should NOT update state during drag
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // But should update DOM style (GlassCard wrapper)
+    const draggableWindow = screen.getByTestId('draggable-window');
+    expect(draggableWindow.style.left).toBe('150px');
+    expect(draggableWindow.style.top).toBe('150px');
+
+    // Clean up (Drag End)
+    fireEvent.pointerUp(window, {
+      clientX: 160,
+      clientY: 160,
+      pointerId: 1,
+    });
+
+    // NOW it should update state
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({
+        x: 150,
+        y: 150,
+      })
+    );
+  });
+
+  it('updates state continuously for position-aware widgets', () => {
+    const { container } = render(
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+        isPositionAware={true}
+      >
+        <div data-testid="widget-content">Widget Content</div>
+      </DraggableWindow>
+    );
+
+    const frontFace = container.querySelector(
+      '.front'
+    ) as HTMLElementWithCapture;
+    frontFace.setPointerCapture = vi.fn();
+    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
+    frontFace.releasePointerCapture = vi.fn();
+
+    fireEvent.pointerDown(frontFace, {
+      clientX: 110,
+      clientY: 110,
+      pointerId: 1,
+    });
+
+    fireEvent.pointerMove(window, {
+      clientX: 160,
+      clientY: 160,
+      pointerId: 1,
+    });
+
+    // Should update state immediately
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -226,7 +286,6 @@ describe('DraggableWindow', () => {
       })
     );
 
-    // Clean up
     fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
@@ -269,7 +328,19 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // It should now drag
+    // It should now drag (standard widget updates DOM, not state)
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+    const draggableWindow = screen.getByTestId('draggable-window');
+    expect(draggableWindow.style.left).toBe('150px');
+    expect(draggableWindow.style.top).toBe('150px');
+
+    // Clean up
+    fireEvent.pointerUp(window, {
+      clientX: 160,
+      clientY: 200,
+      pointerId: 1,
+    });
+
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -277,9 +348,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('updates size on pointer resize (SE corner)', () => {
