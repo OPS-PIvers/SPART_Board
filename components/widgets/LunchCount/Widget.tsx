@@ -9,6 +9,7 @@ import {
   defaultDropAnimationSideEffects,
   MouseSensor,
   TouchSensor,
+  pointerWithin,
 } from '@dnd-kit/core';
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { useDashboard } from '../../../context/useDashboard';
@@ -163,6 +164,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
