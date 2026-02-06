@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { InstructionalRoutinesWidget } from './Widget';
 import { InstructionalRoutinesSettings } from './Settings';
 import { vi, describe, it, expect } from 'vitest';
-import { WidgetData } from '../../../types';
+import { WidgetData, InstructionalRoutinesConfig } from '../../../types';
 
 const mocks = vi.hoisted(() => ({
   addWidget: vi.fn(),
@@ -33,6 +33,13 @@ vi.mock('../../../hooks/useInstructionalRoutines', () => ({
   }),
 }));
 
+const mockConfig: InstructionalRoutinesConfig = {
+  selectedRoutineId: null,
+  customSteps: [],
+  favorites: [],
+  scaleMultiplier: 1,
+};
+
 const mockWidget: WidgetData = {
   id: 'test-widget',
   type: 'instructionalRoutines',
@@ -42,12 +49,7 @@ const mockWidget: WidgetData = {
   y: 0,
   z: 0,
   flipped: false,
-  config: {
-    selectedRoutineId: null,
-    customSteps: [],
-    favorites: [],
-    scaleMultiplier: 1,
-  },
+  config: mockConfig,
 };
 
 describe('InstructionalRoutinesWidget', () => {
@@ -57,12 +59,14 @@ describe('InstructionalRoutinesWidget', () => {
   });
 
   it('generates HTML with standardized classes when launching Blooms resource', () => {
-    const bloomsWidget = {
+    const bloomsConfig: InstructionalRoutinesConfig = {
+      ...mockConfig,
+      selectedRoutineId: 'blooms-analysis',
+    };
+
+    const bloomsWidget: WidgetData = {
       ...mockWidget,
-      config: {
-        ...mockWidget.config,
-        selectedRoutineId: 'blooms-analysis',
-      },
+      config: bloomsConfig,
     };
 
     render(<InstructionalRoutinesWidget widget={bloomsWidget} />);
