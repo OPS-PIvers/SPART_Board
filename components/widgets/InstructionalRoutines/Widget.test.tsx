@@ -62,7 +62,7 @@ describe('InstructionalRoutinesWidget', () => {
       config: {
         ...mockWidget.config,
         selectedRoutineId: 'blooms-analysis',
-      }
+      },
     };
 
     render(<InstructionalRoutinesWidget widget={bloomsWidget} />);
@@ -73,12 +73,18 @@ describe('InstructionalRoutinesWidget', () => {
 
     expect(mocks.addWidget).toHaveBeenCalled();
     const callArgs = mocks.addWidget.mock.lastCall;
-    const type = callArgs![0];
-    const config = callArgs![1].config;
+
+    expect(callArgs).toBeDefined();
+    if (!callArgs) throw new Error('addWidget was not called');
+
+    const [type, payload] = callArgs as [
+      string,
+      { config: { content: string } },
+    ];
 
     expect(type).toBe('text');
     // Expect the standardized class
-    expect(config.content).toContain('text-brand-blue-primary');
+    expect(payload.config.content).toContain('text-brand-blue-primary');
   });
 });
 
