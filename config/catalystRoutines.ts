@@ -1,16 +1,6 @@
-import { WidgetType, WidgetConfig } from '../types';
+import { CatalystRoutine } from '../types';
 
 export type RoutineCategory = 'Get Attention' | 'Engage' | 'Set Up' | 'Support';
-
-export interface CatalystRoutine {
-  id: string;
-  title: string;
-  category: RoutineCategory;
-  icon: string; // Lucide icon name
-  shortDesc: string;
-  instructions: string; // The guide for the teacher
-  associatedWidgets?: { type: WidgetType; config?: WidgetConfig }[]; // What opens in "Go Mode"
-}
 
 export const CATALYST_ROUTINES: CatalystRoutine[] = [
   {
