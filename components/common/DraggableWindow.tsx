@@ -511,7 +511,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
               <div
                 ref={contentRef}
-                className="flex-1 overflow-hidden relative p-0 bg-white"
+                className="flex-1 overflow-hidden relative p-0"
               >
                 {/* Flash Overlay */}
                 {isFlashing && (

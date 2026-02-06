@@ -65,7 +65,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
       aria-modal="true"
       aria-labelledby="report-modal-title"
     >
-      <div className="bg-white/60 backdrop-blur-2xl rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-white/40 animate-in zoom-in-95 duration-200 custom-scrollbar">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[90%] max-h-[90%] overflow-y-auto border border-slate-200 animate-in zoom-in-95 duration-200 custom-scrollbar">
         <div className="p-6 bg-brand-blue-primary/90 backdrop-blur-sm text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/30 rounded-xl">
@@ -112,7 +112,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-orange-500/10 rounded-2xl border border-orange-500/20 backdrop-blur-sm">
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-2xl border border-orange-300">
               <div className="flex flex-col">
                 <span className="text-xxs font-black text-orange-600 uppercase">
                   Hot Lunch
@@ -126,7 +126,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 backdrop-blur-sm">
+            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-2xl border border-emerald-300">
               <div className="flex flex-col">
                 <span className="text-xxs font-black text-emerald-600 uppercase">
                   Bento Box
@@ -141,7 +141,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             </div>
 
             {isIntermediate && (
-              <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 backdrop-blur-sm flex items-center justify-between">
+              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-300 flex items-center justify-between">
                 <div>
                   <label
                     htmlFor="extra-pizza-input"
@@ -164,7 +164,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
                     )
                   }
                   placeholder="0"
-                  className="w-20 p-2 text-center text-lg font-black bg-white/50 border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400/20"
+                  className="w-20 p-2 text-center text-lg font-black bg-white border border-purple-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400/20"
                 />
               </div>
             )}
@@ -182,11 +182,11 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Gluten Free, Field Trips, etc..."
-              className="w-full h-24 p-4 text-sm font-bold bg-white/20 border border-white/30 rounded-2xl outline-none focus:ring-2 focus:ring-brand-blue-primary/20 focus:border-brand-blue-primary transition-all resize-none shadow-inner"
+              className="w-full h-24 p-4 text-sm font-bold bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-brand-blue-primary/20 focus:border-brand-blue-primary transition-all resize-none shadow-inner"
             />
           </div>
 
-          <div className="flex gap-3 sticky bottom-0 bg-white/40 backdrop-blur-md pt-2">
+          <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
             <Button
               onClick={onClose}
               variant="secondary"

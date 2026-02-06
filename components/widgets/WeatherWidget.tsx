@@ -428,7 +428,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           Instruction
         </div>
 
-        <div className="w-full bg-white/20 border border-white/30 backdrop-blur-sm rounded-2xl p-3 flex items-center gap-3">
+        <div className="w-full bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3">
           <div
             className="shrink-0"
             style={{ fontSize: `${clothingImgSize}px` }}
@@ -445,11 +445,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       {isAuto && (
-        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-white/20 w-full justify-start">
+        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-200 w-full justify-start">
           <button
             onClick={handleRefresh}
             disabled={isSyncing}
-            className="p-2 bg-white/20 hover:bg-white/40 text-slate-500 hover:text-indigo-600 rounded-lg transition-all border border-white/30 backdrop-blur-sm disabled:opacity-50 shadow-sm"
+            className="p-2 bg-white hover:bg-slate-50 text-slate-500 hover:text-indigo-600 rounded-lg transition-all border border-slate-200 disabled:opacity-50 shadow-sm"
             title="Refresh Weather"
           >
             {isSyncing ? (
@@ -458,10 +458,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <RefreshCw className="w-3.5 h-3.5" />
             )}
           </button>
-          <div className="text-xxxs  text-slate-300 uppercase flex items-center gap-1.5">
+          <div className="text-xxxs text-slate-500 uppercase flex items-center gap-1.5">
             <span>Last Sync</span>
             {lastSync && (
-              <span className="text-slate-400">
+              <span className="text-slate-600">
                 {new Date(lastSync).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -702,7 +702,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between p-3 bg-white/20 rounded-xl border border-white/10">
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
         <div className="flex flex-col gap-0.5">
           <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
             Prioritize Feels Like

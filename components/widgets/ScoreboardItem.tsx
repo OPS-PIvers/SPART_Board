@@ -94,7 +94,7 @@ export const ScoreboardItem = React.memo(
 
     return (
       <div
-        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
+        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-slate-200 relative group`}
         style={{ containerType: 'size' }}
       >
         <div
@@ -112,7 +112,7 @@ export const ScoreboardItem = React.memo(
         <div className="flex gap-2 opacity-100 transition-opacity">
           <button
             onClick={() => onUpdateScore(team.id, -1)}
-            className={`p-1.5 bg-white/40 ${styles.button} rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
+            className={`p-1.5 bg-white ${styles.button} rounded-lg shadow-sm hover:bg-slate-50 active:scale-95 transition-all`}
           >
             <Minus className="w-4 h-4" />
           </button>

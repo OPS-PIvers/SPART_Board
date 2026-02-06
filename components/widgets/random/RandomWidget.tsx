@@ -440,14 +440,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <RotateCcw className="w-4 h-4" />
           </button>
           {remainingStudents.length > 0 && (
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight bg-white/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-white/50 shadow-sm">
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight bg-white px-1.5 py-0.5 rounded-md border border-slate-200 shadow-sm">
               {remainingStudents.length} Left
             </span>
           )}
         </div>
       )}
       {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
+        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
           <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
           <span className="text-xxs  font-black uppercase text-brand-blue-primary tracking-wider">
             {activeRoster.name}
@@ -470,7 +470,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     key={i}
                     draggable
                     data-no-drag="true"
-                    className="flex items-center gap-3 bg-white/40 backdrop-blur-sm p-2.5 rounded-xl border border-white/50 mb-1.5 transition-all hover:bg-white/60 shadow-sm"
+                    className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 mb-1.5 transition-all hover:bg-slate-50 shadow-sm"
                   >
                     <span className="text-xs font-mono font-black text-slate-400">
                       {i + 1}
@@ -530,7 +530,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   return (
                     <div
                       key={i}
-                      className="bg-brand-blue-primary/10 backdrop-blur-sm border border-brand-blue-primary/20 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
+                      className="bg-blue-50 border border-blue-200 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
                       style={{ fontSize: `${groupFontSize}px` }}
                     >
                       <div

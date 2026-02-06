@@ -58,7 +58,7 @@ const DiceFace: React.FC<{
   return (
     <div
       className={`
-                  relative bg-white/40 backdrop-blur-md rounded-2xl shadow-lg border-2 border-white/40
+                  relative bg-white rounded-2xl shadow-lg border-2 border-slate-200
                   flex items-center justify-center
                   transition-all duration-300
                   w-[25cqmin] h-[25cqmin]

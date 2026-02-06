@@ -93,7 +93,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   ? `${item.color} ${
                       item.textColor ?? 'text-white'
                     } border-transparent shadow-lg scale-[1.02] z-10`
-                  : 'bg-white/50 border-white/20 text-slate-600 hover:bg-white/70 hover:border-white/30'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
               }`}
             >
               <item.icon

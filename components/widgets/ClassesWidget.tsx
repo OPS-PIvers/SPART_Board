@@ -324,7 +324,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             </button>
             <button
               onClick={handleFetchClassLink}
-              className="bg-white/40 text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
+              className="bg-white text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
               title="Sync from ClassLink"
             >
               <RefreshCw
@@ -345,7 +345,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             {rosters.map((r) => (
               <div
                 key={r.id}
-                className={`p-3 border rounded-lg bg-white/40 flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
+                className={`p-3 border rounded-lg bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
               >
                 {' '}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -432,7 +432,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 classLinkClasses.map((cls) => (
                   <div
                     key={cls.sourcedId}
-                    className="p-3 border border-slate-200 rounded-lg bg-white/40 flex justify-between items-center hover:shadow-md transition-shadow"
+                    className="p-3 border border-slate-200 rounded-lg bg-white flex justify-between items-center hover:shadow-md transition-shadow"
                   >
                     <div>
                       <div className=" text-slate-800">{cls.title}</div>

@@ -143,10 +143,10 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   const renderVolumeView = () => (
     <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
-      <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
+      <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
-          className="p-1 hover:bg-white/20 rounded-lg mr-2"
+          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
         >
           <ArrowLeft size={18} />
         </button>
@@ -164,7 +164,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
               voiceLevel === v.id
                 ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
-                : 'border-white/40 bg-white/20 text-slate-500 hover:border-white/60'
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
             }`}
           >
             <span className="text-2xl font-black opacity-40 w-6">{v.id}</span>
@@ -187,10 +187,10 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   const renderGroupsView = () => (
     <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
-      <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
+      <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
-          className="p-1 hover:bg-white/20 rounded-lg mr-2"
+          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
         >
           <ArrowLeft size={18} />
         </button>
@@ -208,7 +208,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
               workMode === g.id
                 ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
-                : 'border-white/40 bg-white/20 text-slate-500 hover:border-white/60'
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
             }`}
           >
             <g.icon size={24} strokeWidth={2.5} />
@@ -226,10 +226,10 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
 
   const renderInteractionView = () => (
     <div className="flex flex-col h-full bg-transparent animate-in slide-in-from-right duration-200">
-      <div className="flex items-center p-3 border-b border-white/20 backdrop-blur-sm shrink-0">
+      <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
         <button
           onClick={() => setActiveCategory(null)}
-          className="p-1 hover:bg-white/20 rounded-lg mr-2"
+          className="p-1 hover:bg-slate-100 rounded-lg mr-2"
         >
           <ArrowLeft size={18} />
         </button>
@@ -249,7 +249,7 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
             className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
               interactionMode === i.id
                 ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
-                : 'border-white/40 bg-white/20 text-slate-500 hover:border-white/60'
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
             }`}
           >
             <i.icon size={24} strokeWidth={2.5} />
@@ -290,11 +290,11 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
         className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
           selectedVolume
             ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
-            : 'bg-white/40 border-white/50 text-slate-600 hover:border-white/80 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
         } ${isElementary ? 'col-span-2' : ''}`}
       >
         <div
-          className={`p-3 rounded-xl ${selectedVolume ? 'bg-white/50' : 'bg-white/20'}`}
+          className={`p-3 rounded-xl ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
         >
           <Volume2 size={24} strokeWidth={2.5} />
         </div>
@@ -313,11 +313,11 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
         className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
           selectedGroup
             ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
-            : 'bg-white/40 border-white/50 text-slate-600 hover:border-white/80 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
         }`}
       >
         <div
-          className={`p-3 rounded-xl ${selectedGroup ? 'bg-white/50' : 'bg-white/20'}`}
+          className={`p-3 rounded-xl ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
         >
           <Users size={24} strokeWidth={2.5} />
         </div>
@@ -336,11 +336,11 @@ export const WorkSymbolsWidget: React.FC<{ widget: WidgetData }> = ({
         className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
           selectedInteraction
             ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
-            : 'bg-white/40 border-white/50 text-slate-600 hover:border-white/80 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
         }`}
       >
         <div
-          className={`p-3 rounded-xl ${selectedInteraction ? 'bg-white/50' : 'bg-white/20'}`}
+          className={`p-3 rounded-xl ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
         >
           <MessagesSquare size={24} strokeWidth={2.5} />
         </div>

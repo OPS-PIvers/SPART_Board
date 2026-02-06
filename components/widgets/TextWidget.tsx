@@ -99,7 +99,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <button
               key={t.name}
               onClick={() => applyTemplate(t.content)}
-              className="flex items-center gap-2 p-2 bg-white/50 border border-white/30 rounded-lg text-left hover:bg-white/70 transition-all"
+              className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg text-left hover:bg-slate-50 transition-all"
             >
               <t.icon className="w-3 h-3 text-indigo-600" />
               <span className="text-xxs  text-slate-800">{t.name}</span>

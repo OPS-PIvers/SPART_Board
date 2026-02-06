@@ -441,7 +441,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
 
         {!hasTrafficLight && (
-          <div className="text-xxs text-indigo-400 font-medium bg-white/50 p-2 rounded-lg">
+          <div className="text-xxs text-indigo-400 font-medium bg-indigo-50 p-2 rounded-lg">
             Tip: Add a Traffic Light widget to use this feature.
           </div>
         )}
@@ -484,7 +484,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
                     trafficLightThreshold === i + 1
                       ? 'bg-white border-indigo-200 text-indigo-700 shadow-sm'
-                      : 'border-transparent hover:bg-white/50 text-indigo-900/60'
+                      : 'border-transparent hover:bg-indigo-50 text-indigo-900/60'
                   }`}
                 >
                   <div
