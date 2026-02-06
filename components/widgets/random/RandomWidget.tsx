@@ -10,11 +10,12 @@ import {
 } from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target, RotateCcw } from 'lucide-react';
-import { useScaledFont } from '../../../hooks/useScaledFont';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
 import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
+
+import { WidgetLayout } from '../WidgetLayout';
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
@@ -126,13 +127,6 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
     return combined;
   }, [firstNames, lastNames, activeRoster, rosterMode]);
-
-  // Grid columns for group view - Deprecated in favor of auto-fit
-  // const gridCols = useMemo(() => {
-  //   if (widget.w > 600) return 3;
-  //   if (widget.w > 400) return 2;
-  //   return 1;
-  // }, [widget.w]);
 
   const shuffle = <T,>(array: T[]): T[] => {
     const newArr = [...array];
@@ -253,23 +247,16 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     };
 
     if (mode === 'single') {
-      // Logic for "bag" selection:
-      // 1. Get current pool from config or init with all students
-      // 2. Filter pool to remove any students that were deleted from roster
       let pool =
         remainingStudents.length > 0 ? remainingStudents : [...students];
       pool = pool.filter((s) => students.includes(s));
 
-      // 3. If pool is empty (everyone picked or all remaining deleted), reset
       if (pool.length === 0) {
         pool = [...students];
       }
 
-      // 4. Pick winner
       const winnerIndexInPool = Math.floor(Math.random() * pool.length);
       const winnerName = pool[winnerIndexInPool];
-
-      // 5. Calculate new remaining list
       const nextRemaining = pool.filter((_, i) => i !== winnerIndexInPool);
 
       if (visualStyle === 'flash') {
@@ -290,14 +277,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         }, 80);
       } else if (visualStyle === 'wheel') {
         const extraSpins = 5;
-        // Find index of winnerName in the full students list for wheel targeting
         let winnerIndex = students.indexOf(winnerName);
-        if (winnerIndex === -1) winnerIndex = 0; // Fallback
+        if (winnerIndex === -1) winnerIndex = 0;
 
         const segmentAngle = 360 / students.length;
-        // Target the top center (90 degrees offset in SVG math).
-        // We rotate the wheel so that the middle of the winning segment
-        // (winnerIndex * segmentAngle + segmentAngle / 2) lands at the top.
         const targetRotation =
           rotation +
           360 * extraSpins +
@@ -367,16 +350,11 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
-  const resultFontSize = useScaledFont(widget.w, widget.h, 1.5, 24, 200);
-  const groupFontSize = useScaledFont(widget.w, widget.h, 0.45, 12, 36);
-
   const renderSinglePick = () => {
+    const resFontSize = '15cqmin'; // Standardized size
+
     if (visualStyle === 'wheel' && students.length > 0) {
-      const VERTICAL_OFFSET = 100; // Accounts for button height and vertical padding
-      const HORIZONTAL_PADDING = 40;
-      const availableH = widget.h - VERTICAL_OFFSET;
-      const availableW = widget.w - HORIZONTAL_PADDING;
-      const wheelSize = Math.min(availableW, availableH);
+      const wheelSize = Math.min(widget.w * 0.8, widget.h * 0.6);
 
       return (
         <RandomWheel
@@ -385,7 +363,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={resultFontSize}
+          resultFontSize={24} // Internal scaling handled by RandomWheel
         />
       );
     }
@@ -394,8 +372,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       return (
         <RandomSlots
           displayResult={displayResult as string | string[] | string[][] | null}
-          fontSize={resultFontSize * 1.5}
-          slotHeight={widget.h - 100}
+          fontSize={resFontSize}
+          slotHeight={widget.h * 0.5}
         />
       );
     }
@@ -404,7 +382,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <RandomFlash
         displayResult={displayResult as string | string[] | string[][] | null}
         isSpinning={isSpinning}
-        fontSize={resultFontSize * 1.5}
+        fontSize={resFontSize}
       />
     );
   };
@@ -414,7 +392,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
         <Users className="w-12 h-12 opacity-20" />
         <div>
-          <p className="text-sm  uppercase tracking-widest mb-1">
+          <p className="text-sm uppercase tracking-widest mb-1 font-bold">
             No Names Provided
           </p>
           <p className="text-xs">
@@ -426,164 +404,172 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   return (
-    <div className="h-full flex flex-col p-2 font-sans bg-transparent rounded-lg overflow-hidden relative">
-      {mode === 'single' && students.length > 0 && (
-        <div className="absolute top-2 left-8 flex items-center gap-1.5 z-10">
-          <button
-            onClick={handleReset}
-            disabled={
-              isSpinning || (remainingStudents.length === 0 && !displayResult)
-            }
-            className="p-2 hover:bg-slate-800/10 rounded-full text-slate-500 hover:text-brand-blue-primary transition-all disabled:opacity-30 disabled:pointer-events-none"
-            title="Reset student pool"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          {remainingStudents.length > 0 && (
-            <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight bg-white px-1.5 py-0.5 rounded-md border border-slate-200 shadow-sm">
-              {remainingStudents.length} Left
-            </span>
-          )}
-        </div>
-      )}
-      {activeRoster && rosterMode === 'class' && (
-        <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light animate-in fade-in slide-in-from-top-1">
-          <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
-          <span className="text-xxs  font-black uppercase text-brand-blue-primary tracking-wider">
-            {activeRoster.name}
-          </span>
-        </div>
-      )}
-      <div className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden">
-        {mode === 'single' ? (
-          renderSinglePick()
-        ) : (
-          <div className="w-full h-full flex flex-col min-h-0">
-            {mode === 'shuffle' ? (
-              <div className="flex-1 overflow-y-auto w-full py-1 custom-scrollbar">
-                {(Array.isArray(displayResult) &&
-                (displayResult.length === 0 || !Array.isArray(displayResult[0]))
-                  ? (displayResult as string[])
-                  : []
-                ).map((name: string, i: number) => (
-                  <div
-                    key={i}
-                    draggable
-                    data-no-drag="true"
-                    className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 mb-1.5 transition-all hover:bg-slate-50 shadow-sm"
-                  >
-                    <span className="text-xs font-mono font-black text-slate-400">
-                      {i + 1}
-                    </span>
-                    <span className="text-lg leading-none font-bold text-slate-700">
-                      {name}
-                    </span>
-                  </div>
-                ))}
-                {(!displayResult ||
-                  !Array.isArray(displayResult) ||
-                  (displayResult.length > 0 &&
-                    Array.isArray(displayResult[0]))) && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 italic py-10 gap-2">
-                    <Layers className="w-8 h-8 opacity-20" />
-                    <span className="font-bold">
-                      Click Randomize to Shuffle
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div
-                className="flex-1 w-full grid content-start overflow-y-auto custom-scrollbar pr-1"
-                style={{
-                  gridTemplateColumns: `repeat(auto-fit, minmax(145px, 1fr))`,
-                  gap: '12px',
-                }}
-              >
-                {(Array.isArray(displayResult) &&
-                (displayResult.length === 0 ||
-                  Array.isArray(displayResult[0]) ||
-                  (typeof displayResult[0] === 'object' &&
-                    displayResult[0] !== null))
-                  ? (displayResult as (string[] | RandomGroup)[])
-                  : []
-                ).map((groupItem, i) => {
-                  const groupNames = Array.isArray(groupItem)
-                    ? groupItem
-                    : groupItem.names;
-                  const groupId =
-                    !Array.isArray(groupItem) && 'id' in groupItem
-                      ? groupItem.id
-                      : null;
-
-                  // Lookup shared name if ID exists
-                  let groupName = `Group ${i + 1}`;
-                  if (groupId && activeDashboard?.sharedGroups) {
-                    const shared = activeDashboard.sharedGroups.find(
-                      (g) => g.id === groupId
-                    );
-                    if (shared) groupName = shared.name;
+    <WidgetLayout
+      header={
+        <div className="flex justify-between items-center w-full px-2 pt-1">
+          <div className="flex items-center gap-2">
+            {mode === 'single' && (
+              <>
+                <button
+                  onClick={handleReset}
+                  disabled={
+                    isSpinning ||
+                    (remainingStudents.length === 0 && !displayResult)
                   }
-
-                  if (!groupNames) return null;
-
-                  return (
-                    <div
-                      key={i}
-                      className="bg-blue-50 border border-blue-200 rounded-2xl p-3 flex flex-col shadow-sm overflow-hidden"
-                      style={{ fontSize: `${groupFontSize}px` }}
-                    >
-                      <div
-                        className="uppercase text-brand-blue-primary mb-1 tracking-widest opacity-80 text-[10px] font-black truncate"
-                        title={groupName}
-                      >
-                        {groupName}
-                      </div>
-                      <div className="space-y-1 overflow-hidden">
-                        {groupNames.map((name, ni) => (
-                          <div
-                            key={ni}
-                            data-no-drag="true"
-                            className="text-slate-700 font-bold whitespace-nowrap overflow-hidden text-ellipsis"
-                          >
-                            {name}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-                {(!displayResult ||
-                  !Array.isArray(displayResult) ||
-                  (displayResult.length > 0 &&
-                    !Array.isArray(displayResult[0]) &&
-                    typeof displayResult[0] !== 'object')) && (
-                  <div className="col-span-full flex flex-col items-center justify-center text-slate-400 italic h-full gap-2 font-bold">
-                    <Users className="w-8 h-8 opacity-20" />
-                    <span>Click Randomize to Group</span>
-                  </div>
+                  className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-brand-blue-primary transition-all disabled:opacity-30"
+                  title="Reset student pool"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                {remainingStudents.length > 0 && (
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-tight bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                    {remainingStudents.length} Left
+                  </span>
                 )}
-              </div>
+              </>
             )}
           </div>
-        )}
-      </div>
+          {activeRoster && rosterMode === 'class' && (
+            <div className="flex items-center gap-1.5 bg-brand-blue-lighter px-2 py-0.5 rounded-full border border-brand-blue-light">
+              <Target className="w-2.5 h-2.5 text-brand-blue-primary" />
+              <span className="text-[9px] font-black uppercase text-brand-blue-primary tracking-wider">
+                {activeRoster.name}
+              </span>
+            </div>
+          )}
+        </div>
+      }
+      content={
+        <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0 overflow-hidden">
+          {mode === 'single' ? (
+            renderSinglePick()
+          ) : (
+            <div className="w-full h-full flex flex-col min-h-0 px-2">
+              {mode === 'shuffle' ? (
+                <div className="flex-1 overflow-y-auto w-full py-1 custom-scrollbar">
+                  {(Array.isArray(displayResult) &&
+                  (displayResult.length === 0 ||
+                    !Array.isArray(displayResult[0]))
+                    ? (displayResult as string[])
+                    : []
+                  ).map((name: string, i: number) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 mb-1 transition-all hover:bg-slate-50 shadow-sm"
+                    >
+                      <span className="text-[10px] font-mono font-black text-slate-400">
+                        {i + 1}
+                      </span>
+                      <span className="text-[4cqmin] leading-none font-bold text-slate-700">
+                        {name}
+                      </span>
+                    </div>
+                  ))}
+                  {(!displayResult ||
+                    !Array.isArray(displayResult) ||
+                    (displayResult.length > 0 &&
+                      Array.isArray(displayResult[0]))) && (
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-300 italic py-10 gap-2">
+                      <Layers className="w-8 h-8 opacity-20" />
+                      <span className="font-bold text-sm">
+                        Click Randomize to Shuffle
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="flex-1 w-full grid content-start overflow-y-auto custom-scrollbar pr-1 py-2"
+                  style={{
+                    gridTemplateColumns: `repeat(auto-fit, minmax(130px, 1fr))`,
+                    gap: '8px',
+                  }}
+                >
+                  {(Array.isArray(displayResult) &&
+                  (displayResult.length === 0 ||
+                    Array.isArray(displayResult[0]) ||
+                    (typeof displayResult[0] === 'object' &&
+                      displayResult[0] !== null))
+                    ? (displayResult as (string[] | RandomGroup)[])
+                    : []
+                  ).map((groupItem, i) => {
+                    const groupNames = Array.isArray(groupItem)
+                      ? groupItem
+                      : groupItem.names;
+                    const groupId =
+                      !Array.isArray(groupItem) && 'id' in groupItem
+                        ? groupItem.id
+                        : null;
 
-      <Button
-        variant="hero"
-        size="lg"
-        shape="pill"
-        onClick={handlePick}
-        disabled={isSpinning}
-        className="mt-4 w-full shrink-0"
-        icon={
-          <RefreshCw
-            className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`}
-          />
-        }
-      >
-        {isSpinning ? 'Picking...' : 'Randomize'}
-      </Button>
-    </div>
+                    let groupName = `Group ${i + 1}`;
+                    if (groupId && activeDashboard?.sharedGroups) {
+                      const shared = activeDashboard.sharedGroups.find(
+                        (g) => g.id === groupId
+                      );
+                      if (shared) groupName = shared.name;
+                    }
+
+                    if (!groupNames) return null;
+
+                    return (
+                      <div
+                        key={i}
+                        className="bg-blue-50 border border-blue-200 rounded-xl p-2 flex flex-col shadow-sm overflow-hidden"
+                      >
+                        <div
+                          className="uppercase text-brand-blue-primary mb-1 tracking-widest opacity-80 text-[8px] font-black truncate"
+                          title={groupName}
+                        >
+                          {groupName}
+                        </div>
+                        <div className="space-y-0.5 overflow-hidden">
+                          {groupNames.map((name, ni) => (
+                            <div
+                              key={ni}
+                              className="text-slate-700 font-bold text-[3cqmin] whitespace-nowrap overflow-hidden text-ellipsis"
+                            >
+                              {name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!displayResult ||
+                    !Array.isArray(displayResult) ||
+                    (displayResult.length > 0 &&
+                      !Array.isArray(displayResult[0]) &&
+                      typeof displayResult[0] !== 'object')) && (
+                    <div className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full gap-2 font-bold py-10">
+                      <Users className="w-8 h-8 opacity-20" />
+                      <span className="text-sm">Click Randomize to Group</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      }
+      footer={
+        <div className="w-full px-2 pb-2">
+          <Button
+            variant="hero"
+            size="lg"
+            shape="pill"
+            onClick={handlePick}
+            disabled={isSpinning}
+            className="w-full h-12"
+            icon={
+              <RefreshCw
+                className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`}
+              />
+            }
+          >
+            {isSpinning ? 'Picking...' : 'Randomize'}
+          </Button>
+        </div>
+      }
+    />
   );
 };

@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { TrafficLightWidget } from './TrafficLightWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { WidgetData, TrafficConfig } from '../../types';
+import { TrafficLightWidget } from './TrafficLightWidget';
 
 vi.mock('../../context/useDashboard');
 
@@ -10,6 +10,11 @@ const mockUpdateWidget = vi.fn();
 
 const mockDashboardContext = {
   updateWidget: mockUpdateWidget,
+};
+
+// Helper to render widget
+const renderWidget = (widget: WidgetData) => {
+  return render(<TrafficLightWidget widget={widget} />);
 };
 
 describe('TrafficLightWidget', () => {
@@ -36,27 +41,25 @@ describe('TrafficLightWidget', () => {
 
   it('renders correctly with no active light', () => {
     const widget = createWidget();
-    render(<TrafficLightWidget widget={widget} />);
+    renderWidget(widget);
 
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(3);
 
     // Check that none of them have the "active" state/class
-    // Based on the code: current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'
-    // We check for absence of 'active' or specific active color classes
     buttons.forEach((button) => {
       expect(button.className).not.toContain('bg-red-500');
-      expect(button.className).not.toContain('bg-yellow-400'); // yellow active is 400
+      expect(button.className).not.toContain('bg-yellow-400');
       expect(button.className).not.toContain('bg-green-500');
     });
   });
 
   it('renders correctly with red light active', () => {
     const widget = createWidget('red');
-    render(<TrafficLightWidget widget={widget} />);
+    renderWidget(widget);
 
     const buttons = screen.getAllByRole('button');
-    const redButton = buttons[0]; // Assuming order: Red, Yellow, Green
+    const redButton = buttons[0]; // Order: Red, Yellow, Green
 
     expect(redButton.className).toContain('bg-red-500');
     expect(redButton.className).toContain('active');
@@ -64,7 +67,7 @@ describe('TrafficLightWidget', () => {
 
   it('toggles red light on when clicked', () => {
     const widget = createWidget();
-    render(<TrafficLightWidget widget={widget} />);
+    renderWidget(widget);
 
     const buttons = screen.getAllByRole('button');
     const redButton = buttons[0];
@@ -80,7 +83,7 @@ describe('TrafficLightWidget', () => {
 
   it('toggles red light off when clicked again', () => {
     const widget = createWidget('red');
-    render(<TrafficLightWidget widget={widget} />);
+    renderWidget(widget);
 
     const buttons = screen.getAllByRole('button');
     const redButton = buttons[0];
@@ -96,7 +99,7 @@ describe('TrafficLightWidget', () => {
 
   it('switches from red to yellow', () => {
     const widget = createWidget('red');
-    render(<TrafficLightWidget widget={widget} />);
+    renderWidget(widget);
 
     const buttons = screen.getAllByRole('button');
     const yellowButton = buttons[1];
@@ -112,7 +115,7 @@ describe('TrafficLightWidget', () => {
 
   it('switches from yellow to green', () => {
     const widget = createWidget('yellow');
-    render(<TrafficLightWidget widget={widget} />);
+    renderWidget(widget);
 
     const buttons = screen.getAllByRole('button');
     const greenButton = buttons[2];

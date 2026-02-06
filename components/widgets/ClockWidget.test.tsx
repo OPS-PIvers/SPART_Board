@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
-import { ClockWidget } from './ClockWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { ClockWidget } from './ClockWidget';
 
 vi.mock('../../context/useDashboard');
 
@@ -10,6 +10,11 @@ const mockDashboardContext = {
   activeDashboard: {
     globalStyle: DEFAULT_GLOBAL_STYLE,
   },
+};
+
+// Helper to render widget
+const renderWidget = (widget: WidgetData) => {
+  return render(<ClockWidget widget={widget} />);
 };
 
 describe('ClockWidget', () => {
@@ -49,7 +54,7 @@ describe('ClockWidget', () => {
     const date = new Date('2023-01-01T14:30:45');
     vi.setSystemTime(date);
 
-    render(<ClockWidget widget={createWidget({ format24: true })} />);
+    renderWidget(createWidget({ format24: true }));
 
     expect(screen.getByText('14')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
@@ -60,7 +65,7 @@ describe('ClockWidget', () => {
     const date = new Date('2023-01-01T14:30:45');
     vi.setSystemTime(date);
 
-    render(<ClockWidget widget={createWidget({ format24: false })} />);
+    renderWidget(createWidget({ format24: false }));
 
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
@@ -71,7 +76,7 @@ describe('ClockWidget', () => {
     const date = new Date('2023-01-01T14:30:45');
     vi.setSystemTime(date);
 
-    render(<ClockWidget widget={createWidget({ showSeconds: true })} />);
+    renderWidget(createWidget({ showSeconds: true }));
 
     expect(screen.getByText('45')).toBeInTheDocument();
 
@@ -87,11 +92,7 @@ describe('ClockWidget', () => {
     const date = new Date('2023-01-01T14:30:45');
     vi.setSystemTime(date);
 
-    render(
-      <ClockWidget
-        widget={createWidget({ showSeconds: false, format24: true })}
-      />
-    );
+    renderWidget(createWidget({ showSeconds: false, format24: true }));
 
     expect(screen.getByText('14')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
@@ -100,7 +101,7 @@ describe('ClockWidget', () => {
 
   it('applies theme color', () => {
     const widget = createWidget({ themeColor: 'rgb(255, 0, 0)' });
-    const { container } = render(<ClockWidget widget={widget} />);
+    const { container } = renderWidget(widget);
 
     // The color is applied to the inner div with inline style
     const timeContainer = container.querySelector('.flex.items-baseline');

@@ -10,11 +10,11 @@ import { Play, Pause, RotateCcw, Bell, Delete, Check, X } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { playTimerAlert, resumeAudio } from '../../utils/timeToolAudio';
 
-interface Props {
-  widget: WidgetData;
-}
+import { WidgetLayout } from './WidgetLayout';
 
-export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
+export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
   const [showSoundPicker, setShowSoundPicker] = useState(false);
@@ -225,301 +225,308 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
   };
 
   return (
-    <div
-      className={`flex flex-col h-full transition-all duration-500 ${themeClass} w-full`}
-    >
-      {/* Header: Digital/Visual Toggle & Themes */}
-      <div className="px-3 pt-3 flex justify-between items-center shrink-0">
-        <div className="bg-slate-400/10 p-1 rounded-xl flex items-center relative w-36">
-          <div
-            className={`absolute w-[calc(50%-4px)] h-[calc(100%-8px)] bg-blue-500 rounded-lg shadow-sm transition-transform duration-300 ${isVisual ? 'translate-x-full' : ''}`}
-          />
-          <button
-            onClick={() =>
-              updateWidget(widget.id, {
-                config: { ...config, visualType: 'digital' },
-              })
-            }
-            className={`relative z-10 flex-1 py-1 text-xxs  uppercase transition-colors ${!isVisual ? 'text-white' : 'text-slate-500'}`}
-          >
-            Digital
-          </button>
-          <button
-            onClick={() =>
-              updateWidget(widget.id, {
-                config: { ...config, visualType: 'visual' },
-              })
-            }
-            className={`relative z-10 flex-1 py-1 text-xxs  uppercase transition-colors ${isVisual ? 'text-white' : 'text-slate-500'}`}
-          >
-            Visual
-          </button>
-        </div>
-        <div className="flex gap-2">
-          {(['light', 'dark', 'glass'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() =>
-                updateWidget(widget.id, { config: { ...config, theme: t } })
-              }
-              className={`w-4 h-4 rounded-full border border-black shadow-sm transition-transform hover:scale-110 active:scale-95 ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-800' : 'bg-white/30'}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Mode Tabs */}
-      <div className="px-3 mt-2 flex gap-4 shrink-0" role="tablist">
-        <button
-          role="tab"
-          aria-selected={config.mode === 'timer'}
-          onClick={() => {
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                mode: 'timer',
-                elapsedTime: 600,
-                duration: 600,
-                isRunning: false,
-                startTime: null,
-              },
-            });
-            setRunningDisplayTime(600);
-          }}
-          className={`pb-2 text-xxs  uppercase tracking-widest transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-500'}`}
-        >
-          Timer
-        </button>
-        <button
-          role="tab"
-          aria-selected={config.mode === 'stopwatch'}
-          onClick={() => {
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                mode: 'stopwatch',
-                elapsedTime: 0,
-                isRunning: false,
-                startTime: null,
-              },
-            });
-            setRunningDisplayTime(0);
-          }}
-          className={`pb-2 text-xxs  uppercase tracking-widest transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-500'}`}
-        >
-          Stopwatch
-        </button>
-      </div>
-
-      {/* Center: Time Display */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-0">
-        {isEditing ? (
-          <div className="flex flex-col items-center w-full max-w-[280px] animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center gap-2 mb-4 font-mono text-4xl font-bold tabular-nums">
+    <WidgetLayout
+      padding="p-0"
+      header={
+        <div className={`flex flex-col gap-2 p-3 ${themeClass} rounded-t-xl`}>
+          {/* Digital/Visual Toggle & Themes */}
+          <div className="flex justify-between items-center">
+            <div className="bg-slate-400/10 p-1 rounded-xl flex items-center relative w-36">
+              <div
+                className={`absolute w-[calc(50%-4px)] h-[calc(100%-8px)] bg-blue-500 rounded-lg shadow-sm transition-transform duration-300 ${isVisual ? 'translate-x-full' : ''}`}
+              />
               <button
-                onClick={() => setActiveField('min')}
-                className={`px-3 py-1 rounded-lg border-2 transition-colors ${
-                  activeField === 'min'
-                    ? 'border-blue-500 bg-blue-500/10 text-blue-500'
-                    : 'border-transparent text-slate-400'
-                }`}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, visualType: 'digital' },
+                  })
+                }
+                className={`relative z-10 flex-1 py-1 text-[10px] uppercase transition-colors ${!isVisual ? 'text-white' : 'text-slate-500'}`}
               >
-                {editValues.min}
-              </button>
-              <span className="text-slate-300">:</span>
-              <button
-                onClick={() => setActiveField('sec')}
-                className={`px-3 py-1 rounded-lg border-2 transition-colors ${
-                  activeField === 'sec'
-                    ? 'border-blue-500 bg-blue-500/10 text-blue-500'
-                    : 'border-transparent text-slate-400'
-                }`}
-              >
-                {editValues.sec}
+                Digital
               </button>
               <button
-                onClick={() => setIsEditing(false)}
-                className="ml-4 p-2 text-slate-400 hover:text-red-500 transition-colors"
-                aria-label="Close keypad"
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, visualType: 'visual' },
+                  })
+                }
+                className={`relative z-10 flex-1 py-1 text-[10px] uppercase transition-colors ${isVisual ? 'text-white' : 'text-slate-500'}`}
               >
-                <X size={20} />
+                Visual
               </button>
             </div>
-
-            <div className="grid grid-cols-3 gap-2 w-full max-w-[200px]">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+            <div className="flex gap-2">
+              {(['light', 'dark', 'glass'] as const).map((t) => (
                 <button
-                  key={n}
-                  onClick={() => handleKeypadInput(n.toString())}
-                  className={numpadButtonClasses}
-                >
-                  {n}
-                </button>
+                  key={t}
+                  onClick={() =>
+                    updateWidget(widget.id, { config: { ...config, theme: t } })
+                  }
+                  className={`w-4 h-4 rounded-full border border-black shadow-sm transition-transform hover:scale-110 active:scale-95 ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-800' : 'bg-white/30'}`}
+                />
               ))}
-              <button
-                onClick={handleBackspace}
-                className={`py-2 rounded-lg flex items-center justify-center transition-colors active:scale-95 ${
-                  config.theme === 'dark'
-                    ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700'
-                    : config.theme === 'glass'
-                      ? 'bg-white/5 text-slate-300 hover:bg-white/10'
-                      : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                }`}
-                aria-label="Backspace"
-              >
-                <Delete size={18} />
-              </button>
-              <button
-                onClick={() => handleKeypadInput('0')}
-                className={numpadButtonClasses}
-              >
-                0
-              </button>
-              <button
-                onClick={confirmEdit}
-                className="py-2 bg-blue-600 text-white rounded-lg shadow-md flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all"
-                aria-label="Confirm time"
-              >
-                <Check size={18} />
-              </button>
             </div>
           </div>
-        ) : (
-          <>
-            {isVisual && (
-              <svg
-                className="absolute p-4 max-h-full max-w-full"
-                viewBox="0 0 220 220"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                <circle
-                  className="opacity-10"
-                  stroke="currentColor"
-                  strokeWidth="10"
-                  fill="transparent"
-                  r="95"
-                  cx="110"
-                  cy="110"
-                />
-                <circle
-                  className="transition-all duration-300"
-                  stroke={
-                    getStatusColor().includes('red')
-                      ? STANDARD_COLORS.red
-                      : getStatusColor().includes('amber')
-                        ? STANDARD_COLORS.amber
-                        : STANDARD_COLORS.blue
-                  }
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                  fill="transparent"
-                  r="95"
-                  cx="110"
-                  cy="110"
-                  strokeDasharray="597"
-                  strokeDashoffset={
-                    597 -
-                    (config.mode === 'timer'
-                      ? displayTime / config.duration
-                      : 1) *
-                      597
-                  }
-                  style={{
-                    transform: 'rotate(-90deg)',
-                    transformOrigin: '50% 50%',
-                  }}
-                />
-              </svg>
-            )}
+
+          {/* Mode Tabs */}
+          <div className="flex gap-4" role="tablist">
             <button
-              onClick={startEditing}
-              data-testid="time-display"
-              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
-              disabled={config.isRunning || config.mode !== 'timer'}
+              role="tab"
+              aria-selected={config.mode === 'timer'}
+              onClick={() => {
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    mode: 'timer',
+                    elapsedTime: 600,
+                    duration: 600,
+                    isRunning: false,
+                    startTime: null,
+                  },
+                });
+                setRunningDisplayTime(600);
+              }}
+              className={`pb-1 text-[10px] uppercase tracking-widest transition-all ${config.mode === 'timer' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-500'}`}
             >
-              {formatTime(displayTime)}
+              Timer
             </button>
-            {!isVisual && config.mode === 'timer' && (
-              <div className="flex flex-wrap justify-center gap-1.5 mt-4 max-w-full">
-                {[60, 300, 600, 900, 1800].map((s) => (
+            <button
+              role="tab"
+              aria-selected={config.mode === 'stopwatch'}
+              onClick={() => {
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    mode: 'stopwatch',
+                    elapsedTime: 0,
+                    isRunning: false,
+                    startTime: null,
+                  },
+                });
+                setRunningDisplayTime(0);
+              }}
+              className={`pb-1 text-[10px] uppercase tracking-widest transition-all ${config.mode === 'stopwatch' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-slate-500'}`}
+            >
+              Stopwatch
+            </button>
+          </div>
+        </div>
+      }
+      content={
+        <div
+          className={`flex-1 flex flex-col items-center justify-center p-4 relative min-h-0 w-full h-full ${themeClass}`}
+        >
+          {isEditing ? (
+            <div className="flex flex-col items-center w-full max-w-[280px] animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center gap-2 mb-4 font-mono text-[10cqmin] font-bold tabular-nums">
+                <button
+                  onClick={() => setActiveField('min')}
+                  className={`px-3 py-1 rounded-lg border-2 transition-colors ${
+                    activeField === 'min'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-500'
+                      : 'border-transparent text-slate-400'
+                  }`}
+                >
+                  {editValues.min}
+                </button>
+                <span className="text-slate-300">:</span>
+                <button
+                  onClick={() => setActiveField('sec')}
+                  className={`px-3 py-1 rounded-lg border-2 transition-colors ${
+                    activeField === 'sec'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-500'
+                      : 'border-transparent text-slate-400'
+                  }`}
+                >
+                  {editValues.sec}
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="ml-4 p-2 text-slate-400 hover:text-red-500 transition-colors"
+                  aria-label="Close keypad"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 w-full max-w-[200px]">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                   <button
-                    key={s}
-                    onClick={() => setTime(s)}
-                    className="px-2 py-1 text-[10px] font-bold bg-slate-400/10 rounded-md hover:bg-slate-400/20 transition-colors whitespace-nowrap"
+                    key={n}
+                    onClick={() => handleKeypadInput(n.toString())}
+                    className={numpadButtonClasses}
                   >
-                    {s >= 60 ? `${s / 60}m` : `${s}s`}
+                    {n}
                   </button>
                 ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Controls */}
-      <div className="px-3 pb-3 flex gap-3 shrink-0">
-        <button
-          onClick={
-            config.isRunning
-              ? () => handleStop(runningDisplayTime)
-              : handleStart
-          }
-          className={`flex-[3] py-4 rounded-2xl  text-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${config.isRunning ? 'bg-slate-800 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'}`}
-        >
-          {config.isRunning ? (
-            <Pause size={20} fill="currentColor" />
-          ) : (
-            <Play size={20} fill="currentColor" />
-          )}
-          {config.isRunning ? 'PAUSE' : 'START'}
-        </button>
-        <button
-          onClick={handleReset}
-          className="flex-1 bg-slate-400/10 rounded-2xl flex items-center justify-center hover:bg-slate-400/20 transition-all active:scale-95"
-        >
-          <RotateCcw size={20} />
-        </button>
-      </div>
-
-      {/* Footer: Audio Selection */}
-      <div className="px-3 py-2 flex justify-end items-center relative shrink-0">
-        <div className="relative">
-          <button
-            onClick={() => {
-              setShowSoundPicker(!showSoundPicker);
-            }}
-            className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors"
-          >
-            <Bell size={14} />
-            <span className="text-xxs  uppercase tracking-widest">
-              {config.selectedSound}
-            </span>
-          </button>
-          {showSoundPicker && (
-            <div className="absolute bottom-full right-0 mb-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50">
-              {(['Chime', 'Blip', 'Gong', 'Alert'] as const).map((s) => (
                 <button
-                  key={s}
-                  onClick={() => {
-                    updateWidget(widget.id, {
-                      config: { ...config, selectedSound: s },
-                    });
-                    setShowSoundPicker(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xxs  uppercase transition-colors ${config.selectedSound === s ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  onClick={handleBackspace}
+                  className={`py-2 rounded-lg flex items-center justify-center transition-colors active:scale-95 ${
+                    config.theme === 'dark'
+                      ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                      : config.theme === 'glass'
+                        ? 'bg-white/5 text-slate-300 hover:bg-white/10'
+                        : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                  }`}
+                  aria-label="Backspace"
                 >
-                  {s}
+                  <Delete size={18} />
                 </button>
-              ))}
+                <button
+                  onClick={() => handleKeypadInput('0')}
+                  className={numpadButtonClasses}
+                >
+                  0
+                </button>
+                <button
+                  onClick={confirmEdit}
+                  className="py-2 bg-blue-600 text-white rounded-lg shadow-md flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all"
+                  aria-label="Confirm time"
+                >
+                  <Check size={18} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center relative">
+              {isVisual && (
+                <svg
+                  className="absolute p-4 max-h-full max-w-full"
+                  viewBox="0 0 220 220"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <circle
+                    className="opacity-10"
+                    stroke="currentColor"
+                    strokeWidth="10"
+                    fill="transparent"
+                    r="95"
+                    cx="110"
+                    cy="110"
+                  />
+                  <circle
+                    className="transition-all duration-300"
+                    stroke={
+                      getStatusColor().includes('red')
+                        ? STANDARD_COLORS.red
+                        : getStatusColor().includes('amber')
+                          ? STANDARD_COLORS.amber
+                          : STANDARD_COLORS.blue
+                    }
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    fill="transparent"
+                    r="95"
+                    cx="110"
+                    cy="110"
+                    strokeDasharray="597"
+                    strokeDashoffset={
+                      597 -
+                      (config.mode === 'timer'
+                        ? displayTime / config.duration
+                        : 1) *
+                        597
+                    }
+                    style={{
+                      transform: 'rotate(-90deg)',
+                      transformOrigin: '50% 50%',
+                    }}
+                  />
+                </svg>
+              )}
+              <button
+                onClick={startEditing}
+                data-testid="time-display"
+                className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
+                disabled={config.isRunning || config.mode !== 'timer'}
+              >
+                {formatTime(displayTime)}
+              </button>
+              {!isVisual && config.mode === 'timer' && (
+                <div className="flex flex-wrap justify-center gap-1.5 mt-4 max-w-full">
+                  {[60, 300, 600, 900, 1800].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setTime(s)}
+                      className="px-2 py-1 text-[10px] font-bold bg-slate-400/10 rounded-md hover:bg-slate-400/20 transition-colors whitespace-nowrap"
+                    >
+                      {s >= 60 ? `${s / 60}m` : `${s}s`}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
-    </div>
+      }
+      footer={
+        <div className={`flex flex-col gap-2 p-3 ${themeClass} rounded-b-xl`}>
+          <div className="flex gap-3">
+            <button
+              onClick={
+                config.isRunning
+                  ? () => handleStop(runningDisplayTime)
+                  : handleStart
+              }
+              className={`flex-[3] py-3 rounded-xl text-md font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${config.isRunning ? 'bg-slate-800 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'}`}
+            >
+              {config.isRunning ? (
+                <Pause size={18} fill="currentColor" />
+              ) : (
+                <Play size={18} fill="currentColor" />
+              )}
+              {config.isRunning ? 'PAUSE' : 'START'}
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex-1 bg-slate-400/10 rounded-xl flex items-center justify-center hover:bg-slate-400/20 transition-all active:scale-95"
+            >
+              <RotateCcw size={18} />
+            </button>
+          </div>
+          <div className="flex justify-end items-center relative">
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowSoundPicker(!showSoundPicker);
+                }}
+                className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors"
+              >
+                <Bell size={12} />
+                <span className="text-[10px] uppercase tracking-widest">
+                  {config.selectedSound}
+                </span>
+              </button>
+              {showSoundPicker && (
+                <div className="absolute bottom-full right-0 mb-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50">
+                  {(['Chime', 'Blip', 'Gong', 'Alert'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        updateWidget(widget.id, {
+                          config: { ...config, selectedSound: s },
+                        });
+                        setShowSoundPicker(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] uppercase transition-colors ${config.selectedSound === s ? 'bg-blue-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      }
+    />
   );
 };
 
-export const TimeToolSettings: React.FC<Props> = ({ widget }) => {
+export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
+  widget,
+}) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
   const { timerEndVoiceLevel } = config;

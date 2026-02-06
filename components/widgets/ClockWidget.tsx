@@ -4,6 +4,8 @@ import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 
+import { WidgetLayout } from './WidgetLayout';
+
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
@@ -52,70 +54,78 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-500 ${clockStyle === 'lcd' ? 'bg-black/5' : ''}`}
-    >
-      <div
-        className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
-        style={{
-          fontSize: showSeconds ? '15cqmin' : '20cqmin',
-          color: themeColor,
-          textShadow: glow
-            ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
-            : 'none',
-        }}
-      >
-        {clockStyle === 'lcd' && (
-          <div className="absolute opacity-5 pointer-events-none select-none flex">
-            <span>88</span>
-            <span className="mx-0.5">:</span>
-            <span>88</span>
-            {showSeconds && (
-              <>
+    <WidgetLayout
+      content={
+        <div
+          className={`flex flex-col items-center justify-center h-full w-full gap-[1cqmin] transition-all duration-500 ${
+            clockStyle === 'lcd' ? 'bg-black/5' : ''
+          }`}
+        >
+          <div
+            className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
+            style={{
+              fontSize: showSeconds ? '15cqmin' : '20cqmin',
+              color: themeColor,
+              textShadow: glow
+                ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
+                : 'none',
+            }}
+          >
+            {clockStyle === 'lcd' && (
+              <div className="absolute opacity-5 pointer-events-none select-none flex">
+                <span>88</span>
                 <span className="mx-0.5">:</span>
                 <span>88</span>
+                {showSeconds && (
+                  <>
+                    <span className="mx-0.5">:</span>
+                    <span>88</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            <span>{displayHours}</span>
+            <span
+              className={`${
+                clockStyle === 'minimal' ? '' : 'animate-pulse'
+              } mx-0.5`}
+            >
+              :
+            </span>
+            <span>{minutes}</span>
+
+            {showSeconds && (
+              <>
+                <span className="opacity-30 mx-0.5">:</span>
+                <span className="opacity-60" style={{ fontSize: '0.7em' }}>
+                  {seconds}
+                </span>
               </>
             )}
+
+            {!format24 && (
+              <span
+                className="text-xs opacity-40 ml-2 uppercase "
+                style={{ fontSize: '0.2em' }}
+              >
+                {ampm}
+              </span>
+            )}
           </div>
-        )}
 
-        <span>{displayHours}</span>
-        <span
-          className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-0.5`}
-        >
-          :
-        </span>
-        <span>{minutes}</span>
-
-        {showSeconds && (
-          <>
-            <span className="opacity-30 mx-0.5">:</span>
-            <span className="opacity-60" style={{ fontSize: '0.7em' }}>
-              {seconds}
-            </span>
-          </>
-        )}
-
-        {!format24 && (
-          <span
-            className="text-xs opacity-40 ml-2 uppercase "
-            style={{ fontSize: '0.2em' }}
+          <div
+            className={`text-[4cqmin] opacity-60 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
           >
-            {ampm}
-          </span>
-        )}
-      </div>
-
-      <div
-        className={`text-xxs md:text-xs  opacity-60 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
-      >
-        {time.toLocaleDateString(undefined, {
-          weekday: 'long',
-          month: 'short',
-          day: 'numeric',
-        })}
-      </div>
-    </div>
+            {time.toLocaleDateString(undefined, {
+              weekday: 'long',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </div>
+        </div>
+      }
+    />
   );
 };
 

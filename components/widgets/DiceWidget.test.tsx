@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock, afterEach } from 'vitest';
-import { DiceWidget } from './DiceWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { DashboardContextValue } from '../../context/DashboardContextValue';
 import { WidgetData, DiceConfig } from '../../types';
+import { DiceWidget } from './DiceWidget';
 
 // Mock dependencies
 vi.mock('../../context/useDashboard');
@@ -12,6 +12,11 @@ vi.mock('lucide-react', () => ({
   Hash: () => <div data-testid="hash-icon" />,
   RefreshCw: () => <div data-testid="refresh-icon" />,
 }));
+
+// Helper to render widget
+const renderWidget = (widget: WidgetData) => {
+  return render(<DiceWidget widget={widget} />);
+};
 
 // Mock AudioContext
 const mockAudioContext = {
@@ -87,7 +92,7 @@ describe('DiceWidget', () => {
   });
 
   it('does not apply blur class while rolling', () => {
-    const { container } = render(<DiceWidget widget={mockWidget} />);
+    const { container } = renderWidget(mockWidget);
     const rollButton = screen.getByText('Roll Dice');
 
     fireEvent.click(rollButton);
@@ -97,8 +102,6 @@ describe('DiceWidget', () => {
     });
 
     // Check for the blur class on the DiceFace element
-    // DiceFace has classes including bg-white/70
-    // We select it and check if it has the blur class
     const diceFace = container.querySelector('.grid-cols-3')?.parentElement;
     expect(diceFace).not.toHaveClass('blur-[1px]');
   });

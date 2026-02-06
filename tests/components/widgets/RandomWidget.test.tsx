@@ -2,8 +2,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RandomWidget } from '../../../components/widgets/random/RandomWidget';
 import { WidgetData } from '../../../types';
+import { RandomWidget } from '../../../components/widgets/random/RandomWidget';
 
 const mockUpdateWidget = vi.fn();
 
@@ -26,10 +26,10 @@ vi.mock('../../../components/widgets/random/audioUtils', () => ({
   playWinner: vi.fn(),
 }));
 
-// Mock useScaledFont hook
-vi.mock('../../../hooks/useScaledFont', () => ({
-  useScaledFont: () => 16,
-}));
+// Helper to render widget
+const renderWidget = (widget: WidgetData) => {
+  return render(<RandomWidget widget={widget} />);
+};
 
 describe('RandomWidget', () => {
   const mockWidget: WidgetData = {
@@ -55,19 +55,19 @@ describe('RandomWidget', () => {
   });
 
   it('renders the remaining count when in single mode', () => {
-    render(<RandomWidget widget={mockWidget} />);
+    renderWidget(mockWidget);
     expect(screen.getByText('2 Left')).toBeInTheDocument();
   });
 
   it('renders the reset button when in single mode and there are remaining students or a last result', () => {
-    render(<RandomWidget widget={mockWidget} />);
+    renderWidget(mockWidget);
     const resetButton = screen.getByTitle('Reset student pool');
     expect(resetButton).toBeInTheDocument();
     expect(resetButton).not.toBeDisabled();
   });
 
   it('calls updateWidget and resets local state when reset button is clicked', () => {
-    render(<RandomWidget widget={mockWidget} />);
+    renderWidget(mockWidget);
     // Verify initial result is visible
     expect(screen.getByText('Charlie')).toBeInTheDocument();
 
@@ -90,7 +90,7 @@ describe('RandomWidget', () => {
       ...mockWidget,
       config: { ...mockWidget.config, mode: 'groups' },
     } as unknown as WidgetData;
-    render(<RandomWidget widget={groupWidget} />);
+    renderWidget(groupWidget);
     expect(screen.queryByText(/Left/)).not.toBeInTheDocument();
   });
 
@@ -103,7 +103,7 @@ describe('RandomWidget', () => {
         lastResult: null,
       },
     } as unknown as WidgetData;
-    render(<RandomWidget widget={emptyWidget} />);
+    renderWidget(emptyWidget);
     const resetButton = screen.getByTitle('Reset student pool');
     expect(resetButton).toBeDisabled();
   });

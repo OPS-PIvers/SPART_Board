@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { TimeToolWidget } from './TimeToolWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TimeToolConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { TimeToolWidget } from './TimeToolWidget';
 
 vi.mock('../../context/useDashboard');
 vi.mock('../../utils/timeToolAudio', () => ({
@@ -18,6 +18,11 @@ const mockDashboardContext = {
     globalStyle: DEFAULT_GLOBAL_STYLE,
   },
   updateWidget: mockUpdateWidget,
+};
+
+// Helper to render widget
+const renderWidget = (widget: WidgetData) => {
+  return render(<TimeToolWidget widget={widget} />);
 };
 
 describe('TimeToolWidget', () => {
@@ -40,8 +45,8 @@ describe('TimeToolWidget', () => {
       type: 'time-tool',
       x: 0,
       y: 0,
-      w: 4,
-      h: 4,
+      w: 400,
+      h: 400,
       z: 1,
       config: {
         mode: 'timer',
@@ -57,16 +62,14 @@ describe('TimeToolWidget', () => {
   };
 
   it('renders time correctly', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
     expect(screen.getByText('05:00')).toBeInTheDocument();
   });
 
   it('enters editing mode when clicking time display in timer mode', () => {
-    render(
-      <TimeToolWidget
-        widget={createWidget({ mode: 'timer', isRunning: false })}
-      />
-    );
+    const widget = createWidget({ mode: 'timer', isRunning: false });
+    renderWidget(widget);
 
     const timeDisplay = screen.getByText('05:00');
     fireEvent.click(timeDisplay);
@@ -79,11 +82,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('does not enter editing mode when running', () => {
-    render(
-      <TimeToolWidget
-        widget={createWidget({ mode: 'timer', isRunning: true })}
-      />
-    );
+    const widget = createWidget({ mode: 'timer', isRunning: true });
+    renderWidget(widget);
 
     const timeDisplay = screen.getByText('05:00');
     fireEvent.click(timeDisplay);
@@ -93,7 +93,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('updates edit values when clicking keypad', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
 
     fireEvent.click(screen.getByText('05:00'));
 
@@ -106,7 +107,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('confirms edit and updates widget', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
 
     fireEvent.click(screen.getByText('05:00'));
 
@@ -131,7 +133,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('caps seconds at 59', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
     fireEvent.click(screen.getByText('05:00'));
 
     // Switch to seconds
@@ -145,7 +148,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('supports backspace functionality', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
     fireEvent.click(screen.getByText('05:00'));
 
     // Minutes is 005. Type 1 -> 051
@@ -158,7 +162,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('cancels editing when clicking X button', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
     fireEvent.click(screen.getByText('05:00'));
 
     // Should be in editing mode
@@ -173,7 +178,8 @@ describe('TimeToolWidget', () => {
   });
 
   it('supports 3-digit minutes (e.g., 2 hours / 120 minutes)', () => {
-    render(<TimeToolWidget widget={createWidget({ elapsedTime: 300 })} />);
+    const widget = createWidget({ elapsedTime: 300 });
+    renderWidget(widget);
     fireEvent.click(screen.getByText('05:00'));
 
     // Set minutes to 120
