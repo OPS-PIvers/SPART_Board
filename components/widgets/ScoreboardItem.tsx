@@ -94,25 +94,25 @@ export const ScoreboardItem = React.memo(
 
     return (
       <div
-        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-slate-200 relative group`}
+        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-white/20 relative group`}
         style={{ containerType: 'size' }}
       >
         <div
           className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
-          style={{ fontSize: '10cqmin' }}
+          style={{ fontSize: '1.25rem' }}
         >
           {team.name}
         </div>
         <div
           className={`font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
-          style={{ fontSize: `35cqmin`, lineHeight: 1 }}
+          style={{ fontSize: '4.5rem', lineHeight: 1 }}
         >
           {team.score}
         </div>
         <div className="flex gap-2 opacity-100 transition-opacity">
           <button
             onClick={() => onUpdateScore(team.id, -1)}
-            className={`p-1.5 bg-white ${styles.button} rounded-lg shadow-sm hover:bg-slate-50 active:scale-95 transition-all`}
+            className={`p-1.5 bg-white/40 ${styles.button} rounded-lg shadow-sm hover:bg-white/60 active:scale-95 transition-all`}
           >
             <Minus className="w-4 h-4" />
           </button>

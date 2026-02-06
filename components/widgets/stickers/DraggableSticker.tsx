@@ -198,7 +198,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
               className="sticker-control absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-0.5"
               onPointerDown={handleResizeStart}
             >
-              <div className="w-3 h-3 border-r-2 border-b-2 border-blue-500 bg-white rounded-br-[2px]" />
+              <div className="w-3 h-3 border-r-2 border-b-2 border-blue-500 bg-white/50 rounded-br-[2px]" />
             </div>
 
             {/* Menu Button (Top Right) */}

@@ -36,64 +36,25 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
   const [lasts, setLasts] = useState(
     roster?.students.map((s) => s.lastName).join('\n') ?? ''
   );
-  const [showLastNames, setShowLastNames] = useState(
-    roster?.students.some((s) => s.lastName.trim() !== '') ?? false
-  );
 
-  const handleToggleToLastNames = () => {
-    // When enabling last names, try to split full names on space
-    if (!showLastNames) {
-      const lines = firsts.split('\n');
-      const newFirsts: string[] = [];
-      const newLasts: string[] = [];
+  const handleSmartPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text');
+    const rows = text.split(/\r\n|\r|\n/);
+    const newF: string[] = [];
+    const newL: string[] = [];
 
-      lines.forEach((line) => {
-        const trimmed = line.trim();
-        if (trimmed) {
-          const lastSpaceIndex = trimmed.lastIndexOf(' ');
-          if (lastSpaceIndex > 0) {
-            // Split on last space (common pattern: "First Middle Last")
-            newFirsts.push(trimmed.substring(0, lastSpaceIndex));
-            newLasts.push(trimmed.substring(lastSpaceIndex + 1));
-          } else {
-            // No space found, keep in first name
-            newFirsts.push(trimmed);
-            newLasts.push('');
-          }
-        } else {
-          newFirsts.push('');
-          newLasts.push('');
-        }
-      });
-
-      setFirsts(newFirsts.join('\n'));
-      setLasts(newLasts.join('\n'));
-      setShowLastNames(true);
-    }
-  };
-
-  const handleToggleToSingleField = () => {
-    // When disabling last names, merge first and last names
-    if (showLastNames) {
-      const fList = firsts.split('\n');
-      const lList = lasts.split('\n');
-      const merged: string[] = [];
-
-      const maxLength = Math.max(fList.length, lList.length);
-      for (let i = 0; i < maxLength; i++) {
-        const first = fList[i] ? fList[i].trim() : '';
-        const last = lList[i] ? lList[i].trim() : '';
-        if (first || last) {
-          merged.push([first, last].filter(Boolean).join(' '));
-        } else {
-          merged.push('');
-        }
+    rows.forEach((row) => {
+      const parts = row.trim().split(' ');
+      if (parts.length > 0 && parts[0]) {
+        newF.push(parts[0]);
+        newL.push(parts.slice(1).join(' '));
       }
+    });
 
-      setFirsts(merged.join('\n'));
-      setLasts('');
-      setShowLastNames(false);
-    }
+    const prefix = firsts ? '\n' : '';
+    setFirsts(firsts + prefix + newF.join('\n'));
+    setLasts(lasts + (lasts ? '\n' : '') + newL.join('\n'));
   };
 
   const handleSave = () => {
@@ -149,55 +110,33 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
           </button>
         </div>
       </div>
-      <div
-        className={`grid ${showLastNames ? 'grid-cols-2' : 'grid-cols-1'} gap-3 flex-1 min-h-0`}
-      >
+      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
         <div className="flex flex-col h-full">
-          <div className="flex justify-between items-end mb-1">
-            <label className="text-xxs  text-slate-500 uppercase tracking-widest">
-              {showLastNames ? 'First Names' : 'Names (One per line)'}
-            </label>
-            {!showLastNames && (
-              <button
-                onClick={handleToggleToLastNames}
-                className="text-xxs text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider"
-              >
-                + Add Last Name
-              </button>
-            )}
-          </div>
+          <label className="text-xxs  text-slate-500 uppercase tracking-widest mb-1">
+            First Name (Smart Paste)
+          </label>
           <textarea
             className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
             value={firsts}
             onChange={(e) => setFirsts(e.target.value)}
-            placeholder={
-              showLastNames
-                ? 'Paste first names...'
-                : 'Paste full names or group names here...'
-            }
+            onPaste={handleSmartPaste}
+            placeholder="Paste names here..."
           />
         </div>
-        {showLastNames && (
-          <div className="flex flex-col h-full">
-            <div className="flex justify-between items-end mb-1">
-              <label className="text-xxs  text-slate-500 uppercase tracking-widest">
-                Last Names
-              </label>
-              <button
-                onClick={handleToggleToSingleField}
-                className="text-xxs text-slate-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors"
-              >
-                Remove
-              </button>
-            </div>
-            <textarea
-              className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-              value={lasts}
-              onChange={(e) => setLasts(e.target.value)}
-              placeholder="Paste last names..."
-            />
-          </div>
-        )}
+        <div className="flex flex-col h-full">
+          <label className="text-xxs  text-slate-500 uppercase tracking-widest mb-1">
+            Last Name
+          </label>
+          <textarea
+            className="flex-1 border border-slate-200 focus:border-blue-400 p-2 rounded-lg resize-none text-sm font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+            value={lasts}
+            onChange={(e) => setLasts(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="mt-2 text-xxs text-slate-400 text-center italic">
+        Tip: Paste a full list of names into &quot;First Name&quot; to
+        auto-split them.
       </div>
     </div>
   );
@@ -324,7 +263,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             </button>
             <button
               onClick={handleFetchClassLink}
-              className="bg-white text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
+              className="bg-white/40 text-slate-700 border border-slate-200 p-2 rounded flex items-center justify-center gap-2 hover:bg-slate-50 text-sm  shadow-sm transition-colors"
               title="Sync from ClassLink"
             >
               <RefreshCw
@@ -345,8 +284,9 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             {rosters.map((r) => (
               <div
                 key={r.id}
-                className={`p-3 border rounded-lg bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
+                className={`p-3 border rounded-lg bg-white/40 flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-sm' : 'border-slate-200'}`}
               >
+                {' '}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <button
                     onClick={() =>
@@ -431,7 +371,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 classLinkClasses.map((cls) => (
                   <div
                     key={cls.sourcedId}
-                    className="p-3 border border-slate-200 rounded-lg bg-white flex justify-between items-center hover:shadow-md transition-shadow"
+                    className="p-3 border border-slate-200 rounded-lg bg-white/40 flex justify-between items-center hover:shadow-md transition-shadow"
                   >
                     <div>
                       <div className=" text-slate-800">{cls.title}</div>

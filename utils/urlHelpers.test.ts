@@ -2,56 +2,32 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { getOriginUrl, getJoinUrl, convertToEmbedUrl } from './urlHelpers';
 
 describe('urlHelpers', () => {
-  const originalWindow = global.window;
-
   afterEach(() => {
-    // Restore window after each test
-    global.window = originalWindow;
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   describe('getOriginUrl', () => {
     it('returns window.location.origin when window is defined', () => {
-      // Setup window mock
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            origin: 'https://myschool.com',
-          },
+      vi.stubGlobal('window', {
+        location: {
+          origin: 'https://myschool.com',
         },
-        writable: true,
       });
 
       expect(getOriginUrl()).toBe('https://myschool.com');
-    });
-
-    it('returns empty string when window is undefined', () => {
-      // @ts-expect-error - Simulating SSR environment
-      delete global.window;
-
-      expect(getOriginUrl()).toBe('');
     });
   });
 
   describe('getJoinUrl', () => {
     it('returns full join URL when window is defined', () => {
-      Object.defineProperty(global, 'window', {
-        value: {
-          location: {
-            origin: 'https://myschool.com',
-          },
+      vi.stubGlobal('window', {
+        location: {
+          origin: 'https://myschool.com',
         },
-        writable: true,
       });
 
       expect(getJoinUrl()).toBe('https://myschool.com/join');
-    });
-
-    it('returns relative join path when window is undefined', () => {
-      // @ts-expect-error - Simulating SSR environment
-      delete global.window;
-
-      expect(getJoinUrl()).toBe('/join');
     });
   });
 
@@ -111,30 +87,30 @@ describe('urlHelpers', () => {
     });
 
     describe('Google Slides', () => {
-      it('converts edit URLs to /preview and clears other params', () => {
+      it('converts edit URLs to /embed and preserves other params', () => {
         const url =
           'https://docs.google.com/presentation/d/preso-id/edit?delayms=3000';
         const result = convertToEmbedUrl(url);
         expect(result).toBe(
-          'https://docs.google.com/presentation/d/preso-id/preview'
+          'https://docs.google.com/presentation/d/preso-id/embed?delayms=3000'
         );
       });
 
       it('handles user segments', () => {
         const url = 'https://docs.google.com/presentation/u/0/d/preso-id/edit';
         expect(convertToEmbedUrl(url)).toBe(
-          'https://docs.google.com/presentation/d/preso-id/preview'
+          'https://docs.google.com/presentation/d/preso-id/embed'
         );
       });
     });
 
     describe('Google Sheets', () => {
-      it('converts edit URLs to /preview', () => {
+      it('converts edit URLs to /embed and preserves other params', () => {
         const url =
           'https://docs.google.com/spreadsheets/d/sheet-id/edit?gid=0';
         const result = convertToEmbedUrl(url);
         expect(result).toBe(
-          'https://docs.google.com/spreadsheets/d/sheet-id/preview'
+          'https://docs.google.com/spreadsheets/d/sheet-id/embed?gid=0'
         );
       });
     });

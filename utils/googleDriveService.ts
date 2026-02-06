@@ -1,4 +1,3 @@
-import { APP_NAME } from '../config/constants';
 import { Dashboard } from '../types';
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
@@ -107,7 +106,7 @@ export class GoogleDriveService {
    * Get the main app folder.
    */
   async getAppFolder(): Promise<string> {
-    return this.getOrCreateFolder(APP_NAME);
+    return this.getOrCreateFolder('School Boards');
   }
 
   /**

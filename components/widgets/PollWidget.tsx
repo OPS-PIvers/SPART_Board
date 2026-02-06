@@ -49,7 +49,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const labelSize = useScaledFont(widget.w, widget.h, 0.25, 10, 18);
 
   return (
-    <div className={`flex flex-col h-full p-2 font-${globalStyle.fontFamily}`}>
+    <div className={`flex flex-col h-full p-4 font-${globalStyle.fontFamily}`}>
       <div
         className="font-black uppercase text-slate-800 mb-4 tracking-tight border-b pb-2"
         style={{ fontSize: `${questionSize}px` }}
@@ -80,7 +80,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 </span>
               </div>
 
-              <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
+              <div className="h-4 bg-white/20 rounded-full overflow-hidden relative border border-white/30 backdrop-blur-sm">
                 <div
                   className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
                   style={{ width: `${percent}%` }}

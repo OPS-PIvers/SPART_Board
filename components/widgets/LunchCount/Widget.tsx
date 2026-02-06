@@ -96,14 +96,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const unassignedStudents = activeRoster.filter((s) => !assignments[s]);
 
   return (
-    <div className="flex flex-col h-full bg-transparent p-2 gap-2 overflow-hidden animate-in fade-in duration-300">
+    <div className="flex flex-col h-full bg-transparent p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex justify-between items-center shrink-0">
         <div className="flex flex-col">
-          <h3 className="text-xxs font-black text-slate-700 uppercase tracking-widest">
+          <h3 className="text-xxs font-black text-slate-400 uppercase tracking-widest">
             Daily Lunch Count
           </h3>
-          <p className="text-xxs font-bold text-slate-600 uppercase tracking-tighter">
+          <p className="text-xxs font-bold text-slate-500 uppercase tracking-tighter">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
@@ -147,7 +147,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             const student = e.dataTransfer.getData('student');
             if (student) handleDrop(student, 'hot');
           }}
-          className="bg-orange-50 border-2 border-dashed border-orange-300 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
+          className="bg-orange-500/10 border-2 border-dashed border-orange-500/20 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid backdrop-blur-sm group"
         >
           <div className="flex justify-between items-start mb-2">
             <div className="flex flex-col">
@@ -170,11 +170,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={student}
                   draggable
-                  onDragStart={(e) =>
-                    e.dataTransfer.setData('student', student)
-                  }
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('student', student);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
                   onClick={() => handleDrop(student, null)}
-                  className="px-2 py-1 bg-white border border-orange-200 rounded-lg text-xxs font-bold text-orange-900 shadow-sm cursor-grab active:cursor-grabbing"
+                  className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-orange-200 rounded-lg text-xxs font-bold text-orange-900 shadow-sm cursor-grab active:cursor-grabbing"
                 >
                   {student}
                 </div>
@@ -189,7 +190,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             const student = e.dataTransfer.getData('student');
             if (student) handleDrop(student, 'bento');
           }}
-          className="bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
+          className="bg-emerald-500/10 border-2 border-dashed border-emerald-500/20 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid backdrop-blur-sm group"
         >
           <div className="flex justify-between items-start mb-2">
             <div className="flex flex-col">
@@ -212,11 +213,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={student}
                   draggable
-                  onDragStart={(e) =>
-                    e.dataTransfer.setData('student', student)
-                  }
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('student', student);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
                   onClick={() => handleDrop(student, null)}
-                  className="px-2 py-1 bg-white border border-emerald-200 rounded-lg text-xxs font-bold text-emerald-900 shadow-sm cursor-grab active:cursor-grabbing"
+                  className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-emerald-200 rounded-lg text-xxs font-bold text-emerald-900 shadow-sm cursor-grab active:cursor-grabbing"
                 >
                   {student}
                 </div>
@@ -231,7 +233,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             const student = e.dataTransfer.getData('student');
             if (student) handleDrop(student, 'home');
           }}
-          className="bg-blue-50 border-2 border-dashed border-blue-300 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid group"
+          className="bg-blue-500/10 border-2 border-dashed border-blue-500/20 rounded-2xl p-3 flex flex-col min-h-[160px] transition-all hover:scale-[1.01] hover:border-solid backdrop-blur-sm group"
         >
           <div className="flex justify-between items-start mb-2">
             <div className="flex flex-col">
@@ -254,11 +256,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 <div
                   key={student}
                   draggable
-                  onDragStart={(e) =>
-                    e.dataTransfer.setData('student', student)
-                  }
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('student', student);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
                   onClick={() => handleDrop(student, null)}
-                  className="px-2 py-1 bg-white border border-blue-200 rounded-lg text-xxs font-bold text-blue-900 shadow-sm cursor-grab active:cursor-grabbing"
+                  className="px-2 py-1 bg-white/60 backdrop-blur-sm border border-blue-200 rounded-lg text-xxs font-bold text-blue-900 shadow-sm cursor-grab active:cursor-grabbing"
                 >
                   {student}
                 </div>
@@ -270,14 +273,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       {/* Roster Area */}
       <div className="flex-1 flex flex-col min-h-0">
         <div
-          className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-y-auto custom-scrollbar shadow-inner"
+          className="flex-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-4 overflow-y-auto custom-scrollbar shadow-inner"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             const student = e.dataTransfer.getData('student');
             if (student) handleDrop(student, null);
           }}
         >
-          <div className="text-xxs font-black uppercase text-slate-700 mb-4 tracking-widest text-center">
+          <div className="text-xxs font-black uppercase text-slate-500 mb-4 tracking-widest text-center">
             Unassigned Students ({unassignedStudents.length})
           </div>
           <div className="flex flex-wrap justify-center gap-2">
@@ -285,14 +288,17 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               <div
                 key={student}
                 draggable
-                onDragStart={(e) => e.dataTransfer.setData('student', student)}
-                className="px-4 py-2 bg-white border-b-2 border-slate-300 rounded-xl text-xs font-black text-slate-700 shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('student', student);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                className="px-4 py-2 bg-white/60 backdrop-blur-sm border-b-2 border-white/40 rounded-xl text-xs font-black text-slate-700 shadow-sm cursor-grab hover:border-indigo-400 hover:-translate-y-0.5 transition-all active:scale-90"
               >
                 {student}
               </div>
             ))}
             {unassignedStudents.length === 0 && (
-              <div className="text-xs text-slate-600 italic py-4 font-bold">
+              <div className="text-xs text-slate-400 italic py-4 font-bold">
                 All students accounted for!
               </div>
             )}

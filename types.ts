@@ -546,12 +546,6 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                               ? RecessGearConfig
                                                               : never;
 
-export interface WidgetComponentProps {
-  widget: WidgetData;
-  isStudentView?: boolean;
-  scale?: number;
-}
-
 export interface WidgetData {
   id: string;
   type: WidgetType;
@@ -762,11 +756,6 @@ export interface ScalingConfig {
    * Useful for widgets with flexible content like text or lists.
    */
   canSpread?: boolean;
-  /**
-   * If true, skips the automatic JS-based scaling.
-   * Modern widgets should use CSS Container Queries instead.
-   */
-  skipScaling?: boolean;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {

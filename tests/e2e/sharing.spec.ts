@@ -1,4 +1,3 @@
-import { APP_NAME } from '../../config/constants';
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -32,7 +31,7 @@ test.describe('Board Sharing', () => {
 
   test('can share and import a board', async ({ page }) => {
     await page.getByTitle('Open Menu').click();
-    await expect(page.getByText(APP_NAME)).toBeVisible();
+    await expect(page.getByText('School Boards')).toBeVisible();
     await page
       .getByRole('button', { name: 'Boards Manage and switch between' })
       .click();

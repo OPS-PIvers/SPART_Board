@@ -7,14 +7,15 @@
  */
 
 import React, { lazy } from 'react';
-import {
-  WidgetData,
-  WidgetType,
-  ScalingConfig,
-  WidgetComponentProps,
-} from '@/types';
+import { WidgetData, WidgetType, ScalingConfig } from '@/types';
 
 // Component type definitions to ensure type safety
+type WidgetComponentProps = {
+  widget: WidgetData;
+  isStudentView?: boolean;
+  scale?: number;
+};
+
 type SettingsComponentProps = {
   widget: WidgetData;
 };
@@ -171,21 +172,18 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 280,
     baseHeight: 140,
     canSpread: true,
-    skipScaling: true,
   },
   'time-tool': {
     baseWidth: 420,
     baseHeight: 400,
     canSpread: true,
-    skipScaling: true,
   },
   traffic: {
     baseWidth: 120,
     baseHeight: 320,
     canSpread: false,
-    skipScaling: true,
   },
-  text: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
+  text: { baseWidth: 300, baseHeight: 250, canSpread: true },
   checklist: {
     baseWidth: 280,
     baseHeight: 300,
@@ -200,32 +198,28 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 240,
     baseHeight: 240,
     canSpread: false,
-    skipScaling: true,
   },
   sound: {
     baseWidth: 300,
     baseHeight: 300,
     canSpread: true,
-    skipScaling: true,
   },
   webcam: {
     baseWidth: 400,
     baseHeight: 300,
     canSpread: true,
-    skipScaling: true,
   },
   embed: {
     baseWidth: 480,
     baseHeight: 350,
     canSpread: true,
-    skipScaling: true,
   },
   drawing: {
     baseWidth: 400,
     baseHeight: 350,
     canSpread: true,
   },
-  qr: { baseWidth: 200, baseHeight: 250, canSpread: false, skipScaling: true },
+  qr: { baseWidth: 200, baseHeight: 250, canSpread: false },
   scoreboard: {
     baseWidth: 320,
     baseHeight: 200,
@@ -312,6 +306,5 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 250,
     baseHeight: 280,
     canSpread: true,
-    skipScaling: true,
   },
 };

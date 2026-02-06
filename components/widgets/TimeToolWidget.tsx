@@ -226,7 +226,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
 
   return (
     <div
-      className={`flex flex-col h-full transition-all duration-500 ${themeClass} w-full`}
+      className={`flex flex-col h-full rounded-3xl shadow-xl border border-white/30 transition-all duration-500 ${themeClass} w-full`}
     >
       {/* Header: Digital/Visual Toggle & Themes */}
       <div className="px-3 pt-3 flex justify-between items-center shrink-0">
@@ -437,7 +437,7 @@ export const TimeToolWidget: React.FC<Props> = ({ widget }) => {
             <button
               onClick={startEditing}
               data-testid="time-display"
-              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} ${isVisual ? 'text-[20cqmin]' : 'text-[25cqmin]'}`}
+              className={` transition-all duration-500 tabular-nums select-none font-bold ${getStatusColor()} ${!config.isRunning && config.mode === 'timer' ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} text-[10rem]`}
               disabled={config.isRunning || config.mode !== 'timer'}
             >
               {formatTime(displayTime)}

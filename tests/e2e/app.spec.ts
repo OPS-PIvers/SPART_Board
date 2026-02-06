@@ -1,13 +1,12 @@
-import { APP_NAME } from '../../config/constants';
 import { test, expect } from '@playwright/test';
 
-test.describe(APP_NAME, () => {
+test.describe('Classroom Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
   test('has title', async ({ page }) => {
-    await expect(page).toHaveTitle(new RegExp(APP_NAME, 'i'));
+    await expect(page).toHaveTitle(/School Boards/i);
   });
 
   test('can open sidebar and view widgets', async ({ page }) => {
@@ -17,7 +16,7 @@ test.describe(APP_NAME, () => {
     await menuButton.click();
 
     // Verify sidebar header
-    await expect(page.getByText(APP_NAME.toUpperCase())).toBeVisible();
+    await expect(page.getByText('SCHOOL BOARDS')).toBeVisible();
 
     // Verify Widgets tab is active (by checking for "Available Widgets" text)
     await expect(page.getByText('Available Widgets')).toBeVisible();

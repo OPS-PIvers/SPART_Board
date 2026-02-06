@@ -181,14 +181,13 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     (w: number, h: number, scale?: number) => {
       if (WidgetComponent) {
         return (
-          <InnerWidgetRenderer
-            Component={WidgetComponent}
-            widget={widget}
-            w={w}
-            h={h}
-            scale={scale}
-            isStudentView={isStudentView}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <WidgetComponent
+              widget={{ ...widget, w, h }}
+              isStudentView={isStudentView}
+              scale={scale}
+            />
+          </Suspense>
         );
       }
       return (
@@ -206,17 +205,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const scalingConfig = scaling ?? DEFAULT_SCALING_CONFIG;
 
-  const finalContent = scalingConfig.skipScaling ? (
-    <div
-      className="h-full w-full relative"
-      style={{
-        padding: PADDING,
-        containerType: 'size',
-      }}
-    >
-      {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
-    </div>
-  ) : (
+  const finalContent = (
     <ScalableWidget
       width={effectiveWidth}
       height={effectiveHeight}
@@ -292,76 +281,5 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     </DraggableWindow>
   );
 };
-
-// Internal optimized wrapper to prevent re-renders when x/y coordinates change during drag
-interface InnerWidgetRendererProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Component: React.ComponentType<any>;
-  widget: WidgetData;
-  w: number;
-  h: number;
-  scale?: number;
-  isStudentView: boolean;
-}
-
-const InnerWidgetRenderer = memo(
-  function InnerWidgetRenderer({
-    Component,
-    widget,
-    w,
-    h,
-    scale,
-    isStudentView,
-  }: InnerWidgetRendererProps) {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <Component
-          widget={{ ...widget, w, h }}
-          scale={scale}
-          isStudentView={isStudentView}
-        />
-      </Suspense>
-    );
-  },
-  (prev, next) => {
-    // Return true if props are equal (do NOT re-render)
-    if (prev.Component !== next.Component) return false;
-    if (prev.w !== next.w) return false;
-    if (prev.h !== next.h) return false;
-    if (prev.scale !== next.scale) return false;
-    if (prev.isStudentView !== next.isStudentView) return false;
-
-    // Check widget props - explicitly ignoring x, y, z
-    const pw = prev.widget;
-    const nw = next.widget;
-
-    if (pw.id !== nw.id) return false;
-    if (pw.type !== nw.type) return false; // Defensive check for type change
-
-    // If the widget type is position-aware, we MUST re-render if x or y changed.
-    const isPositionAware = [
-      'catalyst',
-      'catalyst-instruction',
-      'catalyst-visual',
-    ].includes(nw.type);
-
-    if (isPositionAware) {
-      if (pw.x !== nw.x) return false;
-      if (pw.y !== nw.y) return false;
-    }
-
-    // Other fields
-    if (pw.flipped !== nw.flipped) return false;
-    if (pw.minimized !== nw.minimized) return false;
-    if (pw.maximized !== nw.maximized) return false;
-    if (pw.customTitle !== nw.customTitle) return false;
-    if (pw.isLive !== nw.isLive) return false;
-    if (pw.transparency !== nw.transparency) return false;
-    if (pw.annotation !== nw.annotation) return false;
-    if (pw.config !== nw.config) return false;
-
-    return true;
-  }
-);
 
 export const WidgetRenderer = memo(WidgetRendererComponent);

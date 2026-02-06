@@ -1,5 +1,7 @@
 import React from 'react';
+import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CatalystVisualConfig } from '../../types';
+import { DraggableWindow } from '../common/DraggableWindow';
 import * as Icons from 'lucide-react';
 import {
   Hand,
@@ -13,6 +15,13 @@ import {
 export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
+  const {
+    updateWidget,
+    removeWidget,
+    duplicateWidget,
+    bringToFront,
+    addToast,
+  } = useDashboard();
   const config = widget.config as CatalystVisualConfig;
 
   const getIcon = (iconName: string) => {
@@ -43,14 +52,34 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
   const title = config.title ?? 'Visual Anchor';
 
   return (
-    <div
-      className={`h-full flex flex-col items-center justify-center p-3 ${theme} border-2 border-double`}
+    <DraggableWindow
+      widget={widget}
+      title={title}
+      settings={<CatalystVisualSettings widget={widget} />}
+      updateWidget={updateWidget}
+      removeWidget={removeWidget}
+      duplicateWidget={duplicateWidget}
+      bringToFront={bringToFront}
+      addToast={addToast}
+      globalStyle={{
+        fontFamily: 'sans',
+        windowTransparency: 0.8,
+        windowBorderRadius: '2xl',
+        dockTransparency: 0.4,
+        dockBorderRadius: 'full',
+        dockTextColor: '#334155',
+        dockTextShadow: false,
+      }}
     >
-      <div className="mb-4 animate-pulse">{getIcon(config.icon ?? '')}</div>
-      <h2 className="text-2xl font-black text-center uppercase tracking-wider leading-tight">
-        {title}
-      </h2>
-    </div>
+      <div
+        className={`h-full flex flex-col items-center justify-center p-6 ${theme} border-4 border-double rounded-b-xl`}
+      >
+        <div className="mb-4 animate-pulse">{getIcon(config.icon ?? '')}</div>
+        <h2 className="text-2xl font-black text-center uppercase tracking-wider leading-tight">
+          {title}
+        </h2>
+      </div>
+    </DraggableWindow>
   );
 };
 

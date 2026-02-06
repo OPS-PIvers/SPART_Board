@@ -1,11 +1,10 @@
-import { APP_NAME } from '../../config/constants';
 import { test, expect } from '@playwright/test';
 
 test('has title', async ({ page }) => {
   await page.goto('/');
 
   // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(new RegExp(APP_NAME));
+  await expect(page).toHaveTitle(/School Boards/);
 });
 
 test('dashboard loads and shows sidebar button', async ({ page }) => {

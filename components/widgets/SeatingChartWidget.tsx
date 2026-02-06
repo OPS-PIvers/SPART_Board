@@ -460,36 +460,36 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const isSelected = selectedId === item.id && mode === 'setup';
     const isHighlighted = randomHighlight === item.id;
 
-    let bg = 'bg-white';
-    let border = 'border-slate-300';
+    let bg = 'bg-white/40';
+    let border = 'border-white/40';
 
     if (item.type === 'desk') {
-      bg = 'bg-white';
-      border = 'border-slate-300';
+      bg = 'bg-white/60';
+      border = 'border-slate-300/50';
     }
     if (item.type === 'table-rect') {
-      bg = 'bg-amber-100';
-      border = 'border-amber-300';
+      bg = 'bg-amber-100/40';
+      border = 'border-amber-300/50';
     }
     if (item.type === 'table-round') {
-      bg = 'bg-amber-100';
-      border = 'border-amber-300';
+      bg = 'bg-amber-100/40';
+      border = 'border-amber-300/50';
     }
     if (item.type === 'rug') {
-      bg = 'bg-indigo-100';
-      border = 'border-indigo-300';
+      bg = 'bg-indigo-100/30';
+      border = 'border-indigo-300/40';
     }
     if (item.type === 'teacher-desk') {
-      bg = 'bg-slate-200';
-      border = 'border-slate-400';
+      bg = 'bg-slate-200/60';
+      border = 'border-slate-400/50';
     }
 
     if (isHighlighted) {
-      bg = 'bg-yellow-300';
+      bg = 'bg-yellow-300/80';
       border = 'border-yellow-500';
     }
 
-    return `absolute border-2 flex items-center justify-center transition-all ${bg} ${border} ${isSelected ? 'ring-2 ring-blue-500 z-10' : ''} ${item.type === 'table-round' ? 'rounded-full' : 'rounded-lg'} shadow-sm`;
+    return `absolute border-2 flex items-center justify-center transition-all ${bg} backdrop-blur-sm ${border} ${isSelected ? 'ring-2 ring-blue-500 z-10' : ''} ${item.type === 'table-round' ? 'rounded-full' : 'rounded-lg'} shadow-sm`;
   };
 
   // Find students assigned to a specific furniture item
@@ -502,23 +502,23 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="h-12 bg-slate-50 border-b border-slate-200 flex items-center px-2 justify-between shrink-0">
-        <div className="flex bg-slate-100 p-1 rounded-lg">
+      <div className="h-12 bg-white/30 backdrop-blur-sm border-b border-white/20 flex items-center px-2 justify-between shrink-0">
+        <div className="flex bg-white/20 p-1 rounded-lg">
           <button
             onClick={() => setMode('interact')}
-            className={`px-3 py-1 text-xs font-black uppercase rounded-md transition-all ${mode === 'interact' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            className={`px-3 py-1 text-xs font-black uppercase rounded-md transition-all ${mode === 'interact' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:bg-white/30'}`}
           >
             Interact
           </button>
           <button
             onClick={() => setMode('assign')}
-            className={`px-3 py-1 text-xs font-black uppercase rounded-md transition-all ${mode === 'assign' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            className={`px-3 py-1 text-xs font-black uppercase rounded-md transition-all ${mode === 'assign' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:bg-white/30'}`}
           >
             Assign
           </button>
           <button
             onClick={() => setMode('setup')}
-            className={`px-3 py-1 text-xs font-black uppercase rounded-md transition-all ${mode === 'setup' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            className={`px-3 py-1 text-xs font-black uppercase rounded-md transition-all ${mode === 'setup' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:bg-white/30'}`}
           >
             Setup
           </button>
@@ -541,10 +541,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         {(mode === 'setup' || mode === 'assign') && (
-          <div className="w-48 bg-slate-50 border-r border-slate-200 flex flex-col overflow-hidden shrink-0 animate-in slide-in-from-left-4 duration-200">
+          <div className="w-48 bg-white/20 backdrop-blur-md border-r border-white/20 flex flex-col overflow-hidden shrink-0 animate-in slide-in-from-left-4 duration-200">
             {mode === 'setup' && (
               <div className="flex flex-col h-full">
-                <div className="p-3 border-b border-slate-200">
+                <div className="p-3 border-b border-white/10">
                   <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-2">
                     Bulk Add Quantity
                   </label>
@@ -556,7 +556,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     onChange={(e) =>
                       setBulkCount(parseInt(e.target.value) || 1)
                     }
-                    className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
+                    className="w-full p-2 text-xs border border-white/30 bg-white/40 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
                   />
                 </div>
 
@@ -565,7 +565,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     <button
                       key={t.type}
                       onClick={() => addFurniture(t.type)}
-                      className="flex flex-col items-center justify-center gap-1 p-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg transition-colors aspect-square shadow-sm"
+                      className="flex flex-col items-center justify-center gap-1 p-2 bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50 rounded-lg transition-colors aspect-square shadow-sm"
                     >
                       <t.icon className="w-6 h-6 text-slate-600" />
                       <span className="text-xxs font-black uppercase text-slate-500">
@@ -575,7 +575,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   ))}
                 </div>
 
-                <div className="mt-auto p-3 border-t border-slate-200">
+                <div className="mt-auto p-3 border-t border-white/10">
                   <button
                     onClick={clearAllFurniture}
                     className="w-full flex items-center justify-center gap-2 p-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
@@ -589,14 +589,14 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
             {mode === 'assign' && (
               <div className="flex flex-col h-full">
-                <div className="p-2 border-b border-slate-200 bg-slate-100 text-xxs font-black uppercase text-slate-600 tracking-widest text-center">
+                <div className="p-2 border-b border-white/10 bg-white/10 text-xxs font-black uppercase text-slate-500 tracking-widest text-center">
                   Unassigned Students
                 </div>
 
-                <div className="p-2 border-b border-slate-200">
+                <div className="p-2 border-b border-white/10">
                   <button
                     onClick={addAllRandomly}
-                    className="w-full flex items-center justify-center gap-2 p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 border border-indigo-500/20 rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     Add All Random
@@ -617,7 +617,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                           e.dataTransfer.setData('studentName', student)
                         }
                         onClick={() => handleStudentClick(student)}
-                        className={`p-2 bg-white border ${selectedStudent === student ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'} rounded-lg shadow-sm text-xs font-black text-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all`}
+                        className={`p-2 bg-white/60 backdrop-blur-sm border ${selectedStudent === student ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-white/40'} rounded-lg shadow-sm text-xs font-black text-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all`}
                         title="Drag or Click to assign"
                       >
                         {student}
@@ -633,7 +633,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         {/* Canvas */}
         <div
           ref={canvasRef}
-          className="flex-1 relative bg-white overflow-hidden"
+          className="flex-1 relative bg-white/5 overflow-hidden"
           onClick={() => setSelectedId(null)}
           style={{
             backgroundImage:
@@ -767,7 +767,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       {assigned.map((name) => (
                         <div
                           key={name}
-                          className={`bg-white px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-xxs'}`}
+                          className={`bg-white/90 px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-xxs'}`}
                         >
                           <span className="truncate">{name}</span>
                           {mode === 'assign' && (

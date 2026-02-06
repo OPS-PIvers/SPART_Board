@@ -2,7 +2,6 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CalendarConfig } from '../../types';
 import { Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
-import { useScaledFont } from '../../hooks/useScaledFont';
 
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -10,37 +9,20 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as CalendarConfig;
   const events = config.events ?? [];
 
-  const dateFontSize = useScaledFont(widget.w, widget.h, 0.3, 12, 28);
-  const titleFontSize = useScaledFont(widget.w, widget.h, 0.25, 12, 28);
-  const labelFontSize = useScaledFont(widget.w, widget.h, 0.15, 8, 16);
-
   return (
-    <div className="h-full flex flex-col p-2">
+    <div className="h-full flex flex-col p-4">
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
         {events.map((event, i: number) => (
           <div
             key={i}
-            className="group relative flex gap-3 p-3 bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50"
+            className="group relative flex gap-3 p-3 bg-white/50 rounded-2xl border border-white/30 transition-all hover:bg-white/70"
           >
             <div className="flex flex-col items-center justify-center min-w-[50px] py-1 border-r border-rose-200">
-              <span
-                className="uppercase text-rose-400"
-                style={{ fontSize: `${labelFontSize}px` }}
-              >
-                Day
-              </span>
-              <span
-                className="text-rose-600"
-                style={{ fontSize: `${dateFontSize}px` }}
-              >
-                {event.date}
-              </span>
+              <span className="text-xxxs  uppercase text-rose-400">Day</span>
+              <span className="text-sm  text-rose-600">{event.date}</span>
             </div>
             <div className="flex items-center">
-              <span
-                className="text-slate-700 leading-tight"
-                style={{ fontSize: `${titleFontSize}px` }}
-              >
+              <span className="text-xs  text-slate-700 leading-tight">
                 {event.title}
               </span>
             </div>
@@ -49,7 +31,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
         {events.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 opacity-20">
             <CalendarIcon className="w-8 h-8 mb-2" />
-            <p className="text-xxs uppercase tracking-widest">No Events</p>
+            <p className="text-xxs  uppercase tracking-widest">No Events</p>
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ import { detectWidgetType } from './smartPaste';
 import { EmbedConfig, QRConfig } from '../types';
 
 describe('detectWidgetType (Smart Paste)', () => {
-  it('detects Google Slides and converts to preview URL', () => {
+  it('detects Google Slides and converts to embed URL', () => {
     const input =
       'https://docs.google.com/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/edit?slide=id.g3c33466b1b1_0_0#slide=id.g3c33466b1b1_0_0';
     const result = detectWidgetType(input);
@@ -12,7 +12,7 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result?.type).toBe('embed');
     const config = result?.config as EmbedConfig;
     expect(config.url).toContain(
-      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
+      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/embed'
     );
   });
 

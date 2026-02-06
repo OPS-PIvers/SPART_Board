@@ -85,7 +85,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="group bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex items-center gap-3"
+      className="group bg-white/40 backdrop-blur-sm p-3 rounded-xl border border-white/50 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex items-center gap-3"
     >
       {/* Drag Handle */}
       <div
@@ -121,7 +121,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
         <div className="w-px h-6 bg-slate-200 mx-1"></div>
         <button
           onClick={() => onEdit(app)}
-          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors"
+          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white/50 rounded-lg transition-colors"
           title="Edit"
         >
           <Pencil className="w-4 h-4" />
@@ -404,7 +404,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="absolute top-2 right-2 z-10">
           <button
             onClick={handleCloseActive}
-            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xxs  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-slate-700 font-black"
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white backdrop-blur rounded-lg text-xxs  uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all border border-white/30 font-black"
           >
             <LayoutGrid className="w-3 h-3" /> Library
           </button>
@@ -423,7 +423,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   if (view === 'editor') {
     return (
       <div className="w-full h-full flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="p-4 border-b border-white/20 flex items-center justify-between bg-white/30 backdrop-blur-sm">
           <h3 className=" text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2 font-black">
             <Code2 className="w-4 h-4 text-indigo-500" />
             {editingId ? 'Edit App' : 'New Mini-App'}
@@ -439,7 +439,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar relative">
           {showPromptInput && (
             <div
-              className="absolute inset-0 z-20 bg-white flex items-center justify-center p-6 animate-in fade-in duration-200"
+              className="absolute inset-0 z-20 bg-white/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200"
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setShowPromptInput(false);
               }}
@@ -465,7 +465,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="e.g. A team randomizer for 5 groups with a spinning wheel animation and confetti effect."
-                  className="w-full h-32 p-4 bg-white border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none shadow-inner"
+                  className="w-full h-32 p-4 bg-white/50 border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none shadow-inner"
                   autoFocus
                   aria-label="Describe your mini-app"
                 />
@@ -498,7 +498,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="e.g. Lunch Randomizer"
-                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                className="w-full p-3 bg-white/50 border border-white/40 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
               />
             </div>
             {canAccessFeature('gemini-functions') && (
@@ -531,10 +531,10 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex gap-2">
+        <div className="p-4 border-t border-white/20 bg-white/20 backdrop-blur-md flex gap-2">
           <button
             onClick={() => setView('list')}
-            className="px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition-colors"
+            className="px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider text-slate-500 hover:bg-white/40 transition-colors"
           >
             Cancel
           </button>
@@ -551,7 +551,8 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+      <div className="p-5 border-b border-white/20 flex items-center justify-between bg-white/30 backdrop-blur-sm shrink-0">
+        {' '}
         <div>
           <h2 className="font-black text-lg text-slate-800 tracking-tight uppercase">
             App Library
@@ -581,7 +582,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
         <button
           onClick={handleCreate}
-          className="p-2 bg-white text-indigo-600 hover:bg-slate-50 rounded-xl transition-colors shadow-sm border border-slate-200"
+          className="p-2 bg-white/60 text-indigo-600 hover:bg-white/80 rounded-xl transition-colors shadow-sm border border-white/50"
           title="Create New App"
         >
           <Plus className="w-5 h-5" />
@@ -591,7 +592,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
         {library.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 min-h-[200px]">
-            <div className="p-4 bg-white rounded-full border border-slate-200 shadow-sm">
+            <div className="p-4 bg-white/40 rounded-full backdrop-blur-sm border border-white/50 shadow-sm">
               <Box className="w-8 h-8 opacity-40" />
             </div>
             <p className="text-sm font-bold uppercase tracking-widest">
@@ -625,7 +626,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-3 bg-slate-50 border-t border-slate-200 text-[10px] font-black text-slate-500 text-center  uppercase tracking-widest shrink-0">
+      <div className="p-3 bg-white/20 backdrop-blur-sm border-t border-white/20 text-[10px] font-black text-slate-500 text-center  uppercase tracking-widest shrink-0">
         Drag to reorder • Runs Locally
       </div>
     </div>

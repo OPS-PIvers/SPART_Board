@@ -41,10 +41,10 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   // Use a simple public API for QR codes
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-2 relative">
+    <div className="flex flex-col items-center justify-center h-full p-4 relative">
       {config.syncWithTextWidget && (
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 animate-in fade-in zoom-in">
           <Link className="w-3 h-3 text-indigo-500" />
@@ -53,14 +53,14 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </span>
         </div>
       )}
-      <div className="bg-white p-2 rounded-xl mb-2 shadow-inner flex-1 min-h-0 flex items-center justify-center">
+      <div className="bg-white p-2 rounded-xl mb-3 shadow-inner">
         <img
           src={qrUrl}
           alt="QR Code"
-          className="max-w-full max-h-full object-contain mix-blend-multiply"
+          className="w-full h-auto max-w-[180px] mix-blend-multiply"
         />
       </div>
-      <div className="text-xxs font-mono text-slate-400 break-all text-center max-w-full overflow-hidden px-2 shrink-0">
+      <div className="text-xxs font-mono text-slate-400 break-all text-center max-w-full overflow-hidden px-2">
         {url}
       </div>
     </div>

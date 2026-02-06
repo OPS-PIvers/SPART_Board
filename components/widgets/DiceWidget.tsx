@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
-import { useScaledFont } from '../../hooks/useScaledFont';
 
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
@@ -58,10 +57,10 @@ const DiceFace: React.FC<{
   return (
     <div
       className={`
-                  relative bg-white rounded-2xl shadow-lg border-2 border-slate-200
+                  relative bg-white/40 backdrop-blur-md rounded-2xl shadow-lg border-2 border-white/40
                   flex items-center justify-center
                   transition-all duration-300
-                  w-[25cqmin] h-[25cqmin]
+                  w-[100px] h-[100px] max-w-[160px] max-h-[160px]
                   ${isRolling ? 'scale-110 rotate-12 shadow-indigo-500/20 shadow-2xl' : 'scale-100 rotate-0'}
                 `}
     >
@@ -82,13 +81,13 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as DiceConfig;
+  const { updateWidget: _updateWidget } = useDashboard();
   const diceCount = config.count ?? 1;
 
-  const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
+  const [values, setValues] = useState<number[]>(
+    new Array(diceCount).fill(1).map(() => Math.floor(Math.random() * 6) + 1)
+  );
   const [isRolling, setIsRolling] = useState(false);
-
-  const buttonFontSize = useScaledFont(widget.w, widget.h, 0.3, 12, 24);
-  const buttonIconSize = useScaledFont(widget.w, widget.h, 0.35, 16, 32);
 
   const roll = async () => {
     if (isRolling) return;
@@ -115,17 +114,13 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     // Reset values if count changes in settings
     if (values.length !== diceCount) {
-      setValues(
-        new Array(diceCount)
-          .fill(1)
-          .map(() => Math.floor(Math.random() * 6) + 1)
-      );
+      setValues(new Array(diceCount).fill(1));
     }
   }, [diceCount, values.length]);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-2 gap-3 overflow-hidden">
-      <div className="flex flex-wrap justify-center gap-[5cqmin] max-h-[70%] overflow-y-auto no-scrollbar">
+    <div className="h-full flex flex-col items-center justify-center p-4 gap-4 overflow-hidden">
+      <div className="flex flex-wrap justify-center gap-4 max-h-[70%] overflow-y-auto no-scrollbar">
         {values.map((v, i) => (
           <DiceFace key={i} value={v} isRolling={isRolling} />
         ))}
@@ -135,23 +130,15 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={roll}
         disabled={isRolling}
         className={`
-          flex items-center rounded-full uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
+          flex items-center gap-2 px-8 py-3 rounded-full  uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
           ${
             isRolling
               ? 'bg-slate-100 text-slate-400'
               : 'bg-purple-600 text-white shadow-xl hover:bg-purple-700 active:scale-95 hover:-translate-y-1'
           }
         `}
-        style={{
-          fontSize: `${buttonFontSize}px`,
-          padding: `${buttonFontSize * 0.6}px ${buttonFontSize * 1.6}px`,
-          gap: `${buttonFontSize * 0.5}px`,
-        }}
       >
-        <RefreshCw
-          size={buttonIconSize}
-          className={isRolling ? 'animate-spin' : ''}
-        />
+        <RefreshCw className={`w-5 h-5 ${isRolling ? 'animate-spin' : ''}`} />
         {isRolling ? 'Rolling...' : 'Roll Dice'}
       </button>
     </div>

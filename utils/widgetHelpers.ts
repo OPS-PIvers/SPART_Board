@@ -1,10 +1,4 @@
-import {
-  WidgetData,
-  WidgetType,
-  WidgetConfig,
-  CatalystInstructionConfig,
-  CatalystVisualConfig,
-} from '../types';
+import { WidgetData, WidgetType, WidgetConfig } from '../types';
 import { STICKY_NOTE_COLORS } from '../config/colors';
 
 export const getTitle = (widget: WidgetData): string => {
@@ -21,14 +15,6 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'sticker') return 'Sticker';
   if (widget.type === 'seating-chart') return 'Seating Chart';
   if (widget.type === 'smartNotebook') return 'Notebook Viewer';
-  if (widget.type === 'catalyst-instruction') {
-    const cfg = widget.config as CatalystInstructionConfig;
-    return `Guide: ${cfg.title ?? 'Instruction Guide'}`;
-  }
-  if (widget.type === 'catalyst-visual') {
-    const cfg = widget.config as CatalystVisualConfig;
-    return cfg.title ?? 'Visual Anchor';
-  }
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };
 

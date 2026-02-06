@@ -43,7 +43,7 @@ export const convertToEmbedUrl = (url: string): string => {
 
       // Google Docs
       if (
-        parsed.hostname.includes('docs.google.com') &&
+        parsed.hostname === 'docs.google.com' &&
         parsed.pathname.includes('/document/')
       ) {
         const docIdMatch = /\/document\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/.exec(
@@ -53,20 +53,13 @@ export const convertToEmbedUrl = (url: string): string => {
           const docId = docIdMatch[1];
           parsed.pathname = `/document/d/${docId}/edit`;
           parsed.searchParams.set('rm', 'minimal');
-
-          // Extract tab parameter if present in original URL
-          const tabMatch = /[?&]tab=([^&]+)/.exec(trimmedUrl);
-          if (tabMatch) {
-            parsed.searchParams.set('tab', tabMatch[1]);
-          }
-
           return parsed.toString();
         }
       }
 
       // Google Slides
       if (
-        parsed.hostname.includes('docs.google.com') &&
+        parsed.hostname === 'docs.google.com' &&
         parsed.pathname.includes('/presentation/')
       ) {
         const slideIdMatch =
@@ -75,16 +68,14 @@ export const convertToEmbedUrl = (url: string): string => {
           );
         if (slideIdMatch) {
           const slideId = slideIdMatch[1];
-          parsed.pathname = `/presentation/d/${slideId}/preview`;
-          parsed.search = '';
-          parsed.hash = '';
+          parsed.pathname = `/presentation/d/${slideId}/embed`;
           return parsed.toString();
         }
       }
 
       // Google Sheets
       if (
-        parsed.hostname.includes('docs.google.com') &&
+        parsed.hostname === 'docs.google.com' &&
         parsed.pathname.includes('/spreadsheets/')
       ) {
         const sheetIdMatch =
@@ -93,16 +84,14 @@ export const convertToEmbedUrl = (url: string): string => {
           );
         if (sheetIdMatch) {
           const sheetId = sheetIdMatch[1];
-          parsed.pathname = `/spreadsheets/d/${sheetId}/preview`;
-          parsed.search = '';
-          parsed.hash = '';
+          parsed.pathname = `/spreadsheets/d/${sheetId}/embed`;
           return parsed.toString();
         }
       }
 
       // Google Forms
       if (
-        parsed.hostname.includes('docs.google.com') &&
+        parsed.hostname === 'docs.google.com' &&
         parsed.pathname.includes('/forms/')
       ) {
         parsed.searchParams.set('embedded', 'true');
