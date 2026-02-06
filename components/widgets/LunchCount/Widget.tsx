@@ -7,8 +7,10 @@ import {
   useSensor,
   useSensors,
   defaultDropAnimationSideEffects,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
 } from '@dnd-kit/core';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import { WidgetData, LunchCountConfig } from '../../../types';
@@ -46,9 +48,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
       },
     })
   );
@@ -396,7 +404,10 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         }
       />
-      <DragOverlay dropAnimation={dropAnimation}>
+      <DragOverlay
+        dropAnimation={dropAnimation}
+        modifiers={[snapCenterToCursor]}
+      >
         {activeId ? (
           <div
             data-no-drag="true"
