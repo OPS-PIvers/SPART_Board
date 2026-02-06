@@ -785,7 +785,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div
           className={`
-            ${structure === 'visual-cue' ? 'grid grid-cols-2 gap-4' : 'flex flex-col'}
+            ${structure === 'visual-cue' ? 'grid grid-cols-2' : 'flex flex-col'}
           `}
           style={{ gap: structure === 'visual-cue' ? '0.75em' : '1em' }}
         >
