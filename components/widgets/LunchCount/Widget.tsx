@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
-import { WidgetData, LunchCountConfig, DashboardWidget } from '../../../types';
+import { WidgetData, LunchCountConfig } from '../../../types';
 import { Button } from '../../common/Button';
 import { RefreshCw, Undo2, CheckCircle2, Box } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
@@ -12,7 +12,7 @@ import { WidgetLayout } from '../WidgetLayout';
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addToast, activeDashboard } = useDashboard();
+  const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
   const { user } = useAuth();
   const config = widget.config as LunchCountConfig;
   const {
@@ -34,11 +34,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   const activeRoster = useMemo((): string[] => {
     if (rosterMode === 'custom') return roster;
-    const dashboardWidget = activeDashboard?.widgets.find(
-      (w) => w.id === widget.id
-    ) as DashboardWidget | undefined;
-    return dashboardWidget?.activeRoster ?? [];
-  }, [rosterMode, roster, widget.id, activeDashboard]);
+    const currentRoster = rosters.find((r) => r.id === activeRosterId);
+    return (
+      currentRoster?.students.map((s) =>
+        `${s.firstName} ${s.lastName}`.trim()
+      ) ?? []
+    );
+  }, [rosterMode, roster, rosters, activeRosterId]);
 
   const stats = useMemo(() => {
     const total = activeRoster.length;
