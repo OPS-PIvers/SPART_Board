@@ -1,11 +1,25 @@
+import React from 'react';
 import {
   WidgetData,
   WidgetType,
   WidgetConfig,
   CatalystInstructionConfig,
   CatalystVisualConfig,
+  WidgetOutput,
+  WidgetLayout,
 } from '../types';
 import { STICKY_NOTE_COLORS } from '../config/colors';
+
+export const isWidgetLayout = (
+  output: WidgetOutput
+): output is WidgetLayout => {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    'content' in output &&
+    !React.isValidElement(output)
+  );
+};
 
 export const getTitle = (widget: WidgetData): string => {
   if (widget.customTitle) return widget.customTitle;

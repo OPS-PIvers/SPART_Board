@@ -547,6 +547,28 @@ export interface WidgetComponentProps {
   scale?: number;
 }
 
+export interface WidgetLayout {
+  /** Optional header content (stays fixed at top) */
+  header?: React.ReactNode;
+
+  /** Main content (grows to fill available space) */
+  content: React.ReactNode;
+
+  /** Optional footer content (stays fixed at bottom) */
+  footer?: React.ReactNode;
+
+  /** Optional: Override default flex behavior */
+  contentClassName?: string;
+
+  /** Optional: Custom padding (default: 'p-2') */
+  padding?: string;
+}
+
+// Widget components can return either:
+// 1. WidgetLayout object (new standardized way)
+// 2. React.ReactNode (backwards compatible)
+export type WidgetOutput = WidgetLayout | React.ReactNode;
+
 export interface WidgetData {
   id: string;
   type: WidgetType;

@@ -15,11 +15,11 @@ import { StickerItemWidget } from './stickers/StickerItemWidget';
 import { getTitle } from '@/utils/widgetHelpers';
 import { getJoinUrl } from '@/utils/urlHelpers';
 import { ScalableWidget } from '../common/ScalableWidget';
+import { WidgetLayoutWrapper } from './WidgetLayoutWrapper';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useAuth } from '@/context/useAuth';
 import { UI_CONSTANTS } from '@/config/layout';
 import {
-  WIDGET_COMPONENTS,
   WIDGET_SETTINGS_COMPONENTS,
   WIDGET_SCALING_CONFIG,
   DEFAULT_SCALING_CONFIG,
@@ -142,7 +142,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     void updateSessionBackground(dashboardBackground);
   }, [dashboardBackground, isLive, updateSessionBackground]);
 
-  const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const SettingsComponent = WIDGET_SETTINGS_COMPONENTS[widget.type];
 
   const getWidgetSettings = () => {
@@ -179,25 +178,17 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
   const getWidgetContentInternal = useCallback(
     (w: number, h: number, scale?: number) => {
-      if (WidgetComponent) {
-        return (
-          <InnerWidgetRenderer
-            Component={WidgetComponent}
-            widget={widget}
-            w={w}
-            h={h}
-            scale={scale}
-            isStudentView={isStudentView}
-          />
-        );
-      }
       return (
-        <div className="p-4 text-center text-slate-400 text-sm">
-          Widget under construction
-        </div>
+        <InnerWidgetRenderer
+          widget={widget}
+          w={w}
+          h={h}
+          scale={scale}
+          isStudentView={isStudentView}
+        />
       );
     },
-    [WidgetComponent, widget, isStudentView]
+    [widget, isStudentView]
   );
 
   if (widget.type === 'sticker') {
@@ -295,8 +286,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
 
 // Internal optimized wrapper to prevent re-renders when x/y coordinates change during drag
 interface InnerWidgetRendererProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Component: React.ComponentType<any>;
   widget: WidgetData;
   w: number;
   h: number;
@@ -306,7 +295,6 @@ interface InnerWidgetRendererProps {
 
 const InnerWidgetRenderer = memo(
   function InnerWidgetRenderer({
-    Component,
     widget,
     w,
     h,
@@ -314,18 +302,17 @@ const InnerWidgetRenderer = memo(
     isStudentView,
   }: InnerWidgetRendererProps) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <Component
-          widget={{ ...widget, w, h }}
-          scale={scale}
-          isStudentView={isStudentView}
-        />
-      </Suspense>
+      <WidgetLayoutWrapper
+        widget={widget}
+        w={w}
+        h={h}
+        scale={scale}
+        isStudentView={isStudentView}
+      />
     );
   },
   (prev, next) => {
     // Return true if props are equal (do NOT re-render)
-    if (prev.Component !== next.Component) return false;
     if (prev.w !== next.w) return false;
     if (prev.h !== next.h) return false;
     if (prev.scale !== next.scale) return false;
