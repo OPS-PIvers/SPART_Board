@@ -40,7 +40,7 @@ export interface WidgetLayout {
   /** Optional: Override default flex behavior */
   contentClassName?: string;
 
-  /** Optional: Custom padding (default: 'p-2') */
+  /** Optional: Custom padding (default: 'p-2', use 'p-0' for maximum fill) */
   padding?: string;
 }
 
@@ -76,18 +76,30 @@ const finalContent = scalingConfig.skipScaling ? (
   <div
     className="h-full w-full relative"
     style={{
-      padding: PADDING,
+      padding: scalingConfig.padding ?? PADDING, // Opt-out of 16px padding
       containerType: 'size',
     }}
   >
-    <WidgetLayoutWrapper widget={widget} w={effectiveWidth} h={effectiveHeight} />
+    <WidgetLayoutWrapper
+      widget={widget}
+      w={effectiveWidth}
+      h={effectiveHeight}
+    />
   </div>
 ) : (
   // ScalableWidget for legacy widgets (drawing, seating-chart)
-  <ScalableWidget ...>
-    {({ internalW, internalH, scale }) =>
-      <WidgetLayoutWrapper widget={widget} w={internalW} h={internalH} scale={scale} />
-    }
+  <ScalableWidget
+    // ...
+    padding={scalingConfig.padding ?? PADDING}
+  >
+    {({ internalW, internalH, scale }) => (
+      <WidgetLayoutWrapper
+        widget={widget}
+        w={internalW}
+        h={internalH}
+        scale={scale}
+      />
+    )}
   </ScalableWidget>
 );
 ```
@@ -192,66 +204,49 @@ export const WidgetLayoutWrapper: React.FC<WidgetLayoutWrapperProps> = ({
 
 Migrate widgets in priority order based on usage/visibility.
 
+#### Key Scaling Principles (Updated)
+
+1. **Avoid `cqmin`**: It is often too conservative. Use `min(cqw, cqh)` to fill space aggressively.
+2. **Padding `p-0`**: Use `padding="p-0"` in `WidgetLayout` and `padding: 0` in `WIDGET_SCALING_CONFIG` for widgets that should touch the edges.
+3. **Responsive Fonts**:
+   - Clock: `fontSize: min(30cqw, 75cqh)`
+   - Icons/Buttons: `fontSize: min(16px, 4cqmin)` (for small elements)
+
 #### High Priority (Batch 1) (COMPLETED ✅)
 
 - [x] **clock** (Done)
-
 - [x] **dice** (Done)
-
 - [x] **time-tool** (Timer) (Done)
-
 - [x] **random** (Done)
-
 - [x] **traffic** (Done)
 
 #### Medium Priority (Batch 2)
 
 - [ ] **qr**
-
 - [ ] **text**
-
 - [ ] **checklist**
-
 - [ ] **poll**
-
 - [ ] **scoreboard**
 
 #### Lower Priority (Batch 3)
 
 - [ ] **weather**
-
 - [ ] **schedule**
-
 - [ ] **calendar**
-
 - [ ] **webcam**
-
 - [ ] **sound**
-
 - [ ] **embed**
-
 - [ ] **workSymbols**
-
 - [ ] **materials**
-
 - [ ] **classes**
-
 - [ ] **lunchCount**
-
 - [ ] **instructionalRoutines**
-
 - [ ] **catalyst**
-
 - [ ] **catalyst-instruction**
-
 - [ ] **catalyst-visual**
-
 - [ ] **miniApp**
-
 - [ ] **stickers**
-
 - [ ] **smartNotebook**
-
 - [ ] **recessGear**
 
 ### Phase 3: Optimization (2-4 hours)
@@ -282,28 +277,31 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   return {
+    padding: 'p-0',
     content: (
-      <div className="flex flex-wrap justify-center items-center gap-[5cqmin] w-full h-full">
+      <div className="flex flex-wrap justify-center items-center gap-[4cqmin] w-full h-full">
         {values.map((v, i) => (
           <DiceFace
             key={i}
             value={v}
             isRolling={isRolling}
-            size="40cqmin" // Much larger now!
+            size={diceCount === 1 ? 'min(60cqw, 75cqh)' : 'min(30cqw, 45cqh)'}
           />
         ))}
       </div>
     ),
     footer: (
-      <button
-        onClick={roll}
-        disabled={isRolling}
-        className="w-full px-6 py-3 bg-purple-600 text-white rounded-full 
+      <div className="px-2 pb-2">
+        <button
+          onClick={roll}
+          disabled={isRolling}
+          className="w-full px-6 py-3 bg-purple-600 text-white rounded-xl 
                    font-bold uppercase tracking-wide transition-all
                    hover:bg-purple-700 disabled:bg-slate-300"
-      >
-        {isRolling ? 'Rolling...' : 'Roll Dice'}
-      </button>
+        >
+          {isRolling ? 'Rolling...' : 'Roll Dice'}
+        </button>
+      </div>
     ),
   };
 };
@@ -433,21 +431,24 @@ export const ClockWidget = ({ widget }) => {
   // ... time formatting logic ...
 
   return {
+    padding: 'p-0',
     content: (
       <div className="flex flex-col items-center justify-center gap-[2cqmin]">
         <div
           className="flex items-baseline"
           style={{
-            fontSize: config.showSeconds ? '30cqmin' : '40cqmin',
+            fontSize: config.showSeconds
+              ? 'min(20cqw, 65cqh)'
+              : 'min(30cqw, 75cqh)',
             color: config.themeColor,
           }}
         >
           <span>{displayHours}</span>
-          <span className="opacity-30 mx-[0.5cqmin]">:</span>
+          <span className="opacity-30 mx-[0.25em]">:</span>
           <span>{minutes}</span>
           {config.showSeconds && (
             <>
-              <span className="opacity-30 mx-[0.5cqmin]">:</span>
+              <span className="opacity-30 mx-[0.25em]">:</span>
               <span className="opacity-60" style={{ fontSize: '0.7em' }}>
                 {seconds}
               </span>
@@ -746,10 +747,13 @@ footer: (
 
 ## Sizing Guidelines
 
-- Use `cqmin` for responsive font sizes
-- Use percentages or `max-w/h-full` for elements
-- Content automatically fills available space
-- No need for manual `flex-1` or `h-full`
+- **NEVER** use `cqmin` for primary content (e.g. clock text, dice).
+- **ALWAYS** use `min(Xcqw, Ycqh)` to ensure content scales to the narrowest dimension without creating massive vertical or horizontal gaps.
+- Use `padding="p-0"` in the `WidgetLayout` to remove the internal flex gap/padding.
+- Set `padding: 0` in `WIDGET_SCALING_CONFIG` (WidgetRegistry.ts) to remove the 16px container margin.
+- Use percentages or `max-w/h-full` for elements.
+- Content automatically fills available space.
+- No need for manual `flex-1` or `h-full`.
 
 ## Examples
 
