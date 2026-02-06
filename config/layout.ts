@@ -8,5 +8,5 @@ export const UI_CONSTANTS = {
   WIDGET_HEADER_HEIGHT: 24,
 
   /** Standard padding used inside widgets */
-  WIDGET_PADDING: 4,
+  WIDGET_PADDING: 0,
 } as const;

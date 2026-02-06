@@ -190,11 +190,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 280,
     baseHeight: 300,
     canSpread: true,
+    skipScaling: true,
   },
   random: {
     baseWidth: 300,
     baseHeight: 320,
     canSpread: true,
+    skipScaling: true,
   },
   dice: {
     baseWidth: 240,
@@ -230,27 +232,31 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 320,
     baseHeight: 200,
     canSpread: true,
+    skipScaling: true,
   },
   workSymbols: {
     baseWidth: 320,
     baseHeight: 350,
     canSpread: true,
   },
-  poll: { baseWidth: 300, baseHeight: 250, canSpread: true },
+  poll: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   weather: {
     baseWidth: 250,
     baseHeight: 280,
     canSpread: true,
+    skipScaling: true,
   },
   schedule: {
     baseWidth: 300,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   calendar: {
     baseWidth: 300,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   lunchCount: {
     baseWidth: 500,
@@ -266,6 +272,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 400,
     baseHeight: 480,
     canSpread: true,
+    skipScaling: true,
   },
   miniApp: {
     baseWidth: 500,
@@ -276,6 +283,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 340,
     baseHeight: 340,
     canSpread: true,
+    skipScaling: true,
   },
   stickers: {
     baseWidth: 600,
