@@ -166,6 +166,30 @@ export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
   canSpread: true,
 };
 
+/**
+ * Widget Scaling Configuration
+ *
+ * Controls how each widget adapts to its container size via ScalableWidget.
+ *
+ * Key properties:
+ *  - baseWidth / baseHeight: Reference dimensions used by ScalableWidget's
+ *    CSS-transform scaling. When skipScaling is true these serve only as
+ *    default size hints.
+ *  - canSpread: When true, the widget is allowed to fill available space
+ *    (CSS transform capped at 1×). When false, the widget is always rendered
+ *    at base dimensions and CSS-scaled.
+ *  - skipScaling: When true, ScalableWidget is bypassed entirely. The widget
+ *    receives the real container dimensions and a CSS `container-type: size`
+ *    wrapper so it can use flex/grid/container-query layouts natively. This is
+ *    the preferred mode for widgets with responsive CSS layouts.
+ *
+ * Widgets that KEEP CSS-transform scaling (skipScaling omitted / false):
+ *  - drawing   – Canvas relies on fixed coordinate space; CSS-transform
+ *                preserves pixel-perfect rendering.
+ *  - seating-chart – Uses absolute-positioned seat nodes; CSS-transform keeps
+ *                    coordinates consistent.
+ *  - sticker   – Decorative overlay; fixed size, no DraggableWindow wrapper.
+ */
 export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   clock: {
     baseWidth: 280,
@@ -190,11 +214,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 280,
     baseHeight: 300,
     canSpread: true,
+    skipScaling: true,
   },
   random: {
     baseWidth: 300,
     baseHeight: 320,
     canSpread: true,
+    skipScaling: true,
   },
   dice: {
     baseWidth: 240,
@@ -230,57 +256,68 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 320,
     baseHeight: 200,
     canSpread: true,
+    skipScaling: true,
   },
   workSymbols: {
     baseWidth: 320,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
-  poll: { baseWidth: 300, baseHeight: 250, canSpread: true },
+  poll: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   weather: {
     baseWidth: 250,
     baseHeight: 280,
     canSpread: true,
+    skipScaling: true,
   },
   schedule: {
     baseWidth: 300,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   calendar: {
     baseWidth: 300,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   lunchCount: {
     baseWidth: 500,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   classes: {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
+    skipScaling: true,
   },
   instructionalRoutines: {
     baseWidth: 400,
     baseHeight: 480,
     canSpread: true,
+    skipScaling: true,
   },
   miniApp: {
     baseWidth: 500,
     baseHeight: 600,
     canSpread: true,
+    skipScaling: true,
   },
   materials: {
     baseWidth: 340,
     baseHeight: 340,
     canSpread: true,
+    skipScaling: true,
   },
   stickers: {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
+    skipScaling: true,
   },
   sticker: { baseWidth: 200, baseHeight: 200, canSpread: false },
   'seating-chart': {
@@ -292,21 +329,25 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseWidth: 320,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   'catalyst-instruction': {
     baseWidth: 280,
     baseHeight: 350,
     canSpread: true,
+    skipScaling: true,
   },
   'catalyst-visual': {
     baseWidth: 600,
     baseHeight: 400,
     canSpread: true,
+    skipScaling: true,
   },
   smartNotebook: {
     baseWidth: 600,
     baseHeight: 500,
     canSpread: true,
+    skipScaling: true,
   },
   recessGear: {
     baseWidth: 250,

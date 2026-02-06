@@ -431,21 +431,20 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     // Routine view scaling: Estimate total vertical "ems" to fit without scrolling
-    // Padding (3em) + Header area (~4.5em)
-    let totalVerticalEms = 7.5;
+    // Padding (2em) + Header area (~3.5em)
+    let totalVerticalEms = 5.5;
 
-    // Bloom's specific buttons (~4em)
+    // Bloom's specific buttons (~3em)
     if (selectedRoutineId === 'blooms-analysis') {
-      totalVerticalEms += 4;
+      totalVerticalEms += 3;
     }
 
-    // Steps: each step is roughly 3.5em including its gap (1.5em)
-    // We use a slightly more conservative estimate to ensure it fits
+    // Steps: each step is roughly 3em including its gap (1em)
     const stepCount = customSteps.length || 1;
-    totalVerticalEms += stepCount * 3.6;
+    totalVerticalEms += stepCount * 3;
 
     const heightFactor = widget.h / totalVerticalEms;
-    const widthFactor = widget.w / 22; // Estimate horizontal capacity
+    const widthFactor = widget.w / 20; // Estimate horizontal capacity
 
     const baseSize = Math.min(widthFactor, heightFactor);
     return Math.max(8, baseSize * scaleMultiplier);
@@ -539,7 +538,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   if (!selectedRoutineId || !selectedRoutine) {
     return (
-      <div className="flex flex-col h-full bg-brand-gray-lightest p-4 overflow-hidden">
+      <div className="flex flex-col h-full p-3 overflow-hidden">
         <div className="flex justify-between items-center mb-3 shrink-0">
           <div className="text-xxs font-black uppercase text-slate-400 tracking-widest">
             Library ({gradeFilter.toUpperCase()})
@@ -565,7 +564,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             </button>
           </div>
         </div>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 overflow-y-auto custom-scrollbar pr-1 pb-2">
           {displayedRoutines.map((r) => {
             const Icon =
               (Icons as unknown as Record<string, React.ElementType>)[r.icon] ??
@@ -694,15 +693,19 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div
-      className="flex flex-col h-full bg-white animate-in fade-in duration-200 overflow-hidden relative"
+      className="flex flex-col h-full animate-in fade-in duration-200 overflow-hidden relative"
       style={{
         fontSize: `${dynamicFontSize}px`,
-        padding: '1.5em',
+        padding: '1em',
       }}
     >
       <div
         className="flex items-center shrink-0 border-b border-brand-blue-lighter"
-        style={{ gap: '1em', marginBottom: '1.5em', paddingBottom: '1em' }}
+        style={{
+          gap: '0.75em',
+          marginBottom: '0.75em',
+          paddingBottom: '0.75em',
+        }}
       >
         <button
           onClick={() =>
@@ -759,7 +762,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       {selectedRoutine.id === 'blooms-analysis' && (
         <div
           className="flex shrink-0 px-1"
-          style={{ gap: '1em', marginBottom: '1em' }}
+          style={{ gap: '0.75em', marginBottom: '0.75em' }}
         >
           <button
             onClick={() => launchBloomsResource('keyWords')}
@@ -782,9 +785,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div
           className={`
-            ${structure === 'visual-cue' ? 'grid grid-cols-2 gap-4' : 'flex flex-col'}
+            ${structure === 'visual-cue' ? 'grid grid-cols-2' : 'flex flex-col'}
           `}
-          style={{ gap: structure === 'visual-cue' ? '1em' : '1.5em' }}
+          style={{ gap: structure === 'visual-cue' ? '0.75em' : '1em' }}
         >
           {customSteps.map((step, i) => {
             return (
