@@ -552,7 +552,6 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="w-full h-full flex flex-col">
       <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-        {' '}
         <div>
           <h2 className="font-black text-lg text-slate-800 tracking-tight uppercase">
             App Library
