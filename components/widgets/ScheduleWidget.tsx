@@ -16,10 +16,11 @@ interface ScheduleRowProps {
   onToggle: (idx: number) => void;
   timeSize: number;
   taskSize: number;
+  iconSize: number;
 }
 
 const ScheduleRow = React.memo<ScheduleRowProps>(
-  ({ item, index, onToggle, timeSize, taskSize }) => {
+  ({ item, index, onToggle, timeSize, taskSize, iconSize }) => {
     return (
       <button
         onClick={() => onToggle(index)}
@@ -30,9 +31,9 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
         }`}
       >
         {item.done ? (
-          <CheckCircle2 className="w-5 h-5 text-green-500" />
+          <CheckCircle2 className="text-green-500 shrink-0" size={iconSize} />
         ) : (
-          <Circle className="w-5 h-5 text-indigo-300" />
+          <Circle className="text-indigo-300 shrink-0" size={iconSize} />
         )}
         <div className="flex flex-col items-start">
           <span
@@ -158,8 +159,9 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     return () => clearInterval(interval);
   }, [autoProgress, hasClock, widget.id, updateWidget]);
 
-  const taskSize = useScaledFont(widget.w, widget.h, 0.35, 14, 24);
-  const timeSize = useScaledFont(widget.w, widget.h, 0.2, 10, 14);
+  const taskSize = useScaledFont(widget.w, widget.h, 0.35, 14, 36);
+  const timeSize = useScaledFont(widget.w, widget.h, 0.2, 10, 22);
+  const iconSize = useScaledFont(widget.w, widget.h, 0.3, 16, 32);
 
   const getFontClass = () => {
     if (fontFamily === 'global') {
@@ -182,6 +184,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             onToggle={toggle}
             timeSize={timeSize}
             taskSize={taskSize}
+            iconSize={iconSize}
           />
         ))}
       </div>

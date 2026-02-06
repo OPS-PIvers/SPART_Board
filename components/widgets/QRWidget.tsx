@@ -41,7 +41,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   ]);
 
   // Use a simple public API for QR codes
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-2 relative">

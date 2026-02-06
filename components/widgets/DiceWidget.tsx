@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
+import { useScaledFont } from '../../hooks/useScaledFont';
 
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
@@ -86,6 +87,9 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const [values, setValues] = useState<number[]>(new Array(diceCount).fill(1));
   const [isRolling, setIsRolling] = useState(false);
 
+  const buttonFontSize = useScaledFont(widget.w, widget.h, 0.3, 12, 24);
+  const buttonIconSize = useScaledFont(widget.w, widget.h, 0.35, 16, 32);
+
   const roll = async () => {
     if (isRolling) return;
 
@@ -131,15 +135,23 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         onClick={roll}
         disabled={isRolling}
         className={`
-          flex items-center gap-2 px-8 py-3 rounded-full  uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
+          flex items-center rounded-full uppercase tracking-widest transition-all font-${globalStyle.fontFamily}
           ${
             isRolling
               ? 'bg-slate-100 text-slate-400'
               : 'bg-purple-600 text-white shadow-xl hover:bg-purple-700 active:scale-95 hover:-translate-y-1'
           }
         `}
+        style={{
+          fontSize: `${buttonFontSize}px`,
+          padding: `${buttonFontSize * 0.6}px ${buttonFontSize * 1.6}px`,
+          gap: `${buttonFontSize * 0.5}px`,
+        }}
       >
-        <RefreshCw className={`w-5 h-5 ${isRolling ? 'animate-spin' : ''}`} />
+        <RefreshCw
+          size={buttonIconSize}
+          className={isRolling ? 'animate-spin' : ''}
+        />
         {isRolling ? 'Rolling...' : 'Roll Dice'}
       </button>
     </div>
