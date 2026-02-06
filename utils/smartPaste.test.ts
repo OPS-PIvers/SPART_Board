@@ -12,7 +12,7 @@ describe('detectWidgetType (Smart Paste)', () => {
     expect(result?.type).toBe('embed');
     const config = result?.config as EmbedConfig;
     expect(config.url).toContain(
-      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/embed'
+      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
     );
   });
 
