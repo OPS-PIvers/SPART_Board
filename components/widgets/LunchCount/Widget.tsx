@@ -4,11 +4,13 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
   useSensor,
   useSensors,
   defaultDropAnimationSideEffects,
+  MouseSensor,
+  TouchSensor,
 } from '@dnd-kit/core';
+import { snapCenterToCursor, restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import { WidgetData, LunchCountConfig } from '../../../types';
@@ -46,9 +48,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
       },
     })
   );
@@ -380,9 +388,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         }
       />
-      <DragOverlay dropAnimation={dropAnimation}>
+      <DragOverlay
+        dropAnimation={dropAnimation}
+        modifiers={[snapCenterToCursor, restrictToWindowEdges]}
+        className="drag-overlay"
+      >
         {activeId ? (
-          <div className="px-3 py-1.5 bg-brand-blue-primary border-b-2 border-brand-blue-dark rounded-xl text-[min(11px,3.5cqmin)] font-black text-white shadow-xl scale-110 opacity-90 cursor-grabbing">
+          <div
+            data-no-drag="true"
+            className="px-3 py-1.5 bg-brand-blue-primary border-b-2 border-brand-blue-dark rounded-xl text-[min(11px,3.5cqmin)] font-black text-white shadow-xl scale-110 opacity-90 cursor-grabbing pointer-events-none"
+          >
             {activeId}
           </div>
         ) : null}
