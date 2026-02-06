@@ -55,7 +55,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
   const activeRoster = useMemo((): string[] => {
     if (rosterMode === 'custom') return roster;
-    const currentRoster = rosters.find((r) => r.id === activeRosterId);
+    const currentRoster =
+      rosters.find((r) => r.id === activeRosterId) ?? rosters[0];
     return (
       currentRoster?.students.map((s) =>
         `${s.firstName} ${s.lastName}`.trim()
