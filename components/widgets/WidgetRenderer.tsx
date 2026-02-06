@@ -201,7 +201,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     <div
       className="h-full w-full relative"
       style={{
-        padding: PADDING,
+        padding: scalingConfig.padding ?? PADDING,
         containerType: 'size',
       }}
     >
@@ -215,7 +215,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       baseHeight={scalingConfig.baseHeight}
       canSpread={scalingConfig.canSpread ?? true}
       headerHeight={HEADER_HEIGHT}
-      padding={PADDING}
+      padding={scalingConfig.padding ?? PADDING}
     >
       {({ internalW, internalH, scale }) =>
         getWidgetContentInternal(internalW, internalH, scale)

@@ -784,6 +784,11 @@ export interface ScalingConfig {
    * Modern widgets should use CSS Container Queries instead.
    */
   skipScaling?: boolean;
+  /**
+   * Optional padding override (e.g. 0).
+   * Used to eliminate excess space in modern layouts.
+   */
+  padding?: number;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {

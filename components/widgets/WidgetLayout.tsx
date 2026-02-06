@@ -12,10 +12,14 @@ export const WidgetLayout: React.FC<WidgetLayoutProps> = ({
   contentClassName,
   padding = 'p-2',
 }) => {
+  const hasPadding = padding !== 'p-0';
+
   return (
     <div className={`h-full w-full flex flex-col ${padding}`}>
       {/* Header - fixed size */}
-      {header && <div className="shrink-0 mb-2">{header}</div>}
+      {header && (
+        <div className={`shrink-0 ${hasPadding ? 'mb-2' : ''}`}>{header}</div>
+      )}
 
       {/* Content - grows to fill space */}
       <div
@@ -27,7 +31,9 @@ export const WidgetLayout: React.FC<WidgetLayoutProps> = ({
       </div>
 
       {/* Footer - fixed size */}
-      {footer && <div className="shrink-0 mt-2">{footer}</div>}
+      {footer && (
+        <div className={`shrink-0 ${hasPadding ? 'mt-2' : ''}`}>{footer}</div>
+      )}
     </div>
   );
 };

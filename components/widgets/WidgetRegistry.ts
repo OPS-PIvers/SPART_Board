@@ -196,18 +196,21 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseHeight: 140,
     canSpread: true,
     skipScaling: true,
+    padding: 0,
   },
   'time-tool': {
     baseWidth: 420,
     baseHeight: 400,
     canSpread: true,
     skipScaling: true,
+    padding: 0,
   },
   traffic: {
     baseWidth: 120,
     baseHeight: 320,
     canSpread: false,
     skipScaling: true,
+    padding: 0,
   },
   text: { baseWidth: 300, baseHeight: 250, canSpread: true, skipScaling: true },
   checklist: {
@@ -221,12 +224,14 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseHeight: 320,
     canSpread: true,
     skipScaling: true,
+    padding: 4,
   },
   dice: {
     baseWidth: 240,
     baseHeight: 240,
     canSpread: false,
     skipScaling: true,
+    padding: 0,
   },
   sound: {
     baseWidth: 300,

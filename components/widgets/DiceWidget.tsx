@@ -45,7 +45,7 @@ const DiceFace: React.FC<{
   value: number;
   isRolling: boolean;
   size?: string;
-}> = ({ value, isRolling, size = '25cqmin' }) => {
+}> = ({ value, isRolling, size = 'min(35cqw, 45cqh)' }) => {
   const dotPositions: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -130,36 +130,47 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="flex flex-wrap justify-center items-center gap-[5cqmin] w-full h-full overflow-hidden">
+        <div className="flex flex-wrap justify-center items-center gap-[4cqmin] w-full h-full overflow-hidden">
           {values.map((v, i) => (
             <DiceFace
               key={i}
               value={v}
               isRolling={isRolling}
-              size={diceCount > 1 ? '30cqmin' : '45cqmin'}
+              size={
+                diceCount === 1
+                  ? 'min(60cqw, 75cqh)'
+                  : diceCount === 2
+                    ? 'min(40cqw, 55cqh)'
+                    : 'min(28cqw, 40cqh)'
+              }
             />
           ))}
         </div>
       }
       footer={
-        <button
-          onClick={roll}
-          disabled={isRolling}
-          className={`
-          w-full py-3 px-6 flex items-center justify-center gap-3 rounded-xl uppercase tracking-widest transition-all font-bold font-${
-            globalStyle.fontFamily
-          }
-          ${
-            isRolling
-              ? 'bg-slate-100 text-slate-400'
-              : 'bg-purple-600 text-white shadow-lg hover:bg-purple-700 active:scale-95'
-          }
-        `}
-          style={{ fontSize: 'min(16px, 4cqmin)' }}
-        >
-          <RefreshCw size="1.2em" className={isRolling ? 'animate-spin' : ''} />
-          {isRolling ? 'Rolling...' : 'Roll Dice'}
-        </button>
+        <div className="px-2 pb-2">
+          <button
+            onClick={roll}
+            disabled={isRolling}
+            className={`
+            w-full py-3 px-6 flex items-center justify-center gap-3 rounded-xl uppercase tracking-widest transition-all font-bold font-${
+              globalStyle.fontFamily
+            }
+            ${
+              isRolling
+                ? 'bg-slate-100 text-slate-400'
+                : 'bg-purple-600 text-white shadow-lg hover:bg-purple-700 active:scale-95'
+            }
+          `}
+            style={{ fontSize: 'min(16px, 4cqmin)' }}
+          >
+            <RefreshCw
+              size="1.2em"
+              className={isRolling ? 'animate-spin' : ''}
+            />
+            {isRolling ? 'Rolling...' : 'Roll Dice'}
+          </button>
+        </div>
       }
     />
   );

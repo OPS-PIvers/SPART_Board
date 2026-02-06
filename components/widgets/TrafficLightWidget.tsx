@@ -26,24 +26,24 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div className="flex items-center justify-center h-full w-full">
-          <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[5cqmin] gap-[5cqmin]">
+          <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[4cqmin] gap-[3cqmin]">
             <button
               onClick={() => {
                 toggle('red');
               }}
-              className={`w-[20cqmin] h-[20cqmin] rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'}`}
+              className={`w-[min(25cqw,25cqh)] h-[min(25cqw,25cqh)] rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'}`}
             />
             <button
               onClick={() => {
                 toggle('yellow');
               }}
-              className={`w-[20cqmin] h-[20cqmin] rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400' : 'bg-yellow-950/50'}`}
+              className={`w-[min(25cqw,25cqh)] h-[min(25cqw,25cqh)] rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400' : 'bg-yellow-950/50'}`}
             />
             <button
               onClick={() => {
                 toggle('green');
               }}
-              className={`w-[20cqmin] h-[20cqmin] rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500' : 'bg-green-950/50'}`}
+              className={`w-[min(25cqw,25cqh)] h-[min(25cqw,25cqh)] rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500' : 'bg-green-950/50'}`}
             />
           </div>
         </div>

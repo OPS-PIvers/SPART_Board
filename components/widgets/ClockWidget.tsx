@@ -65,7 +65,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div
             className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
             style={{
-              fontSize: showSeconds ? '30cqmin' : '40cqmin',
+              fontSize: showSeconds ? 'min(20cqw, 65cqh)' : 'min(30cqw, 75cqh)',
               color: themeColor,
               textShadow: glow
                 ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
@@ -75,11 +75,11 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {clockStyle === 'lcd' && (
               <div className="absolute opacity-5 pointer-events-none select-none flex">
                 <span>88</span>
-                <span className="mx-[0.5cqmin]">:</span>
+                <span className="mx-[0.25em]">:</span>
                 <span>88</span>
                 {showSeconds && (
                   <>
-                    <span className="mx-[0.5cqmin]">:</span>
+                    <span className="mx-[0.25em]">:</span>
                     <span>88</span>
                   </>
                 )}
@@ -90,7 +90,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <span
               className={`${
                 clockStyle === 'minimal' ? '' : 'animate-pulse'
-              } mx-[0.5cqmin] opacity-30`}
+              } mx-[0.1em] opacity-30`}
             >
               :
             </span>
@@ -98,7 +98,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
             {showSeconds && (
               <>
-                <span className="opacity-30 mx-[0.5cqmin]">:</span>
+                <span className="opacity-30 mx-[0.1em]">:</span>
                 <span className="opacity-60" style={{ fontSize: '0.7em' }}>
                   {seconds}
                 </span>
@@ -116,7 +116,8 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
 
           <div
-            className={`text-[4cqmin] opacity-60 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+            className={`opacity-60 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+            style={{ fontSize: 'min(3cqw, 15cqh)' }}
           >
             {time.toLocaleDateString(undefined, {
               weekday: 'long',
