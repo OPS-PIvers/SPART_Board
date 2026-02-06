@@ -75,7 +75,9 @@ export const convertToEmbedUrl = (url: string): string => {
           );
         if (slideIdMatch) {
           const slideId = slideIdMatch[1];
-          parsed.pathname = `/presentation/d/${slideId}/embed`;
+          parsed.pathname = `/presentation/d/${slideId}/preview`;
+          parsed.search = '';
+          parsed.hash = '';
           return parsed.toString();
         }
       }
@@ -91,7 +93,9 @@ export const convertToEmbedUrl = (url: string): string => {
           );
         if (sheetIdMatch) {
           const sheetId = sheetIdMatch[1];
-          parsed.pathname = `/spreadsheets/d/${sheetId}/embed`;
+          parsed.pathname = `/spreadsheets/d/${sheetId}/preview`;
+          parsed.search = '';
+          parsed.hash = '';
           return parsed.toString();
         }
       }
