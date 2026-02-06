@@ -688,6 +688,7 @@ All widgets should return a `WidgetLayout` object:
 export const MyWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
 return {
 content: (
+
 <div>Main content here</div>
 ),
 footer: (
