@@ -128,6 +128,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <WidgetLayout
+      padding="p-0"
       content={
         <div className="flex flex-wrap justify-center items-center gap-[5cqmin] w-full h-full overflow-hidden">
           {values.map((v, i) => (

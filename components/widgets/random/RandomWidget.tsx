@@ -405,6 +405,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <WidgetLayout
+      padding="p-0"
       header={
         <div className="flex justify-between items-center w-full px-2 pt-1">
           <div className="flex items-center gap-2">

@@ -55,16 +55,17 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <WidgetLayout
+      padding="p-0"
       content={
         <div
-          className={`flex flex-col items-center justify-center h-full w-full gap-[1cqmin] transition-all duration-500 ${
+          className={`flex flex-col items-center justify-center h-full w-full gap-[2cqmin] transition-all duration-500 ${
             clockStyle === 'lcd' ? 'bg-black/5' : ''
           }`}
         >
           <div
             className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
             style={{
-              fontSize: showSeconds ? '15cqmin' : '20cqmin',
+              fontSize: showSeconds ? '30cqmin' : '40cqmin',
               color: themeColor,
               textShadow: glow
                 ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
@@ -74,11 +75,11 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {clockStyle === 'lcd' && (
               <div className="absolute opacity-5 pointer-events-none select-none flex">
                 <span>88</span>
-                <span className="mx-0.5">:</span>
+                <span className="mx-[0.5cqmin]">:</span>
                 <span>88</span>
                 {showSeconds && (
                   <>
-                    <span className="mx-0.5">:</span>
+                    <span className="mx-[0.5cqmin]">:</span>
                     <span>88</span>
                   </>
                 )}
@@ -89,7 +90,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <span
               className={`${
                 clockStyle === 'minimal' ? '' : 'animate-pulse'
-              } mx-0.5`}
+              } mx-[0.5cqmin] opacity-30`}
             >
               :
             </span>
@@ -97,7 +98,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
             {showSeconds && (
               <>
-                <span className="opacity-30 mx-0.5">:</span>
+                <span className="opacity-30 mx-[0.5cqmin]">:</span>
                 <span className="opacity-60" style={{ fontSize: '0.7em' }}>
                   {seconds}
                 </span>

@@ -23,6 +23,7 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <WidgetLayout
+      padding="p-0"
       content={
         <div className="flex items-center justify-center h-full w-full">
           <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[5cqmin] gap-[5cqmin]">
