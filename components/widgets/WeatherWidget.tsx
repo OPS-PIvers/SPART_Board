@@ -308,7 +308,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     switch (condition.toLowerCase()) {
       case 'cloudy':
       case 'clouds':
-        return <Cloud size={iconSize} className="text-slate-400" />;
+        return <Cloud size={iconSize} className="text-slate-500" />;
       case 'rainy':
       case 'rain':
       case 'drizzle':
@@ -382,7 +382,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     >
       <div className="flex flex-col items-center justify-center gap-2">
         <div
-          className="font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1"
+          className="font-black uppercase tracking-widest text-slate-600 mb-1 flex items-center gap-1"
           style={{ fontSize: `${labelFontSize}px` }}
         >
           <MapPin style={{ width: labelFontSize, height: labelFontSize }} />{' '}
@@ -403,7 +403,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
             {showFeelsLike ? (
               <div
-                className="font-black text-slate-400 mt-1 uppercase tracking-wider"
+                className="font-black text-slate-600 mt-1 uppercase tracking-wider"
                 style={{ fontSize: `${labelFontSize}px` }}
               >
                 Actual {Math.round(temp)}°
@@ -411,7 +411,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             ) : (
               feelsLike !== undefined && (
                 <div
-                  className="font-black text-slate-400 mt-1 uppercase tracking-wider"
+                  className="font-black text-slate-600 mt-1 uppercase tracking-wider"
                   style={{ fontSize: `${labelFontSize}px` }}
                 >
                   Feels like {Math.round(feelsLike)}°
@@ -422,7 +422,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
 
         <div
-          className="font-black uppercase tracking-[0.2em] text-slate-400 mt-2"
+          className="font-black uppercase tracking-[0.2em] text-slate-600 mt-2"
           style={{ fontSize: `${labelFontSize}px` }}
         >
           Instruction
@@ -458,10 +458,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               <RefreshCw className="w-3.5 h-3.5" />
             )}
           </button>
-          <div className="text-xxxs text-slate-500 uppercase flex items-center gap-1.5">
+          <div className="text-xxxs text-slate-600 uppercase flex items-center gap-1.5">
             <span>Last Sync</span>
             {lastSync && (
-              <span className="text-slate-600">
+              <span className="text-slate-700">
                 {new Date(lastSync).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',

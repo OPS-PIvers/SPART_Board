@@ -107,7 +107,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div
-        className={`text-xxs md:text-xs  opacity-40 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
+        className={`text-xxs md:text-xs  opacity-60 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
       >
         {time.toLocaleDateString(undefined, {
           weekday: 'long',
