@@ -32,20 +32,30 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  // Merge categories: Start with defaults, override/append with custom by ID
+  // Merge categories: Start with defaults, override/append with custom by ID, exclude removed
   const categoriesMap = new Map<
     string,
     (typeof DEFAULT_CATALYST_CATEGORIES)[number]
   >();
-  DEFAULT_CATALYST_CATEGORIES.forEach((c) => categoriesMap.set(c.id, c));
+  const removedCategoryIds = new Set(config.removedCategoryIds ?? []);
+  DEFAULT_CATALYST_CATEGORIES.forEach((c) => {
+    if (!removedCategoryIds.has(c.id)) {
+      categoriesMap.set(c.id, c);
+    }
+  });
   if (config.customCategories) {
     config.customCategories.forEach((c) => categoriesMap.set(c.id, c));
   }
   const categories = Array.from(categoriesMap.values());
 
-  // Merge routines: Start with defaults, override/append with custom
+  // Merge routines: Start with defaults, override/append with custom, exclude removed
   const routinesMap = new Map<string, CatalystRoutine>();
-  CATALYST_ROUTINES.forEach((r) => routinesMap.set(r.id, r));
+  const removedRoutineIds = new Set(config.removedRoutineIds ?? []);
+  CATALYST_ROUTINES.forEach((r) => {
+    if (!removedRoutineIds.has(r.id)) {
+      routinesMap.set(r.id, r);
+    }
+  });
   if (config.customRoutines) {
     config.customRoutines.forEach((r) => routinesMap.set(r.id, r));
   }

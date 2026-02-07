@@ -399,6 +399,8 @@ export interface CatalystConfig {
   activeStrategyId: string | null;
   customCategories?: CatalystCategory[];
   customRoutines?: CatalystRoutine[];
+  removedCategoryIds?: string[];
+  removedRoutineIds?: string[];
 }
 
 export interface CatalystInstructionConfig {

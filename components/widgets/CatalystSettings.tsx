@@ -78,17 +78,27 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
   const config = widget.config as CatalystConfig;
 
   // Initialize state from config or defaults
-  // Initialize categories by merging defaults with custom overrides (diff) by id
+  // Initialize categories by merging defaults with custom overrides (diff) by id, excluding removed
   const [categories, setCategories] = useState<CatalystCategory[]>(() => {
     const categoriesMap = new Map<string, CatalystCategory>();
-    DEFAULT_CATALYST_CATEGORIES.forEach((c) => categoriesMap.set(c.id, c));
+    const removedIds = new Set(config.removedCategoryIds ?? []);
+    DEFAULT_CATALYST_CATEGORIES.forEach((c) => {
+      if (!removedIds.has(c.id)) {
+        categoriesMap.set(c.id, c);
+      }
+    });
     config.customCategories?.forEach((c) => categoriesMap.set(c.id, c));
     return Array.from(categoriesMap.values());
   });
 
   const [routines, setRoutines] = useState<CatalystRoutine[]>(() => {
     const routinesMap = new Map<string, CatalystRoutine>();
-    CATALYST_ROUTINES.forEach((r) => routinesMap.set(r.id, r));
+    const removedIds = new Set(config.removedRoutineIds ?? []);
+    CATALYST_ROUTINES.forEach((r) => {
+      if (!removedIds.has(r.id)) {
+        routinesMap.set(r.id, r);
+      }
+    });
     config.customRoutines?.forEach((r) => routinesMap.set(r.id, r));
     return Array.from(routinesMap.values());
   });
@@ -126,11 +136,26 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
       );
     });
 
+    // Track removed default categories and routines as tombstones
+    const newCategoryIds = new Set(newCategories.map((c) => c.id));
+    const removedCategoryIds = DEFAULT_CATALYST_CATEGORIES.filter(
+      (c) => !newCategoryIds.has(c.id)
+    ).map((c) => c.id);
+
+    const newRoutineIds = new Set(newRoutines.map((r) => r.id));
+    const removedRoutineIds = CATALYST_ROUTINES.filter(
+      (r) => !newRoutineIds.has(r.id)
+    ).map((r) => r.id);
+
     updateWidget(widget.id, {
       config: {
         ...config,
         customCategories: categoryDiffs.length > 0 ? categoryDiffs : undefined,
         customRoutines: routineDiffs.length > 0 ? routineDiffs : undefined,
+        removedCategoryIds:
+          removedCategoryIds.length > 0 ? removedCategoryIds : undefined,
+        removedRoutineIds:
+          removedRoutineIds.length > 0 ? removedRoutineIds : undefined,
       },
     });
   };

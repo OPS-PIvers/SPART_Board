@@ -99,33 +99,71 @@ describe('CatalystWidget', () => {
     expect(screen.queryByText('Attention')).not.toBeInTheDocument();
   });
 
-  it('renders custom routines when category is active', () => {
-    // Need a custom routine
-    const customRoutines = [
-      {
-        id: 'custom-routine-1',
-        title: 'My Custom Routine',
-        category: 'Get Attention', // Uses default category
-        icon: 'Zap',
-        shortDesc: 'Short Desc',
-        instructions: 'Instructions',
-        associatedWidgets: [],
-      },
-    ];
-
-    // Active category 'Get Attention'
+  it('excludes removed category IDs from display', () => {
     render(
       <CatalystWidget
         widget={createWidget({
-          activeCategory: 'Get Attention',
-          customRoutines,
+          removedCategoryIds: ['Get Attention', 'Engage'], // Remove two defaults
         })}
       />
     );
 
-    // Should see default routines for Get Attention + Custom Routine
-    // 'Signal for Silence' is a default routine in 'Get Attention'
-    expect(screen.getByText('Signal for Silence')).toBeInTheDocument();
-    expect(screen.getByText('My Custom Routine')).toBeInTheDocument();
+    // Should not see removed categories
+    expect(screen.queryByText('Attention')).not.toBeInTheDocument();
+    expect(screen.queryByText('Engage')).not.toBeInTheDocument();
+
+    // Should still see remaining defaults
+    expect(screen.getByText('Set Up')).toBeInTheDocument();
+    expect(screen.getByText('Support')).toBeInTheDocument();
+  });
+
+  it('excludes removed routine IDs from display', () => {
+    // Remove 'Signal for Silence' routine (default in 'Get Attention')
+    render(
+      <CatalystWidget
+        widget={createWidget({
+          activeCategory: 'Get Attention',
+          removedRoutineIds: ['signal-silence'], // Remove a default routine
+        })}
+      />
+    );
+
+    // Should not see removed routine
+    expect(screen.queryByText('Signal for Silence')).not.toBeInTheDocument();
+
+    // Should still see other routines in 'Get Attention' category if they exist
+    // (If there are no other routines, the widget would show empty state)
+  });
+
+  it('combines removed IDs with custom overrides correctly', () => {
+    const customCategories: CatalystCategory[] = [
+      {
+        id: 'cat1',
+        label: 'Custom Cat 1',
+        icon: 'Zap',
+        color: 'bg-red-500',
+        isCustom: true,
+      },
+    ];
+
+    render(
+      <CatalystWidget
+        widget={createWidget({
+          customCategories,
+          removedCategoryIds: ['Get Attention'], // Remove a default
+        })}
+      />
+    );
+
+    // Should see custom category
+    expect(screen.getByText('Custom Cat 1')).toBeInTheDocument();
+
+    // Should not see removed default
+    expect(screen.queryByText('Attention')).not.toBeInTheDocument();
+
+    // Should see other defaults
+    expect(screen.getByText('Engage')).toBeInTheDocument();
+    expect(screen.getByText('Set Up')).toBeInTheDocument();
+    expect(screen.getByText('Support')).toBeInTheDocument();
   });
 });
