@@ -32,7 +32,16 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const categories = config.customCategories ?? DEFAULT_CATALYST_CATEGORIES;
+  // Merge categories: Start with defaults, override/append with custom by ID
+  const categoriesMap = new Map<
+    string,
+    (typeof DEFAULT_CATALYST_CATEGORIES)[number]
+  >();
+  DEFAULT_CATALYST_CATEGORIES.forEach((c) => categoriesMap.set(c.id, c));
+  if (config.customCategories) {
+    config.customCategories.forEach((c) => categoriesMap.set(c.id, c));
+  }
+  const categories = Array.from(categoriesMap.values());
 
   // Merge routines: Start with defaults, override/append with custom
   const routinesMap = new Map<string, CatalystRoutine>();

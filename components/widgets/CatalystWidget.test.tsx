@@ -76,8 +76,26 @@ describe('CatalystWidget', () => {
 
     render(<CatalystWidget widget={createWidget({ customCategories })} />);
 
+    // With merge behavior, both custom and default categories should be present
     expect(screen.getByText('Custom Cat 1')).toBeInTheDocument();
     expect(screen.getByText('Custom Cat 2')).toBeInTheDocument();
+    expect(screen.getByText('Attention')).toBeInTheDocument(); // Default should still be there
+  });
+
+  it('overrides default category when custom has same ID', () => {
+    const customCategories: CatalystCategory[] = [
+      {
+        id: 'Get Attention', // Same ID as default
+        label: 'Modified Attention',
+        icon: 'Zap',
+        color: 'bg-red-500',
+      },
+    ];
+
+    render(<CatalystWidget widget={createWidget({ customCategories })} />);
+
+    // Should see modified version, not original
+    expect(screen.getByText('Modified Attention')).toBeInTheDocument();
     expect(screen.queryByText('Attention')).not.toBeInTheDocument();
   });
 

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -25,9 +23,8 @@ const mockDashboardContext = {
 
 describe('CatalystSettings', () => {
   beforeEach(() => {
-    (useDashboard as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
-    );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+    vi.mocked(useDashboard).mockReturnValue(mockDashboardContext as any);
     mockUpdateWidget.mockClear();
 
     // Mock window interactions
@@ -82,7 +79,9 @@ describe('CatalystSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'catalyst-1',
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           customCategories: expect.arrayContaining([
             expect.objectContaining({
               label: 'My Custom Cat',
@@ -127,7 +126,9 @@ describe('CatalystSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'catalyst-1',
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           customRoutines: expect.arrayContaining([
             expect.objectContaining({
               title: 'Updated Signal',
