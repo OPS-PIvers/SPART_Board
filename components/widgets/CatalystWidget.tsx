@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 import {
   WidgetData,
   CatalystConfig,
@@ -21,8 +22,13 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addWidget } = useDashboard();
+  const { featurePermissions } = useAuth();
   const config = widget.config as CatalystConfig;
   const { activeCategory, activeStrategyId } = config;
+  const permission = featurePermissions.find(
+    (p) => p.widgetType === 'catalyst'
+  );
+  const globalConfig = (permission?.config ?? {}) as Partial<CatalystConfig>;
 
   const navigateTo = (catId: string | null, stratId: string | null) => {
     updateWidget(widget.id, {
@@ -35,8 +41,8 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   // Use shared helpers to merge categories and routines
-  const categories = mergeCatalystCategories(config);
-  const allRoutines = mergeCatalystRoutines(config);
+  const categories = mergeCatalystCategories(globalConfig);
+  const allRoutines = mergeCatalystRoutines(globalConfig);
 
   const activeRoutine = activeStrategyId
     ? allRoutines.find((r) => r.id === activeStrategyId)

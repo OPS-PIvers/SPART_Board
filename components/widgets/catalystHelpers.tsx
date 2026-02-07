@@ -52,7 +52,7 @@ export const renderCatalystIcon = (
  * Merges default categories with custom overrides, excluding removed categories
  */
 export const mergeCatalystCategories = (
-  config: CatalystConfig
+  config: Partial<CatalystConfig>
 ): CatalystCategory[] => {
   const categoriesMap = new Map<string, CatalystCategory>();
   const removedCategoryIds = new Set(config.removedCategoryIds ?? []);
@@ -74,7 +74,7 @@ export const mergeCatalystCategories = (
  * Merges default routines with custom overrides, excluding removed routines
  */
 export const mergeCatalystRoutines = (
-  config: CatalystConfig
+  config: Partial<CatalystConfig>
 ): CatalystRoutine[] => {
   const routinesMap = new Map<string, CatalystRoutine>();
   const removedRoutineIds = new Set(config.removedRoutineIds ?? []);

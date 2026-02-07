@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { db, isAuthBypass } from '../../config/firebase';
 import {
+  CatalystGlobalConfig,
   FeaturePermission,
   AccessLevel,
   WidgetType,
@@ -43,6 +44,12 @@ import { LibraryManager } from '../widgets/InstructionalRoutines/LibraryManager'
 import { InstructionalRoutine } from '../../config/instructionalRoutines';
 import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
+import { CatalystPermissionEditor } from './CatalystPermissionEditor';
+
+// Helper type guard
+const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {
+  return typeof config === 'object' && config !== null;
+};
 
 export const FeaturePermissionsManager: React.FC = () => {
   const { routines, deleteRoutine, saveRoutine } = useInstructionalRoutines();
@@ -964,87 +971,33 @@ export const FeaturePermissionsManager: React.FC = () => {
                     </div>
                   )}
 
-                  {tool.type === 'instructionalRoutines' && (
+                  {tool.type === 'catalyst' && (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <label className="text-xxs font-bold text-slate-500 uppercase">
-                          Global Library
-                        </label>
-                        <button
-                          onClick={() =>
-                            setEditingRoutine({
-                              id: crypto.randomUUID(),
-                              name: '',
-                              grades: 'Universal',
-                              gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
-                              icon: 'Zap',
-                              color: 'blue',
-                              steps: [
-                                {
-                                  text: '',
-                                  icon: 'Zap',
-                                  color: 'blue',
-                                  label: 'Step',
-                                },
-                              ],
-                            })
-                          }
-                          className="text-xxs font-bold text-brand-blue-primary hover:text-brand-blue-dark flex items-center gap-1"
-                        >
-                          <Plus className="w-3 h-3" /> New Routine
-                        </button>
-                      </div>
-                      <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar p-1">
-                        {routines.map((routine) => (
-                          <div
-                            key={routine.id}
-                            className="bg-white border border-slate-200 rounded-lg p-2.5 flex items-center justify-between group hover:border-brand-blue-light transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`p-1.5 rounded-md ${getRoutineColorClasses(routine.color || 'blue').bg} ${getRoutineColorClasses(routine.color || 'blue').text}`}
-                              >
-                                <div className="w-3 h-3 rounded-full bg-current opacity-50" />
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold text-slate-700 leading-tight">
-                                  {routine.name}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium uppercase">
-                                  {routine.grades}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setEditingRoutine(routine)}
-                                className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition-colors"
-                                title="Edit Routine"
-                              >
-                                <Edit size={14} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDeleteConfirm({
-                                    routineId: routine.id,
-                                    routineName: routine.name,
-                                  });
-                                }}
-                                className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600 transition-colors"
-                                title="Delete Routine"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <CatalystPermissionEditor
+                        config={
+                          isCatalystConfig(permission.config)
+                            ? permission.config
+                            : {}
+                        }
+                        onChange={(newConfig) =>
+                          updatePermission(tool.type, {
+                            config: newConfig as unknown as Record<
+                              string,
+                              unknown
+                            >,
+                          })
+                        }
+                        onShowMessage={showMessage}
+                      />
                     </div>
                   )}
 
-                  {!['lunchCount', 'weather', 'instructionalRoutines'].includes(
-                    tool.type
-                  ) && (
+                  {![
+                    'lunchCount',
+                    'weather',
+                    'instructionalRoutines',
+                    'catalyst',
+                  ].includes(tool.type) && (
                     <p className="text-xs text-slate-500 italic">
                       No additional configuration available for this widget.
                     </p>
