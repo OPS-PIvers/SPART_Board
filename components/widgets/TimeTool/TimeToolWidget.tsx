@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { STANDARD_COLORS } from '../../../config/colors';
 import { WidgetLayout as BaseWidgetLayout } from '../WidgetLayout';
+import { FloatingPanel } from '../../common/FloatingPanel';
 
 // --- Sub-components ---
 
@@ -493,7 +494,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       className="fixed inset-0 z-40"
                       onClick={() => setShowSoundPicker(false)}
                     />
-                    <div className="absolute bottom-full left-0 mb-3 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-2 z-50 animate-in slide-in-from-bottom-2 zoom-in-95 duration-200">
+                    <FloatingPanel
+                      padding="sm"
+                      className="absolute bottom-full left-0 mb-3 w-48 origin-bottom-left"
+                    >
                       {(['Chime', 'Blip', 'Gong', 'Alert'] as const).map(
                         (s) => (
                           <button
@@ -512,7 +516,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                           </button>
                         )
                       )}
-                    </div>
+                    </FloatingPanel>
                   </>
                 )}
               </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { COMMON_INSTRUCTIONAL_ICONS } from '../../../config/instructionalIcons';
 import { getRoutineColorClasses } from './colorHelpers';
+import { FloatingPanel } from '../../common/FloatingPanel';
 
 export const IconPicker: React.FC<{
   currentIcon: string;
@@ -33,7 +34,7 @@ export const IconPicker: React.FC<{
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-[100] bg-white border border-slate-200 shadow-2xl rounded-2xl p-3 w-64 animate-in zoom-in-95 duration-200">
+        <FloatingPanel className="absolute top-full left-0 mt-2 w-64">
           <div className="flex justify-between items-center mb-2 px-1">
             <span className="text-xxs font-black uppercase text-slate-400">
               Select Icon
@@ -69,7 +70,7 @@ export const IconPicker: React.FC<{
               );
             })}
           </div>
-        </div>
+        </FloatingPanel>
       )}
     </div>
   );

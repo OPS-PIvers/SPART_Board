@@ -33,3 +33,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## 2026-02-07 - Floating Menus (Gap)
+
+**Drift:** Multiple widgets (`SeatingChart`, `TimeTool`, `DraggableSticker`) implemented their own "floating menu" or "popover" with inconsistent shadows, border radius, z-index, and animations.
+**Fix:** Created `components/common/FloatingPanel.tsx` to standardize the container styling (shadow-xl, rounded-2xl, z-popover) and animations. Refactored affected widgets to use this component.

@@ -9,6 +9,7 @@ import {
 import { WidgetData, StickerConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { FloatingPanel } from '../../common/FloatingPanel';
 
 interface DraggableStickerProps {
   widget: WidgetData;
@@ -218,7 +219,10 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute top-full right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                  <FloatingPanel
+                    padding="none"
+                    className="absolute top-full right-0 mt-2 w-40 origin-top-right py-1"
+                  >
                     <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-50 mb-1">
                       Layers
                     </div>
@@ -252,7 +256,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
                       <Trash2 size={14} />
                       Delete
                     </button>
-                  </div>
+                  </FloatingPanel>
                 )}
               </div>
             </div>
