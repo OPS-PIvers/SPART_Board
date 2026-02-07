@@ -11,6 +11,7 @@ import {
   FeaturePermission,
   AccessLevel,
   WidgetType,
+  CatalystGlobalConfig,
   GradeLevel,
   LunchCountGlobalConfig,
   WeatherGlobalConfig,
@@ -43,6 +44,7 @@ import { LibraryManager } from '../widgets/InstructionalRoutines/LibraryManager'
 import { InstructionalRoutine } from '../../config/instructionalRoutines';
 import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
+import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const { routines, deleteRoutine, saveRoutine } = useInstructionalRoutines();
@@ -1042,9 +1044,31 @@ export const FeaturePermissionsManager: React.FC = () => {
                     </div>
                   )}
 
-                  {!['lunchCount', 'weather', 'instructionalRoutines'].includes(
-                    tool.type
-                  ) && (
+                  {tool.type === 'catalyst' && (
+                    <div className="space-y-4">
+                      <CatalystPermissionEditor
+                        config={
+                          (permission.config ??
+                            {}) as unknown as CatalystGlobalConfig
+                        }
+                        onChange={(newConfig) =>
+                          updatePermission(tool.type, {
+                            config: newConfig as unknown as Record<
+                              string,
+                              unknown
+                            >,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {![
+                    'lunchCount',
+                    'weather',
+                    'instructionalRoutines',
+                    'catalyst',
+                  ].includes(tool.type) && (
                     <p className="text-xs text-slate-500 italic">
                       No additional configuration available for this widget.
                     </p>
