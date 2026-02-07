@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-06-05 - Refactor DraggableWindow
+
+**Weed:** `DraggableWindow.tsx` was ~600 lines and contained complex drag and resize logic mixed with UI rendering.
+**Root Cause:** "God Component" pattern; core window behavior logic (drag, resize) was implemented inline.
+**Plan:** Extracted drag logic to `hooks/useWindowDrag.ts` and resize logic to `hooks/useWindowResize.ts`. This separates concerns and makes the component more readable and testable.
+
 ## 2025-06-04 - Refactor LunchCountWidget
 
 **Weed:** `LunchCountWidget.tsx` was ~1000 lines, mixing UI components (Widget, Settings, Modal) with complex API fetching logic.

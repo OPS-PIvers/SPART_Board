@@ -19,6 +19,8 @@ import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useWindowDrag } from '@/hooks/useWindowDrag';
+import { useWindowResize } from '@/hooks/useWindowResize';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
 import { Z_INDEX } from '../../config/zIndex';
@@ -157,6 +159,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const isMaximized = widget.maximized ?? false;
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
+  const { handleDragStart } = useWindowDrag(
+    widget,
+    updateWidget,
+    isMaximized,
+    isAnnotating,
+    setIsDragging,
+    dragDistanceRef,
+    DRAG_BLOCKING_SELECTOR
+  );
+
+  const { handleResizeStart } = useWindowResize(
+    widget,
+    updateWidget,
+    isMaximized,
+    setIsResizing
+  );
+
   const handlePointerDown = (_e: React.PointerEvent) => {
     bringToFront(widget.id);
   };
@@ -178,157 +197,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       setTempTitle(title);
     }
     setIsEditingTitle(false);
-  };
-
-  const handleDragStart = (e: React.PointerEvent) => {
-    if (isMaximized) return;
-
-    // Don't drag if clicking interactive elements or resize handle
-    const target = e.target as HTMLElement;
-    const isInteractive = target.closest(DRAG_BLOCKING_SELECTOR);
-    if (isInteractive) return;
-
-    // Don't drag if annotating
-    if (isAnnotating) return;
-
-    // Prevent default browser behavior (like scroll or selection)
-    e.preventDefault();
-
-    setIsDragging(true);
-    document.body.classList.add('is-dragging-widget');
-    const startX = e.clientX - widget.x;
-    const startY = e.clientY - widget.y;
-    const initialMouseX = e.clientX;
-    const initialMouseY = e.clientY;
-
-    // Use pointer capture to ensure we get events even if pointer leaves the element
-    const targetElement = e.currentTarget as HTMLElement;
-    try {
-      targetElement.setPointerCapture(e.pointerId);
-    } catch (_err) {
-      console.warn('Failed to set pointer capture:', _err);
-    }
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      // Only process the same pointer that started the drag
-      if (moveEvent.pointerId !== e.pointerId) return;
-
-      dragDistanceRef.current = Math.sqrt(
-        Math.pow(moveEvent.clientX - initialMouseX, 2) +
-          Math.pow(moveEvent.clientY - initialMouseY, 2)
-      );
-
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
-    };
-
-    const onPointerUp = (upEvent: PointerEvent) => {
-      if (upEvent.pointerId !== e.pointerId) return;
-
-      setIsDragging(false);
-      document.body.classList.remove('is-dragging-widget');
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-
-      try {
-        if (targetElement.hasPointerCapture(e.pointerId)) {
-          targetElement.releasePointerCapture(e.pointerId);
-        }
-      } catch (_err) {
-        // Ignore capture release errors
-      }
-    };
-
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
-  };
-
-  const handleResizeStart = (e: React.PointerEvent, direction: string) => {
-    if (isMaximized) return;
-    e.stopPropagation();
-    e.preventDefault();
-
-    setIsResizing(true);
-    document.body.classList.add('is-dragging-widget');
-    const startW = widget.w;
-    const startH = widget.h;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startPosX = widget.x;
-    const startPosY = widget.y;
-
-    const targetElement = e.currentTarget as HTMLElement;
-    try {
-      targetElement.setPointerCapture(e.pointerId);
-    } catch (_err) {
-      console.warn('Failed to set pointer capture:', _err);
-    }
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      if (moveEvent.pointerId !== e.pointerId) return;
-
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
-
-      let newW = startW;
-      let newH = startH;
-      let newX = startPosX;
-      let newY = startPosY;
-
-      if (direction.includes('e')) {
-        newW = Math.max(150, startW + dx);
-      }
-      if (direction.includes('w')) {
-        const potentialW = startW - dx;
-        if (potentialW >= 150) {
-          newW = potentialW;
-          newX = startPosX + dx;
-        }
-      }
-      if (direction.includes('s')) {
-        newH = Math.max(100, startH + dy);
-      }
-      if (direction.includes('n')) {
-        const potentialH = startH - dy;
-        if (potentialH >= 100) {
-          newH = potentialH;
-          newY = startPosY + dy;
-        }
-      }
-
-      updateWidget(widget.id, {
-        w: newW,
-        h: newH,
-        x: newX,
-        y: newY,
-      });
-    };
-
-    const onPointerUp = (upEvent: PointerEvent) => {
-      if (upEvent.pointerId !== e.pointerId) return;
-
-      setIsResizing(false);
-      document.body.classList.remove('is-dragging-widget');
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-
-      try {
-        if (targetElement.hasPointerCapture(e.pointerId)) {
-          targetElement.releasePointerCapture(e.pointerId);
-        }
-      } catch (_err) {
-        // Ignore capture release errors
-      }
-    };
-
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
   };
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
