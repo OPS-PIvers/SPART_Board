@@ -39,7 +39,6 @@ const presetLabel = (s: number) => (s >= 60 ? `${s / 60}m` : `${s}s`);
 
 const ProgressRing: React.FC<{
   progress: number; // 0 to 1
-  time: number;
   ringColor: string;
 }> = ({ progress, ringColor }) => {
   const CIRCUMFERENCE = 2 * Math.PI * 95;
@@ -135,7 +134,7 @@ const Keypad: React.FC<{
       >
         <button
           onClick={() => setActiveField('min')}
-          className={`px-4 py-2 rounded-xl border-3 transition-all ${
+          className={`px-4 py-2 rounded-xl border-2 transition-all ${
             activeField === 'min'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
               : 'border-transparent text-slate-300 opacity-40 hover:opacity-100'
@@ -146,7 +145,7 @@ const Keypad: React.FC<{
         <span className="text-slate-300">:</span>
         <button
           onClick={() => setActiveField('sec')}
-          className={`px-4 py-2 rounded-xl border-3 transition-all ${
+          className={`px-4 py-2 rounded-xl border-2 transition-all ${
             activeField === 'sec'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
               : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
@@ -320,6 +319,9 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             }}
             className="p-1.5 rounded-lg text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title={mode === 'timer' ? 'Switch to Stopwatch' : 'Switch to Timer'}
+            aria-label={
+              mode === 'timer' ? 'Switch to Stopwatch' : 'Switch to Timer'
+            }
           >
             {mode === 'timer' ? (
               <ClockIcon size={14} />
@@ -339,6 +341,9 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                 : 'text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             title={isVisual ? 'Switch to Digital' : 'Switch to Visual Ring'}
+            aria-label={
+              isVisual ? 'Switch to Digital' : 'Switch to Visual Ring'
+            }
           >
             <svg
               width="14"
@@ -360,6 +365,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               <button
                 key={t}
                 onClick={() => updateConfig({ theme: t })}
+                aria-label={`Set theme: ${t.charAt(0).toUpperCase() + t.slice(1)}`}
                 className={`w-4 h-4 rounded-full border-2 transition-all hover:scale-110 ${
                   config.theme === t
                     ? 'border-brand-blue-primary scale-110'
@@ -397,7 +403,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                 {isVisual && (
                   <ProgressRing
                     progress={progress}
-                    time={displayTime}
                     ringColor={getRingColor()}
                   />
                 )}

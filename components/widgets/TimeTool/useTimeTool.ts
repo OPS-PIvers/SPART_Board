@@ -15,14 +15,20 @@ export const useTimeTool = (widget: WidgetData) => {
   const [runningDisplayTime, setRunningDisplayTime] = useState(
     config.elapsedTime
   );
+  const runningDisplayTimeRef = useRef(runningDisplayTime);
   const rafRef = useRef<number | null>(null);
+
+  // Keep the ref in sync so handleStop can read the latest value
+  useEffect(() => {
+    runningDisplayTimeRef.current = runningDisplayTime;
+  }, [runningDisplayTime]);
 
   const displayTime = config.isRunning
     ? runningDisplayTime
     : config.elapsedTime;
 
   const cancelRaf = useCallback(() => {
-    if (rafRef.current) {
+    if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
@@ -30,7 +36,7 @@ export const useTimeTool = (widget: WidgetData) => {
 
   const handleStop = useCallback(
     (finalTime?: number) => {
-      const timeToSave = finalTime ?? runningDisplayTime;
+      const timeToSave = finalTime ?? runningDisplayTimeRef.current;
       updateWidget(widget.id, {
         config: {
           ...config,
@@ -41,7 +47,7 @@ export const useTimeTool = (widget: WidgetData) => {
       });
       cancelRaf();
     },
-    [config, updateWidget, widget.id, runningDisplayTime, cancelRaf]
+    [config, updateWidget, widget.id, cancelRaf]
   );
 
   const handleStart = useCallback(async () => {
