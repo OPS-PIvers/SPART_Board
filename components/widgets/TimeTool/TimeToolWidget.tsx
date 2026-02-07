@@ -200,6 +200,7 @@ const Keypad: React.FC<{
       <button
         onClick={onCancel}
         className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
+        aria-label="Close keypad"
       >
         Cancel
       </button>
