@@ -27,6 +27,13 @@ import { UI_CONSTANTS } from '../../config/layout';
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
 
+// Widgets that require real-time position updates for inter-widget functionality
+const POSITION_AWARE_WIDGETS: WidgetType[] = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
+
 const INTERACTIVE_ELEMENTS_SELECTOR =
   'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .cursor-pointer, [contenteditable="true"]';
 
@@ -97,6 +104,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     widget.flipped
   );
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // OPTIMIZATION: Transient drag state for direct DOM manipulation
+  // This allows us to update the DOM directly during drag/resize without triggering React re-renders for the whole tree
+  const dragState = useRef<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   // OPTIMIZATION: Lazy initialization of settings
   // We only set this to true once the widget is flipped for the first time.
@@ -195,6 +211,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     e.preventDefault();
 
     setIsDragging(true);
+    // Initialize transient state
+    dragState.current = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
+
     document.body.classList.add('is-dragging-widget');
     const startX = e.clientX - widget.x;
     const startY = e.clientY - widget.y;
@@ -218,10 +237,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      // OPTIMIZATION: If widget is not position-aware, update DOM directly and skip React render cycle
+      if (!POSITION_AWARE_WIDGETS.includes(widget.type) && windowRef.current) {
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+        if (dragState.current) {
+          dragState.current.x = newX;
+          dragState.current.y = newY;
+        }
+      } else {
+        updateWidget(widget.id, {
+          x: newX,
+          y: newY,
+        });
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -240,6 +272,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       } catch (_err) {
         // Ignore capture release errors
       }
+
+      // Commit final position if using direct DOM manipulation
+      if (
+        !POSITION_AWARE_WIDGETS.includes(widget.type) &&
+        dragState.current &&
+        (dragState.current.x !== widget.x || dragState.current.y !== widget.y)
+      ) {
+        updateWidget(widget.id, {
+          x: dragState.current.x,
+          y: dragState.current.y,
+        });
+      }
     };
 
     window.addEventListener('pointermove', onPointerMove);
@@ -253,6 +297,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     e.preventDefault();
 
     setIsResizing(true);
+    // Initialize transient state
+    dragState.current = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
+
     document.body.classList.add('is-dragging-widget');
     const startW = widget.w;
     const startH = widget.h;
@@ -300,12 +347,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
       }
 
-      updateWidget(widget.id, {
-        w: newW,
-        h: newH,
-        x: newX,
-        y: newY,
-      });
+      // OPTIMIZATION: If widget is not position-aware, update DOM directly and skip React render cycle
+      if (!POSITION_AWARE_WIDGETS.includes(widget.type) && windowRef.current) {
+        windowRef.current.style.width = `${newW}px`;
+        windowRef.current.style.height = `${newH}px`;
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+        if (dragState.current) {
+          dragState.current.w = newW;
+          dragState.current.h = newH;
+          dragState.current.x = newX;
+          dragState.current.y = newY;
+        }
+      } else {
+        updateWidget(widget.id, {
+          w: newW,
+          h: newH,
+          x: newX,
+          y: newY,
+        });
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -323,6 +384,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
       } catch (_err) {
         // Ignore capture release errors
+      }
+
+      // Commit final position/size if using direct DOM manipulation
+      if (
+        !POSITION_AWARE_WIDGETS.includes(widget.type) &&
+        dragState.current &&
+        (dragState.current.w !== widget.w ||
+          dragState.current.h !== widget.h ||
+          dragState.current.x !== widget.x ||
+          dragState.current.y !== widget.y)
+      ) {
+        updateWidget(widget.id, {
+          w: dragState.current.w,
+          h: dragState.current.h,
+          x: dragState.current.x,
+          y: dragState.current.y,
+        });
       }
     };
 
@@ -418,6 +496,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     updateWidget,
   ]);
 
+  // Fallback to widget state if not dragging/resizing or if position-aware
+  const shouldUseDragState =
+    (isDragging || isResizing) &&
+    !POSITION_AWARE_WIDGETS.includes(widget.type) &&
+    dragState.current;
+
   return (
     <>
       <GlassCard
@@ -435,10 +519,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           isMaximized ? 'border-none !shadow-none' : ''
         } `}
         style={{
-          left: isMaximized ? 0 : widget.x,
-          top: isMaximized ? 0 : widget.y,
-          width: isMaximized ? '100vw' : widget.w,
-          height: isMaximized ? '100vh' : widget.h,
+          left: isMaximized
+            ? 0
+            : shouldUseDragState && dragState.current
+              ? dragState.current.x
+              : widget.x,
+          top: isMaximized
+            ? 0
+            : shouldUseDragState && dragState.current
+              ? dragState.current.y
+              : widget.y,
+          width: isMaximized
+            ? '100vw'
+            : shouldUseDragState && dragState.current
+              ? dragState.current.w
+              : widget.w,
+          height: isMaximized
+            ? '100vh'
+            : shouldUseDragState && dragState.current
+              ? dragState.current.h
+              : widget.h,
           zIndex: isMaximized ? Z_INDEX.maximized : widget.z,
           display: 'flex',
           flexDirection: 'column',
