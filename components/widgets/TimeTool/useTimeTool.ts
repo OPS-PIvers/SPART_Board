@@ -12,16 +12,21 @@ export const useTimeTool = (widget: WidgetData) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
 
-  // Local state for smooth display
   const [runningDisplayTime, setRunningDisplayTime] = useState(
     config.elapsedTime
   );
   const rafRef = useRef<number | null>(null);
 
-  // Derived display time
   const displayTime = config.isRunning
     ? runningDisplayTime
     : config.elapsedTime;
+
+  const cancelRaf = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
 
   const handleStop = useCallback(
     (finalTime?: number) => {
@@ -34,15 +39,12 @@ export const useTimeTool = (widget: WidgetData) => {
           startTime: null,
         },
       });
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
+      cancelRaf();
     },
-    [config, updateWidget, widget.id, runningDisplayTime]
+    [config, updateWidget, widget.id, runningDisplayTime, cancelRaf]
   );
 
-  const handleStart = async () => {
+  const handleStart = useCallback(async () => {
     await resumeAudio();
     const now = Date.now();
     updateWidget(widget.id, {
@@ -54,7 +56,7 @@ export const useTimeTool = (widget: WidgetData) => {
       },
     });
     setRunningDisplayTime(displayTime);
-  };
+  }, [config, updateWidget, widget.id, displayTime]);
 
   const handleReset = useCallback(() => {
     const resetTime = config.mode === 'timer' ? config.duration : 0;
@@ -67,11 +69,8 @@ export const useTimeTool = (widget: WidgetData) => {
       },
     });
     setRunningDisplayTime(resetTime);
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  }, [config, updateWidget, widget.id]);
+    cancelRaf();
+  }, [config, updateWidget, widget.id, cancelRaf]);
 
   const setTime = useCallback(
     (s: number) => {
@@ -89,65 +88,53 @@ export const useTimeTool = (widget: WidgetData) => {
     [config, updateWidget, widget.id]
   );
 
-  // Ticking logic with requestAnimationFrame
+  // RAF tick loop
   useEffect(() => {
-    if (config.isRunning && config.startTime) {
-      const startTime = config.startTime;
-      const baseTime = config.elapsedTime;
-
-      const tick = () => {
-        const now = Date.now();
-        const delta = (now - startTime) / 1000;
-
-        let nextTime: number;
-        if (config.mode === 'timer') {
-          nextTime = Math.max(0, baseTime - delta);
-          if (nextTime === 0) {
-            handleStop(0);
-            playTimerAlert(config.selectedSound);
-
-            // Auto-switch voice level if configured
-            if (
-              config.timerEndVoiceLevel !== undefined &&
-              config.timerEndVoiceLevel !== null &&
-              activeDashboard
-            ) {
-              const wsWidget = activeDashboard.widgets.find(
-                (w) => w.type === 'expectations'
-              );
-              if (wsWidget) {
-                const wsConfig = wsWidget.config as ExpectationsConfig;
-                const newConfig: ExpectationsConfig = {
-                  ...wsConfig,
-                  voiceLevel: config.timerEndVoiceLevel,
-                };
-
-                updateWidget(wsWidget.id, {
-                  config: newConfig as WidgetConfig,
-                });
-              }
-            }
-            return;
-          }
-        } else {
-          nextTime = baseTime + delta;
-        }
-
-        setRunningDisplayTime(nextTime);
-        rafRef.current = requestAnimationFrame(tick);
-      };
-
-      rafRef.current = requestAnimationFrame(tick);
-    } else {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
+    if (!config.isRunning || !config.startTime) {
+      cancelRaf();
+      return;
     }
 
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startTime = config.startTime;
+    const baseTime = config.elapsedTime;
+
+    const tick = () => {
+      const delta = (Date.now() - startTime) / 1000;
+
+      if (config.mode === 'timer') {
+        const nextTime = Math.max(0, baseTime - delta);
+        setRunningDisplayTime(nextTime);
+
+        if (nextTime === 0) {
+          handleStop(0);
+          playTimerAlert(config.selectedSound);
+
+          // Auto-switch expectations voice level
+          if (config.timerEndVoiceLevel != null && activeDashboard) {
+            const expWidget = activeDashboard.widgets.find(
+              (w) => w.type === 'expectations'
+            );
+            if (expWidget) {
+              updateWidget(expWidget.id, {
+                config: {
+                  ...(expWidget.config as ExpectationsConfig),
+                  voiceLevel: config.timerEndVoiceLevel,
+                } as WidgetConfig,
+              });
+            }
+          }
+          return;
+        }
+      } else {
+        setRunningDisplayTime(baseTime + delta);
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
     };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return cancelRaf;
   }, [
     config.isRunning,
     config.startTime,
@@ -158,6 +145,7 @@ export const useTimeTool = (widget: WidgetData) => {
     activeDashboard,
     updateWidget,
     handleStop,
+    cancelRaf,
   ]);
 
   return {
