@@ -1,7 +1,5 @@
 import { CatalystRoutine } from '../types';
 
-export type RoutineCategory = 'Get Attention' | 'Engage' | 'Set Up' | 'Support';
-
 export const CATALYST_ROUTINES: CatalystRoutine[] = [
   {
     id: 'signal-silence',
