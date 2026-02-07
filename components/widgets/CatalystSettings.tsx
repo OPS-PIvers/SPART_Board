@@ -13,6 +13,7 @@ import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
 import { TOOLS } from '../../config/tools';
 import * as Icons from 'lucide-react';
 import { Plus, Trash2, Edit2, X, AlertCircle } from 'lucide-react';
+import { renderCatalystIcon } from './catalystHelpers';
 
 const COMMON_ICONS = [
   'LayoutGrid',
@@ -66,6 +67,34 @@ const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
   (tool) =>
     !tool.type.startsWith('catalyst') && tool.type !== 'instructionalRoutines'
 ).map((tool) => tool.type);
+
+/**
+ * Validates and sanitizes parsed JSON to prevent prototype pollution.
+ * Ensures the value is a plain object and strips dangerous keys.
+ */
+const sanitizeJsonConfig = (parsed: unknown): WidgetConfig | null => {
+  // Only allow plain objects
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    Array.isArray(parsed) ||
+    Object.prototype.toString.call(parsed) !== '[object Object]'
+  ) {
+    return null;
+  }
+
+  // Strip dangerous prototype pollution keys
+  const dangerous = ['__proto__', 'constructor', 'prototype'];
+  const sanitized = Object.create(null) as Record<string, unknown>;
+
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!dangerous.includes(key)) {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized as WidgetConfig;
+};
 
 interface CatalystSettingsProps {
   widget: WidgetData;
@@ -197,6 +226,15 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
       return;
     }
 
+    // Prevent saving if category is empty or invalid
+    if (
+      !routine.category ||
+      !categories.find((c) => c.id === routine.category)
+    ) {
+      alert('Please select a valid category before saving.');
+      return;
+    }
+
     let newRoutines;
     if (routines.find((r) => r.id === routine.id)) {
       newRoutines = routines.map((r) => (r.id === routine.id ? routine : r));
@@ -214,48 +252,6 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
       setRoutines(newRoutines);
       saveConfig(categories, newRoutines);
     }
-  };
-
-  // Helper to render icons consistently
-  const renderIcon = (
-    iconName: string,
-    size: number = 20,
-    className: string = ''
-  ) => {
-    // Validate icon URLs before rendering
-    const isSafeIconUrl = (value: string): boolean => {
-      if (!value) return false;
-      if (value.startsWith('data:')) {
-        // Only allow data URLs that are clearly images and reasonably sized
-        const MAX_DATA_URL_LENGTH = 100_000;
-        return (
-          /^data:image\//i.test(value) && value.length <= MAX_DATA_URL_LENGTH
-        );
-      }
-      try {
-        const url = new URL(value);
-        return url.protocol === 'https:';
-      } catch {
-        return false;
-      }
-    };
-
-    if (isSafeIconUrl(iconName)) {
-      return (
-        <img
-          src={iconName}
-          className={`object-contain ${className}`}
-          alt=""
-          style={{ width: size, height: size }}
-          referrerPolicy="no-referrer"
-          loading="lazy"
-        />
-      );
-    }
-    const IconComp =
-      (Icons as unknown as Record<string, React.ElementType>)[iconName] ??
-      Icons.Zap;
-    return <IconComp size={size} className={className} />;
   };
 
   // --- Sub-components (Render Functions) ---
@@ -290,6 +286,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                   value === name ? 'bg-indigo-100 text-indigo-600' : ''
                 }`}
                 title={name}
+                aria-label={`Select ${name} icon`}
               >
                 <Icon size={16} />
               </button>
@@ -500,14 +497,18 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                               ...editingRoutine,
                               associatedWidgets: newWidgets,
                             });
-                            // Reset JSON text and clear any errors
+                            // Reset JSON text and clear any errors using functional updates
                             setJsonTexts((prev) => ({
                               ...prev,
                               [aw.id]: '{}',
                             }));
-                            const newErrors = { ...jsonErrors };
-                            delete newErrors[aw.id];
-                            setJsonErrors(newErrors);
+                            setJsonErrors((prev) => {
+                              if (!prev[aw.id]) {
+                                return prev;
+                              }
+                              const { [aw.id]: _removed, ...rest } = prev;
+                              return rest;
+                            });
                           }}
                           className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
                         >
@@ -526,13 +527,21 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                               ...editingRoutine,
                               associatedWidgets: newWidgets,
                             });
-                            // Clean up state
-                            const newErrors = { ...jsonErrors };
-                            delete newErrors[aw.id];
-                            setJsonErrors(newErrors);
-                            const newTexts = { ...jsonTexts };
-                            delete newTexts[aw.id];
-                            setJsonTexts(newTexts);
+                            // Clean up state using functional updates
+                            setJsonErrors((prev) => {
+                              if (!prev[aw.id]) {
+                                return prev;
+                              }
+                              const { [aw.id]: _removed, ...rest } = prev;
+                              return rest;
+                            });
+                            setJsonTexts((prev) => {
+                              if (!prev[aw.id]) {
+                                return prev;
+                              }
+                              const { [aw.id]: _removed, ...rest } = prev;
+                              return rest;
+                            });
                           }}
                           className="text-red-500 hover:text-red-700 p-1"
                         >
@@ -553,30 +562,41 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                             }));
 
                             try {
-                              const parsed = JSON.parse(
-                                newText
-                              ) as WidgetConfig;
+                              const parsed = JSON.parse(newText) as unknown;
+                              const sanitized = sanitizeJsonConfig(parsed);
+
+                              if (sanitized === null) {
+                                // Set error state using functional update
+                                setJsonErrors((prev) => ({
+                                  ...prev,
+                                  [aw.id]: 'Config must be a plain object',
+                                }));
+                                return;
+                              }
+
                               const newWidgets = (
                                 editingRoutine.associatedWidgets ?? []
                               ).map((w) =>
-                                w.id === aw.id ? { ...w, config: parsed } : w
+                                w.id === aw.id ? { ...w, config: sanitized } : w
                               );
                               setEditingRoutine({
                                 ...editingRoutine,
                                 associatedWidgets: newWidgets,
                               });
-                              // Clear error if success
-                              if (jsonErrors[aw.id]) {
-                                const newErrors = { ...jsonErrors };
-                                delete newErrors[aw.id];
-                                setJsonErrors(newErrors);
-                              }
-                            } catch (_err) {
-                              // Set error state
-                              setJsonErrors({
-                                ...jsonErrors,
-                                [aw.id]: 'Invalid JSON format',
+                              // Clear error if success using functional update
+                              setJsonErrors((prev) => {
+                                if (!prev[aw.id]) {
+                                  return prev;
+                                }
+                                const { [aw.id]: _removed, ...rest } = prev;
+                                return rest;
                               });
+                            } catch (_err) {
+                              // Set error state using functional update
+                              setJsonErrors((prev) => ({
+                                ...prev,
+                                [aw.id]: 'Invalid JSON format',
+                              }));
                             }
                           }}
                           className={`w-full text-xs font-mono border rounded p-2 h-24 ${
@@ -694,7 +714,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                   <div
                     className={`w-10 h-10 rounded-lg ${cat.color} flex items-center justify-center text-white shrink-0`}
                   >
-                    {renderIcon(cat.icon, 20)}
+                    {renderCatalystIcon(cat.icon, 20)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-slate-700 text-sm truncate">
@@ -735,7 +755,8 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                   associatedWidgets: [],
                 })
               }
-              className="w-full py-3 border-2 border-dashed border-indigo-200 text-indigo-500 rounded-xl font-bold uppercase text-xs flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors"
+              disabled={categories.length === 0}
+              className="w-full py-3 border-2 border-dashed border-indigo-200 text-indigo-500 rounded-xl font-bold uppercase text-xs flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <Plus size={16} /> Add Routine
             </button>
@@ -759,7 +780,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                           className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 transition-colors"
                         >
                           <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                            {renderIcon(routine.icon, 18)}
+                            {renderCatalystIcon(routine.icon, 18)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-slate-700 text-sm truncate">
