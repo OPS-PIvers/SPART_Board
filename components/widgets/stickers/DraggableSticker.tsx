@@ -221,6 +221,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
                 {showMenu && (
                   <FloatingPanel
                     padding="none"
+                    overflow="hidden"
                     className="absolute top-full right-0 mt-2 w-40 origin-top-right py-1"
                   >
                     <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-50 mb-1">
