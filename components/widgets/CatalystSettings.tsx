@@ -160,7 +160,9 @@ const sanitizeJsonConfig = (parsed: unknown): WidgetConfig | null => {
     return value;
   };
 
-  const sanitizeObject = (obj: Record<string, unknown>): Record<string, unknown> => {
+  const sanitizeObject = (
+    obj: Record<string, unknown>
+  ): Record<string, unknown> => {
     const result = Object.create(null) as Record<string, unknown>;
 
     for (const [key, value] of Object.entries(obj)) {
