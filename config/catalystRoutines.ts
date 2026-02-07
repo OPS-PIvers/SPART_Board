@@ -52,7 +52,7 @@ export const CATALYST_ROUTINES: CatalystRoutine[] = [
     category: 'Set Up',
     icon: 'ListTodo',
     shortDesc: 'Set expectations for work time',
-    instructions: `1. Define the "Must Do" items.\n2. Define the "May Do" items.\n3. ask students to repeat the first step.`,
+    instructions: `1. Define the "Must Do" items.\n2. Define the "May Do" items.\n3. Ask students to repeat the first step.`,
     associatedWidgets: [{ id: 'aw-3', type: 'checklist' }],
   },
   {

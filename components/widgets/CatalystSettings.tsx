@@ -78,9 +78,13 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
   const config = widget.config as CatalystConfig;
 
   // Initialize state from config or defaults
-  const [categories, setCategories] = useState<CatalystCategory[]>(
-    config.customCategories ?? DEFAULT_CATALYST_CATEGORIES
-  );
+  // Initialize categories by merging defaults with custom overrides (diff) by id
+  const [categories, setCategories] = useState<CatalystCategory[]>(() => {
+    const categoriesMap = new Map<string, CatalystCategory>();
+    DEFAULT_CATALYST_CATEGORIES.forEach((c) => categoriesMap.set(c.id, c));
+    config.customCategories?.forEach((c) => categoriesMap.set(c.id, c));
+    return Array.from(categoriesMap.values());
+  });
 
   const [routines, setRoutines] = useState<CatalystRoutine[]>(() => {
     const routinesMap = new Map<string, CatalystRoutine>();
@@ -193,13 +197,33 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
     size: number = 20,
     className: string = ''
   ) => {
-    if (iconName.startsWith('http') || iconName.startsWith('data:')) {
+    // Validate icon URLs before rendering
+    const isSafeIconUrl = (value: string): boolean => {
+      if (!value) return false;
+      if (value.startsWith('data:')) {
+        // Only allow data URLs that are clearly images and reasonably sized
+        const MAX_DATA_URL_LENGTH = 100_000;
+        return (
+          /^data:image\//i.test(value) && value.length <= MAX_DATA_URL_LENGTH
+        );
+      }
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    };
+
+    if (isSafeIconUrl(iconName)) {
       return (
         <img
           src={iconName}
           className={`object-contain ${className}`}
           alt=""
           style={{ width: size, height: size }}
+          referrerPolicy="no-referrer"
+          loading="lazy"
         />
       );
     }
@@ -430,14 +454,6 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
               </label>
               <div className="space-y-3">
                 {(editingRoutine.associatedWidgets ?? []).map((aw) => {
-                  // Initialize JSON text state if not present
-                  if (!jsonTexts[aw.id]) {
-                    setJsonTexts((prev) => ({
-                      ...prev,
-                      [aw.id]: JSON.stringify(aw.config ?? {}, null, 2),
-                    }));
-                  }
-
                   return (
                     <div
                       key={aw.id}

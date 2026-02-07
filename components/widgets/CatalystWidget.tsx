@@ -64,13 +64,33 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     size: number = 24,
     className: string = ''
   ) => {
-    if (iconName.startsWith('http') || iconName.startsWith('data:')) {
+    // Validate icon URLs before rendering
+    const isSafeIconUrl = (value: string): boolean => {
+      if (!value) return false;
+      if (value.startsWith('data:')) {
+        // Only allow data URLs that are clearly images and reasonably sized
+        const MAX_DATA_URL_LENGTH = 100_000;
+        return (
+          /^data:image\//i.test(value) && value.length <= MAX_DATA_URL_LENGTH
+        );
+      }
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    };
+
+    if (isSafeIconUrl(iconName)) {
       return (
         <img
           src={iconName}
           className={`object-contain ${className}`}
           alt=""
           style={{ width: size, height: size }}
+          referrerPolicy="no-referrer"
+          loading="lazy"
         />
       );
     }
@@ -253,5 +273,5 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   );
 };
 
-// Re-export CatalystSettings so it can be used by the Registry if needed (though Registry likely uses default export or CatalystWidget)
+// Re-export CatalystSettings so WidgetRegistry can load it via lazyNamed(() => import('./CatalystWidget'), 'CatalystSettings')
 export { CatalystSettings };

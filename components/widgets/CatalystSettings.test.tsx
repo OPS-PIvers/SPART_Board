@@ -17,14 +17,19 @@ vi.mock('../../context/useDashboard', () => ({
 }));
 
 const mockUpdateWidget = vi.fn();
-const mockDashboardContext = {
+
+// Type the mock as the return type of useDashboard
+type DashboardHookReturn = ReturnType<typeof useDashboard>;
+
+const mockDashboardContext: Partial<DashboardHookReturn> = {
   updateWidget: mockUpdateWidget,
 };
 
 describe('CatalystSettings', () => {
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-    vi.mocked(useDashboard).mockReturnValue(mockDashboardContext as any);
+    vi.mocked(useDashboard).mockReturnValue(
+      mockDashboardContext as DashboardHookReturn
+    );
     mockUpdateWidget.mockClear();
 
     // Mock window interactions
@@ -76,20 +81,16 @@ describe('CatalystSettings', () => {
 
     fireEvent.click(screen.getByText('Save'));
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'catalyst-1',
-      expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        config: expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          customCategories: expect.arrayContaining([
-            expect.objectContaining({
-              label: 'My Custom Cat',
-            }),
-          ]),
-        }),
-      })
-    );
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
+    const callArgs = mockUpdateWidget.mock.calls[0];
+    expect(callArgs[0]).toBe('catalyst-1');
+    const updateArg = callArgs[1] as Partial<WidgetData>;
+    expect(updateArg.config).toBeDefined();
+    const config = updateArg.config as CatalystConfig;
+    expect(config.customCategories).toBeDefined();
+    expect(
+      config.customCategories?.some((cat) => cat.label === 'My Custom Cat')
+    ).toBe(true);
   });
 
   it('prevents deleting a category that is in use', () => {
@@ -123,20 +124,16 @@ describe('CatalystSettings', () => {
 
     fireEvent.click(screen.getByText('Save'));
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'catalyst-1',
-      expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        config: expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          customRoutines: expect.arrayContaining([
-            expect.objectContaining({
-              title: 'Updated Signal',
-            }),
-          ]),
-        }),
-      })
-    );
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
+    const callArgs = mockUpdateWidget.mock.calls[0];
+    expect(callArgs[0]).toBe('catalyst-1');
+    const updateArg = callArgs[1] as Partial<WidgetData>;
+    expect(updateArg.config).toBeDefined();
+    const config = updateArg.config as CatalystConfig;
+    expect(config.customRoutines).toBeDefined();
+    expect(
+      config.customRoutines?.some((r) => r.title === 'Updated Signal')
+    ).toBe(true);
   });
 
   it('validates JSON in associated widgets', async () => {
