@@ -12,9 +12,11 @@ import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
 
 describe('CatalystPermissionEditor', () => {
   const mockOnChange = vi.fn();
+  const mockOnShowMessage = vi.fn();
 
   beforeEach(() => {
     mockOnChange.mockClear();
+    mockOnShowMessage.mockClear();
     vi.spyOn(window, 'alert').mockImplementation(vi.fn());
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
   });
@@ -36,6 +38,7 @@ describe('CatalystPermissionEditor', () => {
       <CatalystPermissionEditor
         config={defaultConfig}
         onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
       />
     );
 
@@ -52,6 +55,7 @@ describe('CatalystPermissionEditor', () => {
       <CatalystPermissionEditor
         config={defaultConfig}
         onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
       />
     );
 
@@ -63,6 +67,7 @@ describe('CatalystPermissionEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     expect(mockOnChange).toHaveBeenCalledTimes(1);
+    expect(mockOnShowMessage).toHaveBeenCalledWith('success', 'Category saved');
     const newConfig = mockOnChange.mock.calls[0][0] as CatalystGlobalConfig;
     expect(newConfig.customCategories).toBeDefined();
     expect(
@@ -75,6 +80,7 @@ describe('CatalystPermissionEditor', () => {
       <CatalystPermissionEditor
         config={defaultConfig}
         onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
       />
     );
 
@@ -84,7 +90,8 @@ describe('CatalystPermissionEditor', () => {
 
     fireEvent.click(deleteBtn);
 
-    expect(window.alert).toHaveBeenCalledWith(
+    expect(mockOnShowMessage).toHaveBeenCalledWith(
+      'error',
       expect.stringContaining('in use')
     );
     expect(mockOnChange).not.toHaveBeenCalled();
@@ -95,6 +102,7 @@ describe('CatalystPermissionEditor', () => {
       <CatalystPermissionEditor
         config={defaultConfig}
         onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
       />
     );
     fireEvent.click(screen.getByText('Routines'));
@@ -111,6 +119,7 @@ describe('CatalystPermissionEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     expect(mockOnChange).toHaveBeenCalledTimes(1);
+    expect(mockOnShowMessage).toHaveBeenCalledWith('success', 'Routine saved');
     const newConfig = mockOnChange.mock.calls[0][0] as CatalystGlobalConfig;
     expect(newConfig.customRoutines).toBeDefined();
     expect(
@@ -123,6 +132,7 @@ describe('CatalystPermissionEditor', () => {
       <CatalystPermissionEditor
         config={defaultConfig}
         onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
       />
     );
     fireEvent.click(screen.getByText('Routines'));
@@ -175,7 +185,11 @@ describe('CatalystPermissionEditor', () => {
     };
 
     render(
-      <CatalystPermissionEditor config={config} onChange={mockOnChange} />
+      <CatalystPermissionEditor
+        config={config}
+        onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
+      />
     );
     fireEvent.click(screen.getByText('Routines'));
 
@@ -191,13 +205,21 @@ describe('CatalystPermissionEditor', () => {
     };
 
     render(
-      <CatalystPermissionEditor config={config} onChange={mockOnChange} />
+      <CatalystPermissionEditor
+        config={config}
+        onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
+      />
     );
 
     const deleteBtns = screen.getAllByLabelText('Delete Category');
     fireEvent.click(deleteBtns[0]);
 
     expect(mockOnChange).toHaveBeenCalledTimes(1);
+    expect(mockOnShowMessage).toHaveBeenCalledWith(
+      'success',
+      'Category deleted'
+    );
     const newConfig = mockOnChange.mock.calls[0][0] as CatalystGlobalConfig;
 
     expect(newConfig.removedCategoryIds).toBeDefined();
@@ -209,6 +231,7 @@ describe('CatalystPermissionEditor', () => {
       <CatalystPermissionEditor
         config={defaultConfig}
         onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
       />
     );
     fireEvent.click(screen.getByText('Routines'));
@@ -217,6 +240,10 @@ describe('CatalystPermissionEditor', () => {
     fireEvent.click(deleteBtns[0]);
 
     expect(mockOnChange).toHaveBeenCalledTimes(1);
+    expect(mockOnShowMessage).toHaveBeenCalledWith(
+      'success',
+      'Routine deleted'
+    );
     const newConfig = mockOnChange.mock.calls[0][0] as CatalystGlobalConfig;
 
     expect(newConfig.removedRoutineIds).toBeDefined();
@@ -229,7 +256,11 @@ describe('CatalystPermissionEditor', () => {
     };
 
     render(
-      <CatalystPermissionEditor config={config} onChange={mockOnChange} />
+      <CatalystPermissionEditor
+        config={config}
+        onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
+      />
     );
 
     expect(screen.queryByText('Attention')).not.toBeInTheDocument();
@@ -243,7 +274,11 @@ describe('CatalystPermissionEditor', () => {
     };
 
     render(
-      <CatalystPermissionEditor config={config} onChange={mockOnChange} />
+      <CatalystPermissionEditor
+        config={config}
+        onChange={mockOnChange}
+        onShowMessage={mockOnShowMessage}
+      />
     );
     fireEvent.click(screen.getByText('Routines'));
 
