@@ -372,9 +372,35 @@ export interface MaterialsConfig {
   activeItems: string[];
 }
 
+export interface CatalystCategory {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  isCustom?: boolean;
+}
+
+export interface CatalystRoutine {
+  id: string;
+  title: string;
+  category: string;
+  icon: string;
+  shortDesc: string;
+  instructions: string;
+  associatedWidgets?: {
+    id: string;
+    type: WidgetType;
+    config?: WidgetConfig;
+  }[];
+}
+
 export interface CatalystConfig {
   activeCategory: string | null;
   activeStrategyId: string | null;
+  customCategories?: CatalystCategory[];
+  customRoutines?: CatalystRoutine[];
+  removedCategoryIds?: string[];
+  removedRoutineIds?: string[];
 }
 
 export interface CatalystInstructionConfig {

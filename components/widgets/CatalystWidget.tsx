@@ -5,24 +5,15 @@ import {
   CatalystConfig,
   WidgetType,
   WidgetConfig,
-} from '../../types';
-import {
-  CATALYST_ROUTINES,
   CatalystRoutine,
-  RoutineCategory,
-} from '../../config/catalystRoutines';
+} from '../../types';
+import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
+import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
 import * as Icons from 'lucide-react';
-import {
-  LayoutGrid,
-  Brain,
-  Settings2,
-  HelpCircle,
-  ChevronLeft,
-  Zap,
-  BookOpen,
-} from 'lucide-react';
+import { Zap, BookOpen, ChevronLeft } from 'lucide-react';
 
 import { WidgetLayout } from './WidgetLayout';
+import { CatalystSettings } from './CatalystSettings'; // Import the new settings component
 
 export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -41,30 +32,82 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const categories: {
-    id: RoutineCategory;
-    label: string;
-    icon: React.ElementType;
-    color: string;
-  }[] = [
-    {
-      id: 'Get Attention',
-      label: 'Attention',
-      icon: LayoutGrid,
-      color: 'bg-red-500',
-    },
-    { id: 'Engage', label: 'Engage', icon: Brain, color: 'bg-amber-500' },
-    { id: 'Set Up', label: 'Set Up', icon: Settings2, color: 'bg-emerald-500' },
-    { id: 'Support', label: 'Support', icon: HelpCircle, color: 'bg-blue-500' },
-  ];
+  // Merge categories: Start with defaults, override/append with custom by ID, exclude removed
+  const categoriesMap = new Map<
+    string,
+    (typeof DEFAULT_CATALYST_CATEGORIES)[number]
+  >();
+  const removedCategoryIds = new Set(config.removedCategoryIds ?? []);
+  DEFAULT_CATALYST_CATEGORIES.forEach((c) => {
+    if (!removedCategoryIds.has(c.id)) {
+      categoriesMap.set(c.id, c);
+    }
+  });
+  if (config.customCategories) {
+    config.customCategories.forEach((c) => categoriesMap.set(c.id, c));
+  }
+  const categories = Array.from(categoriesMap.values());
+
+  // Merge routines: Start with defaults, override/append with custom, exclude removed
+  const routinesMap = new Map<string, CatalystRoutine>();
+  const removedRoutineIds = new Set(config.removedRoutineIds ?? []);
+  CATALYST_ROUTINES.forEach((r) => {
+    if (!removedRoutineIds.has(r.id)) {
+      routinesMap.set(r.id, r);
+    }
+  });
+  if (config.customRoutines) {
+    config.customRoutines.forEach((r) => routinesMap.set(r.id, r));
+  }
+  const allRoutines = Array.from(routinesMap.values());
 
   const activeRoutine = activeStrategyId
-    ? CATALYST_ROUTINES.find((r) => r.id === activeStrategyId)
+    ? allRoutines.find((r) => r.id === activeStrategyId)
     : null;
 
   const filteredRoutines = activeCategory
-    ? CATALYST_ROUTINES.filter((r) => r.category === activeCategory)
+    ? allRoutines.filter((r) => r.category === activeCategory)
     : [];
+
+  const renderIcon = (
+    iconName: string,
+    size: number = 24,
+    className: string = ''
+  ) => {
+    // Validate icon URLs before rendering
+    const isSafeIconUrl = (value: string): boolean => {
+      if (!value) return false;
+      if (value.startsWith('data:')) {
+        // Only allow data URLs that are clearly images and reasonably sized
+        const MAX_DATA_URL_LENGTH = 100_000;
+        return (
+          /^data:image\//i.test(value) && value.length <= MAX_DATA_URL_LENGTH
+        );
+      }
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    };
+
+    if (isSafeIconUrl(iconName)) {
+      return (
+        <img
+          src={iconName}
+          className={`object-contain ${className}`}
+          alt=""
+          style={{ width: size, height: size }}
+          referrerPolicy="no-referrer"
+          loading="lazy"
+        />
+      );
+    }
+    const IconComp =
+      (Icons as unknown as Record<string, React.ElementType>)[iconName] ?? Zap;
+    return <IconComp size={size} className={className} />;
+  };
 
   const handleGoMode = (routine: CatalystRoutine) => {
     // 1. Spawn Visual Anchor
@@ -110,14 +153,13 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   const renderCategories = () => (
     <div className="grid grid-cols-2 gap-4 p-4">
       {categories.map((cat) => {
-        const Icon = cat.icon;
         return (
           <button
             key={cat.id}
             onClick={() => navigateTo(cat.id, null)}
             className={`${cat.color} h-32 rounded-3xl p-4 flex flex-col items-center justify-center gap-3 text-white shadow-lg hover:scale-105 transition-transform`}
           >
-            <Icon size={32} />
+            {renderIcon(cat.icon, 32)}
             <span className="font-black uppercase tracking-widest text-xs">
               {cat.label}
             </span>
@@ -137,14 +179,11 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
           <ChevronLeft size={20} />
         </button>
         <h2 className="font-black uppercase tracking-widest text-slate-700">
-          {activeCategory}
+          {categories.find((c) => c.id === activeCategory)?.label ??
+            activeCategory}
         </h2>
       </div>
       {filteredRoutines.map((routine) => {
-        const RoutineIcon =
-          (Icons as unknown as Record<string, React.ElementType>)[
-            routine.icon
-          ] ?? Zap;
         return (
           <button
             key={routine.id}
@@ -152,7 +191,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
             className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all text-left shadow-sm"
           >
             <div className="p-3 rounded-xl bg-indigo-100 text-indigo-600">
-              <RoutineIcon size={24} />
+              {renderIcon(routine.icon, 24)}
             </div>
             <div>
               <div className="font-black uppercase text-sm text-slate-700">
@@ -170,10 +209,6 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
 
   const renderRoutineDetail = () => {
     if (!activeRoutine) return null;
-    const RoutineIcon =
-      (Icons as unknown as Record<string, React.ElementType>)[
-        activeRoutine.icon
-      ] ?? Zap;
 
     return (
       <div className="flex flex-col h-full p-4">
@@ -186,7 +221,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
           </button>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-              <RoutineIcon size={20} />
+              {renderIcon(activeRoutine.icon, 20)}
             </div>
             <h2 className="font-black uppercase tracking-widest text-indigo-900 text-sm">
               {activeRoutine.title}
@@ -248,20 +283,5 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   );
 };
 
-export const CatalystSettings: React.FC<{ widget: WidgetData }> = ({
-  widget: _widget,
-}) => {
-  return (
-    <div className="p-4 text-center space-y-4">
-      <div className="p-8 bg-indigo-50 rounded-3xl border-2 border-dashed border-indigo-200">
-        <Icons.Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-3" />
-        <h3 className="font-black text-indigo-800 uppercase tracking-widest text-sm">
-          Catalyst Engine
-        </h3>
-        <p className="text-xs text-indigo-600 mt-2 leading-relaxed font-medium">
-          Automate classroom routines and deploy interactive tools instantly.
-        </p>
-      </div>
-    </div>
-  );
-};
+// Re-export CatalystSettings so WidgetRegistry can load it via lazyNamed(() => import('./CatalystWidget'), 'CatalystSettings')
+export { CatalystSettings };
