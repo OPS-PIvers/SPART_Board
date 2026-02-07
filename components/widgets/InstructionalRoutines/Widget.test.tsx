@@ -53,6 +53,10 @@ const mockWidget: WidgetData = {
 };
 
 describe('InstructionalRoutinesWidget', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders correctly in library mode', () => {
     render(<InstructionalRoutinesWidget widget={mockWidget} />);
     expect(screen.getByText(/Library/i)).toBeInTheDocument();
@@ -89,6 +93,11 @@ describe('InstructionalRoutinesWidget', () => {
     expect(type).toBe('text');
     // Expect the standardized class
     expect(payload.config.content).toContain('text-brand-blue-primary');
+
+    // Expect no inline styles or hardcoded hex values (Regression Check)
+    expect(payload.config.content).not.toContain('style=');
+    expect(payload.config.content).not.toContain('#2d3f89');
+    expect(payload.config.content).not.toContain('font-weight:');
   });
 });
 
