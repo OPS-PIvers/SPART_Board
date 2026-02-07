@@ -111,7 +111,8 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
           {error ? (
             <ScaledEmptyState
               icon={Camera}
-              title={error}
+              title="Camera Error"
+              subtitle={error}
               className="text-white/50"
               action={
                 <button

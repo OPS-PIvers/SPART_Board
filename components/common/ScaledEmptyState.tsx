@@ -7,6 +7,9 @@ interface ScaledEmptyStateProps {
   subtitle?: string;
   action?: React.ReactNode;
   className?: string;
+  iconClassName?: string;
+  titleClassName?: string;
+  subtitleClassName?: string;
 }
 
 /**
@@ -14,6 +17,9 @@ interface ScaledEmptyStateProps {
  *
  * All sizing uses `cqmin` (the smaller of container width/height)
  * so the content automatically scales when the widget is resized.
+ *
+ * Override `iconClassName`, `titleClassName`, or `subtitleClassName` to theme
+ * per widget background (defaults are slate tones for dark widgets).
  *
  * Usage:
  *   <ScaledEmptyState icon={Clock} title="No Schedule" subtitle="Flip to add items." />
@@ -24,6 +30,9 @@ export const ScaledEmptyState: React.FC<ScaledEmptyStateProps> = ({
   subtitle,
   action,
   className = '',
+  iconClassName = 'text-slate-300',
+  titleClassName = 'text-slate-500',
+  subtitleClassName = 'text-slate-400',
 }) => {
   return (
     <div
@@ -31,7 +40,7 @@ export const ScaledEmptyState: React.FC<ScaledEmptyStateProps> = ({
       style={{ gap: '2cqmin', padding: '4cqmin' }}
     >
       <div
-        className="text-slate-300"
+        className={iconClassName}
         style={{
           width: 'min(48px, 15cqmin)',
           height: 'min(48px, 15cqmin)',
@@ -41,14 +50,14 @@ export const ScaledEmptyState: React.FC<ScaledEmptyStateProps> = ({
       </div>
       <div className="flex flex-col" style={{ gap: '0.5cqmin' }}>
         <p
-          className="font-black uppercase tracking-widest text-slate-500"
+          className={`font-black uppercase tracking-widest ${titleClassName}`}
           style={{ fontSize: 'min(14px, 4cqmin)' }}
         >
           {title}
         </p>
         {subtitle && (
           <p
-            className="text-slate-400 leading-tight"
+            className={`leading-tight ${subtitleClassName}`}
             style={{ fontSize: 'min(12px, 3cqmin)' }}
           >
             {subtitle}
