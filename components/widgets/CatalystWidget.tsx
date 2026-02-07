@@ -88,16 +88,26 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const renderCategories = () => (
-    <div className="grid grid-cols-2 gap-4 p-4">
+    <div
+      className="grid grid-cols-2 h-full w-full"
+      style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}
+    >
       {categories.map((cat) => {
         return (
           <button
             key={cat.id}
             onClick={() => navigateTo(cat.id, null)}
-            className={`${cat.color} h-32 rounded-3xl p-4 flex flex-col items-center justify-center gap-3 text-white shadow-lg hover:scale-105 transition-transform`}
+            className={`${cat.color} rounded-3xl flex flex-col items-center justify-center text-white shadow-lg hover:scale-105 transition-transform`}
+            style={{
+              gap: 'min(12px, 2.5cqmin)',
+              padding: 'min(16px, 3cqmin)',
+            }}
           >
-            {renderCatalystIcon(cat.icon, 32)}
-            <span className="font-black uppercase tracking-widest text-xs">
+            {renderCatalystIcon(cat.icon, 'min(32px, 10cqmin)')}
+            <span
+              className="font-black uppercase tracking-widest"
+              style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+            >
               {cat.label}
             </span>
           </button>
@@ -107,15 +117,30 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const renderRoutineList = () => (
-    <div className="flex flex-col gap-3 p-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div
+      className="flex flex-col h-full w-full overflow-y-auto custom-scrollbar"
+      style={{ gap: 'min(12px, 2.5cqmin)', padding: 'min(16px, 3cqmin)' }}
+    >
+      <div
+        className="flex items-center"
+        style={{
+          gap: 'min(8px, 1.5cqmin)',
+          marginBottom: 'min(8px, 1.5cqmin)',
+        }}
+      >
         <button
           onClick={() => navigateTo(null, null)}
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          className="hover:bg-slate-100 rounded-full transition-colors"
+          style={{ padding: 'min(8px, 1.5cqmin)' }}
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft
+            style={{ width: 'min(20px, 5cqmin)', height: 'min(20px, 5cqmin)' }}
+          />
         </button>
-        <h2 className="font-black uppercase tracking-widest text-slate-700">
+        <h2
+          className="font-black uppercase tracking-widest text-slate-700"
+          style={{ fontSize: 'min(14px, 4cqmin)' }}
+        >
           {categories.find((c) => c.id === activeCategory)?.label ??
             activeCategory}
         </h2>
@@ -125,16 +150,26 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
           <button
             key={routine.id}
             onClick={() => navigateTo(activeCategory, routine.id)}
-            className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all text-left shadow-sm"
+            className="bg-white border border-slate-200 rounded-2xl flex items-center hover:border-indigo-300 hover:bg-indigo-50 transition-all text-left shadow-sm"
+            style={{ padding: 'min(16px, 3cqmin)', gap: 'min(16px, 3cqmin)' }}
           >
-            <div className="p-3 rounded-xl bg-indigo-100 text-indigo-600">
-              {renderCatalystIcon(routine.icon, 24)}
+            <div
+              className="rounded-xl bg-indigo-100 text-indigo-600 shrink-0 flex items-center justify-center"
+              style={{ padding: 'min(12px, 2.5cqmin)' }}
+            >
+              {renderCatalystIcon(routine.icon, 'min(24px, 6cqmin)')}
             </div>
             <div>
-              <div className="font-black uppercase text-sm text-slate-700">
+              <div
+                className="font-black uppercase text-slate-700"
+                style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+              >
                 {routine.title}
               </div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <div
+                className="font-bold text-slate-400 uppercase tracking-widest"
+                style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+              >
                 {routine.shortDesc}
               </div>
             </div>
@@ -148,33 +183,73 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     if (!activeRoutine) return null;
 
     return (
-      <div className="flex flex-col h-full p-4">
-        <div className="flex items-center gap-2 mb-6">
+      <div
+        className="flex flex-col h-full w-full"
+        style={{ padding: 'min(16px, 3cqmin)' }}
+      >
+        <div
+          className="flex items-center shrink-0"
+          style={{
+            gap: 'min(8px, 1.5cqmin)',
+            marginBottom: 'min(24px, 4cqmin)',
+          }}
+        >
           <button
             onClick={() => navigateTo(activeCategory, null)}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+            className="hover:bg-slate-100 rounded-full transition-colors"
+            style={{ padding: 'min(8px, 1.5cqmin)' }}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft
+              style={{
+                width: 'min(20px, 5cqmin)',
+                height: 'min(20px, 5cqmin)',
+              }}
+            />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-              {renderCatalystIcon(activeRoutine.icon, 20)}
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(12px, 2.5cqmin)' }}
+          >
+            <div
+              className="rounded-xl bg-indigo-100 text-indigo-600 shrink-0 flex items-center justify-center"
+              style={{ padding: 'min(8px, 1.5cqmin)' }}
+            >
+              {renderCatalystIcon(activeRoutine.icon, 'min(20px, 5cqmin)')}
             </div>
-            <h2 className="font-black uppercase tracking-widest text-indigo-900 text-sm">
+            <h2
+              className="font-black uppercase tracking-widest text-indigo-900"
+              style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+            >
               {activeRoutine.title}
             </h2>
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm overflow-y-auto custom-scrollbar">
-          <h3 className="font-black uppercase text-[10px] text-slate-400 tracking-[0.2em] mb-4">
+        <div
+          className="flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-y-auto custom-scrollbar"
+          style={{ padding: 'min(24px, 4cqmin)' }}
+        >
+          <h3
+            className="font-black uppercase text-slate-400 tracking-[0.2em]"
+            style={{
+              fontSize: 'min(10px, 2.5cqmin)',
+              marginBottom: 'min(16px, 3cqmin)',
+            }}
+          >
             Teacher Guide
           </h3>
-          <div className="space-y-4">
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'min(16px, 3cqmin)',
+            }}
+          >
             {activeRoutine.instructions.split('\n').map((line, i) => (
               <p
                 key={i}
-                className="text-sm font-medium text-slate-600 leading-relaxed"
+                className="font-medium text-slate-600 leading-relaxed"
+                style={{ fontSize: 'min(14px, 3.5cqmin)' }}
               >
                 {line}
               </p>
@@ -182,19 +257,42 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-6">
+        <div
+          className="grid grid-cols-2 shrink-0"
+          style={{ gap: 'min(16px, 3cqmin)', marginTop: 'min(24px, 4cqmin)' }}
+        >
           <button
             onClick={() => handleGuideMode(activeRoutine)}
-            className="bg-white border-2 border-slate-200 text-slate-600 py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm"
+            className="bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black uppercase flex items-center justify-center hover:bg-slate-50 transition-all shadow-sm"
+            style={{
+              fontSize: 'min(12px, 3cqmin)',
+              padding: 'min(16px, 3cqmin)',
+              gap: 'min(8px, 1.5cqmin)',
+            }}
           >
-            <BookOpen size={18} />
+            <BookOpen
+              style={{
+                width: 'min(18px, 4.5cqmin)',
+                height: 'min(18px, 4.5cqmin)',
+              }}
+            />
             Guide
           </button>
           <button
             onClick={() => handleGoMode(activeRoutine)}
-            className="bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+            className="bg-indigo-600 text-white rounded-2xl font-black uppercase flex items-center justify-center hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+            style={{
+              fontSize: 'min(12px, 3cqmin)',
+              padding: 'min(16px, 3cqmin)',
+              gap: 'min(8px, 1.5cqmin)',
+            }}
           >
-            <Zap size={18} />
+            <Zap
+              style={{
+                width: 'min(18px, 4.5cqmin)',
+                height: 'min(18px, 4.5cqmin)',
+              }}
+            />
             Go Mode
           </button>
         </div>
