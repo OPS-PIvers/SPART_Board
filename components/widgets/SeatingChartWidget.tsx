@@ -15,6 +15,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { Button } from '../common/Button';
+import { FloatingPanel } from '../common/FloatingPanel';
 
 // Furniture definitions for palette
 const FURNITURE_TYPES: {
@@ -689,9 +690,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   selectedId === item.id &&
                   !dragState &&
                   !resizeState && (
-                    <div
+                    <FloatingPanel
                       onPointerDown={(e) => e.stopPropagation()}
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-200"
+                      shape="pill"
+                      padding="sm"
+                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1"
                     >
                       <button
                         onClick={(e) => {
@@ -742,7 +745,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
+                    </FloatingPanel>
                   )}
 
                 {/* Content */}
