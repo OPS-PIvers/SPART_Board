@@ -10,6 +10,7 @@ import {
 } from '../../types';
 import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
 import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
+import { TOOLS } from '../../config/tools';
 import * as Icons from 'lucide-react';
 import { Plus, Trash2, Edit2, X, AlertCircle } from 'lucide-react';
 
@@ -60,25 +61,11 @@ const COLORS = [
   'bg-slate-500',
 ];
 
-const WIDGET_TYPES: WidgetType[] = [
-  'time-tool',
-  'text',
-  'poll',
-  'random',
-  'sound',
-  'checklist',
-  'traffic',
-  'embed',
-  'qr',
-  'webcam',
-  'scoreboard',
-  'weather',
-  'schedule',
-  'calendar',
-  'lunchCount',
-  'classes',
-  'materials',
-];
+// Derive widget types from TOOLS registry, excluding catalyst-related widgets
+const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
+  (tool) =>
+    !tool.type.startsWith('catalyst') && tool.type !== 'instructionalRoutines'
+).map((tool) => tool.type);
 
 interface CatalystSettingsProps {
   widget: WidgetData;
@@ -111,19 +98,35 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
     null
   );
 
-  // Track JSON parsing errors for associated widgets editor
-  // Key: index of the associated widget in the editingRoutine list
-  const [jsonErrors, setJsonErrors] = useState<Record<number, string>>({});
+  // Track JSON parsing errors and JSON text state by widget ID (stable identifier)
+  const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
+  const [jsonTexts, setJsonTexts] = useState<Record<string, string>>({});
 
   const saveConfig = (
     newCategories: CatalystCategory[],
     newRoutines: CatalystRoutine[]
   ) => {
+    // Compute diffs: only save overrides/additions vs defaults
+    const categoryDiffs = newCategories.filter((cat) => {
+      const defaultCat = DEFAULT_CATALYST_CATEGORIES.find(
+        (c) => c.id === cat.id
+      );
+      return !defaultCat || JSON.stringify(cat) !== JSON.stringify(defaultCat);
+    });
+
+    const routineDiffs = newRoutines.filter((routine) => {
+      const defaultRoutine = CATALYST_ROUTINES.find((r) => r.id === routine.id);
+      return (
+        !defaultRoutine ||
+        JSON.stringify(routine) !== JSON.stringify(defaultRoutine)
+      );
+    });
+
     updateWidget(widget.id, {
       config: {
         ...config,
-        customCategories: newCategories,
-        customRoutines: newRoutines,
+        customCategories: categoryDiffs.length > 0 ? categoryDiffs : undefined,
+        customRoutines: routineDiffs.length > 0 ? routineDiffs : undefined,
       },
     });
   };
@@ -334,6 +337,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
               onClick={() => {
                 setEditingRoutine(null);
                 setJsonErrors({});
+                setJsonTexts({});
               }}
               className="p-1 hover:bg-slate-100 rounded-full"
             >
@@ -425,100 +429,132 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                 Associated Widgets (Go Mode)
               </label>
               <div className="space-y-3">
-                {(editingRoutine.associatedWidgets ?? []).map((aw, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col gap-2 p-3 bg-slate-50 rounded border border-slate-200"
-                  >
-                    <div className="flex gap-2 items-center">
-                      <select
-                        value={aw.type}
-                        onChange={(e) => {
-                          const newWidgets = [
-                            ...(editingRoutine.associatedWidgets ?? []),
-                          ];
-                          newWidgets[idx] = {
-                            ...aw,
-                            type: e.target.value as WidgetType,
-                          };
-                          setEditingRoutine({
-                            ...editingRoutine,
-                            associatedWidgets: newWidgets,
-                          });
-                        }}
-                        className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
-                      >
-                        {WIDGET_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => {
-                          const newWidgets = (
-                            editingRoutine.associatedWidgets ?? []
-                          ).filter((_, i) => i !== idx);
-                          setEditingRoutine({
-                            ...editingRoutine,
-                            associatedWidgets: newWidgets,
-                          });
-                          // Also clear any error for this index (though shifting indices might be tricky, simple delete is okay for now)
-                          const newErrors = { ...jsonErrors };
-                          delete newErrors[idx];
-                          setJsonErrors(newErrors);
-                        }}
-                        className="text-red-500 hover:text-red-700 p-1"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div>
-                      <textarea
-                        defaultValue={JSON.stringify(aw.config ?? {}, null, 2)}
-                        onChange={(e) => {
-                          try {
-                            const parsed = JSON.parse(
-                              e.target.value
-                            ) as WidgetConfig;
-                            const newWidgets = [
-                              ...(editingRoutine.associatedWidgets ?? []),
-                            ];
-                            newWidgets[idx] = { ...aw, config: parsed };
+                {(editingRoutine.associatedWidgets ?? []).map((aw) => {
+                  // Initialize JSON text state if not present
+                  if (!jsonTexts[aw.id]) {
+                    setJsonTexts((prev) => ({
+                      ...prev,
+                      [aw.id]: JSON.stringify(aw.config ?? {}, null, 2),
+                    }));
+                  }
+
+                  return (
+                    <div
+                      key={aw.id}
+                      className="flex flex-col gap-2 p-3 bg-slate-50 rounded border border-slate-200"
+                    >
+                      <div className="flex gap-2 items-center">
+                        <select
+                          value={aw.type}
+                          onChange={(e) => {
+                            const newType = e.target.value as WidgetType;
+                            const newWidgets = (
+                              editingRoutine.associatedWidgets ?? []
+                            ).map((w) =>
+                              w.id === aw.id
+                                ? { id: w.id, type: newType, config: undefined }
+                                : w
+                            );
                             setEditingRoutine({
                               ...editingRoutine,
                               associatedWidgets: newWidgets,
                             });
-                            // Clear error if success
-                            if (jsonErrors[idx]) {
-                              const newErrors = { ...jsonErrors };
-                              delete newErrors[idx];
-                              setJsonErrors(newErrors);
-                            }
-                          } catch (_err) {
-                            // Set error state
-                            setJsonErrors({
-                              ...jsonErrors,
-                              [idx]: 'Invalid JSON format',
+                            // Reset JSON text and clear any errors
+                            setJsonTexts((prev) => ({
+                              ...prev,
+                              [aw.id]: '{}',
+                            }));
+                            const newErrors = { ...jsonErrors };
+                            delete newErrors[aw.id];
+                            setJsonErrors(newErrors);
+                          }}
+                          className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                        >
+                          {WIDGET_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => {
+                            const newWidgets = (
+                              editingRoutine.associatedWidgets ?? []
+                            ).filter((w) => w.id !== aw.id);
+                            setEditingRoutine({
+                              ...editingRoutine,
+                              associatedWidgets: newWidgets,
                             });
+                            // Clean up state
+                            const newErrors = { ...jsonErrors };
+                            delete newErrors[aw.id];
+                            setJsonErrors(newErrors);
+                            const newTexts = { ...jsonTexts };
+                            delete newTexts[aw.id];
+                            setJsonTexts(newTexts);
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div>
+                        <textarea
+                          value={
+                            jsonTexts[aw.id] ??
+                            JSON.stringify(aw.config ?? {}, null, 2)
                           }
-                        }}
-                        className={`w-full text-xs font-mono border rounded p-2 h-24 ${
-                          jsonErrors[idx]
-                            ? 'border-red-500 bg-red-50'
-                            : 'border-slate-300'
-                        }`}
-                        placeholder="{}"
-                      />
-                      {jsonErrors[idx] && (
-                        <div className="flex items-center gap-1 text-red-500 text-xs mt-1 font-bold">
-                          <AlertCircle size={12} />
-                          {jsonErrors[idx]}
-                        </div>
-                      )}
+                          onChange={(e) => {
+                            const newText = e.target.value;
+                            setJsonTexts((prev) => ({
+                              ...prev,
+                              [aw.id]: newText,
+                            }));
+
+                            try {
+                              const parsed = JSON.parse(
+                                newText
+                              ) as WidgetConfig;
+                              const newWidgets = (
+                                editingRoutine.associatedWidgets ?? []
+                              ).map((w) =>
+                                w.id === aw.id ? { ...w, config: parsed } : w
+                              );
+                              setEditingRoutine({
+                                ...editingRoutine,
+                                associatedWidgets: newWidgets,
+                              });
+                              // Clear error if success
+                              if (jsonErrors[aw.id]) {
+                                const newErrors = { ...jsonErrors };
+                                delete newErrors[aw.id];
+                                setJsonErrors(newErrors);
+                              }
+                            } catch (_err) {
+                              // Set error state
+                              setJsonErrors({
+                                ...jsonErrors,
+                                [aw.id]: 'Invalid JSON format',
+                              });
+                            }
+                          }}
+                          className={`w-full text-xs font-mono border rounded p-2 h-24 ${
+                            jsonErrors[aw.id]
+                              ? 'border-red-500 bg-red-50'
+                              : 'border-slate-300'
+                          }`}
+                          placeholder="{}"
+                        />
+                        {jsonErrors[aw.id] && (
+                          <div className="flex items-center gap-1 text-red-500 text-xs mt-1 font-bold">
+                            <AlertCircle size={12} />
+                            {jsonErrors[aw.id]}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <button
                   onClick={() =>
                     setEditingRoutine({
@@ -526,6 +562,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                       associatedWidgets: [
                         ...(editingRoutine.associatedWidgets ?? []),
                         {
+                          id: crypto.randomUUID(),
                           type: 'time-tool',
                           config: { mode: 'timer' } as unknown as WidgetConfig,
                         },
@@ -545,6 +582,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
               onClick={() => {
                 setEditingRoutine(null);
                 setJsonErrors({});
+                setJsonTexts({});
               }}
               className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold"
             >

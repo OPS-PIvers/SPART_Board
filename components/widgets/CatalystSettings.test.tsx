@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -9,9 +7,8 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, CatalystConfig, CatalystRoutine } from '../../types';
+import { WidgetData, CatalystConfig } from '../../types';
 import { CatalystSettings } from './CatalystSettings';
-import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
 
 // Mock useDashboard
 vi.mock('../../context/useDashboard', () => ({
@@ -25,8 +22,8 @@ const mockDashboardContext = {
 
 describe('CatalystSettings', () => {
   beforeEach(() => {
-    (useDashboard as ReturnType<typeof vi.fn>).mockReturnValue(
-      mockDashboardContext
+    vi.mocked(useDashboard).mockReturnValue(
+      mockDashboardContext as ReturnType<typeof useDashboard>
     );
     mockUpdateWidget.mockClear();
 
@@ -82,7 +79,9 @@ describe('CatalystSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'catalyst-1',
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           customCategories: expect.arrayContaining([
             expect.objectContaining({
               label: 'My Custom Cat',
@@ -127,7 +126,9 @@ describe('CatalystSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'catalyst-1',
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           customRoutines: expect.arrayContaining([
             expect.objectContaining({
               title: 'Updated Signal',
@@ -183,7 +184,9 @@ describe('CatalystSettings', () => {
   it('merges default and custom routines correctly', () => {
     // Create a widget with one custom routine that OVERRIDES a default one
     // and one that is NEW.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const customRoutine = {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       ...CATALYST_ROUTINES[0], // Override first routine
       title: 'Overridden Routine',
     };

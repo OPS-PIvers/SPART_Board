@@ -387,7 +387,11 @@ export interface CatalystRoutine {
   icon: string;
   shortDesc: string;
   instructions: string;
-  associatedWidgets?: { type: WidgetType; config?: WidgetConfig }[];
+  associatedWidgets?: {
+    id: string;
+    type: WidgetType;
+    config?: WidgetConfig;
+  }[];
 }
 
 export interface CatalystConfig {
