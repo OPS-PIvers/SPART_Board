@@ -9,8 +9,9 @@ import {
   WidgetConfig,
 } from '../../types';
 import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
+import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
 import * as Icons from 'lucide-react';
-import { Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, AlertCircle } from 'lucide-react';
 
 const COMMON_ICONS = [
   'LayoutGrid',
@@ -63,7 +64,7 @@ const WIDGET_TYPES: WidgetType[] = [
   'time-tool',
   'text',
   'poll',
-  'random', // Ensure 'random' is in WidgetType
+  'random',
   'sound',
   'checklist',
   'traffic',
@@ -91,34 +92,14 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
 
   // Initialize state from config or defaults
   const [categories, setCategories] = useState<CatalystCategory[]>(
-    config.customCategories ?? [
-      {
-        id: 'Get Attention',
-        label: 'Attention',
-        icon: 'LayoutGrid',
-        color: 'bg-red-500',
-      },
-      { id: 'Engage', label: 'Engage', icon: 'Brain', color: 'bg-amber-500' },
-      {
-        id: 'Set Up',
-        label: 'Set Up',
-        icon: 'Settings2',
-        color: 'bg-emerald-500',
-      },
-      {
-        id: 'Support',
-        label: 'Support',
-        icon: 'HelpCircle',
-        color: 'bg-blue-500',
-      },
-    ]
+    config.customCategories ?? DEFAULT_CATALYST_CATEGORIES
   );
 
   const [routines, setRoutines] = useState<CatalystRoutine[]>(() => {
-    if (config.customRoutines) {
-      return config.customRoutines;
-    }
-    return [...CATALYST_ROUTINES];
+    const routinesMap = new Map<string, CatalystRoutine>();
+    CATALYST_ROUTINES.forEach((r) => routinesMap.set(r.id, r));
+    config.customRoutines?.forEach((r) => routinesMap.set(r.id, r));
+    return Array.from(routinesMap.values());
   });
 
   const [activeTab, setActiveTab] = useState<'categories' | 'routines'>(
@@ -129,6 +110,10 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
   const [editingRoutine, setEditingRoutine] = useState<CatalystRoutine | null>(
     null
   );
+
+  // Track JSON parsing errors for associated widgets editor
+  // Key: index of the associated widget in the editingRoutine list
+  const [jsonErrors, setJsonErrors] = useState<Record<number, string>>({});
 
   const saveConfig = (
     newCategories: CatalystCategory[],
@@ -158,6 +143,14 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
   };
 
   const handleDeleteCategory = (id: string) => {
+    const isCategoryInUse = routines.some((r) => r.category === id);
+    if (isCategoryInUse) {
+      alert(
+        'This category is in use by one or more routines and cannot be deleted. Please re-assign or delete the routines first.'
+      );
+      return;
+    }
+
     if (confirm('Delete this category?')) {
       const newCategories = categories.filter((c) => c.id !== id);
       setCategories(newCategories);
@@ -166,6 +159,12 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
   };
 
   const handleSaveRoutine = (routine: CatalystRoutine) => {
+    // Prevent saving if there are JSON errors
+    if (Object.keys(jsonErrors).length > 0) {
+      alert('Please fix JSON errors before saving.');
+      return;
+    }
+
     let newRoutines;
     if (routines.find((r) => r.id === routine.id)) {
       newRoutines = routines.map((r) => (r.id === routine.id ? routine : r));
@@ -183,6 +182,28 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
       setRoutines(newRoutines);
       saveConfig(categories, newRoutines);
     }
+  };
+
+  // Helper to render icons consistently
+  const renderIcon = (
+    iconName: string,
+    size: number = 20,
+    className: string = ''
+  ) => {
+    if (iconName.startsWith('http') || iconName.startsWith('data:')) {
+      return (
+        <img
+          src={iconName}
+          className={`object-contain ${className}`}
+          alt=""
+          style={{ width: size, height: size }}
+        />
+      );
+    }
+    const IconComp =
+      (Icons as unknown as Record<string, React.ElementType>)[iconName] ??
+      Icons.Zap;
+    return <IconComp size={size} className={className} />;
   };
 
   // --- Sub-components (Render Functions) ---
@@ -310,7 +331,10 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
               {isNew ? 'New Routine' : 'Edit Routine'}
             </h3>
             <button
-              onClick={() => setEditingRoutine(null)}
+              onClick={() => {
+                setEditingRoutine(null);
+                setJsonErrors({});
+              }}
               className="p-1 hover:bg-slate-100 rounded-full"
             >
               <X size={20} />
@@ -439,34 +463,60 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                             ...editingRoutine,
                             associatedWidgets: newWidgets,
                           });
+                          // Also clear any error for this index (though shifting indices might be tricky, simple delete is okay for now)
+                          const newErrors = { ...jsonErrors };
+                          delete newErrors[idx];
+                          setJsonErrors(newErrors);
                         }}
                         className="text-red-500 hover:text-red-700 p-1"
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <textarea
-                      value={JSON.stringify(aw.config ?? {}, null, 2)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = JSON.parse(
-                            e.target.value
-                          ) as WidgetConfig;
-                          const newWidgets = [
-                            ...(editingRoutine.associatedWidgets ?? []),
-                          ];
-                          newWidgets[idx] = { ...aw, config: parsed };
-                          setEditingRoutine({
-                            ...editingRoutine,
-                            associatedWidgets: newWidgets,
-                          });
-                        } catch (_err) {
-                          // Ignore parsing errors during typing
-                        }
-                      }}
-                      className="w-full text-xs font-mono border border-slate-300 rounded p-2 h-24"
-                      placeholder="{}"
-                    />
+                    <div>
+                      <textarea
+                        defaultValue={JSON.stringify(aw.config ?? {}, null, 2)}
+                        onChange={(e) => {
+                          try {
+                            const parsed = JSON.parse(
+                              e.target.value
+                            ) as WidgetConfig;
+                            const newWidgets = [
+                              ...(editingRoutine.associatedWidgets ?? []),
+                            ];
+                            newWidgets[idx] = { ...aw, config: parsed };
+                            setEditingRoutine({
+                              ...editingRoutine,
+                              associatedWidgets: newWidgets,
+                            });
+                            // Clear error if success
+                            if (jsonErrors[idx]) {
+                              const newErrors = { ...jsonErrors };
+                              delete newErrors[idx];
+                              setJsonErrors(newErrors);
+                            }
+                          } catch (_err) {
+                            // Set error state
+                            setJsonErrors({
+                              ...jsonErrors,
+                              [idx]: 'Invalid JSON format',
+                            });
+                          }
+                        }}
+                        className={`w-full text-xs font-mono border rounded p-2 h-24 ${
+                          jsonErrors[idx]
+                            ? 'border-red-500 bg-red-50'
+                            : 'border-slate-300'
+                        }`}
+                        placeholder="{}"
+                      />
+                      {jsonErrors[idx] && (
+                        <div className="flex items-center gap-1 text-red-500 text-xs mt-1 font-bold">
+                          <AlertCircle size={12} />
+                          {jsonErrors[idx]}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <button
@@ -492,7 +542,10 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
 
           <div className="flex gap-2 mt-6 justify-end">
             <button
-              onClick={() => setEditingRoutine(null)}
+              onClick={() => {
+                setEditingRoutine(null);
+                setJsonErrors({});
+              }}
               className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold"
             >
               Cancel
@@ -562,13 +615,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                   <div
                     className={`w-10 h-10 rounded-lg ${cat.color} flex items-center justify-center text-white shrink-0`}
                   >
-                    {(() => {
-                      const I =
-                        (Icons as unknown as Record<string, React.ElementType>)[
-                          cat.icon
-                        ] ?? Icons.Zap;
-                      return <I size={20} />;
-                    })()}
+                    {renderIcon(cat.icon, 20)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-slate-700 text-sm truncate">
@@ -577,12 +624,14 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                   </div>
                   <div className="flex gap-1">
                     <button
+                      aria-label="Edit Category"
                       onClick={() => setEditingCategory(cat)}
                       className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg hover:text-indigo-600"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
+                      aria-label="Delete Category"
                       onClick={() => handleDeleteCategory(cat.id)}
                       className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg hover:text-red-600"
                     >
@@ -631,16 +680,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                           className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 transition-colors"
                         >
                           <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                            {(() => {
-                              const I =
-                                (
-                                  Icons as unknown as Record<
-                                    string,
-                                    React.ElementType
-                                  >
-                                )[routine.icon] ?? Icons.Zap;
-                              return <I size={18} />;
-                            })()}
+                            {renderIcon(routine.icon, 18)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-slate-700 text-sm truncate">
@@ -651,12 +691,14 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                             </div>
                           </div>
                           <button
+                            aria-label="Edit Routine"
                             onClick={() => setEditingRoutine(routine)}
                             className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg hover:text-indigo-600"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
+                            aria-label="Delete Routine"
                             onClick={() => handleDeleteRoutine(routine.id)}
                             className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg hover:text-red-600"
                           >

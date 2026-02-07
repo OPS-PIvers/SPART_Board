@@ -5,10 +5,10 @@ import {
   CatalystConfig,
   WidgetType,
   WidgetConfig,
-  CatalystCategory,
   CatalystRoutine,
 } from '../../types';
 import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
+import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
 import * as Icons from 'lucide-react';
 import { Zap, BookOpen, ChevronLeft } from 'lucide-react';
 
@@ -32,29 +32,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const defaultCategories: CatalystCategory[] = [
-    {
-      id: 'Get Attention',
-      label: 'Attention',
-      icon: 'LayoutGrid',
-      color: 'bg-red-500',
-    },
-    { id: 'Engage', label: 'Engage', icon: 'Brain', color: 'bg-amber-500' },
-    {
-      id: 'Set Up',
-      label: 'Set Up',
-      icon: 'Settings2',
-      color: 'bg-emerald-500',
-    },
-    {
-      id: 'Support',
-      label: 'Support',
-      icon: 'HelpCircle',
-      color: 'bg-blue-500',
-    },
-  ];
-
-  const categories = config.customCategories ?? defaultCategories;
+  const categories = config.customCategories ?? DEFAULT_CATALYST_CATEGORIES;
 
   // Merge routines: Start with defaults, override/append with custom
   const routinesMap = new Map<string, CatalystRoutine>();
