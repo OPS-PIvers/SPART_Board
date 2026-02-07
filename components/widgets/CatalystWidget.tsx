@@ -239,9 +239,8 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
             Teacher Guide
           </h3>
           <div
+            className="flex flex-col"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
               gap: 'min(16px, 3cqmin)',
             }}
           >

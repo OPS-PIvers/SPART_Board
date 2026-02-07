@@ -33,10 +33,7 @@ export const renderCatalystIcon = (
   size: number | string = 24,
   className: string = ''
 ): React.ReactElement => {
-  const sizeStyle =
-    typeof size === 'number'
-      ? { width: size, height: size }
-      : { width: size, height: size };
+  const sizeStyle = { width: size, height: size };
 
   if (isSafeIconUrl(iconName)) {
     return (
