@@ -8,6 +8,7 @@ import {
   Link as LinkIcon,
   AlertCircle,
 } from 'lucide-react';
+import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { Toggle } from '../common/Toggle';
 
 interface GearItem {
@@ -88,19 +89,11 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-4">
-            <div className="bg-slate-100 p-4 rounded-full">
-              <AlertCircle className="w-8 h-8 text-slate-400" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-black text-slate-600 uppercase tracking-tight">
-                No Weather Data
-              </p>
-              <p className="text-xxs text-slate-400 leading-tight">
-                Add a Weather widget to automatically see required recess gear.
-              </p>
-            </div>
-          </div>
+          <ScaledEmptyState
+            icon={AlertCircle}
+            title="No Weather Data"
+            subtitle="Add a Weather widget to automatically see required recess gear."
+          />
         }
       />
     );
@@ -110,18 +103,51 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-white/50 backdrop-blur-sm shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-50 p-1.5 rounded-lg border border-emerald-100 shadow-sm">
-              <Shirt className="w-4 h-4 text-emerald-600" />
+        <div
+          className="flex items-center justify-between border-b border-slate-100 bg-white/50 backdrop-blur-sm shrink-0"
+          style={{ padding: 'min(12px, 2.5cqmin) min(16px, 3cqmin)' }}
+        >
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(8px, 1.5cqmin)' }}
+          >
+            <div
+              className="bg-emerald-50 rounded-lg border border-emerald-100 shadow-sm flex items-center justify-center"
+              style={{ padding: 'min(6px, 1.2cqmin)' }}
+            >
+              <Shirt
+                className="text-emerald-600"
+                style={{
+                  width: 'min(16px, 4cqmin)',
+                  height: 'min(16px, 4cqmin)',
+                }}
+              />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <span
+              className="font-black uppercase tracking-widest text-slate-400"
+              style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+            >
               Recess Gear
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-full border border-emerald-100 shadow-sm">
-            <Thermometer className="w-3 h-3 text-emerald-600" />
-            <span className="text-[10px] font-black text-emerald-700 tracking-tight">
+          <div
+            className="flex items-center bg-emerald-50 rounded-full border border-emerald-100 shadow-sm"
+            style={{
+              gap: 'min(6px, 1.2cqmin)',
+              padding: 'min(4px, 0.8cqmin) min(10px, 2cqmin)',
+            }}
+          >
+            <Thermometer
+              className="text-emerald-600"
+              style={{
+                width: 'min(12px, 3cqmin)',
+                height: 'min(12px, 3cqmin)',
+              }}
+            />
+            <span
+              className="font-black text-emerald-700 tracking-tight"
+              style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+            >
               {Math.round(
                 (config.useFeelsLike && weatherConfig.feelsLike !== undefined
                   ? weatherConfig.feelsLike
@@ -133,21 +159,43 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-4 custom-scrollbar bg-slate-50/30">
-          <div className="grid grid-cols-1 @[240px]:grid-cols-2 gap-3">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
+          style={{ padding: 'min(16px, 3cqmin)' }}
+        >
+          <div
+            className="grid grid-cols-1 @[240px]:grid-cols-2"
+            style={{ gap: 'min(12px, 2.5cqmin)' }}
+          >
             {gearList.map((item, idx) => (
               <div
                 key={`${item.label}-${idx}`}
-                className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-emerald-200 hover:shadow-md transition-all group"
+                className="flex items-center bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-emerald-200 hover:shadow-md transition-all group"
+                style={{
+                  gap: 'min(12px, 2.5cqmin)',
+                  padding: 'min(16px, 3cqmin)',
+                }}
               >
-                <span className="text-3xl group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm">
+                <span
+                  className="group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm shrink-0"
+                  style={{ fontSize: 'min(30px, 8cqmin)' }}
+                >
                   {item.icon}
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] font-black text-slate-700 uppercase leading-tight tracking-tight">
+                  <span
+                    className="font-black text-slate-700 uppercase leading-tight tracking-tight"
+                    style={{ fontSize: 'min(10px, 2.8cqmin)' }}
+                  >
                     {item.label}
                   </span>
-                  <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">
+                  <span
+                    className="font-bold text-slate-300 uppercase tracking-widest"
+                    style={{
+                      fontSize: 'min(9px, 2.2cqmin)',
+                      marginTop: 'min(4px, 0.8cqmin)',
+                    }}
+                  >
                     {item.category}
                   </span>
                 </div>
@@ -157,15 +205,36 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       footer={
-        <div className="px-4 py-2.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">
-          <div className="flex items-center gap-1.5 truncate max-w-[70%]">
-            <LinkIcon className="w-2.5 h-2.5 opacity-60" />
+        <div
+          className="bg-slate-50/50 border-t border-slate-100 flex items-center justify-between font-black text-slate-400 uppercase tracking-widest shrink-0"
+          style={{
+            padding: 'min(10px, 2cqmin) min(16px, 3cqmin)',
+            fontSize: 'min(9px, 2.2cqmin)',
+          }}
+        >
+          <div
+            className="flex items-center truncate max-w-[70%]"
+            style={{ gap: 'min(6px, 1.2cqmin)' }}
+          >
+            <LinkIcon
+              className="opacity-60"
+              style={{
+                width: 'min(10px, 2.5cqmin)',
+                height: 'min(10px, 2.5cqmin)',
+              }}
+            />
             <span className="truncate">
               {weatherConfig.locationName ?? 'Weather'} Source
             </span>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />
+          <div
+            className="flex items-center shrink-0"
+            style={{ gap: 'min(4px, 0.8cqmin)' }}
+          >
+            <div
+              className="bg-emerald-400 rounded-full animate-pulse"
+              style={{ width: 'min(4px, 1cqmin)', height: 'min(4px, 1cqmin)' }}
+            />
             <span>Auto</span>
           </div>
         </div>

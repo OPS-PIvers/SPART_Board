@@ -14,11 +14,26 @@ export const CatalystInstructionWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="p-4 bg-amber-50 h-full w-full overflow-y-auto text-slate-800 font-serif leading-relaxed custom-scrollbar shadow-inner">
-          <h3 className="text-xl font-bold mb-3 text-slate-900 border-b border-amber-200 pb-2 uppercase tracking-tight">
+        <div
+          className="bg-amber-50 h-full w-full overflow-y-auto text-slate-800 font-serif leading-relaxed custom-scrollbar shadow-inner"
+          style={{ padding: 'min(16px, 3cqmin)' }}
+        >
+          <h3
+            className="font-bold text-slate-900 border-b border-amber-200 uppercase tracking-tight"
+            style={{
+              fontSize: 'min(20px, 5cqmin)',
+              marginBottom: 'min(12px, 2.5cqmin)',
+              paddingBottom: 'min(8px, 1.5cqmin)',
+            }}
+          >
             {title}
           </h3>
-          <div className="whitespace-pre-line text-sm">{instructions}</div>
+          <div
+            className="whitespace-pre-line"
+            style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+          >
+            {instructions}
+          </div>
         </div>
       }
     />

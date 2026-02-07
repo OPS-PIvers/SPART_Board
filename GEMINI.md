@@ -115,8 +115,33 @@ To add a new widget:
 3.  **Create Component:** Build the widget in `components/widgets/YourWidget.tsx`.
     - Must accept `widget: WidgetData` prop.
     - Use `useDashboard()` for state updates.
+    - Use `WidgetLayout` component for standard header/content/footer structure.
 4.  **Register Renderer:** Add the component to the switch statement in `components/widgets/WidgetRenderer.tsx`.
 5.  **Set Defaults:** Define default dimensions and config in `context/DashboardContext.tsx` (`addWidget` function).
+
+### Widget Content Scaling (CRITICAL)
+
+Widgets with `skipScaling: true` in `WidgetRegistry.ts` use **CSS Container Queries** for responsive sizing. All text, icons, spacing, and sizing in widget **front-face content** must use container query units via inline `style={{}}` props.
+
+```tsx
+// CORRECT - scales with widget size
+<span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>Label</span>
+<Icon style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }} />
+<div style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
+
+// WRONG - fixed sizes, won't scale when widget is resized
+<span className="text-sm">Label</span>
+<Icon className="w-12 h-12" />
+<Icon size={24} />
+```
+
+**Key rules:**
+
+- **Never** use hardcoded Tailwind text/icon size classes (`text-sm`, `text-xs`, `w-12 h-12`, `size={24}`) in widget content.
+- **Settings panels (back-face):** Normal Tailwind classes are fine, no scaling needed.
+- **Empty/error states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) instead of hand-rolling per-widget empty states.
+- **Container query units:** `cqw` = 1% container width, `cqh` = 1% container height, `cqmin` = 1% of the smaller dimension.
+- **Reference implementations:** `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx`.
 
 ## Environment Configuration
 

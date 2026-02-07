@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
+import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { convertToEmbedUrl } from '../../utils/urlHelpers';
 
 import { WidgetLayout } from './WidgetLayout';
@@ -54,17 +55,11 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
-            <Globe className="w-12 h-12 opacity-20" />
-            <div>
-              <p className="text-sm  uppercase tracking-widest mb-1 font-black">
-                No URL Provided
-              </p>
-              <p className="text-xs">
-                Flip this widget to add a link to a website, video, or document.
-              </p>
-            </div>
-          </div>
+          <ScaledEmptyState
+            icon={Globe}
+            title="No URL Provided"
+            subtitle="Flip this widget to add a link to a website, video, or document."
+          />
         }
       />
     );
@@ -75,17 +70,11 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3">
-            <Code className="w-12 h-12 opacity-20" />
-            <div>
-              <p className="text-sm  uppercase tracking-widest mb-1 font-black">
-                No Code Provided
-              </p>
-              <p className="text-xs">
-                Flip this widget and paste your HTML/CSS/JS code to run it here.
-              </p>
-            </div>
-          </div>
+          <ScaledEmptyState
+            icon={Code}
+            title="No Code Provided"
+            subtitle="Flip this widget and paste your HTML/CSS/JS code to run it here."
+          />
         }
       />
     );

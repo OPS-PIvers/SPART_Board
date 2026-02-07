@@ -5,8 +5,10 @@ import {
   WidgetComponentProps,
 } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
+import { Package } from 'lucide-react';
 import { MATERIAL_ITEMS } from './constants';
 import { MaterialsSettings } from './Settings';
+import { ScaledEmptyState } from '../../common/ScaledEmptyState';
 
 export { MaterialsSettings };
 
@@ -68,12 +70,12 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none opacity-40">
-            <p className="text-sm font-bold uppercase tracking-widest mb-1">
-              No materials selected
-            </p>
-            <p className="text-xs">Open settings to choose class materials</p>
-          </div>
+          <ScaledEmptyState
+            icon={Package}
+            title="No materials selected"
+            subtitle="Open settings to choose class materials"
+            className="opacity-40"
+          />
         }
       />
     );

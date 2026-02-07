@@ -311,38 +311,44 @@ export const TOOLS: ToolMetadata[] = [
 
 In `components/widgets/YourNewWidget.tsx`:
 
+**IMPORTANT - Content Scaling:** Widgets with `skipScaling: true` in `WidgetRegistry.ts` use **CSS Container Queries** for responsive sizing. All text, icons, spacing, and sizing in widget front-face content **must** use container query units via inline `style={{}}` props - never hardcoded Tailwind size classes like `text-sm`, `text-xs`, `w-12 h-12`, or `size={24}`.
+
 ```typescript
 import React from 'react';
 import { WidgetData } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
+import { WidgetLayout } from './WidgetLayout';
 
 export const YourNewWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
-
-  // Access config
   const { someSetting } = widget.config;
 
-  // Update config
-  const handleChange = (newValue: string) => {
-    updateWidget(widget.id, {
-      config: { ...widget.config, someSetting: newValue }
-    });
-  };
-
   return (
-    <div className="p-4">
-      {/* Your widget UI */}
-    </div>
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div className="h-full w-full flex flex-col items-center justify-center">
+          {/* Use container query units for ALL sizing in widget content */}
+          <div style={{ fontSize: 'min(20cqw, 15cqh)' }}>
+            Main Content
+          </div>
+          <div style={{ fontSize: 'min(4cqw, 3cqh)' }}>
+            Subtitle text
+          </div>
+        </div>
+      }
+    />
   );
 };
 
 // Optional: Settings panel (shown when widget is flipped)
+// Settings panels do NOT need container query scaling - use normal Tailwind classes
 export const YourNewWidgetSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget } = useDashboard();
 
   return (
     <div className="p-4">
-      {/* Your settings UI */}
+      {/* Settings UI - normal Tailwind classes are fine here */}
     </div>
   );
 };
@@ -424,6 +430,73 @@ const getTitle = (widget: WidgetData) => {
 5. Refresh page to ensure persistence works
 
 ## Widget Development Patterns
+
+### Content Scaling with Container Queries
+
+Widgets use a two-mode scaling system configured in `components/widgets/WidgetRegistry.ts`:
+
+- **`skipScaling: true`** (most widgets): Uses **CSS Container Queries**. The widget content area is a CSS container (`container-type: size`), and all sizing must use container query units.
+- **`skipScaling: false`** (drawing, seating-chart): Uses CSS `transform: scale()` for pixel-accurate coordinate preservation.
+
+**For `skipScaling: true` widgets, follow these rules:**
+
+1. **Use inline `style={{}}` with `min()` and container query units** for all dynamic sizing:
+
+   ```tsx
+   // Font sizes
+   style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+   style={{ fontSize: 'min(20cqw, 15cqh)' }}
+
+   // Icon/element sizes
+   style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
+
+   // Spacing
+   style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
+   ```
+
+2. **NEVER use hardcoded Tailwind text/size classes** in widget front-face content:
+
+   ```tsx
+   // BAD - won't scale when widget is resized
+   <span className="text-sm">Label</span>
+   <Icon className="w-12 h-12" />
+   <Icon size={24} />
+   <div className="h-32 gap-4 p-4">
+
+   // GOOD - scales with the container
+   <span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>Label</span>
+   <Icon style={{ width: 'min(48px, 12cqmin)', height: 'min(48px, 12cqmin)' }} />
+   <div style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}>
+   ```
+
+3. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
+
+4. **Container query unit reference:**
+   - `cqw` = 1% of container width
+   - `cqh` = 1% of container height
+   - `cqmin` = 1% of the smaller dimension (width or height)
+   - Use `min(Xpx, Ycqmin)` to set a max pixel size that scales down in smaller containers
+
+5. **For empty/error states**, use the shared `ScaledEmptyState` component:
+
+   ```tsx
+   import { ScaledEmptyState } from '../common/ScaledEmptyState';
+
+   <ScaledEmptyState
+     icon={Clock}
+     title="No Schedule"
+     subtitle="Flip to add schedule items."
+   />;
+   ```
+
+6. **For Catalyst icon rendering**, `renderCatalystIcon()` accepts CSS string sizes:
+
+   ```tsx
+   renderCatalystIcon(iconName, 'min(32px, 8cqmin)'); // Scaled
+   renderCatalystIcon(iconName, 32); // Fixed (for settings panels only)
+   ```
+
+**Reference implementations:** `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx`
 
 ### Audio Context Management
 
@@ -660,6 +733,8 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 - Widget dimensions use px values, not percentages
 - The `flipped` state is managed by DraggableWindow, not individual widgets
 - Audio contexts must be resumed on user interaction (see Timer/Stopwatch unlock patterns)
+- **Content scaling:** Never use hardcoded Tailwind text size classes (`text-sm`, `text-xs`, etc.) or fixed icon sizes (`size={24}`, `w-12 h-12`) in widget front-face content. Use `style={{ fontSize: 'min(Xpx, Ycqmin)' }}` instead. See "Content Scaling with Container Queries" section.
+- **Empty states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) instead of hand-rolling empty/error state UI in each widget.
 
 ### Authentication & Permissions
 

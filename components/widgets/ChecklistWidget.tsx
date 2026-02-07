@@ -19,6 +19,7 @@ import {
   RefreshCw,
   BookOpen,
 } from 'lucide-react';
+import { ScaledEmptyState } from '../common/ScaledEmptyState';
 
 interface ChecklistRowProps {
   id: string;
@@ -185,23 +186,15 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       <WidgetLayout
         padding="p-0"
         content={
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center gap-3 bg-transparent">
-            {mode === 'manual' ? (
-              <ListPlus className="w-12 h-12 opacity-20" />
-            ) : (
-              <Users className="w-12 h-12 opacity-20" />
-            )}
-            <div>
-              <p className="text-sm font-black uppercase tracking-widest mb-1">
-                {mode === 'manual' ? 'No Tasks' : 'Roster Empty'}
-              </p>
-              <p className="text-xs">
-                {mode === 'manual'
-                  ? 'Flip to add your class tasks.'
-                  : 'Flip to enter your student names.'}
-              </p>
-            </div>
-          </div>
+          <ScaledEmptyState
+            icon={mode === 'manual' ? ListPlus : Users}
+            title={mode === 'manual' ? 'No Tasks' : 'Roster Empty'}
+            subtitle={
+              mode === 'manual'
+                ? 'Flip to add your class tasks.'
+                : 'Flip to enter your student names.'
+            }
+          />
         }
       />
     );

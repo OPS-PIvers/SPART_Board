@@ -9,6 +9,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { WidgetData } from '../../types';
+import { ScaledEmptyState } from '../common/ScaledEmptyState';
 
 interface CapturedItem {
   id: string;
@@ -108,16 +109,24 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div className="relative h-full w-full bg-slate-950 overflow-hidden group">
           {error ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white/50 gap-4">
-              <Camera className="w-12 h-12 opacity-20" />
-              <p className="text-sm ">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs  hover:bg-blue-700 transition-colors"
-              >
-                Retry Camera
-              </button>
-            </div>
+            <ScaledEmptyState
+              icon={Camera}
+              title="Camera Error"
+              subtitle={error}
+              className="text-white/50"
+              action={
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                  style={{
+                    fontSize: 'min(12px, 3cqmin)',
+                    padding: 'min(8px, 1.5cqmin) min(16px, 3cqmin)',
+                  }}
+                >
+                  Retry Camera
+                </button>
+              }
+            />
           ) : (
             <>
               <video
@@ -191,10 +200,11 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {capturedItems.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-white/30 gap-2">
-                    <FileText className="w-12 h-12 opacity-20" />
-                    <p className="text-sm">No photos yet.</p>
-                  </div>
+                  <ScaledEmptyState
+                    icon={FileText}
+                    title="No photos yet"
+                    className="text-white/30"
+                  />
                 ) : (
                   <div className="grid grid-cols-2 gap-4">
                     {capturedItems.map((item) => (
