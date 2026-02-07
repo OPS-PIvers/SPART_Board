@@ -218,10 +218,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      // OPTIMIZATION: Update DOM directly during drag to avoid React render cycle
+      if (windowRef.current) {
+        windowRef.current.style.left = `${moveEvent.clientX - startX}px`;
+        windowRef.current.style.top = `${moveEvent.clientY - startY}px`;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -232,6 +233,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      // Sync final position to React state
+      updateWidget(widget.id, {
+        x: upEvent.clientX - startX,
+        y: upEvent.clientY - startY,
+      });
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {
@@ -283,29 +290,24 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         newW = Math.max(150, startW + dx);
       }
       if (direction.includes('w')) {
-        const potentialW = startW - dx;
-        if (potentialW >= 150) {
-          newW = potentialW;
-          newX = startPosX + dx;
-        }
+        newW = Math.max(150, startW - dx);
+        newX = startPosX + (startW - newW);
       }
       if (direction.includes('s')) {
         newH = Math.max(100, startH + dy);
       }
       if (direction.includes('n')) {
-        const potentialH = startH - dy;
-        if (potentialH >= 100) {
-          newH = potentialH;
-          newY = startPosY + dy;
-        }
+        newH = Math.max(100, startH - dy);
+        newY = startPosY + (startH - newH);
       }
 
-      updateWidget(widget.id, {
-        w: newW,
-        h: newH,
-        x: newX,
-        y: newY,
-      });
+      // OPTIMIZATION: Update DOM directly during resize to avoid React render cycle
+      if (windowRef.current) {
+        windowRef.current.style.width = `${newW}px`;
+        windowRef.current.style.height = `${newH}px`;
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -316,6 +318,37 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      // Calculate final dimensions one last time
+      const dx = upEvent.clientX - startX;
+      const dy = upEvent.clientY - startY;
+
+      let newW = startW;
+      let newH = startH;
+      let newX = startPosX;
+      let newY = startPosY;
+
+      if (direction.includes('e')) {
+        newW = Math.max(150, startW + dx);
+      }
+      if (direction.includes('w')) {
+        newW = Math.max(150, startW - dx);
+        newX = startPosX + (startW - newW);
+      }
+      if (direction.includes('s')) {
+        newH = Math.max(100, startH + dy);
+      }
+      if (direction.includes('n')) {
+        newH = Math.max(100, startH - dy);
+        newY = startPosY + (startH - newH);
+      }
+
+      updateWidget(widget.id, {
+        w: newW,
+        h: newH,
+        x: newX,
+        y: newY,
+      });
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {

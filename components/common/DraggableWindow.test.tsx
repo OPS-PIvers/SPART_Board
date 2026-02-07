@@ -217,7 +217,19 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    // Should NOT call updateWidget during drag (optimization)
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Verify DOM update
+    // The GlassCard mock passes the ref to the div, so we can check the style
+    const draggableWindow = screen.getByTestId('draggable-window');
+    expect(draggableWindow.style.left).toBe('150px');
+    expect(draggableWindow.style.top).toBe('150px');
+
+    // Clean up - this should trigger the update
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 160, clientY: 160 });
+
+    // NOW it should be called
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -225,9 +237,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('allows dragging from below the old 40px handle area', () => {
@@ -269,7 +278,17 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // It should now drag
+    // Should NOT call updateWidget during drag
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Verify DOM update
+    const draggableWindow = screen.getByTestId('draggable-window');
+    expect(draggableWindow.style.left).toBe('150px');
+    expect(draggableWindow.style.top).toBe('150px');
+
+    // Clean up - triggers update
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 160, clientY: 200 });
+
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -277,9 +296,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('updates size on pointer resize (SE corner)', () => {
@@ -325,7 +341,17 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New size should be w: 200 + (350 - 300) = 250, h: 200 + (400 - 300) = 300
+    // Should NOT call updateWidget during resize
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Verify DOM update
+    const draggableWindow = screen.getByTestId('draggable-window');
+    expect(draggableWindow.style.width).toBe('250px');
+    expect(draggableWindow.style.height).toBe('300px');
+
+    // Clean up
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 350, clientY: 400 });
+
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -333,9 +359,6 @@ describe('DraggableWindow', () => {
         h: 300,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('updates position and size on NW pointer resize', () => {
@@ -379,7 +402,18 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New W: 200 - (-50) = 250, New X: 100 + (-50) = 50
+    // Should NOT call updateWidget during resize
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Verify DOM update
+    const draggableWindow = screen.getByTestId('draggable-window');
+    expect(draggableWindow.style.width).toBe('250px');
+    expect(draggableWindow.style.height).toBe('250px');
+    expect(draggableWindow.style.left).toBe('50px');
+    expect(draggableWindow.style.top).toBe('50px');
+
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 50, clientY: 50 });
+
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -389,8 +423,6 @@ describe('DraggableWindow', () => {
         y: 50,
       })
     );
-
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('closes immediately on widget-escape-press if skipCloseConfirmation is true', async () => {
