@@ -112,9 +112,15 @@ export interface PollOption {
 }
 
 export interface ScheduleItem {
+  id?: string;
   time: string;
   task: string;
   done?: boolean;
+  startTime?: string;
+  endTime?: string;
+  mode?: 'clock' | 'timer';
+  linkedWidgets?: WidgetType[];
+  spawnedWidgetIds?: string[];
 }
 
 export interface CalendarEvent {
