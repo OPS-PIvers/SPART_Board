@@ -96,16 +96,9 @@ const areRoutinesEqual = (a: CatalystRoutine, b: CatalystRoutine): boolean => {
     return false;
   }
 
-  // Compare instructions array
-  if (a.instructions?.length !== b.instructions?.length) {
+  // Compare instructions string
+  if (a.instructions !== b.instructions) {
     return false;
-  }
-  if (a.instructions && b.instructions) {
-    for (let i = 0; i < a.instructions.length; i++) {
-      if (a.instructions[i] !== b.instructions[i]) {
-        return false;
-      }
-    }
   }
 
   // Compare associatedWidgets array
@@ -137,39 +130,51 @@ const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
 
 /**
  * Validates and sanitizes parsed JSON to prevent prototype pollution.
- * Recursively ensures the value is a plain object and strips dangerous keys at all levels.
+ * Recursively ensures the value is a plain object and strips dangerous keys at all levels,
+ * including objects nested inside arrays.
  */
 const sanitizeJsonConfig = (parsed: unknown): WidgetConfig | null => {
-  // Only allow plain objects
-  if (
-    typeof parsed !== 'object' ||
-    parsed === null ||
-    Array.isArray(parsed) ||
-    Object.prototype.toString.call(parsed) !== '[object Object]'
-  ) {
+  const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.prototype.toString.call(value) === '[object Object]';
+
+  // Only allow plain objects at the top level
+  if (!isPlainObject(parsed)) {
     return null;
   }
 
   // Strip dangerous prototype pollution keys recursively
   const dangerous = ['__proto__', 'constructor', 'prototype'];
-  const sanitized = Object.create(null) as Record<string, unknown>;
 
-  for (const [key, value] of Object.entries(parsed)) {
-    if (!dangerous.includes(key)) {
-      // Recursively sanitize nested objects
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value) &&
-        Object.prototype.toString.call(value) === '[object Object]'
-      ) {
-        sanitized[key] = sanitizeJsonConfig(value);
-      } else {
-        sanitized[key] = value;
-      }
+  const sanitizeValue = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map((item) => sanitizeValue(item));
     }
-  }
 
+    if (isPlainObject(value)) {
+      return sanitizeObject(value);
+    }
+
+    return value;
+  };
+
+  const sanitizeObject = (obj: Record<string, unknown>): Record<string, unknown> => {
+    const result = Object.create(null) as Record<string, unknown>;
+
+    for (const [key, value] of Object.entries(obj)) {
+      if (dangerous.includes(key)) {
+        continue;
+      }
+
+      result[key] = sanitizeValue(value);
+    }
+
+    return result;
+  };
+
+  const sanitized = sanitizeObject(parsed);
   return sanitized as WidgetConfig;
 };
 
