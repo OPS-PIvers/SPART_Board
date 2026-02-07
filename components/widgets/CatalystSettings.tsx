@@ -102,7 +102,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
     null
   );
 
-  // Track JSON parsing errors and JSON text state by widget ID (stable identifier)
+  // Track JSON parsing errors and JSON text state by associated widget ID (e.g. associatedWidgets item id)
   const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
   const [jsonTexts, setJsonTexts] = useState<Record<string, string>>({});
 
