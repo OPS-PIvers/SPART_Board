@@ -13,7 +13,11 @@ import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
 import { TOOLS } from '../../config/tools';
 import * as Icons from 'lucide-react';
 import { Plus, Trash2, Edit2, X, AlertCircle } from 'lucide-react';
-import { renderCatalystIcon } from './catalystHelpers';
+import {
+  renderCatalystIcon,
+  mergeCatalystCategories,
+  mergeCatalystRoutines,
+} from './catalystHelpers';
 
 const COMMON_ICONS = [
   'LayoutGrid',
@@ -62,6 +66,69 @@ const COLORS = [
   'bg-slate-500',
 ];
 
+/**
+ * Compares two categories for equality by comparing relevant fields explicitly.
+ */
+const areCategoriesEqual = (
+  a: CatalystCategory,
+  b: CatalystCategory
+): boolean => {
+  return (
+    a.id === b.id &&
+    a.label === b.label &&
+    a.icon === b.icon &&
+    a.color === b.color
+  );
+};
+
+/**
+ * Compares two routines for equality by comparing relevant fields explicitly.
+ */
+const areRoutinesEqual = (a: CatalystRoutine, b: CatalystRoutine): boolean => {
+  // Compare primitive fields
+  if (
+    a.id !== b.id ||
+    a.title !== b.title ||
+    a.shortDesc !== b.shortDesc ||
+    a.icon !== b.icon ||
+    a.category !== b.category
+  ) {
+    return false;
+  }
+
+  // Compare instructions array
+  if (a.instructions?.length !== b.instructions?.length) {
+    return false;
+  }
+  if (a.instructions && b.instructions) {
+    for (let i = 0; i < a.instructions.length; i++) {
+      if (a.instructions[i] !== b.instructions[i]) {
+        return false;
+      }
+    }
+  }
+
+  // Compare associatedWidgets array
+  if (a.associatedWidgets?.length !== b.associatedWidgets?.length) {
+    return false;
+  }
+  if (a.associatedWidgets && b.associatedWidgets) {
+    for (let i = 0; i < a.associatedWidgets.length; i++) {
+      const aWidget = a.associatedWidgets[i];
+      const bWidget = b.associatedWidgets[i];
+      if (
+        aWidget.id !== bWidget.id ||
+        aWidget.type !== bWidget.type ||
+        JSON.stringify(aWidget.config) !== JSON.stringify(bWidget.config)
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
 // Derive widget types from TOOLS registry, excluding catalyst-related widgets
 const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
   (tool) =>
@@ -70,7 +137,7 @@ const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
 
 /**
  * Validates and sanitizes parsed JSON to prevent prototype pollution.
- * Ensures the value is a plain object and strips dangerous keys.
+ * Recursively ensures the value is a plain object and strips dangerous keys at all levels.
  */
 const sanitizeJsonConfig = (parsed: unknown): WidgetConfig | null => {
   // Only allow plain objects
@@ -83,13 +150,23 @@ const sanitizeJsonConfig = (parsed: unknown): WidgetConfig | null => {
     return null;
   }
 
-  // Strip dangerous prototype pollution keys
+  // Strip dangerous prototype pollution keys recursively
   const dangerous = ['__proto__', 'constructor', 'prototype'];
   const sanitized = Object.create(null) as Record<string, unknown>;
 
   for (const [key, value] of Object.entries(parsed)) {
     if (!dangerous.includes(key)) {
-      sanitized[key] = value;
+      // Recursively sanitize nested objects
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value) &&
+        Object.prototype.toString.call(value) === '[object Object]'
+      ) {
+        sanitized[key] = sanitizeJsonConfig(value);
+      } else {
+        sanitized[key] = value;
+      }
     }
   }
 
@@ -106,31 +183,14 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as CatalystConfig;
 
-  // Initialize state from config or defaults
-  // Initialize categories by merging defaults with custom overrides (diff) by id, excluding removed
-  const [categories, setCategories] = useState<CatalystCategory[]>(() => {
-    const categoriesMap = new Map<string, CatalystCategory>();
-    const removedIds = new Set(config.removedCategoryIds ?? []);
-    DEFAULT_CATALYST_CATEGORIES.forEach((c) => {
-      if (!removedIds.has(c.id)) {
-        categoriesMap.set(c.id, c);
-      }
-    });
-    config.customCategories?.forEach((c) => categoriesMap.set(c.id, c));
-    return Array.from(categoriesMap.values());
-  });
+  // Initialize state using shared helper functions
+  const [categories, setCategories] = useState<CatalystCategory[]>(() =>
+    mergeCatalystCategories(config)
+  );
 
-  const [routines, setRoutines] = useState<CatalystRoutine[]>(() => {
-    const routinesMap = new Map<string, CatalystRoutine>();
-    const removedIds = new Set(config.removedRoutineIds ?? []);
-    CATALYST_ROUTINES.forEach((r) => {
-      if (!removedIds.has(r.id)) {
-        routinesMap.set(r.id, r);
-      }
-    });
-    config.customRoutines?.forEach((r) => routinesMap.set(r.id, r));
-    return Array.from(routinesMap.values());
-  });
+  const [routines, setRoutines] = useState<CatalystRoutine[]>(() =>
+    mergeCatalystRoutines(config)
+  );
 
   const [activeTab, setActiveTab] = useState<'categories' | 'routines'>(
     'categories'
@@ -149,20 +209,17 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
     newCategories: CatalystCategory[],
     newRoutines: CatalystRoutine[]
   ) => {
-    // Compute diffs: only save overrides/additions vs defaults
+    // Compute diffs: only save overrides/additions vs defaults using proper equality comparison
     const categoryDiffs = newCategories.filter((cat) => {
       const defaultCat = DEFAULT_CATALYST_CATEGORIES.find(
         (c) => c.id === cat.id
       );
-      return !defaultCat || JSON.stringify(cat) !== JSON.stringify(defaultCat);
+      return !defaultCat || !areCategoriesEqual(cat, defaultCat);
     });
 
     const routineDiffs = newRoutines.filter((routine) => {
       const defaultRoutine = CATALYST_ROUTINES.find((r) => r.id === routine.id);
-      return (
-        !defaultRoutine ||
-        JSON.stringify(routine) !== JSON.stringify(defaultRoutine)
-      );
+      return !defaultRoutine || !areRoutinesEqual(routine, defaultRoutine);
     });
 
     // Track removed default categories and routines as tombstones
@@ -625,7 +682,7 @@ export const CatalystSettings: React.FC<CatalystSettingsProps> = ({
                         {
                           id: crypto.randomUUID(),
                           type: 'time-tool',
-                          config: { mode: 'timer' } as unknown as WidgetConfig,
+                          // Omit config to let addWidget use WIDGET_DEFAULTS
                         },
                       ],
                     })
