@@ -374,6 +374,7 @@ export const CatalystPermissionEditor: React.FC<
         categories={categories}
         onSave={handleSaveRoutine}
         onCancel={() => setEditingRoutine(null)}
+        onShowMessage={onShowMessage}
       />
     </div>
   );
