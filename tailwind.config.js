@@ -8,7 +8,7 @@ export default {
     './context/**/*.{js,ts,jsx,tsx}',
     './hooks/**/*.{js,ts,jsx,tsx}',
     './*.{js,ts,jsx,tsx}',
-    './config/tools.ts',
+    './config/**/*.ts',
   ],
   safelist: [
     'bg-blue-500',
