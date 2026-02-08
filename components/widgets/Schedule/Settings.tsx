@@ -77,13 +77,17 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   const handleSave = () => {
     if (!tempItem) return;
 
-    // Sync legacy time field with startTime if possible
+    // Sync legacy time field with startTime when startTime is non-empty
+    const shouldSyncStartTime =
+      typeof tempItem.startTime === 'string' &&
+      tempItem.startTime.trim() !== '';
+
     const itemToSave = {
       ...tempItem,
-      time: tempItem.startTime ?? tempItem.time,
+      ...(shouldSyncStartTime ? { time: tempItem.startTime } : {}),
       // Ensure ID
       id: tempItem.id ?? crypto.randomUUID(),
-    };
+    } as ScheduleItem; // Explicit cast to satisfy required 'time' if missing in spread
 
     const newItems = [...items];
     if (editingIndex === -1) {
@@ -134,8 +138,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
             {editingIndex === -1 ? 'Add Event' : 'Edit Event'}
           </h3>
           <button
+            type="button"
             onClick={() => setEditingIndex(null)}
-            className="text-slate-400 hover:text-slate-600"
+            aria-label="Close event editor"
+            className="text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded-full"
           >
             <X className="w-5 h-5" />
           </button>
@@ -278,7 +284,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-2">
           {items.map((item, i) => (
             <div
-              key={item.id ?? i}
+              key={
+                item.id ??
+                `${item.task}-${item.startTime ?? item.time}-${item.endTime ?? ''}-${item.mode}`
+              }
               className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm group"
             >
               <div className="flex flex-col items-center gap-0.5 text-slate-300">
