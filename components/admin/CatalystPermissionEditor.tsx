@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   CatalystGlobalConfig,
   CatalystCategory,
@@ -98,21 +98,42 @@ export const CatalystPermissionEditor: React.FC<
     null
   );
 
+  // Track previous config to detect actual changes
+  const prevConfigRef = useRef(config);
+
   // Sync categories state when config prop changes
   useEffect(() => {
-    const newCategories = mergeCatalystCategories(config ?? {});
-    setCategories(newCategories);
+    // Only update if config has actually changed (avoid unnecessary re-renders)
+    if (prevConfigRef.current !== config) {
+      prevConfigRef.current = config;
+      // Use setTimeout to defer state update to next tick, avoiding synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        const newCategories = mergeCatalystCategories(config ?? {});
+        setCategories(newCategories);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+    return undefined;
   }, [config]);
 
   // Sync routines state when config prop changes
   useEffect(() => {
-    const newRoutines = mergeCatalystRoutines(config ?? {});
-    setRoutines(newRoutines);
-    // Clear editing state if the routine being edited no longer exists
-    setEditingRoutine((prev) => {
-      if (!prev) return null;
-      return newRoutines.find((r) => r.id === prev.id) || null;
-    });
+    // Only update if config has actually changed
+    if (prevConfigRef.current !== config) {
+      prevConfigRef.current = config;
+      // Use setTimeout to defer state update to next tick
+      const timeoutId = setTimeout(() => {
+        const newRoutines = mergeCatalystRoutines(config ?? {});
+        setRoutines(newRoutines);
+        // Clear editing state if the routine being edited no longer exists
+        setEditingRoutine((prev) => {
+          if (!prev) return null;
+          return newRoutines.find((r) => r.id === prev.id) ?? null;
+        });
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+    return undefined;
   }, [config]);
 
   const saveConfig = (
