@@ -21,6 +21,7 @@ import { GlassCard } from './GlassCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
+import { POSITION_AWARE_WIDGETS } from '@/config/widgetDefaults';
 import { Z_INDEX } from '../../config/zIndex';
 import { UI_CONSTANTS } from '../../config/layout';
 
@@ -123,6 +124,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
 
+  // Refs for tracking position during optimized drag/resize
+  const lastX = useRef(widget.x);
+  const lastY = useRef(widget.y);
+  const lastW = useRef(widget.w);
+  const lastH = useRef(widget.h);
+
+  // Sync refs when widget props change (e.g. undo/redo or external update)
+  useEffect(() => {
+    if (!isDragging && !isResizing) {
+      lastX.current = widget.x;
+      lastY.current = widget.y;
+      lastW.current = widget.w;
+      lastH.current = widget.h;
+    }
+  }, [widget.x, widget.y, widget.w, widget.h, isDragging, isResizing]);
+
   useClickOutside(menuRef, () => setShowTools(false), [windowRef]);
 
   // Ref specifically for the inner content we want to capture
@@ -209,6 +226,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       console.warn('Failed to set pointer capture:', _err);
     }
 
+    // Check if this widget needs real-time React updates
+    const isPositionAware = POSITION_AWARE_WIDGETS.includes(widget.type);
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       // Only process the same pointer that started the drag
       if (moveEvent.pointerId !== e.pointerId) return;
@@ -218,10 +238,23 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      if (isPositionAware) {
+        updateWidget(widget.id, {
+          x: newX,
+          y: newY,
+        });
+      } else {
+        // Direct DOM manipulation for performance
+        if (windowRef.current) {
+          windowRef.current.style.left = `${newX}px`;
+          windowRef.current.style.top = `${newY}px`;
+        }
+        lastX.current = newX;
+        lastY.current = newY;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -232,6 +265,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      if (!isPositionAware) {
+        // Sync final state to React
+        updateWidget(widget.id, {
+          x: lastX.current,
+          y: lastY.current,
+        });
+      }
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {
@@ -268,6 +309,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       console.warn('Failed to set pointer capture:', _err);
     }
 
+    // Check if this widget needs real-time React updates
+    const isPositionAware = POSITION_AWARE_WIDGETS.includes(widget.type);
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (moveEvent.pointerId !== e.pointerId) return;
 
@@ -300,12 +344,26 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
       }
 
-      updateWidget(widget.id, {
-        w: newW,
-        h: newH,
-        x: newX,
-        y: newY,
-      });
+      if (isPositionAware) {
+        updateWidget(widget.id, {
+          w: newW,
+          h: newH,
+          x: newX,
+          y: newY,
+        });
+      } else {
+        // Direct DOM manipulation
+        if (windowRef.current) {
+          windowRef.current.style.width = `${newW}px`;
+          windowRef.current.style.height = `${newH}px`;
+          windowRef.current.style.left = `${newX}px`;
+          windowRef.current.style.top = `${newY}px`;
+        }
+        lastW.current = newW;
+        lastH.current = newH;
+        lastX.current = newX;
+        lastY.current = newY;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -316,6 +374,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+
+      if (!isPositionAware) {
+        updateWidget(widget.id, {
+          w: lastW.current,
+          h: lastH.current,
+          x: lastX.current,
+          y: lastY.current,
+        });
+      }
 
       try {
         if (targetElement.hasPointerCapture(e.pointerId)) {

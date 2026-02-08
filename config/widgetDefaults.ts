@@ -199,3 +199,9 @@ export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
     config: { linkedWeatherWidgetId: null, useFeelsLike: true },
   },
 };
+
+export const POSITION_AWARE_WIDGETS: string[] = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
