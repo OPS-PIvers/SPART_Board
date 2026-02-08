@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   CatalystGlobalConfig,
   CatalystCategory,
@@ -97,23 +97,6 @@ export const CatalystPermissionEditor: React.FC<
   const [editingRoutine, setEditingRoutine] = useState<CatalystRoutine | null>(
     null
   );
-
-  // Sync categories state when config prop changes
-  useEffect(() => {
-    const newCategories = mergeCatalystCategories(config ?? {});
-    setCategories(newCategories);
-  }, [config]);
-
-  // Sync routines state when config prop changes
-  useEffect(() => {
-    const newRoutines = mergeCatalystRoutines(config ?? {});
-    setRoutines(newRoutines);
-    // Clear editing state if the routine being edited no longer exists
-    setEditingRoutine((prev) => {
-      if (!prev) return null;
-      return newRoutines.find((r) => r.id === prev.id) || null;
-    });
-  }, [config]);
 
   const saveConfig = (
     newCategories: CatalystCategory[],
@@ -377,7 +360,6 @@ export const CatalystPermissionEditor: React.FC<
         categories={categories}
         onSave={handleSaveRoutine}
         onCancel={() => setEditingRoutine(null)}
-        onShowMessage={onShowMessage}
       />
     </div>
   );

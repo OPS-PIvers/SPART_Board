@@ -15,7 +15,6 @@ interface RoutineEditorProps {
   categories: CatalystCategory[];
   onSave: (routine: CatalystRoutine) => void;
   onCancel: () => void;
-  onShowMessage: (type: 'success' | 'error', text: string) => void;
 }
 
 const COMMON_ICONS = [
@@ -108,7 +107,6 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
   categories,
   onSave,
   onCancel,
-  onShowMessage,
 }) => {
   const [editingRoutine, setEditingRoutine] = useState<CatalystRoutine | null>(
     null
@@ -129,7 +127,7 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
   const handleSave = () => {
     // Prevent saving if there are JSON errors
     if (Object.keys(jsonErrors).length > 0) {
-      onShowMessage('error', 'Please fix JSON errors before saving.');
+      alert('Please fix JSON errors before saving.');
       return;
     }
 
@@ -138,7 +136,7 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
       !editingRoutine.category ||
       !categories.find((c) => c.id === editingRoutine.category)
     ) {
-      onShowMessage('error', 'Please select a valid category before saving.');
+      alert('Please select a valid category before saving.');
       return;
     }
 
