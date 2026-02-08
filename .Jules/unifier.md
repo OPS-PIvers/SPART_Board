@@ -43,7 +43,7 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 1.  Updating `config/zIndex.ts` with new semantic layers:
     - `stickerControl: 50`
     - `widgetResize: 60`
-    - `dropdown: 100`
+    - `dropdown: 110`
     - `overlay: 9910`
     - `modalNested: 10100`
     - `modalNestedContent: 10110`
