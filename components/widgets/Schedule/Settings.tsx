@@ -278,7 +278,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-2">
           {items.map((item, i) => (
             <div
-              key={item.id || i}
+              key={item.id ?? i}
               className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm group"
             >
               <div className="flex flex-col items-center gap-0.5 text-slate-300">
