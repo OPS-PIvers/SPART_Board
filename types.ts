@@ -113,8 +113,8 @@ export interface PollOption {
 
 export interface ScheduleItem {
   id?: string;
-  /** @deprecated Use startTime instead */
-  time: string;
+  /** @deprecated Use startTime instead. Falls back to startTime if not provided. */
+  time?: string;
   task: string;
   done?: boolean;
   startTime?: string;
