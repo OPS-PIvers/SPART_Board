@@ -82,12 +82,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       typeof tempItem.startTime === 'string' &&
       tempItem.startTime.trim() !== '';
 
-    const itemToSave = {
+    const itemToSave: ScheduleItem = {
       ...tempItem,
-      ...(shouldSyncStartTime ? { time: tempItem.startTime } : {}),
+      // Sync time from startTime, or omit if both are empty
+      time: shouldSyncStartTime ? tempItem.startTime : tempItem.time,
       // Ensure ID
       id: tempItem.id ?? crypto.randomUUID(),
-    } as ScheduleItem; // Explicit cast to satisfy required 'time' if missing in spread
+    };
 
     const newItems = [...items];
     if (editingIndex === -1) {
@@ -195,16 +196,20 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
             <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">
               Display Mode
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="group" aria-label="Display mode">
               <button
+                type="button"
                 onClick={() => setTempItem({ ...tempItem, mode: 'clock' })}
                 className={`flex-1 p-2 border rounded-lg text-sm flex items-center justify-center gap-2 ${tempItem.mode === 'clock' ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white'}`}
+                aria-pressed={tempItem.mode === 'clock'}
               >
                 <Clock className="w-4 h-4" /> Clock
               </button>
               <button
+                type="button"
                 onClick={() => setTempItem({ ...tempItem, mode: 'timer' })}
                 className={`flex-1 p-2 border rounded-lg text-sm flex items-center justify-center gap-2 ${tempItem.mode === 'timer' ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white'}`}
+                aria-pressed={tempItem.mode === 'timer'}
               >
                 <Clock className="w-4 h-4" /> Timer
               </button>
@@ -227,6 +232,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                 return (
                   <button
                     key={w.type}
+                    type="button"
                     onClick={() => {
                       const newLinked = isSelected
                         ? currentLinked.filter((t) => t !== w.type)
@@ -234,6 +240,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                       setTempItem({ ...tempItem, linkedWidgets: newLinked });
                     }}
                     className={`text-xs p-2 rounded border flex items-center gap-2 ${isSelected ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-white border-slate-200 text-slate-600'}`}
+                    aria-pressed={isSelected}
+                    aria-label={`${isSelected ? 'Remove' : 'Add'} ${w.label}`}
                   >
                     {isSelected && (
                       <CheckCircle2 className="w-3 h-3 text-blue-500" />
@@ -292,16 +300,20 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
             >
               <div className="flex flex-col items-center gap-0.5 text-slate-300">
                 <button
+                  type="button"
                   onClick={() => handleMove(i, 'up')}
                   disabled={i === 0}
                   className="hover:text-slate-600 disabled:opacity-30"
+                  aria-label="Move event up"
                 >
                   <GripVertical className="w-3 h-3" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleMove(i, 'down')}
                   disabled={i === items.length - 1}
                   className="hover:text-slate-600 disabled:opacity-30"
+                  aria-label="Move event down"
                 >
                   <GripVertical className="w-3 h-3" />
                 </button>
@@ -324,14 +336,20 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
+                  type="button"
                   onClick={() => handleStartEdit(i)}
                   className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                  aria-label="Edit event"
+                  title="Edit event"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleDelete(i)}
                   className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+                  aria-label="Delete event"
+                  title="Delete event"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
