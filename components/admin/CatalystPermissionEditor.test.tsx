@@ -17,7 +17,6 @@ describe('CatalystPermissionEditor', () => {
   beforeEach(() => {
     mockOnChange.mockClear();
     mockOnShowMessage.mockClear();
-    vi.spyOn(window, 'alert').mockImplementation(vi.fn());
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
   });
 
@@ -150,7 +149,8 @@ describe('CatalystPermissionEditor', () => {
     });
 
     fireEvent.click(screen.getByText('Save'));
-    expect(window.alert).toHaveBeenCalledWith(
+    expect(mockOnShowMessage).toHaveBeenCalledWith(
+      'error',
       'Please fix JSON errors before saving.'
     );
     expect(mockOnChange).not.toHaveBeenCalled();
