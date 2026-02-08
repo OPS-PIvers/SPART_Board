@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   CatalystGlobalConfig,
   CatalystCategory,
@@ -80,6 +80,9 @@ interface CatalystPermissionEditorProps {
 export const CatalystPermissionEditor: React.FC<
   CatalystPermissionEditorProps
 > = ({ config, onChange, onShowMessage }) => {
+  // Track the previous config to detect changes
+  const prevConfigRef = useRef<CatalystGlobalConfig | undefined>(config);
+
   // Initialize state using shared helper functions
   const [categories, setCategories] = useState<CatalystCategory[]>(() =>
     mergeCatalystCategories(config ?? {})
@@ -97,6 +100,17 @@ export const CatalystPermissionEditor: React.FC<
   const [editingRoutine, setEditingRoutine] = useState<CatalystRoutine | null>(
     null
   );
+
+  // Sync local state when config prop changes (e.g., updated by another admin)
+  useEffect(() => {
+    // Only update if config reference changed
+    if (config !== prevConfigRef.current) {
+      prevConfigRef.current = config;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Legitimate use: syncing external Firestore updates
+      setCategories(mergeCatalystCategories(config ?? {}));
+      setRoutines(mergeCatalystRoutines(config ?? {}));
+    }
+  }, [config]);
 
   const saveConfig = (
     newCategories: CatalystCategory[],
