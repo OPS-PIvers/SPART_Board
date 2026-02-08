@@ -81,7 +81,9 @@ export default {
         dropdown: Z_INDEX.dropdown.toString(),
         overlay: Z_INDEX.overlay.toString(),
         'modal-nested': Z_INDEX.modalNested.toString(),
+        'modal-nested-content': Z_INDEX.modalNestedContent.toString(),
         'modal-deep': Z_INDEX.modalDeep.toString(),
+        'modal-deep-content': Z_INDEX.modalDeepContent.toString(),
       },
       fontFamily: {
         sans: ['"Lexend"', 'sans-serif'],

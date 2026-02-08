@@ -46,6 +46,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
     - `dropdown: 100`
     - `overlay: 9910`
     - `modalNested: 10100`
+    -   `modalNestedContent: 10110`
     - `modalDeep: 10200`
+    -   `modalDeepContent: 10210`
 2.  Updating `tailwind.config.js` to expose these as utility classes.
-3.  Refactoring 8 components (`DraggableWindow`, `SeatingChartWidget`, `DraggableSticker`, `IconPicker`, `DrawingWidget`, `AdminSettings`, `DashboardView`, `FeaturePermissionsManager`, `BackgroundManager`) to use the new `z-*` utility classes.
+3.  Refactoring components (`DraggableWindow`, `SeatingChartWidget`, `DraggableSticker`, `IconPicker`, `DrawingWidget`, `AdminSettings`, `DashboardView`, `FeaturePermissionsManager`, `BackgroundManager`, `GlobalPermissionsManager`) to use the new `z-*` utility classes.
