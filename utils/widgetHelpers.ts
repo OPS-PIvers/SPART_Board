@@ -51,6 +51,6 @@ export const getTitle = (widget: WidgetData): string => {
  * Returns an empty object for widgets that don't require configuration.
  */
 export const getDefaultWidgetConfig = (type: WidgetType): WidgetConfig => {
-  const config = WIDGET_DEFAULTS[type]?.config ?? {};
+  const config = WIDGET_DEFAULTS[type].config ?? {};
   return structuredClone(config);
 };

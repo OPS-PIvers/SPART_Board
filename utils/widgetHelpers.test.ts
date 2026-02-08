@@ -81,6 +81,22 @@ describe('widgetHelpers', () => {
       expect(config).toEqual({});
     });
 
+    it('returns a deep copy to prevent shared state mutations', () => {
+      const config1 = getDefaultWidgetConfig('checklist') as any;
+      const config2 = getDefaultWidgetConfig('checklist');
+
+      config1.items.push({ id: '1', text: 'New Item', completed: false });
+
+      expect(config2).toEqual({
+        items: [],
+        mode: 'manual',
+        firstNames: '',
+        lastNames: '',
+        completedNames: [],
+        scaleMultiplier: 1,
+      });
+    });
+
     it('returns defaults for all supported widget types', () => {
       const types: WidgetType[] = [
         'clock',
