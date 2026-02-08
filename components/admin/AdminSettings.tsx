@@ -68,7 +68,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] bg-slate-50 flex flex-col"
+      className="fixed inset-0 z-modal bg-slate-50 flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-settings-title"

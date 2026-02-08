@@ -76,6 +76,12 @@ export default {
         toast: Z_INDEX.toast.toString(),
         critical: Z_INDEX.critical.toString(),
         cursor: Z_INDEX.cursor.toString(),
+        'sticker-control': Z_INDEX.stickerControl.toString(),
+        'widget-resize': Z_INDEX.widgetResize.toString(),
+        dropdown: Z_INDEX.dropdown.toString(),
+        overlay: Z_INDEX.overlay.toString(),
+        'modal-nested': Z_INDEX.modalNested.toString(),
+        'modal-deep': Z_INDEX.modalDeep.toString(),
       },
       fontFamily: {
         sans: ['"Lexend"', 'sans-serif'],

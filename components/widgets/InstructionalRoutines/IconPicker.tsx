@@ -33,7 +33,7 @@ export const IconPicker: React.FC<{
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-[100] bg-white border border-slate-200 shadow-2xl rounded-2xl p-3 w-64 animate-in zoom-in-95 duration-200">
+        <div className="absolute top-full left-0 mt-2 z-dropdown bg-white border border-slate-200 shadow-2xl rounded-2xl p-3 w-64 animate-in zoom-in-95 duration-200">
           <div className="flex justify-between items-center mb-2 px-1">
             <span className="text-xxs font-black uppercase text-slate-400">
               Select Icon

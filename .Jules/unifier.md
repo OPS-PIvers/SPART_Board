@@ -33,3 +33,18 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## 2026-02-08 - Z-Index Standardization
+
+**Drift:** Discovered multiple hardcoded z-index values (e.g., `z-[60]`, `z-[9999]`, `z-[10000]`) across components, creating inconsistent stacking contexts and potential visual bugs (e.g., toasts appearing below modals).
+
+**Fix:** Standardized z-indices by:
+1.  Updating `config/zIndex.ts` with new semantic layers:
+    -   `stickerControl: 50`
+    -   `widgetResize: 60`
+    -   `dropdown: 100`
+    -   `overlay: 9910`
+    -   `modalNested: 10100`
+    -   `modalDeep: 10200`
+2.  Updating `tailwind.config.js` to expose these as utility classes.
+3.  Refactoring 8 components (`DraggableWindow`, `SeatingChartWidget`, `DraggableSticker`, `IconPicker`, `DrawingWidget`, `AdminSettings`, `DashboardView`, `FeaturePermissionsManager`, `BackgroundManager`) to use the new `z-*` utility classes.
