@@ -39,12 +39,13 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 **Drift:** Discovered multiple hardcoded z-index values (e.g., `z-[60]`, `z-[9999]`, `z-[10000]`) across components, creating inconsistent stacking contexts and potential visual bugs (e.g., toasts appearing below modals).
 
 **Fix:** Standardized z-indices by:
+
 1.  Updating `config/zIndex.ts` with new semantic layers:
-    -   `stickerControl: 50`
-    -   `widgetResize: 60`
-    -   `dropdown: 100`
-    -   `overlay: 9910`
-    -   `modalNested: 10100`
-    -   `modalDeep: 10200`
+    - `stickerControl: 50`
+    - `widgetResize: 60`
+    - `dropdown: 100`
+    - `overlay: 9910`
+    - `modalNested: 10100`
+    - `modalDeep: 10200`
 2.  Updating `tailwind.config.js` to expose these as utility classes.
 3.  Refactoring 8 components (`DraggableWindow`, `SeatingChartWidget`, `DraggableSticker`, `IconPicker`, `DrawingWidget`, `AdminSettings`, `DashboardView`, `FeaturePermissionsManager`, `BackgroundManager`) to use the new `z-*` utility classes.
