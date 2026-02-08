@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScoreboardItem } from './ScoreboardItem';
 import { ScoreboardTeam } from '../../types';
 
@@ -12,6 +12,10 @@ describe('ScoreboardItem', () => {
   };
 
   const mockOnUpdateScore = vi.fn();
+
+  beforeEach(() => {
+    mockOnUpdateScore.mockClear();
+  });
 
   it('renders team name and score', () => {
     render(
@@ -44,7 +48,7 @@ describe('ScoreboardItem', () => {
     expect(mockOnUpdateScore).toHaveBeenCalledWith('team-1', -1);
   });
 
-  it('renders correctly with unknown color', () => {
+  it('applies fallback styles for unknown color', () => {
     const unknownColorTeam = { ...mockTeam, color: 'bg-unknown-500' };
     render(
       <ScoreboardItem
@@ -52,10 +56,12 @@ describe('ScoreboardItem', () => {
         onUpdateScore={mockOnUpdateScore}
       />
     );
-    expect(screen.getByText('Alpha')).toBeInTheDocument();
+    const teamName = screen.getByText('Alpha');
+    expect(teamName).toBeInTheDocument();
+    expect(teamName).toHaveClass('text-slate-600');
   });
 
-  it('renders correctly with no color provided', () => {
+  it('applies default styles when no color is provided', () => {
     const noColorTeam: ScoreboardTeam = {
       id: 'team-3',
       name: 'Delta',
@@ -66,6 +72,8 @@ describe('ScoreboardItem', () => {
     render(
       <ScoreboardItem team={noColorTeam} onUpdateScore={mockOnUpdateScore} />
     );
-    expect(screen.getByText('Delta')).toBeInTheDocument();
+    const teamName = screen.getByText('Delta');
+    expect(teamName).toBeInTheDocument();
+    expect(teamName).toHaveClass('text-blue-600');
   });
 });
