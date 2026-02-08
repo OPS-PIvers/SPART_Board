@@ -394,13 +394,6 @@ export interface CatalystRoutine {
   }[];
 }
 
-export interface CatalystGlobalConfig {
-  customCategories?: CatalystCategory[];
-  customRoutines?: CatalystRoutine[];
-  removedCategoryIds?: string[];
-  removedRoutineIds?: string[];
-}
-
 export interface CatalystConfig {
   activeCategory: string | null;
   activeStrategyId: string | null;
@@ -409,6 +402,11 @@ export interface CatalystConfig {
   removedCategoryIds?: string[];
   removedRoutineIds?: string[];
 }
+
+export type CatalystGlobalConfig = Omit<
+  CatalystConfig,
+  'activeCategory' | 'activeStrategyId'
+>;
 
 export interface CatalystInstructionConfig {
   routineId: string;
