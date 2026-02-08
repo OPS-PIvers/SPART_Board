@@ -39,6 +39,13 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string }[] = [
   { type: 'lunchCount', label: 'Lunch Count' },
 ];
 
+const FONTS = [
+  { id: 'global', label: 'Inherit', icon: 'G' },
+  { id: 'font-mono', label: 'Digital', icon: '01' },
+  { id: 'font-sans', label: 'Modern', icon: 'Aa' },
+  { id: 'font-handwritten', label: 'School', icon: '✏️' },
+];
+
 export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -49,16 +56,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [tempItem, setTempItem] = useState<ScheduleItem | null>(null);
 
-  const fonts = [
-    { id: 'global', label: 'Inherit', icon: 'G' },
-    { id: 'font-mono', label: 'Digital', icon: '01' },
-    { id: 'font-sans', label: 'Modern', icon: 'Aa' },
-    { id: 'font-handwritten', label: 'School', icon: '✏️' },
-  ];
-
   const handleStartEdit = (index: number) => {
     setEditingIndex(index);
-    setTempItem({ ...(items[index] ?? { time: '', task: '' }) });
+    setTempItem({ ...items[index] });
   };
 
   const handleStartAdd = () => {
@@ -278,7 +278,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-2">
           {items.map((item, i) => (
             <div
-              key={i}
+              key={item.id || i}
               className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm group"
             >
               <div className="flex flex-col items-center gap-0.5 text-slate-300">
@@ -287,14 +287,14 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   disabled={i === 0}
                   className="hover:text-slate-600 disabled:opacity-30"
                 >
-                  <GripVertical className="w-3 h-3 rotate-90" />
+                  <GripVertical className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => handleMove(i, 'down')}
                   disabled={i === items.length - 1}
                   className="hover:text-slate-600 disabled:opacity-30"
                 >
-                  <GripVertical className="w-3 h-3 rotate-90" />
+                  <GripVertical className="w-3 h-3" />
                 </button>
               </div>
               <div className="flex-1 min-w-0">
@@ -351,7 +351,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           <Type className="w-3 h-3" /> Typography
         </label>
         <div className="grid grid-cols-4 gap-2">
-          {fonts.map((f) => (
+          {FONTS.map((f) => (
             <button
               key={f.id}
               onClick={() =>
