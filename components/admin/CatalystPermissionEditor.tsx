@@ -105,10 +105,10 @@ export const CatalystPermissionEditor: React.FC<
   useEffect(() => {
     // Only update if config reference changed
     if (config !== prevConfigRef.current) {
-      prevConfigRef.current = config;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Legitimate use: syncing external Firestore updates
       setCategories(mergeCatalystCategories(config ?? {}));
       setRoutines(mergeCatalystRoutines(config ?? {}));
+      prevConfigRef.current = config;
     }
   }, [config]);
 
