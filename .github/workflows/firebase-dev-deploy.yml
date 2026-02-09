@@ -27,10 +27,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm run install:ci
 
       - name: Run type check
-        run: pnpm run type-check
+        run: pnpm run type-check:all
 
       - name: Run linter
         run: pnpm run lint
@@ -38,8 +38,8 @@ jobs:
       - name: Check code formatting
         run: pnpm run format:check
 
-      - name: Build project
-        run: pnpm run build
+      - name: Build all
+        run: pnpm run build:all
         env:
           # Firebase config - stored as GitHub Secrets
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
