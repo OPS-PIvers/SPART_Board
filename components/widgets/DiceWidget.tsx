@@ -45,7 +45,7 @@ const DiceFace: React.FC<{
   value: number;
   isRolling: boolean;
   size?: string;
-}> = ({ value, isRolling, size = 'min(35cqw, 45cqh)' }) => {
+}> = ({ value, isRolling, size = 'min(35cqmin)' }) => {
   const dotPositions: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -138,10 +138,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               isRolling={isRolling}
               size={
                 diceCount === 1
-                  ? 'min(60cqw, 75cqh)'
+                  ? 'min(60cqmin)'
                   : diceCount === 2
-                    ? 'min(40cqw, 55cqh)'
-                    : 'min(28cqw, 40cqh)'
+                    ? 'min(40cqmin)'
+                    : 'min(28cqmin)'
               }
             />
           ))}

@@ -26,13 +26,13 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="flex flex-col items-center justify-center min-w-[min(60px,25cqw)] py-1 border-r border-rose-200 pr-3 shrink-0">
                   <span
                     className="uppercase text-rose-400 font-black"
-                    style={{ fontSize: 'min(3cqw, 2.5cqh)' }}
+                    style={{ fontSize: 'min(2.5cqmin)' }}
                   >
                     Day
                   </span>
                   <span
                     className="text-rose-600 font-black"
-                    style={{ fontSize: 'min(5cqw, 4.5cqh)' }}
+                    style={{ fontSize: 'min(4.5cqmin)' }}
                   >
                     {event.date}
                   </span>
@@ -40,7 +40,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="flex items-center min-w-0">
                   <span
                     className="text-slate-700 font-bold leading-tight truncate"
-                    style={{ fontSize: 'min(4.5cqw, 4cqh)' }}
+                    style={{ fontSize: 'min(4cqmin)' }}
                   >
                     {event.title}
                   </span>

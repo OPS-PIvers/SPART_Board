@@ -595,17 +595,17 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     </div>
                     <div
                       className="flex flex-col w-full"
-                      style={{ gap: 'min(4px, 1cqh)' }}
+                      style={{ gap: 'min(4px, 1cqmin)' }}
                     >
                       <div
                         className="font-black text-slate-800 uppercase leading-tight tracking-wide"
-                        style={{ fontSize: 'min(11px, 2.8cqw, 3.5cqh)' }}
+                        style={{ fontSize: 'min(11px, 2.8cqmin)' }}
                       >
                         {r.name}
                       </div>
                       <div
                         className="font-bold text-slate-400 uppercase tracking-wider"
-                        style={{ fontSize: 'min(9px, 2.2cqw, 2.8cqh)' }}
+                        style={{ fontSize: 'min(9px, 2.2cqmin)' }}
                       >
                         {r.grades}
                       </div>

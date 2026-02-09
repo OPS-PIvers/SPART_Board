@@ -346,32 +346,32 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               <div
                 className="flex-1 overflow-y-auto custom-scrollbar flex flex-col"
                 style={{
-                  gap: 'min(8px, 2cqw, 2.5cqh)',
-                  padding: 'min(12px, 2.5cqw, 4cqh)',
+                  gap: 'min(8px, 2cqmin)',
+                  padding: 'min(12px, 2.5cqmin)',
                 }}
               >
                 {rosters.length === 0 && (
                   <div
                     className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40"
-                    style={{ gap: 'min(12px, 3cqw, 4cqh)' }}
+                    style={{ gap: 'min(12px, 3cqmin)' }}
                   >
                     <Star
                       className="stroke-slate-300"
                       style={{
-                        width: 'min(40px, 10cqw, 12cqh)',
-                        height: 'min(40px, 10cqw, 12cqh)',
+                        width: 'min(40px, 10cqmin)',
+                        height: 'min(40px, 10cqmin)',
                       }}
                     />
                     <div className="text-center">
                       <p
                         className="font-black uppercase tracking-widest"
-                        style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                        style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                       >
                         No classes yet.
                       </p>
                       <p
                         className="font-bold"
-                        style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                        style={{ fontSize: 'min(12px, 3cqmin)' }}
                       >
                         Create one to get started!
                       </p>
@@ -382,11 +382,11 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                   <div
                     key={r.id}
                     className={`border rounded-2xl bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-500/5' : 'border-slate-200'}`}
-                    style={{ padding: 'min(14px, 3cqw, 4cqh)' }}
+                    style={{ padding: 'min(14px, 3cqmin)' }}
                   >
                     <div
                       className="flex items-center flex-1 min-w-0"
-                      style={{ gap: 'min(12px, 3cqw, 4cqh)' }}
+                      style={{ gap: 'min(12px, 3cqmin)' }}
                     >
                       <button
                         onClick={() =>
@@ -404,8 +404,8 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                             activeRosterId === r.id ? 'currentColor' : 'none'
                           }
                           style={{
-                            width: 'min(24px, 5cqw, 7cqh)',
-                            height: 'min(24px, 5cqw, 7cqh)',
+                            width: 'min(24px, 5cqmin)',
+                            height: 'min(24px, 5cqmin)',
                           }}
                           strokeWidth={2.5}
                         />
@@ -413,13 +413,13 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                       <div className="min-w-0 flex-1">
                         <div
                           className="text-slate-800 font-black truncate uppercase tracking-tight"
-                          style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                          style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                         >
                           {r.name}
                         </div>
                         <div
                           className="text-slate-400 font-bold uppercase tracking-widest"
-                          style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                          style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                         >
                           {r.students.length} Students
                         </div>
@@ -427,7 +427,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                     </div>
                     <div
                       className="flex"
-                      style={{ gap: 'min(4px, 1cqw, 1.5cqh)' }}
+                      style={{ gap: 'min(4px, 1cqmin)' }}
                     >
                       <button
                         onClick={() => {
@@ -435,26 +435,26 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                           setView('edit');
                         }}
                         className="hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors"
-                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
+                        style={{ padding: 'min(8px, 2cqmin)' }}
                         title="Edit Class"
                       >
                         <Edit2
                           style={{
-                            width: 'min(18px, 4cqw, 5.5cqh)',
-                            height: 'min(18px, 4cqw, 5.5cqh)',
+                            width: 'min(18px, 4cqmin)',
+                            height: 'min(18px, 4cqmin)',
                           }}
                         />
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(r.id)}
                         className="hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
-                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
+                        style={{ padding: 'min(8px, 2cqmin)' }}
                         title="Delete Class"
                       >
                         <Trash2
                           style={{
-                            width: 'min(18px, 4cqw, 5.5cqh)',
-                            height: 'min(18px, 4cqw, 5.5cqh)',
+                            width: 'min(18px, 4cqmin)',
+                            height: 'min(18px, 4cqmin)',
                           }}
                         />
                       </button>
@@ -513,18 +513,18 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                       <div
                         key={cls.sourcedId}
                         className="border border-slate-200 rounded-2xl bg-white flex justify-between items-center hover:shadow-md transition-all hover:border-blue-200 group"
-                        style={{ padding: 'min(16px, 3.5cqw, 5cqh)' }}
+                        style={{ padding: 'min(16px, 3.5cqmin)' }}
                       >
                         <div className="min-w-0 flex-1">
                           <div
                             className="text-slate-800 font-black uppercase tracking-tight truncate"
-                            style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                            style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                           >
                             {cls.title}
                           </div>
                           <div
                             className="text-slate-400 font-bold uppercase tracking-widest"
-                            style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                            style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                           >
                             {classLinkStudents[cls.sourcedId]?.length || 0}{' '}
                             Students
@@ -535,8 +535,8 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                           className="bg-blue-50 text-blue-600 rounded-xl font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:shadow-md"
                           style={{
                             padding:
-                              'min(8px, 2cqw, 2.5cqh) min(16px, 3.5cqw, 5cqh)',
-                            fontSize: 'min(12px, 3cqw, 4cqh)',
+                              'min(8px, 2cqmin) min(16px, 3.5cqmin)',
+                            fontSize: 'min(12px, 3cqmin)',
                           }}
                         >
                           Import
