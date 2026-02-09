@@ -403,6 +403,11 @@ export interface CatalystConfig {
   removedRoutineIds?: string[];
 }
 
+export type CatalystGlobalConfig = Omit<
+  CatalystConfig,
+  'activeCategory' | 'activeStrategyId'
+>;
+
 export interface CatalystInstructionConfig {
   routineId: string;
   stepIndex: number;
