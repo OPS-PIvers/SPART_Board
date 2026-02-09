@@ -20,12 +20,16 @@ export const RandomFlash: React.FC<RandomFlashProps> = ({
 
   return (
     <div
-      className={`text-center font-bold px-4 transition-all duration-300 w-full flex items-center justify-center font-${globalStyle.fontFamily} ${
+      className={`text-center font-bold transition-all duration-300 w-full flex items-center justify-center font-${globalStyle.fontFamily} ${
         isSpinning
           ? 'scale-90 opacity-30 grayscale'
           : 'scale-100 text-brand-blue-primary drop-shadow-xl'
       }`}
-      style={{ fontSize: fontStyle, height: '100%' }}
+      style={{
+        fontSize: fontStyle,
+        height: '100%',
+        padding: 'min(16px, 3cqmin)',
+      }}
     >
       <span className="max-w-full break-words leading-tight uppercase">
         {(displayResult as string) ?? 'Ready?'}

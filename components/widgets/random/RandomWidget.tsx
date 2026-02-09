@@ -351,7 +351,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const renderSinglePick = () => {
-    const resFontSize = '15cqmin'; // Standardized size
+    const resFontSize = '30cqmin'; // Hero text - fill available space
 
     if (visualStyle === 'wheel' && students.length > 0) {
       const wheelSize = Math.min(widget.w * 0.8, widget.h * 0.6);

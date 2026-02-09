@@ -22,43 +22,44 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
     return (
       <button
         onClick={() => onToggle(index)}
-        className={`w-full flex items-center rounded-2xl border transition-all ${
+        className={`flex-1 w-full flex items-center rounded-2xl border transition-all ${
           item.done
             ? 'bg-slate-100 border-slate-200 opacity-60'
             : 'bg-white border-slate-200 shadow-sm'
         }`}
         style={{
-          gap: 'min(12px, 3cqw, 4cqh)',
-          padding: 'min(12px, 3cqw, 4cqh)',
+          gap: 'min(12px, 2.5cqmin)',
+          padding: 'min(12px, 2.5cqmin)',
+          minHeight: 0,
         }}
       >
         {item.done ? (
           <CheckCircle2
             className="text-green-500 shrink-0"
             style={{
-              width: 'min(24px, 6cqw, 8cqh)',
-              height: 'min(24px, 6cqw, 8cqh)',
+              width: 'min(32px, 8cqmin)',
+              height: 'min(32px, 8cqmin)',
             }}
           />
         ) : (
           <Circle
             className="text-indigo-300 shrink-0"
             style={{
-              width: 'min(24px, 6cqw, 8cqh)',
-              height: 'min(24px, 6cqw, 8cqh)',
+              width: 'min(32px, 8cqmin)',
+              height: 'min(32px, 8cqmin)',
             }}
           />
         )}
-        <div className="flex flex-col items-start min-w-0">
+        <div className="flex flex-col items-start justify-center min-w-0 flex-1">
           <span
             className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-            style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+            style={{ fontSize: 'min(16px, 5.5cqmin)' }}
           >
             {item.startTime ?? item.time ?? ''}
           </span>
           <span
             className={`font-bold leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-            style={{ fontSize: 'min(18px, 4.5cqw, 7cqh)' }}
+            style={{ fontSize: 'min(24px, 8cqmin)' }}
           >
             {item.task}
           </span>
@@ -192,11 +193,11 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className={`h-full w-full flex flex-col overflow-hidden ${getFontClass()}`}
-          style={{ padding: 'min(16px, 3.5cqw, 5cqh)' }}
+          style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div
             className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
-            style={{ gap: 'min(12px, 2.5cqw, 4cqh)' }}
+            style={{ gap: 'min(10px, 2cqmin)' }}
           >
             {items.map((item: ScheduleItem, i: number) => (
               <ScheduleRow

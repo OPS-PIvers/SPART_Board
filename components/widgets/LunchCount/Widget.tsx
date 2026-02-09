@@ -246,15 +246,15 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           >
             {/* Top Grid: 3 Zones */}
             <div
-              className="grid grid-cols-3 shrink-0"
-              style={{ gap: 'min(10px, 2cqmin)' }}
+              className="grid grid-cols-3 flex-1"
+              style={{ gap: 'min(10px, 2cqmin)', minHeight: 0 }}
             >
               {/* Hot Lunch Drop Zone */}
               <DroppableZone
                 id="hot"
                 data-testid="hot-zone"
                 className="bg-brand-red-lighter/10 border-2 border-dashed border-brand-red-lighter rounded-2xl flex flex-col transition-all group"
-                style={{ padding: 'min(10px, 2cqmin)', minHeight: '15cqmin' }}
+                style={{ padding: 'min(10px, 2cqmin)' }}
                 activeClassName="border-solid border-brand-red-primary bg-brand-red-lighter/30 scale-[1.02]"
               >
                 <div
@@ -324,7 +324,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               <DroppableZone
                 id="bento"
                 className="bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl flex flex-col transition-all group"
-                style={{ padding: 'min(10px, 2cqmin)', minHeight: '15cqmin' }}
+                style={{ padding: 'min(10px, 2cqmin)' }}
                 activeClassName="border-solid border-emerald-500 bg-emerald-100/50 scale-[1.02]"
               >
                 <div
@@ -394,7 +394,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               <DroppableZone
                 id="home"
                 className="bg-brand-blue-lighter/20 border-2 border-dashed border-brand-blue-lighter rounded-2xl flex flex-col transition-all group"
-                style={{ padding: 'min(10px, 2cqmin)', minHeight: '15cqmin' }}
+                style={{ padding: 'min(10px, 2cqmin)' }}
                 activeClassName="border-solid border-brand-blue-primary bg-brand-blue-lighter/40 scale-[1.02]"
               >
                 <div
