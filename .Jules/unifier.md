@@ -72,3 +72,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Multiple widgets and admin panels used hardcoded `label` + `input[type="checkbox"]` patterns for toggles, with inconsistent styling, focus states, and sizing.
 **Fix:** Refactored all remaining instances to use the shared `Toggle` component. Standardized on `md` size for dashboard widgets and `xs` or `sm` for high-density admin panels.
+
+## 2026-02-09 - Standardize Bloom's Resource Styles
+
+**Drift:** `InstructionalRoutinesWidget` was generating HTML strings with hardcoded inline styles (`color: #2d3f89`, `font-weight: 900`, `color: #1e293b`) for Bloom's Taxonomy resources instead of using design system tokens.
+**Fix:** Replaced inline styles with standard Tailwind utility classes (`text-brand-blue-primary`, `font-black`, `text-slate-800`, `text-slate-600`) to enforce design system consistency and eliminate "snowflakes".
