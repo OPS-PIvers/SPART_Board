@@ -207,7 +207,12 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
         >
-          <div className="flex-1 overflow-y-auto py-3 px-4 custom-scrollbar">
+          <div
+            className="flex-1 overflow-y-auto custom-scrollbar"
+            style={{
+              padding: 'min(12px, 2.5cqw, 4cqh) min(16px, 3.5cqw, 5cqh)',
+            }}
+          >
             <ul
               style={{ gap: `${baseFontSize / 3}px` }}
               className="flex flex-col"
@@ -236,12 +241,27 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       footer={
-        <div className="px-4 pb-3">
+        <div
+          style={{
+            padding: '0 min(16px, 3.5cqw, 5cqh) min(12px, 2.5cqw, 4cqh)',
+          }}
+        >
           <button
             onClick={resetToday}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 shadow-sm rounded-xl text-[min(11px,3cqmin)] font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95 shadow-indigo-500/5"
+            className="w-full flex items-center justify-center bg-white border border-slate-200 shadow-sm rounded-xl font-black text-indigo-600 uppercase tracking-wider hover:bg-indigo-50 transition-all active:scale-95 shadow-indigo-500/5"
+            style={{
+              gap: 'min(8px, 2cqw, 2.5cqh)',
+              padding: 'min(10px, 2.5cqw, 3cqh)',
+              fontSize: 'min(11px, 2.8cqw, 3.5cqh)',
+            }}
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Reset Checks
+            <RefreshCw
+              style={{
+                width: 'min(14px, 3.5cqw, 4cqh)',
+                height: 'min(14px, 3.5cqw, 4cqh)',
+              }}
+            />{' '}
+            Reset Checks
           </button>
         </div>
       }
