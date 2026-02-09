@@ -426,12 +426,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const selectedRoutine = ROUTINES.find((r) => r.id === selectedRoutineId);
 
-  // Mathematical Scaling
-  const dynamicFontSize = useMemo(() => {
+  // Mathematical Scaling (Preferred values for CSS Container Queries)
+  const scalingStyles = useMemo(() => {
     if (!selectedRoutineId) {
       // Library view scaling
-      const baseSize = Math.min(widget.w / 24, widget.h / 24);
-      return Math.max(8, baseSize * scaleMultiplier);
+      return {
+        fontSize: `calc(clamp(10px, 4cqmin, 16px) * ${scaleMultiplier})`,
+      };
     }
 
     // Routine view scaling: Estimate total vertical "ems" to fit without scrolling
@@ -447,18 +448,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     const stepCount = customSteps.length || 1;
     totalVerticalEms += stepCount * 3;
 
-    const heightFactor = widget.h / totalVerticalEms;
-    const widthFactor = widget.w / 20; // Estimate horizontal capacity
+    const vScale = (100 / totalVerticalEms).toFixed(2);
+    const hScale = (100 / 20).toFixed(2); // Estimate horizontal capacity (20 chars)
 
-    const baseSize = Math.min(widthFactor, heightFactor);
-    return Math.max(8, baseSize * scaleMultiplier);
-  }, [
-    widget.w,
-    widget.h,
-    scaleMultiplier,
-    selectedRoutineId,
-    customSteps.length,
-  ]);
+    return {
+      fontSize: `calc(min(18px, ${vScale}cqh, ${hScale}cqw) * ${scaleMultiplier})`,
+      '--dynamic-font-size': `calc(min(18px, ${vScale}cqh, ${hScale}cqw) * ${scaleMultiplier})`,
+    } as React.CSSProperties;
+  }, [selectedRoutineId, customSteps.length, scaleMultiplier]);
 
   const displayedRoutines = useMemo(() => {
     const filtered = ROUTINES.filter((r) => {
@@ -572,7 +569,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         }
         content={
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar p-3 pb-4">
+          <div
+            className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar p-3 pb-4"
+            style={scalingStyles}
+          >
             {displayedRoutines.map((r) => {
               const Icon =
                 (Icons as unknown as Record<string, React.ElementType>)[
@@ -719,6 +719,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             className="flex items-center p-3"
             style={{
               gap: '0.75em',
+              ...scalingStyles,
             }}
           >
             <button
@@ -732,7 +733,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               title="Back to Library"
             >
               <ArrowLeft
-                size={dynamicFontSize * 1.5}
+                style={{
+                  width: '1.5em',
+                  height: '1.5em',
+                }}
                 className="text-slate-600"
               />
             </button>
@@ -749,7 +753,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter flex items-center gap-1 shrink-0"
                     style={{ fontSize: '0.5em' }}
                   >
-                    <Info size={dynamicFontSize * 0.8} /> Teacher Focus
+                    <Info style={{ width: '0.8em', height: '0.8em' }} /> Teacher
+                    Focus
                   </span>
                 )}
               </div>
@@ -768,7 +773,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 style={{ padding: '0.6em' }}
                 title="Clear all stickers from board"
               >
-                <Trash2 size={dynamicFontSize * 1.25} />
+                <Trash2 style={{ width: '1.25em', height: '1.25em' }} />
               </button>
               <div
                 className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
@@ -780,20 +785,27 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
 
           {selectedRoutine.id === 'blooms-analysis' && (
-            <div className="flex shrink-0 px-3 pb-3" style={{ gap: '0.75em' }}>
+            <div
+              className="flex shrink-0 px-3 pb-3"
+              style={{ gap: '0.75em', ...scalingStyles }}
+            >
               <button
                 onClick={() => launchBloomsResource('keyWords')}
                 className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center shadow-sm"
                 style={{ padding: '0.8em', gap: '0.5em', fontSize: '0.7em' }}
               >
-                <Icons.Key size={dynamicFontSize * 1.2} /> Key Words
+                <Icons.Key style={{ width: '1.2em', height: '1.2em' }} /> Key
+                Words
               </button>
               <button
                 onClick={() => launchBloomsResource('questionStarters')}
                 className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center shadow-sm"
                 style={{ padding: '0.8em', gap: '0.5em', fontSize: '0.7em' }}
               >
-                <Icons.MessageSquare size={dynamicFontSize * 1.2} /> Starters
+                <Icons.MessageSquare
+                  style={{ width: '1.2em', height: '1.2em' }}
+                />{' '}
+                Starters
               </button>
             </div>
           )}
@@ -802,9 +814,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="flex-1 overflow-y-auto custom-scrollbar p-4"
-          style={{
-            fontSize: `${dynamicFontSize}px`,
-          }}
+          style={scalingStyles}
         >
           <div
             className={`
@@ -819,21 +829,20 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     step={step}
                     index={i}
                     structure={structure}
-                    dynamicFontSize={dynamicFontSize}
                     onDragStart={onDragStart}
                     onStepClick={handleStepClick}
                     onAddWidget={(type, config) => addWidget(type, { config })}
                   />
                   {structure === 'cycle' && i < customSteps.length - 1 && (
                     <div className="flex justify-center -my-2 text-slate-300">
-                      <ArrowDown size={dynamicFontSize * 1.5} />
+                      <ArrowDown style={{ width: '1.5em', height: '1.5em' }} />
                     </div>
                   )}
                   {structure === 'cycle' && i === customSteps.length - 1 && (
                     <div className="flex justify-center mt-2">
                       <div className="flex flex-col items-center gap-1 text-blue-500/50">
                         <RefreshCw
-                          size={dynamicFontSize * 1.5}
+                          style={{ width: '1.5em', height: '1.5em' }}
                           className="animate-spin-slow"
                         />
                         <span

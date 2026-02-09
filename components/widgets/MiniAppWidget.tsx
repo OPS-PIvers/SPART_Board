@@ -104,13 +104,13 @@ const SortableItem: React.FC<SortableItemProps> = ({
       <div className="flex-1 min-w-0">
         <h4
           className="text-slate-700 font-bold truncate"
-          style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+          style={{ fontSize: 'clamp(12px, 3.5cqw, 14px)' }}
         >
           {app.title}
         </h4>
         <div
           className="text-slate-500 font-mono"
-          style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+          style={{ fontSize: 'clamp(9px, 2.5cqw, 10px)' }}
         >
           {(app.html.length / 1024).toFixed(1)} KB
         </div>
@@ -572,41 +572,41 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       header={
         <div
           className="border-b border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0"
-          style={{ padding: 'min(20px, 4cqw, 6cqh)' }}
+          style={{ padding: 'clamp(12px, 4cqw, 20px)' }}
         >
           <div>
             <h2
               className="font-black text-slate-800 tracking-tight uppercase"
-              style={{ fontSize: 'min(18px, 4.5cqw, 6cqh)' }}
+              style={{ fontSize: 'clamp(14px, 4.5cqw, 18px)' }}
             >
               App Library
             </h2>
             <div
               className="flex items-center"
               style={{
-                gap: 'min(12px, 3cqw, 4cqh)',
-                marginTop: 'min(6px, 1.5cqh)',
+                gap: 'clamp(8px, 3cqw, 12px)',
+                marginTop: '4px',
               }}
             >
               <button
                 onClick={handleExport}
                 className="font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center transition-colors"
                 style={{
-                  fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
-                  gap: 'min(4px, 1cqw)',
+                  fontSize: 'clamp(9px, 2.5cqw, 10px)',
+                  gap: '4px',
                 }}
               >
                 <Download
                   style={{
-                    width: 'min(12px, 3cqw, 3.5cqh)',
-                    height: 'min(12px, 3cqw, 3.5cqh)',
+                    width: 'clamp(10px, 3cqw, 12px)',
+                    height: 'clamp(10px, 3cqw, 12px)',
                   }}
                 />{' '}
                 Export
               </button>
               <span
                 className="text-slate-200 font-bold"
-                style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                style={{ fontSize: 'clamp(9px, 2.5cqw, 10px)' }}
               >
                 •
               </span>
@@ -614,14 +614,14 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 onClick={() => fileInputRef.current?.click()}
                 className="font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center transition-colors"
                 style={{
-                  fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
-                  gap: 'min(4px, 1cqw)',
+                  fontSize: 'clamp(9px, 2.5cqw, 10px)',
+                  gap: '4px',
                 }}
               >
                 <Upload
                   style={{
-                    width: 'min(12px, 3cqw, 3.5cqh)',
-                    height: 'min(12px, 3cqw, 3.5cqh)',
+                    width: 'clamp(10px, 3cqw, 12px)',
+                    height: 'clamp(10px, 3cqw, 12px)',
                   }}
                 />{' '}
                 Import
@@ -655,15 +655,15 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <p
                   className="font-black uppercase tracking-widest"
                   style={{
-                    fontSize: 'min(14px, 3.5cqw, 5cqh)',
-                    marginBottom: 'min(4px, 1cqh)',
+                    fontSize: 'clamp(12px, 3.5cqw, 14px)',
+                    marginBottom: '4px',
                   }}
                 >
                   No apps saved yet
                 </p>
                 <p
                   className="font-bold uppercase tracking-tighter"
-                  style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                  style={{ fontSize: 'clamp(10px, 3cqw, 12px)' }}
                 >
                   Import a file or create your first mini-app.
                 </p>
@@ -697,8 +697,8 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div
           className="bg-slate-50/50 border-t border-slate-200 font-black text-slate-400 text-center uppercase tracking-widest shrink-0"
           style={{
-            padding: 'min(12px, 2.5cqw, 4cqh)',
-            fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+            padding: '8px',
+            fontSize: 'clamp(9px, 2.5cqw, 10px)',
           }}
         >
           Drag to reorder • Runs in secure sandbox

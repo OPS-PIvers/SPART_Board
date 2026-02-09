@@ -346,32 +346,32 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
               <div
                 className="flex-1 overflow-y-auto custom-scrollbar flex flex-col"
                 style={{
-                  gap: 'min(8px, 2cqw, 2.5cqh)',
-                  padding: 'min(12px, 2.5cqw, 4cqh)',
+                  gap: 'clamp(6px, 2cqw, 8px)',
+                  padding: 'clamp(8px, 3cqw, 12px)',
                 }}
               >
                 {rosters.length === 0 && (
                   <div
                     className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40"
-                    style={{ gap: 'min(12px, 3cqw, 4cqh)' }}
+                    style={{ gap: '12px' }}
                   >
                     <Star
                       className="stroke-slate-300"
                       style={{
-                        width: 'min(40px, 10cqw, 12cqh)',
-                        height: 'min(40px, 10cqw, 12cqh)',
+                        width: 'clamp(32px, 10cqw, 48px)',
+                        height: 'clamp(32px, 10cqw, 48px)',
                       }}
                     />
                     <div className="text-center">
                       <p
                         className="font-black uppercase tracking-widest"
-                        style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                        style={{ fontSize: 'clamp(12px, 3.5cqw, 14px)' }}
                       >
                         No classes yet.
                       </p>
                       <p
                         className="font-bold"
-                        style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                        style={{ fontSize: 'clamp(10px, 3cqw, 12px)' }}
                       >
                         Create one to get started!
                       </p>
@@ -382,11 +382,11 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                   <div
                     key={r.id}
                     className={`border rounded-2xl bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-500/5' : 'border-slate-200'}`}
-                    style={{ padding: 'min(14px, 3cqw, 4cqh)' }}
+                    style={{ padding: 'clamp(10px, 3cqw, 14px)' }}
                   >
                     <div
                       className="flex items-center flex-1 min-w-0"
-                      style={{ gap: 'min(12px, 3cqw, 4cqh)' }}
+                      style={{ gap: 'clamp(8px, 3cqw, 12px)' }}
                     >
                       <button
                         onClick={() =>
@@ -404,8 +404,8 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                             activeRosterId === r.id ? 'currentColor' : 'none'
                           }
                           style={{
-                            width: 'min(24px, 5cqw, 7cqh)',
-                            height: 'min(24px, 5cqw, 7cqh)',
+                            width: 'clamp(20px, 5cqw, 24px)',
+                            height: 'clamp(20px, 5cqw, 24px)',
                           }}
                           strokeWidth={2.5}
                         />
@@ -413,48 +413,45 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                       <div className="min-w-0 flex-1">
                         <div
                           className="text-slate-800 font-black truncate uppercase tracking-tight"
-                          style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                          style={{ fontSize: 'clamp(12px, 3.5cqw, 14px)' }}
                         >
                           {r.name}
                         </div>
                         <div
                           className="text-slate-400 font-bold uppercase tracking-widest"
-                          style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                          style={{ fontSize: 'clamp(9px, 2.5cqw, 10px)' }}
                         >
                           {r.students.length} Students
                         </div>
                       </div>
                     </div>
-                    <div
-                      className="flex"
-                      style={{ gap: 'min(4px, 1cqw, 1.5cqh)' }}
-                    >
+                    <div className="flex" style={{ gap: '4px' }}>
                       <button
                         onClick={() => {
                           setEditingId(r.id);
                           setView('edit');
                         }}
                         className="hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors"
-                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
+                        style={{ padding: '8px' }}
                         title="Edit Class"
                       >
                         <Edit2
                           style={{
-                            width: 'min(18px, 4cqw, 5.5cqh)',
-                            height: 'min(18px, 4cqw, 5.5cqh)',
+                            width: 'clamp(16px, 4cqw, 18px)',
+                            height: 'clamp(16px, 4cqw, 18px)',
                           }}
                         />
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(r.id)}
                         className="hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
-                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
+                        style={{ padding: '8px' }}
                         title="Delete Class"
                       >
                         <Trash2
                           style={{
-                            width: 'min(18px, 4cqw, 5.5cqh)',
-                            height: 'min(18px, 4cqw, 5.5cqh)',
+                            width: 'clamp(16px, 4cqw, 18px)',
+                            height: 'clamp(16px, 4cqw, 18px)',
                           }}
                         />
                       </button>

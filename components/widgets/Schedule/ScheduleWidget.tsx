@@ -52,13 +52,13 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
         <div className="flex flex-col items-start min-w-0">
           <span
             className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-            style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+            style={{ fontSize: 'clamp(10px, 3.5cqw, 14px)' }}
           >
             {item.startTime ?? item.time ?? ''}
           </span>
           <span
             className={`font-bold leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-            style={{ fontSize: 'min(18px, 4.5cqw, 7cqh)' }}
+            style={{ fontSize: 'clamp(12px, 4.5cqw, 18px)' }}
           >
             {item.task}
           </span>

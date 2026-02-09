@@ -186,29 +186,29 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       header={
         <div
           className="border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-sm z-10 shrink-0"
-          style={{ padding: 'min(16px, 3.5cqw, 5cqh)' }}
+          style={{ padding: 'clamp(12px, 4cqw, 20px)' }}
         >
           <span
             className="text-slate-700 font-black uppercase tracking-widest"
-            style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+            style={{ fontSize: 'clamp(12px, 3.5cqw, 14px)' }}
           >
             Sticker Collection
           </span>
-          <div className="flex" style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}>
+          <div className="flex" style={{ gap: '8px' }}>
             <button
               onClick={clearAllStickers}
               className="flex items-center bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors uppercase font-black tracking-widest border border-red-100 shadow-sm"
               style={{
-                gap: 'min(4px, 1cqw)',
-                fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
-                padding: 'min(6px, 1.5cqw, 2cqh) min(12px, 2.5cqw, 4cqh)',
+                gap: '4px',
+                fontSize: 'clamp(9px, 2.5cqw, 10px)',
+                padding: '6px 12px',
               }}
               title="Clear all stickers from board"
             >
               <Eraser
                 style={{
-                  width: 'min(12px, 3cqw, 3.5cqh)',
-                  height: 'min(12px, 3cqw, 3.5cqh)',
+                  width: 'clamp(10px, 3cqw, 12px)',
+                  height: 'clamp(10px, 3cqw, 12px)',
                 }}
               />
               Clear
@@ -216,24 +216,24 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             <label
               className={`flex items-center bg-blue-600 text-white rounded-full font-black uppercase tracking-widest cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
               style={{
-                gap: 'min(8px, 2cqw, 2.5cqh)',
-                fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
-                padding: 'min(6px, 1.5cqw, 2cqh) min(16px, 3.5cqw, 5cqh)',
+                gap: '8px',
+                fontSize: 'clamp(9px, 2.5cqw, 10px)',
+                padding: '6px 16px',
               }}
             >
               {uploading ? (
                 <Loader2
                   className="animate-spin"
                   style={{
-                    width: 'min(12px, 3cqw, 3.5cqh)',
-                    height: 'min(12px, 3cqw, 3.5cqh)',
+                    width: 'clamp(10px, 3cqw, 12px)',
+                    height: 'clamp(10px, 3cqw, 12px)',
                   }}
                 />
               ) : (
                 <Upload
                   style={{
-                    width: 'min(12px, 3cqw, 3.5cqh)',
-                    height: 'min(12px, 3cqw, 3.5cqh)',
+                    width: 'clamp(10px, 3cqw, 12px)',
+                    height: 'clamp(10px, 3cqw, 12px)',
                   }}
                 />
               )}
@@ -269,13 +269,13 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="text-left">
                   <p
                     className="font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight"
-                    style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                    style={{ fontSize: 'clamp(12px, 3.5cqw, 14px)' }}
                   >
                     Drop or Paste Image
                   </p>
                   <p
                     className="font-bold text-slate-400 uppercase tracking-widest"
-                    style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                    style={{ fontSize: 'clamp(9px, 2.5cqw, 10px)' }}
                   >
                     to add custom stickers
                   </p>
@@ -289,9 +289,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             <h4
               className="font-black text-slate-400 uppercase tracking-widest"
               style={{
-                fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
-                marginBottom: 'min(16px, 3.5cqw, 5cqh)',
-                padding: '0 min(4px, 1cqw)',
+                fontSize: 'clamp(10px, 2.5cqw, 12px)',
+                marginBottom: '12px',
+                padding: '0 4px',
               }}
             >
               Essentials
@@ -323,9 +323,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
               <h4
                 className="font-black text-slate-400 uppercase tracking-widest"
                 style={{
-                  fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
-                  marginBottom: 'min(16px, 3.5cqw, 5cqh)',
-                  padding: '0 min(4px, 1cqw)',
+                  fontSize: 'clamp(10px, 2.5cqw, 12px)',
+                  marginBottom: '12px',
+                  padding: '0 4px',
                 }}
               >
                 My Collection
@@ -367,20 +367,20 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className="bg-slate-50/50 border-t border-slate-100 flex items-center shrink-0"
           style={{
-            padding: 'min(12px, 2.5cqw, 4cqh) min(16px, 3.5cqw, 5cqh)',
-            gap: 'min(12px, 3cqw, 4cqh)',
+            padding: '8px 12px',
+            gap: '8px',
           }}
         >
           <MousePointer2
             className="text-slate-400"
             style={{
-              width: 'min(12px, 3cqw, 3.5cqh)',
-              height: 'min(12px, 3cqw, 3.5cqh)',
+              width: 'clamp(10px, 2.5cqw, 12px)',
+              height: 'clamp(10px, 2.5cqw, 12px)',
             }}
           />
           <span
             className="font-black text-slate-400 uppercase tracking-widest text-center flex-1"
-            style={{ fontSize: 'min(9px, 2.2cqw, 2.8cqh)' }}
+            style={{ fontSize: 'clamp(8px, 2.2cqw, 9px)' }}
           >
             Drag stickers from library to the board
           </span>

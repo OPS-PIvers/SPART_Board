@@ -306,14 +306,14 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
           <div className="flex flex-col min-w-0">
             <span
               className="font-black uppercase tracking-widest text-slate-400 leading-none"
-              style={{ fontSize: 'min(9px, 2.2cqw, 2.5cqh)' }}
+              style={{ fontSize: 'clamp(8px, 2.2cqw, 9px)' }}
             >
               {mode === 'timer' ? 'Countdown' : 'Elapsed'}
             </span>
             <span
               className="font-black uppercase tracking-tight leading-none"
               style={{
-                fontSize: 'min(11px, 2.8cqw, 3cqh)',
+                fontSize: 'clamp(10px, 2.8cqw, 11px)',
                 marginTop: 'min(2px, 0.5cqh)',
               }}
             >

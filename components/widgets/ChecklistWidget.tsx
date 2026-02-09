@@ -8,7 +8,6 @@ import {
   InstructionalRoutinesConfig,
 } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
-import { useScaledFont } from '../../hooks/useScaledFont';
 import { RosterModeControl } from '../common/RosterModeControl';
 import {
   CheckSquare,
@@ -30,37 +29,34 @@ interface ChecklistRowProps {
 }
 
 const ChecklistRow = React.memo<ChecklistRowProps>(
-  ({ id, label, isCompleted, dynamicFontSize, onToggle }) => {
+  ({ id, label, isCompleted, onToggle }) => {
     return (
       <li
         onClick={() => onToggle(id)}
         className="group/item flex items-start gap-3 cursor-pointer select-none"
       >
-        <div
-          className="shrink-0 transition-transform active:scale-90 flex items-center justify-center"
-          style={{ height: `${dynamicFontSize * 1.2}px` }}
-        >
+        <div className="shrink-0 transition-transform active:scale-90 flex items-center justify-center h-[1.2em]">
           {isCompleted ? (
             <CheckSquare
               className="text-green-500 fill-green-50"
               style={{
-                width: `${dynamicFontSize}px`,
-                height: `${dynamicFontSize}px`,
+                width: 'min(24px, 1.1em)',
+                height: 'min(24px, 1.1em)',
               }}
             />
           ) : (
             <Square
               className="text-slate-300"
               style={{
-                width: `${dynamicFontSize}px`,
-                height: `${dynamicFontSize}px`,
+                width: 'min(24px, 1.1em)',
+                height: 'min(24px, 1.1em)',
               }}
             />
           )}
         </div>
         <span
           className={`font-medium leading-tight transition-all ${isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700'}`}
-          style={{ fontSize: `${dynamicFontSize}px` }}
+          style={{ fontSize: '1em' }}
         >
           {label}
         </span>
@@ -177,8 +173,6 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const baseFontSize = useScaledFont(widget.w, widget.h, 0.4) * scaleMultiplier;
-
   const hasContent = mode === 'manual' ? items.length > 0 : students.length > 0;
 
   if (!hasContent) {
@@ -206,6 +200,9 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
+          style={{
+            fontSize: `calc(clamp(12px, 4cqw, 24px) * ${scaleMultiplier})`,
+          }}
         >
           <div
             className="flex-1 overflow-y-auto custom-scrollbar"
@@ -213,10 +210,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
               padding: 'min(12px, 2.5cqw, 4cqh) min(16px, 3.5cqw, 5cqh)',
             }}
           >
-            <ul
-              style={{ gap: `${baseFontSize / 3}px` }}
-              className="flex flex-col"
-            >
+            <ul style={{ gap: '0.4em' }} className="flex flex-col">
               {(mode === 'manual' ? items : students).map((item) => {
                 const isManual = typeof item !== 'string';
                 const label = isManual ? item.text : item;
@@ -231,7 +225,6 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
                     id={id}
                     label={label}
                     isCompleted={isCompleted}
-                    dynamicFontSize={baseFontSize}
                     onToggle={toggleItem}
                   />
                 );
@@ -252,7 +245,7 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             style={{
               gap: 'min(8px, 2cqw, 2.5cqh)',
               padding: 'min(10px, 2.5cqw, 3cqh)',
-              fontSize: 'min(11px, 2.8cqw, 3.5cqh)',
+              fontSize: 'clamp(9px, 2.8cqw, 11px)',
             }}
           >
             <RefreshCw

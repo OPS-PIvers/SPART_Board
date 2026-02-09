@@ -125,7 +125,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
             <span
               className="font-black uppercase tracking-widest text-slate-400"
-              style={{ fontSize: 'min(12px, 2.8cqw, 4cqh)' }}
+              style={{ fontSize: 'clamp(10px, 2.8cqw, 12px)' }}
             >
               Recess Gear
             </span>
@@ -146,7 +146,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
             />
             <span
               className="font-black text-emerald-700 tracking-tight"
-              style={{ fontSize: 'min(12px, 2.8cqw, 4cqh)' }}
+              style={{ fontSize: 'clamp(10px, 2.8cqw, 12px)' }}
             >
               {Math.round(
                 (config.useFeelsLike && weatherConfig.feelsLike !== undefined
@@ -178,21 +178,21 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 <span
                   className="group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm shrink-0"
-                  style={{ fontSize: 'min(30px, 7cqw, 10cqh)' }}
+                  style={{ fontSize: 'clamp(20px, 7cqmin, 30px)' }}
                 >
                   {item.icon}
                 </span>
                 <div className="flex flex-col min-w-0">
                   <span
                     className="font-black text-slate-700 uppercase leading-tight tracking-tight"
-                    style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                    style={{ fontSize: 'clamp(12px, 3.5cqw, 14px)' }}
                   >
                     {item.label}
                   </span>
                   <span
                     className="font-bold text-slate-300 uppercase tracking-widest"
                     style={{
-                      fontSize: 'min(11px, 2.8cqw, 4cqh)',
+                      fontSize: 'clamp(9px, 2.8cqw, 11px)',
                       marginTop: 'min(4px, 0.8cqw)',
                     }}
                   >
@@ -209,7 +209,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           className="bg-slate-50/50 border-t border-slate-100 flex items-center justify-between font-black text-slate-400 uppercase tracking-widest shrink-0"
           style={{
             padding: 'min(10px, 2cqw, 3.5cqh) min(16px, 3cqw, 5cqh)',
-            fontSize: 'min(11px, 2.5cqw, 3.5cqh)',
+            fontSize: 'clamp(9px, 2.5cqw, 11px)',
           }}
         >
           <div
