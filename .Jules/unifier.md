@@ -23,6 +23,11 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 - **Action:** Standardized all widget settings to use the custom `Toggle` component.
 - **Reference:** PR #328 (Standardize Toggle Switches).
 
+### Floating Panels
+
+- **Action:** Standardized all floating menus and popovers using the shared `FloatingPanel` component.
+- **Reference:** PR #487 (Standardized Floating Panels).
+
 ### Scaling Logic
 
 - **Container Query System:** Widgets with `skipScaling: true` (most widgets) use CSS Container Queries. All front-face content sizing must use `min(Xpx, Ycqmin)` or `min(Xcqw, Ycqh)` patterns in inline `style={{}}` props.
@@ -40,7 +45,7 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 - In **widget content**, use `style={{ fontSize: 'min(10px, 2.5cqmin)' }}` instead of Tailwind text classes.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
 
-## 2026-02-07 - Floating Menus
+## 2026-02-07 - Floating Menus (Gap)
 
 **Drift:** Multiple widgets (`SeatingChart`, `TimeTool`, `DraggableSticker`) implemented their own "floating menu" or "popover" with inconsistent shadows, border radius, z-index, and animations.
 **Fix:** Created `components/common/FloatingPanel.tsx` to standardize the container styling (shadow-xl, rounded-2xl, z-popover) and animations. Refactored affected widgets to use this component.
@@ -62,3 +67,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
     - `modalDeepContent: 10210`
 2.  Updating `tailwind.config.js` to expose these as utility classes.
 3.  Refactoring components (`DraggableWindow`, `SeatingChartWidget`, `DraggableSticker`, `IconPicker`, `DrawingWidget`, `AdminSettings`, `DashboardView`, `FeaturePermissionsManager`, `BackgroundManager`, `GlobalPermissionsManager`) to use the new `z-*` utility classes.
+
+## 2026-02-09 - Toggle Standardization (Gap)
+
+**Drift:** Multiple widgets and admin panels used hardcoded `label` + `input[type="checkbox"]` patterns for toggles, with inconsistent styling, focus states, and sizing.
+**Fix:** Refactored all remaining instances to use the shared `Toggle` component. Standardized on `md` size for dashboard widgets and `xs` or `sm` for high-density admin panels.
