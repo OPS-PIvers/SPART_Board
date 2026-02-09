@@ -10,14 +10,7 @@ import {
   PollConfig,
 } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
-import {
-  Plus,
-  Trash2,
-  Users,
-  RefreshCw,
-  Trophy,
-  ChartBar,
-} from 'lucide-react';
+import { Plus, Trash2, Users, RefreshCw, Trophy, ChartBar } from 'lucide-react';
 import { Button } from '../common/Button';
 import { ScoreboardItem, TEAM_COLORS } from './ScoreboardItem';
 
