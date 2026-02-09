@@ -171,8 +171,8 @@ describe('QRSettings', () => {
     const widget = createMockWidget({ syncWithTextWidget: false });
     render(<QRSettings widget={widget} />);
 
-    const checkbox = screen.getByRole('checkbox');
-    fireEvent.click(checkbox);
+    const toggle = screen.getByRole('switch');
+    fireEvent.click(toggle);
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget-id', {
       config: expect.objectContaining({ syncWithTextWidget: true }) as unknown,
