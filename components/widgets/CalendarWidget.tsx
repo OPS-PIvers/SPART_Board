@@ -2,6 +2,7 @@ import React from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, CalendarConfig } from '../../types';
 import { Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { ScaledEmptyState } from '../common/ScaledEmptyState';
 
 import { WidgetLayout } from './WidgetLayout';
 
@@ -47,12 +48,12 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
             ))}
             {events.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-20 py-10">
-                <CalendarIcon className="w-12 h-12" />
-                <span className="text-xs font-black uppercase tracking-widest">
-                  No Events
-                </span>
-              </div>
+              <ScaledEmptyState
+                icon={CalendarIcon}
+                title="No Events"
+                subtitle="Flip to add calendar events."
+                className="opacity-40"
+              />
             )}
           </div>
         </div>

@@ -119,6 +119,8 @@ To add a new widget, follow these steps:
 2.  **Create Component (`components/widgets/<Name>Widget.tsx`):**
     - Implement the view and settings view.
     - Cast `widget.config` to your specific interface immediately.
+    - Use `WidgetLayout` component for standard header/content/footer structure.
+    - **All front-face content sizing must use container query units** (see Content Scaling below).
 
 3.  **Register in Registry (`components/widgets/WidgetRegistry.ts`):**
     - Add entries to `WIDGET_COMPONENTS` and `WIDGET_SETTINGS_COMPONENTS` (use lazy loading).
@@ -129,6 +131,31 @@ To add a new widget, follow these steps:
 
 5.  **Assign Grade Levels (`config/widgetGradeLevels.ts`):**
     - Add the widget's intended grade levels to `WIDGET_GRADE_LEVELS`.
+
+### Widget Content Scaling (CRITICAL)
+
+Widgets with `skipScaling: true` use CSS Container Queries for responsive sizing. All text, icons, spacing, and sizing in widget **front-face content** must use container query units via inline `style={{}}` props:
+
+```tsx
+// CORRECT - scales with widget size
+<span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>Label</span>
+<Icon style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }} />
+<div style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
+
+// WRONG - fixed sizes, won't scale when widget is resized
+<span className="text-sm">Label</span>
+<Icon className="w-12 h-12" />
+<Icon size={24} />
+```
+
+**Key rules:**
+
+- **Never** use hardcoded Tailwind text/icon size classes in widget content — they don't scale with widget resize.
+- **Settings panels (back-face):** Normal Tailwind classes are fine, no scaling needed.
+- **Empty/error states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`).
+- **Container query units:** `cqw` = 1% container width, `cqh` = 1% container height, `cqmin` = 1% of the smaller dimension.
+- **`renderCatalystIcon()`** accepts CSS string sizes (e.g. `'min(32px, 8cqmin)'`) for scaled rendering.
+- **Reference implementations:** `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx`.
 
 ---
 

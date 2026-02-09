@@ -23,20 +23,25 @@ export const isSafeIconUrl = (value: string): boolean => {
 };
 
 /**
- * Renders an icon consistently, supporting both Lucide icon names and safe URLs
+ * Renders an icon consistently, supporting both Lucide icon names and safe URLs.
+ *
+ * `size` accepts either a fixed pixel number (e.g. 24) or a CSS string for
+ * container-query scaling (e.g. `'min(8cqw, 8cqh)'`).
  */
 export const renderCatalystIcon = (
   iconName: string,
-  size: number = 24,
+  size: number | string = 24,
   className: string = ''
 ): React.ReactElement => {
+  const sizeStyle = { width: size, height: size };
+
   if (isSafeIconUrl(iconName)) {
     return (
       <img
         src={iconName}
         className={`object-contain ${className}`}
         alt=""
-        style={{ width: size, height: size }}
+        style={sizeStyle}
         referrerPolicy="no-referrer"
         loading="lazy"
       />
@@ -45,7 +50,7 @@ export const renderCatalystIcon = (
   const IconComp =
     (Icons as unknown as Record<string, React.ElementType>)[iconName] ??
     Icons.Zap;
-  return <IconComp size={size} className={className} />;
+  return <IconComp style={sizeStyle} className={className} />;
 };
 
 /**
