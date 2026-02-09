@@ -503,7 +503,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               {mode === 'shuffle' ? (
                 <div
                   className="flex-1 overflow-y-auto w-full custom-scrollbar flex flex-col"
-                  style={{ padding: 'min(4px, 1cqmin) 0', gap: 'min(4px, 1cqmin)' }}
+                  style={{
+                    padding: 'min(4px, 1cqmin) 0',
+                    gap: 'min(4px, 1cqmin)',
+                  }}
                 >
                   {(Array.isArray(displayResult) &&
                   (displayResult.length === 0 ||
@@ -658,9 +661,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div
-          className="w-full px-2 pb-2"
-        >
+        <div className="w-full px-2 pb-2">
           <Button
             variant="hero"
             size="lg"

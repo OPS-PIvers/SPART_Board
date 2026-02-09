@@ -378,10 +378,14 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="font-black uppercase tracking-widest text-slate-600 flex items-center"
             style={{ gap: 'min(4px, 1cqmin)', fontSize: 'min(12px, 4cqmin)' }}
           >
-            <MapPin style={{ width: '1.2em', height: '1.2em' }} /> {locationName}
+            <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
+            {locationName}
           </div>
 
-          <div className="flex items-center" style={{ gap: 'min(20px, 5cqmin)' }}>
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(20px, 5cqmin)' }}
+          >
             <div style={{ fontSize: 'clamp(60px, 18cqmin, 200px)' }}>
               {getIcon('1em')}
             </div>
@@ -398,7 +402,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               {showFeelsLike ? (
                 <div
                   className="font-black text-slate-600 uppercase tracking-wider"
-                  style={{ fontSize: 'min(14px, 5cqmin)', marginTop: 'min(4px, 1cqmin)' }}
+                  style={{
+                    fontSize: 'min(14px, 5cqmin)',
+                    marginTop: 'min(4px, 1cqmin)',
+                  }}
                 >
                   Actual {Math.round(temp)}°
                 </div>
@@ -406,7 +413,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 feelsLike !== undefined && (
                   <div
                     className="font-black text-slate-600 uppercase tracking-wider"
-                    style={{ fontSize: 'min(14px, 5cqmin)', marginTop: 'min(4px, 1cqmin)' }}
+                    style={{
+                      fontSize: 'min(14px, 5cqmin)',
+                      marginTop: 'min(4px, 1cqmin)',
+                    }}
                   >
                     Feels like {Math.round(feelsLike)}°
                   </div>
@@ -415,7 +425,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
           </div>
 
-          <div className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm" style={{ gap: 'min(12px, 3cqmin)', padding: 'min(12px, 2.5cqmin)' }}>
+          <div
+            className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
+            style={{ gap: 'min(12px, 3cqmin)', padding: 'min(12px, 2.5cqmin)' }}
+          >
             <div
               className="shrink-0 flex items-center justify-center overflow-hidden"
               style={{
@@ -437,7 +450,13 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
       footer={
         isAuto ? (
-          <div className="flex items-center w-full justify-start border-t border-slate-50" style={{ gap: 'min(8px, 2cqmin)', padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)' }}>
+          <div
+            className="flex items-center w-full justify-start border-t border-slate-50"
+            style={{
+              gap: 'min(8px, 2cqmin)',
+              padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
+            }}
+          >
             <button
               onClick={handleRefresh}
               disabled={isSyncing}
@@ -446,14 +465,28 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               title="Refresh Weather"
             >
               {isSyncing ? (
-                <Loader2 style={{ width: 'min(14px, 4cqmin)', height: 'min(14px, 4cqmin)' }} className="animate-spin" />
+                <Loader2
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                  className="animate-spin"
+                />
               ) : (
-                <RefreshCw style={{ width: 'min(14px, 4cqmin)', height: 'min(14px, 4cqmin)' }} />
+                <RefreshCw
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                />
               )}
             </button>
             <div
               className="text-slate-600 uppercase flex items-center font-bold"
-              style={{ gap: 'min(6px, 1.5cqmin)', fontSize: 'min(10px, 3.5cqmin)' }}
+              style={{
+                gap: 'min(6px, 1.5cqmin)',
+                fontSize: 'min(10px, 3.5cqmin)',
+              }}
             >
               <span>Last Sync</span>
               {lastSync && (

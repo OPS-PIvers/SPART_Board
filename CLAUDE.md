@@ -454,14 +454,14 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
 
 2. **Size elements by visual hierarchy** with appropriate `cqmin` values:
 
-   | Element Type | Recommended `cqmin` | Min px | Example |
-   |-------------|---------------------|--------|---------|
-   | Primary content (hero text/numbers) | 20-30cqmin | 20-32px | Temperature, Clock time |
-   | Secondary content (subheadings) | 5-8cqmin | 14-18px | Widget section labels |
-   | Tertiary content (metadata) | 3.5-5cqmin | 10-12px | Footer text, timestamps |
-   | Primary icons | 20-30cqmin | 48-80px | Weather icons |
-   | Decorative icons | 8-15cqmin | 16-48px | Section markers |
-   | Small icons | 4-6cqmin | 14-24px | Buttons, indicators |
+   | Element Type                        | Recommended `cqmin` | Min px  | Example                 |
+   | ----------------------------------- | ------------------- | ------- | ----------------------- |
+   | Primary content (hero text/numbers) | 20-30cqmin          | 20-32px | Temperature, Clock time |
+   | Secondary content (subheadings)     | 5-8cqmin            | 14-18px | Widget section labels   |
+   | Tertiary content (metadata)         | 3.5-5cqmin          | 10-12px | Footer text, timestamps |
+   | Primary icons                       | 20-30cqmin          | 48-80px | Weather icons           |
+   | Decorative icons                    | 8-15cqmin           | 16-48px | Section markers         |
+   | Small icons                         | 4-6cqmin            | 14-24px | Buttons, indicators     |
 
 3. **NEVER use hardcoded Tailwind text/size classes** in widget front-face content:
 
@@ -499,16 +499,17 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
 
 5. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
 
-5. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
+6. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
 
-6. **Container query unit reference:**
+7. **Container query unit reference:**
    - `cqmin` = 1% of the smaller dimension (width or height) - **USE THIS for almost everything**
    - `cqw` = 1% of container width - only use when you specifically need width-based scaling
    - `cqh` = 1% of container height - only use when you specifically need height-based scaling
    - `min(Xpx, Ycqmin)` **caps maximum size at Xpx** (text never exceeds X pixels - prevents blur on huge screens)
    - For unlimited scaling, use `Ycqmin` alone or `clamp(Xpx, Ycqmin, Zpx)` for min/max bounds
 
-7. **Common scaling formulas:**
+8. **Common scaling formulas:**
+
    ```tsx
    // Tiny labels (footer metadata) - cap at 10px
    style={{ fontSize: 'min(10px, 3.5cqmin)' }}
@@ -527,7 +528,7 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
    // OR for unlimited scaling: style={{ fontSize: '25cqmin' }}
    ```
 
-8. **For empty/error states**, use the shared `ScaledEmptyState` component:
+9. **For empty/error states**, use the shared `ScaledEmptyState` component:
 
    ```tsx
    import { ScaledEmptyState } from '../common/ScaledEmptyState';
@@ -539,12 +540,12 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
    />;
    ```
 
-6. **For Catalyst icon rendering**, `renderCatalystIcon()` accepts CSS string sizes:
+10. **For Catalyst icon rendering**, `renderCatalystIcon()` accepts CSS string sizes:
 
-   ```tsx
-   renderCatalystIcon(iconName, 'min(32px, 8cqmin)'); // Scaled
-   renderCatalystIcon(iconName, 32); // Fixed (for settings panels only)
-   ```
+    ```tsx
+    renderCatalystIcon(iconName, 'min(32px, 8cqmin)'); // Scaled
+    renderCatalystIcon(iconName, 32); // Fixed (for settings panels only)
+    ```
 
 **Reference implementations:** `WeatherWidget.tsx`, `RecessGearWidget.tsx`, `LunchCount/Widget.tsx`
 

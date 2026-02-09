@@ -6,6 +6,7 @@
 ## Problem Statement
 
 Widgets with `skipScaling: true` were not properly scaling to fill their container, resulting in:
+
 - Tiny text with large empty spaces
 - Inconsistent sizing across different widget aspect ratios
 - Poor use of available screen real estate
@@ -17,11 +18,13 @@ Widgets with `skipScaling: true` were not properly scaling to fill their contain
 `cqmin` represents 1% of the **smaller** container dimension (width or height), ensuring consistent scaling regardless of widget aspect ratio.
 
 ❌ **WRONG**:
+
 ```tsx
 style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
 ```
 
 ✅ **CORRECT**:
+
 ```tsx
 style={{ fontSize: 'min(14px, 5cqmin)' }}
 ```
@@ -30,19 +33,20 @@ style={{ fontSize: 'min(14px, 5cqmin)' }}
 
 **Important**: When using `min(Xpx, Ycqmin)`, the pixel value (`Xpx`) is a **maximum cap**, not a minimum. Text will never exceed `Xpx` even on huge containers. For primary content that should scale without limits, consider using `clamp()` or just `cqmin` alone.
 
-| Element Type | Recommended `cqmin` | Example Formula | Notes |
-|-------------|---------------------|-----------------|-------|
-| **Primary content** (hero text, main numbers) | 20-30cqmin | `clamp(24px, 25cqmin, 120px)` or `25cqmin` | Should scale aggressively to fill space |
-| **Secondary content** (subheadings, labels) | 5-8cqmin | `min(16px, 7cqmin)` | Readable at all sizes |
-| **Tertiary content** (metadata, small labels) | 3.5-5cqmin | `min(12px, 4.5cqmin)` | Compact but legible |
-| **Icons (decorative)** | 8-15cqmin | `min(48px, 12cqmin)` | Balance with text |
-| **Icons (primary)** | 20-30cqmin | `min(80px, 20cqmin)` | Visual anchors |
+| Element Type                                  | Recommended `cqmin` | Example Formula                            | Notes                                   |
+| --------------------------------------------- | ------------------- | ------------------------------------------ | --------------------------------------- |
+| **Primary content** (hero text, main numbers) | 20-30cqmin          | `clamp(24px, 25cqmin, 120px)` or `25cqmin` | Should scale aggressively to fill space |
+| **Secondary content** (subheadings, labels)   | 5-8cqmin            | `min(16px, 7cqmin)`                        | Readable at all sizes                   |
+| **Tertiary content** (metadata, small labels) | 3.5-5cqmin          | `min(12px, 4.5cqmin)`                      | Compact but legible                     |
+| **Icons (decorative)**                        | 8-15cqmin           | `min(48px, 12cqmin)`                       | Balance with text                       |
+| **Icons (primary)**                           | 20-30cqmin          | `min(80px, 20cqmin)`                       | Visual anchors                          |
 
 ### 3. Minimize Header/Footer Overhead
 
 Headers and footers should use **minimal space** to maximize content area:
 
 ✅ **GOOD** (compact header):
+
 ```tsx
 <div style={{ padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)' }}>
   <span style={{ fontSize: 'min(11px, 4cqmin)' }}>HEADER</span>
@@ -50,6 +54,7 @@ Headers and footers should use **minimal space** to maximize content area:
 ```
 
 ❌ **BAD** (bloated header):
+
 ```tsx
 <div className="p-6 gap-4">
   <span className="text-xs">HEADER</span>
@@ -61,17 +66,15 @@ Headers and footers should use **minimal space** to maximize content area:
 The most important content should **dominate** the widget:
 
 **Weather Widget** - Temperature should fill 40-50% of widget height:
+
 ```tsx
-<div style={{ fontSize: 'min(24px, 25cqmin)' }}>
-  {temp}°
-</div>
+<div style={{ fontSize: 'min(24px, 25cqmin)' }}>{temp}°</div>
 ```
 
 **Clock Widget** - Time should fill 30-40% of widget height:
+
 ```tsx
-<div style={{ fontSize: 'min(20px, 22cqmin)' }}>
-  {time}
-</div>
+<div style={{ fontSize: 'min(20px, 22cqmin)' }}>{time}</div>
 ```
 
 ### 5. Use `cqmin` for Spacing Too
@@ -79,11 +82,13 @@ The most important content should **dominate** the widget:
 All padding, gaps, and margins should scale:
 
 ❌ **WRONG**:
+
 ```tsx
 <div className="p-4 gap-3">
 ```
 
 ✅ **CORRECT**:
+
 ```tsx
 <div style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
 ```
@@ -152,7 +157,10 @@ style={{ padding: 'min(16px, 3.5cqmin)' }}
 <WidgetLayout
   header={<CompactHeader />}
   content={
-    <div className="flex-1 flex flex-col" style={{ gap: 'min(12px, 2.5cqmin)' }}>
+    <div
+      className="flex-1 flex flex-col"
+      style={{ gap: 'min(12px, 2.5cqmin)' }}
+    >
       {/* Content that scales to fill available space */}
     </div>
   }
@@ -165,11 +173,13 @@ style={{ padding: 'min(16px, 3.5cqmin)' }}
 Avoid `min-h-[140px]` or other fixed heights in widget content. Use `flex-1` and let content scale.
 
 ❌ **BAD**:
+
 ```tsx
 <div className="min-h-[140px]">
 ```
 
 ✅ **GOOD**:
+
 ```tsx
 <div className="flex-1" style={{ minHeight: '12cqmin' }}>
 ```
@@ -195,10 +205,18 @@ For grid layouts that need to reflow:
     </div>
   }
   content={
-    <div className="flex-1 overflow-auto" style={{ padding: 'min(12px, 2.5cqmin)' }}>
+    <div
+      className="flex-1 overflow-auto"
+      style={{ padding: 'min(12px, 2.5cqmin)' }}
+    >
       <div style={{ gap: 'min(8px, 2cqmin)' }}>
-        {items.map(item => (
-          <div style={{ fontSize: 'min(14px, 5.5cqmin)', padding: 'min(8px, 1.5cqmin)' }}>
+        {items.map((item) => (
+          <div
+            style={{
+              fontSize: 'min(14px, 5.5cqmin)',
+              padding: 'min(8px, 1.5cqmin)',
+            }}
+          >
             {item.text}
           </div>
         ))}
@@ -214,21 +232,18 @@ For grid layouts that need to reflow:
 <WidgetLayout
   padding="p-0"
   content={
-    <div className="flex flex-col items-center justify-center h-full" style={{ gap: 'min(16px, 4cqmin)', padding: 'min(16px, 3.5cqmin)' }}>
+    <div
+      className="flex flex-col items-center justify-center h-full"
+      style={{ gap: 'min(16px, 4cqmin)', padding: 'min(16px, 3.5cqmin)' }}
+    >
       {/* Small metadata */}
-      <div style={{ fontSize: 'min(12px, 4cqmin)' }}>
-        LOCATION
-      </div>
+      <div style={{ fontSize: 'min(12px, 4cqmin)' }}>LOCATION</div>
 
       {/* Hero content */}
-      <div style={{ fontSize: 'min(24px, 25cqmin)' }}>
-        72°
-      </div>
+      <div style={{ fontSize: 'min(24px, 25cqmin)' }}>72°</div>
 
       {/* Secondary info */}
-      <div style={{ fontSize: 'min(14px, 5.5cqmin)' }}>
-        Partly Cloudy
-      </div>
+      <div style={{ fontSize: 'min(14px, 5.5cqmin)' }}>Partly Cloudy</div>
     </div>
   }
 />
@@ -241,8 +256,11 @@ For grid layouts that need to reflow:
   padding="p-0"
   header={<CompactHeader />}
   content={
-    <div className="flex-1 grid grid-cols-3" style={{ gap: 'min(12px, 2.5cqmin)', padding: 'min(12px, 2.5cqmin)' }}>
-      {categories.map(cat => (
+    <div
+      className="flex-1 grid grid-cols-3"
+      style={{ gap: 'min(12px, 2.5cqmin)', padding: 'min(12px, 2.5cqmin)' }}
+    >
+      {categories.map((cat) => (
         <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
           <span style={{ fontSize: 'min(11px, 4.5cqmin)' }}>{cat.label}</span>
           <span style={{ fontSize: 'min(18px, 8cqmin)' }}>{cat.count}</span>
@@ -277,6 +295,7 @@ To fix an existing widget:
 ## Examples of Before/After
 
 ### Before (Too Conservative):
+
 ```tsx
 <div className="p-4 gap-3">
   <span className="text-xs">Label</span>
@@ -285,6 +304,7 @@ To fix an existing widget:
 ```
 
 ### After (Properly Scaled):
+
 ```tsx
 <div style={{ padding: 'min(16px, 3.5cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
   <span style={{ fontSize: 'min(11px, 4cqmin)' }}>Label</span>
@@ -295,6 +315,7 @@ To fix an existing widget:
 ## Reference: Actual cqmin Values
 
 For a **400x300px widget**:
+
 - `cqmin = 300px` (smaller dimension)
 - `1cqmin = 3px`
 - `5cqmin = 15px`
@@ -302,6 +323,7 @@ For a **400x300px widget**:
 - `25cqmin = 75px`
 
 For an **800x600px widget**:
+
 - `cqmin = 600px`
 - `1cqmin = 6px`
 - `5cqmin = 30px`
