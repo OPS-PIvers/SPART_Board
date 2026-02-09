@@ -32,6 +32,13 @@ const INTERACTIVE_ELEMENTS_SELECTOR =
 
 const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"]`;
 
+// Widgets that need continuous state updates for internal logic (e.g. specialized positioning)
+const POSITION_AWARE_WIDGETS: WidgetType[] = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
+
 interface DraggableWindowProps {
   widget: WidgetData;
   children: React.ReactNode;
@@ -209,6 +216,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       console.warn('Failed to set pointer capture:', _err);
     }
 
+    const isPositionAware = POSITION_AWARE_WIDGETS.includes(widget.type);
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       // Only process the same pointer that started the drag
       if (moveEvent.pointerId !== e.pointerId) return;
@@ -218,14 +227,32 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           Math.pow(moveEvent.clientY - initialMouseY, 2)
       );
 
-      updateWidget(widget.id, {
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY,
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      if (isPositionAware) {
+        updateWidget(widget.id, {
+          x: newX,
+          y: newY,
+        });
+      } else if (windowRef.current) {
+        // OPTIMIZATION: Update DOM directly to avoid re-renders during drag
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
       if (upEvent.pointerId !== e.pointerId) return;
+
+      if (!isPositionAware) {
+        const finalX = upEvent.clientX - startX;
+        const finalY = upEvent.clientY - startY;
+        updateWidget(widget.id, {
+          x: finalX,
+          y: finalY,
+        });
+      }
 
       setIsDragging(false);
       document.body.classList.remove('is-dragging-widget');
@@ -268,6 +295,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       console.warn('Failed to set pointer capture:', _err);
     }
 
+    const isPositionAware = POSITION_AWARE_WIDGETS.includes(widget.type);
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (moveEvent.pointerId !== e.pointerId) return;
 
@@ -300,16 +329,64 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         }
       }
 
-      updateWidget(widget.id, {
-        w: newW,
-        h: newH,
-        x: newX,
-        y: newY,
-      });
+      if (isPositionAware) {
+        updateWidget(widget.id, {
+          w: newW,
+          h: newH,
+          x: newX,
+          y: newY,
+        });
+      } else if (windowRef.current) {
+        // OPTIMIZATION: Update DOM directly
+        windowRef.current.style.width = `${newW}px`;
+        windowRef.current.style.height = `${newH}px`;
+        windowRef.current.style.left = `${newX}px`;
+        windowRef.current.style.top = `${newY}px`;
+      }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
       if (upEvent.pointerId !== e.pointerId) return;
+
+      if (!isPositionAware) {
+        // Recalculate final dimensions/position for state update
+        // We replicate the logic here to ensure state matches visual
+        const dx = upEvent.clientX - startX;
+        const dy = upEvent.clientY - startY;
+
+        let newW = startW;
+        let newH = startH;
+        let newX = startPosX;
+        let newY = startPosY;
+
+        if (direction.includes('e')) {
+          newW = Math.max(150, startW + dx);
+        }
+        if (direction.includes('w')) {
+          const potentialW = startW - dx;
+          if (potentialW >= 150) {
+            newW = potentialW;
+            newX = startPosX + dx;
+          }
+        }
+        if (direction.includes('s')) {
+          newH = Math.max(100, startH + dy);
+        }
+        if (direction.includes('n')) {
+          const potentialH = startH - dy;
+          if (potentialH >= 100) {
+            newH = potentialH;
+            newY = startPosY + dy;
+          }
+        }
+
+        updateWidget(widget.id, {
+          w: newW,
+          h: newH,
+          x: newX,
+          y: newY,
+        });
+      }
 
       setIsResizing(false);
       document.body.classList.remove('is-dragging-widget');

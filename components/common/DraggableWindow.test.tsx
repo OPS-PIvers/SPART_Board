@@ -217,7 +217,14 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    // OPTIMIZATION: Should NOT call updateWidget during drag (standard widget)
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Clean up
+    fireEvent.pointerUp(window, { clientX: 160, clientY: 160, pointerId: 1 });
+
+    // New position should be synced ONCE on pointer up
+    // (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -225,9 +232,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('allows dragging from below the old 40px handle area', () => {
@@ -269,7 +273,12 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // It should now drag
+    // Should now drag (internal DOM update), but NOT trigger React update yet
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Clean up (release at final position)
+    fireEvent.pointerUp(window, { clientX: 160, clientY: 200, pointerId: 1 });
+
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -277,9 +286,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('updates size on pointer resize (SE corner)', () => {
@@ -325,7 +331,13 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New size should be w: 200 + (350 - 300) = 250, h: 200 + (400 - 300) = 300
+    // Optimization: No update during resize
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // Clean up
+    fireEvent.pointerUp(window, { clientX: 350, clientY: 400, pointerId: 1 });
+
+    // New size should be synced on pointer up
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -333,9 +345,6 @@ describe('DraggableWindow', () => {
         h: 300,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('updates position and size on NW pointer resize', () => {
@@ -379,6 +388,11 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
+    // Optimization: No update during resize
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(window, { clientX: 50, clientY: 50, pointerId: 1 });
+
     // New W: 200 - (-50) = 250, New X: 100 + (-50) = 50
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
@@ -389,8 +403,6 @@ describe('DraggableWindow', () => {
         y: 50,
       })
     );
-
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('closes immediately on widget-escape-press if skipCloseConfirmation is true', async () => {
@@ -457,5 +469,57 @@ describe('DraggableWindow', () => {
         screen.getByText(/Close widget\? Data will be lost\./i)
       ).toBeInTheDocument();
     });
+  });
+
+  it('continuously updates position for position-aware widgets (e.g. catalyst)', () => {
+    const positionAwareWidget = { ...mockWidget, type: 'catalyst' as const };
+
+    const { container } = render(
+      <DraggableWindow
+        widget={positionAwareWidget}
+        title="Catalyst Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div data-testid="widget-content">Widget Content</div>
+      </DraggableWindow>
+    );
+
+    const frontFace = container.querySelector(
+      '.front'
+    ) as HTMLElementWithCapture;
+
+    frontFace.setPointerCapture = vi.fn();
+    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
+    frontFace.releasePointerCapture = vi.fn();
+
+    fireEvent.pointerDown(frontFace, {
+      clientX: 100,
+      clientY: 100,
+      pointerId: 1,
+    });
+
+    // Move pointer
+    fireEvent.pointerMove(window, {
+      clientX: 120,
+      clientY: 120,
+      pointerId: 1,
+    });
+
+    // Expect updateWidget to be called IMMEDIATELY (no optimization)
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({
+        x: 120,
+        y: 120,
+      })
+    );
+
+    fireEvent.pointerUp(window, { clientX: 120, clientY: 120, pointerId: 1 });
   });
 });
