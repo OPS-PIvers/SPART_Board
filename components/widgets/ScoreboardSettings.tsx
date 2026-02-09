@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -48,6 +48,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, updateDashboard, activeDashboard, addToast } =
     useDashboard();
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const config = widget.config as ScoreboardConfig;
   const teams = config.teams ?? [];
 
@@ -140,10 +141,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
         );
       } else {
         // Should not happen if data is consistent, but safe fallback
-        newSharedGroups = [
-          ...sharedGroups,
-          { id: team.linkedGroupId ?? '', name },
-        ];
+        newSharedGroups = [...sharedGroups, { id: team.linkedGroupId, name }];
       }
 
       updateDashboard({ sharedGroups: newSharedGroups });
@@ -157,15 +155,15 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
     });
   };
 
-  const resetScores = () => {
-    if (confirm('Reset all scores to 0?')) {
-      updateWidget(widget.id, {
-        config: {
-          ...config,
-          teams: teams.map((t) => ({ ...t, score: 0 })),
-        },
-      });
-    }
+  const handleReset = () => {
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        teams: teams.map((t) => ({ ...t, score: 0 })),
+      },
+    });
+    setShowResetConfirm(false);
+    addToast('All scores reset to 0', 'info');
   };
 
   return (
@@ -199,16 +197,35 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div className="space-y-3">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center h-6">
           <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
             Teams ({teams.length})
           </label>
-          <button
-            onClick={resetScores}
-            className="text-xxs font-bold text-red-500 hover:text-red-600 underline"
-          >
-            Reset Scores
-          </button>
+
+          {showResetConfirm ? (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
+              <span className="text-xxs font-bold text-slate-500">Sure?</span>
+              <button
+                onClick={handleReset}
+                className="text-xxs font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded transition-colors"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="text-xxs font-bold text-slate-500 hover:text-slate-700 px-1"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="text-xxs font-bold text-red-500 hover:text-red-600 underline"
+            >
+              Reset Scores
+            </button>
+          )}
         </div>
 
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
