@@ -112,9 +112,16 @@ export interface PollOption {
 }
 
 export interface ScheduleItem {
-  time: string;
+  id?: string;
+  /** @deprecated Use startTime instead. Falls back to startTime if not provided. */
+  time?: string;
   task: string;
   done?: boolean;
+  startTime?: string;
+  endTime?: string;
+  mode?: 'clock' | 'timer';
+  linkedWidgets?: WidgetType[];
+  spawnedWidgetIds?: string[];
 }
 
 export interface CalendarEvent {

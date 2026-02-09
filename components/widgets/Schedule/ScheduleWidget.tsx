@@ -1,14 +1,12 @@
 import React, { useCallback, useRef, useEffect, useMemo } from 'react';
-import { useDashboard } from '../../context/useDashboard';
+import { useDashboard } from '../../../context/useDashboard';
 import {
   WidgetData,
   ScheduleItem,
   ScheduleConfig,
   DEFAULT_GLOBAL_STYLE,
-} from '../../types';
-import { Circle, CheckCircle2, Type, Clock, AlertTriangle } from 'lucide-react';
-import { ScaledEmptyState } from '../common/ScaledEmptyState';
-import { Toggle } from '../common/Toggle';
+} from '../../../types';
+import { Circle, CheckCircle2, Clock } from 'lucide-react';
 
 interface ScheduleRowProps {
   item: ScheduleItem;
@@ -62,7 +60,7 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
 
 ScheduleRow.displayName = 'ScheduleRow';
 
-import { WidgetLayout } from './WidgetLayout';
+import { WidgetLayout } from '../WidgetLayout';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -198,115 +196,16 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
               />
             ))}
             {items.length === 0 && (
-              <ScaledEmptyState
-                icon={Clock}
-                title="No Schedule"
-                subtitle="Flip to add schedule items."
-                className="opacity-40"
-              />
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-20 py-10">
+                <Clock className="w-12 h-12" />
+                <span className="text-xs font-black uppercase tracking-widest">
+                  No Schedule
+                </span>
+              </div>
             )}
           </div>
         </div>
       }
     />
-  );
-};
-
-export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
-  widget,
-}) => {
-  const { updateWidget, activeDashboard } = useDashboard();
-  const config = widget.config as ScheduleConfig;
-
-  const hasClock = useMemo(
-    () => activeDashboard?.widgets?.some((w) => w.type === 'clock') ?? false,
-    [activeDashboard?.widgets]
-  );
-
-  const fonts = [
-    { id: 'global', label: 'Inherit', icon: 'G' },
-    { id: 'font-mono', label: 'Digital', icon: '01' },
-    { id: 'font-sans', label: 'Modern', icon: 'Aa' },
-    { id: 'font-handwritten', label: 'School', icon: '✏️' },
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Typography */}
-      <div>
-        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Type className="w-3 h-3" /> Typography
-        </label>
-        <div className="grid grid-cols-4 gap-2">
-          {fonts.map((f) => (
-            <button
-              key={f.id}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, fontFamily: f.id } as ScheduleConfig,
-                })
-              }
-              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                config.fontFamily === f.id ||
-                (!config.fontFamily && f.id === 'global')
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-slate-100 hover:border-slate-200'
-              }`}
-            >
-              <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
-              <span className="text-xxxs uppercase text-slate-600">
-                {f.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Automation */}
-      <div>
-        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Clock className="w-3 h-3" /> Automation
-        </label>
-
-        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">
-              Connect to Clock
-            </span>
-            <Toggle
-              checked={config.autoProgress ?? false}
-              onChange={(checked) =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    autoProgress: checked,
-                  } as ScheduleConfig,
-                })
-              }
-            />
-          </div>
-
-          <p className="text-xs text-slate-500">
-            Automatically check off items as time passes.
-          </p>
-
-          {/* Validation Note */}
-          <div
-            className={`flex items-start gap-2 p-2 rounded-lg text-xs transition-colors ${hasClock ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}
-          >
-            {hasClock ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-            )}
-            <span>
-              {hasClock
-                ? 'Clock widget detected. Auto-progress active.'
-                : 'Requires an active Clock widget to function.'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
