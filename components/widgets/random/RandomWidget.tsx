@@ -392,28 +392,28 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <div
         className="flex flex-col items-center justify-center h-full text-slate-400 text-center"
         style={{
-          padding: 'min(24px, 5cqw, 7cqh)',
-          gap: 'min(12px, 3cqw, 4cqh)',
+          padding: 'min(24px, 5cqmin)',
+          gap: 'min(12px, 3cqmin)',
         }}
       >
         <Users
           className="opacity-20"
           style={{
-            width: 'min(48px, 12cqw, 14cqh)',
-            height: 'min(48px, 12cqw, 14cqh)',
+            width: 'min(48px, 12cqmin)',
+            height: 'min(48px, 12cqmin)',
           }}
         />
         <div>
           <p
             className="uppercase tracking-widest font-bold"
             style={{
-              fontSize: 'min(14px, 3.5cqw, 5cqh)',
-              marginBottom: 'min(4px, 1cqh)',
+              fontSize: 'min(14px, 3.5cqmin)',
+              marginBottom: 'min(4px, 1cqmin)',
             }}
           >
             No Names Provided
           </p>
-          <p style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}>
+          <p style={{ fontSize: 'min(12px, 3cqmin)' }}>
             Flip this widget to enter your student roster.
           </p>
         </div>
@@ -427,11 +427,11 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       header={
         <div
           className="flex justify-between items-center w-full"
-          style={{ padding: 'min(4px, 1cqh) min(8px, 2cqw, 2.5cqh) 0' }}
+          style={{ padding: 'min(4px, 1cqmin) min(8px, 2cqmin) 0' }}
         >
           <div
             className="flex items-center"
-            style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}
+            style={{ gap: 'min(8px, 2cqmin)' }}
           >
             {mode === 'single' && (
               <>
@@ -442,13 +442,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     (remainingStudents.length === 0 && !displayResult)
                   }
                   className="hover:bg-slate-100 rounded-full text-slate-400 hover:text-brand-blue-primary transition-all disabled:opacity-30"
-                  style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
+                  style={{ padding: 'min(6px, 1.5cqmin)' }}
                   title="Reset student pool"
                 >
                   <RotateCcw
                     style={{
-                      width: 'min(14px, 3.5cqw, 4cqh)',
-                      height: 'min(14px, 3.5cqw, 4cqh)',
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
                     }}
                   />
                 </button>
@@ -456,8 +456,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   <span
                     className="font-black text-slate-500 uppercase tracking-tight bg-slate-50 rounded border border-slate-200"
                     style={{
-                      fontSize: 'min(9px, 2.2cqw, 2.8cqh)',
-                      padding: 'min(2px, 0.5cqh) min(6px, 1.5cqw, 2cqh)',
+                      fontSize: 'min(9px, 2.2cqmin)',
+                      padding: 'min(2px, 0.5cqmin) min(6px, 1.5cqmin)',
                     }}
                   >
                     {remainingStudents.length} Left
@@ -470,20 +470,20 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <div
               className="flex items-center bg-brand-blue-lighter rounded-full border border-brand-blue-light"
               style={{
-                gap: 'min(6px, 1.5cqw, 2cqh)',
-                padding: 'min(2px, 0.5cqh) min(8px, 2cqw, 2.5cqh)',
+                gap: 'min(6px, 1.5cqmin)',
+                padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
               }}
             >
               <Target
                 className="text-brand-blue-primary"
                 style={{
-                  width: 'min(10px, 2.5cqw, 3cqh)',
-                  height: 'min(10px, 2.5cqw, 3cqh)',
+                  width: 'min(10px, 2.5cqmin)',
+                  height: 'min(10px, 2.5cqmin)',
                 }}
               />
               <span
                 className="font-black uppercase text-brand-blue-primary tracking-wider"
-                style={{ fontSize: 'min(9px, 2.2cqw, 2.8cqh)' }}
+                style={{ fontSize: 'min(9px, 2.2cqmin)' }}
               >
                 {activeRoster.name}
               </span>
@@ -498,12 +498,12 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           ) : (
             <div
               className="w-full h-full flex flex-col min-h-0"
-              style={{ padding: '0 min(8px, 2cqw, 2.5cqh)' }}
+              style={{ padding: '0 min(8px, 2cqmin)' }}
             >
               {mode === 'shuffle' ? (
                 <div
                   className="flex-1 overflow-y-auto w-full custom-scrollbar flex flex-col"
-                  style={{ padding: 'min(4px, 1cqh) 0', gap: 'min(4px, 1cqh)' }}
+                  style={{ padding: 'min(4px, 1cqmin) 0', gap: 'min(4px, 1cqmin)' }}
                 >
                   {(Array.isArray(displayResult) &&
                   (displayResult.length === 0 ||
@@ -515,19 +515,19 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       key={i}
                       className="flex items-center bg-white rounded-xl border border-slate-200 transition-all hover:bg-slate-50 shadow-sm"
                       style={{
-                        gap: 'min(12px, 3cqw, 4cqh)',
-                        padding: 'min(8px, 2cqw, 2.5cqh)',
+                        gap: 'min(12px, 3cqmin)',
+                        padding: 'min(8px, 2cqmin)',
                       }}
                     >
                       <span
                         className="font-mono font-black text-slate-400"
-                        style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                       >
                         {i + 1}
                       </span>
                       <span
                         className="leading-none font-bold text-slate-700"
-                        style={{ fontSize: 'min(16px, 4cqw, 6cqh)' }}
+                        style={{ fontSize: 'min(16px, 4cqmin)' }}
                       >
                         {name}
                       </span>
@@ -540,20 +540,20 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     <div
                       className="flex-1 flex flex-col items-center justify-center text-slate-300 italic"
                       style={{
-                        padding: 'min(40px, 8cqh) 0',
-                        gap: 'min(8px, 2cqw, 2.5cqh)',
+                        padding: 'min(40px, 8cqmin) 0',
+                        gap: 'min(8px, 2cqmin)',
                       }}
                     >
                       <Layers
                         className="opacity-20"
                         style={{
-                          width: 'min(32px, 8cqw, 10cqh)',
-                          height: 'min(32px, 8cqw, 10cqh)',
+                          width: 'min(32px, 8cqmin)',
+                          height: 'min(32px, 8cqmin)',
                         }}
                       />
                       <span
                         className="font-bold"
-                        style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                        style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                       >
                         Click Randomize to Shuffle
                       </span>
@@ -598,13 +598,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                       <div
                         key={i}
                         className="bg-blue-50 border border-blue-200 rounded-xl flex flex-col shadow-sm overflow-hidden"
-                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
+                        style={{ padding: 'min(8px, 2cqmin)' }}
                       >
                         <div
                           className="uppercase text-brand-blue-primary tracking-widest opacity-80 font-black truncate"
                           style={{
-                            fontSize: 'min(8px, 2cqw, 2.5cqh)',
-                            marginBottom: 'min(4px, 1cqh)',
+                            fontSize: 'min(8px, 2cqmin)',
+                            marginBottom: 'min(4px, 1cqmin)',
                           }}
                           title={groupName}
                         >
@@ -612,13 +612,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                         </div>
                         <div
                           className="overflow-hidden flex flex-col"
-                          style={{ gap: 'min(2px, 0.5cqh)' }}
+                          style={{ gap: 'min(2px, 0.5cqmin)' }}
                         >
                           {groupNames.map((name, ni) => (
                             <div
                               key={ni}
                               className="text-slate-700 font-bold whitespace-nowrap overflow-hidden text-ellipsis"
-                              style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                              style={{ fontSize: 'min(12px, 3cqmin)' }}
                             >
                               {name}
                             </div>
@@ -635,18 +635,18 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     <div
                       className="col-span-full flex flex-col items-center justify-center text-slate-300 italic h-full font-bold"
                       style={{
-                        padding: 'min(40px, 8cqh) 0',
-                        gap: 'min(8px, 2cqw, 2.5cqh)',
+                        padding: 'min(40px, 8cqmin) 0',
+                        gap: 'min(8px, 2cqmin)',
                       }}
                     >
                       <Users
                         className="opacity-20"
                         style={{
-                          width: 'min(32px, 8cqw, 10cqh)',
-                          height: 'min(32px, 8cqw, 10cqh)',
+                          width: 'min(32px, 8cqmin)',
+                          height: 'min(32px, 8cqmin)',
                         }}
                       />
-                      <span style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}>
+                      <span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>
                         Click Randomize to Group
                       </span>
                     </div>
