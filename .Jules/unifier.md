@@ -33,3 +33,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 - Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
+
+## 2025-02-18 - Standardize Bloom's Resource Styles
+
+**Drift:** `InstructionalRoutinesWidget` was generating HTML strings with hardcoded inline styles (`color: #2d3f89`, `font-weight: 900`, `color: #1e293b`) for Bloom's Taxonomy resources instead of using design system tokens.
+**Fix:** Replaced inline styles with standard Tailwind utility classes (`text-brand-blue-primary`, `font-black`, `text-slate-800`, `text-slate-600`) to enforce design system consistency and eliminate "snowflakes".
