@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { ScheduleWidget, ScheduleSettings } from './ScheduleWidget';
+import { ScheduleWidget, ScheduleSettings } from './Schedule';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 
