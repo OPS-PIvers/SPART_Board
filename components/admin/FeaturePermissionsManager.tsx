@@ -48,7 +48,23 @@ import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 
 // Helper type guard
 const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {
-  return typeof config === 'object' && config !== null;
+  // Check for null or non-object types
+  if (!config || typeof config !== 'object') {
+    return false;
+  }
+
+  // Reject arrays
+  if (Array.isArray(config)) {
+    return false;
+  }
+
+  // Ensure it's a plain object by checking constructor
+  const obj = config as Record<string, unknown>;
+  return (
+    obj.constructor === Object ||
+    Object.getPrototypeOf(obj) === Object.prototype ||
+    Object.getPrototypeOf(obj) === null
+  );
 };
 
 export const FeaturePermissionsManager: React.FC = () => {
@@ -974,6 +990,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                   {tool.type === 'catalyst' && (
                     <div className="space-y-4">
                       <CatalystPermissionEditor
+                        key={JSON.stringify(permission.config)}
                         config={
                           isCatalystConfig(permission.config)
                             ? permission.config

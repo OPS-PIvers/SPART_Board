@@ -4,6 +4,7 @@ import { useAuth } from '../../context/useAuth';
 import {
   WidgetData,
   CatalystConfig,
+  CatalystGlobalConfig,
   WidgetType,
   WidgetConfig,
   CatalystRoutine,
@@ -28,7 +29,8 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
   const permission = featurePermissions.find(
     (p) => p.widgetType === 'catalyst'
   );
-  const globalConfig = (permission?.config ?? {}) as Partial<CatalystConfig>;
+  const globalConfig = (permission?.config ??
+    {}) as Partial<CatalystGlobalConfig>;
 
   const navigateTo = (catId: string | null, stratId: string | null) => {
     updateWidget(widget.id, {
