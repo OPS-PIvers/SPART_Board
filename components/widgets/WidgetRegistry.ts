@@ -121,7 +121,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   drawing: lazyNamed(() => import('./DrawingWidget'), 'DrawingSettings'),
   qr: lazyNamed(() => import('./QRWidget'), 'QRSettings'),
   scoreboard: lazyNamed(
-    () => import('./ScoreboardWidget'),
+    () => import('./ScoreboardSettings'),
     'ScoreboardSettings'
   ),
   webcam: lazyNamed(() => import('./WebcamWidget'), 'WebcamSettings'),

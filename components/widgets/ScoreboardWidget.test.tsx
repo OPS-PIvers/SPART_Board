@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
+import { ScoreboardWidget } from './ScoreboardWidget';
+import { ScoreboardSettings } from './ScoreboardSettings';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import * as ScoreboardItemModule from './ScoreboardItem';
