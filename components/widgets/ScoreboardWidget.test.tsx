@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ScoreboardWidget, ScoreboardSettings } from './ScoreboardWidget';
+import { ScoreboardWidget } from './ScoreboardWidget';
+import { ScoreboardSettings } from './ScoreboardSettings';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import * as ScoreboardItemModule from './ScoreboardItem';
@@ -174,6 +175,49 @@ describe('ScoreboardWidget', () => {
     expect(itemRenderSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         team: expect.objectContaining({ id: '1', score: 11 }),
+      })
+    );
+  });
+
+  it('resets scores after confirmation', () => {
+    const teams = [
+      { id: '1', name: 'Team One', score: 10, color: 'bg-blue-500' },
+      { id: '2', name: 'Team Two', score: 20, color: 'bg-red-500' },
+    ];
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: { teams } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    // Click "Reset Scores"
+    const resetButton = screen.getByText('Reset Scores');
+    fireEvent.click(resetButton);
+
+    // Confirm buttons should appear
+    expect(screen.getByText('Sure?')).toBeInTheDocument();
+
+    // Click "Yes"
+    const yesButton = screen.getByText('Yes');
+    fireEvent.click(yesButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ id: '1', score: 0 }),
+            expect.objectContaining({ id: '2', score: 0 }),
+          ]) as unknown,
+        }) as unknown,
       })
     );
   });

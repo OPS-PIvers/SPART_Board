@@ -35,3 +35,9 @@
 **Weed:** `Sidebar.tsx` was over 1400 lines and contained a large inner component definition (`SortableDashboardItem`) and duplicated background fetching logic found in `useBackgrounds`.
 **Root Cause:** Component grew organically as features were added (boards, backgrounds, widgets) without separating concerns.
 **Plan:** Extract sub-components and leverage existing hooks to reduce file size and improve readability/maintainability.
+
+## 2025-06-05 - Extract ScoreboardSettings
+
+**Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
+**Root Cause:** Component grew over time, likely started small but expanded with settings logic.
+**Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
