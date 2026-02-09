@@ -621,19 +621,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               {/* Resize Handles (Corners Only) */}
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'nw')}
-                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-[60] touch-none"
+                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
               />
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'ne')}
-                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-[60] touch-none"
+                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
               />
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'sw')}
-                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-[60] touch-none"
+                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
               />
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'se')}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
               >
                 <ResizeHandleIcon
                   className="text-slate-400"
@@ -712,19 +712,19 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               {/* Resize Handles (Settings Face) */}
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'nw')}
-                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-[60] touch-none"
+                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
               />
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'ne')}
-                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-[60] touch-none"
+                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
               />
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'sw')}
-                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-[60] touch-none"
+                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
               />
               <div
                 onPointerDown={(e) => handleResizeStart(e, 'se')}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-[60] touch-none"
+                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
               >
                 <ResizeHandleIcon
                   className="text-slate-500"

@@ -11,6 +11,11 @@ export const Z_INDEX = {
   content: 20,
   controls: 30,
 
+  // Widget internal layers
+  stickerControl: 50, // Sticker controls (above sticker content)
+  widgetResize: 60, // Resize handles (above widget content)
+  dropdown: 110, // Local dropdowns within widgets (must be > widget base)
+
   // Widget layers
   widget: 100, // Standard widget level (DraggableWindow uses this as base + widget.z)
   widgetDrag: 500, // Widget being dragged
@@ -24,9 +29,14 @@ export const Z_INDEX = {
 
   // Overlay layers
   backdrop: 9900, // Dimmed backgrounds
+  overlay: 9910, // Full-screen overlays (e.g. DrawingWidget)
   confirmOverlay: 9950, // Confirmation dialogs within widgets
   modal: 10000, // Standard Modals (e.g. Settings, Reports)
   modalContent: 10001, // Content within modals (dropdowns etc)
+  modalNested: 10100, // Modals on top of modals (e.g. Drive Picker, Library)
+  modalNestedContent: 10110, // Content within nested modals
+  modalDeep: 10200, // Modals on top of nested modals (e.g. Routine Editor)
+  modalDeepContent: 10210, // Content within deep modals
 
   // Floating/Pop-up layers
   popover: 11000, // Popovers, Menus attached to elements

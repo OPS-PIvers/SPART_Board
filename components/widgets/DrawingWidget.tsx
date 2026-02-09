@@ -388,7 +388,7 @@ export const DrawingWidget: React.FC<{
     return (
       <>
         {createPortal(
-          <div className="fixed inset-0 z-[9990] pointer-events-none overflow-hidden">
+          <div className="fixed inset-0 z-overlay pointer-events-none overflow-hidden">
             {/* Darken background slightly to indicate annotation mode */}
             <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
             <canvas

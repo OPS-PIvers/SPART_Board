@@ -373,7 +373,7 @@ export const FeaturePermissionsManager: React.FC = () => {
       {/* Message Toast */}
       {message && (
         <div
-          className={`fixed top-6 right-6 z-[10001] px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top ${
+          className={`fixed top-6 right-6 z-toast px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top ${
             message.type === 'success'
               ? 'bg-green-500 text-white'
               : 'bg-red-500 text-white'
@@ -1165,7 +1165,7 @@ export const FeaturePermissionsManager: React.FC = () => {
 
       {/* Instructional Routines Library Modal */}
       {isRoutinesLibraryOpen && (
-        <div className="fixed inset-0 z-[99990] bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-modal-nested bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">
@@ -1284,7 +1284,7 @@ export const FeaturePermissionsManager: React.FC = () => {
 
       {/* Routine Editor Modal */}
       {editingRoutine && (
-        <div className="fixed inset-0 z-[99999] bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-modal-deep bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <LibraryManager
               routine={editingRoutine}

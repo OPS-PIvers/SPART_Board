@@ -691,7 +691,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   !resizeState && (
                     <div
                       onPointerDown={(e) => e.stopPropagation()}
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-[60] animate-in fade-in zoom-in-95 duration-200"
+                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-slate-200 z-widget-resize animate-in fade-in zoom-in-95 duration-200"
                     >
                       <button
                         onClick={(e) => {
