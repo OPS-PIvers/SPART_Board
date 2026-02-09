@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { ScheduleWidget, ScheduleSettings } from './ScheduleWidget';
+import { ScheduleWidget, ScheduleSettings } from './Schedule';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 
@@ -19,6 +19,7 @@ vi.mock('lucide-react', () => ({
   Type: () => <div>Type Icon</div>,
   Clock: () => <div>Clock Icon</div>,
   AlertTriangle: () => <div>Alert Icon</div>,
+  Plus: () => <div>Plus Icon</div>,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -202,7 +203,6 @@ describe('ScheduleSettings', () => {
     render(<ScheduleSettings widget={createWidget()} />);
 
     expect(screen.getByText(/typography/i)).toBeInTheDocument();
-    expect(screen.getByText(/automation/i)).toBeInTheDocument();
-    expect(screen.getByText(/connect to clock/i)).toBeInTheDocument();
+    expect(screen.getByText(/auto-checkoff/i)).toBeInTheDocument();
   });
 });

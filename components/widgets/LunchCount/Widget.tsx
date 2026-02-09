@@ -159,7 +159,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const studentItemClass =
-    'px-3 py-1.5 bg-white border-b-2 border-slate-200 rounded-xl text-[min(11px,3.5cqmin)] font-black text-slate-700 shadow-sm hover:border-brand-blue-primary hover:-translate-y-0.5 transition-all active:scale-90';
+    'bg-white border-b-2 border-slate-200 rounded-xl font-black text-slate-700 shadow-sm hover:border-brand-blue-primary hover:-translate-y-0.5 transition-all active:scale-90';
+
+  const studentItemStyle: React.CSSProperties = {
+    fontSize: 'min(12px, 5cqmin)',
+    padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+  };
 
   return (
     <DndContext
@@ -171,12 +176,21 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       <WidgetLayout
         padding="p-0"
         header={
-          <div className="flex justify-between items-center p-3 border-b border-slate-100 bg-slate-50/50">
+          <div
+            className="flex justify-between items-center border-b border-slate-100 bg-slate-50/50"
+            style={{ padding: 'min(10px, 2cqmin)' }}
+          >
             <div className="flex flex-col">
-              <h3 className="text-[min(10px,3cqmin)] font-black text-slate-700 uppercase tracking-widest">
+              <h3
+                style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+                className="font-black text-slate-700 uppercase tracking-widest"
+              >
                 Daily Lunch Count
               </h3>
-              <p className="text-[min(10px,3cqmin)] font-bold text-slate-500 uppercase tracking-tighter">
+              <p
+                style={{ fontSize: 'min(11px, 4cqmin)' }}
+                className="font-bold text-slate-500 uppercase tracking-tighter"
+              >
                 {new Date().toLocaleDateString('en-US', {
                   weekday: 'short',
                   month: 'short',
@@ -184,16 +198,25 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 })}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex" style={{ gap: 'min(6px, 1.5cqmin)' }}>
               <Button
                 onClick={() => void fetchNutrislice()}
                 variant="ghost"
                 size="sm"
-                className="p-2 h-8 w-8 rounded-xl bg-white border border-slate-200"
+                className="rounded-xl bg-white border border-slate-200"
+                style={{
+                  padding: 'min(6px, 1.5cqmin)',
+                  width: 'min(32px, 8cqmin)',
+                  height: 'min(32px, 8cqmin)',
+                }}
                 disabled={isSyncing}
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+                  style={{
+                    width: 'min(16px, 4.5cqmin)',
+                    height: 'min(16px, 4.5cqmin)',
+                  }}
+                  className={isSyncing ? 'animate-spin' : ''}
                 />
               </Button>
               <Button
@@ -204,39 +227,86 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 }
                 variant="ghost"
                 size="sm"
-                className="p-2 h-8 w-8 rounded-xl text-slate-400 hover:text-brand-red-primary bg-white border border-slate-200"
+                className="rounded-xl text-slate-400 hover:text-brand-red-primary bg-white border border-slate-200"
+                style={{
+                  padding: 'min(6px, 1.5cqmin)',
+                  width: 'min(32px, 8cqmin)',
+                  height: 'min(32px, 8cqmin)',
+                }}
               >
-                <Undo2 className="w-4 h-4" />
+                <Undo2
+                  style={{
+                    width: 'min(16px, 4.5cqmin)',
+                    height: 'min(16px, 4.5cqmin)',
+                  }}
+                />
               </Button>
             </div>
           </div>
         }
         content={
-          <div className="flex flex-col h-full w-full p-3 gap-3 overflow-hidden animate-in fade-in duration-300">
+          <div
+            className="flex flex-col h-full w-full overflow-hidden animate-in fade-in duration-300"
+            style={{ padding: 'min(10px, 2cqmin)', gap: 'min(10px, 2cqmin)' }}
+          >
             {/* Top Grid: 3 Zones */}
-            <div className="grid grid-cols-3 gap-3 shrink-0">
+            <div
+              className="grid grid-cols-3 flex-1"
+              style={{ gap: 'min(10px, 2cqmin)', minHeight: 0 }}
+            >
               {/* Hot Lunch Drop Zone */}
               <DroppableZone
                 id="hot"
                 data-testid="hot-zone"
-                className="bg-brand-red-lighter/10 border-2 border-dashed border-brand-red-lighter rounded-2xl p-3 flex flex-col min-h-[140px] transition-all group"
+                className="bg-brand-red-lighter/10 border-2 border-dashed border-brand-red-lighter rounded-2xl flex flex-col transition-all group"
+                style={{ padding: 'min(10px, 2cqmin)' }}
                 activeClassName="border-solid border-brand-red-primary bg-brand-red-lighter/30 scale-[1.02]"
               >
-                <div className="flex justify-between items-start mb-2">
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginBottom: 'min(6px, 1.5cqmin)' }}
+                >
                   <div className="flex flex-col">
-                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-brand-red-primary tracking-tighter">
+                    <span
+                      style={{ fontSize: 'min(11px, 4cqmin)' }}
+                      className="font-black uppercase text-brand-red-primary tracking-tighter"
+                    >
                       Hot Lunch
                     </span>
-                    <span className="bg-brand-red-primary text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
+                    <span
+                      style={{
+                        fontSize: 'min(14px, 5cqmin)',
+                        padding: 'min(3px, 0.8cqmin) min(8px, 2cqmin)',
+                      }}
+                      className="bg-brand-red-primary text-white rounded-full font-black w-max"
+                    >
                       {stats.hotLunch}
                     </span>
                   </div>
-                  <Box className="w-3.5 h-3.5 text-brand-red-primary opacity-40 group-hover:scale-110 transition-transform" />
+                  <Box
+                    style={{
+                      width: 'min(14px, 4cqmin)',
+                      height: 'min(14px, 4cqmin)',
+                    }}
+                    className="text-brand-red-primary opacity-40 group-hover:scale-110 transition-transform"
+                  />
                 </div>
-                <div className="text-[min(9px,2.5cqmin)] font-bold text-brand-red-dark leading-tight mb-3 line-clamp-2 italic opacity-60">
+                <div
+                  style={{
+                    fontSize: 'min(11px, 4cqmin)',
+                    marginBottom: 'min(10px, 2cqmin)',
+                  }}
+                  className="font-bold text-brand-red-dark leading-tight line-clamp-2 italic opacity-60"
+                >
                   {cachedMenu?.hotLunch ?? 'Loading menu...'}
                 </div>
-                <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
+                <div
+                  className="flex-1 flex flex-wrap content-start overflow-y-auto custom-scrollbar"
+                  style={{
+                    gap: 'min(6px, 1.5cqmin)',
+                    paddingRight: 'min(4px, 1cqmin)',
+                  }}
+                >
                   {activeRoster
                     .filter((s) => assignments[s] === 'hot')
                     .map((student) => (
@@ -246,6 +316,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         name={student}
                         onClick={() => updateAssignment(student, null)}
                         className={studentItemClass}
+                        style={studentItemStyle}
                       />
                     ))}
                 </div>
@@ -254,24 +325,55 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               {/* Bento Box Drop Zone */}
               <DroppableZone
                 id="bento"
-                className="bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl p-3 flex flex-col min-h-[140px] transition-all group"
+                className="bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-2xl flex flex-col transition-all group"
+                style={{ padding: 'min(10px, 2cqmin)' }}
                 activeClassName="border-solid border-emerald-500 bg-emerald-100/50 scale-[1.02]"
               >
-                <div className="flex justify-between items-start mb-2">
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginBottom: 'min(6px, 1.5cqmin)' }}
+                >
                   <div className="flex flex-col">
-                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-emerald-600 tracking-tighter">
+                    <span
+                      style={{ fontSize: 'min(11px, 4cqmin)' }}
+                      className="font-black uppercase text-emerald-600 tracking-tighter"
+                    >
                       Bento Box
                     </span>
-                    <span className="bg-emerald-500 text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
+                    <span
+                      style={{
+                        fontSize: 'min(14px, 5cqmin)',
+                        padding: 'min(3px, 0.8cqmin) min(8px, 2cqmin)',
+                      }}
+                      className="bg-emerald-500 text-white rounded-full font-black w-max"
+                    >
                       {stats.bentoBox}
                     </span>
                   </div>
-                  <Box className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <Box
+                    style={{
+                      width: 'min(14px, 4cqmin)',
+                      height: 'min(14px, 4cqmin)',
+                    }}
+                    className="text-emerald-400 group-hover:scale-110 transition-transform"
+                  />
                 </div>
-                <div className="text-[min(9px,2.5cqmin)] font-bold text-emerald-800 leading-tight mb-3 line-clamp-2 italic opacity-60">
+                <div
+                  style={{
+                    fontSize: 'min(11px, 4cqmin)',
+                    marginBottom: 'min(10px, 2cqmin)',
+                  }}
+                  className="font-bold text-emerald-800 leading-tight line-clamp-2 italic opacity-60"
+                >
                   {cachedMenu?.bentoBox ?? 'Loading menu...'}
                 </div>
-                <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
+                <div
+                  className="flex-1 flex flex-wrap content-start overflow-y-auto custom-scrollbar"
+                  style={{
+                    gap: 'min(6px, 1.5cqmin)',
+                    paddingRight: 'min(4px, 1cqmin)',
+                  }}
+                >
                   {activeRoster
                     .filter((s) => assignments[s] === 'bento')
                     .map((student) => (
@@ -281,6 +383,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         name={student}
                         onClick={() => updateAssignment(student, null)}
                         className={studentItemClass}
+                        style={studentItemStyle}
                       />
                     ))}
                 </div>
@@ -289,24 +392,55 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               {/* Home Lunch Drop Zone */}
               <DroppableZone
                 id="home"
-                className="bg-brand-blue-lighter/20 border-2 border-dashed border-brand-blue-lighter rounded-2xl p-3 flex flex-col min-h-[140px] transition-all group"
+                className="bg-brand-blue-lighter/20 border-2 border-dashed border-brand-blue-lighter rounded-2xl flex flex-col transition-all group"
+                style={{ padding: 'min(10px, 2cqmin)' }}
                 activeClassName="border-solid border-brand-blue-primary bg-brand-blue-lighter/40 scale-[1.02]"
               >
-                <div className="flex justify-between items-start mb-2">
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginBottom: 'min(6px, 1.5cqmin)' }}
+                >
                   <div className="flex flex-col">
-                    <span className="text-[min(9px,2.5cqmin)] font-black uppercase text-brand-blue-primary tracking-tighter">
+                    <span
+                      style={{ fontSize: 'min(11px, 4cqmin)' }}
+                      className="font-black uppercase text-brand-blue-primary tracking-tighter"
+                    >
                       Home / Other
                     </span>
-                    <span className="bg-brand-blue-primary text-white text-[min(10px,3cqmin)] px-2 py-0.5 rounded-full font-black w-max">
+                    <span
+                      style={{
+                        fontSize: 'min(14px, 5cqmin)',
+                        padding: 'min(3px, 0.8cqmin) min(8px, 2cqmin)',
+                      }}
+                      className="bg-brand-blue-primary text-white rounded-full font-black w-max"
+                    >
                       {stats.homeLunch}
                     </span>
                   </div>
-                  <Box className="w-3.5 h-3.5 text-brand-blue-primary opacity-40 group-hover:scale-110 transition-transform" />
+                  <Box
+                    style={{
+                      width: 'min(14px, 4cqmin)',
+                      height: 'min(14px, 4cqmin)',
+                    }}
+                    className="text-brand-blue-primary opacity-40 group-hover:scale-110 transition-transform"
+                  />
                 </div>
-                <div className="text-[min(9px,2.5cqmin)] font-bold text-brand-blue-dark leading-tight mb-3 italic opacity-60">
+                <div
+                  style={{
+                    fontSize: 'min(11px, 4cqmin)',
+                    marginBottom: 'min(10px, 2cqmin)',
+                  }}
+                  className="font-bold text-brand-blue-dark leading-tight italic opacity-60"
+                >
                   Field Trips / Absent
                 </div>
-                <div className="flex-1 flex flex-wrap gap-1.5 content-start overflow-y-auto custom-scrollbar pr-1">
+                <div
+                  className="flex-1 flex flex-wrap content-start overflow-y-auto custom-scrollbar"
+                  style={{
+                    gap: 'min(6px, 1.5cqmin)',
+                    paddingRight: 'min(4px, 1cqmin)',
+                  }}
+                >
                   {activeRoster
                     .filter((s) => assignments[s] === 'home')
                     .map((student) => (
@@ -316,6 +450,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         name={student}
                         onClick={() => updateAssignment(student, null)}
                         className={studentItemClass}
+                        style={studentItemStyle}
                       />
                     ))}
                 </div>
@@ -326,18 +461,37 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="flex-1 flex flex-col min-h-0">
               <DroppableZone
                 id="unassigned"
-                className="flex-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-4 overflow-y-auto custom-scrollbar shadow-inner"
+                className="flex-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner"
+                style={{ padding: 'min(12px, 2.5cqmin)' }}
                 activeClassName="bg-slate-100 border-brand-blue-primary ring-4 ring-brand-blue-lighter/20"
               >
                 <div className="flex flex-col items-center h-full">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-4 h-4 text-slate-300" />
-                    <span className="text-[min(10px,3cqmin)] font-black uppercase text-slate-400 tracking-widest">
+                  <div
+                    className="flex items-center"
+                    style={{
+                      gap: 'min(6px, 1.5cqmin)',
+                      marginBottom: 'min(12px, 2.5cqmin)',
+                    }}
+                  >
+                    <Users
+                      style={{
+                        width: 'min(16px, 4.5cqmin)',
+                        height: 'min(16px, 4.5cqmin)',
+                      }}
+                      className="text-slate-300"
+                    />
+                    <span
+                      style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+                      className="font-black uppercase text-slate-400 tracking-widest"
+                    >
                       Unassigned ({stats.remaining})
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap justify-center gap-2 w-full">
+                  <div
+                    className="flex flex-wrap justify-center w-full"
+                    style={{ gap: 'min(6px, 1.5cqmin)' }}
+                  >
                     {activeRoster
                       .filter((s) => !assignments[s])
                       .map((student) => (
@@ -346,12 +500,29 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                           id={student}
                           name={student}
                           className={studentItemClass}
+                          style={studentItemStyle}
                         />
                       ))}
                     {stats.remaining === 0 && stats.total > 0 && (
-                      <div className="flex flex-col items-center justify-center py-12 opacity-30 grayscale animate-in zoom-in-95 duration-500">
-                        <CheckCircle2 className="w-12 h-12 text-brand-blue-primary mb-3" />
-                        <span className="text-sm font-black uppercase tracking-[0.2em]">
+                      <div
+                        className="flex flex-col items-center justify-center opacity-30 grayscale animate-in zoom-in-95 duration-500"
+                        style={{
+                          paddingTop: 'min(32px, 10cqmin)',
+                          paddingBottom: 'min(32px, 10cqmin)',
+                        }}
+                      >
+                        <CheckCircle2
+                          style={{
+                            width: 'min(48px, 12cqmin)',
+                            height: 'min(48px, 12cqmin)',
+                            marginBottom: 'min(10px, 2.5cqmin)',
+                          }}
+                          className="text-brand-blue-primary"
+                        />
+                        <span
+                          style={{ fontSize: 'min(14px, 5cqmin)' }}
+                          className="font-black uppercase tracking-[0.2em]"
+                        >
                           Roster Complete
                         </span>
                       </div>
@@ -363,7 +534,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         }
         footer={
-          <div className="px-3 pb-3">
+          <div style={{ padding: '0 min(10px, 2cqmin) min(10px, 2cqmin)' }}>
             <Button
               onClick={() => setIsModalOpen(true)}
               disabled={stats.remaining > 0 || stats.total === 0}
@@ -372,16 +543,36 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                   ? 'primary'
                   : 'secondary'
               }
-              className="w-full py-3 rounded-2xl font-black uppercase tracking-widest text-[min(11px,3.5cqmin)] shadow-lg transition-all"
+              className="w-full rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all"
+              style={{
+                padding: 'min(10px, 2.5cqmin)',
+                fontSize: 'min(12px, 4.5cqmin)',
+              }}
             >
               {stats.remaining === 0 && stats.total > 0 ? (
-                <div className="flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div
+                  className="flex items-center justify-center"
+                  style={{ gap: 'min(6px, 1.5cqmin)' }}
+                >
+                  <CheckCircle2
+                    style={{
+                      width: 'min(16px, 4.5cqmin)',
+                      height: 'min(16px, 4.5cqmin)',
+                    }}
+                  />
                   Submit Report
                 </div>
               ) : (
-                <div className="flex items-center justify-center gap-2">
-                  <Users className="w-4 h-4" />
+                <div
+                  className="flex items-center justify-center"
+                  style={{ gap: 'min(6px, 1.5cqmin)' }}
+                >
+                  <Users
+                    style={{
+                      width: 'min(16px, 4.5cqmin)',
+                      height: 'min(16px, 4.5cqmin)',
+                    }}
+                  />
                   Assign {stats.remaining} More Students
                 </div>
               )}
@@ -413,7 +604,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         {activeId ? (
           <div
             data-no-drag="true"
-            className="px-4 py-2 bg-brand-blue-primary border-b-4 border-brand-blue-dark rounded-2xl text-[min(12px,4cqmin)] font-black text-white shadow-2xl scale-110 opacity-95 cursor-grabbing pointer-events-none"
+            className="bg-brand-blue-primary border-b-4 border-brand-blue-dark rounded-2xl font-black text-white shadow-2xl scale-110 opacity-95 cursor-grabbing pointer-events-none"
+            style={{
+              padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
+              fontSize: 'min(14px, 6cqmin)',
+            }}
           >
             {activeId}
           </div>
