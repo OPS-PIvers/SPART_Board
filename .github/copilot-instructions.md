@@ -144,6 +144,26 @@ Never manage z-index manually - use `bringToFront(id)`. State persists to Firest
 4. **context/DashboardContext.tsx**: Add default dimensions and initial config in `addWidget()` function
 5. **config/widgetGradeLevels.ts**: Assign grade levels (K-2, 3-5, 6-8, 9-12, or Universal)
 
+### Widget Content Scaling (CRITICAL)
+
+Widgets use CSS Container Queries for responsive sizing. All text, icons, and spacing in widget **front-face content** must use container query units via inline `style={{}}` props:
+
+```tsx
+// CORRECT - scales with widget size
+<span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>Label</span>
+<Icon style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }} />
+<div style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
+
+// WRONG - fixed sizes, won't scale when widget is resized
+<span className="text-sm">Label</span>
+<Icon className="w-12 h-12" />
+<Icon size={24} />
+```
+
+- **Settings panels (back-face):** Normal Tailwind classes are fine, no scaling needed.
+- **Empty/error states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`).
+- **Reference:** See `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx` for examples.
+
 ### Common Pitfalls (AVOID THESE)
 
 - ❌ Editing files in `dist/` or `node_modules/` (build artifacts)
@@ -153,6 +173,8 @@ Never manage z-index manually - use `bringToFront(id)`. State persists to Firest
 - ❌ Manual z-index management (use `bringToFront()`)
 - ❌ Defining context hooks in component files (causes Fast Refresh warnings)
 - ❌ Multiple AudioContext instances per widget (use singleton pattern)
+- ❌ Hardcoded Tailwind text/icon sizes in widget content (`text-sm`, `w-12 h-12`, `size={24}`) — use `style={{ fontSize: 'min(Xpx, Ycqmin)' }}` instead
+- ❌ Hand-rolling per-widget empty/error states — use `ScaledEmptyState` component
 
 ## CI/CD Workflows
 

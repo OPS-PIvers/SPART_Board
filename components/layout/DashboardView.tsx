@@ -17,7 +17,7 @@ const EMPTY_STUDENTS: LiveStudent[] = [];
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
-    <div className="fixed top-6 right-6 z-[10000] space-y-3 pointer-events-none">
+    <div className="fixed top-6 right-6 z-toast space-y-3 pointer-events-none">
       {toasts.map((toast) => (
         <div
           key={toast.id}

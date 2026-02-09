@@ -204,7 +204,7 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
             {/* Menu Button (Top Right) */}
             <div
-              className="sticker-control absolute -top-3 -right-3 z-[9999]"
+              className="sticker-control absolute -top-3 -right-3 z-sticker-control"
               style={{ transform: `rotate(${-rotation}deg)` }}
               onPointerDown={(e) => e.stopPropagation()}
             >

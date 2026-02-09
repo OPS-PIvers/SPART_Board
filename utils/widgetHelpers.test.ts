@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { getTitle, getDefaultWidgetConfig } from './widgetHelpers';
-import { WidgetData, TimeToolConfig, WidgetType } from '../types';
+import {
+  WidgetData,
+  TimeToolConfig,
+  WidgetType,
+  ChecklistConfig,
+} from '../types';
 
 describe('widgetHelpers', () => {
   describe('getTitle', () => {
@@ -66,12 +71,35 @@ describe('widgetHelpers', () => {
 
     it('returns correct defaults for checklist', () => {
       const config = getDefaultWidgetConfig('checklist');
-      expect(config).toEqual({ items: [] });
+      expect(config).toEqual({
+        items: [],
+        mode: 'manual',
+        firstNames: '',
+        lastNames: '',
+        completedNames: [],
+        scaleMultiplier: 1,
+      });
     });
 
     it('returns empty object for traffic', () => {
       const config = getDefaultWidgetConfig('traffic');
       expect(config).toEqual({});
+    });
+
+    it('returns a deep copy to prevent shared state mutations', () => {
+      const config1 = getDefaultWidgetConfig('checklist') as ChecklistConfig;
+      const config2 = getDefaultWidgetConfig('checklist');
+
+      config1.items.push({ id: '1', text: 'New Item', completed: false });
+
+      expect(config2).toEqual({
+        items: [],
+        mode: 'manual',
+        firstNames: '',
+        lastNames: '',
+        completedNames: [],
+        scaleMultiplier: 1,
+      });
     });
 
     it('returns defaults for all supported widget types', () => {

@@ -1,12 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, CatalystConfig, CatalystCategory } from '../../types';
+import { useAuth } from '../../context/useAuth';
+import {
+  WidgetData,
+  CatalystConfig,
+  CatalystCategory,
+  FeaturePermission,
+} from '../../types';
 import { CatalystWidget } from './CatalystWidget';
 
 // Mock useDashboard
 vi.mock('../../context/useDashboard', () => ({
   useDashboard: vi.fn(),
+}));
+
+// Mock useAuth
+vi.mock('../../context/useAuth', () => ({
+  useAuth: vi.fn(),
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -22,6 +33,10 @@ describe('CatalystWidget', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       mockDashboardContext
     );
+    // Default auth mock with no specific catalyst permission
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [],
+    });
     mockUpdateWidget.mockClear();
     mockAddWidget.mockClear();
   });
@@ -56,7 +71,7 @@ describe('CatalystWidget', () => {
     expect(screen.getByText('Support')).toBeInTheDocument();
   });
 
-  it('renders custom categories when provided', () => {
+  it('renders custom categories when provided via global permissions', () => {
     const customCategories: CatalystCategory[] = [
       {
         id: 'cat1',
@@ -74,7 +89,21 @@ describe('CatalystWidget', () => {
       },
     ];
 
-    render(<CatalystWidget widget={createWidget({ customCategories })} />);
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: {
+            customCategories,
+          },
+        } as FeaturePermission,
+      ],
+    });
+
+    render(<CatalystWidget widget={createWidget()} />);
 
     // With merge behavior, both custom and default categories should be present
     expect(screen.getByText('Custom Cat 1')).toBeInTheDocument();
@@ -92,7 +121,21 @@ describe('CatalystWidget', () => {
       },
     ];
 
-    render(<CatalystWidget widget={createWidget({ customCategories })} />);
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: {
+            customCategories,
+          },
+        } as FeaturePermission,
+      ],
+    });
+
+    render(<CatalystWidget widget={createWidget()} />);
 
     // Should see modified version, not original
     expect(screen.getByText('Modified Attention')).toBeInTheDocument();
@@ -100,13 +143,21 @@ describe('CatalystWidget', () => {
   });
 
   it('excludes removed category IDs from display', () => {
-    render(
-      <CatalystWidget
-        widget={createWidget({
-          removedCategoryIds: ['Get Attention', 'Engage'], // Remove two defaults
-        })}
-      />
-    );
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: {
+            removedCategoryIds: ['Get Attention', 'Engage'],
+          },
+        } as FeaturePermission,
+      ],
+    });
+
+    render(<CatalystWidget widget={createWidget()} />);
 
     // Should not see removed categories
     expect(screen.queryByText('Attention')).not.toBeInTheDocument();
@@ -118,21 +169,31 @@ describe('CatalystWidget', () => {
   });
 
   it('excludes removed routine IDs from display', () => {
-    // Remove 'Signal for Silence' routine (default in 'Get Attention')
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: {
+            removedRoutineIds: ['signal-silence'],
+          },
+        } as FeaturePermission,
+      ],
+    });
+
+    // Active category 'Get Attention' contains 'Signal for Silence'
     render(
       <CatalystWidget
         widget={createWidget({
           activeCategory: 'Get Attention',
-          removedRoutineIds: ['signal-silence'], // Remove a default routine
         })}
       />
     );
 
     // Should not see removed routine
     expect(screen.queryByText('Signal for Silence')).not.toBeInTheDocument();
-
-    // Should still see other routines in 'Get Attention' category if they exist
-    // (If there are no other routines, the widget would show empty state)
   });
 
   it('combines removed IDs with custom overrides correctly', () => {
@@ -146,14 +207,22 @@ describe('CatalystWidget', () => {
       },
     ];
 
-    render(
-      <CatalystWidget
-        widget={createWidget({
-          customCategories,
-          removedCategoryIds: ['Get Attention'], // Remove a default
-        })}
-      />
-    );
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: {
+            customCategories,
+            removedCategoryIds: ['Get Attention'],
+          },
+        } as FeaturePermission,
+      ],
+    });
+
+    render(<CatalystWidget widget={createWidget()} />);
 
     // Should see custom category
     expect(screen.getByText('Custom Cat 1')).toBeInTheDocument();

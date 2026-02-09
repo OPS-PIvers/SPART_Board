@@ -143,47 +143,88 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
 
   // --- Render Sub-views ---
 
+  const renderSubViewHeader = (label: string) => (
+    <div
+      className="flex items-center border-b border-slate-200 shrink-0"
+      style={{ padding: 'min(12px, 2.5cqmin)' }}
+    >
+      <button
+        onClick={() => setActiveCategory(null)}
+        className="hover:bg-slate-100 rounded-lg"
+        style={{
+          padding: 'min(4px, 0.8cqmin)',
+          marginRight: 'min(8px, 1.5cqmin)',
+        }}
+      >
+        <ArrowLeft
+          style={{ width: 'min(18px, 5cqmin)', height: 'min(18px, 5cqmin)' }}
+        />
+      </button>
+      <h3
+        className="font-bold text-slate-800 uppercase tracking-tight"
+        style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+      >
+        {label}
+      </h3>
+    </div>
+  );
+
   const renderVolumeView = () => (
     <WidgetLayout
       padding="p-0"
-      header={
-        <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className="p-1 hover:bg-slate-100 rounded-lg mr-2"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
-            Volume Level
-          </h3>
-        </div>
-      }
+      header={renderSubViewHeader('Volume Level')}
       content={
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200">
+        <div
+          className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
+          style={{ padding: 'min(12px, 2.5cqmin)', gap: 'min(8px, 1.5cqmin)' }}
+        >
           {VOLUME_OPTIONS.map((v) => (
             <button
               key={v.id}
               onClick={() =>
                 updateConfig({ voiceLevel: voiceLevel === v.id ? null : v.id })
               }
-              className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
+              className={`flex items-center rounded-xl border-2 transition-all ${
                 voiceLevel === v.id
                   ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
+              style={{
+                gap: 'min(16px, 3cqmin)',
+                padding: 'min(12px, 2.5cqmin)',
+              }}
             >
-              <span className="text-2xl font-black opacity-40 w-6">{v.id}</span>
+              <span
+                className="font-black opacity-40"
+                style={{
+                  fontSize: 'min(24px, 6cqmin)',
+                  width: 'min(24px, 6cqmin)',
+                }}
+              >
+                {v.id}
+              </span>
               <div className="text-left">
-                <div className="font-black uppercase text-sm leading-tight">
+                <div
+                  className="font-black uppercase leading-tight"
+                  style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                >
                   {v.label}
                 </div>
-                <div className="text-[10px] font-bold opacity-60 uppercase">
+                <div
+                  className="font-bold opacity-60 uppercase"
+                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                >
                   {v.sub}
                 </div>
               </div>
               {voiceLevel === v.id && (
-                <CheckCircle2 className="ml-auto" size={18} />
+                <CheckCircle2
+                  className="ml-auto"
+                  style={{
+                    width: 'min(18px, 4.5cqmin)',
+                    height: 'min(18px, 4.5cqmin)',
+                  }}
+                />
               )}
             </button>
           ))}
@@ -195,39 +236,46 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
   const renderGroupsView = () => (
     <WidgetLayout
       padding="p-0"
-      header={
-        <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className="p-1 hover:bg-slate-100 rounded-lg mr-2"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
-            Group Size
-          </h3>
-        </div>
-      }
+      header={renderSubViewHeader('Group Size')}
       content={
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200">
+        <div
+          className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
+          style={{ padding: 'min(12px, 2.5cqmin)', gap: 'min(8px, 1.5cqmin)' }}
+        >
           {GROUP_OPTIONS.map((g) => (
             <button
               key={g.id}
               onClick={() =>
                 updateConfig({ workMode: workMode === g.id ? null : g.id })
               }
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+              className={`flex items-center rounded-xl border-2 transition-all ${
                 workMode === g.id
                   ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
+              style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}
             >
-              <g.icon size={24} strokeWidth={2.5} />
-              <span className="font-black uppercase text-sm tracking-wide">
+              <g.icon
+                style={{
+                  width: 'min(24px, 6cqmin)',
+                  height: 'min(24px, 6cqmin)',
+                }}
+                strokeWidth={2.5}
+              />
+              <span
+                className="font-black uppercase tracking-wide"
+                style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+              >
                 {g.label}
               </span>
               {workMode === g.id && (
-                <CheckCircle2 className="ml-auto" size={18} />
+                <CheckCircle2
+                  className="ml-auto"
+                  style={{
+                    width: 'min(18px, 4.5cqmin)',
+                    height: 'min(18px, 4.5cqmin)',
+                  }}
+                />
               )}
             </button>
           ))}
@@ -239,21 +287,12 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
   const renderInteractionView = () => (
     <WidgetLayout
       padding="p-0"
-      header={
-        <div className="flex items-center p-3 border-b border-slate-200 shrink-0">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className="p-1 hover:bg-slate-100 rounded-lg mr-2"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <h3 className="font-bold text-slate-800 uppercase text-sm tracking-tight">
-            Interaction
-          </h3>
-        </div>
-      }
+      header={renderSubViewHeader('Interaction')}
       content={
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200">
+        <div
+          className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
+          style={{ padding: 'min(12px, 2.5cqmin)', gap: 'min(8px, 1.5cqmin)' }}
+        >
           {INTERACTION_OPTIONS.map((i) => (
             <button
               key={i.id}
@@ -262,18 +301,34 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                   interactionMode: interactionMode === i.id ? null : i.id,
                 })
               }
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+              className={`flex items-center rounded-xl border-2 transition-all ${
                 interactionMode === i.id
                   ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
+              style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}
             >
-              <i.icon size={24} strokeWidth={2.5} />
-              <span className="font-black uppercase text-sm tracking-wide">
+              <i.icon
+                style={{
+                  width: 'min(24px, 6cqmin)',
+                  height: 'min(24px, 6cqmin)',
+                }}
+                strokeWidth={2.5}
+              />
+              <span
+                className="font-black uppercase tracking-wide"
+                style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+              >
                 {i.label}
               </span>
               {interactionMode === i.id && (
-                <CheckCircle2 className="ml-auto" size={18} />
+                <CheckCircle2
+                  className="ml-auto"
+                  style={{
+                    width: 'min(18px, 4.5cqmin)',
+                    height: 'min(18px, 4.5cqmin)',
+                  }}
+                />
               )}
             </button>
           ))}

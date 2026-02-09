@@ -175,7 +175,7 @@ describe('DraggableWindow', () => {
     });
   });
 
-  it('updates position on pointer drag', () => {
+  it('updates position on pointer drag (using direct DOM manipulation for standard widgets)', () => {
     const { container } = render(
       <DraggableWindow
         widget={mockWidget}
@@ -192,13 +192,12 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    // The drag handle is now the .front div itself
     const frontFace = container.querySelector(
       '.front'
     ) as HTMLElementWithCapture;
     if (!frontFace) throw new Error('Front face not found');
+    const windowEl = screen.getByTestId('draggable-window');
 
-    // Mock capture methods on the handle itself since it's the currentTarget
     frontFace.setPointerCapture = vi.fn();
     frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
     frontFace.releasePointerCapture = vi.fn();
@@ -217,7 +216,18 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New position should be (100 + (160 - 110), 100 + (160 - 110)) = (150, 150)
+    // Standard widget: should NOT call updateWidget during drag
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+
+    // BUT should update DOM directly
+    // New position: 100 + (160 - 110) = 150
+    expect(windowEl.style.left).toBe('150px');
+    expect(windowEl.style.top).toBe('150px');
+
+    // Clean up (Pointer Up)
+    fireEvent.pointerUp(window, { pointerId: 1 });
+
+    // NOW updateWidget should be called with final position
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
       expect.objectContaining({
@@ -225,9 +235,6 @@ describe('DraggableWindow', () => {
         y: 150,
       })
     );
-
-    // Clean up
-    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('allows dragging from below the old 40px handle area', () => {
@@ -250,13 +257,13 @@ describe('DraggableWindow', () => {
     const frontFace = container.querySelector(
       '.front'
     ) as HTMLElementWithCapture;
+    const windowEl = screen.getByTestId('draggable-window');
 
-    // Mock capture methods
     frontFace.setPointerCapture = vi.fn();
     frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
     frontFace.releasePointerCapture = vi.fn();
 
-    // Start pointer at (110, 150) - This was 50px from top, previously restricted
+    // Start pointer at (110, 150)
     fireEvent.pointerDown(frontFace, {
       clientX: 110,
       clientY: 150,
@@ -269,21 +276,23 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // It should now drag
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'test-widget',
-      expect.objectContaining({
-        x: 150,
-        y: 150,
-      })
-    );
+    // Verify DOM update instead of updateWidget
+    // dx = 160 - 110 = 50, dy = 200 - 150 = 50
+    // newX = 100 + 50 = 150, newY = 100 + 50 = 150
+    expect(windowEl.style.left).toBe('150px');
+    expect(windowEl.style.top).toBe('150px');
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
 
     // Clean up
     fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ x: 150, y: 150 })
+    );
   });
 
   it('updates size on pointer resize (SE corner)', () => {
-    render(
+    const { container } = render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -299,19 +308,18 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    // SE handle is typically the last one or indexed specifically
-    const resizeHandles = document.querySelectorAll('.resize-handle');
+    // SE handle
+    const resizeHandles = container.querySelectorAll('.resize-handle');
     const seHandle = Array.from(resizeHandles).find((h) =>
       h.classList.contains('cursor-se-resize')
     ) as HTMLElementWithCapture;
-    if (!seHandle) throw new Error('SE Resize handle not found');
+    const windowEl = screen.getByTestId('draggable-window');
 
-    // Mock capture methods
     seHandle.setPointerCapture = vi.fn();
     seHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
     seHandle.releasePointerCapture = vi.fn();
 
-    // Start resize pointer at (300, 300)
+    // Start resize pointer at (300, 300) (approx corner)
     fireEvent.pointerDown(seHandle, {
       clientX: 300,
       clientY: 300,
@@ -325,21 +333,23 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New size should be w: 200 + (350 - 300) = 250, h: 200 + (400 - 300) = 300
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'test-widget',
-      expect.objectContaining({
-        w: 250,
-        h: 300,
-      })
-    );
+    // DOM should update directly
+    // w: 200 + (350 - 300) = 250
+    // h: 200 + (400 - 300) = 300
+    expect(windowEl.style.width).toBe('250px');
+    expect(windowEl.style.height).toBe('300px');
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
 
     // Clean up
     fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ w: 250, h: 300 })
+    );
   });
 
   it('updates position and size on NW pointer resize', () => {
-    render(
+    const { container } = render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -355,17 +365,17 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const resizeHandles = document.querySelectorAll('.resize-handle');
+    const resizeHandles = container.querySelectorAll('.resize-handle');
     const nwHandle = Array.from(resizeHandles).find((h) =>
       h.classList.contains('cursor-nw-resize')
     ) as HTMLElementWithCapture;
-    if (!nwHandle) throw new Error('NW Resize handle not found');
+    const windowEl = screen.getByTestId('draggable-window');
 
     nwHandle.setPointerCapture = vi.fn();
     nwHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
     nwHandle.releasePointerCapture = vi.fn();
 
-    // Start resize at handle position (conceptually 100, 100)
+    // Start resize at handle position (100, 100)
     fireEvent.pointerDown(nwHandle, {
       clientX: 100,
       clientY: 100,
@@ -379,18 +389,69 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
-    // New W: 200 - (-50) = 250, New X: 100 + (-50) = 50
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'test-widget',
-      expect.objectContaining({
-        w: 250,
-        h: 250,
-        x: 50,
-        y: 50,
-      })
-    );
+    // DOM update
+    // New W: 200 - (-50) = 250, New H: 200 - (-50) = 250
+    // New X: 100 + (-50) = 50, New Y: 100 + (-50) = 50
+    expect(windowEl.style.width).toBe('250px');
+    expect(windowEl.style.height).toBe('250px');
+    expect(windowEl.style.left).toBe('50px');
+    expect(windowEl.style.top).toBe('50px');
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
 
     fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ w: 250, h: 250, x: 50, y: 50 })
+    );
+  });
+
+  it('triggers real-time updates for position-aware widgets (e.g. catalyst)', () => {
+    const catalystWidget = {
+      ...mockWidget,
+      id: 'catalyst-1',
+      type: 'catalyst' as const, // Force type
+    };
+
+    const { container } = render(
+      <DraggableWindow
+        widget={catalystWidget}
+        title="Catalyst"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    const frontFace = container.querySelector(
+      '.front'
+    ) as HTMLElementWithCapture;
+    frontFace.setPointerCapture = vi.fn();
+    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
+    frontFace.releasePointerCapture = vi.fn();
+
+    fireEvent.pointerDown(frontFace, {
+      clientX: 100,
+      clientY: 100,
+      pointerId: 1,
+    });
+
+    fireEvent.pointerMove(window, {
+      clientX: 110,
+      clientY: 110,
+      pointerId: 1,
+    });
+
+    // Catalyst should trigger updateWidget immediately during drag
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'catalyst-1',
+      expect.objectContaining({ x: 110, y: 110 })
+    );
   });
 
   it('closes immediately on widget-escape-press if skipCloseConfirmation is true', async () => {

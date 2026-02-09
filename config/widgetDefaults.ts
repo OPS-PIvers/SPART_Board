@@ -1,7 +1,7 @@
-import { WidgetData } from '../types';
+import { WidgetData, WidgetType } from '../types';
 import { STICKY_NOTE_COLORS } from './colors';
 
-export const WIDGET_DEFAULTS: Record<string, Partial<WidgetData>> = {
+export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
   clock: { w: 280, h: 140, config: { format24: true, showSeconds: true } },
   'time-tool': {
     w: 420,

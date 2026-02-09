@@ -206,11 +206,29 @@ Migrate widgets in priority order based on usage/visibility.
 
 #### Key Scaling Principles (Updated)
 
-1. **Avoid `cqmin`**: It is often too conservative. Use `min(cqw, cqh)` to fill space aggressively.
+1. **Use `min(Xpx, Ycqmin)` or `min(Xcqw, Ycqh)`** for all text, icon, and spacing sizes in widget content. The `min()` function caps the size at a sensible pixel maximum while allowing it to scale down in smaller containers.
 2. **Padding `p-0`**: Use `padding="p-0"` in `WidgetLayout` and `padding: 0` in `WIDGET_SCALING_CONFIG` for widgets that should touch the edges.
 3. **Responsive Fonts**:
-   - Clock: `fontSize: min(30cqw, 75cqh)`
-   - Icons/Buttons: `fontSize: min(16px, 4cqmin)` (for small elements)
+   - Large display text: `fontSize: min(30cqw, 75cqh)` (fills most of the widget)
+   - Body text: `fontSize: min(14px, 3.5cqmin)` (caps at 14px, scales down)
+   - Small labels: `fontSize: min(10px, 2.5cqmin)` (caps at 10px, scales down)
+   - Icons/Buttons: `width/height: min(24px, 6cqmin)` (for interactive elements)
+4. **NEVER use hardcoded Tailwind text classes** (`text-sm`, `text-xs`, `text-2xl`, etc.) or fixed icon sizes (`size={24}`, `w-12 h-12`) in widget front-face content. These do not scale when the widget is resized.
+5. **Settings panels (back-face)** do NOT need container query scaling — normal Tailwind classes are fine there.
+6. **Empty/error states**: Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) for all widget empty and error states. It auto-scales via `cqmin` units.
+   ```tsx
+   import { ScaledEmptyState } from '../common/ScaledEmptyState';
+   <ScaledEmptyState
+     icon={Clock}
+     title="No Schedule"
+     subtitle="Flip to add items."
+   />;
+   ```
+7. **`renderCatalystIcon()`** in `catalystHelpers.tsx` accepts both `number` and CSS `string` sizes for container-query-aware icon rendering:
+   ```tsx
+   renderCatalystIcon(iconName, 'min(32px, 8cqmin)'); // Scaled — use in widget content
+   renderCatalystIcon(iconName, 32); // Fixed — use in settings only
+   ```
 
 #### High Priority (Batch 1) (COMPLETED ✅)
 
@@ -747,17 +765,17 @@ footer: (
 
 ## Sizing Guidelines
 
-- **NEVER** use `cqmin` for primary content (e.g. clock text, dice).
-- **ALWAYS** use `min(Xcqw, Ycqh)` to ensure content scales to the narrowest dimension without creating massive vertical or horizontal gaps.
+- **Use container query units** (`cqw`, `cqh`, `cqmin`) via inline `style={{}}` for ALL dynamic sizing in widget content.
+- **Use `min(Xpx, Ycqmin)`** to set a max pixel size that scales down in smaller containers. For primary content that should fill the widget aggressively, use `min(Xcqw, Ycqh)` instead.
+- **NEVER use hardcoded Tailwind text/size classes** (`text-sm`, `text-xs`, `w-12 h-12`, `size={24}`) in widget front-face content — they don't scale.
 - Use `padding="p-0"` in the `WidgetLayout` to remove the internal flex gap/padding.
 - Set `padding: 0` in `WIDGET_SCALING_CONFIG` (WidgetRegistry.ts) to remove the 16px container margin.
-- Use percentages or `max-w/h-full` for elements.
-- Content automatically fills available space.
-- No need for manual `flex-1` or `h-full`.
+- **Settings panels (back-face)** don't need container query scaling — use normal Tailwind classes.
+- **Empty/error states:** Always use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) instead of hand-rolling a per-widget empty state. It accepts `icon`, `title`, `subtitle`, and optional `action` props and auto-scales via `cqmin`.
 
 ## Examples
 
-See `components/widgets/QRWidget.tsx` for reference implementation.
+See `components/widgets/ClockWidget.tsx`, `WeatherWidget.tsx`, or `PollWidget.tsx` for reference scaling implementations.
 \`\`\`
 
 ---

@@ -25,16 +25,40 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 ### Scaling Logic
 
+- **Container Query System:** Widgets with `skipScaling: true` (most widgets) use CSS Container Queries. All front-face content sizing must use `min(Xpx, Ycqmin)` or `min(Xcqw, Ycqh)` patterns in inline `style={{}}` props.
+- **NEVER** use hardcoded Tailwind text/icon size classes (`text-sm`, `text-xs`, `w-12 h-12`, `size={24}`) in widget content — they don't scale when the widget is resized.
+- **Settings panels** (back-face) don't need container query scaling — normal Tailwind classes are fine there.
+- **Empty/error states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) for all widget empty and error states. It auto-scales via `cqmin` units.
 - **Instructional Routines:** Uses mathematical "EM-based" scaling to ensure all steps fit within the widget height without vertical scrolling.
 - **Bloom's Taxonomy:** Optimized step multiplier to 3.6 for high-density content layouts.
 - **Clock:** Fixed dynamic font sizing to prevent overflow on extreme aspect ratios.
+- **Reference implementations:** `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx`.
 
 ## Micro-Typography
 
-- Use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
+- In **settings panels**, use `text-xxs` or `text-xxxs` for meta-labels and tracking-widest for uppercase headers.
+- In **widget content**, use `style={{ fontSize: 'min(10px, 2.5cqmin)' }}` instead of Tailwind text classes.
 - All "meta" labels should be `uppercase tracking-widest text-slate-400 font-black`.
 
-## 2026-02-07 - Floating Menus (Gap)
+## 2026-02-07 - Floating Menus
 
 **Drift:** Multiple widgets (`SeatingChart`, `TimeTool`, `DraggableSticker`) implemented their own "floating menu" or "popover" with inconsistent shadows, border radius, z-index, and animations.
 **Fix:** Created `components/common/FloatingPanel.tsx` to standardize the container styling (shadow-xl, rounded-2xl, z-popover) and animations. Refactored affected widgets to use this component.
+
+## 2026-02-08 - Z-Index Standardization
+
+**Drift:** Discovered multiple hardcoded z-index values (e.g., `z-[60]`, `z-[9999]`, `z-[10000]`) across components, creating inconsistent stacking contexts and potential visual bugs (e.g., toasts appearing below modals).
+
+**Fix:** Standardized z-indices by:
+
+1.  Updating `config/zIndex.ts` with new semantic layers:
+    - `stickerControl: 50`
+    - `widgetResize: 60`
+    - `dropdown: 110`
+    - `overlay: 9910`
+    - `modalNested: 10100`
+    - `modalNestedContent: 10110`
+    - `modalDeep: 10200`
+    - `modalDeepContent: 10210`
+2.  Updating `tailwind.config.js` to expose these as utility classes.
+3.  Refactoring components (`DraggableWindow`, `SeatingChartWidget`, `DraggableSticker`, `IconPicker`, `DrawingWidget`, `AdminSettings`, `DashboardView`, `FeaturePermissionsManager`, `BackgroundManager`, `GlobalPermissionsManager`) to use the new `z-*` utility classes.
