@@ -113,12 +113,14 @@ export const ScoreboardItem = React.memo(
           <button
             onClick={() => onUpdateScore(team.id, -1)}
             className={`p-1.5 bg-white ${styles.button} rounded-lg shadow-sm hover:bg-slate-50 active:scale-95 transition-all`}
+            aria-label="Decrease score"
           >
             <Minus className="w-4 h-4" />
           </button>
           <button
             onClick={() => onUpdateScore(team.id, 1)}
             className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
+            aria-label="Increase score"
           >
             <Plus className="w-4 h-4" />
           </button>
