@@ -24,7 +24,6 @@ interface ChecklistRowProps {
   id: string;
   label: string;
   isCompleted: boolean;
-  dynamicFontSize: number;
   onToggle: (id: string) => void;
 }
 

@@ -170,7 +170,6 @@ interface RoutineStepItemProps {
   step: RoutineStep;
   index: number;
   structure: string;
-  dynamicFontSize: number;
   onDragStart: (
     e: React.DragEvent,
     icon: string | undefined,
@@ -191,7 +190,6 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
   step,
   index,
   structure,
-  dynamicFontSize,
   onDragStart,
   onStepClick,
   onAddWidget,
@@ -299,8 +297,8 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
                     alt={step.label ?? 'Sticker'}
                     className="object-contain"
                     style={{
-                      width: dynamicFontSize * 1.5,
-                      height: dynamicFontSize * 1.5,
+                      width: '1.5em',
+                      height: '1.5em',
                     }}
                   />
                 </div>
@@ -310,7 +308,10 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
                   style={{ padding: '0.4em' }}
                 >
                   {StepIcon && (
-                    <StepIcon size={dynamicFontSize * 1.5} strokeWidth={2.5} />
+                    <StepIcon
+                      style={{ width: '1.5em', height: '1.5em' }}
+                      strokeWidth={2.5}
+                    />
                   )}
                 </div>
               )}
@@ -327,7 +328,10 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
                 className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
                 style={{ gap: '0.1em' }}
               >
-                <Grab size={dynamicFontSize * 0.5} className="text-slate-300" />
+                <Grab
+                  style={{ width: '0.5em', height: '0.5em' }}
+                  className="text-slate-300"
+                />
                 <span
                   className="font-black uppercase text-slate-400"
                   style={{ fontSize: '0.4em' }}
@@ -353,7 +357,7 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
               fontSize: '0.8em',
             }}
           >
-            <Rocket size={dynamicFontSize} />
+            <Rocket style={{ width: '1em', height: '1.5em' }} />
             Launch {step.attachedWidget.label}
           </button>
         )}
