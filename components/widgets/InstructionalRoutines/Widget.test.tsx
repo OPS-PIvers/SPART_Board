@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { InstructionalRoutinesWidget } from './Widget';
 import { InstructionalRoutinesSettings } from './Settings';
@@ -72,18 +73,22 @@ describe('InstructionalRoutinesWidget', () => {
       'text',
       expect.objectContaining({
         config: expect.objectContaining({
-          content: expect.stringContaining('class="font-black mb-[0.5em] uppercase text-slate-800"')
-        })
+          content: expect.stringContaining(
+            'class="font-black mb-[0.5em] uppercase text-slate-800"'
+          ),
+        }),
       })
     );
 
     expect(addWidgetSpy).toHaveBeenCalledWith(
-        'text',
-        expect.objectContaining({
-            config: expect.objectContaining({
-                content: expect.stringContaining('class="font-extrabold mt-[1em] mb-[0.25em] text-brand-blue-primary text-[0.9em]"')
-            })
-        })
+      'text',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          content: expect.stringContaining(
+            'class="font-extrabold mt-[1em] mb-[0.25em] text-brand-blue-primary text-[0.9em]"'
+          ),
+        }),
+      })
     );
   });
 });
