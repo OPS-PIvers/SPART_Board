@@ -242,35 +242,59 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       <WidgetLayout
         padding="p-0"
         header={
-          <div className="p-4 border-b border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-between shrink-0">
+          <div
+            className="border-b border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-between shrink-0"
+            style={{ padding: 'min(16px, 3.5cqw, 5cqh)' }}
+          >
             <div>
-              <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest truncate max-w-[200px]">
+              <h3
+                className="font-black text-slate-700 uppercase tracking-widest truncate"
+                style={{ fontSize: 'min(12px, 3cqw, 4cqh)', maxWidth: '60cqw' }}
+              >
                 {activeNotebook.title}
               </h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">
+              <p
+                className="font-bold text-slate-400 uppercase tracking-tighter"
+                style={{
+                  fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                  marginTop: 'min(2px, 0.5cqh)',
+                }}
+              >
                 Page {currentPage + 1} of {activeNotebook.pageUrls.length}
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex" style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}>
               {hasAssets && (
                 <button
                   onClick={() => setShowAssets(!showAssets)}
-                  className={`p-2 rounded-xl transition-all shadow-sm border ${
+                  className={`rounded-xl transition-all shadow-sm border ${
                     showAssets
                       ? 'bg-indigo-600 text-white border-indigo-700'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
+                  style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
                   title="Toggle Assets"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText
+                    style={{
+                      width: 'min(16px, 4cqw, 5cqh)',
+                      height: 'min(16px, 4cqw, 5cqh)',
+                    }}
+                  />
                 </button>
               )}
               <button
                 onClick={handleClose}
-                className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition-all border border-slate-700 active:scale-95"
+                className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition-all border border-slate-700 active:scale-95"
+                style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
               >
-                <X className="w-4 h-4" />
+                <X
+                  style={{
+                    width: 'min(16px, 4cqw, 5cqh)',
+                    height: 'min(16px, 4cqw, 5cqh)',
+                  }}
+                />
               </button>
             </div>
           </div>
@@ -290,10 +314,19 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
             {showAssets && hasAssets && (
               <div className="w-1/3 max-w-[240px] min-w-[160px] bg-white border-l border-slate-200 shadow-xl overflow-y-auto p-3 custom-scrollbar z-20 flex flex-col gap-3">
                 <div className="text-center">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  <h4
+                    className="font-black text-slate-400 uppercase tracking-widest"
+                    style={{
+                      fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                      marginBottom: 'min(4px, 1cqh)',
+                    }}
+                  >
                     Assets
                   </h4>
-                  <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-tighter animate-pulse">
+                  <p
+                    className="font-bold text-indigo-500 uppercase tracking-tighter animate-pulse"
+                    style={{ fontSize: 'min(9px, 2.2cqw, 2.8cqh)' }}
+                  >
                     Drag to board
                   </p>
                 </div>
@@ -318,19 +351,43 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         }
         footer={
-          <div className="p-4 border-t border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-center gap-6 shrink-0">
+          <div
+            className="border-t border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-center shrink-0"
+            style={{
+              padding: 'min(16px, 3.5cqw, 5cqh)',
+              gap: 'min(24px, 5cqw, 7cqh)',
+            }}
+          >
             <button
               disabled={currentPage === 0}
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all shadow-sm active:scale-90"
+              className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all shadow-sm active:scale-90"
+              style={{ padding: 'min(12px, 2.5cqw, 4cqh)' }}
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft
+                style={{
+                  width: 'min(24px, 5cqw, 7cqh)',
+                  height: 'min(24px, 5cqw, 7cqh)',
+                }}
+              />
             </button>
-            <div className="flex flex-col items-center min-w-[80px]">
-              <span className="text-xs font-black text-slate-700 tracking-widest uppercase">
+            <div
+              className="flex flex-col items-center"
+              style={{ minWidth: 'min(80px, 20cqw)' }}
+            >
+              <span
+                className="font-black text-slate-700 tracking-widest uppercase"
+                style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+              >
                 {currentPage + 1} / {activeNotebook.pageUrls.length}
               </span>
-              <div className="w-full h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+              <div
+                className="w-full bg-slate-100 rounded-full overflow-hidden"
+                style={{
+                  height: 'min(4px, 1cqh)',
+                  marginTop: 'min(6px, 1.5cqh)',
+                }}
+              >
                 <div
                   className="h-full bg-indigo-500 transition-all duration-300"
                   style={{
@@ -346,9 +403,15 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                   Math.min(activeNotebook.pageUrls.length - 1, p + 1)
                 )
               }
-              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all shadow-sm active:scale-90"
+              className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all shadow-sm active:scale-90"
+              style={{ padding: 'min(12px, 2.5cqw, 4cqh)' }}
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight
+                style={{
+                  width: 'min(24px, 5cqw, 7cqh)',
+                  height: 'min(24px, 5cqw, 7cqh)',
+                }}
+              />
             </button>
           </div>
         }
@@ -361,9 +424,25 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-sm shrink-0">
-          <h2 className="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
-            <Book className="w-5 h-5 text-indigo-500" /> Notebooks
+        <div
+          className="border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-sm shrink-0"
+          style={{ padding: 'min(20px, 4cqw, 6cqh)' }}
+        >
+          <h2
+            className="font-black text-slate-700 uppercase tracking-widest flex items-center"
+            style={{
+              fontSize: 'min(14px, 3.5cqw, 5cqh)',
+              gap: 'min(8px, 2cqw, 2.5cqh)',
+            }}
+          >
+            <Book
+              className="text-indigo-500"
+              style={{
+                width: 'min(20px, 5cqw, 6cqh)',
+                height: 'min(20px, 5cqw, 6cqh)',
+              }}
+            />{' '}
+            Notebooks
           </h2>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -394,10 +473,19 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                 <FileText className="w-10 h-10 opacity-30" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-black uppercase tracking-widest mb-1">
+                <p
+                  className="font-black uppercase tracking-widest"
+                  style={{
+                    fontSize: 'min(14px, 3.5cqw, 5cqh)',
+                    marginBottom: 'min(4px, 1cqh)',
+                  }}
+                >
                   Library is empty
                 </p>
-                <p className="text-xs font-bold uppercase tracking-tighter opacity-60">
+                <p
+                  className="font-bold uppercase tracking-tighter opacity-60"
+                  style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                >
                   Import a .notebook file to begin.
                 </p>
               </div>
@@ -426,11 +514,26 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                         No Preview
                       </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent p-4 pt-10">
-                      <p className="text-white text-xs font-black uppercase tracking-tight truncate">
+                    <div
+                      className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent"
+                      style={{
+                        padding:
+                          'min(40px, 8cqh) min(16px, 4cqw) min(16px, 4cqw)',
+                      }}
+                    >
+                      <p
+                        className="text-white font-black uppercase tracking-tight truncate"
+                        style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                      >
                         {notebook.title}
                       </p>
-                      <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-0.5">
+                      <p
+                        className="text-white/60 font-bold uppercase tracking-widest"
+                        style={{
+                          fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                          marginTop: 'min(2px, 0.5cqh)',
+                        }}
+                      >
                         {notebook.pageUrls.length} pages
                       </p>
                     </div>

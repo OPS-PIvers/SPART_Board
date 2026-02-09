@@ -105,27 +105,27 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       header={
         <div
           className="flex items-center justify-between border-b border-slate-100 bg-white/50 backdrop-blur-sm shrink-0"
-          style={{ padding: 'min(12px, 2.5cqmin) min(16px, 3cqmin)' }}
+          style={{ padding: 'min(12px, 2.5cqw, 4cqh) min(16px, 3cqw, 5cqh)' }}
         >
           <div
             className="flex items-center"
-            style={{ gap: 'min(8px, 1.5cqmin)' }}
+            style={{ gap: 'min(8px, 1.5cqw, 2.5cqh)' }}
           >
             <div
               className="bg-emerald-50 rounded-lg border border-emerald-100 shadow-sm flex items-center justify-center"
-              style={{ padding: 'min(6px, 1.2cqmin)' }}
+              style={{ padding: 'min(6px, 1.2cqw, 2cqh)' }}
             >
               <Shirt
                 className="text-emerald-600"
                 style={{
-                  width: 'min(16px, 4cqmin)',
-                  height: 'min(16px, 4cqmin)',
+                  width: 'min(16px, 3.5cqw, 5cqh)',
+                  height: 'min(16px, 3.5cqw, 5cqh)',
                 }}
               />
             </div>
             <span
               className="font-black uppercase tracking-widest text-slate-400"
-              style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+              style={{ fontSize: 'min(12px, 2.8cqw, 4cqh)' }}
             >
               Recess Gear
             </span>
@@ -133,20 +133,20 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           <div
             className="flex items-center bg-emerald-50 rounded-full border border-emerald-100 shadow-sm"
             style={{
-              gap: 'min(6px, 1.2cqmin)',
-              padding: 'min(4px, 0.8cqmin) min(10px, 2cqmin)',
+              gap: 'min(6px, 1.2cqw, 2cqh)',
+              padding: 'min(4px, 0.8cqw, 1.5cqh) min(10px, 2cqw, 3.5cqh)',
             }}
           >
             <Thermometer
               className="text-emerald-600"
               style={{
-                width: 'min(12px, 3cqmin)',
-                height: 'min(12px, 3cqmin)',
+                width: 'min(12px, 2.8cqw, 4cqh)',
+                height: 'min(12px, 2.8cqw, 4cqh)',
               }}
             />
             <span
               className="font-black text-emerald-700 tracking-tight"
-              style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+              style={{ fontSize: 'min(12px, 2.8cqw, 4cqh)' }}
             >
               {Math.round(
                 (config.useFeelsLike && weatherConfig.feelsLike !== undefined
@@ -161,39 +161,39 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
-          style={{ padding: 'min(16px, 3cqmin)' }}
+          style={{ padding: 'min(16px, 3cqw, 5cqh)' }}
         >
           <div
             className="grid grid-cols-1 @[240px]:grid-cols-2"
-            style={{ gap: 'min(12px, 2.5cqmin)' }}
+            style={{ gap: 'min(12px, 2.5cqw, 4cqh)' }}
           >
             {gearList.map((item, idx) => (
               <div
                 key={`${item.label}-${idx}`}
                 className="flex items-center bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-emerald-200 hover:shadow-md transition-all group"
                 style={{
-                  gap: 'min(12px, 2.5cqmin)',
-                  padding: 'min(16px, 3cqmin)',
+                  gap: 'min(12px, 2.5cqw, 4cqh)',
+                  padding: 'min(16px, 3cqw, 5cqh)',
                 }}
               >
                 <span
                   className="group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm shrink-0"
-                  style={{ fontSize: 'min(30px, 8cqmin)' }}
+                  style={{ fontSize: 'min(30px, 7cqw, 10cqh)' }}
                 >
                   {item.icon}
                 </span>
                 <div className="flex flex-col min-w-0">
                   <span
                     className="font-black text-slate-700 uppercase leading-tight tracking-tight"
-                    style={{ fontSize: 'min(10px, 2.8cqmin)' }}
+                    style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
                   >
                     {item.label}
                   </span>
                   <span
                     className="font-bold text-slate-300 uppercase tracking-widest"
                     style={{
-                      fontSize: 'min(9px, 2.2cqmin)',
-                      marginTop: 'min(4px, 0.8cqmin)',
+                      fontSize: 'min(11px, 2.8cqw, 4cqh)',
+                      marginTop: 'min(4px, 0.8cqw)',
                     }}
                   >
                     {item.category}
@@ -208,19 +208,19 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className="bg-slate-50/50 border-t border-slate-100 flex items-center justify-between font-black text-slate-400 uppercase tracking-widest shrink-0"
           style={{
-            padding: 'min(10px, 2cqmin) min(16px, 3cqmin)',
-            fontSize: 'min(9px, 2.2cqmin)',
+            padding: 'min(10px, 2cqw, 3.5cqh) min(16px, 3cqw, 5cqh)',
+            fontSize: 'min(11px, 2.5cqw, 3.5cqh)',
           }}
         >
           <div
             className="flex items-center truncate max-w-[70%]"
-            style={{ gap: 'min(6px, 1.2cqmin)' }}
+            style={{ gap: 'min(6px, 1.2cqw, 2cqh)' }}
           >
             <LinkIcon
               className="opacity-60"
               style={{
-                width: 'min(10px, 2.5cqmin)',
-                height: 'min(10px, 2.5cqmin)',
+                width: 'min(10px, 2.5cqw, 3.5cqh)',
+                height: 'min(10px, 2.5cqw, 3.5cqh)',
               }}
             />
             <span className="truncate">
@@ -229,11 +229,14 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
           <div
             className="flex items-center shrink-0"
-            style={{ gap: 'min(4px, 0.8cqmin)' }}
+            style={{ gap: 'min(4px, 0.8cqw, 1.5cqh)' }}
           >
             <div
               className="bg-emerald-400 rounded-full animate-pulse"
-              style={{ width: 'min(4px, 1cqmin)', height: 'min(4px, 1cqmin)' }}
+              style={{
+                width: 'min(5px, 1cqw, 1.5cqh)',
+                height: 'min(5px, 1cqw, 1.5cqh)',
+              }}
             />
             <span>Auto</span>
           </div>

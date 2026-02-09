@@ -593,11 +593,20 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     >
                       <Icon size={28} strokeWidth={2} />
                     </div>
-                    <div className="flex flex-col gap-1 w-full">
-                      <div className="text-[11px] font-black text-slate-800 uppercase leading-tight tracking-wide">
+                    <div
+                      className="flex flex-col w-full"
+                      style={{ gap: 'min(4px, 1cqh)' }}
+                    >
+                      <div
+                        className="font-black text-slate-800 uppercase leading-tight tracking-wide"
+                        style={{ fontSize: 'min(11px, 2.8cqw, 3.5cqh)' }}
+                      >
                         {r.name}
                       </div>
-                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                      <div
+                        className="font-bold text-slate-400 uppercase tracking-wider"
+                        style={{ fontSize: 'min(9px, 2.2cqw, 2.8cqh)' }}
+                      >
                         {r.grades}
                       </div>
                     </div>
@@ -827,7 +836,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           size={dynamicFontSize * 1.5}
                           className="animate-spin-slow"
                         />
-                        <span className="text-xxs font-black uppercase tracking-widest">
+                        <span
+                          className="font-black uppercase tracking-widest"
+                          style={{ fontSize: '0.6em' }}
+                        >
                           Repeat
                         </span>
                       </div>

@@ -343,15 +343,36 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                   </div>
                 </div>
               )}
-              <div className="flex-1 overflow-y-auto space-y-2 p-3 custom-scrollbar">
+              <div
+                className="flex-1 overflow-y-auto custom-scrollbar flex flex-col"
+                style={{
+                  gap: 'min(8px, 2cqw, 2.5cqh)',
+                  padding: 'min(12px, 2.5cqw, 4cqh)',
+                }}
+              >
                 {rosters.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 opacity-40">
-                    <Star size={40} className="stroke-slate-300" />
+                  <div
+                    className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40"
+                    style={{ gap: 'min(12px, 3cqw, 4cqh)' }}
+                  >
+                    <Star
+                      className="stroke-slate-300"
+                      style={{
+                        width: 'min(40px, 10cqw, 12cqh)',
+                        height: 'min(40px, 10cqw, 12cqh)',
+                      }}
+                    />
                     <div className="text-center">
-                      <p className="text-sm font-black uppercase tracking-widest">
+                      <p
+                        className="font-black uppercase tracking-widest"
+                        style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                      >
                         No classes yet.
                       </p>
-                      <p className="text-xs font-bold">
+                      <p
+                        className="font-bold"
+                        style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                      >
                         Create one to get started!
                       </p>
                     </div>
@@ -360,9 +381,13 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                 {rosters.map((r) => (
                   <div
                     key={r.id}
-                    className={`p-3.5 border rounded-2xl bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-500/5' : 'border-slate-200'}`}
+                    className={`border rounded-2xl bg-white flex justify-between items-center transition-all hover:shadow-md ${activeRosterId === r.id ? 'ring-2 ring-blue-400 border-blue-400 shadow-lg shadow-blue-500/5' : 'border-slate-200'}`}
+                    style={{ padding: 'min(14px, 3cqw, 4cqh)' }}
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      className="flex items-center flex-1 min-w-0"
+                      style={{ gap: 'min(12px, 3cqw, 4cqh)' }}
+                    >
                       <button
                         onClick={() =>
                           setActiveRoster(activeRosterId === r.id ? null : r.id)
@@ -378,36 +403,60 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                           fill={
                             activeRosterId === r.id ? 'currentColor' : 'none'
                           }
-                          size={24}
+                          style={{
+                            width: 'min(24px, 5cqw, 7cqh)',
+                            height: 'min(24px, 5cqw, 7cqh)',
+                          }}
                           strokeWidth={2.5}
                         />
                       </button>
                       <div className="min-w-0 flex-1">
-                        <div className="text-slate-800 font-black truncate text-sm uppercase tracking-tight">
+                        <div
+                          className="text-slate-800 font-black truncate uppercase tracking-tight"
+                          style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                        >
                           {r.name}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        <div
+                          className="text-slate-400 font-bold uppercase tracking-widest"
+                          style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                        >
                           {r.students.length} Students
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div
+                      className="flex"
+                      style={{ gap: 'min(4px, 1cqw, 1.5cqh)' }}
+                    >
                       <button
                         onClick={() => {
                           setEditingId(r.id);
                           setView('edit');
                         }}
-                        className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors"
+                        className="hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors"
+                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
                         title="Edit Class"
                       >
-                        <Edit2 size={18} />
+                        <Edit2
+                          style={{
+                            width: 'min(18px, 4cqw, 5.5cqh)',
+                            height: 'min(18px, 4cqw, 5.5cqh)',
+                          }}
+                        />
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(r.id)}
-                        className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
+                        className="hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors"
+                        style={{ padding: 'min(8px, 2cqw, 2.5cqh)' }}
                         title="Delete Class"
                       >
-                        <Trash2 size={18} />
+                        <Trash2
+                          style={{
+                            width: 'min(18px, 4cqw, 5.5cqh)',
+                            height: 'min(18px, 4cqw, 5.5cqh)',
+                          }}
+                        />
                       </button>
                     </div>
                   </div>
@@ -463,20 +512,32 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                     classLinkClasses.map((cls) => (
                       <div
                         key={cls.sourcedId}
-                        className="p-4 border border-slate-200 rounded-2xl bg-white flex justify-between items-center hover:shadow-md transition-all hover:border-blue-200 group"
+                        className="border border-slate-200 rounded-2xl bg-white flex justify-between items-center hover:shadow-md transition-all hover:border-blue-200 group"
+                        style={{ padding: 'min(16px, 3.5cqw, 5cqh)' }}
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="text-slate-800 font-black uppercase tracking-tight truncate">
+                          <div
+                            className="text-slate-800 font-black uppercase tracking-tight truncate"
+                            style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+                          >
                             {cls.title}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                          <div
+                            className="text-slate-400 font-bold uppercase tracking-widest"
+                            style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                          >
                             {classLinkStudents[cls.sourcedId]?.length || 0}{' '}
                             Students
                           </div>
                         </div>
                         <button
                           onClick={() => importClassLinkClass(cls)}
-                          className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:shadow-md"
+                          className="bg-blue-50 text-blue-600 rounded-xl font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:shadow-md"
+                          style={{
+                            padding:
+                              'min(8px, 2cqw, 2.5cqh) min(16px, 3.5cqw, 5cqh)',
+                            fontSize: 'min(12px, 3cqw, 4cqh)',
+                          }}
                         >
                           Import
                         </button>

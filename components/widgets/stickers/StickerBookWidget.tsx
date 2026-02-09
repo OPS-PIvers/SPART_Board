@@ -184,26 +184,58 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-sm z-10 shrink-0">
-          <span className="text-slate-700 font-black uppercase tracking-widest text-xs">
+        <div
+          className="border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-sm z-10 shrink-0"
+          style={{ padding: 'min(16px, 3.5cqw, 5cqh)' }}
+        >
+          <span
+            className="text-slate-700 font-black uppercase tracking-widest"
+            style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+          >
             Sticker Collection
           </span>
-          <div className="flex gap-2">
+          <div className="flex" style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}>
             <button
               onClick={clearAllStickers}
-              className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-3 py-1.5 rounded-full hover:bg-red-100 transition-colors uppercase font-black tracking-widest border border-red-100 shadow-sm"
+              className="flex items-center bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors uppercase font-black tracking-widest border border-red-100 shadow-sm"
+              style={{
+                gap: 'min(4px, 1cqw)',
+                fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                padding: 'min(6px, 1.5cqw, 2cqh) min(12px, 2.5cqw, 4cqh)',
+              }}
               title="Clear all stickers from board"
             >
-              <Eraser size={12} />
+              <Eraser
+                style={{
+                  width: 'min(12px, 3cqw, 3.5cqh)',
+                  height: 'min(12px, 3cqw, 3.5cqh)',
+                }}
+              />
               Clear
             </button>
             <label
-              className={`flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+              className={`flex items-center bg-blue-600 text-white rounded-full font-black uppercase tracking-widest cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+              style={{
+                gap: 'min(8px, 2cqw, 2.5cqh)',
+                fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                padding: 'min(6px, 1.5cqw, 2cqh) min(16px, 3.5cqw, 5cqh)',
+              }}
             >
               {uploading ? (
-                <Loader2 size={12} className="animate-spin" />
+                <Loader2
+                  className="animate-spin"
+                  style={{
+                    width: 'min(12px, 3cqw, 3.5cqh)',
+                    height: 'min(12px, 3cqw, 3.5cqh)',
+                  }}
+                />
               ) : (
-                <Upload size={12} />
+                <Upload
+                  style={{
+                    width: 'min(12px, 3cqw, 3.5cqh)',
+                    height: 'min(12px, 3cqw, 3.5cqh)',
+                  }}
+                />
               )}
               {uploading ? 'Wait...' : 'Upload'}
               <input
@@ -235,10 +267,16 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   <Upload className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight">
+                  <p
+                    className="font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight"
+                    style={{ fontSize: 'min(12px, 3cqw, 4cqh)' }}
+                  >
                     Drop or Paste Image
                   </p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p
+                    className="font-bold text-slate-400 uppercase tracking-widest"
+                    style={{ fontSize: 'min(10px, 2.5cqw, 3.5cqh)' }}
+                  >
                     to add custom stickers
                   </p>
                 </div>
@@ -248,7 +286,14 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 
           {/* Defaults */}
           <div className="mb-8">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">
+            <h4
+              className="font-black text-slate-400 uppercase tracking-widest"
+              style={{
+                fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                marginBottom: 'min(16px, 3.5cqw, 5cqh)',
+                padding: '0 min(4px, 1cqw)',
+              }}
+            >
               Essentials
             </h4>
             <div className="grid grid-cols-4 gap-4">
@@ -275,7 +320,14 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
           {/* Custom */}
           {customStickers.length > 0 && (
             <div>
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">
+              <h4
+                className="font-black text-slate-400 uppercase tracking-widest"
+                style={{
+                  fontSize: 'min(10px, 2.5cqw, 3.5cqh)',
+                  marginBottom: 'min(16px, 3.5cqw, 5cqh)',
+                  padding: '0 min(4px, 1cqw)',
+                }}
+              >
                 My Collection
               </h4>
               <div className="grid grid-cols-4 gap-4">
@@ -312,9 +364,24 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       footer={
-        <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center gap-3 shrink-0">
-          <MousePointer2 size={12} className="text-slate-400" />
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center flex-1">
+        <div
+          className="bg-slate-50/50 border-t border-slate-100 flex items-center shrink-0"
+          style={{
+            padding: 'min(12px, 2.5cqw, 4cqh) min(16px, 3.5cqw, 5cqh)',
+            gap: 'min(12px, 3cqw, 4cqh)',
+          }}
+        >
+          <MousePointer2
+            className="text-slate-400"
+            style={{
+              width: 'min(12px, 3cqw, 3.5cqh)',
+              height: 'min(12px, 3cqw, 3.5cqh)',
+            }}
+          />
+          <span
+            className="font-black text-slate-400 uppercase tracking-widest text-center flex-1"
+            style={{ fontSize: 'min(9px, 2.2cqw, 2.8cqh)' }}
+          >
             Drag stickers from library to the board
           </span>
         </div>
