@@ -150,7 +150,8 @@ describe('CatalystPermissionEditor', () => {
     });
 
     fireEvent.click(screen.getByText('Save'));
-    expect(window.alert).toHaveBeenCalledWith(
+    expect(mockOnShowMessage).toHaveBeenCalledWith(
+      'error',
       'Please fix JSON errors before saving.'
     );
     expect(mockOnChange).not.toHaveBeenCalled();
