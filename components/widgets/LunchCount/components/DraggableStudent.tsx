@@ -5,6 +5,7 @@ interface DraggableStudentProps {
   id: string;
   name: string;
   className?: string;
+  style?: React.CSSProperties;
   onClick?: () => void;
 }
 
@@ -12,6 +13,7 @@ export const DraggableStudent: React.FC<DraggableStudentProps> = ({
   id,
   name,
   className,
+  style: propStyle,
   onClick,
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -24,9 +26,10 @@ export const DraggableStudent: React.FC<DraggableStudentProps> = ({
 
   const style = transform
     ? {
+        ...propStyle,
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
-    : undefined;
+    : propStyle;
 
   return (
     <div

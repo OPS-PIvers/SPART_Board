@@ -440,42 +440,88 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
 
 **For `skipScaling: true` widgets, follow these rules:**
 
-1. **Use inline `style={{}}` with `min()` and container query units** for all dynamic sizing:
+1. **ALWAYS use `cqmin` for text sizing** (not `cqw` or `cqh` separately):
 
    ```tsx
-   // Font sizes
-   style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+   // WRONG - mixes units, inconsistent scaling
+   style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
    style={{ fontSize: 'min(20cqw, 15cqh)' }}
 
-   // Icon/element sizes
-   style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
-
-   // Spacing
-   style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
+   // CORRECT - uses cqmin for consistent scaling
+   style={{ fontSize: 'min(14px, 5cqmin)' }}
+   style={{ fontSize: 'min(24px, 25cqmin)' }}
    ```
 
-2. **NEVER use hardcoded Tailwind text/size classes** in widget front-face content:
+2. **Size elements by visual hierarchy** with appropriate `cqmin` values:
+
+   | Element Type | Recommended `cqmin` | Min px | Example |
+   |-------------|---------------------|--------|---------|
+   | Primary content (hero text/numbers) | 20-30cqmin | 20-32px | Temperature, Clock time |
+   | Secondary content (subheadings) | 5-8cqmin | 14-18px | Widget section labels |
+   | Tertiary content (metadata) | 3.5-5cqmin | 10-12px | Footer text, timestamps |
+   | Primary icons | 20-30cqmin | 48-80px | Weather icons |
+   | Decorative icons | 8-15cqmin | 16-48px | Section markers |
+   | Small icons | 4-6cqmin | 14-24px | Buttons, indicators |
+
+3. **NEVER use hardcoded Tailwind text/size classes** in widget front-face content:
 
    ```tsx
-   // BAD - won't scale when widget is resized
+   // BAD - won't scale, leaves empty space
    <span className="text-sm">Label</span>
    <Icon className="w-12 h-12" />
    <Icon size={24} />
-   <div className="h-32 gap-4 p-4">
+   <div className="gap-4 p-4">
 
-   // GOOD - scales with the container
-   <span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>Label</span>
+   // GOOD - scales aggressively to fill container
+   <span style={{ fontSize: 'min(14px, 5.5cqmin)' }}>Label</span>
    <Icon style={{ width: 'min(48px, 12cqmin)', height: 'min(48px, 12cqmin)' }} />
-   <div style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}>
+   <div style={{ gap: 'min(16px, 3.5cqmin)', padding: 'min(16px, 3.5cqmin)' }}>
    ```
 
-3. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
+4. **Minimize header/footer overhead** to maximize content area:
 
-4. **Container query unit reference:**
-   - `cqw` = 1% of container width
-   - `cqh` = 1% of container height
-   - `cqmin` = 1% of the smaller dimension (width or height)
-   - Use `min(Xpx, Ycqmin)` to set a max pixel size that scales down in smaller containers
+   ```tsx
+   // Header - keep compact with smaller padding
+   <div style={{ padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)' }}>
+     <span style={{ fontSize: 'min(11px, 4cqmin)' }}>HEADER</span>
+   </div>
+
+   // Content - should dominate the widget
+   <div className="flex-1" style={{ padding: 'min(12px, 2.5cqmin)' }}>
+     <div style={{ fontSize: 'min(24px, 25cqmin)' }}>MAIN CONTENT</div>
+   </div>
+
+   // Footer - keep minimal
+   <div style={{ padding: 'min(8px, 1.5cqmin)' }}>
+     <span style={{ fontSize: 'min(10px, 3.5cqmin)' }}>Footer</span>
+   </div>
+   ```
+
+5. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
+
+6. **Container query unit reference:**
+   - `cqmin` = 1% of the smaller dimension (width or height) - **USE THIS for almost everything**
+   - `cqw` = 1% of container width - only use when you specifically need width-based scaling
+   - `cqh` = 1% of container height - only use when you specifically need height-based scaling
+   - Use `min(Xpx, Ycqmin)` to set a minimum pixel size that scales up in larger containers
+
+7. **Common scaling formulas:**
+   ```tsx
+   // Tiny labels (footer metadata)
+   style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+
+   // Small labels (section titles)
+   style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+
+   // Medium text (list items, body)
+   style={{ fontSize: 'min(14px, 5.5cqmin)' }}
+
+   // Large text (subheadings)
+   style={{ fontSize: 'min(16px, 7cqmin)' }}
+
+   // Hero text (primary numbers/headings)
+   style={{ fontSize: 'min(24px, 25cqmin)' }}
+   ```
 
 5. **For empty/error states**, use the shared `ScaledEmptyState` component:
 
@@ -496,7 +542,9 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
    renderCatalystIcon(iconName, 32); // Fixed (for settings panels only)
    ```
 
-**Reference implementations:** `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx`
+**Reference implementations:** `WeatherWidget.tsx`, `RecessGearWidget.tsx`, `LunchCount/Widget.tsx`
+
+**For complete scaling standards and patterns**, see [WIDGET_SCALING_STANDARDS.md](WIDGET_SCALING_STANDARDS.md).
 
 ### Audio Context Management
 
@@ -733,7 +781,13 @@ See [LINTING_SETUP.md](LINTING_SETUP.md) for complete linting documentation.
 - Widget dimensions use px values, not percentages
 - The `flipped` state is managed by DraggableWindow, not individual widgets
 - Audio contexts must be resumed on user interaction (see Timer/Stopwatch unlock patterns)
-- **Content scaling:** Never use hardcoded Tailwind text size classes (`text-sm`, `text-xs`, etc.) or fixed icon sizes (`size={24}`, `w-12 h-12`) in widget front-face content. Use `style={{ fontSize: 'min(Xpx, Ycqmin)' }}` instead. See "Content Scaling with Container Queries" section.
+- **Content scaling:**
+  - ALWAYS use `cqmin` (not `cqw` or `cqh` separately) for text and icon sizing
+  - Never use hardcoded Tailwind text size classes (`text-sm`, `text-xs`, etc.) or fixed icon sizes (`size={24}`, `w-12 h-12`) in widget front-face content
+  - Use aggressive `cqmin` values: primary content should be 20-30cqmin, secondary 5-8cqmin, tertiary 3.5-5cqmin
+  - Example: `style={{ fontSize: 'min(24px, 25cqmin)' }}` for hero text, NOT `style={{ fontSize: 'min(14px, 3.5cqmin)' }}`
+  - Minimize header/footer size to maximize content area
+  - See [WIDGET_SCALING_STANDARDS.md](WIDGET_SCALING_STANDARDS.md) for complete guidelines
 - **Empty states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`) instead of hand-rolling empty/error state UI in each widget.
 
 ### Authentication & Permissions
