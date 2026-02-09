@@ -28,13 +28,15 @@ style={{ fontSize: 'min(14px, 5cqmin)' }}
 
 ### 2. Size Elements by Visual Hierarchy
 
-| Element Type | Recommended `cqmin` Range | Min Pixel Size |
-|-------------|---------------------------|----------------|
-| **Primary content** (main number, hero text) | 20-30cqmin | 20-32px |
-| **Secondary content** (subheadings, labels) | 5-8cqmin | 14-18px |
-| **Tertiary content** (metadata, small labels) | 3.5-5cqmin | 10-12px |
-| **Icons (decorative)** | 8-15cqmin | 16-48px |
-| **Icons (primary)** | 20-30cqmin | 48-80px |
+**Important**: When using `min(Xpx, Ycqmin)`, the pixel value (`Xpx`) is a **maximum cap**, not a minimum. Text will never exceed `Xpx` even on huge containers. For primary content that should scale without limits, consider using `clamp()` or just `cqmin` alone.
+
+| Element Type | Recommended `cqmin` | Example Formula | Notes |
+|-------------|---------------------|-----------------|-------|
+| **Primary content** (hero text, main numbers) | 20-30cqmin | `clamp(24px, 25cqmin, 120px)` or `25cqmin` | Should scale aggressively to fill space |
+| **Secondary content** (subheadings, labels) | 5-8cqmin | `min(16px, 7cqmin)` | Readable at all sizes |
+| **Tertiary content** (metadata, small labels) | 3.5-5cqmin | `min(12px, 4.5cqmin)` | Compact but legible |
+| **Icons (decorative)** | 8-15cqmin | `min(48px, 12cqmin)` | Balance with text |
+| **Icons (primary)** | 20-30cqmin | `min(80px, 20cqmin)` | Visual anchors |
 
 ### 3. Minimize Header/Footer Overhead
 

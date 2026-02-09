@@ -382,13 +382,13 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
 
           <div className="flex items-center" style={{ gap: 'min(20px, 5cqmin)' }}>
-            <div style={{ fontSize: 'min(60px, 18cqmin)' }}>
+            <div style={{ fontSize: 'clamp(60px, 18cqmin, 200px)' }}>
               {getIcon('1em')}
             </div>
             <div className="flex flex-col">
               <div
                 className="font-black text-slate-800 tabular-nums leading-none"
-                style={{ fontSize: 'min(48px, 28cqmin)' }}
+                style={{ fontSize: 'clamp(48px, 28cqmin, 300px)' }}
               >
                 {showFeelsLike && feelsLike !== undefined
                   ? Math.round(feelsLike)

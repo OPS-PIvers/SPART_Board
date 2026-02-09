@@ -499,31 +499,35 @@ Widgets use a two-mode scaling system configured in `components/widgets/WidgetRe
 
 5. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
 
+5. **Settings panels (back-face) don't need scaling** - use normal Tailwind classes there.
+
 6. **Container query unit reference:**
    - `cqmin` = 1% of the smaller dimension (width or height) - **USE THIS for almost everything**
    - `cqw` = 1% of container width - only use when you specifically need width-based scaling
    - `cqh` = 1% of container height - only use when you specifically need height-based scaling
-   - Use `min(Xpx, Ycqmin)` to set a minimum pixel size that scales up in larger containers
+   - `min(Xpx, Ycqmin)` **caps maximum size at Xpx** (text never exceeds X pixels - prevents blur on huge screens)
+   - For unlimited scaling, use `Ycqmin` alone or `clamp(Xpx, Ycqmin, Zpx)` for min/max bounds
 
 7. **Common scaling formulas:**
    ```tsx
-   // Tiny labels (footer metadata)
+   // Tiny labels (footer metadata) - cap at 10px
    style={{ fontSize: 'min(10px, 3.5cqmin)' }}
 
-   // Small labels (section titles)
+   // Small labels (section titles) - cap at 12px
    style={{ fontSize: 'min(12px, 4.5cqmin)' }}
 
-   // Medium text (list items, body)
+   // Medium text (list items, body) - cap at 14px
    style={{ fontSize: 'min(14px, 5.5cqmin)' }}
 
-   // Large text (subheadings)
+   // Large text (subheadings) - cap at 16px
    style={{ fontSize: 'min(16px, 7cqmin)' }}
 
-   // Hero text (primary numbers/headings)
-   style={{ fontSize: 'min(24px, 25cqmin)' }}
+   // Hero text (primary numbers/headings) - can scale larger
+   style={{ fontSize: 'clamp(24px, 25cqmin, 120px)' }}
+   // OR for unlimited scaling: style={{ fontSize: '25cqmin' }}
    ```
 
-5. **For empty/error states**, use the shared `ScaledEmptyState` component:
+8. **For empty/error states**, use the shared `ScaledEmptyState` component:
 
    ```tsx
    import { ScaledEmptyState } from '../common/ScaledEmptyState';

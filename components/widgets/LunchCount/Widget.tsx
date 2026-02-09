@@ -161,6 +161,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   const studentItemClass =
     'bg-white border-b-2 border-slate-200 rounded-xl font-black text-slate-700 shadow-sm hover:border-brand-blue-primary hover:-translate-y-0.5 transition-all active:scale-90';
 
+  const studentItemStyle: React.CSSProperties = {
+    fontSize: 'min(12px, 5cqmin)',
+    padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -311,10 +316,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         name={student}
                         onClick={() => updateAssignment(student, null)}
                         className={studentItemClass}
-                        style={{
-                          fontSize: 'min(12px, 5cqmin)',
-                          padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-                        }}
+                        style={studentItemStyle}
                       />
                     ))}
                 </div>
@@ -381,10 +383,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         name={student}
                         onClick={() => updateAssignment(student, null)}
                         className={studentItemClass}
-                        style={{
-                          fontSize: 'min(12px, 5cqmin)',
-                          padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-                        }}
+                        style={studentItemStyle}
                       />
                     ))}
                 </div>
@@ -451,10 +450,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                         name={student}
                         onClick={() => updateAssignment(student, null)}
                         className={studentItemClass}
-                        style={{
-                          fontSize: 'min(12px, 5cqmin)',
-                          padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-                        }}
+                        style={studentItemStyle}
                       />
                     ))}
                 </div>
@@ -504,10 +500,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                           id={student}
                           name={student}
                           className={studentItemClass}
-                          style={{
-                            fontSize: 'min(12px, 5cqmin)',
-                            padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
-                          }}
+                          style={studentItemStyle}
                         />
                       ))}
                     {stats.remaining === 0 && stats.total > 0 && (
