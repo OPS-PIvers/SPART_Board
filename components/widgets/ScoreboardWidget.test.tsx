@@ -11,6 +11,7 @@ import {
   RandomConfig,
   WidgetType,
   ScoreboardTeam,
+  PollConfig,
 } from '../../types';
 
 vi.mock('../../context/useDashboard');
@@ -221,6 +222,7 @@ describe('ScoreboardWidget', () => {
       })
     );
   });
+
 });
 
 describe('ScoreboardSettings', () => {
@@ -317,6 +319,66 @@ describe('ScoreboardSettings', () => {
           ]) as unknown,
         }) as unknown,
       })
+    );
+  });
+
+  it('imports options and votes from poll widget', () => {
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: { teams: [] } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const pollWidget: WidgetData = {
+      id: 'poll-id',
+      type: 'poll' as WidgetType,
+      config: {
+        question: 'Best Pet?',
+        options: [
+          { label: 'Cats', votes: 15 },
+          { label: 'Dogs', votes: 20 },
+        ],
+      } as PollConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        widgets: [pollWidget],
+      },
+    });
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const importButton = screen.getByText('Import Poll');
+    fireEvent.click(importButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Cats', score: 15 }),
+            expect.objectContaining({ name: 'Dogs', score: 20 }),
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Imported 2 teams from Poll!'),
+      'success'
     );
   });
 });
