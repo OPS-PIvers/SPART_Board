@@ -22,6 +22,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       transparency: propTransparency,
       cornerRadius: propCornerRadius,
       globalStyle: propGlobalStyle,
+      allowInvisible: _allowInvisible,
       disableBlur = false,
       selected = false,
       style,
@@ -29,6 +30,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     },
     ref
   ) => {
+    void _allowInvisible;
+
     const globalStyle = propGlobalStyle ?? DEFAULT_GLOBAL_STYLE;
 
     // Determine values, prioritizing props over global settings
