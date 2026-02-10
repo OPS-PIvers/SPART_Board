@@ -32,6 +32,9 @@ export const useWindowSize = (enabled: boolean = true): WindowSize => {
 
     window.addEventListener('resize', handleResize);
     // Initial sync in case window size changed while disabled or before mount
+    // The state update is guarded by an equality check inside handleResize to prevent infinite loops.
+    // The synchronous call is necessary to sync state if 'enabled' was false during a resize.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     handleResize();
 
     return () => window.removeEventListener('resize', handleResize);
