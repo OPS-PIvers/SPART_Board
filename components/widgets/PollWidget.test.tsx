@@ -353,7 +353,7 @@ describe('PollSettings', () => {
     const widgetWithOptions: WidgetData = {
       ...baseWidget,
       config: {
-        ...baseWidget.config,
+        ...(baseWidget.config as PollConfig),
         options: [{ label: 'Existing Option', votes: 1 }],
       },
     };
@@ -372,7 +372,7 @@ describe('PollSettings', () => {
     const widgetWithVotes: WidgetData = {
       ...baseWidget,
       config: {
-        ...baseWidget.config,
+        ...(baseWidget.config as PollConfig),
         options: [{ label: 'Option 1', votes: 5 }],
       },
     };
