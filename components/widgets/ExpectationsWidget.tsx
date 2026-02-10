@@ -145,7 +145,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
 
   const renderSubViewHeader = (label: string) => (
     <div
-      className="flex items-center border-b border-slate-200 shrink-0"
+      className="flex items-center shrink-0"
       style={{ padding: 'min(12px, 2.5cqmin)' }}
     >
       <button

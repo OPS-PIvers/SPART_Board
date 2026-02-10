@@ -440,7 +440,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <WidgetLayout
         padding="p-0"
         header={
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+          <div className="p-4 flex items-center justify-between">
             <h3 className="text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2 font-black">
               <Code2 className="w-4 h-4 text-indigo-500" />
               {editingId ? 'Edit App' : 'New Mini-App'}
@@ -547,7 +547,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
         }
         footer={
-          <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex gap-3">
+          <div className="p-4 flex gap-3">
             <button
               onClick={() => setView('list')}
               className="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-colors border border-slate-200"
@@ -571,7 +571,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       padding="p-0"
       header={
         <div
-          className="border-b border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0"
+          className="flex items-center justify-between shrink-0"
           style={{ padding: 'clamp(12px, 4cqw, 20px)' }}
         >
           <div>
@@ -695,7 +695,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       }
       footer={
         <div
-          className="bg-slate-50/50 border-t border-slate-200 font-black text-slate-400 text-center uppercase tracking-widest shrink-0"
+          className="font-black text-slate-400 text-center uppercase tracking-widest shrink-0"
           style={{
             padding: '8px',
             fontSize: 'clamp(9px, 2.5cqw, 10px)',

@@ -268,169 +268,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
     <div
       className={`h-full w-full flex flex-col overflow-hidden ${themeClasses}`}
     >
-      {/* ─── Header ─────────────────────────────────────────────── */}
-      <div
-        className={`shrink-0 flex items-center justify-between border-b ${
-          config.theme === 'dark'
-            ? 'border-slate-800'
-            : config.theme === 'glass'
-              ? 'border-white/10'
-              : 'border-slate-100'
-        }`}
-        style={{ padding: 'min(8px, 2cqw, 2.5cqh) min(12px, 3cqw, 3.5cqh)' }}
-      >
-        <div
-          className="flex items-center min-w-0"
-          style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}
-        >
-          <div
-            className="shrink-0 bg-brand-blue-primary text-white rounded-lg flex items-center justify-center"
-            style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
-          >
-            {mode === 'timer' ? (
-              <TimerIcon
-                style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
-                }}
-              />
-            ) : (
-              <ClockIcon
-                style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
-                }}
-              />
-            )}
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span
-              className="font-black uppercase tracking-widest text-slate-400 leading-none"
-              style={{ fontSize: 'clamp(8px, 2.2cqw, 9px)' }}
-            >
-              {mode === 'timer' ? 'Countdown' : 'Elapsed'}
-            </span>
-            <span
-              className="font-black uppercase tracking-tight leading-none"
-              style={{
-                fontSize: 'clamp(10px, 2.8cqw, 11px)',
-                marginTop: 'min(2px, 0.5cqh)',
-              }}
-            >
-              {mode === 'timer' ? 'Timer' : 'Stopwatch'}
-            </span>
-          </div>
-        </div>
-
-        {/* Mode + theme toggles */}
-        <div
-          className="flex items-center"
-          style={{ gap: 'min(4px, 1cqw, 1.5cqh)' }}
-        >
-          {/* Mode toggle */}
-          <button
-            onClick={() => {
-              if (mode === 'timer') {
-                updateConfig({
-                  mode: 'stopwatch',
-                  elapsedTime: 0,
-                  isRunning: false,
-                  startTime: null,
-                });
-              } else {
-                updateConfig({
-                  mode: 'timer',
-                  duration: 600,
-                  elapsedTime: 600,
-                  isRunning: false,
-                  startTime: null,
-                });
-              }
-            }}
-            className="rounded-lg text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
-            title={mode === 'timer' ? 'Switch to Stopwatch' : 'Switch to Timer'}
-            aria-label={
-              mode === 'timer' ? 'Switch to Stopwatch' : 'Switch to Timer'
-            }
-          >
-            {mode === 'timer' ? (
-              <ClockIcon
-                style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
-                }}
-              />
-            ) : (
-              <TimerIcon
-                style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
-                }}
-              />
-            )}
-          </button>
-
-          {/* Visual toggle */}
-          <button
-            onClick={() =>
-              updateConfig({ visualType: isVisual ? 'digital' : 'visual' })
-            }
-            className={`rounded-lg transition-colors ${
-              isVisual
-                ? 'text-brand-blue-primary bg-brand-blue-lighter'
-                : 'text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
-            title={isVisual ? 'Switch to Digital' : 'Switch to Visual Ring'}
-            aria-label={
-              isVisual ? 'Switch to Digital' : 'Switch to Visual Ring'
-            }
-          >
-            <svg
-              style={{
-                width: 'min(14px, 3.5cqw, 4cqh)',
-                height: 'min(14px, 3.5cqw, 4cqh)',
-              }}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-          </button>
-
-          {/* Theme dots */}
-          <div
-            className="flex items-center"
-            style={{
-              gap: 'min(4px, 1cqw, 1.5cqh)',
-              marginLeft: 'min(4px, 1cqw)',
-            }}
-          >
-            {(['light', 'dark', 'glass'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => updateConfig({ theme: t })}
-                aria-label={`Set theme: ${t.charAt(0).toUpperCase() + t.slice(1)}`}
-                className={`rounded-full border-2 transition-all hover:scale-110 ${
-                  config.theme === t
-                    ? 'border-brand-blue-primary scale-110'
-                    : 'border-slate-200 opacity-40 hover:opacity-100'
-                } ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-900' : 'bg-slate-300'}`}
-                style={{
-                  width: 'min(16px, 3.5cqw, 4cqh)',
-                  height: 'min(16px, 3.5cqw, 4cqh)',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ─── Content ────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative">
         {isEditing ? (
@@ -635,6 +472,113 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6 p-1">
+      {/* Mode Selection */}
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-3">
+          <TimerIcon size={14} />
+          Mode
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(['timer', 'stopwatch'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => {
+                if (m === 'timer') {
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      mode: 'timer',
+                      duration: 600,
+                      elapsedTime: 600,
+                      isRunning: false,
+                      startTime: null,
+                    },
+                  });
+                } else {
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      mode: 'stopwatch',
+                      elapsedTime: 0,
+                      isRunning: false,
+                      startTime: null,
+                    },
+                  });
+                }
+              }}
+              className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 flex items-center justify-center gap-2 ${
+                config.mode === m
+                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
+                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+              }`}
+            >
+              {m === 'timer' ? (
+                <TimerIcon size={14} />
+              ) : (
+                <ClockIcon size={14} />
+              )}
+              {m === 'timer' ? 'Timer' : 'Stopwatch'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Display Style */}
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-3">
+          Display Style
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(['digital', 'visual'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, visualType: v },
+                })
+              }
+              className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 ${
+                config.visualType === v
+                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
+                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+              }`}
+            >
+              {v === 'digital' ? 'Digital' : 'Visual Ring'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Theme */}
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-3">
+          <Palette size={14} />
+          Theme
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {(['light', 'dark', 'glass'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, theme: t },
+                })
+              }
+              className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 flex items-center justify-center gap-2 ${
+                config.theme === t
+                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
+                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+              }`}
+            >
+              <span
+                className={`w-3 h-3 rounded-full ${t === 'light' ? 'bg-white border border-slate-200' : t === 'dark' ? 'bg-slate-900' : 'bg-slate-300'}`}
+              />
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
         <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-5">
           <Palette size={14} />
