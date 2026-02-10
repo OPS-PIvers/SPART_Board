@@ -126,16 +126,16 @@ export const useNutrislice = ({
           const entree = items.find(
             (i) =>
               !i.is_section_title &&
-              (i.section_name?.toLowerCase().includes('entree') ??
-                i.section_name?.toLowerCase().includes('main'))
+              ((i.section_name?.toLowerCase().includes('entree') ?? false) ||
+                (i.section_name?.toLowerCase().includes('main') ?? false))
           );
           if (entree) hotLunch = entree.food?.name ?? entree.text ?? hotLunch;
 
           // Bento Box: Map to any item in Entrees or Sides that contains "Bento"
           const bento = items.find(
             (i) =>
-              (i.food?.name?.toLowerCase().includes('bento') ??
-                i.text?.toLowerCase().includes('bento')) &&
+              ((i.food?.name?.toLowerCase().includes('bento') ?? false) ||
+                (i.text?.toLowerCase().includes('bento') ?? false)) &&
               !i.is_section_title
           );
           if (bento) bentoBox = bento.food?.name ?? bento.text ?? bentoBox;
