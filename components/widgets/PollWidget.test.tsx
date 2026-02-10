@@ -41,7 +41,6 @@ vi.mock('../common/MagicInput', () => ({
 
 describe('PollWidget (View)', () => {
   const mockUpdateWidget = vi.fn();
-  const mockAddToast = vi.fn();
 
   beforeEach(() => {
     (useDashboard as Mock).mockReturnValue({
@@ -281,10 +280,13 @@ describe('PollSettings', () => {
         ],
       },
     });
-    expect(mockAddToast).toHaveBeenCalledWith('Imported 2 students!', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Imported 2 students!',
+      'success'
+    );
   });
 
-  it('exports to CSV', async () => {
+  it('exports to CSV', () => {
     // Mock URL.createObjectURL and HTMLAnchorElement click
     const createObjectURLMock = vi.fn(() => 'mock-url');
     const revokeObjectURLMock = vi.fn();
