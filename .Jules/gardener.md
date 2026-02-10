@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-06-06 - Refactor WeatherWidget
+
+**Weed:** `WeatherWidget.tsx` was ~1000 lines (God Component), containing widget view, settings view, and duplicate API logic for multiple providers (OpenWeather, Earth Networks).
+**Root Cause:** Logic for different weather providers and admin proxying was implemented inline and duplicated across Widget and Settings components.
+**Plan:** Refactored into `components/widgets/Weather/` directory with `Widget.tsx`, `Settings.tsx`, and `useWeather.ts`. Consolidated fetching logic into the hook and extracted types/constants.
+
 ## 2025-06-04 - Refactor LunchCountWidget
 
 **Weed:** `LunchCountWidget.tsx` was ~1000 lines, mixing UI components (Widget, Settings, Modal) with complex API fetching logic.

@@ -1,0 +1,240 @@
+import React from 'react';
+import {
+  WidgetData,
+  WeatherConfig,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../../types';
+import { useDashboard } from '../../../context/useDashboard';
+import { useWeather } from './useWeather';
+import { WidgetLayout } from '../WidgetLayout';
+import {
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  Wind,
+  MapPin,
+  RefreshCw,
+  Loader2,
+} from 'lucide-react';
+
+export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
+  const config = widget.config as WeatherConfig;
+
+  const { loading, refreshWeather, showFeelsLike, globalConfig } = useWeather(
+    widget.id,
+    config
+  );
+
+  const {
+    temp = 72,
+    feelsLike,
+    condition = 'sunny',
+    isAuto = false,
+    locationName = 'Classroom',
+    lastSync = null,
+  } = config;
+
+  const getIcon = (size: string) => {
+    switch (condition.toLowerCase()) {
+      case 'cloudy':
+      case 'clouds':
+        return <Cloud size={size} className="text-slate-500" />;
+      case 'rainy':
+      case 'rain':
+      case 'drizzle':
+        return <CloudRain size={size} className="text-blue-400" />;
+      case 'snowy':
+      case 'snow':
+        return <CloudSnow size={size} className="text-blue-200" />;
+      case 'windy':
+      case 'squall':
+      case 'tornado':
+        return <Wind size={size} className="text-slate-500" />;
+      case 'sunny':
+      case 'clear':
+        return <Sun size={size} className="text-amber-400 animate-spin-slow" />;
+      default:
+        return <Sun size={size} className="text-amber-400 animate-spin-slow" />;
+    }
+  };
+
+  const getClothing = () => {
+    if (temp < 40) return { label: 'Heavy Coat & Hat', icon: '🧤' };
+    if (temp < 60) return { label: 'Light Jacket', icon: '🧥' };
+    if (temp < 75) return { label: 'Long Sleeves', icon: '👕' };
+    return { label: 'Short Sleeves', icon: '🩳' };
+  };
+
+  const clothing = getClothing();
+
+  // Custom Message/Image Logic
+  let displayMessage: React.ReactNode = (
+    <>
+      Today is <span className="text-indigo-600 uppercase">{condition}</span>.
+      <br />
+      Wear a <span className="text-indigo-600">{clothing.label}</span>!
+    </>
+  );
+  let displayImage = <span>{clothing.icon}</span>;
+
+  if (globalConfig?.temperatureRanges) {
+    const match = globalConfig.temperatureRanges.find((r) => {
+      if (r.type === 'above') return temp > r.min;
+      if (r.type === 'below') return temp < r.max;
+      return temp >= r.min && temp <= r.max;
+    });
+    if (match) {
+      displayMessage = match.message;
+      if (match.imageUrl) {
+        displayImage = (
+          <img
+            src={match.imageUrl}
+            alt="Weather"
+            className="w-full h-full object-cover rounded-lg"
+          />
+        );
+      }
+    }
+  }
+
+  return (
+    <WidgetLayout
+      padding="p-0"
+      content={
+        <div
+          className={`flex flex-col items-center justify-center h-full w-full font-${globalStyle.fontFamily}`}
+          style={{ gap: 'min(12px, 3cqmin)', padding: 'min(16px, 3.5cqmin)' }}
+        >
+          <div
+            className="font-black uppercase tracking-widest text-slate-600 flex items-center"
+            style={{ gap: 'min(4px, 1cqmin)', fontSize: 'min(12px, 4cqmin)' }}
+          >
+            <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
+            {locationName}
+          </div>
+
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(20px, 5cqmin)' }}
+          >
+            <div style={{ fontSize: 'clamp(60px, 18cqmin, 200px)' }}>
+              {getIcon('1em')}
+            </div>
+            <div className="flex flex-col">
+              <div
+                className="font-black text-slate-800 tabular-nums leading-none"
+                style={{ fontSize: 'clamp(48px, 28cqmin, 300px)' }}
+              >
+                {showFeelsLike && feelsLike !== undefined
+                  ? Math.round(feelsLike)
+                  : Math.round(temp)}
+                °
+              </div>
+              {showFeelsLike ? (
+                <div
+                  className="font-black text-slate-600 uppercase tracking-wider"
+                  style={{
+                    fontSize: 'min(14px, 5cqmin)',
+                    marginTop: 'min(4px, 1cqmin)',
+                  }}
+                >
+                  Actual {Math.round(temp)}°
+                </div>
+              ) : (
+                feelsLike !== undefined && (
+                  <div
+                    className="font-black text-slate-600 uppercase tracking-wider"
+                    style={{
+                      fontSize: 'min(14px, 5cqmin)',
+                      marginTop: 'min(4px, 1cqmin)',
+                    }}
+                  >
+                    Feels like {Math.round(feelsLike)}°
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+
+          <div
+            className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
+            style={{ gap: 'min(12px, 3cqmin)', padding: 'min(12px, 2.5cqmin)' }}
+          >
+            <div
+              className="shrink-0 flex items-center justify-center overflow-hidden"
+              style={{
+                fontSize: 'min(32px, 10cqmin)',
+                width: 'min(48px, 12cqmin)',
+                height: 'min(48px, 12cqmin)',
+              }}
+            >
+              {displayImage}
+            </div>
+            <div
+              className="font-bold text-slate-700 leading-tight"
+              style={{ fontSize: 'min(14px, 5cqmin)' }}
+            >
+              {displayMessage}
+            </div>
+          </div>
+        </div>
+      }
+      footer={
+        isAuto ? (
+          <div
+            className="flex items-center w-full justify-start border-t border-slate-50"
+            style={{
+              gap: 'min(8px, 2cqmin)',
+              padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
+            }}
+          >
+            <button
+              onClick={refreshWeather}
+              disabled={loading}
+              className="bg-white hover:bg-slate-50 text-slate-500 hover:text-indigo-600 rounded-lg transition-all border border-slate-200 disabled:opacity-50 shadow-sm"
+              style={{ padding: 'min(6px, 1.5cqmin)' }}
+              title="Refresh Weather"
+            >
+              {loading ? (
+                <Loader2
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                  className="animate-spin"
+                />
+              ) : (
+                <RefreshCw
+                  style={{
+                    width: 'min(14px, 4cqmin)',
+                    height: 'min(14px, 4cqmin)',
+                  }}
+                />
+              )}
+            </button>
+            <div
+              className="text-slate-600 uppercase flex items-center font-bold"
+              style={{
+                gap: 'min(6px, 1.5cqmin)',
+                fontSize: 'min(10px, 3.5cqmin)',
+              }}
+            >
+              <span>Last Sync</span>
+              {lastSync && (
+                <span className="text-slate-400 font-mono">
+                  {new Date(lastSync).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : undefined
+      }
+    />
+  );
+};
