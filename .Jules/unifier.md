@@ -77,3 +77,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** `InstructionalRoutinesWidget` was generating HTML strings with hardcoded inline styles (`color: #2d3f89`, `font-weight: 900`, `color: #1e293b`) for Bloom's Taxonomy resources instead of using design system tokens.
 **Fix:** Replaced inline styles with standard Tailwind utility classes (`text-brand-blue-primary`, `font-black`, `text-slate-800`, `text-slate-600`) to enforce design system consistency and eliminate "snowflakes".
+
+## 2026-02-10 - Dock Icon Standardization
+
+**Drift:** The main Dock component used inconsistent sizing methods (padding vs fixed pixels) for different button types (Tools, Folders, System Buttons), resulting in visual size mismatches (36px vs 42px vs 48px vs 52px) and hardcoded "magic numbers".
+**Fix:** Created `components/layout/dock/DockIcon.tsx` to enforce a standard responsive size (`w-10 h-10` mobile, `w-12 h-12` desktop) and unified all dock items (Tools, Folders, Live, Classes, Magic, Hide) to use this component.
