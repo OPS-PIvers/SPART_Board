@@ -222,7 +222,6 @@ describe('ScoreboardWidget', () => {
       })
     );
   });
-
 });
 
 describe('ScoreboardSettings', () => {
