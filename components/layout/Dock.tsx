@@ -41,6 +41,7 @@ import {
   WidgetData,
   DockFolder,
   GlobalStyle,
+  MiniAppItem,
 } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
@@ -53,6 +54,9 @@ import { WidgetLibrary } from './dock/WidgetLibrary';
 import { RenameFolderModal } from './dock/RenameFolderModal';
 import { MagicLayoutModal } from './dock/MagicLayoutModal';
 import { detectWidgetType } from '../../utils/smartPaste';
+import { useImageUpload } from '../../hooks/useImageUpload';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 /**
  * Custom Label Component for consistent readability
@@ -688,38 +692,98 @@ export const Dock: React.FC = () => {
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
   const { addToast } = useDashboard();
+  const { processAndUploadImage } = useImageUpload();
 
   // Smart Paste Handler
   useEffect(() => {
     if (!canAccessFeature('smart-paste')) return;
 
-    const handlePaste = (e: ClipboardEvent) => {
+    const handlePaste = async (e: ClipboardEvent) => {
       // Don't intercept if user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
+        target.isContentEditable ||
+        e.defaultPrevented // Respect existing handlers (e.g. StickerBook)
       ) {
         return;
       }
 
+      // 1. Handle Image Paste
+      if (e.clipboardData?.files?.length) {
+        const file = e.clipboardData.files[0];
+        if (file.type.startsWith('image/')) {
+          if (!user) {
+            addToast('Please sign in to add stickers', 'error');
+            return;
+          }
+          addToast('Processing image...', 'info');
+          const url = await processAndUploadImage(file);
+          if (url) {
+            addWidget('sticker', { config: { url, rotation: 0 } });
+            addToast('Sticker added!', 'success');
+          } else {
+            addToast('Failed to process image', 'error');
+          }
+          return;
+        }
+      }
+
+      // 2. Handle Text Paste
       const text = e.clipboardData?.getData('text');
       if (text) {
-        const detected = detectWidgetType(text);
-        if (detected) {
-          addWidget(detected.type, { config: detected.config });
-          addToast(
-            `Added ${detected.type.charAt(0).toUpperCase() + detected.type.slice(1)} widget from clipboard!`,
-            'success'
-          );
+        const result = detectWidgetType(text);
+        if (result) {
+          if (result.action === 'create-widget') {
+            addWidget(result.type, {
+              config: result.config,
+              ...(result.title ? { customTitle: result.title } : {}),
+            });
+            addToast(
+              `Added ${result.type.charAt(0).toUpperCase() + result.type.slice(1)} widget!`,
+              'success'
+            );
+          } else if (result.action === 'import-board') {
+            // Navigate to the share URL to trigger import
+            window.location.href = result.url;
+          } else if (result.action === 'create-mini-app') {
+            if (user) {
+              addToast('Creating Mini App...', 'info');
+              const id = crypto.randomUUID();
+              const newItem: MiniAppItem = {
+                id,
+                title: result.title ?? 'Untitled App',
+                html: result.html,
+                createdAt: Date.now(),
+                order: 0, // Will be sorted by createdAt usually
+              };
+
+              // Save to Firestore (library)
+              try {
+                await setDoc(
+                  doc(db, 'users', user.uid, 'miniapps', id),
+                  newItem
+                );
+
+                // Open the widget immediately
+                addWidget('miniApp', { config: { activeApp: newItem } });
+                addToast('Mini App saved to library!', 'success');
+              } catch (err) {
+                console.error(err);
+                addToast('Failed to save Mini App', 'error');
+              }
+            } else {
+              addToast('Sign in to create Mini Apps', 'error');
+            }
+          }
         }
       }
     };
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addWidget, addToast, canAccessFeature]);
+  }, [addWidget, addToast, canAccessFeature, processAndUploadImage, user]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);

@@ -9,11 +9,15 @@ describe('detectWidgetType (Smart Paste)', () => {
     const result = detectWidgetType(input);
 
     expect(result).not.toBeNull();
-    expect(result?.type).toBe('embed');
-    const config = result?.config as EmbedConfig;
-    expect(config.url).toContain(
-      '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
-    );
+    if (result?.action === 'create-widget') {
+      expect(result.type).toBe('embed');
+      const config = result.config as EmbedConfig;
+      expect(config.url).toContain(
+        '/presentation/d/14weFpoSvOXRuO8DfhyB3cCEzX48VnCNmqShAdUh_esk/preview'
+      );
+    } else {
+      throw new Error('Expected create-widget action');
+    }
   });
 
   it('detects Google Docs and converts to edit with minimal UI', () => {
@@ -21,11 +25,15 @@ describe('detectWidgetType (Smart Paste)', () => {
     const result = detectWidgetType(input);
 
     expect(result).not.toBeNull();
-    expect(result?.type).toBe('embed');
-    const config = result?.config as EmbedConfig;
-    // From urlHelpers.ts: parsed.pathname = `/document/d/${docId}/edit`; parsed.searchParams.set('rm', 'minimal');
-    expect(config.url).toContain('/document/d/1abc123/edit');
-    expect(config.url).toContain('rm=minimal');
+    if (result?.action === 'create-widget') {
+      expect(result.type).toBe('embed');
+      const config = result.config as EmbedConfig;
+      // From urlHelpers.ts: parsed.pathname = `/document/d/${docId}/edit`; parsed.searchParams.set('rm', 'minimal');
+      expect(config.url).toContain('/document/d/1abc123/edit');
+      expect(config.url).toContain('rm=minimal');
+    } else {
+      throw new Error('Expected create-widget action');
+    }
   });
 
   it('detects YouTube and converts to embed URL', () => {
@@ -33,9 +41,13 @@ describe('detectWidgetType (Smart Paste)', () => {
     const result = detectWidgetType(input);
 
     expect(result).not.toBeNull();
-    expect(result?.type).toBe('embed');
-    const config = result?.config as EmbedConfig;
-    expect(config.url).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ');
+    if (result?.action === 'create-widget') {
+      expect(result.type).toBe('embed');
+      const config = result.config as EmbedConfig;
+      expect(config.url).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ');
+    } else {
+      throw new Error('Expected create-widget action');
+    }
   });
 
   it('detects other URLs and defaults to QR widget', () => {
@@ -43,8 +55,37 @@ describe('detectWidgetType (Smart Paste)', () => {
     const result = detectWidgetType(input);
 
     expect(result).not.toBeNull();
-    expect(result?.type).toBe('qr');
-    const config = result?.config as QRConfig;
-    expect(config.url).toBe('https://google.com');
+    if (result?.action === 'create-widget') {
+      expect(result.type).toBe('qr');
+      const config = result.config as QRConfig;
+      expect(config.url).toBe('https://google.com');
+    } else {
+      throw new Error('Expected create-widget action');
+    }
+  });
+
+  it('detects HTML content', () => {
+    const input = '<html><title>My App</title><body>Hello</body></html>';
+    const result = detectWidgetType(input);
+
+    expect(result).not.toBeNull();
+    if (result?.action === 'create-mini-app') {
+      expect(result.title).toBe('My App');
+      expect(result.html).toBe(input);
+    } else {
+      throw new Error('Expected create-mini-app action');
+    }
+  });
+
+  it('detects Share Links', () => {
+    const input = 'https://myapp.com/share/12345';
+    const result = detectWidgetType(input);
+
+    expect(result).not.toBeNull();
+    if (result?.action === 'import-board') {
+      expect(result.url).toBe(input);
+    } else {
+      throw new Error('Expected import-board action');
+    }
   });
 });
