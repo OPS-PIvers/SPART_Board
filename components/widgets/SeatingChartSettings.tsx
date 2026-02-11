@@ -3,6 +3,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, SeatingChartConfig } from '../../types';
 import { RosterModeControl } from '../common/RosterModeControl';
 import { Trash2, Eraser } from 'lucide-react';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -40,9 +41,7 @@ export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
 
       {rosterMode === 'custom' && (
         <div className="space-y-2">
-          <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
-            Custom Roster
-          </label>
+          <SettingsLabel>Custom Roster</SettingsLabel>
           <textarea
             value={names}
             onChange={(e) =>
@@ -57,9 +56,7 @@ export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       <div className="space-y-3">
-        <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
-          Actions
-        </label>
+        <SettingsLabel>Actions</SettingsLabel>
 
         <button
           onClick={handleClearAssignments}

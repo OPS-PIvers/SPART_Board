@@ -2,6 +2,7 @@ import React from 'react';
 import { WidgetData, MaterialsConfig } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
 import { MATERIAL_ITEMS } from './constants';
+import { SettingsLabel } from '../../common/SettingsLabel';
 
 export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -56,9 +57,7 @@ export const MaterialsSettings: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="flex flex-col gap-4 p-1">
       <div className="flex items-center justify-between">
-        <label className="text-xs  text-slate-500 uppercase">
-          Available Materials
-        </label>
+        <SettingsLabel className="mb-0">Available Materials</SettingsLabel>
         <button
           onClick={toggleAll}
           className="text-xs text-blue-500  hover:underline"

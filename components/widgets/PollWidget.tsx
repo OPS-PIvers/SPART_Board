@@ -14,6 +14,7 @@ import {
 import { Button } from '../common/Button';
 import { MagicInput } from '../common/MagicInput';
 import { generatePoll, GeneratedPoll } from '../../utils/ai';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 import { WidgetLayout } from './WidgetLayout';
 
@@ -270,9 +271,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {/* Magic Generator */}
       {canAccessFeature('smart-poll') && (
         <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-            Magic Generator
-          </label>
+          <SettingsLabel>Magic Generator</SettingsLabel>
           <MagicInput<GeneratedPoll>
             onGenerate={generatePoll}
             onSuccess={(result) => {
@@ -298,9 +297,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Question Edit */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-          <Type className="w-3 h-3" /> Question
-        </label>
+        <SettingsLabel icon={Type}>Question</SettingsLabel>
         <input
           key={question} // Force reset when prop changes
           type="text"
@@ -314,9 +311,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Options List */}
       <div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
-          Options
-        </label>
+        <SettingsLabel>Options</SettingsLabel>
         <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
           {options.map((option, idx) => (
             <div key={idx} className="flex gap-2 items-center">
@@ -346,9 +341,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Actions */}
       <div className="pt-4 border-t border-slate-100">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">
-          Actions
-        </label>
+        <SettingsLabel>Actions</SettingsLabel>
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="secondary"

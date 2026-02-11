@@ -19,6 +19,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 interface ChecklistRowProps {
   id: string;
@@ -362,9 +363,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Mode Toggle */}
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
-          List Source
-        </label>
+        <SettingsLabel>List Source</SettingsLabel>
         <div className="flex bg-slate-100 p-1 rounded-xl">
           <button
             onClick={() =>
@@ -387,9 +386,9 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
 
       {mode === 'manual' && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-          <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-            <ListPlus className="w-3 h-3" /> Task List (One per line)
-          </label>
+          <SettingsLabel icon={ListPlus}>
+            Task List (One per line)
+          </SettingsLabel>
           <textarea
             value={localText}
             onChange={(e) => handleBulkChange(e.target.value)}
@@ -413,9 +412,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
           {rosterMode === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block">
-                  First Names
-                </label>
+                <SettingsLabel>First Names</SettingsLabel>
                 <textarea
                   value={firstNames}
                   onChange={(e) =>
@@ -428,9 +425,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
                 />
               </div>
               <div>
-                <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block">
-                  Last Names
-                </label>
+                <SettingsLabel>Last Names</SettingsLabel>
                 <textarea
                   value={lastNames}
                   onChange={(e) =>
@@ -448,9 +443,7 @@ export const ChecklistSettings: React.FC<{ widget: WidgetData }> = ({
       )}
 
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Type className="w-3 h-3" /> Text Scale
-        </label>
+        <SettingsLabel icon={Type}>Text Scale</SettingsLabel>
         <div className="flex items-center gap-4 px-2">
           <input
             type="range"

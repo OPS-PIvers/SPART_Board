@@ -3,6 +3,7 @@ import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, ClockConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Type, Palette, Sun, Sparkles } from 'lucide-react';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 import { WidgetLayout } from './WidgetLayout';
 
@@ -178,9 +179,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Font Family */}
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Type className="w-3 h-3" /> Typography
-        </label>
+        <SettingsLabel icon={Type}>Typography</SettingsLabel>
         <div className="grid grid-cols-4 gap-2">
           {fonts.map((f) => (
             <button
@@ -203,9 +202,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Clock Style */}
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Sparkles className="w-3 h-3" /> Display Style
-        </label>
+        <SettingsLabel icon={Sparkles}>Display Style</SettingsLabel>
         <div className="flex bg-slate-100 p-1 rounded-xl">
           {styles.map((s) => (
             <button
@@ -226,9 +223,7 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {/* Color & Glow */}
       <div className="flex items-end justify-between gap-4">
         <div className="flex-1">
-          <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-            <Palette className="w-3 h-3" /> Color Palette
-          </label>
+          <SettingsLabel icon={Palette}>Color Palette</SettingsLabel>
           <div className="flex gap-1.5">
             {colors.map((c) => (
               <button
