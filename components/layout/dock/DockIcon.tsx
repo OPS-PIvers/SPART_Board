@@ -5,7 +5,6 @@ interface DockIconProps {
   className?: string;
   color?: string;
   badgeCount?: number;
-  onClick?: (e: React.MouseEvent) => void;
   title?: string;
 }
 
@@ -14,15 +13,18 @@ export const DockIcon: React.FC<DockIconProps> = ({
   className = '',
   color = 'bg-slate-400',
   badgeCount,
-  onClick,
   title,
 }) => {
+  const finalClassName = [
+    'relative w-10 h-10 md:w-12 md:h-12 rounded-2xl text-white shadow-lg transition-all duration-200',
+    color,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div
-      className={`relative w-10 h-10 md:w-12 md:h-12 rounded-2xl text-white shadow-lg transition-all duration-200 ${color} ${className}`}
-      onClick={onClick}
-      title={title}
-    >
+    <div className={finalClassName} title={title}>
       {children}
       {badgeCount !== undefined && badgeCount > 0 && (
         <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-xxs font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
