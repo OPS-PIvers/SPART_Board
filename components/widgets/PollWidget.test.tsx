@@ -304,6 +304,7 @@ describe('PollSettings', () => {
 
     expect(createObjectURLMock).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
+    expect(revokeObjectURLMock).toHaveBeenCalled();
     expect(mockAddToast).toHaveBeenCalledWith(
       'Results exported to CSV',
       'success'
@@ -311,6 +312,44 @@ describe('PollSettings', () => {
 
     clickSpy.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('imports from roster without confirmation when no options exist', () => {
+    const mockRoster = {
+      id: 'roster-1',
+      name: 'Class A',
+      students: [{ id: 's1', firstName: 'John', lastName: 'Doe' }],
+    };
+
+    (useDashboard as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      rosters: [mockRoster],
+      activeRosterId: 'roster-1',
+      activeDashboard: { globalStyle: { fontFamily: 'sans' } },
+    });
+
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    const widgetWithoutOptions: WidgetData = {
+      ...baseWidget,
+      config: {
+        ...(baseWidget.config as PollConfig),
+        options: [],
+      },
+    };
+
+    render(<PollSettings widget={widgetWithoutOptions} />);
+
+    fireEvent.click(screen.getByText('Import Class'));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
+      config: {
+        ...widgetWithoutOptions.config,
+        options: [{ label: 'John Doe', votes: 0 }],
+      },
+    });
   });
 
   it('disables import button if no roster is selected', () => {
