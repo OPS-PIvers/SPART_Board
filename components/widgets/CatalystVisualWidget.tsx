@@ -54,7 +54,7 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`h-full w-full flex flex-col items-center justify-center p-6 ${theme} border-2 border-double border-current gap-[5cqh]`}
+          className={`h-full w-full flex flex-col items-center justify-center p-6 ${theme} border-2 border-double border-current gap-[5cqmin]`}
         >
           <div className="shrink-0">{getIcon(config.icon ?? '')}</div>
           <h2

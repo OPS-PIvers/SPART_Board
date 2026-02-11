@@ -160,7 +160,7 @@ const Keypad: React.FC<{
       <div
         className="grid grid-cols-3 gap-2 w-full"
         style={{
-          maxWidth: 'min(280px, 80cqw)',
+          maxWidth: 'min(280px, 80cqmin)',
           fontSize: 'clamp(0.875rem, 3cqmin, 1.25rem)',
         }}
       >
@@ -287,7 +287,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               <div
                 className="relative flex items-center justify-center"
                 style={{
-                  width: isVisual ? 'min(90%, 90cqh)' : 'auto',
+                  width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
                   aspectRatio: isVisual ? '1' : undefined,
                 }}
               >
@@ -366,7 +366,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
               }`}
               style={{
-                height: 'clamp(2.5rem, 10cqh, 4rem)',
+                height: 'clamp(2.5rem, 10cqmin, 4rem)',
                 fontSize: 'clamp(0.625rem, 2.5cqmin, 0.8rem)',
               }}
             >
@@ -380,7 +380,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             <button
               onClick={handleReset}
               className="aspect-square flex items-center justify-center rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 hover:text-brand-blue-primary transition-all active:scale-95"
-              style={{ height: 'clamp(2.5rem, 10cqh, 4rem)' }}
+              style={{ height: 'clamp(2.5rem, 10cqmin, 4rem)' }}
               aria-label="Reset"
             >
               <RotateCcw

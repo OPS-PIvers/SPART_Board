@@ -456,8 +456,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     const hScale = (100 / 20).toFixed(2); // Estimate horizontal capacity (20 chars)
 
     return {
-      fontSize: `calc(min(18px, ${vScale}cqh, ${hScale}cqw) * ${scaleMultiplier})`,
-      '--dynamic-font-size': `calc(min(18px, ${vScale}cqh, ${hScale}cqw) * ${scaleMultiplier})`,
+      fontSize: `calc(min(18px, ${Math.min(parseFloat(vScale), parseFloat(hScale))}cqmin) * ${scaleMultiplier})`,
+      '--dynamic-font-size': `calc(min(18px, ${Math.min(parseFloat(vScale), parseFloat(hScale))}cqmin) * ${scaleMultiplier})`,
     } as React.CSSProperties;
   }, [selectedRoutineId, customSteps.length, scaleMultiplier]);
 
