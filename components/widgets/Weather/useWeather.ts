@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useDashboard } from '../../../context/useDashboard';
@@ -17,6 +17,12 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
   const { updateWidget, addToast } = useDashboard();
   const { featurePermissions } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Use a ref to track the latest config to prevent stale closures in effects/callbacks
+  const configRef = useRef(config);
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const {
     temp = 72,
@@ -54,9 +60,10 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
         const snap = await getDoc(doc(db, 'global_weather', 'current'));
         if (snap.exists()) {
           const data = snap.data() as GlobalWeatherData;
+          // Use configRef.current to get the latest config state
           updateWidget(widgetId, {
             config: {
-              ...config,
+              ...configRef.current,
               temp: data.temp,
               feelsLike: data.feelsLike,
               condition: data.condition,
@@ -73,10 +80,6 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
     void fetchInitial();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuto, globalConfig?.fetchingStrategy, widgetId, updateWidget]);
-  // Omitted 'config' from deps to avoid infinite loop if updateWidget changes config ref
-  // But strictly we should be careful. 'config' changes when we updateWidget.
-  // The original code included 'config' in deps, which might be risky if updateWidget creates a new object reference that triggers the effect again.
-  // However, isAuto and fetchingStrategy are the main triggers.
 
   // Admin Proxy Subscription
   useEffect(() => {
@@ -89,6 +92,7 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
         if (snapshot.exists()) {
           const data = snapshot.data() as GlobalWeatherData;
           // Avoid infinite loop: check if data actually changed significantly
+          // Note: using closure values here for comparison is fine as long as we use ref for update
           if (
             Math.round(data.temp) !== Math.round(temp) ||
             data.feelsLike !== feelsLike ||
@@ -97,7 +101,7 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
           ) {
             updateWidget(widgetId, {
               config: {
-                ...config,
+                ...configRef.current,
                 temp: data.temp,
                 feelsLike: data.feelsLike,
                 condition: data.condition,
@@ -146,6 +150,9 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
       }).toString();
 
       const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
+
+      // TODO: Replace public proxies with a secure backend proxy to improve reliability and security.
+      // Current implementation matches legacy behavior but is fragile.
       const proxies = [
         (u: string) =>
           `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
@@ -185,7 +192,7 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
 
       updateWidget(widgetId, {
         config: {
-          ...config,
+          ...configRef.current,
           temp: data.o.t,
           feelsLike: data.o.fl ?? data.o.t,
           condition: newCondition,
@@ -201,82 +208,72 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
     } finally {
       setLoading(false);
     }
-  }, [loading, widgetId, config, updateWidget, addToast]);
+  }, [loading, widgetId, updateWidget, addToast]); // Removed `config` from deps as we use ref
 
-  const fetchOpenWeather = useCallback(
-    async (params: string) => {
-      if (!hasApiKey) {
-        addToast(
-          'Weather service is not configured. Please contact your administrator.',
-          'error'
+  const fetchOpenWeather = useCallback(async (params: string) => {
+    if (!hasApiKey) {
+      addToast(
+        'Weather service is not configured. Please contact your administrator.',
+        'error'
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
+      );
+
+      if (res.status === 401) {
+        throw new Error(
+          'Invalid API Key. If newly created, wait up to 2 hours for activation.'
         );
-        return;
       }
 
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
-        );
+      const data = (await res.json()) as OpenWeatherData;
+      if (Number(data.cod) !== 200) throw new Error(String(data.message));
 
-        if (res.status === 401) {
-          throw new Error(
-            'Invalid API Key. If newly created, wait up to 2 hours for activation.'
-          );
-        }
-
-        const data = (await res.json()) as OpenWeatherData;
-        if (Number(data.cod) !== 200) throw new Error(String(data.message));
-
-        updateWidget(widgetId, {
-          config: {
-            ...config,
-            temp: data.main.temp,
-            feelsLike: data.main.feels_like,
-            condition: data.weather[0].main.toLowerCase(),
-            locationName: data.name,
-            lastSync: Date.now(),
-          },
-        });
-        addToast(`Weather updated for ${data.name}`, 'success');
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Update failed', 'error');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [hasApiKey, systemKey, widgetId, config, updateWidget, addToast]
-  );
+      updateWidget(widgetId, {
+        config: {
+          ...configRef.current,
+          temp: data.main.temp,
+          feelsLike: data.main.feels_like,
+          condition: data.weather[0].main.toLowerCase(),
+          locationName: data.name,
+          lastSync: Date.now(),
+        },
+      });
+      addToast(`Weather updated for ${data.name}`, 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Update failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [hasApiKey, systemKey, widgetId, updateWidget, addToast]); // Removed `config` from deps
 
   const refreshWeather = useCallback(async () => {
-    if (!isAuto || loading) return;
+    // Check loading state to prevent double clicks
+    if (!configRef.current.isAuto || loading) return;
 
     if (isAdminProxy) {
       addToast('Syncing with school station...', 'info');
       return;
     }
 
-    if (source === 'earth_networks') {
+    if (configRef.current.source === 'earth_networks') {
       await fetchEarthNetworks();
     } else {
       // OpenWeather sync
-      const city = config.city ?? '';
+      const city = configRef.current.city ?? '';
       const params = city.trim()
         ? `q=${encodeURIComponent(city.trim())}`
         : `lat=${STATION_CONFIG.lat}&lon=${STATION_CONFIG.lon}`;
 
       await fetchOpenWeather(params);
     }
-  }, [
-    isAuto,
-    loading,
-    isAdminProxy,
-    source,
-    config.city,
-    fetchEarthNetworks,
-    fetchOpenWeather,
-    addToast,
-  ]);
+  }, [loading, isAdminProxy, fetchEarthNetworks, fetchOpenWeather, addToast]);
+  // Removed `isAuto`, `source`, `config.city` from deps since we use ref
 
   return {
     loading,
