@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
@@ -104,6 +103,7 @@ describe('triggerJulesWidgetGeneration', () => {
       triggerJulesWidgetGeneration as unknown as JulesHandler
     )(request as unknown as CallableRequest<JulesData>);
 
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     expect(vi.mocked(axios.post)).toHaveBeenCalledWith(
       `${JULES_API_SESSIONS_ENDPOINT}?key=test-api-key`,
       expect.objectContaining({
@@ -125,5 +125,6 @@ describe('triggerJulesWidgetGeneration', () => {
       message: expect.stringContaining('12345'),
       consoleUrl: 'https://jules.google.com/session/12345',
     });
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   });
 });
