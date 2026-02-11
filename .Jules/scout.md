@@ -11,3 +11,14 @@
 - Added tests for `deleteFile` (Firebase path).
 
 **Result:** Coverage improved to ~46%.
+
+## 2025-02-18 - Added Tests for PollWidget
+
+**Gap:** `components/widgets/PollWidget.tsx` had low coverage (~26%), leaving user interactions (voting, resetting) and admin settings (import, export) untested.
+
+**Fix:** Updated `components/widgets/PollWidget.test.tsx`.
+- Added tests for `PollWidget` rendering and interaction (voting increments count).
+- Added tests for "Reset Poll" (mocking `window.confirm`).
+- Expanded `PollSettings` tests to cover question updates, option management (add/remove/edit), roster import (mocking `useDashboard` context), and CSV export (mocking `URL.createObjectURL` and spying on `HTMLAnchorElement`).
+
+**Result:** Coverage improved to ~94%.
