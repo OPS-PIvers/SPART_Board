@@ -6,6 +6,7 @@ import { FileText, MessageSquare, ShieldCheck, Star } from 'lucide-react';
 import { sanitizeHtml } from '../../utils/security';
 
 import { WidgetLayout } from './WidgetLayout';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -101,9 +102,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
-          Templates
-        </label>
+        <SettingsLabel>Templates</SettingsLabel>
         <div className="grid grid-cols-2 gap-2">
           {templates.map((t) => (
             <button
@@ -119,9 +118,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
-          Background Color
-        </label>
+        <SettingsLabel>Background Color</SettingsLabel>
         <div className="flex gap-2">
           {colors.map((c) => (
             <button
@@ -140,9 +137,7 @@ export const TextSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
-          Font Size
-        </label>
+        <SettingsLabel>Font Size</SettingsLabel>
         <div className="flex items-center gap-4">
           <input
             type="range"

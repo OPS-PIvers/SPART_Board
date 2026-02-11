@@ -4,6 +4,7 @@ import { WidgetData, EmbedConfig } from '../../types';
 import { Globe, ExternalLink, AlertCircle, Code, Link2 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { convertToEmbedUrl } from '../../utils/urlHelpers';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 import { WidgetLayout } from './WidgetLayout';
 
@@ -140,9 +141,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {mode === 'url' ? (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <div>
-            <label className="text-xxs  text-slate-500 uppercase mb-2 block tracking-widest">
-              Target URL
-            </label>
+            <SettingsLabel>Target URL</SettingsLabel>
             <div className="relative">
               <input
                 type="text"
@@ -185,9 +184,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       ) : (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div>
-            <label className="text-xxs  text-slate-500 uppercase mb-2 block tracking-widest">
-              HTML / CSS / JS
-            </label>
+            <SettingsLabel>HTML / CSS / JS</SettingsLabel>
             <textarea
               value={html}
               placeholder="<html>&#10;  <style>body { background: #f0f; }</style>&#10;  <body><h1>Hello Class!</h1></body>&#10;</html>"
@@ -212,12 +209,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Auto-Refresh Setting */}
       <div className="pt-4 border-t border-slate-100">
-        <label
-          htmlFor="refresh-interval"
-          className="text-xxs  text-slate-500 uppercase mb-2 block tracking-widest"
-        >
-          Auto-Refresh
-        </label>
+        <SettingsLabel htmlFor="refresh-interval">Auto-Refresh</SettingsLabel>
         <select
           id="refresh-interval"
           value={refreshInterval}

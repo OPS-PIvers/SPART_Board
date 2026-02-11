@@ -11,6 +11,7 @@ import {
 import { useDashboard } from '@/context/useDashboard';
 import { WidgetData, TimerConfig } from '@/types';
 import { getButtonAccessibilityProps } from '@/utils/accessibility';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 // Global reference for Timer AudioContext
 let timerAudioCtx: AudioContext | null = null;
@@ -301,9 +302,7 @@ export const TimerSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-          Default Duration (Minutes)
-        </label>
+        <SettingsLabel>Default Duration (Minutes)</SettingsLabel>
         <div className="flex items-center gap-4">
           <input
             type="range"

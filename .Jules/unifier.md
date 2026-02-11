@@ -82,3 +82,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** The main Dock component used inconsistent sizing methods (padding vs fixed pixels) for different button types (Tools, Folders, System Buttons), resulting in visual size mismatches (36px vs 42px vs 48px vs 52px) and hardcoded "magic numbers".
 **Fix:** Created `components/layout/dock/DockIcon.tsx` to enforce a standard responsive size (`w-10 h-10` mobile, `w-12 h-12` desktop) and unified all dock items (Tools, Folders, Live, Classes, Magic, Hide) to use this component.
+
+## 2026-02-12 - Settings Headers (Gap)
+
+**Drift:** Widget settings panels used inconsistent typography for section headers (variations of `text-xxs`, `text-xs`, `text-[10px]`, `font-bold` vs `font-black`, `text-slate-400` vs `text-slate-500`, inconsistent margins).
+**Fix:** Created `components/common/SettingsLabel.tsx` to enforce the standard style (`text-xxs font-black text-slate-400 uppercase tracking-widest mb-2`). Refactored 12 widgets to use this component.

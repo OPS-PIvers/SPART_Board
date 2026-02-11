@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, DiceConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { Dices, Hash, RefreshCw } from 'lucide-react';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 // Singleton-like Audio Manager for Dice
 let diceAudioCtx: AudioContext | null = null;
@@ -184,9 +185,7 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
-          <Hash className="w-3 h-3" /> Number of Dice
-        </label>
+        <SettingsLabel icon={Hash}>Number of Dice</SettingsLabel>
         <div className="grid grid-cols-3 gap-3">
           {[1, 2, 3].map((n) => (
             <button

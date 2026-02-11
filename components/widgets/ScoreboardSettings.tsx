@@ -11,6 +11,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { Plus, Trash2, Users, RefreshCw } from 'lucide-react';
 import { Button } from '../common/Button';
 import { TEAM_COLORS } from './ScoreboardItem';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 const TeamNameInput: React.FC<{
   value: string;
@@ -198,9 +199,7 @@ export const ScoreboardSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div className="space-y-3">
         <div className="flex justify-between items-center h-6">
-          <label className="text-xxs font-black text-slate-400 uppercase tracking-widest block">
-            Teams ({teams.length})
-          </label>
+          <SettingsLabel className="mb-0">Teams ({teams.length})</SettingsLabel>
 
           {showResetConfirm ? (
             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">

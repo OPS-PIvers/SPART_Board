@@ -9,6 +9,7 @@ import {
 import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
 import { IconPicker } from './IconPicker';
 import { QUICK_TOOLS } from './constants';
+import { SettingsLabel } from '../../common/SettingsLabel';
 
 export const InstructionalRoutinesSettings: React.FC<{
   widget: WidgetData;
@@ -42,9 +43,7 @@ export const InstructionalRoutinesSettings: React.FC<{
       </button>
 
       <div className="space-y-3">
-        <label className="text-xxs  uppercase text-slate-400 tracking-[0.2em] block mb-2">
-          Step Editor
-        </label>
+        <SettingsLabel>Step Editor</SettingsLabel>
         {customSteps.map((step, i) => (
           <div
             key={step.id}
@@ -206,9 +205,7 @@ export const InstructionalRoutinesSettings: React.FC<{
       </div>
 
       <div className="bg-slate-50 p-4 rounded-2xl">
-        <label className="text-xxs  uppercase text-slate-400 tracking-widest mb-3 block">
-          Text Zoom
-        </label>
+        <SettingsLabel>Text Zoom</SettingsLabel>
         <input
           type="range"
           min="0.5"

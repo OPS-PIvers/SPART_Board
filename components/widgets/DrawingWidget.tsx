@@ -21,6 +21,7 @@ import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { Button } from '../common/Button';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 export const DrawingWidget: React.FC<{
   widget: WidgetData;
@@ -475,9 +476,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
-          <Palette className="w-3 h-3" /> Color Presets
-        </label>
+        <SettingsLabel icon={Palette}>Color Presets</SettingsLabel>
         <div className="flex gap-2 px-2">
           {customColors.map((c, i) => (
             <div
@@ -498,9 +497,7 @@ export const DrawingSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <div>
-        <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
-          <Pencil className="w-3 h-3" /> Brush Thickness
-        </label>
+        <SettingsLabel icon={Pencil}>Brush Thickness</SettingsLabel>
         <div className="flex items-center gap-4 px-2">
           <input
             type="range"
