@@ -53,6 +53,7 @@ import { WidgetLibrary } from './dock/WidgetLibrary';
 import { RenameFolderModal } from './dock/RenameFolderModal';
 import { MagicLayoutModal } from './dock/MagicLayoutModal';
 import { detectWidgetType } from '../../utils/smartPaste';
+import { useImageUpload } from '../../hooks/useImageUpload';
 
 /**
  * Custom Label Component for consistent readability
@@ -688,12 +689,13 @@ export const Dock: React.FC = () => {
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
   const { addToast } = useDashboard();
+  const { processAndUploadImage } = useImageUpload();
 
   // Smart Paste Handler
   useEffect(() => {
     if (!canAccessFeature('smart-paste')) return;
 
-    const handlePaste = (e: ClipboardEvent) => {
+    const handlePaste = async (e: ClipboardEvent) => {
       // Don't intercept if user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (
@@ -704,22 +706,47 @@ export const Dock: React.FC = () => {
         return;
       }
 
+      // 1. Handle Image Paste
+      if (e.clipboardData?.files?.length) {
+        const file = e.clipboardData.files[0];
+        if (file.type.startsWith('image/')) {
+          addToast('Processing image...', 'info');
+          const url = await processAndUploadImage(file);
+          if (url) {
+            addWidget('sticker', { config: { url, rotation: 0 } });
+            addToast('Sticker added!', 'success');
+          } else {
+            addToast('Failed to process image', 'error');
+          }
+          return;
+        }
+      }
+
+      // 2. Handle Text Paste
       const text = e.clipboardData?.getData('text');
       if (text) {
-        const detected = detectWidgetType(text);
-        if (detected) {
-          addWidget(detected.type, { config: detected.config });
-          addToast(
-            `Added ${detected.type.charAt(0).toUpperCase() + detected.type.slice(1)} widget from clipboard!`,
-            'success'
-          );
+        const result = detectWidgetType(text);
+        if (result) {
+          if (result.action === 'create-widget') {
+            addWidget(result.type, {
+              config: result.config,
+              ...(result.title ? { name: result.title } : {}),
+            });
+            addToast(
+              `Added ${result.type.charAt(0).toUpperCase() + result.type.slice(1)} widget!`,
+              'success'
+            );
+          } else if (result.action === 'import-board') {
+            // Navigate to the share URL to trigger import
+            window.location.href = result.url;
+          }
         }
       }
     };
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addWidget, addToast, canAccessFeature]);
+  }, [addWidget, addToast, canAccessFeature, processAndUploadImage]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);

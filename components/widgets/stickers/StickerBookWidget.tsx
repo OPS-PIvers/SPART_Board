@@ -1,10 +1,8 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { Upload, Trash2, Loader2, Eraser, MousePointer2 } from 'lucide-react';
 import { WidgetData, StickerBookConfig } from '@/types';
-import { trimImageWhitespace, removeBackground } from '@/utils/imageProcessing';
 import { useDashboard } from '@/context/useDashboard';
-import { useStorage } from '@/hooks/useStorage';
-import { useAuth } from '@/context/useAuth';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 const DEFAULT_STICKERS = [
   // Star
@@ -28,12 +26,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, clearAllStickers, addWidget, addToast } =
     useDashboard();
-  const { user } = useAuth();
-  const { uploadSticker, uploading: storageUploading } = useStorage();
-  const [processing, setProcessing] = useState(false);
+  const { processAndUploadImage, uploading } = useImageUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploading = storageUploading || processing;
   const config = widget.config as StickerBookConfig;
   const customStickers = React.useMemo(
     () => config.uploadedUrls ?? [],
@@ -50,49 +45,17 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 
   const processFile = useCallback(
     async (file: File) => {
-      if (!file.type.startsWith('image/') || !user) return;
-
-      setProcessing(true);
-      try {
-        const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+      const url = await processAndUploadImage(file);
+      if (url) {
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            uploadedUrls: [...customStickers, url],
+          },
         });
-
-        // Remove background and trim whitespace
-        const noBg = await removeBackground(dataUrl);
-        const trimmed = await trimImageWhitespace(noBg);
-
-        // Convert back to Blob for upload
-        const response = await fetch(trimmed);
-        const blob = await response.blob();
-        const processedFile = new File(
-          [blob],
-          file.name.replace(/\.[^/.]+$/, '') + '.png',
-          { type: 'image/png' }
-        );
-
-        const url = (await uploadSticker(user.uid, processedFile)) as
-          | string
-          | null;
-
-        if (url) {
-          updateWidget(widget.id, {
-            config: {
-              ...config,
-              uploadedUrls: [...customStickers, url],
-            },
-          });
-        }
-      } catch (err) {
-        console.error('Failed to process/upload sticker:', err);
-      } finally {
-        setProcessing(false);
       }
     },
-    [config, customStickers, updateWidget, uploadSticker, widget.id, user]
+    [config, customStickers, updateWidget, processAndUploadImage, widget.id]
   );
 
   // Handle global paste events when this widget is mounted

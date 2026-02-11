@@ -1,0 +1,58 @@
+import { useState, useCallback } from 'react';
+import { useStorage } from './useStorage';
+import { useAuth } from '../context/useAuth';
+import {
+  trimImageWhitespace,
+  removeBackground,
+} from '../utils/imageProcessing';
+
+export function useImageUpload() {
+  const { user } = useAuth();
+  const { uploadSticker, uploading: storageUploading } = useStorage();
+  const [processing, setProcessing] = useState(false);
+
+  const uploading = storageUploading || processing;
+
+  const processAndUploadImage = useCallback(
+    async (file: File): Promise<string | null> => {
+      if (!file.type.startsWith('image/') || !user) return null;
+
+      setProcessing(true);
+      try {
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Remove background and trim whitespace
+        const noBg = await removeBackground(dataUrl);
+        const trimmed = await trimImageWhitespace(noBg);
+
+        // Convert back to Blob for upload
+        const response = await fetch(trimmed);
+        const blob = await response.blob();
+        const processedFile = new File(
+          [blob],
+          file.name.replace(/\.[^/.]+$/, '') + '.png',
+          { type: 'image/png' }
+        );
+
+        const url = (await uploadSticker(user.uid, processedFile)) as
+          | string
+          | null;
+
+        return url;
+      } catch (err) {
+        console.error('Failed to process/upload sticker:', err);
+        return null;
+      } finally {
+        setProcessing(false);
+      }
+    },
+    [user, uploadSticker]
+  );
+
+  return { processAndUploadImage, uploading };
+}
