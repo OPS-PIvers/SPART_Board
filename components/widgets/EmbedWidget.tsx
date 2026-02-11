@@ -83,6 +83,11 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <WidgetLayout
       padding="p-0"
+      header={
+        <div className="h-4 w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/embed-header">
+          <div className="w-8 h-1 bg-slate-300/50 rounded-full group-hover/embed-header:bg-slate-400/80 transition-colors" />
+        </div>
+      }
       content={
         <div className="w-full h-full bg-transparent flex flex-col overflow-hidden">
           <iframe

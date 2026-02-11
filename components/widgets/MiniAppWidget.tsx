@@ -410,13 +410,16 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <WidgetLayout
         padding="p-0"
         header={
-          <div className="absolute top-2 right-2 z-10">
-            <button
-              onClick={handleCloseActive}
-              className="px-3 py-1.5 bg-slate-900/80 backdrop-blur-sm hover:bg-slate-900 text-white rounded-lg text-xxs uppercase tracking-wider flex items-center gap-2 shadow-lg border border-slate-700 font-black transition-all"
-            >
-              <LayoutGrid className="w-3 h-3" /> Library
-            </button>
+          <div className="h-4 w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/app-header">
+            <div className="w-8 h-1 bg-slate-300/50 rounded-full group-hover/app-header:bg-slate-400/80 transition-colors" />
+            <div className="absolute top-1 right-2 z-10">
+              <button
+                onClick={handleCloseActive}
+                className="px-2 py-0.5 bg-slate-900/80 backdrop-blur-sm hover:bg-slate-900 text-white rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-lg border border-slate-700 font-black transition-all"
+              >
+                <LayoutGrid className="w-2.5 h-2.5" /> Library
+              </button>
+            </div>
           </div>
         }
         content={
