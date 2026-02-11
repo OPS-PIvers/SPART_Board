@@ -126,6 +126,8 @@ const Keypad: React.FC<{
       ? 'bg-white/10 text-white hover:bg-white/20'
       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm';
 
+  const numpadButtonClasses = `${btnBase} ${btnColor}`;
+
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-4 animate-in fade-in zoom-in-95 duration-200">
       {/* Time display row */}
@@ -168,21 +170,21 @@ const Keypad: React.FC<{
           <button
             key={n}
             onClick={() => handleInput(n.toString())}
-            className={`${btnBase} ${btnColor}`}
+            className={numpadButtonClasses}
           >
             {n}
           </button>
         ))}
         <button
           onClick={handleBackspace}
-          className={`${btnBase} ${btnColor}`}
+          className={numpadButtonClasses}
           aria-label="Backspace"
         >
           <Delete className="w-[1.2em] h-[1.2em]" />
         </button>
         <button
           onClick={() => handleInput('0')}
-          className={`${btnBase} ${btnColor}`}
+          className={numpadButtonClasses}
         >
           0
         </button>
