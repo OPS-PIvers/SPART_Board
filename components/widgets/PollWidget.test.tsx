@@ -3,7 +3,7 @@ import { PollSettings } from './PollWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
-import { WidgetData } from '../../types';
+import { WidgetData, RandomConfig } from '../../types';
 import { GeneratedPoll } from '../../utils/ai';
 
 // Mock useDashboard
@@ -50,28 +50,30 @@ describe('PollSettings', () => {
       addToast: mockAddToast,
       rosters: [],
       activeRosterId: null,
+      activeDashboard: { widgets: [] },
     });
     (useAuth as Mock).mockReturnValue({
       canAccessFeature: mockCanAccessFeature,
     });
     vi.clearAllMocks();
   });
-  it('updates widget config when magic poll is generated', () => {
-    const mockWidget: WidgetData = {
-      id: 'poll-1',
-      type: 'poll',
-      w: 2,
-      h: 2,
-      x: 0,
-      y: 0,
-      z: 1,
-      flipped: false,
-      config: {
-        question: 'Original Question',
-        options: [],
-      },
-    };
 
+  const mockWidget: WidgetData = {
+    id: 'poll-1',
+    type: 'poll',
+    w: 2,
+    h: 2,
+    x: 0,
+    y: 0,
+    z: 1,
+    flipped: false,
+    config: {
+      question: 'Original Question',
+      options: [],
+    },
+  };
+
+  it('updates widget config when magic poll is generated', () => {
     render(<PollSettings widget={mockWidget} />);
 
     // Find the magic button (from our mock)
@@ -98,6 +100,88 @@ describe('PollSettings', () => {
     expect(mockAddToast).toHaveBeenCalledWith(
       'Poll generated magically!',
       'success'
+    );
+  });
+
+  it('imports options from randomizer widget', () => {
+    const mockRandomWidget: WidgetData = {
+      id: 'random-1',
+      type: 'random',
+      w: 2,
+      h: 2,
+      x: 0,
+      y: 0,
+      z: 1,
+      flipped: false,
+      config: {
+        lastResult: ['Alice', 'Bob', 'Charlie'],
+        firstNames: '',
+        lastNames: '',
+        mode: 'single',
+      } as RandomConfig,
+    };
+
+    (useDashboard as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      rosters: [],
+      activeRosterId: null,
+      activeDashboard: { widgets: [mockRandomWidget] },
+    });
+
+    render(<PollSettings widget={mockWidget} />);
+
+    const randomBtn = screen.getByText('Random'); // Button label I added
+    fireEvent.click(randomBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
+      config: {
+        question: 'Original Question',
+        options: [
+          { label: 'Alice', votes: 0 },
+          { label: 'Bob', votes: 0 },
+          { label: 'Charlie', votes: 0 },
+        ],
+      },
+    });
+    expect(mockAddToast).toHaveBeenCalledWith('Imported 3 options!', 'success');
+  });
+
+  it('handles empty randomizer result', () => {
+    const mockRandomWidget: WidgetData = {
+      id: 'random-1',
+      type: 'random',
+      w: 2,
+      h: 2,
+      x: 0,
+      y: 0,
+      z: 1,
+      flipped: false,
+      config: {
+        lastResult: [],
+        firstNames: '',
+        lastNames: '',
+        mode: 'single',
+      } as RandomConfig,
+    };
+
+    (useDashboard as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      rosters: [],
+      activeRosterId: null,
+      activeDashboard: { widgets: [mockRandomWidget] },
+    });
+
+    render(<PollSettings widget={mockWidget} />);
+
+    const randomBtn = screen.getByText('Random');
+    fireEvent.click(randomBtn);
+
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Randomizer has no results to import.',
+      'info'
     );
   });
 });

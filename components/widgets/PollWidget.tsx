@@ -1,7 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
-import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import {
+  WidgetData,
+  PollConfig,
+  DEFAULT_GLOBAL_STYLE,
+  RandomConfig,
+  RandomGroup,
+} from '../../types';
 import {
   RotateCcw,
   Plus,
@@ -130,7 +136,8 @@ const OptionInput: React.FC<OptionInputProps> = ({ label, index, onSave }) => {
 };
 
 export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
+  const { updateWidget, addToast, rosters, activeRosterId, activeDashboard } =
+    useDashboard();
   const { canAccessFeature } = useAuth();
   const config = (widget.config || {}) as PollConfig;
   const { question = 'Vote Now!', options = [] } = config;
@@ -138,6 +145,11 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const activeRoster = useMemo(
     () => rosters.find((r) => r.id === activeRosterId),
     [rosters, activeRosterId]
+  );
+
+  const randomWidget = useMemo(
+    () => activeDashboard?.widgets.find((w) => w.type === 'random'),
+    [activeDashboard]
   );
 
   // Question local state
@@ -174,6 +186,66 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       config: { ...config, options: newOptions } as PollConfig,
     });
     addToast(`Imported ${newOptions.length} students!`, 'success');
+  };
+
+  const importFromRandomizer = () => {
+    if (!randomWidget) {
+      addToast('No Randomizer widget found!', 'error');
+      return;
+    }
+
+    const randomConfig = randomWidget.config as RandomConfig;
+    const lastResult = randomConfig.lastResult;
+
+    if (!lastResult || (Array.isArray(lastResult) && lastResult.length === 0)) {
+      addToast('Randomizer has no results to import.', 'info');
+      return;
+    }
+
+    if (
+      options.length > 0 &&
+      !confirm('This will replace current options. Continue?')
+    ) {
+      return;
+    }
+
+    let newOptions: { label: string; votes: number }[] = [];
+
+    // Case 1: Groups (Array of RandomGroup objects)
+    if (
+      Array.isArray(lastResult) &&
+      lastResult.length > 0 &&
+      typeof lastResult[0] === 'object' &&
+      lastResult[0] !== null &&
+      'names' in lastResult[0]
+    ) {
+      const groups = lastResult as RandomGroup[];
+      newOptions = groups.map((g, i) => {
+        let name = `Group ${i + 1}`;
+        // Try to find shared name if ID exists
+        if (g.id && activeDashboard?.sharedGroups) {
+          const shared = activeDashboard.sharedGroups.find(
+            (sg) => sg.id === g.id
+          );
+          if (shared) name = shared.name;
+        }
+        return { label: name, votes: 0 };
+      });
+    }
+    // Case 2: List of Names (Array of strings)
+    else if (Array.isArray(lastResult)) {
+      const names = lastResult as string[];
+      newOptions = names.map((name) => ({ label: name, votes: 0 }));
+    }
+    // Case 3: Single Name (String)
+    else if (typeof lastResult === 'string') {
+      newOptions = [{ label: lastResult, votes: 0 }];
+    }
+
+    updateWidget(widget.id, {
+      config: { ...config, options: newOptions } as PollConfig,
+    });
+    addToast(`Imported ${newOptions.length} options!`, 'success');
   };
 
   const handleExport = () => {
@@ -242,27 +314,43 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div className="flex items-center gap-2 text-indigo-900">
             <Users className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wider">
-              Import from Class
+              Import Options
             </span>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={importFromRoster}
-            disabled={!activeRoster}
-            title={
-              !activeRoster
-                ? 'Select a class in the Classes widget'
-                : `Import ${activeRoster.name}`
-            }
-            icon={<RefreshCw className="w-3 h-3" />}
-          >
-            Import Class
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={importFromRoster}
+              disabled={!activeRoster}
+              title={
+                !activeRoster
+                  ? 'Select a class in the Classes widget'
+                  : `Import ${activeRoster.name}`
+              }
+              icon={<RefreshCw className="w-3 h-3" />}
+            >
+              Class
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={importFromRandomizer}
+              disabled={!randomWidget}
+              title={
+                !randomWidget
+                  ? 'Add a Randomizer widget first'
+                  : 'Import from Randomizer'
+              }
+              icon={<RefreshCw className="w-3 h-3" />}
+            >
+              Random
+            </Button>
+          </div>
         </div>
-        {!activeRoster && (
+        {!activeRoster && !randomWidget && (
           <div className="text-[10px] text-indigo-400 font-medium">
-            Tip: Select a class in the Classes widget to import student names.
+            Tip: Connect to Classes or Randomizer to import options.
           </div>
         )}
       </div>

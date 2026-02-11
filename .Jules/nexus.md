@@ -16,6 +16,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `QRWidget.tsx` monitors the content of any active text widget and updates its URL if syncing is enabled.
 **Configuration:** Enabled via the "Sync with Text Widget" toggle in QR Settings.
 
+### Random Picker -> Poll
+
+**Description:** Instantly creates poll options from randomized groups or selected students.
+**Implementation:** `PollWidget.tsx` (in Settings) checks for `activeDashboard`'s `randomWidget` and imports its `lastResult` as poll options.
+**Configuration:** Enabled via "Import from Randomizer" button in Poll Settings.
+
 ## Planned Connections
 
 - **Poll -> Scoreboard:** Update team scores based on poll results.
