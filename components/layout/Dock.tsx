@@ -57,6 +57,7 @@ import { detectWidgetType } from '../../utils/smartPaste';
 import { useImageUpload } from '../../hooks/useImageUpload';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { DockIcon } from './dock/DockIcon';
 
 /**
  * Custom Label Component for consistent readability
@@ -295,18 +296,15 @@ const ToolDockItem = ({
             isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
           }`}
         >
-          <div
-            className={`${tool.color} p-2 md:p-3 rounded-2xl text-white shadow-lg ${
+          <DockIcon
+            color={tool.color}
+            className={`flex items-center justify-center ${
               isEditMode ? '' : 'group-hover:scale-110'
-            } transition-all duration-200 relative`}
+            }`}
+            badgeCount={minimizedWidgets.length}
           >
             <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
-            {minimizedWidgets.length > 0 && (
-              <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-xxs font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
-                {minimizedWidgets.length}
-              </div>
-            )}
-          </div>
+          </DockIcon>
           <DockLabel>{tool.label}</DockLabel>
         </button>
       </div>
@@ -390,19 +388,15 @@ const SortableFolderWidget = ({
             isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
           }`}
         >
-          <div
-            className={`${tool.color} p-2.5 rounded-2xl text-white shadow-md ${
+          <DockIcon
+            color={tool.color}
+            className={`flex items-center justify-center shadow-md ${
               isEditMode ? '' : 'group-hover:scale-110'
-            } transition-transform`}
+            }`}
+            badgeCount={minimizedCount}
           >
             <tool.icon className="w-5 h-5" />
-          </div>
-
-          {minimizedCount > 0 && (
-            <div className="absolute -top-1 -right-1 bg-brand-red-primary text-white text-xxs font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
-              {minimizedCount}
-            </div>
-          )}
+          </DockIcon>
         </button>
 
         {isEditMode && (
@@ -610,7 +604,10 @@ const FolderItem = ({
             isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
           }`}
         >
-          <div className="bg-slate-200/50 backdrop-blur-md p-2 md:p-3 rounded-2xl shadow-inner border border-white/20 grid grid-cols-2 gap-0.5 relative overflow-hidden group-hover:bg-slate-200/80 transition-colors h-[42px] w-[42px] md:h-[52px] md:w-[52px]">
+          <DockIcon
+            color="bg-slate-200/50"
+            className="backdrop-blur-md shadow-inner border border-white/20 grid grid-cols-2 gap-0.5 overflow-hidden group-hover:bg-slate-200/80 transition-colors p-1.5"
+          >
             {folder.items.slice(0, 4).map((type, i) => {
               const tool = TOOLS.find((t) => t.type === type);
               return (
@@ -621,11 +618,11 @@ const FolderItem = ({
               );
             })}
             {folder.items.length === 0 && (
-              <div className="col-span-2 row-span-2 flex items-center justify-center opacity-20">
+              <div className="col-span-2 row-span-2 flex items-center justify-center opacity-20 text-slate-600">
                 <FolderPlus className="w-4 h-4" />
               </div>
             )}
-          </div>
+          </DockIcon>
           <DockLabel>{folder.name}</DockLabel>
         </button>
       </div>
@@ -1158,25 +1155,29 @@ export const Dock: React.FC = () => {
                         {activeItemId ? (
                           <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
                             {TOOLS.find((t) => t.type === activeItemId) ? (
-                              <div
-                                className={`${
+                              <DockIcon
+                                color={
                                   TOOLS.find((t) => t.type === activeItemId)
-                                    ?.color ?? 'bg-slate-500'
-                                } p-3 rounded-2xl text-white shadow-2xl ring-2 ring-white/50`}
+                                    ?.color
+                                }
+                                className="flex items-center justify-center shadow-2xl ring-2 ring-white/50"
                               >
                                 {React.createElement(
                                   TOOLS.find((t) => t.type === activeItemId)
                                     ?.icon ?? Users,
                                   { className: 'w-6 h-6' }
                                 )}
-                              </div>
+                              </DockIcon>
                             ) : (
-                              <div className="bg-slate-200/80 backdrop-blur-md p-3 rounded-2xl shadow-2xl ring-2 ring-white/50 border border-white/20 grid grid-cols-2 gap-0.5">
+                              <DockIcon
+                                color="bg-slate-200/80"
+                                className="backdrop-blur-md shadow-2xl ring-2 ring-white/50 border border-white/20 grid grid-cols-2 gap-0.5 p-1.5"
+                              >
                                 <div className="w-3 h-3 bg-slate-400 rounded-sm" />
                                 <div className="w-3 h-3 bg-slate-400 rounded-sm" />
                                 <div className="w-3 h-3 bg-slate-400 rounded-sm" />
                                 <div className="w-3 h-3 bg-slate-400 rounded-sm" />
-                              </div>
+                              </DockIcon>
                             )}
                           </div>
                         ) : null}
@@ -1209,9 +1210,12 @@ export const Dock: React.FC = () => {
                         aria-label="View live session information"
                         className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
                       >
-                        <div className="bg-red-500 p-2 md:p-3 rounded-2xl text-white shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 transition-all duration-200 relative animate-pulse">
+                        <DockIcon
+                          color="bg-red-500"
+                          className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
+                        >
                           <Cast className="w-5 h-5 md:w-6 md:h-6" />
-                        </div>
+                        </DockIcon>
                         <DockLabel>Live</DockLabel>
                       </button>
 
@@ -1268,11 +1272,12 @@ export const Dock: React.FC = () => {
                     aria-label="Toggle class roster menu"
                     className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
                   >
-                    <div
-                      className={`${classToolMetadata.color} p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200 relative`}
+                    <DockIcon
+                      color={classToolMetadata.color}
+                      className="flex items-center justify-center group-hover:scale-110"
                     >
                       <Users className="w-5 h-5 md:w-6 md:h-6" />
-                    </div>
+                    </DockIcon>
                     <DockLabel>{classToolMetadata.label}</DockLabel>
                   </button>
 
@@ -1285,9 +1290,12 @@ export const Dock: React.FC = () => {
                       className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
                       title="Magic Layout"
                     >
-                      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 md:p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-all duration-200">
+                      <DockIcon
+                        color="bg-gradient-to-br from-indigo-500 to-purple-600"
+                        className="flex items-center justify-center group-hover:scale-110"
+                      >
                         <Wand2 className="w-5 h-5 md:w-6 md:h-6" />
-                      </div>
+                      </DockIcon>
                       <DockLabel>Magic</DockLabel>
                     </button>
                   )}
@@ -1297,9 +1305,12 @@ export const Dock: React.FC = () => {
                     className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
                     title="Minimize Toolbar"
                   >
-                    <div className="bg-slate-100 p-2 md:p-3 rounded-2xl text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600 transition-all duration-200">
+                    <DockIcon
+                      color="bg-slate-100"
+                      className="flex items-center justify-center text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600"
+                    >
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
-                    </div>
+                    </DockIcon>
                     <DockLabel>Hide</DockLabel>
                   </button>
                 </>
