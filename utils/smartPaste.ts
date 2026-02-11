@@ -8,7 +8,8 @@ export type PasteResult =
       config: WidgetConfig;
       title?: string;
     }
-  | { action: 'import-board'; url: string };
+  | { action: 'import-board'; url: string }
+  | { action: 'create-mini-app'; html: string; title?: string };
 
 /**
  * Detects the most appropriate widget type and initial configuration based on pasted text.
@@ -38,12 +39,8 @@ export function detectWidgetType(text: string): PasteResult | null {
     const title = titleMatch ? titleMatch[1].trim() : undefined;
 
     return {
-      action: 'create-widget',
-      type: 'embed',
-      config: {
-        mode: 'code',
-        html: trimmed,
-      } as WidgetConfig,
+      action: 'create-mini-app',
+      html: trimmed,
       title,
     };
   }

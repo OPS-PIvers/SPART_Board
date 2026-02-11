@@ -41,6 +41,7 @@ import {
   WidgetData,
   DockFolder,
   GlobalStyle,
+  MiniAppItem,
 } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { getTitle } from '../../utils/widgetHelpers';
@@ -54,6 +55,8 @@ import { RenameFolderModal } from './dock/RenameFolderModal';
 import { MagicLayoutModal } from './dock/MagicLayoutModal';
 import { detectWidgetType } from '../../utils/smartPaste';
 import { useImageUpload } from '../../hooks/useImageUpload';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 /**
  * Custom Label Component for consistent readability
@@ -739,6 +742,35 @@ export const Dock: React.FC = () => {
           } else if (result.action === 'import-board') {
             // Navigate to the share URL to trigger import
             window.location.href = result.url;
+          } else if (result.action === 'create-mini-app') {
+            if (user) {
+              addToast('Creating Mini App...', 'info');
+              const id = crypto.randomUUID();
+              const newItem: MiniAppItem = {
+                id,
+                title: result.title ?? 'Untitled App',
+                html: result.html,
+                createdAt: Date.now(),
+                order: 0, // Will be sorted by createdAt usually
+              };
+
+              // Save to Firestore (library)
+              try {
+                await setDoc(
+                  doc(db, 'users', user.uid, 'miniapps', id),
+                  newItem
+                );
+
+                // Open the widget immediately
+                addWidget('miniApp', { config: { activeApp: newItem } });
+                addToast('Mini App saved to library!', 'success');
+              } catch (err) {
+                console.error(err);
+                addToast('Failed to save Mini App', 'error');
+              }
+            } else {
+              addToast('Sign in to create Mini Apps', 'error');
+            }
           }
         }
       }
@@ -746,7 +778,7 @@ export const Dock: React.FC = () => {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addWidget, addToast, canAccessFeature, processAndUploadImage]);
+  }, [addWidget, addToast, canAccessFeature, processAndUploadImage, user]);
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);

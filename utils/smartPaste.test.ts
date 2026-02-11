@@ -69,14 +69,11 @@ describe('detectWidgetType (Smart Paste)', () => {
     const result = detectWidgetType(input);
 
     expect(result).not.toBeNull();
-    if (result?.action === 'create-widget') {
-      expect(result.type).toBe('embed');
+    if (result?.action === 'create-mini-app') {
       expect(result.title).toBe('My App');
-      const config = result.config as EmbedConfig;
-      expect(config.mode).toBe('code');
-      expect(config.html).toBe(input);
+      expect(result.html).toBe(input);
     } else {
-      throw new Error('Expected create-widget action');
+      throw new Error('Expected create-mini-app action');
     }
   });
 
