@@ -185,7 +185,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       header={
         <div
-          className="border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-sm z-10 shrink-0"
+          className="flex items-center justify-between sticky top-0 z-10 shrink-0"
           style={{ padding: 'min(16px, 3.5cqmin)' }}
         >
           <span
@@ -365,7 +365,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       }
       footer={
         <div
-          className="bg-slate-50/50 border-t border-slate-100 flex items-center shrink-0"
+          className="flex items-center shrink-0"
           style={{
             padding: 'min(12px, 2.5cqmin) min(16px, 3.5cqmin)',
             gap: 'min(12px, 3cqmin)',

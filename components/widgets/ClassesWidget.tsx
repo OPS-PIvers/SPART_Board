@@ -123,7 +123,7 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="flex justify-between items-center p-3 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex justify-between items-center p-3">
           <button
             onClick={onBack}
             className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
@@ -284,7 +284,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
         <WidgetLayout
           padding="p-0"
           header={
-            <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+            <div className="p-3">
               <div className="flex gap-2">
                 <button
                   onClick={() => {
@@ -477,7 +477,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
         <WidgetLayout
           padding="p-0"
           header={
-            <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div className="p-3 flex justify-between items-center">
               <button
                 onClick={() => setView('list')}
                 className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"

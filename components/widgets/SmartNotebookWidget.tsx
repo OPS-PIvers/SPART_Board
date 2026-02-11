@@ -243,7 +243,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         padding="p-0"
         header={
           <div
-            className="border-b border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-between shrink-0"
+            className="flex items-center justify-between shrink-0"
             style={{ padding: 'min(16px, 3.5cqmin)' }}
           >
             <div>
@@ -352,7 +352,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         }
         footer={
           <div
-            className="border-t border-slate-200 bg-white/80 backdrop-blur-sm flex items-center justify-center shrink-0"
+            className="flex items-center justify-center shrink-0"
             style={{
               padding: 'min(16px, 3.5cqmin)',
               gap: 'min(24px, 5cqmin)',
@@ -425,7 +425,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       header={
         <div
-          className="border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-sm shrink-0"
+          className="flex items-center justify-between shrink-0"
           style={{ padding: 'min(20px, 4cqmin)' }}
         >
           <h2

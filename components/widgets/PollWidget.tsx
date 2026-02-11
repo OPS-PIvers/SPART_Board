@@ -50,7 +50,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="px-4 pt-4 pb-2 border-b border-slate-100">
+        <div className="px-4 pt-4 pb-2">
           <div
             className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
             style={{ fontSize: 'min(4cqmin)', lineHeight: 1.1 }}
