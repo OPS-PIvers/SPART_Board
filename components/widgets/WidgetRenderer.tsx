@@ -88,7 +88,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   dashboardBackground,
   dashboardSettings,
 }) => {
-  const windowSize = useWindowSize();
+  // OPTIMIZATION: Only listen to window resize events if the widget is maximized
+  // This prevents all non-maximized widgets from re-rendering on every pixel of window resize
+  const windowSize = useWindowSize(widget.maximized);
   const { canAccessFeature } = useAuth();
 
   const handleToggleLive = async () => {
