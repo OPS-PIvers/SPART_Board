@@ -219,7 +219,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-4 custom-scrollbar bg-slate-50/30">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
+          style={{ padding: 'min(16px, 4cqmin)' }}
+        >
           {/* Drop/Paste Zone - Integrated and obvious */}
           <div
             onDragOver={handleDragOver}
@@ -264,7 +267,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             >
               Essentials
             </h4>
-            <div className="grid grid-cols-4 gap-4">
+            <div
+              className="grid grid-cols-4"
+              style={{ gap: 'min(16px, 4cqmin)' }}
+            >
               {DEFAULT_STICKERS.map((url, i) => (
                 <div
                   key={i}
@@ -298,7 +304,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 My Collection
               </h4>
-              <div className="grid grid-cols-4 gap-4">
+              <div
+                className="grid grid-cols-4"
+                style={{ gap: 'min(16px, 4cqmin)' }}
+              >
                 {customStickers.map((url, i) => (
                   <div
                     key={i}

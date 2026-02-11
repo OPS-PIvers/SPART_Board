@@ -20,7 +20,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   wheelSize,
   displayResult,
   isSpinning,
-  resultFontSize,
+  _resultFontSize,
 }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
@@ -127,7 +127,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
           <div
             className="bg-white px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500  text-indigo-900 animate-bounce text-center max-w-full break-words"
             style={{
-              fontSize: `${resultFontSize ?? 24}px`,
+              fontSize: 'min(32px, 8cqmin)',
               lineHeight: 1.1,
             }}
           >

@@ -119,7 +119,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   onClick={() => window.location.reload()}
                   className="bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                   style={{
-                    fontSize: 'min(12px, 3cqmin)',
+                    fontSize: '3cqmin',
                     padding: 'min(8px, 1.5cqmin) min(16px, 3cqmin)',
                   }}
                 >
@@ -198,7 +198,13 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              <div
+                className="flex-1 overflow-y-auto custom-scrollbar flex flex-col"
+                style={{
+                  padding: 'min(16px, 4cqmin)',
+                  gap: 'min(16px, 4cqmin)',
+                }}
+              >
                 {capturedItems.length === 0 ? (
                   <ScaledEmptyState
                     icon={FileText}

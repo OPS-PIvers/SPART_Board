@@ -567,7 +567,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <div
                   className="flex-1 w-full grid content-start overflow-y-auto custom-scrollbar pr-1 py-2"
                   style={{
-                    gridTemplateColumns: `repeat(auto-fit, minmax(130px, 1fr))`,
+                    gridTemplateColumns: `repeat(auto-fit, minmax(min(130px, 40%), 1fr))`,
                     gap: '8px',
                   }}
                 >

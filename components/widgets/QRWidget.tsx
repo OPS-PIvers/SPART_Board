@@ -64,8 +64,14 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         ) : undefined
       }
       content={
-        <div className="w-full h-full flex items-center justify-center p-3">
-          <div className="bg-white p-3 rounded-2xl shadow-inner w-full h-full flex items-center justify-center border border-slate-100 overflow-hidden">
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ padding: 'min(12px, 3cqmin)' }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-inner w-full h-full flex items-center justify-center border border-slate-100 overflow-hidden"
+            style={{ padding: 'min(12px, 3cqmin)' }}
+          >
             <img
               src={qrUrl}
               alt="QR Code"
@@ -75,7 +81,7 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div className="px-3 pb-3">
+        <div style={{ padding: '0 min(12px, 3cqmin) min(12px, 3cqmin)' }}>
           <div className="text-[min(12px,3.5cqmin)] font-mono text-slate-400 break-all text-center max-w-full overflow-hidden py-1.5 px-3 bg-slate-50/50 rounded-lg border border-slate-100/50">
             {url}
           </div>

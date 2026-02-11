@@ -86,23 +86,32 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
       padding="p-0"
       content={
         <div
-          className={`h-full w-full p-3 overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
+          className={`h-full w-full overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
+          style={{ padding: 'min(12px, 3cqmin)' }}
         >
-          <div className="flex flex-wrap gap-2 h-full content-start justify-center">
+          <div
+            className="flex flex-wrap h-full content-start justify-center"
+            style={{ gap: 'min(8px, 2cqmin)' }}
+          >
             {displayItems.map((item) => {
               const isActive = activeItems.has(item.id);
               return (
                 <button
                   key={item.id}
                   onClick={() => toggleActive(item.id)}
-                  style={{ flexBasis: itemWidth, maxWidth: itemWidth }}
-                  className={`aspect-square flex flex-col items-center justify-center gap-1 p-2 rounded-2xl border-2 transition-all duration-300 ${
+                  className={`aspect-square flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
                     isActive
                       ? `${item.color} ${
                           item.textColor ?? 'text-white'
                         } border-transparent shadow-lg scale-[1.02] z-10`
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
                   }`}
+                  style={{
+                    flexBasis: itemWidth,
+                    maxWidth: itemWidth,
+                    gap: 'min(4px, 1cqmin)',
+                    padding: 'min(8px, 2cqmin)',
+                  }}
                 >
                   <item.icon
                     className={`w-1/2 h-1/2 transition-transform duration-300 ${
@@ -112,7 +121,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   />
                   <span
                     className="uppercase tracking-wide text-center font-black leading-tight truncate w-full"
-                    style={{ fontSize: 'min(3cqmin)' }}
+                    style={{ fontSize: '3cqmin' }}
                   >
                     {item.label}
                   </span>

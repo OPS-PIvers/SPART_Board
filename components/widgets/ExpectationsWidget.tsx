@@ -356,13 +356,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`h-full w-full bg-transparent p-3 gap-3 overflow-hidden animate-in fade-in duration-200 ${
+          className={`h-full w-full bg-transparent overflow-hidden animate-in fade-in duration-200 ${
             isElementary ? 'grid grid-cols-2' : 'flex flex-col'
           }`}
         >
           <button
             onClick={() => setActiveCategory('volume')}
-            className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+            className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
               selectedVolume
                 ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
@@ -371,8 +371,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               className={`p-3 rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: 'min(15cqmin)',
-                height: 'min(15cqmin)',
+                width: '15cqmin',
+                height: '15cqmin',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -386,13 +386,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(3cqmin)' }}
+                style={{ fontSize: '3cqmin' }}
               >
                 Volume
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(5cqmin)' }}
+                style={{ fontSize: '5cqmin' }}
               >
                 {selectedVolume ? selectedVolume.label : 'Not Set'}
               </div>
@@ -401,7 +401,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
 
           <button
             onClick={() => setActiveCategory('groups')}
-            className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+            className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
               selectedGroup
                 ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
@@ -410,8 +410,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               className={`p-3 rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: 'min(15cqmin)',
-                height: 'min(15cqmin)',
+                width: '15cqmin',
+                height: '15cqmin',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -425,13 +425,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(3cqmin)' }}
+                style={{ fontSize: '3cqmin' }}
               >
                 Group Size
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(5cqmin)' }}
+                style={{ fontSize: '5cqmin' }}
               >
                 {selectedGroup ? selectedGroup.label : 'Not Set'}
               </div>
@@ -440,7 +440,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
 
           <button
             onClick={() => setActiveCategory('interaction')}
-            className={`flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+            className={`flex-1 flex items-center rounded-2xl border-2 transition-all group ${
               selectedInteraction
                 ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
@@ -449,8 +449,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               className={`p-3 rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: 'min(15cqmin)',
-                height: 'min(15cqmin)',
+                width: '15cqmin',
+                height: '15cqmin',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -464,13 +464,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(3cqmin)' }}
+                style={{ fontSize: '3cqmin' }}
               >
                 Interaction
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(5cqmin)' }}
+                style={{ fontSize: '5cqmin' }}
               >
                 {selectedInteraction ? selectedInteraction.label : 'Not Set'}
               </div>

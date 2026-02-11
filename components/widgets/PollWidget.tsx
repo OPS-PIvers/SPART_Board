@@ -54,14 +54,17 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="px-4 pt-4 pb-2">
           <div
             className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
-            style={{ fontSize: 'min(4cqmin)', lineHeight: 1.1 }}
+            style={{ fontSize: '4cqmin', lineHeight: 1.1 }}
           >
             {question}
           </div>
         </div>
       }
       content={
-        <div className="w-full h-full p-4 overflow-y-auto custom-scrollbar space-y-3">
+        <div
+          className="w-full h-full overflow-y-auto custom-scrollbar flex flex-col"
+          style={{ padding: 'min(16px, 4cqmin)', gap: 'min(12px, 3cqmin)' }}
+        >
           {options.map((o, i: number) => {
             const percent =
               total === 0 ? 0 : Math.round((o.votes / total) * 100);
@@ -76,7 +79,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               >
                 <div
                   className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
-                  style={{ fontSize: 'min(2.5cqmin)' }}
+                  style={{ fontSize: '2.5cqmin' }}
                 >
                   <span className="font-bold truncate pr-4">{o.label}</span>
                   <span className="font-mono whitespace-nowrap">
@@ -84,7 +87,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   </span>
                 </div>
 
-                <div className="h-[min(3cqmin)] min-h-[12px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
+                <div className="h-[3cqmin] min-h-[12px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
                   <div
                     className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
                     style={{ width: `${percent}%` }}

@@ -72,7 +72,8 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full gap-3 p-3 bg-transparent overflow-y-auto custom-scrollbar font-${globalStyle.fontFamily}`}
+          className={`grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full bg-transparent overflow-y-auto custom-scrollbar font-${globalStyle.fontFamily}`}
+          style={{ gap: 'min(12px, 3cqmin)', padding: 'min(12px, 3cqmin)' }}
         >
           {teams.map((team) => (
             <ScoreboardItem

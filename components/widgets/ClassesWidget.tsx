@@ -123,14 +123,20 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="flex justify-between items-center p-3">
+        <div
+          className="flex justify-between items-center"
+          style={{ padding: 'min(12px, 3cqmin)' }}
+        >
           <button
             onClick={onBack}
             className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
           >
             &larr; Back
           </button>
-          <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
+          <div
+            className="flex items-center flex-1 justify-end"
+            style={{ gap: 'min(8px, 2cqmin)', marginLeft: 'min(16px, 4cqmin)' }}
+          >
             <input
               className="border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0 text-sm font-bold"
               placeholder="Class Name"
@@ -148,7 +154,8 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
       }
       content={
         <div
-          className={`grid ${showLastNames ? 'grid-cols-2' : 'grid-cols-1'} gap-3 w-full h-full p-3`}
+          className={`grid ${showLastNames ? 'grid-cols-2' : 'grid-cols-1'} w-full h-full`}
+          style={{ gap: 'min(12px, 3cqmin)', padding: 'min(12px, 3cqmin)' }}
         >
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-end mb-1">
@@ -284,8 +291,8 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
         <WidgetLayout
           padding="p-0"
           header={
-            <div className="p-3">
-              <div className="flex gap-2">
+            <div style={{ padding: 'min(12px, 3cqmin)' }}>
+              <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
                 <button
                   onClick={() => {
                     setEditingId(null);
@@ -312,7 +319,10 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           content={
             <div className="w-full h-full flex flex-col relative overflow-hidden">
               {confirmDeleteId && (
-                <div className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm">
+                <div
+                  className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center text-center animate-in fade-in duration-200 backdrop-blur-sm"
+                  style={{ padding: 'min(16px, 4cqmin)' }}
+                >
                   <p className="text-white font-bold mb-4 text-sm uppercase tracking-tight">
                     Delete roster &quot;
                     {rosters.find((r) => r.id === confirmDeleteId)?.name}&quot;?
@@ -321,7 +331,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                       This cannot be undone.
                     </span>
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex" style={{ gap: 'min(12px, 3cqmin)' }}>
                     <button
                       onClick={() => setConfirmDeleteId(null)}
                       className="px-6 py-2 rounded-xl bg-slate-700 text-white text-xs font-black hover:bg-slate-600 transition-colors uppercase tracking-widest"
@@ -491,16 +501,25 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
             </div>
           }
           content={
-            <div className="w-full h-full flex flex-col p-3 overflow-hidden">
+            <div
+              className="w-full h-full flex flex-col overflow-hidden"
+              style={{ padding: 'min(12px, 3cqmin)' }}
+            >
               {classLinkLoading ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
+                <div
+                  className="flex-1 flex flex-col items-center justify-center text-slate-400"
+                  style={{ gap: 'min(16px, 4cqmin)' }}
+                >
                   <RefreshCw size={40} className="animate-spin text-blue-500" />
                   <p className="text-sm font-black uppercase tracking-widest opacity-60">
                     Connecting to ClassLink...
                   </p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <div
+                  className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
+                  style={{ gap: 'min(8px, 2cqmin)' }}
+                >
                   {classLinkClasses.length === 0 ? (
                     <div className="text-center text-slate-400 py-12 text-sm italic font-bold opacity-40">
                       No classes found in ClassLink.

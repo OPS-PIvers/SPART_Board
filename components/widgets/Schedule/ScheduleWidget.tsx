@@ -211,7 +211,13 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
               />
             ))}
             {items.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-20 py-10">
+              <div
+                className="flex flex-col items-center justify-center h-full text-slate-400 opacity-20"
+                style={{
+                  gap: 'min(8px, 2cqmin)',
+                  padding: 'min(40px, 10cqmin) 0',
+                }}
+              >
                 <Clock className="w-12 h-12" />
                 <span className="text-xs font-black uppercase tracking-widest">
                   No Schedule

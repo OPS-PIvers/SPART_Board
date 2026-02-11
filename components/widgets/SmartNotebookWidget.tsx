@@ -249,14 +249,14 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
             <div>
               <h3
                 className="font-black text-slate-700 uppercase tracking-widest truncate"
-                style={{ fontSize: 'min(12px, 3cqmin)', maxWidth: '60cqmin' }}
+                style={{ fontSize: '3cqmin', maxWidth: '60cqmin' }}
               >
                 {activeNotebook.title}
               </h3>
               <p
                 className="font-bold text-slate-400 uppercase tracking-tighter"
                 style={{
-                  fontSize: 'min(10px, 2.5cqmin)',
+                  fontSize: '2.5cqmin',
                   marginTop: 'min(2px, 0.5cqmin)',
                 }}
               >
@@ -317,7 +317,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                   <h4
                     className="font-black text-slate-400 uppercase tracking-widest"
                     style={{
-                      fontSize: 'min(10px, 2.5cqmin)',
+                      fontSize: '2.5cqmin',
                       marginBottom: 'min(4px, 1cqmin)',
                     }}
                   >
@@ -325,7 +325,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                   </h4>
                   <p
                     className="font-bold text-indigo-500 uppercase tracking-tighter animate-pulse"
-                    style={{ fontSize: 'min(9px, 2.2cqmin)' }}
+                    style={{ fontSize: '2.2cqmin' }}
                   >
                     Drag to board
                   </p>
@@ -377,7 +377,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
             >
               <span
                 className="font-black text-slate-700 tracking-widest uppercase"
-                style={{ fontSize: 'min(12px, 3cqmin)' }}
+                style={{ fontSize: '3cqmin' }}
               >
                 {currentPage + 1} / {activeNotebook.pageUrls.length}
               </span>
@@ -431,7 +431,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
           <h2
             className="font-black text-slate-700 uppercase tracking-widest flex items-center"
             style={{
-              fontSize: 'min(14px, 3.5cqmin)',
+              fontSize: '3.5cqmin',
               gap: 'min(8px, 2cqmin)',
             }}
           >
@@ -466,9 +466,18 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-5 custom-scrollbar bg-slate-50/30">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
+          style={{ padding: 'min(20px, 5cqmin)' }}
+        >
           {notebooks.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 py-12">
+            <div
+              className="h-full flex flex-col items-center justify-center text-slate-400"
+              style={{
+                gap: 'min(16px, 4cqmin)',
+                padding: 'min(48px, 12cqmin) 0',
+              }}
+            >
               <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
                 <FileText className="w-10 h-10 opacity-30" />
               </div>
@@ -476,7 +485,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                 <p
                   className="font-black uppercase tracking-widest"
                   style={{
-                    fontSize: 'min(14px, 3.5cqmin)',
+                    fontSize: '3.5cqmin',
                     marginBottom: 'min(4px, 1cqmin)',
                   }}
                 >
@@ -484,7 +493,7 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                 </p>
                 <p
                   className="font-bold uppercase tracking-tighter opacity-60"
-                  style={{ fontSize: 'min(12px, 3cqmin)' }}
+                  style={{ fontSize: '3cqmin' }}
                 >
                   Import a .notebook file to begin.
                 </p>
@@ -523,14 +532,14 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                     >
                       <p
                         className="text-white font-black uppercase tracking-tight truncate"
-                        style={{ fontSize: 'min(12px, 3cqmin)' }}
+                        style={{ fontSize: '3cqmin' }}
                       >
                         {notebook.title}
                       </p>
                       <p
                         className="text-white/60 font-bold uppercase tracking-widest"
                         style={{
-                          fontSize: 'min(10px, 2.5cqmin)',
+                          fontSize: '2.5cqmin',
                           marginTop: 'min(2px, 0.5cqmin)',
                         }}
                       >

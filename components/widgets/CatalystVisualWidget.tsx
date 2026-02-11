@@ -32,7 +32,7 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
     return (
       <Icon
         className="animate-pulse"
-        style={{ width: 'min(40cqmin)', height: 'min(40cqmin)' }}
+        style={{ width: '40cqmin', height: '40cqmin' }}
       />
     );
   };
@@ -54,12 +54,13 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`h-full w-full flex flex-col items-center justify-center p-6 ${theme} border-2 border-double border-current gap-[5cqmin]`}
+          className={`h-full w-full flex flex-col items-center justify-center ${theme} border-2 border-double border-current`}
+          style={{ padding: 'min(24px, 6cqmin)', gap: '5cqmin' }}
         >
           <div className="shrink-0">{getIcon(config.icon ?? '')}</div>
           <h2
             className="font-black text-center uppercase tracking-wider leading-tight w-full"
-            style={{ fontSize: 'min(6cqmin)' }}
+            style={{ fontSize: '6cqmin' }}
           >
             {title}
           </h2>

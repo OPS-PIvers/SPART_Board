@@ -46,7 +46,7 @@ const DiceFace: React.FC<{
   value: number;
   isRolling: boolean;
   size?: string;
-}> = ({ value, isRolling, size = 'min(35cqmin)' }) => {
+}> = ({ value, isRolling, size = '35cqmin' }) => {
   const dotPositions: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -131,7 +131,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="flex flex-wrap justify-center items-center gap-[4cqmin] w-full h-full overflow-hidden">
+        <div
+          className="flex flex-wrap justify-center items-center w-full h-full overflow-hidden"
+          style={{ gap: '4cqmin' }}
+        >
           {values.map((v, i) => (
             <DiceFace
               key={i}
@@ -139,10 +142,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               isRolling={isRolling}
               size={
                 diceCount === 1
-                  ? 'min(60cqmin)'
+                  ? '60cqmin'
                   : diceCount === 2
-                    ? 'min(40cqmin)'
-                    : 'min(28cqmin)'
+                    ? '40cqmin'
+                    : '28cqmin'
               }
             />
           ))}

@@ -104,13 +104,13 @@ const SortableItem: React.FC<SortableItemProps> = ({
       <div className="flex-1 min-w-0">
         <h4
           className="text-slate-700 font-bold truncate"
-          style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+          style={{ fontSize: '3.5cqmin' }}
         >
           {app.title}
         </h4>
         <div
           className="text-slate-500 font-mono"
-          style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+          style={{ fontSize: '2.5cqmin' }}
         >
           {(app.html.length / 1024).toFixed(1)} KB
         </div>
@@ -579,7 +579,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div>
             <h2
               className="font-black text-slate-800 tracking-tight uppercase"
-              style={{ fontSize: 'min(18px, 4.5cqmin)' }}
+              style={{ fontSize: '4.5cqmin' }}
             >
               App Library
             </h2>
@@ -594,7 +594,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 onClick={handleExport}
                 className="font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center transition-colors"
                 style={{
-                  fontSize: 'min(10px, 2.5cqmin)',
+                  fontSize: '2.5cqmin',
                   gap: 'min(4px, 1cqmin)',
                 }}
               >
@@ -608,7 +608,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               </button>
               <span
                 className="text-slate-200 font-bold"
-                style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                style={{ fontSize: '2.5cqmin' }}
               >
                 •
               </span>
@@ -616,7 +616,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 onClick={() => fileInputRef.current?.click()}
                 className="font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 flex items-center transition-colors"
                 style={{
-                  fontSize: 'min(10px, 2.5cqmin)',
+                  fontSize: '2.5cqmin',
                   gap: 'min(4px, 1cqmin)',
                 }}
               >
@@ -647,9 +647,18 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto bg-transparent custom-scrollbar flex flex-col"
+          style={{ padding: 'min(16px, 4cqmin)', gap: 'min(8px, 2cqmin)' }}
+        >
           {library.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 opacity-40 py-12">
+            <div
+              className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40"
+              style={{
+                gap: 'min(16px, 4cqmin)',
+                padding: 'min(48px, 10cqmin) 0',
+              }}
+            >
               <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm">
                 <Box className="w-10 h-10 stroke-slate-300" />
               </div>
@@ -657,7 +666,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <p
                   className="font-black uppercase tracking-widest"
                   style={{
-                    fontSize: 'min(14px, 3.5cqmin)',
+                    fontSize: '3.5cqmin',
                     marginBottom: 'min(4px, 1cqmin)',
                   }}
                 >
@@ -665,7 +674,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 </p>
                 <p
                   className="font-bold uppercase tracking-tighter"
-                  style={{ fontSize: 'min(12px, 3cqmin)' }}
+                  style={{ fontSize: '3cqmin' }}
                 >
                   Import a file or create your first mini-app.
                 </p>
@@ -700,7 +709,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           className="font-black text-slate-400 text-center uppercase tracking-widest shrink-0"
           style={{
             padding: 'min(12px, 2.5cqmin)',
-            fontSize: 'min(10px, 2.5cqmin)',
+            fontSize: '2.5cqmin',
           }}
         >
           Drag to reorder • Runs in secure sandbox
