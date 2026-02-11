@@ -30,7 +30,6 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
     condition = 'sunny',
     isAuto = false,
     lastSync = null,
-    source = 'openweather',
     showFeelsLike: localShowFeelsLike,
   } = config;
 
@@ -78,7 +77,6 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
     };
 
     void fetchInitial();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuto, globalConfig?.fetchingStrategy, widgetId, updateWidget]);
 
   // Admin Proxy Subscription
@@ -118,7 +116,6 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
     );
 
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isAuto,
     globalConfig?.fetchingStrategy,
@@ -210,47 +207,50 @@ export const useWeather = (widgetId: string, config: WeatherConfig) => {
     }
   }, [loading, widgetId, updateWidget, addToast]); // Removed `config` from deps as we use ref
 
-  const fetchOpenWeather = useCallback(async (params: string) => {
-    if (!hasApiKey) {
-      addToast(
-        'Weather service is not configured. Please contact your administrator.',
-        'error'
-      );
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
-      );
-
-      if (res.status === 401) {
-        throw new Error(
-          'Invalid API Key. If newly created, wait up to 2 hours for activation.'
+  const fetchOpenWeather = useCallback(
+    async (params: string) => {
+      if (!hasApiKey) {
+        addToast(
+          'Weather service is not configured. Please contact your administrator.',
+          'error'
         );
+        return;
       }
 
-      const data = (await res.json()) as OpenWeatherData;
-      if (Number(data.cod) !== 200) throw new Error(String(data.message));
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
+        );
 
-      updateWidget(widgetId, {
-        config: {
-          ...configRef.current,
-          temp: data.main.temp,
-          feelsLike: data.main.feels_like,
-          condition: data.weather[0].main.toLowerCase(),
-          locationName: data.name,
-          lastSync: Date.now(),
-        },
-      });
-      addToast(`Weather updated for ${data.name}`, 'success');
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Update failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [hasApiKey, systemKey, widgetId, updateWidget, addToast]); // Removed `config` from deps
+        if (res.status === 401) {
+          throw new Error(
+            'Invalid API Key. If newly created, wait up to 2 hours for activation.'
+          );
+        }
+
+        const data = (await res.json()) as OpenWeatherData;
+        if (Number(data.cod) !== 200) throw new Error(String(data.message));
+
+        updateWidget(widgetId, {
+          config: {
+            ...configRef.current,
+            temp: data.main.temp,
+            feelsLike: data.main.feels_like,
+            condition: data.weather[0].main.toLowerCase(),
+            locationName: data.name,
+            lastSync: Date.now(),
+          },
+        });
+        addToast(`Weather updated for ${data.name}`, 'success');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : 'Update failed', 'error');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [hasApiKey, systemKey, widgetId, updateWidget, addToast]
+  ); // Removed `config` from deps
 
   const refreshWeather = useCallback(async () => {
     // Check loading state to prevent double clicks
