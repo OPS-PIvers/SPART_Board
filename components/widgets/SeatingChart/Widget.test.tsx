@@ -1,11 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { SeatingChartWidget } from './SeatingChartWidget';
-import { useDashboard } from '../../context/useDashboard';
+import { SeatingChartWidget } from './Widget';
+import { useDashboard } from '../../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
-import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
-import { DashboardContextValue } from '../../context/DashboardContextValue';
+import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../../types';
+import { DashboardContextValue } from '../../../context/DashboardContextValue';
 
-vi.mock('../../context/useDashboard');
+vi.mock('../../../context/useDashboard');
 
 const mockUpdateWidget = vi.fn();
 

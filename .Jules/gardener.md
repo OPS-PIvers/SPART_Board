@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2025-06-06 - Refactor SeatingChartWidget
+
+**Weed:** `SeatingChartWidget.tsx` was ~600 lines, mixing UI components (Widget, Settings, Sidebar, Toolbar) with complex interaction logic (drag/drop, resize).
+**Root Cause:** "God Component" pattern; all features were implemented inline.
+**Plan:** Decomposed into `components/widgets/SeatingChart/` directory with separate files for `Widget`, `Settings`, `Sidebar`, `Toolbar`, `FurnitureItem`, and extracted logic to `useSeatingChartLogic.ts` hook.

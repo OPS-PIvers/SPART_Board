@@ -1,7 +1,7 @@
 import React from 'react';
-import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, SeatingChartConfig } from '../../types';
-import { RosterModeControl } from '../common/RosterModeControl';
+import { useDashboard } from '../../../context/useDashboard';
+import { WidgetData, SeatingChartConfig } from '../../../types';
+import { RosterModeControl } from '../../common/RosterModeControl';
 import { Trash2, Eraser } from 'lucide-react';
 
 export const SeatingChartSettings: React.FC<{ widget: WidgetData }> = ({
