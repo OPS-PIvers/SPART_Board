@@ -1,6 +1,23 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
+import { CallableRequest } from 'firebase-functions/v2/https';
+
+interface JulesResponse {
+  success: boolean;
+  message: string;
+  consoleUrl: string;
+}
+
+interface JulesData {
+  widgetName: string;
+  description: string;
+}
+
+type JulesHandler = (
+  request: CallableRequest<JulesData>
+) => Promise<JulesResponse>;
 
 // Granular mocks for better control in tests
 const getMock = vi.fn();
@@ -83,8 +100,9 @@ describe('triggerJulesWidgetGeneration', () => {
     };
 
     // Verify type casting if needed, but since we mocked onCall to return the handler, it is the handler.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (triggerJulesWidgetGeneration as any)(request);
+    const result = await (
+      triggerJulesWidgetGeneration as unknown as JulesHandler
+    )(request as unknown as CallableRequest<JulesData>);
 
     expect(vi.mocked(axios.post)).toHaveBeenCalledWith(
       `${JULES_API_SESSIONS_ENDPOINT}?key=test-api-key`,

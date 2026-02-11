@@ -1,7 +1,7 @@
 import * as functionsV1 from 'firebase-functions/v1';
 import * as functionsV2 from 'firebase-functions/v2';
-import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
+import * as admin from 'firebase-admin';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI } from '@google/genai';
@@ -10,6 +10,18 @@ admin.initializeApp();
 
 export const JULES_API_SESSIONS_ENDPOINT =
   'https://jules.google.com/api/v1/sessions';
+
+interface JulesSession {
+  name?: string;
+  id?: string;
+  [key: string]: unknown;
+}
+
+interface JulesErrorPayload {
+  error?: {
+    message?: string;
+  };
+}
 
 interface ClassLinkUser {
   sourcedId: string;
@@ -520,7 +532,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     try {
       console.log('Sending request to Jules API...');
       // Use the named constant for the endpoint
-      const { data: session } = await axios.post(
+      const { data: session } = await axios.post<JulesSession>(
         `${JULES_API_SESSIONS_ENDPOINT}?key=${julesApiKey}`,
         {
           prompt: prompt,
@@ -555,7 +567,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       if (axios.isAxiosError(error)) {
         console.error('Jules API Error Response Data:', error.response?.data);
         console.error('Jules API Error Status:', error.response?.status);
-        errorMessage = error.response?.data?.error?.message || error.message;
+        const axiosError = error as AxiosError<JulesErrorPayload>;
+        errorMessage =
+          axiosError.response?.data?.error?.message || axiosError.message;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
