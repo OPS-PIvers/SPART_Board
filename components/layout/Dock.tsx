@@ -704,7 +704,8 @@ export const Dock: React.FC = () => {
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
+        target.isContentEditable ||
+        e.defaultPrevented // Respect existing handlers (e.g. StickerBook)
       ) {
         return;
       }
@@ -713,6 +714,10 @@ export const Dock: React.FC = () => {
       if (e.clipboardData?.files?.length) {
         const file = e.clipboardData.files[0];
         if (file.type.startsWith('image/')) {
+          if (!user) {
+            addToast('Please sign in to add stickers', 'error');
+            return;
+          }
           addToast('Processing image...', 'info');
           const url = await processAndUploadImage(file);
           if (url) {
@@ -733,7 +738,7 @@ export const Dock: React.FC = () => {
           if (result.action === 'create-widget') {
             addWidget(result.type, {
               config: result.config,
-              ...(result.title ? { name: result.title } : {}),
+              ...(result.title ? { customTitle: result.title } : {}),
             });
             addToast(
               `Added ${result.type.charAt(0).toUpperCase() + result.type.slice(1)} widget!`,

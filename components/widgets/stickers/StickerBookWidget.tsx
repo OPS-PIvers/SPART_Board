@@ -76,6 +76,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
+          // Found an image, prevent duplicate processing by Dock
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
           const file = items[i].getAsFile();
           if (file) {
             // Create a pseudo-filename if it's from a screenshot
@@ -90,9 +94,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       }
     };
 
-    window.addEventListener('paste', handlePaste);
+    // Use capture phase to ensure this runs before the global listener on window in Dock.tsx
+    window.addEventListener('paste', handlePaste, true);
     return () => {
-      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('paste', handlePaste, true);
     };
   }, [processFile]);
 

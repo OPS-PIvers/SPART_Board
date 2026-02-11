@@ -12,10 +12,11 @@ export type PasteResult =
   | { action: 'create-mini-app'; html: string; title?: string };
 
 /**
- * Detects the most appropriate widget type and initial configuration based on pasted text.
+ * Detects the most appropriate paste action based on the provided text.
+ * This can result in creating a widget, importing a board, or creating a mini app.
  *
  * @param text - The text content pasted by the user.
- * @returns An object containing the detected type and config, or null if no appropriate type is found.
+ * @returns A {@link PasteResult} describing the detected paste action, or null if the text does not map to any supported action.
  */
 export function detectWidgetType(text: string): PasteResult | null {
   if (!text) return null;
@@ -23,13 +24,33 @@ export function detectWidgetType(text: string): PasteResult | null {
   if (!trimmed) return null;
 
   // 1. Board Import (Share Link)
-  if (trimmed.includes('/share/')) {
-    // Basic validation to ensure it looks like a URL from this app
-    // We can be lenient as the import logic will fail if invalid
-    return {
-      action: 'import-board',
-      url: trimmed,
-    };
+  // Normalize and validate as a URL before treating as an import link.
+  // Only allow http(s) URLs or same-origin relative paths whose pathname starts with /share/.
+  let candidate = trimmed;
+  // Add protocol for bare domains (e.g., "example.com/share/abc")
+  const hasShareProtocol = /^(http|https):\/\//i.test(candidate);
+  if (!hasShareProtocol) {
+    const shareDomainLikePattern =
+      /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:[/:?].*)?$/;
+    if (shareDomainLikePattern.test(candidate)) {
+      candidate = `https://${candidate}`;
+    }
+  }
+
+  try {
+    const url = new URL(candidate, window.location.origin);
+    const protocol = url.protocol.toLowerCase();
+    if (
+      (protocol === 'http:' || protocol === 'https:') &&
+      url.pathname.startsWith('/share/')
+    ) {
+      return {
+        action: 'import-board',
+        url: url.href,
+      };
+    }
+  } catch {
+    // If parsing fails, fall through and let other detectors handle the text.
   }
 
   // 2. HTML Content (Mini App)
