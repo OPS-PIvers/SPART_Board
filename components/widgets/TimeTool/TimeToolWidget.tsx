@@ -417,7 +417,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   config.theme === t
                     ? 'border-brand-blue-primary scale-110'
                     : 'border-slate-200 opacity-40 hover:opacity-100'
-                } ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-900' : t === 'bg-slate-300'}`}
+                } ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-900' : 'bg-slate-300'}`}
                 style={{
                   width: 'min(16px, 3.5cqmin)',
                   height: 'min(16px, 3.5cqmin)',
