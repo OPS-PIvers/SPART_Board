@@ -371,8 +371,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               className={`p-3 rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: 'min(15cqw, 15cqh)',
-                height: 'min(15cqw, 15cqh)',
+                width: 'min(15cqmin)',
+                height: 'min(15cqmin)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -386,13 +386,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(3cqw, 3cqh)' }}
+                style={{ fontSize: 'min(3cqmin)' }}
               >
                 Volume
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(5cqw, 5cqh)' }}
+                style={{ fontSize: 'min(5cqmin)' }}
               >
                 {selectedVolume ? selectedVolume.label : 'Not Set'}
               </div>
@@ -410,8 +410,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               className={`p-3 rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: 'min(15cqw, 15cqh)',
-                height: 'min(15cqw, 15cqh)',
+                width: 'min(15cqmin)',
+                height: 'min(15cqmin)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -425,13 +425,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(3cqw, 3cqh)' }}
+                style={{ fontSize: 'min(3cqmin)' }}
               >
                 Group Size
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(5cqw, 5cqh)' }}
+                style={{ fontSize: 'min(5cqmin)' }}
               >
                 {selectedGroup ? selectedGroup.label : 'Not Set'}
               </div>
@@ -449,8 +449,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div
               className={`p-3 rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: 'min(15cqw, 15cqh)',
-                height: 'min(15cqw, 15cqh)',
+                width: 'min(15cqmin)',
+                height: 'min(15cqmin)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -464,13 +464,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(3cqw, 3cqh)' }}
+                style={{ fontSize: 'min(3cqmin)' }}
               >
                 Interaction
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(5cqw, 5cqh)' }}
+                style={{ fontSize: 'min(5cqmin)' }}
               >
                 {selectedInteraction ? selectedInteraction.label : 'Not Set'}
               </div>

@@ -99,13 +99,13 @@ export const ScoreboardItem = React.memo(
       >
         <div
           className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
-          style={{ fontSize: 'min(10cqw, 8cqh)' }}
+          style={{ fontSize: 'min(8cqmin)' }}
         >
           {team.name}
         </div>
         <div
           className={`font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
-          style={{ fontSize: `min(40cqw, 50cqh)`, lineHeight: 1 }}
+          style={{ fontSize: `min(40cqmin)`, lineHeight: 1 }}
         >
           {team.score}
         </div>

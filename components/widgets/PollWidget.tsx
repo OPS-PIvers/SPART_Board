@@ -53,7 +53,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <div className="px-4 pt-4 pb-2 border-b border-slate-100">
           <div
             className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
-            style={{ fontSize: 'min(6cqw, 4cqh)', lineHeight: 1.1 }}
+            style={{ fontSize: 'min(4cqmin)', lineHeight: 1.1 }}
           >
             {question}
           </div>
@@ -75,7 +75,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               >
                 <div
                   className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
-                  style={{ fontSize: 'min(3.5cqw, 2.5cqh)' }}
+                  style={{ fontSize: 'min(2.5cqmin)' }}
                 >
                   <span className="font-bold truncate pr-4">{o.label}</span>
                   <span className="font-mono whitespace-nowrap">
@@ -83,7 +83,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   </span>
                 </div>
 
-                <div className="h-[min(4cqw,3cqh)] min-h-[12px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
+                <div className="h-[min(3cqmin)] min-h-[12px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
                   <div
                     className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
                     style={{ width: `${percent}%` }}

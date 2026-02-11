@@ -131,7 +131,7 @@ const Keypad: React.FC<{
       {/* Time display row */}
       <div
         className="flex items-center gap-3 font-mono font-black tabular-nums"
-        style={{ fontSize: 'clamp(1.5rem, 8cqw, 3rem)' }}
+        style={{ fontSize: 'clamp(1.5rem, 8cqmin, 3rem)' }}
       >
         <button
           onClick={() => setActiveField('min')}
@@ -161,7 +161,7 @@ const Keypad: React.FC<{
         className="grid grid-cols-3 gap-2 w-full"
         style={{
           maxWidth: 'min(280px, 80cqw)',
-          fontSize: 'clamp(0.875rem, 3cqw, 1.25rem)',
+          fontSize: 'clamp(0.875rem, 3cqmin, 1.25rem)',
         }}
       >
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -277,28 +277,28 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               ? 'border-white/10'
               : 'border-slate-100'
         }`}
-        style={{ padding: 'min(8px, 2cqw, 2.5cqh) min(12px, 3cqw, 3.5cqh)' }}
+        style={{ padding: 'min(8px, 2cqmin) min(12px, 3cqmin)' }}
       >
         <div
           className="flex items-center min-w-0"
-          style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}
+          style={{ gap: 'min(8px, 2cqmin)' }}
         >
           <div
             className="shrink-0 bg-brand-blue-primary text-white rounded-lg flex items-center justify-center"
-            style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
+            style={{ padding: 'min(6px, 1.5cqmin)' }}
           >
             {mode === 'timer' ? (
               <TimerIcon
                 style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
               />
             ) : (
               <ClockIcon
                 style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
               />
             )}
@@ -306,15 +306,15 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
           <div className="flex flex-col min-w-0">
             <span
               className="font-black uppercase tracking-widest text-slate-400 leading-none"
-              style={{ fontSize: 'clamp(8px, 2.2cqw, 9px)' }}
+              style={{ fontSize: 'min(9px, 2.2cqmin)' }}
             >
               {mode === 'timer' ? 'Countdown' : 'Elapsed'}
             </span>
             <span
               className="font-black uppercase tracking-tight leading-none"
               style={{
-                fontSize: 'clamp(10px, 2.8cqw, 11px)',
-                marginTop: 'min(2px, 0.5cqh)',
+                fontSize: 'min(11px, 2.8cqmin)',
+                marginTop: 'min(2px, 0.5cqmin)',
               }}
             >
               {mode === 'timer' ? 'Timer' : 'Stopwatch'}
@@ -323,10 +323,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
 
         {/* Mode + theme toggles */}
-        <div
-          className="flex items-center"
-          style={{ gap: 'min(4px, 1cqw, 1.5cqh)' }}
-        >
+        <div className="flex items-center" style={{ gap: 'min(4px, 1cqmin)' }}>
           {/* Mode toggle */}
           <button
             onClick={() => {
@@ -348,7 +345,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               }
             }}
             className="rounded-lg text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
+            style={{ padding: 'min(6px, 1.5cqmin)' }}
             title={mode === 'timer' ? 'Switch to Stopwatch' : 'Switch to Timer'}
             aria-label={
               mode === 'timer' ? 'Switch to Stopwatch' : 'Switch to Timer'
@@ -357,15 +354,15 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             {mode === 'timer' ? (
               <ClockIcon
                 style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
               />
             ) : (
               <TimerIcon
                 style={{
-                  width: 'min(14px, 3.5cqw, 4cqh)',
-                  height: 'min(14px, 3.5cqw, 4cqh)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
               />
             )}
@@ -381,7 +378,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                 ? 'text-brand-blue-primary bg-brand-blue-lighter'
                 : 'text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
-            style={{ padding: 'min(6px, 1.5cqw, 2cqh)' }}
+            style={{ padding: 'min(6px, 1.5cqmin)' }}
             title={isVisual ? 'Switch to Digital' : 'Switch to Visual Ring'}
             aria-label={
               isVisual ? 'Switch to Digital' : 'Switch to Visual Ring'
@@ -389,8 +386,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <svg
               style={{
-                width: 'min(14px, 3.5cqw, 4cqh)',
-                height: 'min(14px, 3.5cqw, 4cqh)',
+                width: 'min(14px, 3.5cqmin)',
+                height: 'min(14px, 3.5cqmin)',
               }}
               viewBox="0 0 24 24"
               fill="none"
@@ -407,8 +404,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
           <div
             className="flex items-center"
             style={{
-              gap: 'min(4px, 1cqw, 1.5cqh)',
-              marginLeft: 'min(4px, 1cqw)',
+              gap: 'min(4px, 1cqmin)',
+              marginLeft: 'min(4px, 1cqmin)',
             }}
           >
             {(['light', 'dark', 'glass'] as const).map((t) => (
@@ -420,10 +417,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   config.theme === t
                     ? 'border-brand-blue-primary scale-110'
                     : 'border-slate-200 opacity-40 hover:opacity-100'
-                } ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-900' : 'bg-slate-300'}`}
+                } ${t === 'light' ? 'bg-white' : t === 'dark' ? 'bg-slate-900' : t === 'bg-slate-300'}`}
                 style={{
-                  width: 'min(16px, 3.5cqw, 4cqh)',
-                  height: 'min(16px, 3.5cqw, 4cqh)',
+                  width: 'min(16px, 3.5cqmin)',
+                  height: 'min(16px, 3.5cqmin)',
                 }}
               />
             ))}
@@ -472,8 +469,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   }`}
                   style={{
                     fontSize: isVisual
-                      ? 'clamp(1.5rem, min(18cqw, 20cqh), 8rem)'
-                      : 'clamp(2rem, min(28cqw, 32cqh), 12rem)',
+                      ? 'clamp(1.5rem, min(18cqmin), 8rem)'
+                      : 'clamp(2rem, min(28cqmin), 12rem)',
                   }}
                 >
                   {mode === 'stopwatch'
@@ -497,7 +494,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                           ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-brand-blue-primary'
                           : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm'
                     }`}
-                    style={{ fontSize: 'clamp(0.5rem, 2.5cqw, 0.75rem)' }}
+                    style={{ fontSize: 'clamp(0.5rem, 2.5cqmin, 0.75rem)' }}
                   >
                     {presetLabel(s)}
                   </button>
@@ -513,13 +510,12 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className="shrink-0 flex flex-col"
           style={{
-            padding:
-              'min(4px, 1cqh) min(12px, 3cqw, 3.5cqh) min(12px, 3cqw, 3.5cqh)',
-            gap: 'min(8px, 2cqw, 2.5cqh)',
+            padding: 'min(4px, 1cqmin) min(12px, 3cqmin) min(12px, 3cqmin)',
+            gap: 'min(8px, 2cqmin)',
           }}
         >
           {/* Play/Pause + Reset */}
-          <div className="flex" style={{ gap: 'min(8px, 2cqw, 2.5cqh)' }}>
+          <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
             <button
               onClick={
                 isRunning ? () => handleStop() : () => void handleStart()
@@ -531,7 +527,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               }`}
               style={{
                 height: 'clamp(2.5rem, 10cqh, 4rem)',
-                fontSize: 'clamp(0.625rem, 2.5cqw, 0.8rem)',
+                fontSize: 'clamp(0.625rem, 2.5cqmin, 0.8rem)',
               }}
             >
               {isRunning ? (
@@ -549,7 +545,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             >
               <RotateCcw
                 className="w-[1.2em] h-[1.2em]"
-                style={{ fontSize: 'clamp(1rem, 3cqw, 1.5rem)' }}
+                style={{ fontSize: 'clamp(1rem, 3cqmin, 1.5rem)' }}
               />
             </button>
           </div>
