@@ -102,7 +102,13 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div style={{ paddingLeft: 'min(12px, 2.5cqmin)', paddingRight: 'min(12px, 2.5cqmin)', paddingBottom: 'min(12px, 2.5cqmin)' }}>
+        <div
+          style={{
+            paddingLeft: 'min(12px, 2.5cqmin)',
+            paddingRight: 'min(12px, 2.5cqmin)',
+            paddingBottom: 'min(12px, 2.5cqmin)',
+          }}
+        >
           <div
             className="font-mono text-slate-400 break-all text-center max-w-full overflow-hidden bg-slate-50/50 rounded-lg border border-slate-100/50"
             style={{

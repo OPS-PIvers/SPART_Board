@@ -302,7 +302,10 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         content={
           <div className="flex-1 w-full h-full flex overflow-hidden bg-slate-100">
             {/* Slide */}
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div
+              className="flex-1 flex items-center justify-center"
+              style={{ padding: 'min(16px, 3.5cqmin)' }}
+            >
               <img
                 src={activeNotebook.pageUrls[currentPage]}
                 alt={`Page ${currentPage + 1}`}
@@ -312,7 +315,13 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
 
             {/* Assets Panel */}
             {showAssets && hasAssets && (
-              <div className="w-1/3 max-w-[240px] min-w-[160px] bg-white border-l border-slate-200 shadow-xl overflow-y-auto p-3 custom-scrollbar z-20 flex flex-col gap-3">
+              <div
+                className="w-1/3 max-w-[240px] min-w-[160px] bg-white border-l border-slate-200 shadow-xl overflow-y-auto custom-scrollbar z-20 flex flex-col"
+                style={{
+                  padding: 'min(12px, 2.5cqmin)',
+                  gap: 'min(12px, 2.5cqmin)',
+                }}
+              >
                 <div className="text-center">
                   <h4
                     className="font-black text-slate-400 uppercase tracking-widest"
@@ -330,7 +339,10 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                     Drag to board
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div
+                  className="grid grid-cols-2"
+                  style={{ gap: 'min(12px, 2.5cqmin)' }}
+                >
                   {activeNotebook.assetUrls?.map((url, index) => (
                     <div
                       key={url}
@@ -447,12 +459,28 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isImporting}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 active:scale-95"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest flex items-center shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 active:scale-95"
+            style={{
+              padding: 'min(8px, 2cqmin) min(16px, 3.5cqmin)',
+              fontSize: 'min(12px, 3cqmin)',
+              gap: 'min(8px, 2cqmin)',
+            }}
           >
             {isImporting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2
+                className="animate-spin"
+                style={{
+                  width: 'min(16px, 4cqmin)',
+                  height: 'min(16px, 4cqmin)',
+                }}
+              />
             ) : (
-              <Upload className="w-4 h-4" />
+              <Upload
+                style={{
+                  width: 'min(16px, 4cqmin)',
+                  height: 'min(16px, 4cqmin)',
+                }}
+              />
             )}
             Import
           </button>
@@ -466,11 +494,30 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-5 custom-scrollbar bg-slate-50/30">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
+          style={{ padding: 'min(20px, 4cqmin)' }}
+        >
           {notebooks.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 py-12">
-              <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                <FileText className="w-10 h-10 opacity-30" />
+            <div
+              className="h-full flex flex-col items-center justify-center text-slate-400"
+              style={{
+                gap: 'min(16px, 3.5cqmin)',
+                paddingTop: 'min(48px, 10cqmin)',
+                paddingBottom: 'min(48px, 10cqmin)',
+              }}
+            >
+              <div
+                className="bg-white rounded-3xl border border-slate-200 shadow-sm"
+                style={{ padding: 'min(24px, 5cqmin)' }}
+              >
+                <FileText
+                  className="opacity-30"
+                  style={{
+                    width: 'min(40px, 10cqmin)',
+                    height: 'min(40px, 10cqmin)',
+                  }}
+                />
               </div>
               <div className="text-center">
                 <p
@@ -491,7 +538,10 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div
+              className="grid grid-cols-2"
+              style={{ gap: 'min(16px, 3.5cqmin)' }}
+            >
               {notebooks.map((notebook) => {
                 const firstPageUrl = notebook.pageUrls?.[0];
 
@@ -510,7 +560,10 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                         alt={notebook.title}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300 text-xs font-black uppercase tracking-widest">
+                      <div
+                        className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300 font-black uppercase tracking-widest"
+                        style={{ fontSize: 'min(12px, 3cqmin)' }}
+                      >
                         No Preview
                       </div>
                     )}
@@ -539,9 +592,19 @@ export const SmartNotebookWidget: React.FC<{ widget: WidgetData }> = ({
                     </div>
                     <button
                       onClick={(e) => handleDelete(e, notebook.id)}
-                      className="absolute top-2 right-2 p-2 bg-white/90 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-xl scale-75 group-hover:scale-100"
+                      className="absolute bg-white/90 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-xl scale-75 group-hover:scale-100"
+                      style={{
+                        top: 'min(8px, 2cqmin)',
+                        right: 'min(8px, 2cqmin)',
+                        padding: 'min(8px, 2cqmin)',
+                      }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2
+                        style={{
+                          width: 'min(16px, 4cqmin)',
+                          height: 'min(16px, 4cqmin)',
+                        }}
+                      />
                     </button>
                   </div>
                 );

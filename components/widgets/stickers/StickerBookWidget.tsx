@@ -219,20 +219,46 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-4 custom-scrollbar bg-slate-50/30">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
+          style={{ padding: 'min(16px, 3.5cqmin)' }}
+        >
           {/* Drop/Paste Zone - Integrated and obvious */}
           <div
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            className={`mb-6 p-5 border-2 border-dashed border-slate-200 rounded-2xl bg-white flex flex-col items-center justify-center gap-2 transition-all hover:bg-blue-50 hover:border-blue-200 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+            className={`border-2 border-dashed border-slate-200 rounded-2xl bg-white flex flex-col items-center justify-center transition-all hover:bg-blue-50 hover:border-blue-200 group shadow-sm ${uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+            style={{
+              marginBottom: 'min(24px, 5cqmin)',
+              padding: 'min(20px, 4cqmin)',
+              gap: 'min(8px, 2cqmin)',
+            }}
             onClick={() => fileInputRef.current?.click()}
           >
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+              <Loader2
+                className="text-blue-400 animate-spin"
+                style={{
+                  width: 'min(32px, 8cqmin)',
+                  height: 'min(32px, 8cqmin)',
+                }}
+              />
             ) : (
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-                  <Upload className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
+              <div
+                className="flex items-center"
+                style={{ gap: 'min(16px, 3.5cqmin)' }}
+              >
+                <div
+                  className="bg-slate-50 rounded-xl group-hover:bg-blue-100 transition-colors"
+                  style={{ padding: 'min(12px, 2.5cqmin)' }}
+                >
+                  <Upload
+                    className="text-slate-400 group-hover:text-blue-600"
+                    style={{
+                      width: 'min(24px, 6cqmin)',
+                      height: 'min(24px, 6cqmin)',
+                    }}
+                  />
                 </div>
                 <div className="text-left">
                   <p
@@ -264,7 +290,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             >
               Essentials
             </h4>
-            <div className="grid grid-cols-4 gap-4">
+            <div
+              className="grid grid-cols-4"
+              style={{ gap: 'min(16px, 3.5cqmin)' }}
+            >
               {DEFAULT_STICKERS.map((url, i) => (
                 <div
                   key={i}
@@ -278,7 +307,11 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   <img
                     src={url}
                     alt="Sticker"
-                    className="w-10 h-10 object-contain pointer-events-none group-hover:rotate-12 transition-transform"
+                    className="object-contain pointer-events-none group-hover:rotate-12 transition-transform"
+                    style={{
+                      width: 'min(40px, 10cqmin)',
+                      height: 'min(40px, 10cqmin)',
+                    }}
                   />
                 </div>
               ))}
@@ -298,7 +331,10 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 My Collection
               </h4>
-              <div className="grid grid-cols-4 gap-4">
+              <div
+                className="grid grid-cols-4"
+                style={{ gap: 'min(16px, 3.5cqmin)' }}
+              >
                 {customStickers.map((url, i) => (
                   <div
                     key={i}
@@ -312,17 +348,24 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                     <img
                       src={url}
                       alt="Custom Sticker"
-                      className="w-full h-full object-contain p-2.5 pointer-events-none"
+                      className="w-full h-full object-contain pointer-events-none"
+                      style={{ padding: 'min(10px, 2.5cqmin)' }}
                     />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         removeCustomSticker(i);
                       }}
-                      className="absolute -top-1.5 -right-1.5 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
+                      className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
+                      style={{ padding: 'min(6px, 1.5cqmin)' }}
                       title="Delete Sticker"
                     >
-                      <Trash2 size={12} />
+                      <Trash2
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                      />
                     </button>
                   </div>
                 ))}

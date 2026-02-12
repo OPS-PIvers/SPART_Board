@@ -331,19 +331,35 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           content={
             <div className="w-full h-full flex flex-col relative overflow-hidden">
               {confirmDeleteId && (
-                <div className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm">
-                  <p className="text-white font-bold mb-4 text-sm uppercase tracking-tight">
+                <div
+                  className="absolute inset-0 z-50 bg-slate-900/90 flex flex-col items-center justify-center text-center animate-in fade-in duration-200 backdrop-blur-sm"
+                  style={{ padding: 'min(16px, 3.5cqmin)' }}
+                >
+                  <p
+                    className="text-white font-bold uppercase tracking-tight"
+                    style={{
+                      fontSize: 'min(14px, 3.5cqmin)',
+                      marginBottom: 'min(16px, 3.5cqmin)',
+                    }}
+                  >
                     Delete roster &quot;
                     {rosters.find((r) => r.id === confirmDeleteId)?.name}&quot;?
                     <br />
-                    <span className="text-red-400 text-xxs font-black tracking-widest">
+                    <span
+                      className="text-red-400 font-black tracking-widest"
+                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                    >
                       This cannot be undone.
                     </span>
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex" style={{ gap: 'min(12px, 3cqmin)' }}>
                     <button
                       onClick={() => setConfirmDeleteId(null)}
-                      className="px-6 py-2 rounded-xl bg-slate-700 text-white text-xs font-black hover:bg-slate-600 transition-colors uppercase tracking-widest"
+                      className="rounded-xl bg-slate-700 text-white font-black hover:bg-slate-600 transition-colors uppercase tracking-widest"
+                      style={{
+                        padding: 'min(8px, 2cqmin) min(24px, 5cqmin)',
+                        fontSize: 'min(12px, 3cqmin)',
+                      }}
                     >
                       Cancel
                     </button>
@@ -354,7 +370,11 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                           setConfirmDeleteId(null);
                         }
                       }}
-                      className="px-6 py-2 rounded-xl bg-red-600 text-white text-xs font-black hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20 uppercase tracking-widest"
+                      className="rounded-xl bg-red-600 text-white font-black hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20 uppercase tracking-widest"
+                      style={{
+                        padding: 'min(8px, 2cqmin) min(24px, 5cqmin)',
+                        fontSize: 'min(12px, 3cqmin)',
+                      }}
                       title="Confirm deletion"
                     >
                       Delete
@@ -496,32 +516,64 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
         <WidgetLayout
           padding="p-0"
           header={
-            <div className="p-3 flex justify-between items-center">
+            <div
+              className="flex justify-between items-center"
+              style={{ padding: 'min(12px, 2.5cqmin)' }}
+            >
               <button
                 onClick={() => setView('list')}
-                className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
+                className="text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
+                style={{ fontSize: 'min(12px, 3cqmin)' }}
               >
                 &larr; Cancel
               </button>
-              <h3 className="text-slate-800 text-xs font-black uppercase tracking-widest">
+              <h3
+                className="text-slate-800 font-black uppercase tracking-widest"
+                style={{ fontSize: 'min(12px, 3cqmin)' }}
+              >
                 ClassLink Rosters
               </h3>
-              <div className="w-10"></div>
+              <div style={{ width: 'min(40px, 10cqmin)' }}></div>
             </div>
           }
           content={
-            <div className="w-full h-full flex flex-col p-3 overflow-hidden">
+            <div
+              className="w-full h-full flex flex-col overflow-hidden"
+              style={{ padding: 'min(12px, 2.5cqmin)' }}
+            >
               {classLinkLoading ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
-                  <RefreshCw size={40} className="animate-spin text-blue-500" />
-                  <p className="text-sm font-black uppercase tracking-widest opacity-60">
+                <div
+                  className="flex-1 flex flex-col items-center justify-center text-slate-400"
+                  style={{ gap: 'min(16px, 3.5cqmin)' }}
+                >
+                  <RefreshCw
+                    className="animate-spin text-blue-500"
+                    style={{
+                      width: 'min(40px, 10cqmin)',
+                      height: 'min(40px, 10cqmin)',
+                    }}
+                  />
+                  <p
+                    className="font-black uppercase tracking-widest opacity-60"
+                    style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                  >
                     Connecting to ClassLink...
                   </p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <div
+                  className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
+                  style={{ gap: 'min(8px, 2cqmin)' }}
+                >
                   {classLinkClasses.length === 0 ? (
-                    <div className="text-center text-slate-400 py-12 text-sm italic font-bold opacity-40">
+                    <div
+                      className="text-center text-slate-400 italic font-bold opacity-40"
+                      style={{
+                        paddingTop: 'min(48px, 10cqmin)',
+                        paddingBottom: 'min(48px, 10cqmin)',
+                        fontSize: 'min(14px, 3.5cqmin)',
+                      }}
+                    >
                       No classes found in ClassLink.
                     </div>
                   ) : (

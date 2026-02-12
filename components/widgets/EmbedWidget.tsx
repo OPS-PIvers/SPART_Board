@@ -85,8 +85,17 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="h-4 w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/embed-header">
-          <div className="w-8 h-1 bg-slate-300/50 rounded-full group-hover/embed-header:bg-slate-400/80 transition-colors" />
+        <div
+          className="w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/embed-header"
+          style={{ height: 'min(16px, 3.5cqmin)' }}
+        >
+          <div
+            className="bg-slate-300/50 rounded-full group-hover/embed-header:bg-slate-400/80 transition-colors"
+            style={{
+              width: 'min(32px, 8cqmin)',
+              height: 'min(4px, 1cqmin)',
+            }}
+          />
         </div>
       }
       content={

@@ -138,34 +138,63 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
               />
 
               {/* Controls Overlay */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-2xl p-2 rounded-3xl border border-white/30 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-30">
-                <div className="flex items-center gap-1 pr-2 border-r border-white/20">
+              <div
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center bg-black/60 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-30"
+                style={{
+                  gap: 'min(8px, 2cqmin)',
+                  padding: 'min(8px, 2cqmin)',
+                }}
+              >
+                <div
+                  className="flex items-center border-r border-white/20"
+                  style={{
+                    gap: 'min(4px, 1cqmin)',
+                    paddingRight: 'min(8px, 2cqmin)',
+                  }}
+                >
                   <button
                     onClick={takePhoto}
                     disabled={!stream}
-                    className="p-3 hover:bg-white/30 rounded-2xl text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="hover:bg-white/30 rounded-2xl text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Take Photo"
                   >
-                    <Camera className="w-5 h-5" />
+                    <Camera
+                      style={{
+                        width: 'min(20px, 5cqmin)',
+                        height: 'min(20px, 5cqmin)',
+                      }}
+                    />
                   </button>
                   <button
                     onClick={toggleMirror}
                     disabled={!stream}
-                    className={`p-3 rounded-2xl text-white transition-all ${isMirrored ? 'bg-blue-500/30 text-blue-400' : 'hover:bg-white/30'}`}
+                    className={`rounded-2xl text-white transition-all ${isMirrored ? 'bg-blue-500/30 text-blue-400' : 'hover:bg-white/30'}`}
+                    style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Mirror Camera"
                   >
                     <RefreshCw
-                      className={`w-5 h-5 ${isMirrored ? 'rotate-180' : ''}`}
+                      className={isMirrored ? 'rotate-180' : ''}
+                      style={{
+                        width: 'min(20px, 5cqmin)',
+                        height: 'min(20px, 5cqmin)',
+                      }}
                     />
                   </button>
                 </div>
 
                 <button
                   onClick={() => setShowGallery(true)}
-                  className="relative p-3 hover:bg-white/30 rounded-2xl text-white"
+                  className="relative hover:bg-white/30 rounded-2xl text-white"
+                  style={{ padding: 'min(12px, 2.5cqmin)' }}
                   title="View Gallery"
                 >
-                  <Grid className="w-5 h-5" />
+                  <Grid
+                    style={{
+                      width: 'min(20px, 5cqmin)',
+                      height: 'min(20px, 5cqmin)',
+                    }}
+                  />
                   {capturedItems.length > 0 && (
                     <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border border-black" />
                   )}
@@ -177,28 +206,52 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
           {/* Gallery Overlay */}
           {showGallery && (
             <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col animate-in slide-in-from-bottom duration-300">
-              <div className="flex items-center justify-between p-4 border-b border-white/20 shrink-0">
-                <h3 className="text-white  uppercase tracking-widest text-xs">
+              <div
+                className="flex items-center justify-between border-b border-white/20 shrink-0"
+                style={{ padding: 'min(16px, 3.5cqmin)' }}
+              >
+                <h3
+                  className="text-white uppercase tracking-widest"
+                  style={{ fontSize: 'min(12px, 3cqmin)' }}
+                >
                   Photo Gallery
                 </h3>
-                <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center"
+                  style={{ gap: 'min(8px, 2cqmin)' }}
+                >
                   <button
                     onClick={clearPhotos}
-                    className="p-2 hover:bg-white/30 rounded-lg text-red-400"
+                    className="hover:bg-white/30 rounded-lg text-red-400"
+                    style={{ padding: 'min(8px, 2cqmin)' }}
                     title="Clear All"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2
+                      style={{
+                        width: 'min(16px, 4cqmin)',
+                        height: 'min(16px, 4cqmin)',
+                      }}
+                    />
                   </button>
                   <button
                     onClick={() => setShowGallery(false)}
-                    className="p-2 hover:bg-white/30 rounded-lg text-white"
+                    className="hover:bg-white/30 rounded-lg text-white"
+                    style={{ padding: 'min(8px, 2cqmin)' }}
                   >
-                    <X className="w-4 h-4" />
+                    <X
+                      style={{
+                        width: 'min(16px, 4cqmin)',
+                        height: 'min(16px, 4cqmin)',
+                      }}
+                    />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              <div
+                className="flex-1 overflow-y-auto custom-scrollbar"
+                style={{ padding: 'min(16px, 3.5cqmin)' }}
+              >
                 {capturedItems.length === 0 ? (
                   <ScaledEmptyState
                     icon={FileText}
@@ -206,7 +259,10 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                     className="text-white/30"
                   />
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div
+                    className="grid grid-cols-2"
+                    style={{ gap: 'min(16px, 3.5cqmin)' }}
+                  >
                     {capturedItems.map((item) => (
                       <div
                         key={item.id}
@@ -217,20 +273,35 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                           alt="Captured"
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <div
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center"
+                          style={{ gap: 'min(12px, 3cqmin)' }}
+                        >
                           <button
                             onClick={() => downloadPhoto(item.dataUrl)}
-                            className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-all"
+                            className="bg-white/20 hover:bg-white/30 rounded-full text-white transition-all"
+                            style={{ padding: 'min(8px, 2cqmin)' }}
                             title="Download"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download
+                              style={{
+                                width: 'min(16px, 4cqmin)',
+                                height: 'min(16px, 4cqmin)',
+                              }}
+                            />
                           </button>
                           <button
                             onClick={() => deletePhoto(item.id)}
-                            className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-full text-red-400 transition-all"
+                            className="bg-red-500/20 hover:bg-red-500/40 rounded-full text-red-400 transition-all"
+                            style={{ padding: 'min(8px, 2cqmin)' }}
                             title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2
+                              style={{
+                                width: 'min(16px, 4cqmin)',
+                                height: 'min(16px, 4cqmin)',
+                              }}
+                            />
                           </button>
                         </div>
                       </div>
