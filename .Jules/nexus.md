@@ -16,9 +16,14 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `QRWidget.tsx` monitors the content of any active text widget and updates its URL if syncing is enabled.
 **Configuration:** Enabled via the "Sync with Text Widget" toggle in QR Settings.
 
+### Poll -> Scoreboard (Results Import)
+
+**Description:** Update team scores based on poll results.
+**Implementation:** `ScoreboardSettings.tsx` reads options from the active `Poll` widget and creates teams with scores corresponding to vote counts.
+**Configuration:** Triggered via "Import Results" button in Scoreboard Settings.
+
 ## Planned Connections
 
-- **Poll -> Scoreboard:** Update team scores based on poll results.
 - **Timer -> Noise Meter:** Adjust sensitivity based on timer activity (e.g., lower during "quiet time" timers).
 - **Instructional Routines -> All:** Bulk-launch tools required for a specific protocol.
 - **Noise Meter -> Traffic Light:** Automatically switch Traffic Light to Red when noise level exceeds a threshold.

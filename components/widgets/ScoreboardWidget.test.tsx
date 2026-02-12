@@ -290,6 +290,66 @@ describe('ScoreboardSettings', () => {
     );
   });
 
+  it('imports results from poll widget', () => {
+    const widget: WidgetData = {
+      id: 'scoreboard-id',
+      type: 'scoreboard',
+      config: { teams: [] } as ScoreboardConfig,
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: true,
+    };
+
+    const pollWidget: WidgetData = {
+      id: 'poll-id',
+      type: 'poll',
+      config: {
+        question: 'Favorite Color?',
+        options: [
+          { label: 'Blue', votes: 5 },
+          { label: 'Red', votes: 3 },
+        ],
+      },
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      z: 1,
+      flipped: false,
+    };
+
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        widgets: [pollWidget],
+      },
+    });
+
+    render(<ScoreboardSettings widget={widget} />);
+
+    const importButton = screen.getByText('Import Results');
+    fireEvent.click(importButton);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'scoreboard-id',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          teams: expect.arrayContaining([
+            expect.objectContaining({ name: 'Blue', score: 5 }),
+            expect.objectContaining({ name: 'Red', score: 3 }),
+          ]) as unknown,
+        }) as unknown,
+      })
+    );
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Imported 2 options'),
+      'success'
+    );
+  });
+
   it('adds a new team', () => {
     const widget: WidgetData = {
       id: 'scoreboard-id',
