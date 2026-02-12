@@ -7,6 +7,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { Trophy } from 'lucide-react';
+import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { ScoreboardItem } from './ScoreboardItem';
 import { WidgetLayout } from './WidgetLayout';
 
@@ -72,7 +73,11 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       content={
         <div
-          className={`grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full gap-3 p-3 bg-transparent overflow-y-auto custom-scrollbar font-${globalStyle.fontFamily}`}
+          className={`grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] auto-rows-[1fr] h-full w-full bg-transparent overflow-y-auto custom-scrollbar font-${globalStyle.fontFamily}`}
+          style={{
+            gap: 'min(12px, 2.5cqmin)',
+            padding: 'min(12px, 2.5cqmin)',
+          }}
         >
           {teams.map((team) => (
             <ScoreboardItem
@@ -82,11 +87,13 @@ export const ScoreboardWidget: React.FC<{ widget: WidgetData }> = ({
             />
           ))}
           {teams.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-2 h-full">
-              <Trophy className="w-12 h-12 opacity-20" />
-              <span className="text-sm font-black uppercase tracking-widest">
-                No Teams
-              </span>
+            <div className="col-span-full h-full">
+              <ScaledEmptyState
+                icon={Trophy}
+                title="No Teams"
+                subtitle="Flip to add teams."
+                className="opacity-40"
+              />
             </div>
           )}
         </div>

@@ -204,9 +204,12 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
     <div
       className={`
         flex animate-in slide-in-from-left duration-300 group
-        ${isVisualCue ? 'flex-col items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm text-center' : 'items-start'}
+        ${isVisualCue ? 'flex-col items-center bg-slate-50 rounded-2xl border border-slate-100 shadow-sm text-center' : 'items-start'}
       `}
-      style={{ gap: '1em' }}
+      style={{
+        gap: '1em',
+        ...(isVisualCue ? { padding: '1em' } : {}),
+      }}
     >
       {structure === 'linear' && (
         <span
@@ -243,7 +246,8 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
         >
           {step.imageUrl && (
             <div
-              className={`${isVisualCue ? 'w-full aspect-square mb-2' : 'w-24 shrink-0'}`}
+              className={`${isVisualCue ? 'w-full aspect-square' : 'shrink-0'}`}
+              style={isVisualCue ? { marginBottom: '0.5em' } : { width: '6em' }}
             >
               <img
                 src={step.imageUrl}
@@ -254,8 +258,8 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
           )}
 
           <p
-            className={`font-bold text-brand-gray-darkest leading-relaxed pt-1 ${isVisualCue ? 'text-xs' : 'text-sm'}`}
-            style={{ fontSize: '1em' }}
+            className="font-bold text-brand-gray-darkest leading-relaxed"
+            style={{ fontSize: '1em', paddingTop: '0.25em' }}
           >
             {step.text}
           </p>
@@ -546,27 +550,54 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       <WidgetLayout
         padding="p-0"
         header={
-          <div className="flex justify-between items-center p-3 border-b border-slate-100 bg-slate-50/50 shrink-0">
-            <div className="text-[min(10px,3cqmin)] font-black uppercase text-slate-400 tracking-widest">
+          <div
+            className="flex justify-between items-center border-b border-slate-100 bg-slate-50/50 shrink-0"
+            style={{ padding: 'min(12px, 2.5cqmin)' }}
+          >
+            <div
+              className="font-black uppercase text-slate-400 tracking-widest"
+              style={{ fontSize: 'min(10px, 3cqmin)' }}
+            >
               Library ({gradeFilter.toUpperCase()})
             </div>
-            <div className="flex items-center gap-3">
+            <div
+              className="flex items-center"
+              style={{ gap: 'min(12px, 3cqmin)' }}
+            >
               {isAdmin && (
                 <button
                   onClick={() => setIsManagingLibrary(true)}
-                  className="flex items-center gap-1 text-[min(10px,3cqmin)] font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
+                  className="flex items-center font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
+                  style={{
+                    gap: 'min(4px, 1cqmin)',
+                    fontSize: 'min(10px, 3cqmin)',
+                  }}
                   title="Manage global routine library"
                 >
-                  <Settings size={12} />
+                  <Settings
+                    style={{
+                      width: 'min(12px, 3cqmin)',
+                      height: 'min(12px, 3cqmin)',
+                    }}
+                  />
                   Manage
                 </button>
               )}
               <button
                 onClick={clearAllStickers}
-                className="flex items-center gap-1 text-[min(10px,3cqmin)] font-black uppercase text-red-500 hover:text-red-600 transition-colors"
+                className="flex items-center font-black uppercase text-red-500 hover:text-red-600 transition-colors"
+                style={{
+                  gap: 'min(4px, 1cqmin)',
+                  fontSize: 'min(10px, 3cqmin)',
+                }}
                 title="Remove all stickers from board"
               >
-                <Trash2 size={12} />
+                <Trash2
+                  style={{
+                    width: 'min(12px, 3cqmin)',
+                    height: 'min(12px, 3cqmin)',
+                  }}
+                />
                 Clear Board
               </button>
             </div>
@@ -574,8 +605,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         }
         content={
           <div
-            className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar p-3 pb-4"
-            style={scalingStyles}
+            className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-y-auto custom-scrollbar"
+            style={{
+              ...scalingStyles,
+              gap: 'min(12px, 2.5cqmin)',
+              padding: 'min(12px, 2.5cqmin)',
+              paddingBottom: 'min(16px, 3.5cqmin)',
+            }}
           >
             {displayedRoutines.map((r) => {
               const Icon =
@@ -590,12 +626,23 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 <div key={r.id} className="relative group/card h-full">
                   <button
                     onClick={() => selectRoutine(r)}
-                    className={`w-full h-full relative p-4 border rounded-2xl bg-white shadow-sm transition-all duration-300 flex flex-col items-center text-center group-hover/card:shadow-md group-hover/card:-translate-y-1 ${colors.border} ${colors.hoverBorder}`}
+                    className={`w-full h-full relative border rounded-2xl bg-white shadow-sm transition-all duration-300 flex flex-col items-center text-center group-hover/card:shadow-md group-hover/card:-translate-y-1 ${colors.border} ${colors.hoverBorder}`}
+                    style={{ padding: 'min(16px, 3.5cqmin)' }}
                   >
                     <div
-                      className={`p-3 rounded-full mb-3 transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
+                      className={`rounded-full transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
+                      style={{
+                        padding: 'min(12px, 2.5cqmin)',
+                        marginBottom: 'min(12px, 2.5cqmin)',
+                      }}
                     >
-                      <Icon size={28} strokeWidth={2} />
+                      <Icon
+                        style={{
+                          width: 'min(28px, 7cqmin)',
+                          height: 'min(28px, 7cqmin)',
+                        }}
+                        strokeWidth={2}
+                      />
                     </div>
                     <div
                       className="flex flex-col w-full"
@@ -615,7 +662,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       </div>
                     </div>
                   </button>
-                  <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+                  <div
+                    className="absolute flex flex-col opacity-0 group-hover/card:opacity-100 transition-opacity z-10"
+                    style={{
+                      top: 'min(8px, 2cqmin)',
+                      right: 'min(8px, 2cqmin)',
+                      gap: 'min(6px, 1.5cqmin)',
+                    }}
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -626,13 +680,20 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           config: { ...config, favorites: next },
                         });
                       }}
-                      className={`p-1.5 rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform ${
+                      className={`rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform ${
                         isFav
                           ? 'text-amber-400'
                           : 'text-slate-300 hover:text-slate-400'
                       }`}
+                      style={{ padding: 'min(6px, 1.5cqmin)' }}
                     >
-                      <Star size={12} className={isFav ? 'fill-current' : ''} />
+                      <Star
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                        className={isFav ? 'fill-current' : ''}
+                      />
                     </button>
                     {isAdmin && (
                       <>
@@ -642,9 +703,15 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             setEditingRoutine(r);
                             setIsManagingLibrary(true);
                           }}
-                          className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-blue-400 hover:text-blue-600 hover:scale-110 transition-transform"
+                          className="rounded-full bg-white shadow-md border border-slate-100 text-blue-400 hover:text-blue-600 hover:scale-110 transition-transform"
+                          style={{ padding: 'min(6px, 1.5cqmin)' }}
                         >
-                          <PlusCircle size={12} />
+                          <PlusCircle
+                            style={{
+                              width: 'min(12px, 3cqmin)',
+                              height: 'min(12px, 3cqmin)',
+                            }}
+                          />
                         </button>
                         <button
                           onClick={async (e) => {
@@ -657,9 +724,15 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                               await deleteRoutine(r.id);
                             }
                           }}
-                          className="p-1.5 rounded-full bg-white shadow-md border border-slate-100 text-red-300 hover:text-red-500 hover:scale-110 transition-transform"
+                          className="rounded-full bg-white shadow-md border border-slate-100 text-red-300 hover:text-red-500 hover:scale-110 transition-transform"
+                          style={{ padding: 'min(6px, 1.5cqmin)' }}
                         >
-                          <Trash2 size={12} />
+                          <Trash2
+                            style={{
+                              width: 'min(12px, 3cqmin)',
+                              height: 'min(12px, 3cqmin)',
+                            }}
+                          />
                         </button>
                       </>
                     )}
@@ -720,8 +793,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       header={
         <div className="flex flex-col shrink-0 border-b border-brand-blue-lighter bg-slate-50/30">
           <div
-            className="flex items-center p-3"
+            className="flex items-center"
             style={{
+              padding: '0.75em',
               gap: '0.75em',
               ...scalingStyles,
             }}
@@ -745,7 +819,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               />
             </button>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center" style={{ gap: '0.5em' }}>
                 <h2
                   className="text-brand-blue-primary leading-tight font-black truncate uppercase tracking-tight"
                   style={{ fontSize: '1.4em' }}
@@ -754,8 +828,12 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 </h2>
                 {audience === 'teacher' && (
                   <span
-                    className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter flex items-center gap-1 shrink-0"
-                    style={{ fontSize: '0.5em' }}
+                    className="bg-amber-100 text-amber-700 rounded-full font-black uppercase tracking-tighter flex items-center shrink-0"
+                    style={{
+                      fontSize: '0.5em',
+                      padding: '0.25em 1em',
+                      gap: '0.5em',
+                    }}
                   >
                     <Info style={{ width: '0.8em', height: '0.8em' }} /> Teacher
                     Focus
@@ -770,7 +848,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 {structure.replace('-', ' ')}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center" style={{ gap: '0.5em' }}>
               <button
                 onClick={clearAllStickers}
                 className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
@@ -790,8 +868,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
           {selectedRoutine.id === 'blooms-analysis' && (
             <div
-              className="flex shrink-0 px-3 pb-3"
-              style={{ gap: '0.75em', ...scalingStyles }}
+              className="flex shrink-0"
+              style={{
+                paddingLeft: '0.75em',
+                paddingRight: '0.75em',
+                paddingBottom: '0.75em',
+                gap: '0.75em',
+                ...scalingStyles,
+              }}
             >
               <button
                 onClick={() => launchBloomsResource('keyWords')}
@@ -817,8 +901,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       }
       content={
         <div
-          className="flex-1 overflow-y-auto custom-scrollbar p-4"
-          style={scalingStyles}
+          className="flex-1 overflow-y-auto custom-scrollbar"
+          style={{ padding: '1em', ...scalingStyles }}
         >
           <div
             className={`
@@ -838,13 +922,22 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     onAddWidget={(type, config) => addWidget(type, { config })}
                   />
                   {structure === 'cycle' && i < customSteps.length - 1 && (
-                    <div className="flex justify-center -my-2 text-slate-300">
+                    <div
+                      className="flex justify-center text-slate-300"
+                      style={{ marginTop: '-0.5em', marginBottom: '-0.5em' }}
+                    >
                       <ArrowDown style={{ width: '1.5em', height: '1.5em' }} />
                     </div>
                   )}
                   {structure === 'cycle' && i === customSteps.length - 1 && (
-                    <div className="flex justify-center mt-2">
-                      <div className="flex flex-col items-center gap-1 text-blue-500/50">
+                    <div
+                      className="flex justify-center"
+                      style={{ marginTop: '0.5em' }}
+                    >
+                      <div
+                        className="flex flex-col items-center text-blue-500/50"
+                        style={{ gap: '0.25em' }}
+                      >
                         <RefreshCw
                           style={{ width: '1.5em', height: '1.5em' }}
                           className="animate-spin-slow"

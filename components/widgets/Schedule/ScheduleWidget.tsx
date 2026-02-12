@@ -7,6 +7,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
 } from '../../../types';
 import { Circle, CheckCircle2, Clock } from 'lucide-react';
+import { ScaledEmptyState } from '../../common/ScaledEmptyState';
 
 interface ScheduleRowProps {
   item: ScheduleItem;
@@ -211,12 +212,12 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
               />
             ))}
             {items.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 opacity-20 py-10">
-                <Clock className="w-12 h-12" />
-                <span className="text-xs font-black uppercase tracking-widest">
-                  No Schedule
-                </span>
-              </div>
+              <ScaledEmptyState
+                icon={Clock}
+                title="No Schedule"
+                subtitle="Flip to add schedule items."
+                className="opacity-40"
+              />
             )}
           </div>
         </div>

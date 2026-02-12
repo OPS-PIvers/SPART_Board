@@ -32,14 +32,22 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full flex items-center justify-center p-2 overflow-hidden font-${globalStyle.fontFamily}`}
+      className={`relative w-full h-full flex items-center justify-center overflow-hidden font-${globalStyle.fontFamily}`}
+      style={{ padding: 'min(8px, 2cqmin)' }}
     >
       {/* Static Pointer Arrow (Top Center) */}
 
-      <div className="absolute top-2 z-20 flex flex-col items-center">
+      <div
+        className="absolute z-20 flex flex-col items-center"
+        style={{ top: 'min(8px, 2cqmin)' }}
+      >
         <div
-          className="w-10 h-8 bg-red-600 shadow-lg"
-          style={{ clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)' }}
+          className="bg-red-600 shadow-lg"
+          style={{
+            width: 'min(40px, 10cqmin)',
+            height: 'min(32px, 8cqmin)',
+            clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)',
+          }}
         ></div>
       </div>
 
@@ -123,12 +131,19 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
 
       {/* Winner Result Overlay (Only when not spinning) */}
       {!isSpinning && displayResult && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-30">
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
+          style={{ padding: 'min(16px, 3.5cqmin)' }}
+        >
           <div
-            className="bg-white px-8 py-4 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] border-4 border-indigo-500  text-indigo-900 animate-bounce text-center max-w-full break-words"
+            className="bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] text-indigo-900 animate-bounce text-center max-w-full break-words"
             style={{
               fontSize: `${resultFontSize ?? 24}px`,
               lineHeight: 1.1,
+              padding: 'min(16px, 3.5cqmin) min(32px, 7cqmin)',
+              borderWidth: 'min(4px, 1cqmin)',
+              borderColor: 'rgb(99 102 241)',
+              borderStyle: 'solid',
             }}
           >
             {displayResult as string}

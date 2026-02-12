@@ -51,17 +51,30 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="px-4 pt-4 pb-2">
+        <div
+          style={{
+            paddingLeft: 'min(16px, 3cqmin)',
+            paddingRight: 'min(16px, 3cqmin)',
+            paddingTop: 'min(16px, 3cqmin)',
+            paddingBottom: 'min(8px, 1.5cqmin)',
+          }}
+        >
           <div
             className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
-            style={{ fontSize: 'min(4cqmin)', lineHeight: 1.1 }}
+            style={{ fontSize: 'min(16px, 4cqmin)', lineHeight: 1.1 }}
           >
             {question}
           </div>
         </div>
       }
       content={
-        <div className="w-full h-full p-4 overflow-y-auto custom-scrollbar space-y-3">
+        <div
+          className="w-full h-full overflow-y-auto custom-scrollbar flex flex-col"
+          style={{
+            padding: 'min(16px, 3cqmin)',
+            gap: 'min(12px, 2.5cqmin)',
+          }}
+        >
           {options.map((o, i: number) => {
             const percent =
               total === 0 ? 0 : Math.round((o.votes / total) * 100);
@@ -76,7 +89,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               >
                 <div
                   className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
-                  style={{ fontSize: 'min(2.5cqmin)' }}
+                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                 >
                   <span className="font-bold truncate pr-4">{o.label}</span>
                   <span className="font-mono whitespace-nowrap">
@@ -96,12 +109,29 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div className="px-4 pb-2">
+        <div
+          style={{
+            paddingLeft: 'min(16px, 3cqmin)',
+            paddingRight: 'min(16px, 3cqmin)',
+            paddingBottom: 'min(8px, 1.5cqmin)',
+          }}
+        >
           <button
             onClick={handleReset}
-            className="w-full flex items-center justify-center gap-2 py-2 text-[min(10px,3cqmin)] font-black uppercase text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+            className="w-full flex items-center justify-center font-black uppercase text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+            style={{
+              gap: 'min(8px, 2cqmin)',
+              padding: 'min(8px, 1.5cqmin)',
+              fontSize: 'min(10px, 3cqmin)',
+            }}
           >
-            <RotateCcw className="w-3 h-3" /> Reset Poll
+            <RotateCcw
+              style={{
+                width: 'min(12px, 3cqmin)',
+                height: 'min(12px, 3cqmin)',
+              }}
+            />{' '}
+            Reset Poll
           </button>
         </div>
       }

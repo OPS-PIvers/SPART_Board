@@ -85,8 +85,12 @@ const SortableItem: React.FC<SortableItemProps> = ({
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className="group bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex items-center gap-3"
+      style={{
+        ...style,
+        padding: 'min(12px, 2.5cqmin)',
+        gap: 'min(12px, 2.5cqmin)',
+      }}
+      className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex items-center"
     >
       {/* Drag Handle */}
       <div
@@ -94,11 +98,23 @@ const SortableItem: React.FC<SortableItemProps> = ({
         {...listeners}
         className="text-slate-400 cursor-grab hover:text-slate-600 touch-none"
       >
-        <GripVertical className="w-4 h-4" />
+        <GripVertical
+          style={{
+            width: 'min(16px, 4cqmin)',
+            height: 'min(16px, 4cqmin)',
+          }}
+        />
       </div>
 
       {/* Icon & Title */}
-      <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0  text-xs border border-indigo-100">
+      <div
+        className="bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0 border border-indigo-100"
+        style={{
+          width: 'min(40px, 10cqmin)',
+          height: 'min(40px, 10cqmin)',
+          fontSize: 'min(12px, 3cqmin)',
+        }}
+      >
         HTML
       </div>
       <div className="flex-1 min-w-0">
@@ -117,28 +133,55 @@ const SortableItem: React.FC<SortableItemProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center" style={{ gap: 'min(4px, 1cqmin)' }}>
         <button
           onClick={() => onRun(app)}
-          className="p-2 bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors"
+          className="bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors"
+          style={{ padding: 'min(8px, 2cqmin)' }}
           title="Run App"
         >
-          <Play className="w-4 h-4 fill-current" />
+          <Play
+            className="fill-current"
+            style={{
+              width: 'min(16px, 4cqmin)',
+              height: 'min(16px, 4cqmin)',
+            }}
+          />
         </button>
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div
+          className="bg-slate-200"
+          style={{
+            width: '1px',
+            height: 'min(24px, 6cqmin)',
+            marginLeft: 'min(4px, 1cqmin)',
+            marginRight: 'min(4px, 1cqmin)',
+          }}
+        ></div>
         <button
           onClick={() => onEdit(app)}
-          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors"
+          className="text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors"
+          style={{ padding: 'min(8px, 2cqmin)' }}
           title="Edit"
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil
+            style={{
+              width: 'min(16px, 4cqmin)',
+              height: 'min(16px, 4cqmin)',
+            }}
+          />
         </button>
         <button
           onClick={() => onDelete(app.id)}
-          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          style={{ padding: 'min(8px, 2cqmin)' }}
           title="Delete"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2
+            style={{
+              width: 'min(16px, 4cqmin)',
+              height: 'min(16px, 4cqmin)',
+            }}
+          />
         </button>
       </div>
     </div>
@@ -410,14 +453,34 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <WidgetLayout
         padding="p-0"
         header={
-          <div className="h-4 w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/app-header">
-            <div className="w-8 h-1 bg-slate-300/50 rounded-full group-hover/app-header:bg-slate-400/80 transition-colors" />
+          <div
+            className="w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/app-header"
+            style={{ height: 'min(16px, 3.5cqmin)' }}
+          >
+            <div
+              className="bg-slate-300/50 rounded-full group-hover/app-header:bg-slate-400/80 transition-colors"
+              style={{
+                width: 'min(32px, 8cqmin)',
+                height: 'min(4px, 1cqmin)',
+              }}
+            />
             <div className="absolute top-1 right-2 z-10">
               <button
                 onClick={handleCloseActive}
-                className="px-2 py-0.5 bg-slate-900/80 backdrop-blur-sm hover:bg-slate-900 text-white rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-lg border border-slate-700 font-black transition-all"
+                className="bg-slate-900/80 backdrop-blur-sm hover:bg-slate-900 text-white rounded-lg uppercase tracking-wider flex items-center shadow-lg border border-slate-700 font-black transition-all"
+                style={{
+                  padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
+                  fontSize: 'min(10px, 2.5cqmin)',
+                  gap: 'min(6px, 1.5cqmin)',
+                }}
               >
-                <LayoutGrid className="w-2.5 h-2.5" /> Library
+                <LayoutGrid
+                  style={{
+                    width: 'min(10px, 2.5cqmin)',
+                    height: 'min(10px, 2.5cqmin)',
+                  }}
+                />{' '}
+                Library
               </button>
             </div>
           </div>
@@ -639,19 +702,47 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </div>
           <button
             onClick={handleCreate}
-            className="p-3 bg-white text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm border border-slate-200 hover:border-indigo-200 active:scale-95"
+            className="bg-white text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm border border-slate-200 hover:border-indigo-200 active:scale-95"
+            style={{ padding: 'min(12px, 2.5cqmin)' }}
             title="Create New App"
           >
-            <Plus className="w-6 h-6" />
+            <Plus
+              style={{
+                width: 'min(24px, 6cqmin)',
+                height: 'min(24px, 6cqmin)',
+              }}
+            />
           </button>
         </div>
       }
       content={
-        <div className="flex-1 w-full h-full overflow-y-auto p-4 space-y-2 bg-transparent custom-scrollbar">
+        <div
+          className="flex-1 w-full h-full overflow-y-auto bg-transparent custom-scrollbar flex flex-col"
+          style={{
+            padding: 'min(16px, 3.5cqmin)',
+            gap: 'min(8px, 2cqmin)',
+          }}
+        >
           {library.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 opacity-40 py-12">
-              <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                <Box className="w-10 h-10 stroke-slate-300" />
+            <div
+              className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40"
+              style={{
+                gap: 'min(16px, 3.5cqmin)',
+                paddingTop: 'min(48px, 10cqmin)',
+                paddingBottom: 'min(48px, 10cqmin)',
+              }}
+            >
+              <div
+                className="bg-white rounded-3xl border border-slate-200 shadow-sm"
+                style={{ padding: 'min(20px, 4cqmin)' }}
+              >
+                <Box
+                  className="stroke-slate-300"
+                  style={{
+                    width: 'min(40px, 10cqmin)',
+                    height: 'min(40px, 10cqmin)',
+                  }}
+                />
               </div>
               <div className="text-center">
                 <p

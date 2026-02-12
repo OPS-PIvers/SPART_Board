@@ -23,7 +23,8 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       padding="p-0"
       content={
         <div
-          className={`h-full w-full p-4 font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
+          className={`h-full w-full font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
+          style={{ padding: 'min(16px, 3.5cqmin)' }}
         >
           {/* Background color overlay */}
           <div
