@@ -47,6 +47,14 @@ export const STICKY_NOTE_COLORS = {
   gray: '#f3f4f6', // gray-100
 } as const;
 
+export const STICKY_NOTE_OPTIONS = [
+  { hex: STICKY_NOTE_COLORS.yellow, label: 'yellow' },
+  { hex: STICKY_NOTE_COLORS.green, label: 'green' },
+  { hex: STICKY_NOTE_COLORS.blue, label: 'blue' },
+  { hex: STICKY_NOTE_COLORS.pink, label: 'pink' },
+  { hex: STICKY_NOTE_COLORS.gray, label: 'gray' },
+] as const;
+
 export const ROUTINE_COLORS = [
   'blue',
   'indigo',
