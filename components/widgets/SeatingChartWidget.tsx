@@ -749,7 +749,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   )}
 
                 {/* Content */}
-                <div className="flex flex-col items-center justify-center p-1 w-full h-full overflow-hidden pointer-events-none">
+                <div
+                  className="flex flex-col items-center justify-center w-full h-full overflow-hidden pointer-events-none"
+                  style={{ padding: '0.2cqmin' }}
+                >
                   {/* Show type icon if empty or setup */}
                   {assigned.length === 0 && (
                     <div className="opacity-20">
@@ -766,7 +769,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
                   {/* Assigned Students */}
                   {assigned.length > 0 && (
-                    <div className="flex flex-col items-center justify-center gap-1 w-full h-full overflow-hidden">
+                    <div
+                      className="flex flex-col items-center justify-center w-full h-full overflow-hidden"
+                      style={{ gap: '0.2cqmin' }}
+                    >
                       {assigned.map((name) => (
                         <div
                           key={name}

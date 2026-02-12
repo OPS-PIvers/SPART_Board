@@ -32,7 +32,7 @@ export const CatalystVisualWidget: React.FC<{ widget: WidgetData }> = ({
     return (
       <Icon
         className="animate-pulse"
-        style={{ width: '40cqmin', height: '40cqmin' }}
+        style={{ width: 'min(40cqmin)', height: 'min(40cqmin)' }}
       />
     );
   };

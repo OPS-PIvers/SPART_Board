@@ -800,12 +800,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
           {selectedRoutine.id === 'blooms-analysis' && (
             <div
-              className="flex shrink-0"
-              style={{
-                ...scalingStyles,
-                gap: '0.75em',
-                padding: '0 min(12px, 3cqmin) min(12px, 3cqmin)',
-              }}
+              className="flex shrink-0 px-3 pb-3"
+              style={{ gap: '0.75em', ...scalingStyles }}
             >
               <button
                 onClick={() => launchBloomsResource('keyWords')}

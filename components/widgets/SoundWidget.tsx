@@ -80,7 +80,10 @@ const SpeedometerView: React.FC<{ volume: number }> = ({ volume }) => {
   const needleLen = 35;
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+    <div
+      className="relative w-full h-full flex flex-col items-center justify-center"
+      style={{ padding: 'min(16px, 4cqmin)' }}
+    >
       <svg viewBox="0 0 100 60" className="w-full h-auto drop-shadow-sm">
         {/* Arcs */}
         {POSTER_LEVELS.map((level, i) => {
@@ -330,14 +333,20 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="flex-1 min-h-0 relative w-full h-full p-2">
+        <div
+          className="flex-1 min-h-0 relative w-full h-full"
+          style={{ padding: 'min(8px, 2cqmin)' }}
+        >
           {visual === 'thermometer' && <ThermometerView volume={volume} />}
           {visual === 'speedometer' && <SpeedometerView volume={volume} />}
           {visual === 'balls' && (
             <PopcornBallsView volume={volume} width={w} height={h - 60} />
           )}
           {visual === 'line' && (
-            <div className="w-full h-full bg-black/20 rounded-2xl p-2">
+            <div
+              className="w-full h-full bg-black/20 rounded-2xl"
+              style={{ padding: 'min(8px, 2cqmin)' }}
+            >
               <svg
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"

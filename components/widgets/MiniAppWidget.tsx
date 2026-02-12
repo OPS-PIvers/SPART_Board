@@ -666,7 +666,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <p
                   className="font-black uppercase tracking-widest"
                   style={{
-                    fontSize: '3.5cqmin',
+                    fontSize: 'min(14px, 3.5cqmin)',
                     marginBottom: 'min(4px, 1cqmin)',
                   }}
                 >
@@ -674,7 +674,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 </p>
                 <p
                   className="font-bold uppercase tracking-tighter"
-                  style={{ fontSize: '3cqmin' }}
+                  style={{ fontSize: 'min(12px, 3cqmin)' }}
                 >
                   Import a file or create your first mini-app.
                 </p>

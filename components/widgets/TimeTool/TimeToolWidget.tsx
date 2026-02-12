@@ -405,7 +405,11 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   config.theme === 'dark'
                     ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-700'
                     : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100'
-                } style={{ gap: "min(6px, 1.5cqmin)", padding: "min(6px, 1.5cqmin) min(12px, 3cqmin)" }}`}
+                }`}
+                style={{
+                  gap: 'min(6px, 1.5cqmin)',
+                  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                }}
               >
                 <Bell
                   size="1.2em"

@@ -359,6 +359,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
           className={`h-full w-full bg-transparent overflow-hidden animate-in fade-in duration-200 ${
             isElementary ? 'grid grid-cols-2' : 'flex flex-col'
           }`}
+          style={{ padding: 'min(12px, 3cqmin)', gap: 'min(12px, 3cqmin)' }}
         >
           <button
             onClick={() => setActiveCategory('volume')}
@@ -367,6 +368,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 ? `${selectedVolume.bg} border-current ${selectedVolume.color} shadow-sm`
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
             } ${isElementary ? 'col-span-2' : ''}`}
+            style={{ gap: 'min(16px, 4cqmin)', padding: 'min(16px, 4cqmin)' }}
           >
             <div
               className={`p-3 rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
@@ -406,6 +408,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 ? `${selectedGroup.bg} border-current ${selectedGroup.color} shadow-sm`
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
             }`}
+            style={{ gap: 'min(16px, 4cqmin)', padding: 'min(16px, 4cqmin)' }}
           >
             <div
               className={`p-3 rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
@@ -445,6 +448,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 ? `${selectedInteraction.bg} border-current ${selectedInteraction.color} shadow-sm`
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
             }`}
+            style={{ gap: 'min(16px, 4cqmin)', padding: 'min(16px, 4cqmin)' }}
           >
             <div
               className={`p-3 rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}

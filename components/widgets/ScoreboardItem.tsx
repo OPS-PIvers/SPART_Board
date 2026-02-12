@@ -99,7 +99,7 @@ export const ScoreboardItem = React.memo(
       >
         <div
           className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
-          style={{ fontSize: 'min(8cqmin)' }}
+          style={{ fontSize: '8cqmin' }}
         >
           {team.name}
         </div>
