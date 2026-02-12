@@ -376,7 +376,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         >
           <div
             className="font-black uppercase tracking-widest text-slate-600 flex items-center"
-            style={{ gap: 'min(6px, 1cqh)', fontSize: 'min(8cqh, 70cqw)' }}
+            style={{ gap: 'min(6px, 1cqh)', fontSize: 'min(6cqh, 70cqw)' }}
           >
             <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
             {locationName}
@@ -386,13 +386,13 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="flex items-center justify-center w-full"
             style={{ gap: 'min(24px, 4cqw)' }}
           >
-            <div style={{ fontSize: 'min(35cqh, 25cqw)' }}>
+            <div style={{ fontSize: 'min(30cqh, 25cqw)' }}>
               {getIcon('1em')}
             </div>
             <div className="flex flex-col items-center">
               <div
                 className="font-black text-slate-800 tabular-nums leading-none"
-                style={{ fontSize: 'min(45cqh, 35cqw)' }}
+                style={{ fontSize: 'min(40cqh, 35cqw)' }}
               >
                 {showFeelsLike && feelsLike !== undefined
                   ? Math.round(feelsLike)
@@ -403,7 +403,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <div
                   className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap"
                   style={{
-                    fontSize: 'min(7cqh, 20cqw)',
+                    fontSize: 'min(6cqh, 20cqw)',
                     marginTop: 'min(4px, 1cqh)',
                   }}
                 >
@@ -414,7 +414,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   <div
                     className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap"
                     style={{
-                      fontSize: 'min(7cqh, 20cqw)',
+                      fontSize: 'min(6cqh, 20cqw)',
                       marginTop: 'min(4px, 1cqh)',
                     }}
                   >
@@ -429,22 +429,22 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
             style={{
               gap: 'min(16px, 3cqw)',
-              padding: 'min(12px, 2cqh) min(16px, 3cqw)',
+              padding: 'min(10px, 1.5cqh) min(16px, 3cqw)',
             }}
           >
             <div
               className="shrink-0 flex items-center justify-center overflow-hidden"
               style={{
-                fontSize: 'min(18cqh, 12cqw)',
-                width: 'min(22cqh, 15cqw)',
-                height: 'min(22cqh, 15cqw)',
+                fontSize: 'min(15cqh, 12cqw)',
+                width: 'min(20cqh, 15cqw)',
+                height: 'min(20cqh, 15cqw)',
               }}
             >
               {displayImage}
             </div>
             <div
               className="font-bold text-slate-700 leading-tight"
-              style={{ fontSize: 'min(10cqh, 65cqw)' }}
+              style={{ fontSize: 'min(8cqh, 65cqw)' }}
             >
               {displayMessage}
             </div>
