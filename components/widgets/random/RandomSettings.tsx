@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { WidgetData, RandomConfig } from '../../../types';
+import { Button } from '../../common/Button';
 import { RosterModeControl } from '../../common/RosterModeControl';
 import { Toggle } from '../../common/Toggle';
 import {
@@ -325,7 +326,8 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
 
-          <button
+          <Button
+            variant="dashed-danger"
             onClick={() => {
               if (confirm('Clear all custom student data?')) {
                 updateWidget(widget.id, {
@@ -339,10 +341,11 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 });
               }
             }}
-            className="w-full py-3 flex items-center justify-center gap-2 text-red-500 text-xxs  uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-2 border-dashed border-red-100"
+            className="w-full justify-center"
+            icon={<Trash2 className="w-4 h-4" />}
           >
-            <Trash2 className="w-4 h-4" /> Clear Custom Names
-          </button>
+            Clear Custom Names
+          </Button>
         </>
       )}
     </div>

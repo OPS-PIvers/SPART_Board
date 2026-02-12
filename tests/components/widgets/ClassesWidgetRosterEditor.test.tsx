@@ -51,7 +51,7 @@ describe('ClassesWidget RosterEditor', () => {
       screen.queryByPlaceholderText(/last names/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /\+ add last name/i })
+      screen.getByRole('button', { name: /add last name/i })
     ).toBeInTheDocument();
   });
 
@@ -61,7 +61,7 @@ describe('ClassesWidget RosterEditor', () => {
 
     await user.click(screen.getByRole('button', { name: /create new class/i }));
 
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     expect(
       screen.getByPlaceholderText(/paste first names/i)
@@ -120,7 +120,7 @@ describe('ClassesWidget RosterEditor', () => {
     await user.click(screen.getByRole('button', { name: /edit class/i }));
 
     // Toggle to last names
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     const firstsTextarea = screen.getByPlaceholderText(/paste first names/i);
     await user.clear(firstsTextarea);
@@ -161,7 +161,7 @@ describe('ClassesWidget RosterEditor', () => {
     await user.type(namesTextarea, 'Alice Smith\nBob Jones\nCharlie');
 
     // Toggle to dual-field mode
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     // Verify names are split
     const firstsTextarea = screen.getByPlaceholderText(/paste first names/i);
@@ -178,7 +178,7 @@ describe('ClassesWidget RosterEditor', () => {
     await user.click(screen.getByRole('button', { name: /create new class/i }));
 
     // Toggle to dual-field mode
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     // Enter separate first and last names
     const firstsTextarea = screen.getByPlaceholderText(/paste first names/i);
@@ -213,7 +213,7 @@ describe('ClassesWidget RosterEditor', () => {
     await user.type(namesTextarea, 'Alice Smith\nBob Jones');
 
     // Toggle to dual mode (should split)
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     // Toggle back to single mode (should merge)
     await user.click(screen.getByRole('button', { name: /remove/i }));
@@ -246,7 +246,7 @@ describe('ClassesWidget RosterEditor', () => {
     await user.type(namesTextarea, 'Alice\nBob\nCharlie');
 
     // Toggle to dual-field mode
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     // Names without spaces should stay in first name field
     const firstsTextarea = screen.getByPlaceholderText(/paste first names/i);
@@ -269,7 +269,7 @@ describe('ClassesWidget RosterEditor', () => {
     await user.type(namesTextarea, 'Alice Smith\nBob\nCharlie Brown');
 
     // Toggle to dual-field mode
-    await user.click(screen.getByRole('button', { name: /\+ add last name/i }));
+    await user.click(screen.getByRole('button', { name: /add last name/i }));
 
     const firstsTextarea = screen.getByPlaceholderText(/paste first names/i);
     const lastsTextarea = screen.getByPlaceholderText(/paste last names/i);

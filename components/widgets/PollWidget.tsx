@@ -351,22 +351,24 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 label={option.label}
                 onSave={updateOptionLabel}
               />
-              <button
+              <Button
+                variant="ghost-muted-danger"
+                size="icon"
                 onClick={() => removeOption(idx)}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 title="Remove Option"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+                icon={<Trash2 className="w-3.5 h-3.5" />}
+              />
             </div>
           ))}
         </div>
-        <button
+        <Button
+          variant="dashed"
           onClick={addOption}
-          className="mt-3 w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-500 border border-dashed border-slate-300 rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition-all"
+          className="mt-3 w-full justify-center"
+          icon={<Plus className="w-3.5 h-3.5" />}
         >
-          <Plus className="w-3.5 h-3.5" /> Add Option
-        </button>
+          Add Option
+        </Button>
       </div>
 
       {/* Actions */}
