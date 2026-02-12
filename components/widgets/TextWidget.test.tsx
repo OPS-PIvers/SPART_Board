@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TextWidget, TextSettings } from './TextWidget';
+import { TextWidget } from './TextWidget';
+import { TextSettings } from './TextSettings';
 import { WidgetData, TextConfig } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
