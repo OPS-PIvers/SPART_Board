@@ -191,19 +191,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     [widget, isStudentView]
   );
 
-  const renderScalableContent = useCallback(
-    ({
-      internalW,
-      internalH,
-      scale,
-    }: {
-      internalW: number;
-      internalH: number;
-      scale: number;
-    }) => getWidgetContentInternal(internalW, internalH, scale),
-    [getWidgetContentInternal]
-  );
-
   const scalingConfig = scaling ?? DEFAULT_SCALING_CONFIG;
 
   // OPTIMIZATION: Memoize finalContent to prevent re-creation on every render (e.g. when students list updates).
@@ -229,7 +216,9 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         headerHeight={HEADER_HEIGHT}
         padding={scalingConfig.padding ?? PADDING}
       >
-        {renderScalableContent}
+        {({ internalW, internalH, scale }) =>
+          getWidgetContentInternal(internalW, internalH, scale)
+        }
       </ScalableWidget>
     );
   }, [
@@ -239,7 +228,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     effectiveWidth,
     effectiveHeight,
     HEADER_HEIGHT,
-    renderScalableContent,
   ]);
 
   if (widget.type === 'sticker') {
