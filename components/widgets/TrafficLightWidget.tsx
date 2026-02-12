@@ -25,16 +25,16 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="flex items-center justify-center h-full w-full p-[2cqmin]">
-          <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[4cqmin] gap-[4cqmin] h-[90%] justify-center">
+        <div className="flex items-center justify-center h-full w-full p-[min(4px,1cqmin)]">
+          <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[min(12px,3cqh)] gap-[min(12px,3cqh)] h-[95%] w-[95%] justify-center">
             <button
               onClick={() => {
                 toggle('red');
               }}
               className={`rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]' : 'bg-red-950/50'}`}
               style={{
-                width: '28cqmin',
-                height: '28cqmin',
+                width: 'min(28cqh, 80cqw)',
+                height: 'min(28cqh, 80cqw)',
                 minWidth: '40px',
                 minHeight: '40px',
               }}
@@ -45,8 +45,8 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
               }}
               className={`rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)]' : 'bg-yellow-950/50'}`}
               style={{
-                width: '28cqmin',
-                height: '28cqmin',
+                width: 'min(28cqh, 80cqw)',
+                height: 'min(28cqh, 80cqw)',
                 minWidth: '40px',
                 minHeight: '40px',
               }}
@@ -57,8 +57,8 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
               }}
               className={`rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.5)]' : 'bg-green-950/50'}`}
               style={{
-                width: '28cqmin',
-                height: '28cqmin',
+                width: 'min(28cqh, 80cqw)',
+                height: 'min(28cqh, 80cqw)',
                 minWidth: '40px',
                 minHeight: '40px',
               }}

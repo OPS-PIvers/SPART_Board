@@ -1,56 +1,42 @@
-# Plan: Widget Content Scaling Fix
+# Plan: Widget Content Scaling Fix (Final Pass - Fill-First)
 
-## Problem Analysis (Updated)
+## Problem Analysis (Final)
 
-The aggressive `cqmin` scaling implemented in the previous pass caused content to scale to the vertical height of the container without respecting the horizontal boundaries. In wide/short widgets, the text became too wide for the container and was cut off on the sides.
+1.  **Too much padding (Clock)**: Using `cqmin` (height in wide widgets) with conservative values like `55%` leaves ~45% empty vertical space.
+2.  **Cutoff (Weather)**: Lack of proper width constraints or absolute minimum padding causes text to hit the edges and clip.
+3.  **Core Issue**: `cqmin` is too defensive. To "fill the window," we need content to scale relative to _both_ width and height explicitly.
 
 ## Goal
 
-Implement "Double-Constrained Scaling" using `min(Vertical_Aggressive, Horizontal_Safe)` to ensure content fills the height where possible but shrinks to fit the width when necessary.
+Implement "Fill-First Scaling" using `min(Xcqh, Ycqw)` for hero content. This forces content to grow until it hits _either_ the vertical or horizontal "wall" of the container, utilizing ~85-95% of available real estate.
 
 ## Implementation Steps
 
-### 1. Identify Target Widgets
+### 1. The "Fill-First" Formula
 
-Apply fixes to all `skipScaling: true` widgets, prioritizing those with the most visible regression:
+Instead of `cqmin`, we will use:
 
-- **ClockWidget**: Needs much larger time text but must fit width.
-- **WeatherWidget**: Needs larger temperature and icon.
-- **PollWidget**: Needs larger questions and bars.
-- **TrafficLightWidget**: Needs the light housing to fill the height.
-- **DiceWidget**: Needs dice to fill more area.
-- **ScoreboardWidget**: Needs larger team names and scores.
-- **ExpectationsWidget**: Needs larger category buttons and list items.
-- **MaterialsWidget**: Needs larger material buttons.
-- **InstructionalRoutinesWidget**: Needs larger library cards and icons.
-- **RandomWheel**: Needs wheel to fill more space.
-- **CalendarWidget**: Needs larger grid items.
+- **Hero Text (Clock, Temp)**: `min(80cqh, 25cqw)`
+  - _Translation_: Be 80% of the height, but never wider than 25% of the width (tuned for ~5-6 characters).
+- **Primary Labels**: `min(10cqh, 95cqw)`
+- **Padding**: Standardize on `min(4px, 1cqmin)` for "slight padding" requested by the user.
 
-### 2. Standardize "Filling" Formulas (Updated)
+### 2. Targeted Adjustments
 
-Replace conservative caps with "Safe Aggressive Scaling" formulas:
+- **Clock**: Time will use `min(75cqh, 25cqw)`. Date will use `min(15cqh, 80cqw)`.
+- **Weather**: Temp icon + text will use `min(60cqh, 90cqw)`.
+- **Traffic Light**: Housing will use `min(95cqh, 90cqw)`.
+- **Poll**: Bars will expand vertically to fill remaining space.
 
-- **Hero Text (Clock, Temp, Score)**:
-  - _Current_: `55cqmin`
-  - _New_: `min(55cqmin, 22cqw)` (Constrain width to ~80-90% of container)
-- **Primary Labels (Question, Title)**:
-  - _Current_: `min(32px, 8cqmin)`
-  - _New_: `min(32px, 8cqmin, 90cqw)`
-- **Secondary Content (Date, Metadata)**:
-  - _Current_: `min(24px, 5cqmin)`
-  - _New_: `min(24px, 5cqmin, 80cqw)`.
+### 3. Standards Update
 
-### 3. Layout Adjustments
-
-- **Container Padding**: Maintain low padding (`min(12px, 2cqmin)`) to maximize real estate.
-- **Traffic Light**: Increase housing size but ensure it doesn't overflow horizontally.
+Update `WIDGET_SCALING_STANDARDS.md` to move away from `cqmin`-only logic for hero content.
 
 ### 4. Verification
 
-- Test each modified widget at:
-  - **Mini** (Smallest allowed size)
-  - **Standard** (Default size)
-  - **Maximized** (Full screen)
-  - **Ultra-Wide** (Short and very wide)
-  - **Tall/Narrow** (Very tall and skinny)
-- Ensure text remains readable but utilizes the maximum possible real estate without cutoff.
+Test in:
+
+- **Ultra-Wide**: 1000x200
+- **Ultra-Tall**: 200x800
+- **Square**: 400x400
+- **Maximized**: 1920x1080
