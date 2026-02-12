@@ -21,6 +21,7 @@
     "lint:all": "pnpm run lint",
     "validate": "pnpm type-check && pnpm lint && pnpm format:check && pnpm test",
     "test": "vitest run",
+    "test:all": "pnpm run test && pnpm -C functions run test",
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
