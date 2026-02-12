@@ -199,11 +199,11 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       padding="p-0"
       header={
         <div
-          className="w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/checklist-header"
+          className="w-full flex items-center justify-center border-b border-slate-100/30 cursor-move hover:bg-slate-900/5 transition-colors group/checklist-header"
           style={{ height: 'min(16px, 3.5cqmin)' }}
         >
           <div
-            className="bg-slate-300/50 rounded-full group-hover/checklist-header:bg-slate-400/80 transition-colors"
+            className="bg-slate-400/30 rounded-full group-hover/checklist-header:bg-slate-400/50 transition-colors"
             style={{
               width: 'min(32px, 8cqmin)',
               height: 'min(4px, 1cqmin)',
