@@ -11,6 +11,7 @@
 - Added tests for `deleteFile` (Firebase path).
 
 **Result:** Coverage improved to ~46%.
+
 ## 2026-02-12 - Added Tests for PromptDialog Component
 
 **Gap:** `components/widgets/InstructionalRoutines/PromptDialog.tsx` was completely untested (11.11% coverage), leaving user interactions (typing, confirm/cancel) and keyboard shortcuts verified only manually.
