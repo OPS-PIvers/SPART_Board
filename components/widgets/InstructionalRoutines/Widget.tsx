@@ -650,13 +650,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     >
                       <div
                         className="font-black text-slate-800 uppercase leading-tight tracking-wide"
-                        style={{ fontSize: 'min(16px, 4cqmin)' }}
+                        style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
                       >
                         {r.name}
                       </div>
                       <div
                         className="font-bold text-slate-400 uppercase tracking-wider"
-                        style={{ fontSize: 'min(12px, 3cqmin)' }}
+                        style={{ fontSize: 'min(12px, 3cqmin, 70cqw)' }}
                       >
                         {r.grades}
                       </div>

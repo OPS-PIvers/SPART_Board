@@ -121,7 +121,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   />
                   <span
                     className="uppercase tracking-wide text-center font-black leading-tight truncate w-full"
-                    style={{ fontSize: 'min(16px, 4cqmin)' }}
+                    style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
                   >
                     {item.label}
                   </span>

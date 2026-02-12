@@ -376,7 +376,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         >
           <div
             className="font-black uppercase tracking-widest text-slate-600 flex items-center"
-            style={{ gap: 'min(6px, 1.5cqmin)', fontSize: 'min(16px, 5cqmin)' }}
+            style={{
+              gap: 'min(6px, 1.5cqmin)',
+              fontSize: 'min(16px, 5cqmin, 80cqw)',
+            }}
           >
             <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
             {locationName}
@@ -392,7 +395,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             <div className="flex flex-col">
               <div
                 className="font-black text-slate-800 tabular-nums leading-none"
-                style={{ fontSize: 'clamp(60px, 40cqmin, 400px)' }}
+                style={{ fontSize: 'min(clamp(60px, 40cqmin, 400px), 40cqw)' }}
               >
                 {showFeelsLike && feelsLike !== undefined
                   ? Math.round(feelsLike)
@@ -403,7 +406,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <div
                   className="font-black text-slate-600 uppercase tracking-wider"
                   style={{
-                    fontSize: 'min(20px, 6cqmin)',
+                    fontSize: 'min(20px, 6cqmin, 30cqw)',
                     marginTop: 'min(4px, 1cqmin)',
                   }}
                 >
@@ -414,7 +417,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   <div
                     className="font-black text-slate-600 uppercase tracking-wider"
                     style={{
-                      fontSize: 'min(20px, 6cqmin)',
+                      fontSize: 'min(20px, 6cqmin, 30cqw)',
                       marginTop: 'min(4px, 1cqmin)',
                     }}
                   >
@@ -441,7 +444,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
             <div
               className="font-bold text-slate-700 leading-tight"
-              style={{ fontSize: 'min(18px, 6.5cqmin)' }}
+              style={{ fontSize: 'min(18px, 6.5cqmin, 75cqw)' }}
             >
               {displayMessage}
             </div>

@@ -100,7 +100,7 @@ export const ScoreboardItem = React.memo(
         <div
           className={`font-black uppercase tracking-widest ${styles.label} text-center line-clamp-1 w-full`}
           style={{
-            fontSize: 'min(48px, 10cqmin)',
+            fontSize: 'min(48px, 10cqmin, 80cqw)',
             marginBottom: 'min(6px, 1.5cqmin)',
             paddingLeft: 'min(8px, 2cqmin)',
             paddingRight: 'min(8px, 2cqmin)',

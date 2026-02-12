@@ -66,7 +66,9 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div
             className={`flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()}`}
             style={{
-              fontSize: showSeconds ? '40cqmin' : '55cqmin',
+              fontSize: showSeconds
+                ? 'min(40cqmin, 18cqw)'
+                : 'min(55cqmin, 25cqw)',
               color: themeColor,
               textShadow: glow
                 ? `0 0 0.1em ${themeColor}, 0 0 0.25em ${themeColor}66`
@@ -109,7 +111,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {!format24 && (
               <span
                 className="opacity-40 ml-2 uppercase"
-                style={{ fontSize: 'min(24px, 6cqmin)' }}
+                style={{ fontSize: 'min(24px, 6cqmin, 10cqw)' }}
               >
                 {ampm}
               </span>
@@ -118,7 +120,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           <div
             className={`opacity-60 uppercase tracking-[0.2em] text-slate-900 ${getFontClass()}`}
-            style={{ fontSize: 'min(24px, 5cqmin)' }}
+            style={{ fontSize: 'min(24px, 5cqmin, 80cqw)' }}
           >
             {time.toLocaleDateString(undefined, {
               weekday: 'long',

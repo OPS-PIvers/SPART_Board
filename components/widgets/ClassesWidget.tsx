@@ -452,13 +452,13 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
                       <div className="min-w-0 flex-1">
                         <div
                           className="text-slate-800 font-black truncate uppercase tracking-tight"
-                          style={{ fontSize: 'min(24px, 5.5cqmin)' }}
+                          style={{ fontSize: 'min(24px, 5.5cqmin, 80cqw)' }}
                         >
                           {r.name}
                         </div>
                         <div
                           className="text-slate-400 font-bold uppercase tracking-widest"
-                          style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                          style={{ fontSize: 'min(14px, 3.5cqmin, 70cqw)' }}
                         >
                           {r.students.length} Students
                         </div>
