@@ -322,19 +322,31 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
 
             {/* Presets row — only in digital timer mode when stopped */}
             {!isVisual && mode === 'timer' && !isRunning && (
-              <div className="shrink-0 flex flex-wrap justify-center gap-1.5 pb-2">
+              <div
+                className="shrink-0 flex flex-wrap justify-center"
+                style={{
+                  gap: 'min(6px, 1.5cqmin)',
+                  paddingBottom: 'min(8px, 2cqmin)',
+                }}
+              >
                 {PRESETS.map((s) => (
                   <button
                     key={s}
                     onClick={() => setTime(s)}
-                    className={`px-3 py-1.5 rounded-lg font-black transition-all hover:scale-105 active:scale-95 ${
+                    className={`rounded-lg font-black transition-all hover:scale-105 active:scale-95 ${
                       config.elapsedTime === s
                         ? 'bg-brand-blue-primary text-white shadow-md'
                         : config.theme === 'dark'
                           ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-brand-blue-primary'
                           : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm'
                     }`}
-                    style={{ fontSize: 'clamp(0.5rem, 2.5cqmin, 0.75rem)' }}
+                    style={{
+                      fontSize: 'clamp(0.5rem, 2.5cqmin, 0.75rem)',
+                      paddingLeft: 'min(12px, 3cqmin)',
+                      paddingRight: 'min(12px, 3cqmin)',
+                      paddingTop: 'min(6px, 1.5cqmin)',
+                      paddingBottom: 'min(6px, 1.5cqmin)',
+                    }}
                   >
                     {presetLabel(s)}
                   </button>
@@ -395,19 +407,32 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="relative">
               <button
                 onClick={() => setShowSoundPicker((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all border shadow-sm ${
+                className={`flex items-center rounded-full transition-all border shadow-sm ${
                   config.theme === 'dark'
                     ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-700'
                     : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100'
                 }`}
+                style={{
+                  gap: 'min(6px, 1.5cqmin)',
+                  paddingLeft: 'min(12px, 3cqmin)',
+                  paddingRight: 'min(12px, 3cqmin)',
+                  paddingTop: 'min(6px, 1.5cqmin)',
+                  paddingBottom: 'min(6px, 1.5cqmin)',
+                }}
               >
                 <Bell
-                  size={12}
                   className={
                     isRunning ? 'animate-pulse text-brand-blue-primary' : ''
                   }
+                  style={{
+                    width: 'min(12px, 3cqmin)',
+                    height: 'min(12px, 3cqmin)',
+                  }}
                 />
-                <span className="text-[9px] font-black uppercase tracking-widest">
+                <span
+                  className="font-black uppercase tracking-widest"
+                  style={{ fontSize: 'min(9px, 2.5cqmin)' }}
+                >
                   {config.selectedSound}
                 </span>
               </button>
@@ -443,9 +468,21 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-1 opacity-30 select-none">
-              <div className="w-1.5 h-1.5 rounded-full bg-brand-blue-primary" />
-              <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">
+            <div
+              className="flex items-center opacity-30 select-none"
+              style={{ gap: 'min(4px, 1cqmin)' }}
+            >
+              <div
+                className="rounded-full bg-brand-blue-primary"
+                style={{
+                  width: 'min(6px, 1.5cqmin)',
+                  height: 'min(6px, 1.5cqmin)',
+                }}
+              />
+              <span
+                className="font-black text-slate-400 uppercase tracking-tighter"
+                style={{ fontSize: 'min(7px, 2cqmin)' }}
+              >
                 Timer v3
               </span>
             </div>

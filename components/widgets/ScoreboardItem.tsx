@@ -94,35 +94,59 @@ export const ScoreboardItem = React.memo(
 
     return (
       <div
-        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl p-2 border border-slate-200 relative group transition-all hover:shadow-md`}
-        style={{ containerType: 'size' }}
+        className={`flex flex-col items-center justify-center ${colorClass}/20 rounded-2xl border border-slate-200 relative group transition-all hover:shadow-md`}
+        style={{ containerType: 'size', padding: 'min(8px, 2cqmin)' }}
       >
         <div
-          className={`font-black uppercase tracking-widest ${styles.label} mb-1 text-center line-clamp-1 w-full px-2`}
-          style={{ fontSize: 'min(8cqmin)' }}
+          className={`font-black uppercase tracking-widest ${styles.label} text-center line-clamp-1 w-full`}
+          style={{
+            fontSize: '8cqmin',
+            marginBottom: 'min(4px, 1cqmin)',
+            paddingLeft: 'min(8px, 2cqmin)',
+            paddingRight: 'min(8px, 2cqmin)',
+          }}
         >
           {team.name}
         </div>
         <div
-          className={`font-black ${styles.score} mb-2 tabular-nums drop-shadow-sm`}
-          style={{ fontSize: `min(40cqmin)`, lineHeight: 1 }}
+          className={`font-black ${styles.score} tabular-nums drop-shadow-sm`}
+          style={{
+            fontSize: '40cqmin',
+            lineHeight: 1,
+            marginBottom: 'min(8px, 2cqmin)',
+          }}
         >
           {team.score}
         </div>
-        <div className="flex gap-2 opacity-100 transition-opacity">
+        <div
+          className="flex opacity-100 transition-opacity"
+          style={{ gap: 'min(8px, 2cqmin)' }}
+        >
           <button
             onClick={() => onUpdateScore(team.id, -1)}
             aria-label="Decrease score"
-            className={`p-1.5 bg-white ${styles.button} rounded-lg shadow-sm hover:bg-slate-50 active:scale-95 transition-all`}
+            className={`bg-white ${styles.button} rounded-lg shadow-sm hover:bg-slate-50 active:scale-95 transition-all`}
+            style={{ padding: 'min(6px, 1.5cqmin)' }}
           >
-            <Minus className="w-4 h-4" />
+            <Minus
+              style={{
+                width: 'min(16px, 4cqmin)',
+                height: 'min(16px, 4cqmin)',
+              }}
+            />
           </button>
           <button
             onClick={() => onUpdateScore(team.id, 1)}
             aria-label="Increase score"
-            className={`p-1.5 ${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
+            className={`${colorClass} text-white rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all`}
+            style={{ padding: 'min(6px, 1.5cqmin)' }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus
+              style={{
+                width: 'min(16px, 4cqmin)',
+                height: 'min(16px, 4cqmin)',
+              }}
+            />
           </button>
         </div>
       </div>

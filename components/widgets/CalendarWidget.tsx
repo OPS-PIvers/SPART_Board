@@ -16,23 +16,41 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="h-full w-full flex flex-col p-4 overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+        <div
+          className="h-full w-full flex flex-col overflow-hidden"
+          style={{ padding: 'min(16px, 3.5cqmin)' }}
+        >
+          <div
+            className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
+            style={{ gap: 'min(12px, 2.5cqmin)' }}
+          >
             {events.map((event, i: number) => (
               <div
                 key={i}
-                className="group relative flex gap-3 p-3 bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50 shadow-sm"
+                className="group relative flex bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50 shadow-sm"
+                style={{
+                  gap: 'min(12px, 2.5cqmin)',
+                  padding: 'min(12px, 2.5cqmin)',
+                }}
               >
-                <div className="flex flex-col items-center justify-center min-w-[min(60px,25cqw)] py-1 border-r border-rose-200 pr-3 shrink-0">
+                <div
+                  className="flex flex-col items-center justify-center border-r border-rose-200 shrink-0"
+                  style={{
+                    minWidth: 'min(60px, 15cqmin)',
+                    paddingRight: 'min(12px, 2.5cqmin)',
+                    paddingTop: 'min(4px, 1cqmin)',
+                    paddingBottom: 'min(4px, 1cqmin)',
+                  }}
+                >
                   <span
                     className="uppercase text-rose-400 font-black"
-                    style={{ fontSize: 'min(2.5cqmin)' }}
+                    style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                   >
                     Day
                   </span>
                   <span
                     className="text-rose-600 font-black"
-                    style={{ fontSize: 'min(4.5cqmin)' }}
+                    style={{ fontSize: 'min(18px, 4.5cqmin)' }}
                   >
                     {event.date}
                   </span>
@@ -40,7 +58,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="flex items-center min-w-0">
                   <span
                     className="text-slate-700 font-bold leading-tight truncate"
-                    style={{ fontSize: 'min(4cqmin)' }}
+                    style={{ fontSize: 'min(16px, 4cqmin)' }}
                   >
                     {event.title}
                   </span>

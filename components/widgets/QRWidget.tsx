@@ -53,10 +53,31 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       padding="p-0"
       header={
         config.syncWithTextWidget ? (
-          <div className="flex justify-end p-2 pb-0">
-            <div className="flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-full border border-indigo-100 animate-in fade-in zoom-in shadow-sm">
-              <Link className="w-3 h-3 text-indigo-500" />
-              <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wide">
+          <div
+            className="flex justify-end"
+            style={{ padding: 'min(8px, 1.5cqmin)', paddingBottom: 0 }}
+          >
+            <div
+              className="flex items-center bg-indigo-50 rounded-full border border-indigo-100 animate-in fade-in zoom-in shadow-sm"
+              style={{
+                gap: 'min(4px, 1cqmin)',
+                paddingLeft: 'min(8px, 2cqmin)',
+                paddingRight: 'min(8px, 2cqmin)',
+                paddingTop: 'min(4px, 1cqmin)',
+                paddingBottom: 'min(4px, 1cqmin)',
+              }}
+            >
+              <Link
+                className="text-indigo-500"
+                style={{
+                  width: 'min(12px, 3cqmin)',
+                  height: 'min(12px, 3cqmin)',
+                }}
+              />
+              <span
+                className="font-black text-indigo-500 uppercase tracking-wide"
+                style={{ fontSize: 'min(10px, 3cqmin)' }}
+              >
                 Linked
               </span>
             </div>
@@ -64,8 +85,14 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         ) : undefined
       }
       content={
-        <div className="w-full h-full flex items-center justify-center p-3">
-          <div className="bg-white p-3 rounded-2xl shadow-inner w-full h-full flex items-center justify-center border border-slate-100 overflow-hidden">
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ padding: 'min(12px, 2.5cqmin)' }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-inner w-full h-full flex items-center justify-center border border-slate-100 overflow-hidden"
+            style={{ padding: 'min(12px, 2.5cqmin)' }}
+          >
             <img
               src={qrUrl}
               alt="QR Code"
@@ -75,8 +102,17 @@ export const QRWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div className="px-3 pb-3">
-          <div className="text-[min(12px,3.5cqmin)] font-mono text-slate-400 break-all text-center max-w-full overflow-hidden py-1.5 px-3 bg-slate-50/50 rounded-lg border border-slate-100/50">
+        <div style={{ paddingLeft: 'min(12px, 2.5cqmin)', paddingRight: 'min(12px, 2.5cqmin)', paddingBottom: 'min(12px, 2.5cqmin)' }}>
+          <div
+            className="font-mono text-slate-400 break-all text-center max-w-full overflow-hidden bg-slate-50/50 rounded-lg border border-slate-100/50"
+            style={{
+              fontSize: 'min(12px, 3.5cqmin)',
+              paddingTop: 'min(6px, 1.5cqmin)',
+              paddingBottom: 'min(6px, 1.5cqmin)',
+              paddingLeft: 'min(12px, 2.5cqmin)',
+              paddingRight: 'min(12px, 2.5cqmin)',
+            }}
+          >
             {url}
           </div>
         </div>

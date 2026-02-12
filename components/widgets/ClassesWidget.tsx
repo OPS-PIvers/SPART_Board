@@ -284,25 +284,44 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
         <WidgetLayout
           padding="p-0"
           header={
-            <div className="p-3">
-              <div className="flex gap-2">
+            <div style={{ padding: 'min(12px, 2.5cqmin)' }}>
+              <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
                 <button
                   onClick={() => {
                     setEditingId(null);
                     setView('edit');
                   }}
-                  className="flex-1 bg-blue-600 text-white p-2.5 rounded-xl font-black flex items-center justify-center gap-2 hover:bg-blue-700 text-xs shadow-md shadow-blue-500/20 transition-all"
+                  className="flex-1 bg-blue-600 text-white rounded-xl font-black flex items-center justify-center hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all"
+                  style={{
+                    padding: 'min(10px, 2cqmin)',
+                    gap: 'min(8px, 2cqmin)',
+                    fontSize: 'min(12px, 3cqmin)',
+                  }}
                 >
-                  <Plus size={16} /> Create New Class
+                  <Plus
+                    style={{
+                      width: 'min(16px, 4cqmin)',
+                      height: 'min(16px, 4cqmin)',
+                    }}
+                  />{' '}
+                  Create New Class
                 </button>
                 <button
                   onClick={handleFetchClassLink}
-                  className="bg-white text-slate-700 border border-slate-200 p-2.5 rounded-xl font-black flex items-center justify-center gap-2 hover:bg-slate-50 text-xs shadow-sm transition-all"
+                  className="bg-white text-slate-700 border border-slate-200 rounded-xl font-black flex items-center justify-center hover:bg-slate-50 shadow-sm transition-all"
+                  style={{
+                    padding: 'min(10px, 2cqmin)',
+                    gap: 'min(8px, 2cqmin)',
+                    fontSize: 'min(12px, 3cqmin)',
+                  }}
                   title="Sync from ClassLink"
                 >
                   <RefreshCw
-                    size={16}
                     className={classLinkLoading ? 'animate-spin' : ''}
+                    style={{
+                      width: 'min(16px, 4cqmin)',
+                      height: 'min(16px, 4cqmin)',
+                    }}
                   />
                   ClassLink
                 </button>

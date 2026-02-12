@@ -31,19 +31,22 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() => {
                 toggle('red');
               }}
-              className={`w-[min(25cqmin)] h-[min(25cqmin)] rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'}`}
+              className={`rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'}`}
+              style={{ width: '25cqmin', height: '25cqmin' }}
             />
             <button
               onClick={() => {
                 toggle('yellow');
               }}
-              className={`w-[min(25cqmin)] h-[min(25cqmin)] rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400' : 'bg-yellow-950/50'}`}
+              className={`rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400' : 'bg-yellow-950/50'}`}
+              style={{ width: '25cqmin', height: '25cqmin' }}
             />
             <button
               onClick={() => {
                 toggle('green');
               }}
-              className={`w-[min(25cqmin)] h-[min(25cqmin)] rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500' : 'bg-green-950/50'}`}
+              className={`rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500' : 'bg-green-950/50'}`}
+              style={{ width: '25cqmin', height: '25cqmin' }}
             />
           </div>
         </div>
