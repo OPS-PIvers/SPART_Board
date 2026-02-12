@@ -112,7 +112,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
   Record<WidgetType, SettingsComponent>
 > = {
   clock: lazyNamed(() => import('./ClockWidget'), 'ClockSettings'),
-  text: lazyNamed(() => import('./TextWidget'), 'TextSettings'),
+  text: lazyNamed(() => import('./TextSettings'), 'TextSettings'),
   checklist: lazyNamed(() => import('./ChecklistWidget'), 'ChecklistSettings'),
   random: lazyNamed(() => import('./random/RandomSettings'), 'RandomSettings'),
   dice: lazyNamed(() => import('./DiceWidget'), 'DiceSettings'),

@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2025-06-06 - Extract TextSettings
+
+**Weed:** `TextWidget.tsx` contained `TextSettings` component in the same file, preventing true lazy loading of settings.
+**Root Cause:** Component structure evolved organically, but settings logic (templates, etc.) adds unnecessary weight to the main widget bundle.
+**Plan:** Extracted `TextSettings` to `components/widgets/TextSettings.tsx` and updated `WidgetRegistry.ts` to lazy load it independently.
