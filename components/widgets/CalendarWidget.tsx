@@ -29,36 +29,36 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 key={i}
                 className="group relative flex bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50 shadow-sm"
                 style={{
-                  gap: 'min(12px, 2.5cqmin)',
-                  padding: 'min(12px, 2.5cqmin)',
+                  gap: 'min(16px, 3.5cqmin)',
+                  padding: 'min(16px, 3.5cqmin)',
                 }}
               >
                 <div
                   className="flex flex-col items-center justify-center border-r border-rose-200 shrink-0"
                   style={{
-                    minWidth: 'min(60px, 15cqmin)',
-                    paddingRight: 'min(12px, 2.5cqmin)',
+                    minWidth: 'min(80px, 18cqmin)',
+                    paddingRight: 'min(16px, 3.5cqmin)',
                     paddingTop: 'min(4px, 1cqmin)',
                     paddingBottom: 'min(4px, 1cqmin)',
                   }}
                 >
                   <span
                     className="uppercase text-rose-400 font-black"
-                    style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                    style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                   >
                     Day
                   </span>
                   <span
                     className="text-rose-600 font-black"
-                    style={{ fontSize: 'min(18px, 4.5cqmin)' }}
+                    style={{ fontSize: 'min(24px, 6cqmin)' }}
                   >
                     {event.date}
                   </span>
                 </div>
                 <div className="flex items-center min-w-0">
                   <span
-                    className="text-slate-700 font-bold leading-tight truncate"
-                    style={{ fontSize: 'min(16px, 4cqmin)' }}
+                    className="text-slate-700 font-black leading-tight truncate"
+                    style={{ fontSize: 'min(24px, 5.5cqmin)' }}
                   >
                     {event.title}
                   </span>

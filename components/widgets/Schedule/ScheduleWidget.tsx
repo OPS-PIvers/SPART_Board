@@ -29,8 +29,8 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
             : 'bg-white border-slate-200 shadow-sm'
         }`}
         style={{
-          gap: 'min(12px, 2.5cqmin)',
-          padding: 'min(12px, 2.5cqmin)',
+          gap: 'min(16px, 3cqmin)',
+          padding: 'min(16px, 3cqmin)',
           minHeight: 0,
         }}
       >
@@ -53,14 +53,14 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
         )}
         <div className="flex flex-col items-start justify-center min-w-0 flex-1">
           <span
-            className={`font-mono font-bold ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-            style={{ fontSize: 'min(16px, 5.5cqmin)' }}
+            className={`font-mono font-black ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
+            style={{ fontSize: 'min(24px, 6cqmin)' }}
           >
             {item.startTime ?? item.time ?? ''}
           </span>
           <span
-            className={`font-bold leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-            style={{ fontSize: 'min(24px, 8cqmin)' }}
+            className={`font-black leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+            style={{ fontSize: 'min(36px, 10cqmin)' }}
           >
             {item.task}
           </span>

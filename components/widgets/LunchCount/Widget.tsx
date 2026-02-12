@@ -162,8 +162,8 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     'bg-white border-b-2 border-slate-200 rounded-xl font-black text-slate-700 shadow-sm hover:border-brand-blue-primary hover:-translate-y-0.5 transition-all active:scale-90';
 
   const studentItemStyle: React.CSSProperties = {
-    fontSize: 'min(12px, 5cqmin)',
-    padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+    fontSize: 'min(16px, 6cqmin)',
+    padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
   };
 
   return (
@@ -182,13 +182,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <div className="flex flex-col">
               <h3
-                style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+                style={{ fontSize: 'min(16px, 5cqmin)' }}
                 className="font-black text-slate-700 uppercase tracking-widest"
               >
                 Daily Lunch Count
               </h3>
               <p
-                style={{ fontSize: 'min(11px, 4cqmin)' }}
+                style={{ fontSize: 'min(14px, 4cqmin)' }}
                 className="font-bold text-slate-500 uppercase tracking-tighter"
               >
                 {new Date().toLocaleDateString('en-US', {
@@ -534,7 +534,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           </div>
         }
         footer={
-          <div style={{ padding: '0 min(10px, 2cqmin) min(10px, 2cqmin)' }}>
+          <div style={{ padding: '0 min(16px, 3cqmin) min(16px, 3cqmin)' }}>
             <Button
               onClick={() => setIsModalOpen(true)}
               disabled={stats.remaining > 0 || stats.total === 0}
@@ -545,19 +545,19 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               }
               className="w-full rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all"
               style={{
-                padding: 'min(10px, 2.5cqmin)',
-                fontSize: 'min(12px, 4.5cqmin)',
+                padding: 'min(14px, 3cqmin)',
+                fontSize: 'min(16px, 5cqmin)',
               }}
             >
               {stats.remaining === 0 && stats.total > 0 ? (
                 <div
                   className="flex items-center justify-center"
-                  style={{ gap: 'min(6px, 1.5cqmin)' }}
+                  style={{ gap: 'min(10px, 2cqmin)' }}
                 >
                   <CheckCircle2
                     style={{
-                      width: 'min(16px, 4.5cqmin)',
-                      height: 'min(16px, 4.5cqmin)',
+                      width: 'min(20px, 5cqmin)',
+                      height: 'min(20px, 5cqmin)',
                     }}
                   />
                   Submit Report
@@ -565,12 +565,12 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
               ) : (
                 <div
                   className="flex items-center justify-center"
-                  style={{ gap: 'min(6px, 1.5cqmin)' }}
+                  style={{ gap: 'min(10px, 2cqmin)' }}
                 >
                   <Users
                     style={{
-                      width: 'min(16px, 4.5cqmin)',
-                      height: 'min(16px, 4.5cqmin)',
+                      width: 'min(20px, 5cqmin)',
+                      height: 'min(20px, 5cqmin)',
                     }}
                   />
                   Assign {stats.remaining} More Students

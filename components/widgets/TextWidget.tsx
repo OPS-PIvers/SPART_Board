@@ -34,7 +34,7 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           <div
             className="relative z-10 h-full w-full outline-none"
             style={{
-              fontSize: `min(${fontSize}px, ${fontSize * 0.35}cqmin)`,
+              fontSize: `min(${fontSize}px, ${fontSize * 0.5}cqmin)`,
               lineHeight: 1.5,
             }}
             contentEditable

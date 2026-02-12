@@ -351,10 +351,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const renderSinglePick = () => {
-    const resFontSize = '30cqmin'; // Hero text - fill available space
+    const resFontSize = '45cqmin'; // Hero text - fill available space
 
     if (visualStyle === 'wheel' && students.length > 0) {
-      const wheelSize = Math.min(widget.w * 0.8, widget.h * 0.6);
+      const wheelSize = Math.min(widget.w * 0.95, widget.h * 0.8);
 
       return (
         <RandomWheel
@@ -363,7 +363,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={24} // Internal scaling handled by RandomWheel
+          resultFontSize={32} // Internal scaling handled by RandomWheel
         />
       );
     }
@@ -524,13 +524,13 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                     >
                       <span
                         className="font-mono font-black text-slate-400"
-                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                        style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                       >
                         {i + 1}
                       </span>
                       <span
                         className="leading-none font-bold text-slate-700"
-                        style={{ fontSize: 'min(16px, 4cqmin)' }}
+                        style={{ fontSize: 'min(24px, 6cqmin)' }}
                       >
                         {name}
                       </span>

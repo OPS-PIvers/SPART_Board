@@ -632,31 +632,31 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     <div
                       className={`rounded-full transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
                       style={{
-                        padding: 'min(12px, 2.5cqmin)',
+                        padding: 'min(16px, 3.5cqmin)',
                         marginBottom: 'min(12px, 2.5cqmin)',
                       }}
                     >
                       <Icon
                         style={{
-                          width: 'min(28px, 7cqmin)',
-                          height: 'min(28px, 7cqmin)',
+                          width: 'min(48px, 12cqmin)',
+                          height: 'min(48px, 12cqmin)',
                         }}
                         strokeWidth={2}
                       />
                     </div>
                     <div
                       className="flex flex-col w-full"
-                      style={{ gap: 'min(4px, 1cqmin)' }}
+                      style={{ gap: 'min(6px, 1.5cqmin)' }}
                     >
                       <div
                         className="font-black text-slate-800 uppercase leading-tight tracking-wide"
-                        style={{ fontSize: 'min(11px, 2.8cqmin)' }}
+                        style={{ fontSize: 'min(16px, 4cqmin)' }}
                       >
                         {r.name}
                       </div>
                       <div
                         className="font-bold text-slate-400 uppercase tracking-wider"
-                        style={{ fontSize: 'min(9px, 2.2cqmin)' }}
+                        style={{ fontSize: 'min(12px, 3cqmin)' }}
                       >
                         {r.grades}
                       </div>

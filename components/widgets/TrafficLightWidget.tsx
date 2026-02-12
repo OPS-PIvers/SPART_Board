@@ -25,28 +25,43 @@ export const TrafficLightWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="flex items-center justify-center h-full w-full">
-          <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[4cqmin] gap-[3cqmin]">
+        <div className="flex items-center justify-center h-full w-full p-[2cqmin]">
+          <div className="bg-slate-900 rounded-[2.5rem] shadow-inner flex flex-col items-center border-2 border-slate-700 p-[4cqmin] gap-[4cqmin] h-[90%] justify-center">
             <button
               onClick={() => {
                 toggle('red');
               }}
-              className={`rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500' : 'bg-red-950/50'}`}
-              style={{ width: '25cqmin', height: '25cqmin' }}
+              className={`rounded-full border-4 border-black/20 traffic-light light-red ${current === 'red' ? 'active bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]' : 'bg-red-950/50'}`}
+              style={{
+                width: '28cqmin',
+                height: '28cqmin',
+                minWidth: '40px',
+                minHeight: '40px',
+              }}
             />
             <button
               onClick={() => {
                 toggle('yellow');
               }}
-              className={`rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400' : 'bg-yellow-950/50'}`}
-              style={{ width: '25cqmin', height: '25cqmin' }}
+              className={`rounded-full border-4 border-black/20 traffic-light light-yellow ${current === 'yellow' ? 'active bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)]' : 'bg-yellow-950/50'}`}
+              style={{
+                width: '28cqmin',
+                height: '28cqmin',
+                minWidth: '40px',
+                minHeight: '40px',
+              }}
             />
             <button
               onClick={() => {
                 toggle('green');
               }}
-              className={`rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500' : 'bg-green-950/50'}`}
-              style={{ width: '25cqmin', height: '25cqmin' }}
+              className={`rounded-full border-4 border-black/20 traffic-light light-green ${current === 'green' ? 'active bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.5)]' : 'bg-green-950/50'}`}
+              style={{
+                width: '28cqmin',
+                height: '28cqmin',
+                minWidth: '40px',
+                minHeight: '40px',
+              }}
             />
           </div>
         </div>

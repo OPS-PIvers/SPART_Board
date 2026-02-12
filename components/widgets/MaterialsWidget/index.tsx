@@ -87,11 +87,11 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
       content={
         <div
           className={`h-full w-full overflow-y-auto custom-scrollbar select-none font-${globalStyle.fontFamily}`}
-          style={{ padding: 'min(12px, 2.5cqmin)' }}
+          style={{ padding: 'min(16px, 3.5cqmin)' }}
         >
           <div
             className="flex flex-wrap h-full content-start justify-center"
-            style={{ gap: 'min(8px, 2cqmin)' }}
+            style={{ gap: 'min(12px, 2.5cqmin)' }}
           >
             {displayItems.map((item) => {
               const isActive = activeItems.has(item.id);
@@ -102,8 +102,8 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   style={{
                     flexBasis: itemWidth,
                     maxWidth: itemWidth,
-                    gap: 'min(4px, 1cqmin)',
-                    padding: 'min(8px, 2cqmin)',
+                    gap: 'min(6px, 1.5cqmin)',
+                    padding: 'min(12px, 2.5cqmin)',
                   }}
                   className={`aspect-square flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
                     isActive
@@ -121,7 +121,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   />
                   <span
                     className="uppercase tracking-wide text-center font-black leading-tight truncate w-full"
-                    style={{ fontSize: 'min(12px, 3cqmin)' }}
+                    style={{ fontSize: 'min(16px, 4cqmin)' }}
                   >
                     {item.label}
                   </span>

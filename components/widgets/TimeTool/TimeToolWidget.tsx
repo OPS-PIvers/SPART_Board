@@ -309,8 +309,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   }`}
                   style={{
                     fontSize: isVisual
-                      ? 'clamp(1.5rem, min(18cqmin), 8rem)'
-                      : 'clamp(2rem, min(28cqmin), 12rem)',
+                      ? 'clamp(2rem, 25cqmin, 12rem)'
+                      : 'clamp(2.5rem, 40cqmin, 18rem)',
                   }}
                 >
                   {mode === 'stopwatch'
@@ -362,12 +362,13 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className="shrink-0 flex flex-col"
           style={{
-            padding: 'min(4px, 1cqmin) min(12px, 3cqmin) min(12px, 3cqmin)',
-            gap: 'min(8px, 2cqmin)',
+            padding:
+              'min(8px, 1.5cqmin) min(16px, 3.5cqmin) min(16px, 3.5cqmin)',
+            gap: 'min(12px, 2.5cqmin)',
           }}
         >
           {/* Play/Pause + Reset */}
-          <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
+          <div className="flex" style={{ gap: 'min(12px, 2.5cqmin)' }}>
             <button
               onClick={
                 isRunning ? () => handleStop() : () => void handleStart()
@@ -378,8 +379,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
               }`}
               style={{
-                height: 'clamp(2.5rem, 10cqmin, 4rem)',
-                fontSize: 'clamp(0.625rem, 2.5cqmin, 0.8rem)',
+                height: 'clamp(3rem, 12cqmin, 5rem)',
+                fontSize: 'clamp(0.75rem, 3.5cqmin, 1.2rem)',
               }}
             >
               {isRunning ? (
@@ -392,12 +393,14 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             <button
               onClick={handleReset}
               className="aspect-square flex items-center justify-center rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 hover:text-brand-blue-primary transition-all active:scale-95"
-              style={{ height: 'clamp(2.5rem, 10cqmin, 4rem)' }}
+              style={{ height: 'clamp(3rem, 12cqmin, 5rem)' }}
               aria-label="Reset"
             >
               <RotateCcw
-                className="w-[1.2em] h-[1.2em]"
-                style={{ fontSize: 'clamp(1rem, 3cqmin, 1.5rem)' }}
+                style={{
+                  width: 'min(24px, 6cqmin)',
+                  height: 'min(24px, 6cqmin)',
+                }}
               />
             </button>
           </div>
@@ -413,11 +416,11 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100'
                 }`}
                 style={{
-                  gap: 'min(6px, 1.5cqmin)',
-                  paddingLeft: 'min(12px, 3cqmin)',
-                  paddingRight: 'min(12px, 3cqmin)',
-                  paddingTop: 'min(6px, 1.5cqmin)',
-                  paddingBottom: 'min(6px, 1.5cqmin)',
+                  gap: 'min(8px, 2cqmin)',
+                  paddingLeft: 'min(16px, 4cqmin)',
+                  paddingRight: 'min(16px, 4cqmin)',
+                  paddingTop: 'min(8px, 2cqmin)',
+                  paddingBottom: 'min(8px, 2cqmin)',
                 }}
               >
                 <Bell
@@ -425,13 +428,13 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     isRunning ? 'animate-pulse text-brand-blue-primary' : ''
                   }
                   style={{
-                    width: 'min(12px, 3cqmin)',
-                    height: 'min(12px, 3cqmin)',
+                    width: 'min(16px, 4cqmin)',
+                    height: 'min(16px, 4cqmin)',
                   }}
                 />
                 <span
                   className="font-black uppercase tracking-widest"
-                  style={{ fontSize: 'min(9px, 2.5cqmin)' }}
+                  style={{ fontSize: 'min(12px, 3cqmin)' }}
                 >
                   {config.selectedSound}
                 </span>
@@ -481,7 +484,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               />
               <span
                 className="font-black text-slate-400 uppercase tracking-tighter"
-                style={{ fontSize: 'min(7px, 2cqmin)' }}
+                style={{ fontSize: 'min(14px, 4cqmin)' }}
               >
                 Timer v3
               </span>

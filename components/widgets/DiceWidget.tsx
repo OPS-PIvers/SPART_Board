@@ -46,7 +46,7 @@ const DiceFace: React.FC<{
   value: number;
   isRolling: boolean;
   size?: string;
-}> = ({ value, isRolling, size = '35cqmin' }) => {
+}> = ({ value, isRolling, size = '45cqmin' }) => {
   const dotPositions: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -72,7 +72,7 @@ const DiceFace: React.FC<{
     >
       <div
         className="grid grid-cols-3 grid-rows-3 w-full h-full"
-        style={{ gap: 'min(4px, 1cqmin)', padding: '15%' }}
+        style={{ gap: 'min(6px, 1.5cqmin)', padding: '15%' }}
       >
         {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="flex items-center justify-center">
@@ -134,7 +134,7 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     <WidgetLayout
       padding="p-0"
       content={
-        <div className="flex flex-wrap justify-center items-center gap-[4cqmin] w-full h-full overflow-hidden">
+        <div className="flex flex-wrap justify-center items-center gap-[6cqmin] w-full h-full overflow-hidden p-[4cqmin]">
           {values.map((v, i) => (
             <DiceFace
               key={i}
@@ -142,22 +142,22 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               isRolling={isRolling}
               size={
                 diceCount === 1
-                  ? '60cqmin'
+                  ? '75cqmin'
                   : diceCount === 2
-                    ? '40cqmin'
-                    : '28cqmin'
+                    ? '55cqmin'
+                    : '42cqmin'
               }
             />
           ))}
         </div>
       }
       footer={
-        <div className="px-2 pb-2">
+        <div className="px-3 pb-3">
           <button
             onClick={roll}
             disabled={isRolling}
             className={`
-            w-full py-3 px-6 flex items-center justify-center gap-3 rounded-xl uppercase tracking-widest transition-all font-bold font-${
+            w-full py-4 px-6 flex items-center justify-center gap-3 rounded-2xl uppercase tracking-widest transition-all font-black font-${
               globalStyle.fontFamily
             }
             ${
@@ -166,10 +166,10 @@ export const DiceWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 : 'bg-purple-600 text-white shadow-lg hover:bg-purple-700 active:scale-95'
             }
           `}
-            style={{ fontSize: 'min(16px, 4cqmin)' }}
+            style={{ fontSize: 'min(20px, 5cqmin)' }}
           >
             <RefreshCw
-              size="1.2em"
+              style={{ width: '1.2em', height: '1.2em' }}
               className={isRolling ? 'animate-spin' : ''}
             />
             {isRolling ? 'Rolling...' : 'Roll Dice'}

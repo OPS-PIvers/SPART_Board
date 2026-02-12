@@ -24,7 +24,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
 }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
-  const radius = 120;
+  const radius = 145;
   const centerX = 150;
   const centerY = 150;
   const totalNames = students.length;
@@ -33,19 +33,19 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   return (
     <div
       className={`relative w-full h-full flex items-center justify-center overflow-hidden font-${globalStyle.fontFamily}`}
-      style={{ padding: 'min(8px, 2cqmin)' }}
+      style={{ padding: 'min(4px, 1cqmin)' }}
     >
       {/* Static Pointer Arrow (Top Center) */}
 
       <div
         className="absolute z-20 flex flex-col items-center"
-        style={{ top: 'min(8px, 2cqmin)' }}
+        style={{ top: '0' }}
       >
         <div
           className="bg-red-600 shadow-lg"
           style={{
-            width: 'min(40px, 10cqmin)',
-            height: 'min(32px, 8cqmin)',
+            width: 'min(48px, 12cqmin)',
+            height: 'min(36px, 10cqmin)',
             clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)',
           }}
         ></div>
@@ -53,11 +53,11 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
 
       <svg
         viewBox="0 0 300 300"
-        className="w-full h-full drop-shadow-2xl transition-transform duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)"
+        className="w-[95%] h-[95%] drop-shadow-2xl transition-transform duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)"
         style={{
           transform: `rotate(${rotation}deg)`,
-          maxWidth: wheelSize,
-          maxHeight: wheelSize,
+          maxWidth: wheelSize * 1.2,
+          maxHeight: wheelSize * 1.2,
         }}
       >
         {students.map((name, i) => {
@@ -89,8 +89,8 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
           const nameFactor = Math.max(1, name.length / 10);
           const classFactor = Math.max(1, totalNames / 15);
           const fontSize = Math.max(
-            5,
-            20 / (nameFactor * 0.4 + classFactor * 0.6)
+            6,
+            24 / (nameFactor * 0.4 + classFactor * 0.6)
           );
 
           return (
@@ -108,7 +108,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
                   y={centerY}
                   fill="white"
                   fontSize={fontSize}
-                  fontWeight="700"
+                  fontWeight="900"
                   textAnchor="middle"
                   alignmentBaseline="middle"
                   className="select-none pointer-events-none drop-shadow-sm uppercase tracking-tighter"
@@ -123,7 +123,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
         <circle
           cx={centerX}
           cy={centerY}
-          r="8"
+          r="10"
           fill="white"
           className="shadow-md"
         />
@@ -133,15 +133,15 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
       {!isSpinning && displayResult && (
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
-          style={{ padding: 'min(16px, 3.5cqmin)' }}
+          style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div
-            className="bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] text-indigo-900 animate-bounce text-center max-w-full break-words"
+            className="bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] text-indigo-900 animate-bounce text-center max-w-[90%] break-words"
             style={{
-              fontSize: `${resultFontSize ?? 24}px`,
+              fontSize: `max(24px, ${resultFontSize ?? 24}px)`,
               lineHeight: 1.1,
-              padding: 'min(16px, 3.5cqmin) min(32px, 7cqmin)',
-              borderWidth: 'min(4px, 1cqmin)',
+              padding: 'min(24px, 5cqmin) min(40px, 8cqmin)',
+              borderWidth: 'min(6px, 1.5cqmin)',
               borderColor: 'rgb(99 102 241)',
               borderStyle: 'solid',
             }}

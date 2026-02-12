@@ -35,11 +35,11 @@ style={{ fontSize: 'min(14px, 5cqmin)' }}
 
 | Element Type                                  | Recommended `cqmin` | Example Formula                            | Notes                                   |
 | --------------------------------------------- | ------------------- | ------------------------------------------ | --------------------------------------- |
-| **Primary content** (hero text, main numbers) | 20-30cqmin          | `clamp(24px, 25cqmin, 120px)` or `25cqmin` | Should scale aggressively to fill space |
-| **Secondary content** (subheadings, labels)   | 5-8cqmin            | `min(16px, 7cqmin)`                        | Readable at all sizes                   |
-| **Tertiary content** (metadata, small labels) | 3.5-5cqmin          | `min(12px, 4.5cqmin)`                      | Compact but legible                     |
-| **Icons (decorative)**                        | 8-15cqmin           | `min(48px, 12cqmin)`                       | Balance with text                       |
-| **Icons (primary)**                           | 20-30cqmin          | `min(80px, 20cqmin)`                       | Visual anchors                          |
+| **Primary content** (hero text, main numbers) | 40-55cqmin          | `clamp(24px, 50cqmin, 400px)` or `55cqmin` | Should scale aggressively to fill space |
+| **Secondary content** (subheadings, labels)   | 6-10cqmin           | `min(32px, 8cqmin)`                        | Readable at all sizes                   |
+| **Tertiary content** (metadata, small labels) | 4-6cqmin            | `min(16px, 5cqmin)`                        | Compact but legible                     |
+| **Icons (decorative)**                        | 10-20cqmin          | `min(64px, 15cqmin)`                       | Balance with text                       |
+| **Icons (primary)**                           | 30-40cqmin          | `min(120px, 35cqmin)`                      | Visual anchors                          |
 
 ### 3. Minimize Header/Footer Overhead
 
@@ -48,8 +48,8 @@ Headers and footers should use **minimal space** to maximize content area:
 ✅ **GOOD** (compact header):
 
 ```tsx
-<div style={{ padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)' }}>
-  <span style={{ fontSize: 'min(11px, 4cqmin)' }}>HEADER</span>
+<div style={{ padding: 'min(12px, 2cqmin) min(16px, 3cqmin)' }}>
+  <span style={{ fontSize: 'min(14px, 5cqmin)' }}>HEADER</span>
 </div>
 ```
 
@@ -68,13 +68,13 @@ The most important content should **dominate** the widget:
 **Weather Widget** - Temperature should fill 40-50% of widget height:
 
 ```tsx
-<div style={{ fontSize: 'min(24px, 25cqmin)' }}>{temp}°</div>
+<div style={{ fontSize: 'clamp(60px, 40cqmin, 400px)' }}>{temp}°</div>
 ```
 
 **Clock Widget** - Time should fill 30-40% of widget height:
 
 ```tsx
-<div style={{ fontSize: 'min(20px, 22cqmin)' }}>{time}</div>
+<div style={{ fontSize: showSeconds ? '40cqmin' : '55cqmin' }}>{time}</div>
 ```
 
 ### 5. Use `cqmin` for Spacing Too
@@ -99,54 +99,54 @@ All padding, gaps, and margins should scale:
 
 ```tsx
 // Tiny labels (footer metadata, category tags)
-style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+style={{ fontSize: 'min(12px, 4cqmin)' }}
 
 // Small labels (widget headers, section titles)
-style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+style={{ fontSize: 'min(16px, 5cqmin)' }}
 
 // Medium text (list items, body text)
-style={{ fontSize: 'min(14px, 5.5cqmin)' }}
+style={{ fontSize: 'min(20px, 6cqmin)' }}
 
 // Large text (subheadings, secondary data)
-style={{ fontSize: 'min(16px, 7cqmin)' }}
+style={{ fontSize: 'min(24px, 7.5cqmin)' }}
 
 // Hero text (primary numbers, main headings)
-style={{ fontSize: 'min(24px, 25cqmin)' }}
+style={{ fontSize: '55cqmin' }} // Or clamp(24px, 50cqmin, 400px)
 ```
 
 ### Icon Sizing
 
 ```tsx
 // Small decorative icons
-style={{ width: 'min(16px, 4cqmin)', height: 'min(16px, 4cqmin)' }}
+style={{ width: 'min(20px, 5cqmin)', height: 'min(20px, 5cqmin)' }}
 
 // Medium functional icons
-style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
+style={{ width: 'min(32px, 8cqmin)', height: 'min(32px, 8cqmin)' }}
 
 // Large accent icons
-style={{ width: 'min(48px, 12cqmin)', height: 'min(48px, 12cqmin)' }}
+style={{ width: 'min(64px, 15cqmin)', height: 'min(64px, 15cqmin)' }}
 
 // Hero icons (main weather icon, etc.)
-style={{ width: 'min(80px, 20cqmin)', height: 'min(80px, 20cqmin)' }}
+style={{ width: 'min(120px, 35cqmin)', height: 'min(120px, 35cqmin)' }}
 ```
 
 ### Spacing
 
 ```tsx
 // Tight gaps (between icon and label)
-style={{ gap: 'min(4px, 1cqmin)' }}
+style={{ gap: 'min(6px, 1.5cqmin)' }}
 
 // Normal gaps (between list items)
-style={{ gap: 'min(8px, 2cqmin)' }}
+style={{ gap: 'min(12px, 2.5cqmin)' }}
 
 // Spacious gaps (between sections)
-style={{ gap: 'min(16px, 3.5cqmin)' }}
+style={{ gap: 'min(24px, 5cqmin)' }}
 
 // Padding (container insets)
-style={{ padding: 'min(12px, 2.5cqmin)' }}
+style={{ padding: 'min(12px, 2cqmin)' }}
 
 // Large padding (content areas)
-style={{ padding: 'min(16px, 3.5cqmin)' }}
+style={{ padding: 'min(16px, 3cqmin)' }}
 ```
 
 ## Layout Best Practices

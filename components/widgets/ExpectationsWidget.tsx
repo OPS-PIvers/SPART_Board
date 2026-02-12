@@ -146,23 +146,23 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
   const renderSubViewHeader = (label: string) => (
     <div
       className="flex items-center shrink-0"
-      style={{ padding: 'min(12px, 2.5cqmin)' }}
+      style={{ padding: 'min(16px, 3cqmin)' }}
     >
       <button
         onClick={() => setActiveCategory(null)}
         className="hover:bg-slate-100 rounded-lg"
         style={{
-          padding: 'min(4px, 0.8cqmin)',
-          marginRight: 'min(8px, 1.5cqmin)',
+          padding: 'min(6px, 1.2cqmin)',
+          marginRight: 'min(12px, 2cqmin)',
         }}
       >
         <ArrowLeft
-          style={{ width: 'min(18px, 5cqmin)', height: 'min(18px, 5cqmin)' }}
+          style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
         />
       </button>
       <h3
-        className="font-bold text-slate-800 uppercase tracking-tight"
-        style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+        className="font-black text-slate-800 uppercase tracking-tight"
+        style={{ fontSize: 'min(24px, 6cqmin)' }}
       >
         {label}
       </h3>
@@ -176,7 +176,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
-          style={{ padding: 'min(12px, 2.5cqmin)', gap: 'min(8px, 1.5cqmin)' }}
+          style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
         >
           {VOLUME_OPTIONS.map((v) => (
             <button
@@ -184,21 +184,21 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() =>
                 updateConfig({ voiceLevel: voiceLevel === v.id ? null : v.id })
               }
-              className={`flex items-center rounded-xl border-2 transition-all ${
+              className={`flex items-center rounded-2xl border-2 transition-all ${
                 voiceLevel === v.id
                   ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
               style={{
-                gap: 'min(16px, 3cqmin)',
-                padding: 'min(12px, 2.5cqmin)',
+                gap: 'min(20px, 4cqmin)',
+                padding: 'min(16px, 3cqmin)',
               }}
             >
               <span
                 className="font-black opacity-40"
                 style={{
-                  fontSize: 'min(24px, 6cqmin)',
-                  width: 'min(24px, 6cqmin)',
+                  fontSize: 'min(36px, 9cqmin)',
+                  width: 'min(36px, 9cqmin)',
                 }}
               >
                 {v.id}
@@ -206,13 +206,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               <div className="text-left">
                 <div
                   className="font-black uppercase leading-tight"
-                  style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                  style={{ fontSize: 'min(24px, 6cqmin)' }}
                 >
                   {v.label}
                 </div>
                 <div
                   className="font-bold opacity-60 uppercase"
-                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                  style={{ fontSize: 'min(14px, 3.5cqmin)' }}
                 >
                   {v.sub}
                 </div>
@@ -221,8 +221,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 <CheckCircle2
                   className="ml-auto"
                   style={{
-                    width: 'min(18px, 4.5cqmin)',
-                    height: 'min(18px, 4.5cqmin)',
+                    width: 'min(28px, 7cqmin)',
+                    height: 'min(28px, 7cqmin)',
                   }}
                 />
               )}
@@ -240,7 +240,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
-          style={{ padding: 'min(12px, 2.5cqmin)', gap: 'min(8px, 1.5cqmin)' }}
+          style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
         >
           {GROUP_OPTIONS.map((g) => (
             <button
@@ -248,23 +248,23 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() =>
                 updateConfig({ workMode: workMode === g.id ? null : g.id })
               }
-              className={`flex items-center rounded-xl border-2 transition-all ${
+              className={`flex items-center rounded-2xl border-2 transition-all ${
                 workMode === g.id
                   ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
-              style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}
+              style={{ gap: 'min(20px, 4cqmin)', padding: 'min(20px, 4cqmin)' }}
             >
               <g.icon
                 style={{
-                  width: 'min(24px, 6cqmin)',
-                  height: 'min(24px, 6cqmin)',
+                  width: 'min(40px, 10cqmin)',
+                  height: 'min(40px, 10cqmin)',
                 }}
                 strokeWidth={2.5}
               />
               <span
                 className="font-black uppercase tracking-wide"
-                style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                style={{ fontSize: 'min(24px, 6cqmin)' }}
               >
                 {g.label}
               </span>
@@ -272,8 +272,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 <CheckCircle2
                   className="ml-auto"
                   style={{
-                    width: 'min(18px, 4.5cqmin)',
-                    height: 'min(18px, 4.5cqmin)',
+                    width: 'min(28px, 7cqmin)',
+                    height: 'min(28px, 7cqmin)',
                   }}
                 />
               )}
@@ -291,7 +291,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
-          style={{ padding: 'min(12px, 2.5cqmin)', gap: 'min(8px, 1.5cqmin)' }}
+          style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
         >
           {INTERACTION_OPTIONS.map((i) => (
             <button
@@ -301,23 +301,23 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                   interactionMode: interactionMode === i.id ? null : i.id,
                 })
               }
-              className={`flex items-center rounded-xl border-2 transition-all ${
+              className={`flex items-center rounded-2xl border-2 transition-all ${
                 interactionMode === i.id
                   ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
-              style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}
+              style={{ gap: 'min(20px, 4cqmin)', padding: 'min(20px, 4cqmin)' }}
             >
               <i.icon
                 style={{
-                  width: 'min(24px, 6cqmin)',
-                  height: 'min(24px, 6cqmin)',
+                  width: 'min(40px, 10cqmin)',
+                  height: 'min(40px, 10cqmin)',
                 }}
                 strokeWidth={2.5}
               />
               <span
                 className="font-black uppercase tracking-wide"
-                style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+                style={{ fontSize: 'min(24px, 6cqmin)' }}
               >
                 {i.label}
               </span>
@@ -325,8 +325,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 <CheckCircle2
                   className="ml-auto"
                   style={{
-                    width: 'min(18px, 4.5cqmin)',
-                    height: 'min(18px, 4.5cqmin)',
+                    width: 'min(28px, 7cqmin)',
+                    height: 'min(28px, 7cqmin)',
                   }}
                 />
               )}
@@ -360,8 +360,8 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             isElementary ? 'grid grid-cols-2' : 'flex flex-col'
           }`}
           style={{
-            padding: 'min(12px, 2.5cqmin)',
-            gap: 'min(12px, 2.5cqmin)',
+            padding: 'min(16px, 3cqmin)',
+            gap: 'min(16px, 3cqmin)',
           }}
         >
           <button
@@ -372,15 +372,15 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
             } ${isElementary ? 'col-span-2' : ''}`}
             style={{
-              gap: 'min(16px, 3cqmin)',
-              padding: 'min(16px, 3cqmin)',
+              gap: 'min(20px, 4cqmin)',
+              padding: 'min(20px, 4cqmin)',
             }}
           >
             <div
               className={`rounded-xl transition-colors ${selectedVolume ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: '15cqmin',
-                height: '15cqmin',
+                width: '18cqmin',
+                height: '18cqmin',
                 padding: 'min(12px, 2.5cqmin)',
                 display: 'flex',
                 alignItems: 'center',
@@ -395,13 +395,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(12px, 3cqmin)' }}
+                style={{ fontSize: 'min(16px, 4cqmin)' }}
               >
                 Volume
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(20px, 5cqmin)' }}
+                style={{ fontSize: 'min(32px, 8cqmin)' }}
               >
                 {selectedVolume ? selectedVolume.label : 'Not Set'}
               </div>
@@ -416,15 +416,15 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
             }`}
             style={{
-              gap: 'min(16px, 3cqmin)',
-              padding: 'min(16px, 3cqmin)',
+              gap: 'min(20px, 4cqmin)',
+              padding: 'min(20px, 4cqmin)',
             }}
           >
             <div
               className={`rounded-xl transition-colors ${selectedGroup ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: '15cqmin',
-                height: '15cqmin',
+                width: '18cqmin',
+                height: '18cqmin',
                 padding: 'min(12px, 2.5cqmin)',
                 display: 'flex',
                 alignItems: 'center',
@@ -439,13 +439,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(12px, 3cqmin)' }}
+                style={{ fontSize: 'min(16px, 4cqmin)' }}
               >
                 Group Size
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(20px, 5cqmin)' }}
+                style={{ fontSize: 'min(32px, 8cqmin)' }}
               >
                 {selectedGroup ? selectedGroup.label : 'Not Set'}
               </div>
@@ -460,15 +460,15 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 shadow-sm'
             }`}
             style={{
-              gap: 'min(16px, 3cqmin)',
-              padding: 'min(16px, 3cqmin)',
+              gap: 'min(20px, 4cqmin)',
+              padding: 'min(20px, 4cqmin)',
             }}
           >
             <div
               className={`rounded-xl transition-colors ${selectedInteraction ? 'bg-white' : 'bg-slate-50'}`}
               style={{
-                width: '15cqmin',
-                height: '15cqmin',
+                width: '18cqmin',
+                height: '18cqmin',
                 padding: 'min(12px, 2.5cqmin)',
                 display: 'flex',
                 alignItems: 'center',
@@ -483,13 +483,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(12px, 3cqmin)' }}
+                style={{ fontSize: 'min(16px, 4cqmin)' }}
               >
                 Interaction
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(20px, 5cqmin)' }}
+                style={{ fontSize: 'min(32px, 8cqmin)' }}
               >
                 {selectedInteraction ? selectedInteraction.label : 'Not Set'}
               </div>

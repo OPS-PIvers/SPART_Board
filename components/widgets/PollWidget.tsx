@@ -61,7 +61,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         >
           <div
             className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
-            style={{ fontSize: 'min(16px, 4cqmin)', lineHeight: 1.1 }}
+            style={{ fontSize: 'min(32px, 8cqmin)', lineHeight: 1.1 }}
           >
             {question}
           </div>
@@ -72,7 +72,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           className="w-full h-full overflow-y-auto custom-scrollbar flex flex-col"
           style={{
             padding: 'min(16px, 3cqmin)',
-            gap: 'min(12px, 2.5cqmin)',
+            gap: 'min(16px, 3cqmin)',
           }}
         >
           {options.map((o, i: number) => {
@@ -89,7 +89,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               >
                 <div
                   className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
-                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                  style={{ fontSize: 'min(16px, 4cqmin)' }}
                 >
                   <span className="font-bold truncate pr-4">{o.label}</span>
                   <span className="font-mono whitespace-nowrap">
@@ -97,7 +97,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   </span>
                 </div>
 
-                <div className="h-[min(3cqmin)] min-h-[12px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
+                <div className="h-[min(5cqmin)] min-h-[16px] bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/50">
                   <div
                     className="h-full bg-indigo-500 transition-all duration-500 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]"
                     style={{ width: `${percent}%` }}
@@ -122,13 +122,13 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             style={{
               gap: 'min(8px, 2cqmin)',
               padding: 'min(8px, 1.5cqmin)',
-              fontSize: 'min(10px, 3cqmin)',
+              fontSize: 'min(14px, 4cqmin)',
             }}
           >
             <RotateCcw
               style={{
-                width: 'min(12px, 3cqmin)',
-                height: 'min(12px, 3cqmin)',
+                width: 'min(16px, 4cqmin)',
+                height: 'min(16px, 4cqmin)',
               }}
             />{' '}
             Reset Poll
