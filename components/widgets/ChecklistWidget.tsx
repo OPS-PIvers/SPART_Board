@@ -197,11 +197,25 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <WidgetLayout
       padding="p-0"
+      header={
+        <div
+          className="w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/checklist-header"
+          style={{ height: 'min(16px, 3.5cqmin)' }}
+        >
+          <div
+            className="bg-slate-300/50 rounded-full group-hover/checklist-header:bg-slate-400/80 transition-colors"
+            style={{
+              width: 'min(32px, 8cqmin)',
+              height: 'min(4px, 1cqmin)',
+            }}
+          />
+        </div>
+      }
       content={
         <div
           className={`h-full w-full relative overflow-hidden flex flex-col group font-${globalStyle.fontFamily}`}
           style={{
-            fontSize: `calc(min(24px, 5cqmin) * ${scaleMultiplier})`,
+            fontSize: `min(${20 * scaleMultiplier}px, ${5 * scaleMultiplier}cqmin)`,
           }}
         >
           <div
