@@ -21,6 +21,20 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   return (
     <WidgetLayout
       padding="p-0"
+      header={
+        <div
+          className="w-full bg-slate-50/50 flex items-center justify-center border-b border-slate-100/50 cursor-move hover:bg-slate-100/80 transition-colors group/text-header"
+          style={{ height: 'min(16px, 3.5cqmin)' }}
+        >
+          <div
+            className="bg-slate-300/50 rounded-full group-hover/text-header:bg-slate-400/80 transition-colors"
+            style={{
+              width: 'min(32px, 8cqmin)',
+              height: 'min(4px, 1cqmin)',
+            }}
+          />
+        </div>
+      }
       content={
         <div
           className={`h-full w-full font-${globalStyle.fontFamily} outline-none transition-colors overflow-y-auto custom-scrollbar bg-transparent relative`}
