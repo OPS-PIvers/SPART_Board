@@ -100,7 +100,7 @@ export const ScoreboardItem = React.memo(
         <div
           className={`font-black uppercase tracking-widest ${styles.label} text-center line-clamp-1 w-full`}
           style={{
-            fontSize: '8cqmin',
+            fontSize: 'min(24px, 8cqmin)',
             marginBottom: 'min(4px, 1cqmin)',
             paddingLeft: 'min(8px, 2cqmin)',
             paddingRight: 'min(8px, 2cqmin)',
@@ -111,7 +111,7 @@ export const ScoreboardItem = React.memo(
         <div
           className={`font-black ${styles.score} tabular-nums drop-shadow-sm`}
           style={{
-            fontSize: '40cqmin',
+            fontSize: 'min(150px, 40cqmin)',
             lineHeight: 1,
             marginBottom: 'min(8px, 2cqmin)',
           }}

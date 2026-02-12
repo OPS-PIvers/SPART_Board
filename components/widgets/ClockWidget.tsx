@@ -109,7 +109,7 @@ export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             {!format24 && (
               <span
                 className="opacity-40 ml-2 uppercase"
-                style={{ fontSize: '0.2em' }}
+                style={{ fontSize: 'min(14px, 4cqmin)' }}
               >
                 {ampm}
               </span>
