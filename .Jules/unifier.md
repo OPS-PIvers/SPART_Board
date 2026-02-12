@@ -87,3 +87,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Widget settings panels used inconsistent typography for section headers (variations of `text-xxs`, `text-xs`, `text-[10px]`, `font-bold` vs `font-black`, `text-slate-400` vs `text-slate-500`, inconsistent margins).
 **Fix:** Created `components/common/SettingsLabel.tsx` to enforce the standard style (`text-xxs font-black text-slate-400 uppercase tracking-widest mb-2`). Refactored 12 widgets to use this component.
+
+## 2026-02-13 - Button Standardization (Drift)
+
+**Drift:** Discovered multiple "snowflake" buttons in `PollWidget`, `ClassesWidget`, and `RandomSettings` that used hardcoded styles for "dashed" buttons and "ghost" delete buttons, inconsistent colors (green-600 vs emerald-600), and manual icon alignment.
+**Fix:** Updated `components/common/Button.tsx` with new variants (`dashed`, `dashed-danger`, `ghost-muted-danger`, `ghost-primary`) to support these use cases. Refactored the affected widgets to use the `Button` component, enforcing consistent colors, sizing, and hover states.

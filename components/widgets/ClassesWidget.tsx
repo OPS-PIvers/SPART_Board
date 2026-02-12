@@ -7,7 +7,16 @@ import {
   ClassLinkStudent,
 } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
-import { Plus, Trash2, Save, Star, Edit2, RefreshCw } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Save,
+  Star,
+  Edit2,
+  RefreshCw,
+  ArrowLeft,
+} from 'lucide-react';
+import { Button } from '../common/Button';
 import { classLinkService } from '../../utils/classlinkService';
 
 interface Props {
@@ -124,12 +133,14 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
       padding="p-0"
       header={
         <div className="flex justify-between items-center p-3">
-          <button
+          <Button
             onClick={onBack}
-            className="text-xs text-slate-500 hover:text-blue-600 uppercase tracking-wider font-bold"
+            variant="ghost"
+            size="sm"
+            icon={<ArrowLeft size={14} />}
           >
-            &larr; Back
-          </button>
+            Back
+          </Button>
           <div className="flex gap-2 items-center flex-1 ml-4 justify-end">
             <input
               className="border-b-2 border-slate-200 focus:border-blue-500 bg-transparent px-1 py-0.5 outline-none text-slate-800 placeholder-slate-400 min-w-0 text-sm font-bold"
@@ -137,12 +148,14 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <button
+            <Button
               onClick={handleSave}
-              className="bg-green-600 text-white px-3 py-1.5 rounded-lg flex gap-1 items-center text-xs font-bold hover:bg-green-700 shadow-sm transition-colors"
+              variant="success"
+              size="sm"
+              icon={<Save size={14} />}
             >
-              <Save size={14} /> Save
-            </button>
+              Save
+            </Button>
           </div>
         </div>
       }
@@ -156,12 +169,14 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
                 {showLastNames ? 'First Names' : 'Names (One per line)'}
               </label>
               {!showLastNames && (
-                <button
+                <Button
                   onClick={handleToggleToLastNames}
-                  className="text-xxs text-blue-600 hover:text-blue-700 font-black uppercase tracking-wider"
+                  variant="ghost-primary"
+                  size="sm"
+                  icon={<Plus size={14} />}
                 >
-                  + Add Last Name
-                </button>
+                  Add Last Name
+                </Button>
               )}
             </div>
             <textarea
@@ -181,12 +196,13 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
                 <label className="text-xxs  text-slate-500 uppercase tracking-widest font-black">
                   Last Names
                 </label>
-                <button
+                <Button
                   onClick={handleToggleToSingleField}
-                  className="text-xxs text-slate-400 hover:text-red-500 font-black uppercase tracking-wider transition-colors"
+                  variant="ghost-muted-danger"
+                  size="sm"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
               <textarea
                 className="flex-1 border border-slate-200 focus:border-blue-400 p-3 rounded-xl resize-none text-xs font-mono focus:ring-2 focus:ring-blue-100 outline-none transition-all custom-scrollbar bg-slate-50/30"
