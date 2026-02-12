@@ -341,7 +341,7 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
                 });
               }
             }}
-            className="w-full justify-center"
+            className="w-full"
             icon={<Trash2 className="w-4 h-4" />}
           >
             Clear Custom Names

@@ -364,7 +364,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         <Button
           variant="dashed"
           onClick={addOption}
-          className="mt-3 w-full justify-center"
+          className="mt-3 w-full"
           icon={<Plus className="w-3.5 h-3.5" />}
         >
           Add Option
