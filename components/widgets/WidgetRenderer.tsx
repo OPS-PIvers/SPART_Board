@@ -191,37 +191,60 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     [widget, isStudentView]
   );
 
-  if (widget.type === 'sticker') {
-    return <StickerItemWidget widget={widget} />;
-  }
+  const renderScalableContent = useCallback(
+    ({
+      internalW,
+      internalH,
+      scale,
+    }: {
+      internalW: number;
+      internalH: number;
+      scale: number;
+    }) => getWidgetContentInternal(internalW, internalH, scale),
+    [getWidgetContentInternal]
+  );
 
   const scalingConfig = scaling ?? DEFAULT_SCALING_CONFIG;
 
-  const finalContent = scalingConfig.skipScaling ? (
-    <div
-      className="h-full w-full relative"
-      style={{
-        padding: scalingConfig.padding ?? PADDING,
-        containerType: 'size',
-      }}
-    >
-      {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
-    </div>
-  ) : (
-    <ScalableWidget
-      width={effectiveWidth}
-      height={effectiveHeight}
-      baseWidth={scalingConfig.baseWidth}
-      baseHeight={scalingConfig.baseHeight}
-      canSpread={scalingConfig.canSpread ?? true}
-      headerHeight={HEADER_HEIGHT}
-      padding={scalingConfig.padding ?? PADDING}
-    >
-      {({ internalW, internalH, scale }) =>
-        getWidgetContentInternal(internalW, internalH, scale)
-      }
-    </ScalableWidget>
-  );
+  // OPTIMIZATION: Memoize finalContent to prevent re-creation on every render (e.g. when students list updates).
+  // This allows DraggableWindow to avoid re-rendering the widget content when only headerActions change.
+  const finalContent = useMemo(() => {
+    return scalingConfig.skipScaling ? (
+      <div
+        className="h-full w-full relative"
+        style={{
+          padding: scalingConfig.padding ?? PADDING,
+          containerType: 'size',
+        }}
+      >
+        {getWidgetContentInternal(effectiveWidth, effectiveHeight)}
+      </div>
+    ) : (
+      <ScalableWidget
+        width={effectiveWidth}
+        height={effectiveHeight}
+        baseWidth={scalingConfig.baseWidth}
+        baseHeight={scalingConfig.baseHeight}
+        canSpread={scalingConfig.canSpread ?? true}
+        headerHeight={HEADER_HEIGHT}
+        padding={scalingConfig.padding ?? PADDING}
+      >
+        {renderScalableContent}
+      </ScalableWidget>
+    );
+  }, [
+    scalingConfig,
+    PADDING,
+    getWidgetContentInternal,
+    effectiveWidth,
+    effectiveHeight,
+    HEADER_HEIGHT,
+    renderScalableContent,
+  ]);
+
+  if (widget.type === 'sticker') {
+    return <StickerItemWidget widget={widget} />;
+  }
 
   if (isStudentView) {
     const isDrawing = widget.type === 'drawing';
