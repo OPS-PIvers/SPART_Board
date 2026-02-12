@@ -31,7 +31,9 @@ describe('PromptDialog', () => {
     const user = userEvent.setup();
     render(<PromptDialog {...defaultProps} />);
 
-    const textarea = screen.getByRole('textbox', { name: 'Please enter a value' });
+    const textarea = screen.getByRole('textbox', {
+      name: 'Please enter a value',
+    });
     await user.type(textarea, 'Test Value');
 
     expect(textarea).toHaveValue('Test Value');
@@ -41,7 +43,9 @@ describe('PromptDialog', () => {
     const user = userEvent.setup();
     render(<PromptDialog {...defaultProps} />);
 
-    const textarea = screen.getByRole('textbox', { name: 'Please enter a value' });
+    const textarea = screen.getByRole('textbox', {
+      name: 'Please enter a value',
+    });
     await user.type(textarea, 'Test Value');
 
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
@@ -65,7 +69,9 @@ describe('PromptDialog', () => {
     const confirmButton = screen.getByRole('button', { name: 'Confirm' });
     expect(confirmButton).toBeDisabled();
 
-    const textarea = screen.getByRole('textbox', { name: 'Please enter a value' });
+    const textarea = screen.getByRole('textbox', {
+      name: 'Please enter a value',
+    });
     await user.type(textarea, '   '); // Whitespace only
     expect(confirmButton).toBeDisabled();
 
@@ -78,7 +84,9 @@ describe('PromptDialog', () => {
     const user = userEvent.setup();
     render(<PromptDialog {...defaultProps} defaultValue="Test Value" />);
 
-    const textarea = screen.getByRole('textbox', { name: 'Please enter a value' });
+    const textarea = screen.getByRole('textbox', {
+      name: 'Please enter a value',
+    });
 
     // userEvent.type handles modifier keys differently than fireEvent
     // {Meta>} holds the key down, {Enter} presses enter, {/Meta} releases
@@ -91,7 +99,9 @@ describe('PromptDialog', () => {
     const user = userEvent.setup();
     render(<PromptDialog {...defaultProps} defaultValue="Test Value" />);
 
-    const textarea = screen.getByRole('textbox', { name: 'Please enter a value' });
+    const textarea = screen.getByRole('textbox', {
+      name: 'Please enter a value',
+    });
 
     // {Control>} holds the key down, {Enter} presses enter, {/Control} releases
     await user.type(textarea, '{Control>}{Enter}{/Control}');
