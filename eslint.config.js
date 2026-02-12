@@ -20,6 +20,7 @@ export default tseslint.config(
       '*.config.ts',
       'scripts',
       'functions/lib',
+      'functions/vitest.config.ts',
       'coverage',
       '.agents',
       '.gemini',
