@@ -20,7 +20,7 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
   wheelSize,
   displayResult,
   isSpinning,
-  _resultFontSize,
+  resultFontSize: _resultFontSize,
 }) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
