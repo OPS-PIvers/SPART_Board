@@ -151,6 +151,20 @@ export const ScoreboardItem = React.memo(
         </div>
       </div>
     );
+  },
+  (prev, next) => {
+    // OPTIMIZATION: Custom equality check to prevent unnecessary re-renders.
+    // The parent widget often recreates the 'team' object reference on every render (e.g. from Firestore/State),
+    // even if the data hasn't changed. This check ensures we only re-render if actual content changes.
+    // WARNING: If ScoreboardTeam interface changes, this check must be updated!
+    return (
+      prev.team.id === next.team.id &&
+      prev.team.name === next.team.name &&
+      prev.team.score === next.team.score &&
+      prev.team.color === next.team.color &&
+      prev.team.linkedGroupId === next.team.linkedGroupId &&
+      prev.onUpdateScore === next.onUpdateScore
+    );
   }
 );
 
