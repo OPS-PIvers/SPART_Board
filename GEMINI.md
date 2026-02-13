@@ -178,3 +178,8 @@ To manage costs and prevent abuse, AI features have the following usage limits:
 - **Weather Widget:** Enhanced admin configuration to support conditional ranges (Above, Below, and Between) with custom imagery.
 - **Security:** Hardened Storage and Firestore rules; fixed "NaN" validation issues in admin configuration panels.
 - **Performance:** Implemented lazy loading for all widget components to improve initial load performance.
+
+## Project Memories
+
+- **Widget Scaling (Clock):** Perfectly satisfied with the Clock widget's scaling (fill-first logic with `min(75cqh, 25cqw)`). Do not change.
+- **Widget Scaling (Weather):** Perfectly satisfied with the Weather widget's scaling (refined fill-first logic with cqh/cqw constraints and specific padding). Maintain as is.

@@ -131,7 +131,7 @@ const Keypad: React.FC<{
       {/* Time display row */}
       <div
         className="flex items-center gap-3 font-mono font-black tabular-nums"
-        style={{ fontSize: 'min(48px, 8cqmin)' }}
+        style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}
       >
         <button
           onClick={() => setActiveField('min')}

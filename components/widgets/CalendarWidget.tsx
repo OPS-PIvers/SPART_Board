@@ -44,13 +44,13 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 >
                   <span
                     className="uppercase text-rose-400 font-black"
-                    style={{ fontSize: 'min(14px, 4.5cqmin)' }}
+                    style={{ fontSize: 'min(14px, 5.5cqmin)' }}
                   >
                     Day
                   </span>
                   <span
                     className="text-rose-600 font-black"
-                    style={{ fontSize: 'min(32px, 10cqmin)' }}
+                    style={{ fontSize: 'min(48px, 25cqmin)' }}
                   >
                     {event.date}
                   </span>
