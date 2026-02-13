@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import { render, screen } from '@testing-library/react';
 import { RecessGearWidget, RecessGearSettings } from './RecessGearWidget';
 import { WidgetData, RecessGearConfig, WeatherConfig } from '../../types';
@@ -77,8 +77,7 @@ describe('RecessGearWidget', () => {
   });
 
   it('renders gear using global weather data when no widget is present', () => {
-    const mockOnSnapshot = vi.mocked(onSnapshot);
-    mockOnSnapshot.mockImplementation(
+    (onSnapshot as any).mockImplementation(
       (_doc: any, callback: (s: any) => void) => {
         callback({
           exists: () => true,
