@@ -16,3 +16,12 @@ export interface EarthNetworksResponse {
     fl?: number;
   };
 }
+
+export interface GlobalWeatherData {
+  temp: number;
+  feelsLike?: number;
+  condition: string;
+  locationName: string;
+  updatedAt: number;
+  source?: string;
+}

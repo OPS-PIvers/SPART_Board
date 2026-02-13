@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import {
+  doc,
+  onSnapshot,
+  getDoc,
+  FirestoreDataConverter,
+  QueryDocumentSnapshot,
+  SnapshotOptions,
+  DocumentData,
+} from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
@@ -8,7 +16,6 @@ import {
   WeatherConfig,
   WeatherGlobalConfig,
   DEFAULT_GLOBAL_STYLE,
-  GlobalWeatherData,
 } from '../../../types';
 import {
   Sun,
@@ -22,7 +29,21 @@ import {
 } from 'lucide-react';
 import { WidgetLayout } from '../WidgetLayout';
 import { STATION_CONFIG } from './constants';
+import { GlobalWeatherData } from './types';
 import { fetchEarthNetworks, fetchOpenWeather } from './weatherService';
+
+const weatherConverter: FirestoreDataConverter<GlobalWeatherData> = {
+  toFirestore(data: GlobalWeatherData): DocumentData {
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<DocumentData, DocumentData>,
+    options: SnapshotOptions
+  ): GlobalWeatherData {
+    const data = snapshot.data(options);
+    return data as GlobalWeatherData;
+  },
+};
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, activeDashboard } = useDashboard();
@@ -64,10 +85,11 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     const fetchInitial = async () => {
       try {
-        const snap = await getDoc(doc(db, 'global_weather', 'current'));
+        const snap = await getDoc(
+          doc(db, 'global_weather', 'current').withConverter(weatherConverter)
+        );
         if (snap.exists()) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const data = snap.data() as any;
+          const data = snap.data();
           updateWidget(widget.id, {
             config: {
               ...config,
@@ -93,11 +115,10 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (globalConfig?.fetchingStrategy !== 'admin_proxy') return;
 
     const unsubscribe = onSnapshot(
-      doc(db, 'global_weather', 'current'),
+      doc(db, 'global_weather', 'current').withConverter(weatherConverter),
       (snapshot) => {
         if (snapshot.exists()) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const data = snapshot.data() as any;
+          const data = snapshot.data();
           // Avoid infinite loop: check if data actually changed significantly
           if (
             Math.round(data.temp) !== Math.round(temp) ||

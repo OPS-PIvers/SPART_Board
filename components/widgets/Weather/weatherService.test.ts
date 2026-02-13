@@ -85,9 +85,9 @@ describe('weatherService', () => {
         json: () => Promise.resolve(mockResponse),
       } as Response);
 
-      await expect(
-        fetchOpenWeather('test-key', 'q=Invalid')
-      ).rejects.toThrow('City not found');
+      await expect(fetchOpenWeather('test-key', 'q=Invalid')).rejects.toThrow(
+        'City not found'
+      );
     });
   });
 

@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
-import {
-  WidgetData,
-  WeatherConfig,
-  WeatherGlobalConfig,
-} from '../../../types';
+import { WidgetData, WeatherConfig, WeatherGlobalConfig } from '../../../types';
 import { Toggle } from '../../common/Toggle';
 import {
   Sun,
