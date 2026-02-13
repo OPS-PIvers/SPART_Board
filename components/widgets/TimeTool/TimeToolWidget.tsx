@@ -309,8 +309,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   }`}
                   style={{
                     fontSize: isVisual
-                      ? 'min(120px, 25cqmin)'
-                      : 'min(160px, 40cqmin)',
+                      ? 'clamp(2rem, 25cqmin, 12rem)'
+                      : 'clamp(2.5rem, 40cqmin, 18rem)',
                   }}
                 >
                   {mode === 'stopwatch'
