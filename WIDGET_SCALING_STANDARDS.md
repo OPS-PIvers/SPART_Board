@@ -8,12 +8,14 @@
 These widgets have been user-approved and should serve as templates:
 
 ### **User-Tested & Approved** ✅
+
 - **ClockWidget**: Hero time display, clean proportional scaling ("works great!")
 - **WeatherWidget**: Temperature + conditions, aggressive hero text scaling ("works great!")
 - **QRWidget**: Simple centered content pattern ("works great!")
 - **DiceWidget**: Icon-heavy display with good proportions ("works great!")
 
 ### **Recently Fixed (Feb 2026)**
+
 - **ScheduleWidget**: List pattern with 5-8cqmin for items
 - **MaterialsWidget**: Aggressive icon/text scaling with pure cqmin
 - **RecessGearWidget**: Card-based layout with 8-10cqmin labels
@@ -62,15 +64,15 @@ style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}
 
 **Important**: We use **aggressive cqmin values** to ensure content fills the widget. The pixel value in `min(Xpx, Ycqmin)` is a **maximum cap** - text never exceeds it on huge screens.
 
-| Element Type                                  | Recommended `cqmin` | Example Formula                    | Notes                                                 |
-| --------------------------------------------- | ------------------- | ---------------------------------- | ----------------------------------------------------- |
+| Element Type                                  | Recommended `cqmin` | Example Formula                     | Notes                                                     |
+| --------------------------------------------- | ------------------- | ----------------------------------- | --------------------------------------------------------- |
 | **Primary content** (hero text, main numbers) | 20-40cqmin          | `clamp(32px, 40cqmin, 400px)` **†** | Use `clamp()` for wide scaling range (see TimeToolWidget) |
-| **Large headings** (widget titles)            | 8-10cqmin           | `min(24px, 8cqmin)`                | Major section labels                                  |
-| **Medium text** (list items, body)            | 5-5.5cqmin          | `min(14px, 5cqmin)`                | Default for most content                              |
-| **Small labels** (metadata, tags)             | 4.5-5cqmin          | `min(12px, 4.5cqmin)`              | Compact tertiary text                                 |
-| **Primary icons** (weather, decorative)       | 20-30cqmin          | `min(80px, 25cqmin)`               | Visual anchors                                        |
-| **Medium icons** (list bullets, buttons)      | 8-12cqmin           | `min(32px, 10cqmin)`               | Functional icons                                      |
-| **Small icons** (UI controls)                 | 5-6cqmin            | `min(24px, 6cqmin)`                | Buttons, toggles                                      |
+| **Large headings** (widget titles)            | 8-10cqmin           | `min(24px, 8cqmin)`                 | Major section labels                                      |
+| **Medium text** (list items, body)            | 5-5.5cqmin          | `min(14px, 5cqmin)`                 | Default for most content                                  |
+| **Small labels** (metadata, tags)             | 4.5-5cqmin          | `min(12px, 4.5cqmin)`               | Compact tertiary text                                     |
+| **Primary icons** (weather, decorative)       | 20-30cqmin          | `min(80px, 25cqmin)`                | Visual anchors                                            |
+| **Medium icons** (list bullets, buttons)      | 8-12cqmin           | `min(32px, 10cqmin)`                | Functional icons                                          |
+| **Small icons** (UI controls)                 | 5-6cqmin            | `min(24px, 6cqmin)`                 | Buttons, toggles                                          |
 
 **† Hero Text Pattern**: For primary display content (clock time, temperature), use very high `cqmin` values or `clamp()` for wide scaling range. See ClockWidget and WeatherWidget for approved examples.
 
