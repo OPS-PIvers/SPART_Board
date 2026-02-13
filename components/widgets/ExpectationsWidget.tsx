@@ -317,7 +317,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               />
               <span
                 className="font-black uppercase tracking-wide"
-                style={{ fontSize: 'min(24px, 6cqmin, 70cqw)' }}
+                style={{ fontSize: 'min(24px, 8cqmin)' }}
               >
                 {i.label}
               </span>
