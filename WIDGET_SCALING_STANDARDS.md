@@ -1,7 +1,23 @@
 # Widget Scaling Standards
 
-**Last Updated**: 2026-02-09
+**Last Updated**: 2026-02-13
 **Purpose**: Standardized container query scaling rules for all `skipScaling: true` widgets
+
+## Reference Implementations ⭐
+
+These widgets have been user-approved and should serve as templates:
+
+### **TimeToolWidget** (Primary Reference)
+- **Hero text**: Uses `clamp(32px, 40cqmin, 400px)` for wide scaling range
+- **Secondary UI**: Uses `min(14px, 5cqmin)` for labels, buttons, controls
+- **Pattern**: Large primary content with contained auxiliary controls
+- **Status**: ✅ User-approved, "works great"
+
+### **Other Approved Widgets**
+- **ScheduleWidget**: List pattern with 5-8cqmin for items
+- **MaterialsWidget**: Aggressive icon/text scaling with pure cqmin
+- **RecessGearWidget**: Card-based layout with 8-10cqmin labels
+- **CalendarWidget**: Date display with 25cqmin hero text, 5.5cqmin labels
 
 ## Problem Statement
 
@@ -13,33 +29,49 @@ Widgets with `skipScaling: true` were not properly scaling to fill their contain
 
 ## Core Principles
 
-### 1. Always Use `cqmin` for Text (Not `cqw` or `cqh`)
+### 1. Always Use `cqmin` for Text (NEVER Mix Units)
 
-`cqmin` represents 1% of the **smaller** container dimension (width or height), ensuring consistent scaling regardless of widget aspect ratio.
+`cqmin` represents 1% of the **smaller** container dimension (width or height), ensuring consistent, proportional scaling regardless of widget aspect ratio.
 
-❌ **WRONG**:
+❌ **WRONG** - Mixed units create unpredictable scaling:
 
 ```tsx
-style={{ fontSize: 'min(14px, 3.5cqw, 5cqh)' }}
+// BAD: Three-value pattern is confusing and non-proportional
+style={{ fontSize: 'min(14px, 3.5cqmin, 80cqw)' }}
+style={{ fontSize: 'min(24px, 6cqmin, 60cqw)' }}
+
+// BAD: Using cqw or cqh alone breaks on different aspect ratios
+style={{ fontSize: 'min(20cqw, 15cqh)' }}
 ```
 
-✅ **CORRECT**:
+✅ **CORRECT** - Pure cqmin scales intuitively:
 
 ```tsx
+// GOOD: Simple, predictable, proportional
 style={{ fontSize: 'min(14px, 5cqmin)' }}
+style={{ fontSize: 'min(24px, 8cqmin)' }}
+
+// GOOD: For hero text that needs wide range, use clamp
+style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}
 ```
 
-### 2. Size Elements by Visual Hierarchy
+**Rule**: If you see `cqw` or `cqh` in a `fontSize` or icon size, it's wrong. Use `cqmin` only.
 
-**Important**: When using `min(Xpx, Ycqmin)`, the pixel value (`Xpx`) is a **maximum cap**, not a minimum. Text will never exceed `Xpx` even on huge containers. For primary content that should scale without limits, consider using `clamp()` or just `cqmin` alone.
+### 2. Size Elements by Visual Hierarchy (Aggressive Scaling)
 
-| Element Type                                  | Recommended `cqmin` | Example Formula                            | Notes                                   |
-| --------------------------------------------- | ------------------- | ------------------------------------------ | --------------------------------------- |
-| **Primary content** (hero text, main numbers) | 40-55cqmin          | `clamp(24px, 50cqmin, 400px)` or `55cqmin` | Should scale aggressively to fill space |
-| **Secondary content** (subheadings, labels)   | 6-10cqmin           | `min(32px, 8cqmin)`                        | Readable at all sizes                   |
-| **Tertiary content** (metadata, small labels) | 4-6cqmin            | `min(16px, 5cqmin)`                        | Compact but legible                     |
-| **Icons (decorative)**                        | 10-20cqmin          | `min(64px, 15cqmin)`                       | Balance with text                       |
-| **Icons (primary)**                           | 30-40cqmin          | `min(120px, 35cqmin)`                      | Visual anchors                          |
+**Important**: We use **aggressive cqmin values** to ensure content fills the widget. The pixel value in `min(Xpx, Ycqmin)` is a **maximum cap** - text never exceeds it on huge screens.
+
+| Element Type                                  | Recommended `cqmin` | Example Formula                    | Notes                                                 |
+| --------------------------------------------- | ------------------- | ---------------------------------- | ----------------------------------------------------- |
+| **Primary content** (hero text, main numbers) | 20-40cqmin          | `clamp(32px, 40cqmin, 400px)` **†** | Use `clamp()` for wide scaling range (see TimeToolWidget) |
+| **Large headings** (widget titles)            | 8-10cqmin           | `min(24px, 8cqmin)`                | Major section labels                                  |
+| **Medium text** (list items, body)            | 5-5.5cqmin          | `min(14px, 5cqmin)`                | Default for most content                              |
+| **Small labels** (metadata, tags)             | 4.5-5cqmin          | `min(12px, 4.5cqmin)`              | Compact tertiary text                                 |
+| **Primary icons** (weather, decorative)       | 20-30cqmin          | `min(80px, 25cqmin)`               | Visual anchors                                        |
+| **Medium icons** (list bullets, buttons)      | 8-12cqmin           | `min(32px, 10cqmin)`               | Functional icons                                      |
+| **Small icons** (UI controls)                 | 5-6cqmin            | `min(24px, 6cqmin)`                | Buttons, toggles                                      |
+
+**† Hero Text Pattern**: For primary display content (clock time, temperature), use `clamp(Xpx, Ycqmin, Zpx)` to allow wide scaling (e.g., `clamp(32px, 40cqmin, 400px)`).
 
 ### 3. Minimize Header/Footer Overhead
 
@@ -95,23 +127,24 @@ All padding, gaps, and margins should scale:
 
 ## Standard Scaling Formulas
 
-### Text Sizing
+### Text Sizing (Current Standards - Feb 2026)
 
 ```tsx
-// Tiny labels (footer metadata, category tags)
-style={{ fontSize: 'min(12px, 4cqmin)' }}
+// Small labels (footer metadata, category tags, tertiary info)
+style={{ fontSize: 'min(12px, 4.5cqmin)' }}
 
-// Small labels (widget headers, section titles)
-style={{ fontSize: 'min(16px, 5cqmin)' }}
+// Medium text (list items, body text, routine labels)
+style={{ fontSize: 'min(14px, 5cqmin)' }}
 
-// Medium text (list items, body text)
-style={{ fontSize: 'min(20px, 6cqmin)' }}
+// Large headings (widget titles, section headers)
+style={{ fontSize: 'min(24px, 8cqmin)' }}
 
-// Large text (subheadings, secondary data)
-style={{ fontSize: 'min(24px, 7.5cqmin)' }}
+// Extra large (main category labels, poll options)
+style={{ fontSize: 'min(32px, 10cqmin)' }}
 
-// Hero text (primary numbers, main headings)
-style={{ fontSize: '55cqmin' }} // Or clamp(24px, 50cqmin, 400px)
+// Hero text (clock time, temperature, primary display)
+style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}
+// Note: Use clamp for hero text to allow wide scaling range
 ```
 
 ### Icon Sizing
@@ -294,22 +327,36 @@ To fix an existing widget:
 
 ## Examples of Before/After
 
-### Before (Too Conservative):
+### Before (Mixed Units - Bad):
 
 ```tsx
 <div className="p-4 gap-3">
-  <span className="text-xs">Label</span>
-  <span className="text-2xl">{value}</span>
+  <span style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}>Routine Name</span>
+  <span style={{ fontSize: 'min(12px, 3cqmin, 70cqw)' }}>Grades</span>
 </div>
 ```
 
-### After (Properly Scaled):
+### After (Pure cqmin - Good):
 
 ```tsx
-<div style={{ padding: 'min(16px, 3.5cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
-  <span style={{ fontSize: 'min(11px, 4cqmin)' }}>Label</span>
-  <span style={{ fontSize: 'min(24px, 20cqmin)' }}>{value}</span>
+<div style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
+  <span style={{ fontSize: 'min(16px, 5.5cqmin)' }}>Routine Name</span>
+  <span style={{ fontSize: 'min(12px, 4.5cqmin)' }}>Grades</span>
 </div>
+```
+
+### Hero Content Example (TimeToolWidget):
+
+```tsx
+// Main display - uses clamp for wide scaling
+<div style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}>
+  {hours}:{minutes}:{seconds}
+</div>
+
+// Controls - uses min for contained scaling
+<button style={{ fontSize: 'min(14px, 5cqmin)' }}>
+  Start
+</button>
 ```
 
 ## Reference: Actual cqmin Values
@@ -331,3 +378,17 @@ For an **800x600px widget**:
 - `25cqmin = 150px`
 
 This is why **larger cqmin values** are critical - they allow content to actually scale up when the widget grows!
+
+## Recently Fixed Widgets (Feb 2026)
+
+These widgets were updated to follow the new aggressive pure-cqmin standards:
+
+1. **MaterialsWidget** - Removed hardcoded icon sizes, increased label scaling to 5cqmin
+2. **RecessGearWidget** - Increased all text to match ScheduleWidget (8cqmin labels)
+3. **CalendarWidget** - Removed mixed units, increased to 5.5cqmin labels / 25cqmin dates
+4. **ClassesWidget** - Fixed 2 mixed unit instances (8cqmin / 5cqmin)
+5. **ExpectationsWidget** - Fixed 11 mixed unit instances across all views
+6. **PollWidget** - Fixed 2 mixed unit instances (10cqmin question / 5.5cqmin options)
+7. **InstructionalRoutines** - Fixed 2 mixed unit instances (5.5cqmin / 4.5cqmin)
+
+All changes follow the **TimeToolWidget** pattern (user-approved ✅).
