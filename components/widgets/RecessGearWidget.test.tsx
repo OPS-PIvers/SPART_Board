@@ -78,18 +78,20 @@ describe('RecessGearWidget', () => {
 
   it('renders gear using global weather data when no widget is present', () => {
     const mockOnSnapshot = vi.mocked(onSnapshot);
-    mockOnSnapshot.mockImplementation((_doc: any, callback: any) => {
-      callback({
-        exists: () => true,
-        data: () => ({
-          temp: 15,
-          condition: 'snowy',
-          locationName: 'Global Station',
-          updatedAt: Date.now(),
-        }),
-      });
-      return vi.fn();
-    });
+    mockOnSnapshot.mockImplementation(
+      (_doc: any, callback: (s: any) => void) => {
+        callback({
+          exists: () => true,
+          data: () => ({
+            temp: 15,
+            condition: 'snowy',
+            locationName: 'Global Station',
+            updatedAt: Date.now(),
+          }),
+        });
+        return vi.fn();
+      }
+    );
 
     vi.mocked(useDashboard).mockReturnValue({
       activeDashboard: { widgets: [] },
@@ -102,8 +104,8 @@ describe('RecessGearWidget', () => {
           accessLevel: 'public',
           enabled: true,
           betaUsers: [],
-          config: { fetchingStrategy: 'admin_proxy' }
-        }
+          config: { fetchingStrategy: 'admin_proxy' },
+        },
       ],
     } as any);
 
@@ -123,7 +125,9 @@ describe('RecessGearWidget', () => {
     render(<RecessGearWidget widget={baseWidget} />);
 
     expect(screen.getByText(/No Weather Data/i)).toBeInTheDocument();
-    expect(screen.getByText(/Connect to a weather source/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Connect to a weather source/i)
+    ).toBeInTheDocument();
   });
 
   it('uses feelsLike temperature when useFeelsLike is true', () => {

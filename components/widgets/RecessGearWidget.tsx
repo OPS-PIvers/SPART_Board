@@ -8,7 +8,7 @@ import {
   RecessGearConfig,
   WeatherConfig,
   GlobalWeatherData,
-  WeatherGlobalConfig
+  WeatherGlobalConfig,
 } from '../../types';
 import {
   Shirt,
@@ -32,15 +32,19 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { activeDashboard } = useDashboard();
   const { featurePermissions } = useAuth();
-  const [globalWeather, setGlobalWeather] = useState<GlobalWeatherData | null>(null);
+  const [globalWeather, setGlobalWeather] = useState<GlobalWeatherData | null>(
+    null
+  );
   const config = widget.config as RecessGearConfig;
 
-  const weatherPermission = useMemo(() =>
-    featurePermissions.find(p => p.widgetType === 'weather'),
+  const weatherPermission = useMemo(
+    () => featurePermissions.find((p) => p.widgetType === 'weather'),
     [featurePermissions]
   );
 
-  const globalWeatherConfig = weatherPermission?.config as WeatherGlobalConfig | undefined;
+  const globalWeatherConfig = weatherPermission?.config as
+    | WeatherGlobalConfig
+    | undefined;
 
   // Global Weather Subscription (Admin Proxy)
   useEffect(() => {
@@ -54,7 +58,10 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         }
       },
       (error) => {
-        console.error('RecessGear: Failed to subscribe to global weather:', error);
+        console.error(
+          'RecessGear: Failed to subscribe to global weather:',
+          error
+        );
       }
     );
 
@@ -304,13 +311,14 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard, updateWidget, featurePermissions } = useDashboard();
-  const { featurePermissions: authPermissions } = useAuth();
+  const { activeDashboard, updateWidget } = useDashboard();
+  const { featurePermissions } = useAuth();
 
   // Try both sources for permissions (dashboard context or auth context)
-  const permissions = featurePermissions || authPermissions || [];
-  const weatherPermission = permissions.find(p => p.widgetType === 'weather');
-  const isAdminProxy = weatherPermission?.config?.fetchingStrategy === 'admin_proxy';
+  const permissions = featurePermissions ?? [];
+  const weatherPermission = permissions.find((p) => p.widgetType === 'weather');
+  const isAdminProxy =
+    weatherPermission?.config?.fetchingStrategy === 'admin_proxy';
 
   const config = widget.config as RecessGearConfig;
 
@@ -324,7 +332,9 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="text-xxs font-black text-blue-900 uppercase tracking-tight">Managed by Admin</p>
+            <p className="text-xxs font-black text-blue-900 uppercase tracking-tight">
+              Managed by Admin
+            </p>
             <p className="text-xxs text-blue-800 leading-tight">
               Your school station weather data is automatically linked.
             </p>
@@ -339,7 +349,8 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
           </span>
         </div>
         <p className="text-xxs text-emerald-800 leading-relaxed">
-          Recess Gear automatically updates based on your weather source (Admin Panel or a Weather widget on your dashboard).
+          Recess Gear automatically updates based on your weather source (Admin
+          Panel or a Weather widget on your dashboard).
         </p>
       </div>
 

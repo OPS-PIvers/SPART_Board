@@ -7,6 +7,7 @@ import {
   WidgetData,
   WeatherConfig,
   WeatherGlobalConfig,
+  GlobalWeatherData,
   DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import { Toggle } from '../common/Toggle';
@@ -41,15 +42,6 @@ interface EarthNetworksResponse {
     ic: number;
     fl?: number;
   };
-}
-
-interface GlobalWeatherData {
-  temp: number;
-  feelsLike?: number;
-  condition: string;
-  locationName: string;
-  updatedAt: number;
-  source?: string;
 }
 
 const STATION_CONFIG = {

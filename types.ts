@@ -307,6 +307,15 @@ export interface WeatherGlobalConfig {
   showFeelsLike?: boolean;
 }
 
+export interface GlobalWeatherData {
+  temp: number;
+  feelsLike?: number;
+  condition: string;
+  locationName: string;
+  updatedAt: number;
+  source?: string;
+}
+
 export interface ScheduleConfig {
   items: ScheduleItem[];
   fontFamily?: string;
