@@ -7,17 +7,18 @@
 
 These widgets have been user-approved and should serve as templates:
 
-### **TimeToolWidget** (Primary Reference)
-- **Hero text**: Uses `clamp(32px, 40cqmin, 400px)` for wide scaling range
-- **Secondary UI**: Uses `min(14px, 5cqmin)` for labels, buttons, controls
-- **Pattern**: Large primary content with contained auxiliary controls
-- **Status**: ✅ User-approved, "works great"
+### **User-Tested & Approved** ✅
+- **ClockWidget**: Hero time display, clean proportional scaling ("works great!")
+- **WeatherWidget**: Temperature + conditions, aggressive hero text scaling ("works great!")
+- **QRWidget**: Simple centered content pattern ("works great!")
+- **DiceWidget**: Icon-heavy display with good proportions ("works great!")
 
-### **Other Approved Widgets**
+### **Recently Fixed (Feb 2026)**
 - **ScheduleWidget**: List pattern with 5-8cqmin for items
 - **MaterialsWidget**: Aggressive icon/text scaling with pure cqmin
 - **RecessGearWidget**: Card-based layout with 8-10cqmin labels
 - **CalendarWidget**: Date display with 25cqmin hero text, 5.5cqmin labels
+- **TimeToolWidget**: Hero text with `clamp()`, secondary controls with `min()` (not yet user-tested)
 
 ## Problem Statement
 
@@ -71,7 +72,7 @@ style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}
 | **Medium icons** (list bullets, buttons)      | 8-12cqmin           | `min(32px, 10cqmin)`               | Functional icons                                      |
 | **Small icons** (UI controls)                 | 5-6cqmin            | `min(24px, 6cqmin)`                | Buttons, toggles                                      |
 
-**† Hero Text Pattern**: For primary display content (clock time, temperature), use `clamp(Xpx, Ycqmin, Zpx)` to allow wide scaling (e.g., `clamp(32px, 40cqmin, 400px)`).
+**† Hero Text Pattern**: For primary display content (clock time, temperature), use very high `cqmin` values or `clamp()` for wide scaling range. See ClockWidget and WeatherWidget for approved examples.
 
 ### 3. Minimize Header/Footer Overhead
 
@@ -345,18 +346,18 @@ To fix an existing widget:
 </div>
 ```
 
-### Hero Content Example (TimeToolWidget):
+### Hero Content Example (ClockWidget - User Approved):
 
 ```tsx
-// Main display - uses clamp for wide scaling
-<div style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}>
-  {hours}:{minutes}:{seconds}
+// Main time display - aggressive scaling for primary content
+<div style={{ fontSize: showSeconds ? '40cqmin' : '55cqmin' }}>
+  {time}
 </div>
 
-// Controls - uses min for contained scaling
-<button style={{ fontSize: 'min(14px, 5cqmin)' }}>
-  Start
-</button>
+// Date/location - smaller secondary text
+<div style={{ fontSize: 'min(14px, 5cqmin)' }}>
+  {date}
+</div>
 ```
 
 ## Reference: Actual cqmin Values
@@ -391,4 +392,4 @@ These widgets were updated to follow the new aggressive pure-cqmin standards:
 6. **PollWidget** - Fixed 2 mixed unit instances (10cqmin question / 5.5cqmin options)
 7. **InstructionalRoutines** - Fixed 2 mixed unit instances (5.5cqmin / 4.5cqmin)
 
-All changes follow the **TimeToolWidget** pattern (user-approved ✅).
+All changes follow the patterns established in **ClockWidget, WeatherWidget, QRWidget, and DiceWidget** (user-approved ✅).
