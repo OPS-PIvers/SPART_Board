@@ -61,7 +61,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         >
           <div
             className={`font-black uppercase text-slate-800 tracking-tight font-${globalStyle.fontFamily}`}
-            style={{ fontSize: 'min(32px, 8cqmin, 90cqw)', lineHeight: 1.1 }}
+            style={{ fontSize: 'min(32px, 10cqmin)', lineHeight: 1.1 }}
           >
             {question}
           </div>
@@ -89,7 +89,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               >
                 <div
                   className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
-                  style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
+                  style={{ fontSize: 'min(16px, 5.5cqmin)' }}
                 >
                   <span className="font-bold truncate pr-4">{o.label}</span>
                   <span className="font-mono whitespace-nowrap">

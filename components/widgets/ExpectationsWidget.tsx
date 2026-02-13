@@ -162,7 +162,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
       </button>
       <h3
         className="font-black text-slate-800 uppercase tracking-tight"
-        style={{ fontSize: 'min(24px, 6cqmin, 80cqw)' }}
+        style={{ fontSize: 'min(24px, 8cqmin)' }}
       >
         {label}
       </h3>
@@ -206,13 +206,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               <div className="text-left">
                 <div
                   className="font-black uppercase leading-tight"
-                  style={{ fontSize: 'min(24px, 6cqmin, 60cqw)' }}
+                  style={{ fontSize: 'min(24px, 8cqmin)' }}
                 >
                   {v.label}
                 </div>
                 <div
                   className="font-bold opacity-60 uppercase"
-                  style={{ fontSize: 'min(14px, 3.5cqmin, 50cqw)' }}
+                  style={{ fontSize: 'min(14px, 5cqmin)' }}
                 >
                   {v.sub}
                 </div>
@@ -264,7 +264,7 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               />
               <span
                 className="font-black uppercase tracking-wide"
-                style={{ fontSize: 'min(24px, 6cqmin, 70cqw)' }}
+                style={{ fontSize: 'min(24px, 8cqmin)' }}
               >
                 {g.label}
               </span>
@@ -395,13 +395,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
+                style={{ fontSize: 'min(16px, 5.5cqmin)' }}
               >
                 Volume
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(32px, 8cqmin, 80cqw)' }}
+                style={{ fontSize: 'min(32px, 10cqmin)' }}
               >
                 {selectedVolume ? selectedVolume.label : 'Not Set'}
               </div>
@@ -439,13 +439,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
+                style={{ fontSize: 'min(16px, 5.5cqmin)' }}
               >
                 Group Size
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(32px, 8cqmin, 80cqw)' }}
+                style={{ fontSize: 'min(32px, 10cqmin)' }}
               >
                 {selectedGroup ? selectedGroup.label : 'Not Set'}
               </div>
@@ -483,13 +483,13 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
             <div className="text-left flex-1 min-w-0">
               <div
                 className="font-black uppercase text-slate-400 leading-none mb-1 truncate"
-                style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
+                style={{ fontSize: 'min(16px, 5.5cqmin)' }}
               >
                 Interaction
               </div>
               <div
                 className="font-black uppercase tracking-tight truncate"
-                style={{ fontSize: 'min(32px, 8cqmin, 80cqw)' }}
+                style={{ fontSize: 'min(32px, 10cqmin)' }}
               >
                 {selectedInteraction ? selectedInteraction.label : 'Not Set'}
               </div>
