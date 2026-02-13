@@ -27,6 +27,26 @@ describe('PromptDialog', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
+  it('renders with optional props', () => {
+    render(
+      <PromptDialog
+        {...defaultProps}
+        placeholder="Enter text here"
+        defaultValue="Initial Value"
+        confirmLabel="Go"
+        cancelLabel="Stop"
+      />
+    );
+
+    const textarea = screen.getByRole('textbox', {
+      name: 'Please enter a value',
+    });
+    expect(textarea).toHaveAttribute('placeholder', 'Enter text here');
+    expect(textarea).toHaveValue('Initial Value');
+    expect(screen.getByRole('button', { name: 'Go' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+  });
+
   it('allows typing in the textarea', async () => {
     const user = userEvent.setup();
     render(<PromptDialog {...defaultProps} />);
@@ -80,7 +100,10 @@ describe('PromptDialog', () => {
     expect(confirmButton).not.toBeDisabled();
   });
 
-  it('submits with Cmd+Enter', async () => {
+  it.each([
+    ['Cmd+Enter', '{Meta>}{Enter}{/Meta}'],
+    ['Ctrl+Enter', '{Control>}{Enter}{/Control}'],
+  ])('submits with %s', async (_, keypress) => {
     const user = userEvent.setup();
     render(<PromptDialog {...defaultProps} defaultValue="Test Value" />);
 
@@ -88,23 +111,7 @@ describe('PromptDialog', () => {
       name: 'Please enter a value',
     });
 
-    // userEvent.type handles modifier keys differently than fireEvent
-    // {Meta>} holds the key down, {Enter} presses enter, {/Meta} releases
-    await user.type(textarea, '{Meta>}{Enter}{/Meta}');
-
-    expect(onConfirmMock).toHaveBeenCalledWith('Test Value');
-  });
-
-  it('submits with Ctrl+Enter', async () => {
-    const user = userEvent.setup();
-    render(<PromptDialog {...defaultProps} defaultValue="Test Value" />);
-
-    const textarea = screen.getByRole('textbox', {
-      name: 'Please enter a value',
-    });
-
-    // {Control>} holds the key down, {Enter} presses enter, {/Control} releases
-    await user.type(textarea, '{Control>}{Enter}{/Control}');
+    await user.type(textarea, keypress);
 
     expect(onConfirmMock).toHaveBeenCalledWith('Test Value');
   });
