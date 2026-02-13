@@ -190,10 +190,9 @@ describe('GoogleDriveService', () => {
     const mockDashboard: Dashboard = {
       id: 'dash-1',
       name: 'My Dashboard',
-      widgets: {},
-      columns: 12,
-      rowHeight: 100,
-      background: { type: 'color', value: '#fff' },
+      widgets: [],
+      createdAt: Date.now(),
+      background: '#fff',
     };
 
     it('should try direct update if driveFileId exists', async () => {
