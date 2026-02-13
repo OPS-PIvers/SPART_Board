@@ -3,50 +3,11 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { WeatherGlobalConfig } from '@/types';
-
-// Constants shared with WeatherWidget
-const STATION_CONFIG = {
-  id: 'BLLST',
-  lat: 44.99082,
-  lon: -93.59635,
-  name: 'Orono IS',
-};
-
-const EARTH_NETWORKS_API = {
-  BASE_URL: 'https://owc.enterprise.earthnetworks.com/Data/GetData.ashx',
-  PARAMS: {
-    dt: 'o',
-    pi: '3',
-    units: 'english',
-    verbose: 'false',
-  },
-};
-
-const EARTH_NETWORKS_ICONS = {
-  SNOW: [140, 186, 210, 102],
-  CLOUDY: [1, 13, 24, 70, 71, 73, 79],
-  SUNNY: [2, 3, 4],
-  RAIN: [10, 11, 12, 14, 15, 16, 17, 18, 19],
-};
-
-interface OpenWeatherData {
-  cod: number | string;
-  message?: string;
-  name: string;
-  main: {
-    temp: number;
-    feels_like: number;
-  };
-  weather: [{ main: string }, ...{ main: string }[]];
-}
-
-interface EarthNetworksResponse {
-  o?: {
-    t: number;
-    ic: number;
-    fl?: number;
-  };
-}
+import { STATION_CONFIG } from '../widgets/Weather/constants';
+import {
+  fetchEarthNetworks,
+  fetchOpenWeather,
+} from '../widgets/Weather/weatherService';
 
 export const AdminWeatherFetcher: React.FC = () => {
   const { featurePermissions } = useAuth();
@@ -72,64 +33,16 @@ export const AdminWeatherFetcher: React.FC = () => {
         const source = config.source ?? 'openweather';
 
         if (source === 'earth_networks') {
-          // Earth Networks Fetch Logic
-          const queryParams = new URLSearchParams({
-            ...EARTH_NETWORKS_API.PARAMS,
-            si: STATION_CONFIG.id,
-            locstr: `${STATION_CONFIG.lat},${STATION_CONFIG.lon}`,
-          }).toString();
-
-          const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
-          const proxies = [
-            (u: string) =>
-              `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-            (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-            (u: string) =>
-              `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-          ];
-
-          let data: EarthNetworksResponse | null = null;
-          for (const getProxyUrl of proxies) {
-            try {
-              const res = await fetch(getProxyUrl(url), {
-                signal: abortController.signal,
-              });
-              if (!res.ok) continue;
-              const text = await res.text();
-              const trimmed = text.trim();
-              if (
-                !trimmed ||
-                trimmed.startsWith('<') ||
-                trimmed.toLowerCase().startsWith('<!doctype')
-              ) {
-                continue;
-              }
-              data = JSON.parse(trimmed) as EarthNetworksResponse;
-              if (data && data.o) break;
-            } catch (innerErr) {
-              if (innerErr instanceof Error && innerErr.name === 'AbortError') {
-                return;
-              }
-              /* try next proxy */
-            }
-          }
-
-          if (data?.o) {
-            temp = data.o.t;
-            feelsLike = data.o.fl ?? data.o.t;
-            condition = EARTH_NETWORKS_ICONS.SNOW.includes(data.o.ic)
-              ? 'snowy'
-              : EARTH_NETWORKS_ICONS.CLOUDY.includes(data.o.ic)
-                ? 'cloudy'
-                : EARTH_NETWORKS_ICONS.SUNNY.includes(data.o.ic)
-                  ? 'sunny'
-                  : EARTH_NETWORKS_ICONS.RAIN.includes(data.o.ic)
-                    ? 'rainy'
-                    : 'cloudy';
-            locationName = STATION_CONFIG.name;
-          } else {
-            throw new Error('Station data unavailable');
-          }
+          const data = await fetchEarthNetworks(
+            STATION_CONFIG.id,
+            STATION_CONFIG.lat,
+            STATION_CONFIG.lon,
+            abortController.signal
+          );
+          temp = data.temp;
+          feelsLike = data.feelsLike;
+          condition = data.condition;
+          locationName = data.locationName;
         } else {
           // OpenWeather
           const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
@@ -138,24 +51,20 @@ export const AdminWeatherFetcher: React.FC = () => {
           if (!apiKey) throw new Error('No API Key');
 
           const city = config.city;
-          const params =
+          const query =
             city && city.trim()
               ? `q=${encodeURIComponent(city.trim())}`
               : `lat=${STATION_CONFIG.lat}&lon=${STATION_CONFIG.lon}`;
 
-          const res = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${apiKey}&units=imperial`,
-            { signal: abortController.signal }
+          const data = await fetchOpenWeather(
+            apiKey,
+            query,
+            abortController.signal
           );
-          const data = (await res.json()) as OpenWeatherData;
-          if (Number(data.cod) === 200) {
-            temp = data.main.temp;
-            feelsLike = data.main.feels_like;
-            condition = data.weather[0].main.toLowerCase();
-            locationName = data.name;
-          } else {
-            throw new Error(String(data.message));
-          }
+          temp = data.temp;
+          feelsLike = data.feelsLike;
+          condition = data.condition;
+          locationName = data.locationName;
         }
 
         // Write to Firestore
