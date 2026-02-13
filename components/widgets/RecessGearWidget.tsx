@@ -125,7 +125,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
             <span
               className="font-black uppercase tracking-widest text-slate-400"
-              style={{ fontSize: 'min(11px, 4cqmin)' }}
+              style={{ fontSize: 'min(12px, 5cqmin)' }}
             >
               Recess Gear
             </span>
@@ -140,13 +140,13 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
             <Thermometer
               className="text-emerald-600"
               style={{
-                width: 'min(12px, 3.5cqmin)',
-                height: 'min(12px, 3.5cqmin)',
+                width: 'min(14px, 4cqmin)',
+                height: 'min(14px, 4cqmin)',
               }}
             />
             <span
               className="font-black text-emerald-700 tracking-tight"
-              style={{ fontSize: 'min(12px, 4cqmin)' }}
+              style={{ fontSize: 'min(14px, 5cqmin)' }}
             >
               {Math.round(
                 (config.useFeelsLike && weatherConfig.feelsLike !== undefined
@@ -178,21 +178,21 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
               >
                 <span
                   className="group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm shrink-0"
-                  style={{ fontSize: 'min(40px, 14cqmin)' }}
+                  style={{ fontSize: 'min(48px, 16cqmin)' }}
                 >
                   {item.icon}
                 </span>
                 <div className="flex flex-col min-w-0">
                   <span
                     className="font-black text-slate-700 uppercase leading-tight tracking-tight"
-                    style={{ fontSize: 'min(16px, 6cqmin)' }}
+                    style={{ fontSize: 'min(20px, 8cqmin)' }}
                   >
                     {item.label}
                   </span>
                   <span
                     className="font-bold text-slate-300 uppercase tracking-widest"
                     style={{
-                      fontSize: 'min(12px, 4.5cqmin)',
+                      fontSize: 'min(14px, 5.5cqmin)',
                       marginTop: 'min(2px, 0.5cqmin)',
                     }}
                   >
@@ -209,7 +209,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           className="bg-slate-50/50 border-t border-slate-100 flex items-center justify-between font-black text-slate-400 uppercase tracking-widest shrink-0"
           style={{
             padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
-            fontSize: 'min(10px, 3.5cqmin)',
+            fontSize: 'min(11px, 4cqmin)',
           }}
         >
           <div

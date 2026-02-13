@@ -131,7 +131,7 @@ const Keypad: React.FC<{
       {/* Time display row */}
       <div
         className="flex items-center gap-3 font-mono font-black tabular-nums"
-        style={{ fontSize: 'clamp(1.5rem, 8cqmin, 3rem)' }}
+        style={{ fontSize: 'min(48px, 8cqmin)' }}
       >
         <button
           onClick={() => setActiveField('min')}
@@ -161,7 +161,7 @@ const Keypad: React.FC<{
         className="grid grid-cols-3 gap-2 w-full"
         style={{
           maxWidth: 'min(280px, 80cqmin)',
-          fontSize: 'clamp(0.875rem, 3cqmin, 1.25rem)',
+          fontSize: 'min(20px, 3cqmin)',
         }}
       >
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -309,8 +309,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   }`}
                   style={{
                     fontSize: isVisual
-                      ? 'clamp(2rem, 25cqmin, 12rem)'
-                      : 'clamp(2.5rem, 40cqmin, 18rem)',
+                      ? 'min(120px, 25cqmin)'
+                      : 'min(160px, 40cqmin)',
                   }}
                 >
                   {mode === 'stopwatch'
@@ -341,7 +341,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                           : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm'
                     }`}
                     style={{
-                      fontSize: 'clamp(0.5rem, 2.5cqmin, 0.75rem)',
+                      fontSize: 'min(12px, 2.5cqmin)',
                       paddingLeft: 'min(12px, 3cqmin)',
                       paddingRight: 'min(12px, 3cqmin)',
                       paddingTop: 'min(6px, 1.5cqmin)',
@@ -379,8 +379,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
               }`}
               style={{
-                height: 'clamp(3rem, 12cqmin, 5rem)',
-                fontSize: 'clamp(0.75rem, 3.5cqmin, 1.2rem)',
+                height: 'min(80px, 12cqmin)',
+                fontSize: 'min(20px, 3.5cqmin)',
               }}
             >
               {isRunning ? (
@@ -393,7 +393,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             <button
               onClick={handleReset}
               className="aspect-square flex items-center justify-center rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 hover:text-brand-blue-primary transition-all active:scale-95"
-              style={{ height: 'clamp(3rem, 12cqmin, 5rem)' }}
+              style={{ height: 'min(80px, 12cqmin)' }}
               aria-label="Reset"
             >
               <RotateCcw

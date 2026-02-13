@@ -102,7 +102,7 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   style={{
                     flexBasis: itemWidth,
                     maxWidth: itemWidth,
-                    gap: 'min(6px, 1.5cqmin)',
+                    gap: 'min(8px, 2cqmin)',
                     padding: 'min(12px, 2.5cqmin)',
                   }}
                   className={`aspect-square flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
@@ -114,14 +114,18 @@ export const MaterialsWidget: React.FC<WidgetComponentProps> = ({
                   }`}
                 >
                   <item.icon
-                    className={`w-1/2 h-1/2 transition-transform duration-300 ${
+                    className={`transition-transform duration-300 ${
                       isActive ? 'scale-110' : 'scale-100'
                     }`}
+                    style={{
+                      width: 'min(80px, 20cqmin)',
+                      height: 'min(80px, 20cqmin)',
+                    }}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
                   <span
                     className="uppercase tracking-wide text-center font-black leading-tight truncate w-full"
-                    style={{ fontSize: 'min(16px, 4cqmin, 80cqw)' }}
+                    style={{ fontSize: 'min(18px, 6cqmin)' }}
                   >
                     {item.label}
                   </span>
