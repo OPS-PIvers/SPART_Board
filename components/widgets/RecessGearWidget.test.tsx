@@ -3,14 +3,29 @@ import { render, screen } from '@testing-library/react';
 import { RecessGearWidget, RecessGearSettings } from './RecessGearWidget';
 import { WidgetData, RecessGearConfig, WeatherConfig } from '../../types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { onSnapshot } from 'firebase/firestore';
 import '@testing-library/jest-dom';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
 
 const mockUpdateWidget = vi.fn();
 
 // Mock dependencies
 vi.mock('../../context/useDashboard', () => ({
   useDashboard: vi.fn(),
+}));
+
+vi.mock('../../context/useAuth', () => ({
+  useAuth: vi.fn(),
+}));
+
+vi.mock('firebase/firestore', () => ({
+  doc: vi.fn(),
+  onSnapshot: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('../../config/firebase', () => ({
+  db: {},
 }));
 
 describe('RecessGearWidget', () => {
@@ -50,6 +65,7 @@ describe('RecessGearWidget', () => {
       },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -60,16 +76,54 @@ describe('RecessGearWidget', () => {
     expect(screen.getByText(/North Pole/i)).toBeInTheDocument();
   });
 
-  it('renders helpful message when no weather widget is present', () => {
+  it('renders gear using global weather data when no widget is present', () => {
+    const mockOnSnapshot = vi.mocked(onSnapshot);
+    mockOnSnapshot.mockImplementation((_doc: any, callback: any) => {
+      callback({
+        exists: () => true,
+        data: () => ({
+          temp: 15,
+          condition: 'snowy',
+          locationName: 'Global Station',
+          updatedAt: Date.now(),
+        }),
+      });
+      return vi.fn();
+    });
+
     vi.mocked(useDashboard).mockReturnValue({
       activeDashboard: { widgets: [] },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'weather',
+          accessLevel: 'public',
+          enabled: true,
+          betaUsers: [],
+          config: { fetchingStrategy: 'admin_proxy' }
+        }
+      ],
+    } as any);
+
+    render(<RecessGearWidget widget={baseWidget} />);
+
+    expect(screen.getByText(/Heavy Coat/i)).toBeInTheDocument();
+    expect(screen.getByText(/Global Station/i)).toBeInTheDocument();
+  });
+
+  it('renders helpful message when no weather data is available from any source', () => {
+    vi.mocked(useDashboard).mockReturnValue({
+      activeDashboard: { widgets: [] },
+      updateWidget: mockUpdateWidget,
+    } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
     expect(screen.getByText(/No Weather Data/i)).toBeInTheDocument();
-    expect(screen.getByText(/Add a Weather widget/i)).toBeInTheDocument();
+    expect(screen.getByText(/Connect to a weather source/i)).toBeInTheDocument();
   });
 
   it('uses feelsLike temperature when useFeelsLike is true', () => {
@@ -89,6 +143,7 @@ describe('RecessGearWidget', () => {
       },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -118,6 +173,7 @@ describe('RecessGearWidget', () => {
       },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -146,6 +202,7 @@ describe('RecessGearWidget', () => {
       },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     render(<RecessGearWidget widget={baseWidget} />);
 
@@ -179,6 +236,7 @@ describe('RecessGearWidget', () => {
       },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     const widget: WidgetData = {
       ...baseWidget,
@@ -202,6 +260,7 @@ describe('RecessGearWidget', () => {
       },
       updateWidget: mockUpdateWidget,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({ featurePermissions: [] } as any);
 
     render(<RecessGearSettings widget={baseWidget} />);
 

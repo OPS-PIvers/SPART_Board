@@ -1,6 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, RecessGearConfig, WeatherConfig } from '../../types';
+import { useAuth } from '../../context/useAuth';
+import {
+  WidgetData,
+  RecessGearConfig,
+  WeatherConfig,
+  GlobalWeatherData,
+  WeatherGlobalConfig
+} from '../../types';
 import {
   Shirt,
   Thermometer,
@@ -10,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { Toggle } from '../common/Toggle';
+import { WidgetLayout } from './WidgetLayout';
 
 interface GearItem {
   label: string;
@@ -17,36 +27,81 @@ interface GearItem {
   category: 'clothing' | 'footwear' | 'accessory';
 }
 
-import { WidgetLayout } from './WidgetLayout';
-
 export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { activeDashboard } = useDashboard();
+  const { featurePermissions } = useAuth();
+  const [globalWeather, setGlobalWeather] = useState<GlobalWeatherData | null>(null);
   const config = widget.config as RecessGearConfig;
 
-  const widgets = activeDashboard?.widgets;
+  const weatherPermission = useMemo(() =>
+    featurePermissions.find(p => p.widgetType === 'weather'),
+    [featurePermissions]
+  );
 
-  // Find linked or first available weather widget
+  const globalWeatherConfig = weatherPermission?.config as WeatherGlobalConfig | undefined;
+
+  // Global Weather Subscription (Admin Proxy)
+  useEffect(() => {
+    if (globalWeatherConfig?.fetchingStrategy !== 'admin_proxy') return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'global_weather', 'current'),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setGlobalWeather(snapshot.data() as GlobalWeatherData);
+        }
+      },
+      (error) => {
+        console.error('RecessGear: Failed to subscribe to global weather:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [globalWeatherConfig?.fetchingStrategy]);
+
   const weatherWidget = useMemo(() => {
-    if (!widgets) return null;
     if (config.linkedWeatherWidgetId) {
-      const linked = widgets.find((w) => w.id === config.linkedWeatherWidgetId);
-      if (linked && linked.type === 'weather') return linked;
+      return activeDashboard?.widgets.find(
+        (w) => w.id === config.linkedWeatherWidgetId
+      );
     }
-    return widgets.find((w) => w.type === 'weather') ?? null;
-  }, [widgets, config.linkedWeatherWidgetId]);
+    return activeDashboard?.widgets.find((w) => w.type === 'weather');
+  }, [activeDashboard?.widgets, config.linkedWeatherWidgetId]);
 
-  const weatherConfig = weatherWidget?.config as WeatherConfig | undefined;
+  // Combined Weather Data
+  const weatherData = useMemo(() => {
+    if (weatherWidget) {
+      const wConfig = weatherWidget.config as WeatherConfig;
+      return {
+        temp: wConfig.temp,
+        feelsLike: wConfig.feelsLike,
+        condition: wConfig.condition,
+        locationName: wConfig.locationName,
+      };
+    }
+
+    if (globalWeather) {
+      return {
+        temp: globalWeather.temp,
+        feelsLike: globalWeather.feelsLike,
+        condition: globalWeather.condition,
+        locationName: globalWeather.locationName,
+      };
+    }
+
+    return null;
+  }, [weatherWidget, globalWeather]);
 
   const getRecessGear = () => {
-    if (!weatherConfig || weatherConfig.temp === undefined) return [];
+    if (!weatherData || weatherData.temp === undefined) return [];
 
     const temp =
-      config.useFeelsLike && weatherConfig.feelsLike !== undefined
-        ? weatherConfig.feelsLike
-        : weatherConfig.temp;
-    const condition = weatherConfig.condition?.toLowerCase() ?? 'sunny';
+      config.useFeelsLike && weatherData.feelsLike !== undefined
+        ? weatherData.feelsLike
+        : weatherData.temp;
+    const condition = weatherData.condition?.toLowerCase() ?? 'sunny';
 
     const gear: GearItem[] = [];
 
@@ -84,7 +139,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 
   const gearList = getRecessGear();
 
-  if (!weatherWidget || !weatherConfig || weatherConfig.temp === undefined) {
+  if (!weatherData || weatherData.temp === undefined) {
     return (
       <WidgetLayout
         padding="p-0"
@@ -92,7 +147,7 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           <ScaledEmptyState
             icon={AlertCircle}
             title="No Weather Data"
-            subtitle="Add a Weather widget to automatically see required recess gear."
+            subtitle="Connect to a weather source in settings or add a Weather widget."
           />
         }
       />
@@ -105,27 +160,27 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       header={
         <div
           className="flex items-center justify-between border-b border-slate-100 bg-white/50 backdrop-blur-sm shrink-0"
-          style={{ padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)' }}
+          style={{ padding: 'min(12px, 2cqmin) min(16px, 3cqmin)' }}
         >
           <div
             className="flex items-center"
-            style={{ gap: 'min(6px, 1.5cqmin)' }}
+            style={{ gap: 'min(10px, 2cqmin)' }}
           >
             <div
               className="bg-emerald-50 rounded-lg border border-emerald-100 shadow-sm flex items-center justify-center"
-              style={{ padding: 'min(4px, 1cqmin)' }}
+              style={{ padding: 'min(6px, 1.5cqmin)' }}
             >
               <Shirt
                 className="text-emerald-600"
                 style={{
-                  width: 'min(14px, 4cqmin)',
-                  height: 'min(14px, 4cqmin)',
+                  width: 'min(20px, 6cqmin)',
+                  height: 'min(20px, 6cqmin)',
                 }}
               />
             </div>
             <span
               className="font-black uppercase tracking-widest text-slate-400"
-              style={{ fontSize: 'min(11px, 4cqmin)' }}
+              style={{ fontSize: 'min(16px, 5cqmin, 25cqw)' }}
             >
               Recess Gear
             </span>
@@ -133,25 +188,25 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           <div
             className="flex items-center bg-emerald-50 rounded-full border border-emerald-100 shadow-sm"
             style={{
-              gap: 'min(4px, 1cqmin)',
+              gap: 'min(8px, 1.5cqmin)',
               padding: 'min(3px, 0.8cqmin) min(8px, 2cqmin)',
             }}
           >
             <Thermometer
               className="text-emerald-600"
               style={{
-                width: 'min(12px, 3.5cqmin)',
-                height: 'min(12px, 3.5cqmin)',
+                width: 'min(18px, 5cqmin)',
+                height: 'min(18px, 5cqmin)',
               }}
             />
             <span
               className="font-black text-emerald-700 tracking-tight"
-              style={{ fontSize: 'min(12px, 4cqmin)' }}
+              style={{ fontSize: 'min(20px, 6cqmin, 30cqw)' }}
             >
               {Math.round(
-                (config.useFeelsLike && weatherConfig.feelsLike !== undefined
-                  ? weatherConfig.feelsLike
-                  : weatherConfig.temp) ?? 72
+                (config.useFeelsLike && weatherData.feelsLike !== undefined
+                  ? weatherData.feelsLike
+                  : weatherData.temp) ?? 72
               )}
               °
             </span>
@@ -161,38 +216,38 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-slate-50/30"
-          style={{ padding: 'min(12px, 2.5cqmin)' }}
+          style={{ padding: 'min(16px, 3cqmin)' }}
         >
           <div
             className="grid grid-cols-1 @[240px]:grid-cols-2"
-            style={{ gap: 'min(10px, 2.5cqmin)' }}
+            style={{ gap: 'min(12px, 3cqmin)' }}
           >
             {gearList.map((item, idx) => (
               <div
                 key={`${item.label}-${idx}`}
                 className="flex items-center bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-emerald-200 hover:shadow-md transition-all group"
                 style={{
-                  gap: 'min(10px, 2.5cqmin)',
-                  padding: 'min(12px, 2.5cqmin)',
+                  gap: 'min(12px, 3cqmin)',
+                  padding: 'min(16px, 3cqmin)',
                 }}
               >
                 <span
                   className="group-hover:scale-125 transition-transform duration-300 transform-gpu drop-shadow-sm shrink-0"
-                  style={{ fontSize: 'min(40px, 14cqmin)' }}
+                  style={{ fontSize: 'min(60px, 16cqmin, 20cqw)' }}
                 >
                   {item.icon}
                 </span>
                 <div className="flex flex-col min-w-0">
                   <span
                     className="font-black text-slate-700 uppercase leading-tight tracking-tight"
-                    style={{ fontSize: 'min(16px, 6cqmin)' }}
+                    style={{ fontSize: 'min(24px, 8cqmin, 45cqw)' }}
                   >
                     {item.label}
                   </span>
                   <span
                     className="font-bold text-slate-300 uppercase tracking-widest"
                     style={{
-                      fontSize: 'min(12px, 4.5cqmin)',
+                      fontSize: 'min(14px, 5cqmin, 25cqw)',
                       marginTop: 'min(2px, 0.5cqmin)',
                     }}
                   >
@@ -208,13 +263,13 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           className="bg-slate-50/50 border-t border-slate-100 flex items-center justify-between font-black text-slate-400 uppercase tracking-widest shrink-0"
           style={{
-            padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
-            fontSize: 'min(10px, 3.5cqmin)',
+            padding: 'min(12px, 2cqmin) min(16px, 3cqmin)',
+            fontSize: 'min(12px, 4cqmin, 20cqw)',
           }}
         >
           <div
             className="flex items-center truncate max-w-[70%]"
-            style={{ gap: 'min(4px, 1cqmin)' }}
+            style={{ gap: 'min(8px, 1.5cqmin)' }}
           >
             <LinkIcon
               className="opacity-60"
@@ -224,12 +279,12 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
               }}
             />
             <span className="truncate">
-              {weatherConfig.locationName ?? 'Weather'} Source
+              {weatherData.locationName ?? 'Weather'} Source
             </span>
           </div>
           <div
             className="flex items-center shrink-0"
-            style={{ gap: 'min(3px, 0.8cqmin)' }}
+            style={{ gap: 'min(6px, 1cqmin)' }}
           >
             <div
               className="bg-emerald-400 rounded-full animate-pulse"
@@ -249,7 +304,14 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
 export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard, updateWidget } = useDashboard();
+  const { activeDashboard, updateWidget, featurePermissions } = useDashboard();
+  const { featurePermissions: authPermissions } = useAuth();
+
+  // Try both sources for permissions (dashboard context or auth context)
+  const permissions = featurePermissions || authPermissions || [];
+  const weatherPermission = permissions.find(p => p.widgetType === 'weather');
+  const isAdminProxy = weatherPermission?.config?.fetchingStrategy === 'admin_proxy';
+
   const config = widget.config as RecessGearConfig;
 
   const weatherWidgets = useMemo(() => {
@@ -258,6 +320,17 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
+      {isAdminProxy && (
+        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-xxs font-black text-blue-900 uppercase tracking-tight">Managed by Admin</p>
+            <p className="text-xxs text-blue-800 leading-tight">
+              Your school station weather data is automatically linked.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-4">
         <div className="flex items-center gap-2 text-emerald-900">
           <Info className="w-4 h-4" />
@@ -266,8 +339,7 @@ export const RecessGearSettings: React.FC<{ widget: WidgetData }> = ({
           </span>
         </div>
         <p className="text-xxs text-emerald-800 leading-relaxed">
-          Recess Gear automatically updates based on the current temperature and
-          conditions from your Weather widget.
+          Recess Gear automatically updates based on your weather source (Admin Panel or a Weather widget on your dashboard).
         </p>
       </div>
 
