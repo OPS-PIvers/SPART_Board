@@ -202,14 +202,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const {
-    isRunning,
-    config,
-    handleStart,
-    handleStop,
-    handleReset,
-    setTime,
-  } = useTimeToolActions(widget);
+  const { isRunning, config, handleStart, handleStop, handleReset, setTime } =
+    useTimeToolActions(widget);
 
   const [isEditing, setIsEditing] = useState(false);
   const [showSoundPicker, setShowSoundPicker] = useState(false);

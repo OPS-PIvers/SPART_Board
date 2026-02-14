@@ -27,9 +27,7 @@ export const useTimeToolActions = (widget: WidgetData) => {
       }
 
       // Fallback to current elapsed time if not running or calculation logic skipped
-      if (timeToSave === undefined) {
-        timeToSave = config.elapsedTime;
-      }
+      timeToSave ??= config.elapsedTime;
 
       updateWidget(widget.id, {
         config: {
@@ -111,6 +109,7 @@ export const useTimeToolTicker = (
   // Sync local state when config updates (e.g. reset/stopped)
   useEffect(() => {
     if (!config.isRunning) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRunningDisplayTime(config.elapsedTime);
     }
   }, [config.elapsedTime, config.isRunning]);
