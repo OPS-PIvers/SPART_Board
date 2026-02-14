@@ -51,7 +51,6 @@ window.confirm = mockConfirm;
 
 describe('PollWidget', () => {
   const mockUpdateWidget = vi.fn();
-  const mockAddToast = vi.fn();
   const mockActiveDashboard = { globalStyle: { fontFamily: 'sans' } };
 
   const defaultWidget: WidgetData = {
@@ -284,18 +283,21 @@ describe('PollSettings', () => {
         ],
       },
     });
-    expect(mockAddToast).toHaveBeenCalledWith('Imported 2 students!', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Imported 2 students!',
+      'success'
+    );
   });
 
   it('does not import if user cancels confirmation', () => {
     mockConfirm.mockReturnValue(false); // User clicks Cancel
     // Widget with existing options to trigger confirmation
     const widgetWithOptions = {
-        ...widget,
-        config: {
-            ...widget.config,
-            options: [{ label: 'Existing Option', votes: 0 }]
-        }
+      ...widget,
+      config: {
+        ...widget.config,
+        options: [{ label: 'Existing Option', votes: 0 }],
+      },
     };
     render(<PollSettings widget={widgetWithOptions} />);
 
@@ -308,11 +310,11 @@ describe('PollSettings', () => {
 
   it('does not import if no active roster', () => {
     (useDashboard as Mock).mockReturnValue({
-        updateWidget: mockUpdateWidget,
-        addToast: mockAddToast,
-        rosters: mockRosters,
-        activeRosterId: null, // No active roster
-      });
+      updateWidget: mockUpdateWidget,
+      addToast: mockAddToast,
+      rosters: mockRosters,
+      activeRosterId: null, // No active roster
+    });
 
     render(<PollSettings widget={widget} />);
 
@@ -336,17 +338,20 @@ describe('PollSettings', () => {
 
     expect(mockCreateObjectURL).toHaveBeenCalled();
     expect(mockRevokeObjectURL).toHaveBeenCalled();
-    expect(mockAddToast).toHaveBeenCalledWith('Results exported to CSV', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith(
+      'Results exported to CSV',
+      'success'
+    );
   });
 
-    it('resets the poll from settings', () => {
+  it('resets the poll from settings', () => {
     mockConfirm.mockReturnValue(true);
     const widgetWithVotes = {
-        ...widget,
-        config: {
-            ...widget.config,
-            options: [{ label: 'Option 1', votes: 5 }]
-        }
+      ...widget,
+      config: {
+        ...widget.config,
+        options: [{ label: 'Option 1', votes: 5 }],
+      },
     };
     render(<PollSettings widget={widgetWithVotes} />);
 
@@ -358,9 +363,7 @@ describe('PollSettings', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith('poll-1', {
       config: {
         question: 'Original Question',
-        options: [
-          { label: 'Option 1', votes: 0 },
-        ],
+        options: [{ label: 'Option 1', votes: 0 }],
       },
     });
   });
