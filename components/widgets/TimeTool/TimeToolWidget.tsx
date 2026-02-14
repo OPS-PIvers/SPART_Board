@@ -120,7 +120,7 @@ const Keypad: React.FC<{
   };
 
   const btnBase =
-    'aspect-square flex items-center justify-center rounded-2xl font-black transition-all active:scale-90';
+    'aspect-square flex items-center justify-center font-black transition-all active:scale-90';
   const btnColor =
     'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
   const presetBtnColor =
@@ -129,43 +129,42 @@ const Keypad: React.FC<{
   return (
     <div
       className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200"
-      style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
+      style={{ padding: 'min(16px, 4cqmin)', gap: 'min(16px, 4cqmin)' }}
     >
-      {/* Close button */}
-      <button
-        onClick={onCancel}
-        className="self-end text-slate-400 hover:text-brand-red-primary transition-all"
-        style={{ fontSize: 'min(20px, 5cqmin)' }}
-        aria-label="Close keypad"
-      >
-        ×
-      </button>
-
       {/* Selected time display */}
       <div
         className="flex items-center font-mono font-black tabular-nums"
-        style={{ fontSize: 'min(48px, 15cqmin)', gap: 'min(8px, 2cqmin)' }}
+        style={{
+          fontSize: 'min(18cqh, 12cqw)',
+          gap: 'min(12px, 2cqmin)',
+        }}
       >
         <button
           onClick={() => setActiveField('min')}
-          className={`rounded-xl border-2 transition-all ${
+          className={`border-2 transition-all ${
             activeField === 'min'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
               : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
           }`}
-          style={{ padding: 'min(8px, 2cqmin) min(12px, 3cqmin)' }}
+          style={{
+            padding: 'min(8px, 1.5cqh) min(20px, 4cqw)',
+            borderRadius: 'min(16px, 3cqmin)',
+          }}
         >
           {editValues.min}
         </button>
-        <span className="text-slate-300">:</span>
+        <span className="text-slate-300 opacity-30">:</span>
         <button
           onClick={() => setActiveField('sec')}
-          className={`rounded-xl border-2 transition-all ${
+          className={`border-2 transition-all ${
             activeField === 'sec'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
               : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
           }`}
-          style={{ padding: 'min(8px, 2cqmin) min(12px, 3cqmin)' }}
+          style={{
+            padding: 'min(8px, 1.5cqh) min(20px, 4cqw)',
+            borderRadius: 'min(16px, 3cqmin)',
+          }}
         >
           {editValues.sec}
         </button>
@@ -175,6 +174,7 @@ const Keypad: React.FC<{
       <div
         className="grid grid-cols-3 w-full"
         style={{
+          maxWidth: 'min(320px, 80cqw, 55cqh)',
           gap: 'min(8px, 2cqmin)',
           fontSize: 'min(14px, 4cqmin)',
         }}
@@ -184,7 +184,7 @@ const Keypad: React.FC<{
             key={s}
             onClick={() => handlePreset(s)}
             className={`rounded-xl font-black transition-all active:scale-90 ${presetBtnColor}`}
-            style={{ padding: 'min(12px, 3cqmin)' }}
+            style={{ padding: 'min(10px, 2.5cqmin)' }}
           >
             {presetLabel(s)}
           </button>
@@ -193,10 +193,11 @@ const Keypad: React.FC<{
 
       {/* Numpad grid */}
       <div
-        className="grid grid-cols-3 w-full flex-1"
+        className="grid grid-cols-3 w-full"
         style={{
-          gap: 'min(8px, 2cqmin)',
-          fontSize: 'min(20px, 6cqmin)',
+          maxWidth: 'min(320px, 80cqw, 55cqh)',
+          gap: 'min(10px, 2cqmin)',
+          fontSize: 'min(28px, 5cqmin)',
         }}
       >
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -204,6 +205,7 @@ const Keypad: React.FC<{
             key={n}
             onClick={() => handleInput(n.toString())}
             className={`${btnBase} ${btnColor}`}
+            style={{ borderRadius: 'min(16px, 3cqmin)' }}
           >
             {n}
           </button>
@@ -211,13 +213,20 @@ const Keypad: React.FC<{
         <button
           onClick={handleBackspace}
           className={`${btnBase} ${btnColor}`}
+          style={{ borderRadius: 'min(16px, 3cqmin)' }}
           aria-label="Backspace"
         >
-          <Delete className="w-[1.2em] h-[1.2em]" />
+          <Delete
+            style={{
+              width: 'min(24px, 1.2em)',
+              height: 'min(24px, 1.2em)',
+            }}
+          />
         </button>
         <button
           onClick={() => handleInput('0')}
           className={`${btnBase} ${btnColor}`}
+          style={{ borderRadius: 'min(16px, 3cqmin)' }}
         >
           0
         </button>
@@ -226,11 +235,31 @@ const Keypad: React.FC<{
             onConfirm(parseInt(editValues.min) * 60 + parseInt(editValues.sec))
           }
           className={`${btnBase} bg-brand-blue-primary text-white shadow-xl hover:bg-brand-blue-light`}
+          style={{ borderRadius: 'min(16px, 3cqmin)' }}
           aria-label="Confirm time"
         >
-          <Check className="w-[1.4em] h-[1.4em]" strokeWidth={4} />
+          <Check
+            style={{
+              width: 'min(32px, 1.4em)',
+              height: 'min(32px, 1.4em)',
+            }}
+            strokeWidth={4}
+          />
         </button>
       </div>
+
+      <button
+        onClick={onCancel}
+        className="font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
+        style={{
+          fontSize: 'min(12px, 3cqmin)',
+          padding: 'min(6px, 1cqh) min(16px, 4cqw)',
+          borderRadius: '999px',
+        }}
+        aria-label="Close keypad"
+      >
+        Cancel
+      </button>
     </div>
   );
 };
@@ -379,10 +408,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     }`}
                     style={{
                       fontSize: isVisual
-                        ? '28cqmin'
+                        ? 'min(25cqmin, 12rem)'
                         : mode === 'stopwatch'
-                          ? '40cqmin'
-                          : '45cqmin',
+                          ? 'min(75cqh, 18cqw)'
+                          : 'min(75cqh, 25cqw)',
                       color: timeColor,
                       textShadow: glow
                         ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
