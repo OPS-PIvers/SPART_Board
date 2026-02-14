@@ -120,76 +120,79 @@ const Keypad: React.FC<{
   };
 
   const btnBase =
-    'aspect-square flex items-center justify-center font-black transition-all active:scale-90';
+    'flex items-center justify-center font-black transition-all active:scale-90 w-full h-full';
   const btnColor =
     'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
   const presetBtnColor =
     'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600';
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200">
+    <div
+      className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+      style={{ padding: 'min(12px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
+    >
+      {/* Time display row */}
       <div
-        className="flex flex-col items-center justify-center w-full"
+        className="flex items-center font-mono font-black tabular-nums shrink-0"
         style={{
-          height: 'min(95cqh, 95cqw)',
-          maxHeight: '100%',
-          gap: 'min(16px, 4cqmin)',
+          height: '18%',
+          fontSize: 'min(16cqh, 12cqw)',
+          gap: 'min(12px, 2cqmin)',
         }}
       >
-        {/* Selected time display */}
-        <div
-          className="flex items-center font-mono font-black tabular-nums"
+        <button
+          onClick={() => setActiveField('min')}
+          className={`border-2 transition-all ${
+            activeField === 'min'
+              ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
+              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
+          }`}
           style={{
-            fontSize: 'min(15cqh, 12cqw)',
-            gap: 'min(12px, 2cqmin)',
+            padding: 'min(4px, 1cqh) min(20px, 4cqw)',
+            borderRadius: 'min(12px, 3cqmin)',
           }}
         >
-          <button
-            onClick={() => setActiveField('min')}
-            className={`border-2 transition-all ${
-              activeField === 'min'
-                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-                : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
-            }`}
-            style={{
-              padding: 'min(8px, 2cqh) min(20px, 4cqw)',
-              borderRadius: 'min(16px, 3cqmin)',
-            }}
-          >
-            {editValues.min}
-          </button>
-          <span className="text-slate-300 opacity-30">:</span>
-          <button
-            onClick={() => setActiveField('sec')}
-            className={`border-2 transition-all ${
-              activeField === 'sec'
-                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-                : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
-            }`}
-            style={{
-              padding: 'min(8px, 2cqh) min(20px, 4cqw)',
-              borderRadius: 'min(16px, 3cqmin)',
-            }}
-          >
-            {editValues.sec}
-          </button>
-        </div>
+          {editValues.min}
+        </button>
+        <span className="text-slate-300 opacity-30">:</span>
+        <button
+          onClick={() => setActiveField('sec')}
+          className={`border-2 transition-all ${
+            activeField === 'sec'
+              ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
+              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
+          }`}
+          style={{
+            padding: 'min(4px, 1cqh) min(20px, 4cqw)',
+            borderRadius: 'min(12px, 3cqmin)',
+          }}
+        >
+          {editValues.sec}
+        </button>
+      </div>
 
+      {/* Main Controls Area */}
+      <div
+        className="flex-1 min-h-0 flex flex-col items-center justify-center w-full"
+        style={{
+          gap: 'min(8px, 2cqmin)',
+          maxWidth: 'min(400px, 90cqw, 70cqh)',
+        }}
+      >
         {/* Preset buttons row */}
         <div
-          className="grid grid-cols-3 w-full"
+          className="grid grid-cols-3 w-full shrink-0"
           style={{
-            maxWidth: 'min(320px, 80cqw, 45cqh)',
-            gap: 'min(8px, 2cqmin)',
-            fontSize: 'min(14px, 4cqmin)',
+            height: '12%',
+            gap: 'min(8px, 1.5cqmin)',
+            fontSize: 'min(4.5cqh, 4cqmin)',
           }}
         >
           {PRESETS.map((s) => (
             <button
               key={s}
               onClick={() => handlePreset(s)}
-              className={`rounded-xl font-black transition-all active:scale-90 ${presetBtnColor}`}
-              style={{ padding: 'min(10px, 2.5cqmin)' }}
+              className={`rounded-xl font-black transition-all active:scale-90 ${presetBtnColor} ${btnBase}`}
             >
               {presetLabel(s)}
             </button>
@@ -198,11 +201,10 @@ const Keypad: React.FC<{
 
         {/* Numpad grid */}
         <div
-          className="grid grid-cols-3 w-full"
+          className="grid grid-cols-3 w-full flex-1 min-h-0"
           style={{
-            maxWidth: 'min(320px, 80cqw, 45cqh)',
-            gap: 'min(10px, 2cqmin)',
-            fontSize: 'min(28px, 5cqmin)',
+            gap: 'min(8px, 1.5cqmin)',
+            fontSize: 'min(6.5cqh, 6cqmin)',
           }}
         >
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -221,12 +223,7 @@ const Keypad: React.FC<{
             style={{ borderRadius: 'min(16px, 3cqmin)' }}
             aria-label="Backspace"
           >
-            <Delete
-              style={{
-                width: 'min(24px, 1.2em)',
-                height: 'min(24px, 1.2em)',
-              }}
-            />
+            <Delete style={{ width: '1.2em', height: '1.2em' }} />
           </button>
           <button
             onClick={() => handleInput('0')}
@@ -246,28 +243,26 @@ const Keypad: React.FC<{
             aria-label="Confirm time"
           >
             <Check
-              style={{
-                width: 'min(32px, 1.4em)',
-                height: 'min(32px, 1.4em)',
-              }}
+              style={{ width: '1.4em', height: '1.4em' }}
               strokeWidth={4}
             />
           </button>
         </div>
-
-        <button
-          onClick={onCancel}
-          className="font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
-          style={{
-            fontSize: 'min(12px, 3cqmin)',
-            padding: 'min(6px, 1.5cqh) min(16px, 4cqw)',
-            borderRadius: '999px',
-          }}
-          aria-label="Close keypad"
-        >
-          Cancel
-        </button>
       </div>
+
+      <button
+        onClick={onCancel}
+        className="shrink-0 font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
+        style={{
+          height: '10%',
+          fontSize: 'min(12px, 3.5cqmin)',
+          padding: '0 min(16px, 4cqw)',
+          borderRadius: '999px',
+        }}
+        aria-label="Close keypad"
+      >
+        Cancel
+      </button>
     </div>
   );
 };
