@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GlassCard } from '../../common/GlassCard';
+import { Input } from '../../common/Input';
 import { GlobalStyle } from '../../../types';
 
 interface RenameFolderModalProps {
@@ -28,13 +29,12 @@ export const RenameFolderModal: React.FC<RenameFolderModalProps> = ({
         <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">
           {title}
         </h3>
-        <input
-          type="text"
+        <Input
           value={val}
           onChange={(e) => setVal(e.target.value)}
           autoFocus
           placeholder="Folder name..."
-          className="w-full px-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-brand-blue-primary text-sm font-bold mb-6"
+          className="mb-6 bg-slate-100 border-none h-12 text-sm font-bold"
           onKeyDown={(e) => e.key === 'Enter' && onSave(val)}
         />
         <div className="flex gap-3">

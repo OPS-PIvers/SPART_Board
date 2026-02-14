@@ -77,6 +77,7 @@ const EARTH_NETWORKS_ICONS = {
 };
 
 import { WidgetLayout } from './WidgetLayout';
+import { Input } from '../common/Input';
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast, activeDashboard } = useDashboard();
@@ -912,18 +913,21 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                       <MapPin className="w-3 h-3" /> City / Zip
                     </label>
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="e.g. London, US"
-                        value={city}
-                        onChange={(e) =>
-                          updateWidget(widget.id, {
-                            config: { ...config, city: e.target.value },
-                          })
-                        }
-                        disabled={!hasApiKey}
-                        className="flex-1 p-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 disabled:opacity-50 disabled:bg-slate-50"
-                      />
+                      <div className="flex-1">
+                        <Input
+                          placeholder="e.g. London, US"
+                          value={city}
+                          onChange={(e) =>
+                            updateWidget(widget.id, {
+                              config: { ...config, city: e.target.value },
+                            })
+                          }
+                          disabled={!hasApiKey}
+                          size="xs"
+                          fullWidth
+                          className="py-2.5"
+                        />
+                      </div>
                       <button
                         onClick={syncByCity}
                         disabled={loading || !hasApiKey}

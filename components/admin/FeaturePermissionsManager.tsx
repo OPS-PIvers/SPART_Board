@@ -46,6 +46,7 @@ import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
 import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 import { Toggle } from '../common/Toggle';
+import { Input } from '../common/Input';
 
 // Helper type guard
 const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {
@@ -410,8 +411,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                     <tool.icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <input
-                      type="text"
+                    <Input
                       value={permission.displayName ?? ''}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -419,7 +419,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                           displayName: val || undefined,
                         });
                       }}
-                      className="w-full font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand-blue-primary focus:outline-none px-0 py-0.5 transition-colors"
+                      variant="ghost"
+                      size="xs"
+                      fullWidth
+                      className="font-bold border-b rounded-none hover:bg-transparent focus:bg-transparent px-0 py-0.5 hover:border-slate-300 focus:ring-0 focus:border-brand-blue-primary"
                       placeholder={tool.label}
                     />
                     <p className="text-xs text-slate-500">{tool.type}</p>
@@ -486,8 +489,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                               <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Google Sheet ID
                               </label>
-                              <input
-                                type="text"
+                              <Input
                                 value={config.googleSheetId ?? ''}
                                 onChange={(e) =>
                                   updatePermission(tool.type, {
@@ -497,11 +499,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                                     },
                                   })
                                 }
-                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
-                                  isIdMalformed
-                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                                    : 'border-slate-300 focus:ring-brand-blue-primary'
-                                }`}
+                                variant={isIdMalformed ? 'error' : 'default'}
+                                size="xs"
+                                fullWidth
+                                className="font-mono"
                                 placeholder="Spreadsheet ID from URL"
                               />
                               {isIdMalformed && (
@@ -523,8 +524,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                               <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Submission URL (Apps Script)
                               </label>
-                              <input
-                                type="text"
+                              <Input
                                 value={config.submissionUrl ?? ''}
                                 onChange={(e) =>
                                   updatePermission(tool.type, {
@@ -534,11 +534,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                                     },
                                   })
                                 }
-                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
-                                  isUrlMalformed
-                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                                    : 'border-slate-300 focus:ring-brand-blue-primary'
-                                }`}
+                                variant={isUrlMalformed ? 'error' : 'default'}
+                                size="xs"
+                                fullWidth
+                                className="font-mono"
                                 placeholder="https://script.google.com/macros/s/.../exec"
                               />
                               {isUrlMalformed && (
@@ -666,8 +665,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                     <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                       City (Optional)
                                     </label>
-                                    <input
-                                      type="text"
+                                    <Input
                                       placeholder="Default: Local Station"
                                       value={config.city ?? ''}
                                       onChange={(e) =>
@@ -678,7 +676,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                                           },
                                         })
                                       }
-                                      className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                                      size="xs"
+                                      fullWidth
                                     />
                                   </div>
                                 )}
@@ -689,10 +688,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                               <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
                                 Update Frequency (Minutes)
                               </label>
-                              <input
+                              <Input
                                 type="number"
-                                min="5"
-                                max="1440"
+                                min={5}
+                                max={1440}
                                 value={config.updateFrequencyMinutes ?? 15}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value);
@@ -705,7 +704,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                                     },
                                   });
                                 }}
-                                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
+                                size="xs"
+                                fullWidth
                               />
                             </div>
 
@@ -771,7 +771,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                         {(range.type === 'range' ||
                                           !range.type) && (
                                           <>
-                                            <input
+                                            <Input
                                               type="number"
                                               placeholder="Min"
                                               value={range.min}
@@ -787,13 +787,14 @@ export const FeaturePermissionsManager: React.FC = () => {
                                                   }
                                                 );
                                               }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                              size="xs"
+                                              className="w-14 text-center px-1"
                                               title="Min Temp"
                                             />
                                             <span className="text-slate-400 text-xs">
                                               -
                                             </span>
-                                            <input
+                                            <Input
                                               type="number"
                                               placeholder="Max"
                                               value={range.max}
@@ -809,7 +810,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                                                   }
                                                 );
                                               }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                              size="xs"
+                                              className="w-14 text-center px-1"
                                               title="Max Temp"
                                             />
                                           </>
@@ -820,7 +822,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                             <span className="text-xxs font-bold text-slate-400 uppercase">
                                               Above
                                             </span>
-                                            <input
+                                            <Input
                                               type="number"
                                               placeholder="Temp"
                                               value={range.min}
@@ -836,7 +838,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                                                   }
                                                 );
                                               }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                              size="xs"
+                                              className="w-14 text-center px-1"
                                             />
                                           </div>
                                         )}
@@ -846,7 +849,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                             <span className="text-xxs font-bold text-slate-400 uppercase">
                                               Below
                                             </span>
-                                            <input
+                                            <Input
                                               type="number"
                                               placeholder="Temp"
                                               value={range.max}
@@ -862,7 +865,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                                                   }
                                                 );
                                               }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
+                                              size="xs"
+                                              className="w-14 text-center px-1"
                                             />
                                           </div>
                                         )}
@@ -881,8 +885,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                                         </button>
                                       </div>
 
-                                      <input
-                                        type="text"
+                                      <Input
                                         placeholder="Display Message..."
                                         value={range.message}
                                         onChange={(e) =>
@@ -894,7 +897,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                                             }
                                           )
                                         }
-                                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:border-brand-blue-primary outline-none"
+                                        size="xs"
+                                        fullWidth
                                       />
 
                                       <div className="flex items-center gap-2">
@@ -1105,10 +1109,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                     ))}
 
                     <div className="flex gap-2">
-                      <input
+                      <Input
                         type="email"
                         placeholder="user@example.com"
-                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+                        fullWidth
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             addBetaUser(
@@ -1121,10 +1125,14 @@ export const FeaturePermissionsManager: React.FC = () => {
                       />
                       <button
                         onClick={(e) => {
-                          const input = e.currentTarget
-                            .previousElementSibling as HTMLInputElement;
-                          addBetaUser(tool.type, input.value);
-                          input.value = '';
+                          const input =
+                            e.currentTarget.previousElementSibling?.querySelector(
+                              'input'
+                            ) as HTMLInputElement;
+                          if (input) {
+                            addBetaUser(tool.type, input.value);
+                            input.value = '';
+                          }
                         }}
                         className="px-3 py-2 bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors"
                       >

@@ -87,3 +87,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Widget settings panels used inconsistent typography for section headers (variations of `text-xxs`, `text-xs`, `text-[10px]`, `font-bold` vs `font-black`, `text-slate-400` vs `text-slate-500`, inconsistent margins).
 **Fix:** Created `components/common/SettingsLabel.tsx` to enforce the standard style (`text-xxs font-black text-slate-400 uppercase tracking-widest mb-2`). Refactored 12 widgets to use this component.
+
+## 2026-02-12 - Input Standardization
+
+**Drift:** Discovered multiple raw `input` elements with inconsistent styling (borders, padding, focus states) across `FeaturePermissionsManager`, `WeatherWidget`, and `RenameFolderModal`.
+**Fix:** Created `components/common/Input.tsx` to standardize text inputs with consistent variants (`default`, `ghost`, `error`, `filled`, `dark`), sizes, and icon support. Refactored `FeaturePermissionsManager`, `WeatherWidget`, and `RenameFolderModal` to use this component.
