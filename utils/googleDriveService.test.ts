@@ -316,8 +316,10 @@ describe('GoogleDriveService', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
 
+      const fetchSpy = vi.spyOn(global, 'fetch');
+
       // Direct update fails
-      vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 500,
         text: () => Promise.resolve('Error details'),
@@ -329,13 +331,13 @@ describe('GoogleDriveService', () => {
         .mockResolvedValueOnce([]);
 
       // Fallback: create metadata
-      vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      fetchSpy.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ id: 'new-id' }),
       } as Response);
 
       // Fallback: upload content
-      vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      fetchSpy.mockResolvedValueOnce({
         ok: true,
       } as Response);
 
@@ -355,6 +357,9 @@ describe('GoogleDriveService', () => {
 
     it('should throw error if update existing fails', async () => {
       const dashboardNoId = { ...mockDashboard };
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       vi.spyOn(service, 'getFolderPath').mockResolvedValue(
         'dashboards-folder-id'
       );
@@ -376,10 +381,17 @@ describe('GoogleDriveService', () => {
       await expect(service.exportDashboard(dashboardNoId)).rejects.toThrow(
         'Failed to update dashboard in Drive'
       );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Drive API Error (Update Content):',
+        'Error details'
+      );
     });
 
     it('should throw error if create new fails (upload content)', async () => {
       const dashboardNoId = { ...mockDashboard };
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       vi.spyOn(service, 'getFolderPath').mockResolvedValue(
         'dashboards-folder-id'
       );
@@ -402,10 +414,17 @@ describe('GoogleDriveService', () => {
       await expect(service.exportDashboard(dashboardNoId)).rejects.toThrow(
         'Failed to upload dashboard content to Drive'
       );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Drive API Error (Upload Content):',
+        'Error details'
+      );
     });
 
     it('should throw error if create new fails (create metadata)', async () => {
       const dashboardNoId = { ...mockDashboard };
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       vi.spyOn(service, 'getFolderPath').mockResolvedValue(
         'dashboards-folder-id'
       );
@@ -421,6 +440,10 @@ describe('GoogleDriveService', () => {
 
       await expect(service.exportDashboard(dashboardNoId)).rejects.toThrow(
         'Failed to create dashboard metadata in Drive'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Drive API Error (Create Metadata):',
+        'Error details'
       );
     });
   });
