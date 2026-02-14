@@ -25,4 +25,5 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 - **Clock -> Schedule:** Automatically mark schedule items as done based on the current time.
 
 ## WILL NOT IMPLEMENT
+
 - **Poll -> Scoreboard:** this is not a connection that adds meaningful value.
