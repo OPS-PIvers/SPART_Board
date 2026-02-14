@@ -23,3 +23,6 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 - **Instructional Routines -> All:** Bulk-launch tools required for a specific protocol.
 - **Noise Meter -> Traffic Light:** Automatically switch Traffic Light to Red when noise level exceeds a threshold.
 - **Clock -> Schedule:** Automatically mark schedule items as done based on the current time.
+
+## WILL NOT IMPLEMENT
+- **Poll -> Scoreboard:** this is not a connection that adds meaningful value.
