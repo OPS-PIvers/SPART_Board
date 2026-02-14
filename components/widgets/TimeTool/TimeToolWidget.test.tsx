@@ -55,7 +55,6 @@ describe('TimeToolWidget', () => {
       config: {
         mode: 'timer',
         visualType: 'digital',
-        theme: 'light',
         duration: 300,
         elapsedTime: 300,
         isRunning: false,
