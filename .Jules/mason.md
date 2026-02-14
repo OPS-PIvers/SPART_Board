@@ -5,3 +5,5 @@
 ## 2026-01-26 - [Broken Production Deploy] **Bottleneck:** Production deployment workflow was only deploying Hosting and missing Functions build/deploy, leading to config drift and potential runtime errors. **Fix:** Updated `firebase-deploy.yml` to install function deps, build functions, and deploy all targets using `firebase-tools` with a service account.
 
 ## 2026-01-30 - [Build Scripts & Chunk Optimization] **Bottleneck:** Missing convenience scripts for full-stack build caused friction; large chunk warnings in build output. **Fix:** Added `install:all`, `build:all` scripts and optimized `vite.config.ts` manual chunks.
+
+## 2026-02-05 - [Missing Backend Tests in CI] **Bottleneck:** Functions tests were not running in CI, leading to potential unseen regressions. **Fix:** Added `vitest` to functions, configured it, and updated `pr-validation.yml` to run `test:all`.
