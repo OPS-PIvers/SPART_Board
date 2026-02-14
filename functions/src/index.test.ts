@@ -87,7 +87,7 @@ describe('triggerJulesWidgetGeneration', () => {
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
     expect(vi.mocked(axios.post)).toHaveBeenCalledWith(
-      `${JULES_API_SESSIONS_ENDPOINT}?key=test-api-key`,
+      JULES_API_SESSIONS_ENDPOINT,
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
         sourceContext: expect.objectContaining({
@@ -97,7 +97,6 @@ describe('triggerJulesWidgetGeneration', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           'X-Goog-Api-Key': 'test-api-key',
-          Authorization: 'Bearer test-api-key',
         }),
       })
     );
