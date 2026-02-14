@@ -127,139 +127,147 @@ const Keypad: React.FC<{
     'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600';
 
   return (
-    <div
-      className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200"
-      style={{ padding: 'min(16px, 4cqmin)', gap: 'min(16px, 4cqmin)' }}
-    >
-      {/* Selected time display */}
+    <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200">
       <div
-        className="flex items-center font-mono font-black tabular-nums"
+        className="flex flex-col items-center justify-center w-full"
         style={{
-          fontSize: 'min(18cqh, 12cqw)',
-          gap: 'min(12px, 2cqmin)',
+          height: 'min(95cqh, 95cqw)',
+          maxHeight: '100%',
+          gap: 'min(16px, 4cqmin)',
         }}
       >
-        <button
-          onClick={() => setActiveField('min')}
-          className={`border-2 transition-all ${
-            activeField === 'min'
-              ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
-          }`}
+        {/* Selected time display */}
+        <div
+          className="flex items-center font-mono font-black tabular-nums"
           style={{
-            padding: 'min(8px, 1.5cqh) min(20px, 4cqw)',
-            borderRadius: 'min(16px, 3cqmin)',
+            fontSize: 'min(15cqh, 12cqw)',
+            gap: 'min(12px, 2cqmin)',
           }}
         >
-          {editValues.min}
-        </button>
-        <span className="text-slate-300 opacity-30">:</span>
-        <button
-          onClick={() => setActiveField('sec')}
-          className={`border-2 transition-all ${
-            activeField === 'sec'
-              ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
-          }`}
-          style={{
-            padding: 'min(8px, 1.5cqh) min(20px, 4cqw)',
-            borderRadius: 'min(16px, 3cqmin)',
-          }}
-        >
-          {editValues.sec}
-        </button>
-      </div>
-
-      {/* Preset buttons row */}
-      <div
-        className="grid grid-cols-3 w-full"
-        style={{
-          maxWidth: 'min(320px, 80cqw, 55cqh)',
-          gap: 'min(8px, 2cqmin)',
-          fontSize: 'min(14px, 4cqmin)',
-        }}
-      >
-        {PRESETS.map((s) => (
           <button
-            key={s}
-            onClick={() => handlePreset(s)}
-            className={`rounded-xl font-black transition-all active:scale-90 ${presetBtnColor}`}
-            style={{ padding: 'min(10px, 2.5cqmin)' }}
+            onClick={() => setActiveField('min')}
+            className={`border-2 transition-all ${
+              activeField === 'min'
+                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
+                : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
+            }`}
+            style={{
+              padding: 'min(8px, 2cqh) min(20px, 4cqw)',
+              borderRadius: 'min(16px, 3cqmin)',
+            }}
           >
-            {presetLabel(s)}
+            {editValues.min}
           </button>
-        ))}
-      </div>
-
-      {/* Numpad grid */}
-      <div
-        className="grid grid-cols-3 w-full"
-        style={{
-          maxWidth: 'min(320px, 80cqw, 55cqh)',
-          gap: 'min(10px, 2cqmin)',
-          fontSize: 'min(28px, 5cqmin)',
-        }}
-      >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+          <span className="text-slate-300 opacity-30">:</span>
           <button
-            key={n}
-            onClick={() => handleInput(n.toString())}
+            onClick={() => setActiveField('sec')}
+            className={`border-2 transition-all ${
+              activeField === 'sec'
+                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
+                : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
+            }`}
+            style={{
+              padding: 'min(8px, 2cqh) min(20px, 4cqw)',
+              borderRadius: 'min(16px, 3cqmin)',
+            }}
+          >
+            {editValues.sec}
+          </button>
+        </div>
+
+        {/* Preset buttons row */}
+        <div
+          className="grid grid-cols-3 w-full"
+          style={{
+            maxWidth: 'min(320px, 80cqw, 45cqh)',
+            gap: 'min(8px, 2cqmin)',
+            fontSize: 'min(14px, 4cqmin)',
+          }}
+        >
+          {PRESETS.map((s) => (
+            <button
+              key={s}
+              onClick={() => handlePreset(s)}
+              className={`rounded-xl font-black transition-all active:scale-90 ${presetBtnColor}`}
+              style={{ padding: 'min(10px, 2.5cqmin)' }}
+            >
+              {presetLabel(s)}
+            </button>
+          ))}
+        </div>
+
+        {/* Numpad grid */}
+        <div
+          className="grid grid-cols-3 w-full"
+          style={{
+            maxWidth: 'min(320px, 80cqw, 45cqh)',
+            gap: 'min(10px, 2cqmin)',
+            fontSize: 'min(28px, 5cqmin)',
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+            <button
+              key={n}
+              onClick={() => handleInput(n.toString())}
+              className={`${btnBase} ${btnColor}`}
+              style={{ borderRadius: 'min(16px, 3cqmin)' }}
+            >
+              {n}
+            </button>
+          ))}
+          <button
+            onClick={handleBackspace}
+            className={`${btnBase} ${btnColor}`}
+            style={{ borderRadius: 'min(16px, 3cqmin)' }}
+            aria-label="Backspace"
+          >
+            <Delete
+              style={{
+                width: 'min(24px, 1.2em)',
+                height: 'min(24px, 1.2em)',
+              }}
+            />
+          </button>
+          <button
+            onClick={() => handleInput('0')}
             className={`${btnBase} ${btnColor}`}
             style={{ borderRadius: 'min(16px, 3cqmin)' }}
           >
-            {n}
+            0
           </button>
-        ))}
+          <button
+            onClick={() =>
+              onConfirm(
+                parseInt(editValues.min) * 60 + parseInt(editValues.sec)
+              )
+            }
+            className={`${btnBase} bg-brand-blue-primary text-white shadow-xl hover:bg-brand-blue-light`}
+            style={{ borderRadius: 'min(16px, 3cqmin)' }}
+            aria-label="Confirm time"
+          >
+            <Check
+              style={{
+                width: 'min(32px, 1.4em)',
+                height: 'min(32px, 1.4em)',
+              }}
+              strokeWidth={4}
+            />
+          </button>
+        </div>
+
         <button
-          onClick={handleBackspace}
-          className={`${btnBase} ${btnColor}`}
-          style={{ borderRadius: 'min(16px, 3cqmin)' }}
-          aria-label="Backspace"
+          onClick={onCancel}
+          className="font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
+          style={{
+            fontSize: 'min(12px, 3cqmin)',
+            padding: 'min(6px, 1.5cqh) min(16px, 4cqw)',
+            borderRadius: '999px',
+          }}
+          aria-label="Close keypad"
         >
-          <Delete
-            style={{
-              width: 'min(24px, 1.2em)',
-              height: 'min(24px, 1.2em)',
-            }}
-          />
-        </button>
-        <button
-          onClick={() => handleInput('0')}
-          className={`${btnBase} ${btnColor}`}
-          style={{ borderRadius: 'min(16px, 3cqmin)' }}
-        >
-          0
-        </button>
-        <button
-          onClick={() =>
-            onConfirm(parseInt(editValues.min) * 60 + parseInt(editValues.sec))
-          }
-          className={`${btnBase} bg-brand-blue-primary text-white shadow-xl hover:bg-brand-blue-light`}
-          style={{ borderRadius: 'min(16px, 3cqmin)' }}
-          aria-label="Confirm time"
-        >
-          <Check
-            style={{
-              width: 'min(32px, 1.4em)',
-              height: 'min(32px, 1.4em)',
-            }}
-            strokeWidth={4}
-          />
+          Cancel
         </button>
       </div>
-
-      <button
-        onClick={onCancel}
-        className="font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
-        style={{
-          fontSize: 'min(12px, 3cqmin)',
-          padding: 'min(6px, 1cqh) min(16px, 4cqw)',
-          borderRadius: '999px',
-        }}
-        aria-label="Close keypad"
-      >
-        Cancel
-      </button>
     </div>
   );
 };
