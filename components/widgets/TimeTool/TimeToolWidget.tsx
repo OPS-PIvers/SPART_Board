@@ -127,58 +127,55 @@ const Keypad: React.FC<{
     'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600';
 
   return (
-    <div
-      className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
-      style={{ padding: 'min(12px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
-    >
-      {/* Time display row */}
+    <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
       <div
-        className="flex items-center font-mono font-black tabular-nums shrink-0"
+        className="flex flex-col items-center justify-center w-full h-full"
         style={{
-          height: '18%',
-          fontSize: 'min(16cqh, 12cqw)',
-          gap: 'min(12px, 2cqmin)',
-        }}
-      >
-        <button
-          onClick={() => setActiveField('min')}
-          className={`border-2 transition-all ${
-            activeField === 'min'
-              ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
-          }`}
-          style={{
-            padding: 'min(4px, 1cqh) min(20px, 4cqw)',
-            borderRadius: 'min(12px, 3cqmin)',
-          }}
-        >
-          {editValues.min}
-        </button>
-        <span className="text-slate-300 opacity-30">:</span>
-        <button
-          onClick={() => setActiveField('sec')}
-          className={`border-2 transition-all ${
-            activeField === 'sec'
-              ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
-          }`}
-          style={{
-            padding: 'min(4px, 1cqh) min(20px, 4cqw)',
-            borderRadius: 'min(12px, 3cqmin)',
-          }}
-        >
-          {editValues.sec}
-        </button>
-      </div>
-
-      {/* Main Controls Area */}
-      <div
-        className="flex-1 min-h-0 flex flex-col items-center justify-center w-full"
-        style={{
-          gap: 'min(8px, 2cqmin)',
+          gap: 'min(12px, 2.5cqmin)',
           maxWidth: 'min(400px, 90cqw, 70cqh)',
+          padding: 'min(12px, 3cqmin)',
         }}
       >
+        {/* Time display row */}
+        <div
+          className="flex items-center font-mono font-black tabular-nums shrink-0"
+          style={{
+            height: '18%',
+            fontSize: 'min(16cqh, 12cqw)',
+            gap: 'min(12px, 2cqmin)',
+          }}
+        >
+          <button
+            onClick={() => setActiveField('min')}
+            className={`border-2 transition-all ${
+              activeField === 'min'
+                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
+                : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
+            }`}
+            style={{
+              padding: 'min(4px, 1cqh) min(20px, 4cqw)',
+              borderRadius: 'min(12px, 3cqmin)',
+            }}
+          >
+            {editValues.min}
+          </button>
+          <span className="text-slate-300 opacity-30">:</span>
+          <button
+            onClick={() => setActiveField('sec')}
+            className={`border-2 transition-all ${
+              activeField === 'sec'
+                ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
+                : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
+            }`}
+            style={{
+              padding: 'min(4px, 1cqh) min(20px, 4cqw)',
+              borderRadius: 'min(12px, 3cqmin)',
+            }}
+          >
+            {editValues.sec}
+          </button>
+        </div>
+
         {/* Preset buttons row */}
         <div
           className="grid grid-cols-3 w-full shrink-0"
@@ -248,21 +245,21 @@ const Keypad: React.FC<{
             />
           </button>
         </div>
-      </div>
 
-      <button
-        onClick={onCancel}
-        className="shrink-0 font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
-        style={{
-          height: '10%',
-          fontSize: 'min(12px, 3.5cqmin)',
-          padding: '0 min(16px, 4cqw)',
-          borderRadius: '999px',
-        }}
-        aria-label="Close keypad"
-      >
-        Cancel
-      </button>
+        <button
+          onClick={onCancel}
+          className="shrink-0 font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
+          style={{
+            height: '10%',
+            fontSize: 'min(12px, 3.5cqmin)',
+            padding: '0 min(16px, 4cqw)',
+            borderRadius: '999px',
+          }}
+          aria-label="Close keypad"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 };
