@@ -1,6 +1,7 @@
 {
   "name": "functions",
   "scripts": {
+    "test": "vitest run",
     "type-check": "tsc --noEmit",
     "build": "tsc",
     "build:watch": "tsc --watch",
@@ -28,7 +29,8 @@
     "@types/cors": "^2.8.19",
     "@types/crypto-js": "^4.2.2",
     "firebase-functions-test": "^3.4.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.18"
   },
   "pnpm": {
     "overrides": {
