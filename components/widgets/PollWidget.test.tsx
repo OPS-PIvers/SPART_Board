@@ -292,10 +292,10 @@ describe('PollSettings', () => {
   it('does not import if user cancels confirmation', () => {
     mockConfirm.mockReturnValue(false); // User clicks Cancel
     // Widget with existing options to trigger confirmation
-    const widgetWithOptions = {
+    const widgetWithOptions: WidgetData = {
       ...widget,
       config: {
-        ...widget.config,
+        ...(widget.config as any),
         options: [{ label: 'Existing Option', votes: 0 }],
       },
     };
@@ -346,10 +346,10 @@ describe('PollSettings', () => {
 
   it('resets the poll from settings', () => {
     mockConfirm.mockReturnValue(true);
-    const widgetWithVotes = {
+    const widgetWithVotes: WidgetData = {
       ...widget,
       config: {
-        ...widget.config,
+        ...(widget.config as any),
         options: [{ label: 'Option 1', votes: 5 }],
       },
     };
