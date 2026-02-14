@@ -66,7 +66,7 @@ describe('GoogleDriveService', () => {
     });
 
     it('should throw error if response is not ok', async () => {
-      vi.spyOn(global, 'fetch').mockResolvedValue({
+      vi.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: false,
         statusText: 'Unauthorized',
       } as Response);
@@ -79,7 +79,11 @@ describe('GoogleDriveService', () => {
 
   describe('getOrCreateFolder', () => {
     it('should return existing folder id', async () => {
-      const mockFolder = { id: 'folder-1', name: 'TestFolder' } as DriveFile;
+      const mockFolder: DriveFile = {
+        id: 'folder-1',
+        name: 'TestFolder',
+        mimeType: 'application/vnd.google-apps.folder',
+      };
       // Mock listFiles to return the folder
       vi.spyOn(service, 'listFiles').mockResolvedValueOnce([mockFolder]);
 
@@ -146,22 +150,25 @@ describe('GoogleDriveService', () => {
 
   describe('getAppFolder', () => {
     it('should call getOrCreateFolder with APP_NAME', async () => {
-      const spy = vi
-        .spyOn(service, 'getOrCreateFolder')
-        .mockResolvedValue('app-folder-id');
+      // Mock getOrCreateFolder implementation on the instance to avoid calling the real method
+      // Using Object.defineProperty to avoid unbound method linting issues when spying directly
+      const mockGetOrCreateFolder = vi.fn().mockResolvedValue('app-folder-id');
+      service.getOrCreateFolder = mockGetOrCreateFolder;
 
       const id = await service.getAppFolder();
 
       expect(id).toBe('app-folder-id');
       // Verify with regex since constant is from real code now (mock removed)
-      expect(spy).toHaveBeenCalledWith(expect.any(String));
+      expect(mockGetOrCreateFolder).toHaveBeenCalledWith(expect.any(String));
     });
   });
 
   describe('getFolderPath', () => {
     it('should traverse path creating folders', async () => {
-      const getOrCreateSpy = vi.spyOn(service, 'getOrCreateFolder');
-      getOrCreateSpy
+      const mockGetOrCreateFolder = vi.fn();
+      service.getOrCreateFolder = mockGetOrCreateFolder;
+
+      mockGetOrCreateFolder
         .mockResolvedValueOnce('app-folder-id') // getAppFolder call
         .mockResolvedValueOnce('assets-id')
         .mockResolvedValueOnce('backgrounds-id');
@@ -170,15 +177,18 @@ describe('GoogleDriveService', () => {
       const result = await service.getFolderPath(path);
 
       expect(result).toBe('backgrounds-id');
-      expect(getOrCreateSpy).toHaveBeenCalledTimes(3);
+      expect(mockGetOrCreateFolder).toHaveBeenCalledTimes(3);
       // First call uses app name
-      expect(getOrCreateSpy).toHaveBeenNthCalledWith(1, expect.any(String));
-      expect(getOrCreateSpy).toHaveBeenNthCalledWith(
+      expect(mockGetOrCreateFolder).toHaveBeenNthCalledWith(
+        1,
+        expect.any(String)
+      );
+      expect(mockGetOrCreateFolder).toHaveBeenNthCalledWith(
         2,
         'Assets',
         'app-folder-id'
       );
-      expect(getOrCreateSpy).toHaveBeenNthCalledWith(
+      expect(mockGetOrCreateFolder).toHaveBeenNthCalledWith(
         3,
         'Backgrounds',
         'assets-id'
@@ -197,9 +207,8 @@ describe('GoogleDriveService', () => {
 
     it('should try direct update if driveFileId exists', async () => {
       const dashboardWithId = { ...mockDashboard, driveFileId: 'existing-id' };
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
+      // Mock getFolderPath to avoid internal call logic issues
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
 
       const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
@@ -216,9 +225,7 @@ describe('GoogleDriveService', () => {
 
     it('should fallback to search/create if direct update fails with 404', async () => {
       const dashboardWithId = { ...mockDashboard, driveFileId: 'missing-id' };
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
 
       // First fetch (direct update) fails with 404
       const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce({
@@ -227,7 +234,8 @@ describe('GoogleDriveService', () => {
       } as Response);
 
       // Second fetch (listFiles - search) returns empty
-      vi.spyOn(service, 'listFiles').mockResolvedValueOnce([]);
+      // Using Object.defineProperty or assignment to mock method on instance
+      service.listFiles = vi.fn().mockResolvedValueOnce([]);
 
       // Third fetch (create metadata)
       fetchSpy.mockResolvedValueOnce({
@@ -248,13 +256,15 @@ describe('GoogleDriveService', () => {
 
     it('should update existing file if found by name', async () => {
       const dashboardNoId = { ...mockDashboard };
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
 
       // Mock listFiles to find existing file
-      vi.spyOn(service, 'listFiles').mockResolvedValueOnce([
-        { id: 'found-id', name: 'My Dashboard.spart' } as DriveFile,
+      service.listFiles = vi.fn().mockResolvedValueOnce([
+        {
+          id: 'found-id',
+          name: 'My Dashboard.spart',
+          mimeType: 'application/json',
+        } as DriveFile,
       ]);
 
       const fetchSpy = vi.spyOn(global, 'fetch');
@@ -276,12 +286,10 @@ describe('GoogleDriveService', () => {
 
     it('should create new file if not found', async () => {
       const dashboardNoId = { ...mockDashboard };
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
 
       // Mock listFiles to verify not found
-      vi.spyOn(service, 'listFiles').mockResolvedValueOnce([]);
+      service.listFiles = vi.fn().mockResolvedValueOnce([]);
 
       const fetchSpy = vi.spyOn(global, 'fetch');
 
@@ -305,9 +313,7 @@ describe('GoogleDriveService', () => {
 
     it('should fallback to search/create if direct update fails (non-404)', async () => {
       const dashboardWithId = { ...mockDashboard, driveFileId: 'existing-id' };
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
 
       const consoleWarnSpy = vi
         .spyOn(console, 'warn')
@@ -326,9 +332,8 @@ describe('GoogleDriveService', () => {
       } as Response);
 
       // Fallback: listFiles (mocked to find nothing)
-      const listFilesSpy = vi
-        .spyOn(service, 'listFiles')
-        .mockResolvedValueOnce([]);
+      const listFilesMock = vi.fn().mockResolvedValueOnce([]);
+      service.listFiles = listFilesMock;
 
       // Fallback: create metadata
       fetchSpy.mockResolvedValueOnce({
@@ -352,7 +357,7 @@ describe('GoogleDriveService', () => {
         'Direct Drive update failed, falling back to search:',
         expect.any(Error)
       );
-      expect(listFilesSpy).toHaveBeenCalled();
+      expect(listFilesMock).toHaveBeenCalled();
     });
 
     it('should throw error if update existing fails', async () => {
@@ -360,11 +365,13 @@ describe('GoogleDriveService', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
-      vi.spyOn(service, 'listFiles').mockResolvedValueOnce([
-        { id: 'found-id', name: 'My Dashboard.spart' } as DriveFile,
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
+      service.listFiles = vi.fn().mockResolvedValueOnce([
+        {
+          id: 'found-id',
+          name: 'My Dashboard.spart',
+          mimeType: 'application/json',
+        } as DriveFile,
       ]);
 
       const fetchSpy = vi.spyOn(global, 'fetch');
@@ -392,10 +399,8 @@ describe('GoogleDriveService', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
-      vi.spyOn(service, 'listFiles').mockResolvedValueOnce([]);
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
+      service.listFiles = vi.fn().mockResolvedValueOnce([]);
 
       const fetchSpy = vi.spyOn(global, 'fetch');
 
@@ -425,10 +430,8 @@ describe('GoogleDriveService', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
-      vi.spyOn(service, 'getFolderPath').mockResolvedValue(
-        'dashboards-folder-id'
-      );
-      vi.spyOn(service, 'listFiles').mockResolvedValueOnce([]);
+      service.getFolderPath = vi.fn().mockResolvedValue('dashboards-folder-id');
+      service.listFiles = vi.fn().mockResolvedValueOnce([]);
 
       const fetchSpy = vi.spyOn(global, 'fetch');
 
@@ -484,9 +487,8 @@ describe('GoogleDriveService', () => {
     });
 
     it('should default content type to octet-stream if file type missing', async () => {
-      // Mock File with empty type
+      // Mock File with empty type (File constructor sets type to '' when omitted)
       const file = new File(['content'], 'test.bin');
-      Object.defineProperty(file, 'type', { value: '' });
 
       vi.spyOn(service, 'getFolderPath').mockResolvedValue('folder-id');
 
