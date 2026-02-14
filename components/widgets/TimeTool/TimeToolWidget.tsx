@@ -166,7 +166,7 @@ const Keypad: React.FC<{
           className={`rounded-xl border-2 transition-all ${
             activeField === 'min'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
-              : 'border-transparent text-slate-300 opacity-40 hover:opacity-100'
+              : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
           }`}
           style={{ padding: 'min(8px, 2cqmin) min(12px, 3cqmin)' }}
         >
