@@ -3,7 +3,7 @@ import { PollWidget, PollSettings } from './PollWidget';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
-import { WidgetData } from '../../types';
+import { WidgetData, PollConfig } from '../../types';
 import { GeneratedPoll } from '../../utils/ai';
 
 // Mock useDashboard
@@ -295,7 +295,7 @@ describe('PollSettings', () => {
     const widgetWithOptions: WidgetData = {
       ...widget,
       config: {
-        ...(widget.config as any),
+        ...(widget.config as PollConfig),
         options: [{ label: 'Existing Option', votes: 0 }],
       },
     };
@@ -349,7 +349,7 @@ describe('PollSettings', () => {
     const widgetWithVotes: WidgetData = {
       ...widget,
       config: {
-        ...(widget.config as any),
+        ...(widget.config as PollConfig),
         options: [{ label: 'Option 1', votes: 5 }],
       },
     };
