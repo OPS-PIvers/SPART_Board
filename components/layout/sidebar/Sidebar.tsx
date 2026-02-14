@@ -585,7 +585,7 @@ export const Sidebar: React.FC = () => {
                     ) : (
                       <CloudCheck className="w-3 h-3" />
                     )}
-                    <span className="text-[8px] font-black uppercase tracking-tighter">
+                    <span className="text-xxxs font-black uppercase tracking-tighter">
                       {isSaving ? 'Syncing' : 'Cloud'}
                     </span>
                   </div>
@@ -596,7 +596,7 @@ export const Sidebar: React.FC = () => {
                       title="Google Drive Connected"
                     >
                       <GoogleDriveIcon className="w-3 h-3" />
-                      <span className="text-[8px] font-black uppercase tracking-tighter">
+                      <span className="text-xxxs font-black uppercase tracking-tighter">
                         Drive
                       </span>
                     </div>
@@ -959,14 +959,14 @@ export const Sidebar: React.FC = () => {
                             <tool.icon className="w-4 h-4" />
                           </div>
                           <div className="text-left">
-                            <div className="text-[11px] font-bold uppercase tracking-tight">
+                            <div className="text-xxs font-bold uppercase tracking-tight">
                               {displayLabel}
                             </div>
                             <div className="flex gap-1 mt-0.5">
                               {gradeLevels.map((level) => (
                                 <span
                                   key={level}
-                                  className="text-[7px] font-bold px-1 py-0.5 rounded bg-slate-50 text-slate-400 uppercase"
+                                  className="text-xxxs font-bold px-1 py-0.5 rounded bg-slate-50 text-slate-400 uppercase"
                                 >
                                   {level}
                                 </span>
@@ -1060,7 +1060,7 @@ export const Sidebar: React.FC = () => {
                         <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
                           Disable Close Warning
                         </span>
-                        <span className="text-[10px] text-slate-400 leading-tight">
+                        <span className="text-xxs text-slate-400 leading-tight">
                           Skip the confirmation prompt when closing widgets.
                         </span>
                       </div>
@@ -1185,7 +1185,7 @@ export const Sidebar: React.FC = () => {
                   <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-grow">
-                  <span className="text-[11px] font-bold text-slate-900 truncate">
+                  <span className="text-xs font-bold text-slate-900 truncate">
                     {user?.displayName}
                   </span>
                   <span className="text-xxs text-slate-500 truncate">
