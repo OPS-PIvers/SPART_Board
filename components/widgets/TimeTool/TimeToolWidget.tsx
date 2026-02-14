@@ -31,7 +31,7 @@ const formatStopwatch = (totalSeconds: number): string => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms}`;
 };
 
-const PRESETS = [60, 300, 600, 900, 1800] as const;
+const PRESETS = [60, 180, 300] as const;
 const SOUNDS = ['Chime', 'Blip', 'Gong', 'Alert'] as const;
 
 const presetLabel = (s: number) => (s >= 60 ? `${s / 60}m` : `${s}s`);
@@ -115,6 +115,15 @@ const Keypad: React.FC<{
     });
   };
 
+  const handlePreset = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    setEditValues({
+      min: mins.toString().padStart(3, '0'),
+      sec: secs.toString().padStart(2, '0'),
+    });
+  };
+
   const isDark = theme === 'dark';
   const isGlass = theme === 'glass';
 
@@ -126,42 +135,83 @@ const Keypad: React.FC<{
       ? 'bg-white/10 text-white hover:bg-white/20'
       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm';
 
+  const presetBtnColor = isDark
+    ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+    : isGlass
+      ? 'bg-white/5 text-white/80 hover:bg-white/15'
+      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-brand-blue-primary shadow-sm';
+
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-4 animate-in fade-in zoom-in-95 duration-200">
-      {/* Time display row */}
+    <div
+      className="flex flex-col items-center justify-center w-full h-full animate-in fade-in zoom-in-95 duration-200"
+      style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
+    >
+      {/* Close button */}
+      <button
+        onClick={onCancel}
+        className="self-end text-slate-400 hover:text-brand-red-primary transition-all"
+        style={{ fontSize: 'min(20px, 5cqmin)' }}
+        aria-label="Close keypad"
+      >
+        ×
+      </button>
+
+      {/* Selected time display */}
       <div
-        className="flex items-center gap-3 font-mono font-black tabular-nums"
-        style={{ fontSize: 'clamp(32px, 40cqmin, 400px)' }}
+        className="flex items-center font-mono font-black tabular-nums"
+        style={{ fontSize: 'min(48px, 15cqmin)', gap: 'min(8px, 2cqmin)' }}
       >
         <button
           onClick={() => setActiveField('min')}
-          className={`px-4 py-2 rounded-xl border-2 transition-all ${
+          className={`rounded-xl border-2 transition-all ${
             activeField === 'min'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
               : 'border-transparent text-slate-300 opacity-40 hover:opacity-100'
           }`}
+          style={{ padding: 'min(8px, 2cqmin) min(12px, 3cqmin)' }}
         >
           {editValues.min}
         </button>
         <span className="text-slate-300">:</span>
         <button
           onClick={() => setActiveField('sec')}
-          className={`px-4 py-2 rounded-xl border-2 transition-all ${
+          className={`rounded-xl border-2 transition-all ${
             activeField === 'sec'
               ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary scale-105 shadow-lg'
               : 'border-transparent text-slate-400 opacity-40 hover:opacity-100'
           }`}
+          style={{ padding: 'min(8px, 2cqmin) min(12px, 3cqmin)' }}
         >
           {editValues.sec}
         </button>
       </div>
 
+      {/* Preset buttons row */}
+      <div
+        className="grid grid-cols-3 w-full"
+        style={{
+          gap: 'min(8px, 2cqmin)',
+          fontSize: 'min(14px, 4cqmin)',
+        }}
+      >
+        {PRESETS.map((s) => (
+          <button
+            key={s}
+            onClick={() => handlePreset(s)}
+            className={`rounded-xl font-black transition-all active:scale-90 ${presetBtnColor}`}
+            style={{ padding: 'min(12px, 3cqmin)' }}
+          >
+            {presetLabel(s)}
+          </button>
+        ))}
+      </div>
+
       {/* Numpad grid */}
       <div
-        className="grid grid-cols-3 gap-2 w-full"
+        className="grid grid-cols-3 w-full flex-1"
         style={{
-          maxWidth: 'min(280px, 80cqmin)',
-          fontSize: 'min(20px, 3cqmin)',
+          gap: 'min(8px, 2cqmin)',
+          fontSize: 'min(20px, 6cqmin)',
         }}
       >
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -196,14 +246,6 @@ const Keypad: React.FC<{
           <Check className="w-[1.4em] h-[1.4em]" strokeWidth={4} />
         </button>
       </div>
-
-      <button
-        onClick={onCancel}
-        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-red-primary hover:bg-brand-red-lighter/20 transition-all"
-        aria-label="Close keypad"
-      >
-        Cancel
-      </button>
     </div>
   );
 };
@@ -308,9 +350,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       : 'cursor-default'
                   }`}
                   style={{
-                    fontSize: isVisual
-                      ? 'clamp(2rem, 25cqmin, 12rem)'
-                      : 'clamp(2.5rem, 40cqmin, 18rem)',
+                    fontSize: isVisual ? '28cqmin' : '45cqmin',
                   }}
                 >
                   {mode === 'stopwatch'
@@ -319,40 +359,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                 </button>
               </div>
             </div>
-
-            {/* Presets row — only in digital timer mode when stopped */}
-            {!isVisual && mode === 'timer' && !isRunning && (
-              <div
-                className="shrink-0 flex flex-wrap justify-center"
-                style={{
-                  gap: 'min(6px, 1.5cqmin)',
-                  paddingBottom: 'min(8px, 2cqmin)',
-                }}
-              >
-                {PRESETS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setTime(s)}
-                    className={`rounded-lg font-black transition-all hover:scale-105 active:scale-95 ${
-                      config.elapsedTime === s
-                        ? 'bg-brand-blue-primary text-white shadow-md'
-                        : config.theme === 'dark'
-                          ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-brand-blue-primary'
-                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm'
-                    }`}
-                    style={{
-                      fontSize: 'min(12px, 2.5cqmin)',
-                      paddingLeft: 'min(12px, 3cqmin)',
-                      paddingRight: 'min(12px, 3cqmin)',
-                      paddingTop: 'min(6px, 1.5cqmin)',
-                      paddingBottom: 'min(6px, 1.5cqmin)',
-                    }}
-                  >
-                    {presetLabel(s)}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
