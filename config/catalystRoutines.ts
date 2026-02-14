@@ -37,7 +37,6 @@ export const CATALYST_ROUTINES: CatalystRoutine[] = [
           duration: 60,
           isRunning: true,
           visualType: 'digital',
-          theme: 'light',
           elapsedTime: 60,
           selectedSound: 'Gong',
         },

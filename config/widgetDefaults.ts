@@ -9,7 +9,6 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     config: {
       mode: 'timer',
       visualType: 'digital',
-      theme: 'light',
       duration: 600,
       elapsedTime: 600,
       isRunning: false,

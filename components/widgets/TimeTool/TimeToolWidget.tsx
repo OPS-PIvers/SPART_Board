@@ -1,5 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { TimeToolConfig, WidgetData } from '../../../types';
+import {
+  TimeToolConfig,
+  WidgetData,
+  DEFAULT_GLOBAL_STYLE,
+} from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
 import { useTimeTool } from './useTimeTool';
 import {
@@ -11,25 +15,17 @@ import {
   Delete,
   Timer as TimerIcon,
   Clock as ClockIcon,
+  Type,
   Palette,
+  Sun,
+  Sparkles,
 } from 'lucide-react';
-import { STANDARD_COLORS } from '../../../config/colors';
+import { WIDGET_PALETTE, STANDARD_COLORS } from '../../../config/colors';
 import { FloatingPanel } from '../../common/FloatingPanel';
+import { WidgetLayout } from '../WidgetLayout';
+import { SettingsLabel } from '../../common/SettingsLabel';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-const formatTimer = (totalSeconds: number): string => {
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = Math.floor(totalSeconds % 60);
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
-
-const formatStopwatch = (totalSeconds: number): string => {
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = Math.floor(totalSeconds % 60);
-  const ms = Math.floor((totalSeconds % 1) * 10);
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms}`;
-};
 
 const PRESETS = [60, 180, 300] as const;
 const SOUNDS = ['Chime', 'Blip', 'Gong', 'Alert'] as const;
@@ -83,8 +79,7 @@ const Keypad: React.FC<{
   onConfirm: (totalSeconds: number) => void;
   onCancel: () => void;
   initialSeconds: number;
-  theme: 'light' | 'dark' | 'glass';
-}> = ({ onConfirm, onCancel, initialSeconds, theme }) => {
+}> = ({ onConfirm, onCancel, initialSeconds }) => {
   const [activeField, setActiveField] = useState<'min' | 'sec'>('min');
   const [editValues, setEditValues] = useState({
     min: Math.floor(initialSeconds / 60)
@@ -124,22 +119,12 @@ const Keypad: React.FC<{
     });
   };
 
-  const isDark = theme === 'dark';
-  const isGlass = theme === 'glass';
-
   const btnBase =
     'aspect-square flex items-center justify-center rounded-2xl font-black transition-all active:scale-90';
-  const btnColor = isDark
-    ? 'bg-slate-800 text-white hover:bg-slate-700'
-    : isGlass
-      ? 'bg-white/10 text-white hover:bg-white/20'
-      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-brand-blue-primary shadow-sm';
-
-  const presetBtnColor = isDark
-    ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-    : isGlass
-      ? 'bg-white/5 text-white/80 hover:bg-white/15'
-      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-brand-blue-primary shadow-sm';
+  const btnColor =
+    'bg-white/10 text-slate-700 hover:bg-white/20 hover:text-brand-blue-primary';
+  const presetBtnColor =
+    'bg-white/5 text-slate-500 hover:bg-white/15 hover:text-brand-blue-primary';
 
   return (
     <div
@@ -255,7 +240,8 @@ const Keypad: React.FC<{
 export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const {
     displayTime,
     isRunning,
@@ -272,6 +258,13 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
 
   const isVisual = config.visualType === 'visual';
 
+  const {
+    themeColor = STANDARD_COLORS.slate,
+    glow = false,
+    fontFamily = 'global',
+    clockStyle = 'modern',
+  } = config;
+
   const updateConfig = useCallback(
     (patch: Partial<TimeToolConfig>) => {
       updateWidget(widget.id, { config: { ...config, ...patch } });
@@ -281,224 +274,299 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
 
   // ─── Derived styles ──────────────────────────────────────────────
 
-  const themeClasses =
-    config.theme === 'dark'
-      ? 'bg-slate-900 text-white'
-      : config.theme === 'glass'
-        ? 'bg-white/10 backdrop-blur-xl text-white'
-        : 'bg-white text-slate-900';
-
   const getTimeColor = () => {
-    if (mode !== 'timer') return 'text-brand-blue-primary';
-    if (displayTime <= 60) return 'text-brand-red-primary';
-    if (displayTime / config.duration <= 0.25) return 'text-amber-500';
-    return config.theme === 'light' ? 'text-slate-900' : 'text-white';
+    if (mode === 'timer') {
+      if (displayTime <= 60) return STANDARD_COLORS.red;
+      if (displayTime / config.duration <= 0.25) return STANDARD_COLORS.amber;
+    }
+    return themeColor;
   };
 
   const getRingColor = () => {
     if (displayTime <= 60) return STANDARD_COLORS.red;
     if (displayTime / config.duration <= 0.25) return STANDARD_COLORS.amber;
-    return STANDARD_COLORS.blue;
+    return themeColor;
+  };
+
+  const getStyleClasses = () => {
+    switch (clockStyle) {
+      case 'lcd':
+        return 'tracking-widest opacity-90';
+      case 'minimal':
+        return 'tracking-tighter';
+      default:
+        return '';
+    }
+  };
+
+  const getFontClass = () => {
+    if (fontFamily === 'global') {
+      return `font-${globalStyle.fontFamily}`;
+    }
+    return fontFamily;
   };
 
   const progress =
     mode === 'timer' && config.duration > 0 ? displayTime / config.duration : 1;
 
+  const timeColor = getTimeColor();
+
   // ─── Render ───────────────────────────────────────────────────────
 
   return (
-    <div
-      className={`h-full w-full flex flex-col overflow-hidden ${themeClasses}`}
-    >
-      {/* ─── Content ────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative">
-        {isEditing ? (
-          <Keypad
-            initialSeconds={config.elapsedTime}
-            theme={config.theme}
-            onConfirm={(s) => {
-              setTime(s);
-              setIsEditing(false);
-            }}
-            onCancel={() => setIsEditing(false)}
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center px-4 py-2">
-            {/* Time display area */}
-            <div className="flex-1 min-h-0 w-full flex items-center justify-center">
-              <div
-                className="relative flex items-center justify-center"
-                style={{
-                  width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
-                  aspectRatio: isVisual ? '1' : undefined,
-                }}
-              >
-                {isVisual && (
-                  <ProgressRing
-                    progress={progress}
-                    ringColor={getRingColor()}
-                  />
-                )}
-                <button
-                  onClick={() => {
-                    if (!isRunning && mode === 'timer') setIsEditing(true);
-                  }}
-                  disabled={isRunning || mode !== 'timer'}
-                  className={`relative z-10 tabular-nums select-none font-black font-sans leading-none transition-transform ${getTimeColor()} ${
-                    !isRunning && mode === 'timer'
-                      ? 'cursor-pointer hover:scale-105 active:scale-95'
-                      : 'cursor-default'
-                  }`}
-                  style={{
-                    fontSize: isVisual ? '28cqmin' : '45cqmin',
-                  }}
-                >
-                  {mode === 'stopwatch'
-                    ? formatStopwatch(displayTime)
-                    : formatTimer(displayTime)}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ─── Footer (controls) ──────────────────────────────────── */}
-      {!isEditing && (
+    <WidgetLayout
+      padding="p-0"
+      content={
         <div
-          className="shrink-0 flex flex-col"
-          style={{
-            padding:
-              'min(8px, 1.5cqmin) min(16px, 3.5cqmin) min(16px, 3.5cqmin)',
-            gap: 'min(12px, 2.5cqmin)',
-          }}
+          className={`h-full w-full flex flex-col items-center justify-center transition-all duration-500 ${
+            clockStyle === 'lcd' ? 'bg-black/5' : ''
+          }`}
+          style={{ padding: 'min(4px, 1cqmin)' }}
         >
-          {/* Play/Pause + Reset */}
-          <div className="flex" style={{ gap: 'min(12px, 2.5cqmin)' }}>
-            <button
-              onClick={
-                isRunning ? () => handleStop() : () => void handleStart()
-              }
-              className={`flex-[3] flex items-center justify-center gap-2 rounded-lg font-black uppercase tracking-widest transition-all active:scale-[0.97] ${
-                isRunning
-                  ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                  : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
-              }`}
-              style={{
-                height: 'min(80px, 12cqmin)',
-                fontSize: 'min(20px, 3.5cqmin)',
+          {isEditing ? (
+            <Keypad
+              initialSeconds={config.elapsedTime}
+              onConfirm={(s) => {
+                setTime(s);
+                setIsEditing(false);
               }}
-            >
-              {isRunning ? (
-                <Pause className="w-[1.2em] h-[1.2em]" fill="currentColor" />
-              ) : (
-                <Play className="w-[1.2em] h-[1.2em]" fill="currentColor" />
-              )}
-              {isRunning ? 'PAUSE' : 'START'}
-            </button>
-            <button
-              onClick={handleReset}
-              className="aspect-square flex items-center justify-center rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300 hover:text-brand-blue-primary transition-all active:scale-95"
-              style={{ height: 'min(80px, 12cqmin)' }}
-              aria-label="Reset"
-            >
-              <RotateCcw
-                style={{
-                  width: 'min(24px, 6cqmin)',
-                  height: 'min(24px, 6cqmin)',
-                }}
-              />
-            </button>
-          </div>
-
-          {/* Sound picker + version label */}
-          <div className="flex justify-between items-center px-0.5">
-            <div className="relative">
-              <button
-                onClick={() => setShowSoundPicker((v) => !v)}
-                className={`flex items-center rounded-full transition-all border shadow-sm ${
-                  config.theme === 'dark'
-                    ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-700'
-                    : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-brand-blue-primary hover:bg-slate-100'
-                }`}
-                style={{
-                  gap: 'min(8px, 2cqmin)',
-                  paddingLeft: 'min(16px, 4cqmin)',
-                  paddingRight: 'min(16px, 4cqmin)',
-                  paddingTop: 'min(8px, 2cqmin)',
-                  paddingBottom: 'min(8px, 2cqmin)',
-                }}
-              >
-                <Bell
-                  className={
-                    isRunning ? 'animate-pulse text-brand-blue-primary' : ''
-                  }
+              onCancel={() => setIsEditing(false)}
+            />
+          ) : (
+            <>
+              {/* Time display - matches Clock structure */}
+              <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+                <div
+                  className="relative flex items-center justify-center"
                   style={{
-                    width: 'min(16px, 4cqmin)',
-                    height: 'min(16px, 4cqmin)',
+                    width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
+                    aspectRatio: isVisual ? '1' : undefined,
                   }}
-                />
-                <span
-                  className="font-black uppercase tracking-widest"
-                  style={{ fontSize: 'min(12px, 3cqmin)' }}
                 >
-                  {config.selectedSound}
-                </span>
-              </button>
+                  {isVisual && (
+                    <ProgressRing
+                      progress={progress}
+                      ringColor={getRingColor()}
+                    />
+                  )}
 
-              {showSoundPicker && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowSoundPicker(false)}
-                  />
-                  <FloatingPanel
-                    padding="sm"
-                    className="absolute bottom-full left-0 mb-3 w-48 origin-bottom-left"
+                  <button
+                    onClick={() => {
+                      if (!isRunning && mode === 'timer') setIsEditing(true);
+                    }}
+                    disabled={isRunning || mode !== 'timer'}
+                    className={`relative z-10 flex items-baseline leading-none transition-all ${getFontClass()} ${getStyleClasses()} ${
+                      !isRunning && mode === 'timer'
+                        ? 'cursor-pointer hover:scale-105 active:scale-95'
+                        : 'cursor-default'
+                    }`}
+                    style={{
+                      fontSize: isVisual
+                        ? '28cqmin'
+                        : mode === 'stopwatch'
+                          ? '40cqmin'
+                          : '45cqmin',
+                      color: timeColor,
+                      textShadow: glow
+                        ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
+                        : 'none',
+                    }}
                   >
-                    {SOUNDS.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          updateConfig({ selectedSound: s });
-                          setShowSoundPicker(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 rounded-xl text-xxs font-black uppercase tracking-widest transition-all ${
-                          config.selectedSound === s
-                            ? 'bg-brand-blue-primary text-white shadow-md'
-                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-brand-blue-primary'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </FloatingPanel>
-                </>
-              )}
-            </div>
+                    {clockStyle === 'lcd' && !isVisual && (
+                      <div className="absolute opacity-5 pointer-events-none select-none flex">
+                        <span>88</span>
+                        <span className="mx-[0.25em]">:</span>
+                        <span>88</span>
+                        {mode === 'stopwatch' && (
+                          <>
+                            <span className="opacity-30 mx-[0.05em]">.</span>
+                            <span>8</span>
+                          </>
+                        )}
+                      </div>
+                    )}
 
-            <div
-              className="flex items-center opacity-30 select-none"
-              style={{ gap: 'min(4px, 1cqmin)' }}
-            >
+                    {/* Minutes and colon (shared between timer/stopwatch) */}
+                    <span>
+                      {Math.floor(displayTime / 60)
+                        .toString()
+                        .padStart(2, '0')}
+                    </span>
+                    <span
+                      className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-[0.1em] opacity-30`}
+                    >
+                      :
+                    </span>
+                    <span>
+                      {Math.floor(displayTime % 60)
+                        .toString()
+                        .padStart(2, '0')}
+                    </span>
+                    {/* Tenths digit (stopwatch only) */}
+                    {mode === 'stopwatch' && (
+                      <>
+                        <span
+                          className="opacity-30 mx-[0.05em]"
+                          style={{ fontSize: '0.5em' }}
+                        >
+                          .
+                        </span>
+                        <span
+                          className="opacity-60"
+                          style={{ fontSize: '0.5em' }}
+                        >
+                          {Math.floor((displayTime % 1) * 10)}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Controls footer - compact, transparent */}
               <div
-                className="rounded-full bg-brand-blue-primary"
+                className="shrink-0 w-full flex flex-col"
                 style={{
-                  width: 'min(6px, 1.5cqmin)',
-                  height: 'min(6px, 1.5cqmin)',
+                  padding: '0 min(12px, 2.5cqmin) min(8px, 1.5cqmin)',
+                  gap: 'min(6px, 1.5cqmin)',
                 }}
-              />
-              <span
-                className="font-black text-slate-400 uppercase tracking-tighter"
-                style={{ fontSize: 'min(14px, 4cqmin)' }}
               >
-                Timer v3
-              </span>
-            </div>
-          </div>
+                {/* Play/Pause + Reset */}
+                <div className="flex" style={{ gap: 'min(6px, 1.5cqmin)' }}>
+                  <button
+                    onClick={
+                      isRunning ? () => handleStop() : () => void handleStart()
+                    }
+                    className={`flex-[3] flex items-center justify-center rounded-lg font-black uppercase tracking-widest transition-all active:scale-[0.97] ${
+                      isRunning
+                        ? 'bg-slate-200/60 text-slate-500 hover:bg-slate-300/70'
+                        : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
+                    }`}
+                    style={{
+                      height: 'min(44px, 10cqmin)',
+                      fontSize: 'min(12px, 3cqmin)',
+                      gap: 'min(6px, 1.5cqmin)',
+                    }}
+                  >
+                    {isRunning ? (
+                      <Pause
+                        className="w-[1.2em] h-[1.2em]"
+                        fill="currentColor"
+                      />
+                    ) : (
+                      <Play
+                        className="w-[1.2em] h-[1.2em]"
+                        fill="currentColor"
+                      />
+                    )}
+                    {isRunning ? 'PAUSE' : 'START'}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="aspect-square flex items-center justify-center rounded-lg bg-slate-200/60 text-slate-400 hover:bg-slate-300/70 hover:text-brand-blue-primary transition-all active:scale-95"
+                    style={{ height: 'min(44px, 10cqmin)' }}
+                    aria-label="Reset"
+                  >
+                    <RotateCcw
+                      style={{
+                        width: 'min(16px, 4cqmin)',
+                        height: 'min(16px, 4cqmin)',
+                      }}
+                    />
+                  </button>
+                </div>
+
+                {/* Sound picker row */}
+                <div className="flex justify-between items-center">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowSoundPicker((v) => !v)}
+                      className="flex items-center rounded-full transition-all text-slate-400 hover:text-brand-blue-primary"
+                      style={{
+                        gap: 'min(4px, 1cqmin)',
+                        paddingLeft: 'min(8px, 2cqmin)',
+                        paddingRight: 'min(8px, 2cqmin)',
+                        paddingTop: 'min(4px, 1cqmin)',
+                        paddingBottom: 'min(4px, 1cqmin)',
+                      }}
+                    >
+                      <Bell
+                        className={
+                          isRunning
+                            ? 'animate-pulse text-brand-blue-primary'
+                            : ''
+                        }
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                      />
+                      <span
+                        className="font-black uppercase tracking-widest"
+                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                      >
+                        {config.selectedSound}
+                      </span>
+                    </button>
+
+                    {showSoundPicker && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowSoundPicker(false)}
+                        />
+                        <FloatingPanel
+                          padding="sm"
+                          className="absolute bottom-full left-0 mb-3 w-48 origin-bottom-left"
+                        >
+                          {SOUNDS.map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                updateConfig({ selectedSound: s });
+                                setShowSoundPicker(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-xl text-xxs font-black uppercase tracking-widest transition-all ${
+                                config.selectedSound === s
+                                  ? 'bg-brand-blue-primary text-white shadow-md'
+                                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-brand-blue-primary'
+                              }`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </FloatingPanel>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Mode indicator */}
+                  <div
+                    className="flex items-center opacity-30 select-none"
+                    style={{ gap: 'min(4px, 1cqmin)' }}
+                  >
+                    <div
+                      className="rounded-full"
+                      style={{
+                        width: 'min(5px, 1.2cqmin)',
+                        height: 'min(5px, 1.2cqmin)',
+                        backgroundColor: themeColor,
+                      }}
+                    />
+                    <span
+                      className="font-black text-slate-400 uppercase tracking-tighter"
+                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                    >
+                      {mode === 'timer' ? 'Timer' : 'Stopwatch'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
-    </div>
+      }
+    />
   );
 };
 
@@ -509,20 +577,37 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
-  const { timerEndVoiceLevel } = config;
+  const {
+    timerEndVoiceLevel,
+    fontFamily = 'global',
+    clockStyle = 'modern',
+    themeColor = STANDARD_COLORS.slate,
+  } = config;
 
   const hasExpectations = activeDashboard?.widgets.some(
     (w) => w.type === 'expectations'
   );
 
+  const fonts = [
+    { id: 'global', label: 'Inherit', icon: 'G' },
+    { id: 'font-mono', label: 'Digital', icon: '01' },
+    { id: 'font-sans', label: 'Modern', icon: 'Aa' },
+    { id: 'font-handwritten', label: 'School', icon: '\u270F\uFE0F' },
+  ];
+
+  const styles = [
+    { id: 'modern', label: 'Default' },
+    { id: 'lcd', label: 'LCD Panel' },
+    { id: 'minimal', label: 'Minimal' },
+  ];
+
+  const colors = WIDGET_PALETTE;
+
   return (
     <div className="space-y-6 p-1">
       {/* Mode Selection */}
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-3">
-          <TimerIcon size={14} />
-          Mode
-        </label>
+      <div>
+        <SettingsLabel icon={TimerIcon}>Mode</SettingsLabel>
         <div className="grid grid-cols-2 gap-2">
           {(['timer', 'stopwatch'] as const).map((m) => (
             <button
@@ -551,10 +636,10 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                   });
                 }
               }}
-              className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 flex items-center justify-center gap-2 ${
+              className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 flex items-center justify-center gap-2 ${
                 config.mode === m
-                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
-                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+                  ? 'bg-blue-600 border-blue-600 text-white'
+                  : 'bg-white border-slate-200 text-slate-600'
               }`}
             >
               {m === 'timer' ? (
@@ -569,10 +654,8 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       {/* Display Style */}
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-3">
-          Display Style
-        </label>
+      <div>
+        <SettingsLabel icon={Sparkles}>Display Style</SettingsLabel>
         <div className="grid grid-cols-2 gap-2">
           {(['digital', 'visual'] as const).map((v) => (
             <button
@@ -582,10 +665,10 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                   config: { ...config, visualType: v },
                 })
               }
-              className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 ${
+              className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
                 config.visualType === v
-                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
-                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+                  ? 'bg-blue-600 border-blue-600 text-white'
+                  : 'bg-white border-slate-200 text-slate-600'
               }`}
             >
               {v === 'digital' ? 'Digital' : 'Visual Ring'}
@@ -594,41 +677,88 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
         </div>
       </div>
 
-      {/* Theme */}
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-3">
-          <Palette size={14} />
-          Theme
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          {(['light', 'dark', 'glass'] as const).map((t) => (
+      {/* Font Family */}
+      <div>
+        <SettingsLabel icon={Type}>Typography</SettingsLabel>
+        <div className="grid grid-cols-4 gap-2">
+          {fonts.map((f) => (
             <button
-              key={t}
+              key={f.id}
               onClick={() =>
                 updateWidget(widget.id, {
-                  config: { ...config, theme: t },
+                  config: { ...config, fontFamily: f.id },
                 })
               }
-              className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 flex items-center justify-center gap-2 ${
-                config.theme === t
-                  ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
-                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
-              }`}
+              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${fontFamily === f.id ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
             >
               <span
-                className={`w-3 h-3 rounded-full ${t === 'light' ? 'bg-white border border-slate-200' : t === 'dark' ? 'bg-slate-900' : 'bg-slate-300'}`}
-              />
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+                className={`text-sm ${f.id === 'global' ? 'font-sans' : f.id} text-slate-900`}
+              >
+                {f.icon}
+              </span>
+              <span className="text-xxxs uppercase text-slate-600">
+                {f.label}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-        <label className="flex items-center gap-2 text-xxs font-black text-brand-blue-primary uppercase tracking-widest mb-5">
-          <Palette size={14} />
-          Timer End Action
-        </label>
+      {/* Clock Style */}
+      <div>
+        <SettingsLabel icon={Sparkles}>Number Style</SettingsLabel>
+        <div className="flex bg-slate-100 p-1 rounded-xl">
+          {styles.map((s) => (
+            <button
+              key={s.id}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, clockStyle: s.id },
+                })
+              }
+              className={`flex-1 py-1.5 text-xxs rounded-lg transition-all ${clockStyle === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {s.label.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Color & Glow */}
+      <div className="flex items-end justify-between gap-4">
+        <div className="flex-1">
+          <SettingsLabel icon={Palette}>Color Palette</SettingsLabel>
+          <div className="flex gap-1.5">
+            {colors.map((c) => (
+              <button
+                key={c}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, themeColor: c },
+                  })
+                }
+                className={`w-6 h-6 rounded-full border-2 transition-all ${themeColor === c ? 'border-slate-800 scale-125 shadow-md' : 'border-transparent hover:scale-110'}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={() =>
+            updateWidget(widget.id, {
+              config: { ...config, glow: !config.glow },
+            })
+          }
+          className={`p-2 rounded-lg border-2 flex items-center gap-2 transition-all ${config.glow ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
+        >
+          <Sun className={`w-4 h-4 ${config.glow ? 'fill-current' : ''}`} />
+          <span className="text-xxs uppercase">Glow</span>
+        </button>
+      </div>
+
+      {/* Timer End Action */}
+      <div>
+        <SettingsLabel icon={Bell}>Timer End Action</SettingsLabel>
 
         {!hasExpectations ? (
           <div className="text-xs text-brand-red-primary bg-brand-red-lighter/20 p-4 rounded-2xl border border-brand-red-lighter/30 flex items-start gap-3">
@@ -639,7 +769,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-3">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
               Switch to Voice Level when finished:
             </p>
@@ -650,10 +780,10 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                     config: { ...config, timerEndVoiceLevel: null },
                   })
                 }
-                className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 ${
+                className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
                   timerEndVoiceLevel == null
-                    ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
-                    : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-slate-200 text-slate-600'
                 }`}
               >
                 Off
@@ -666,10 +796,10 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                       config: { ...config, timerEndVoiceLevel: level },
                     })
                   }
-                  className={`p-3 rounded-xl text-xxs font-black uppercase transition-all border-2 ${
+                  className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
                     timerEndVoiceLevel === level
-                      ? 'border-brand-blue-primary bg-brand-blue-lighter text-brand-blue-primary shadow-sm'
-                      : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-200 text-slate-600'
                   }`}
                 >
                   Lvl {level}
