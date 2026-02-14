@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2025-06-05 - Refactor Dock and Extract Items
+
+**Weed:** `Dock.tsx` was over 1400 lines (again), containing multiple complex internal components (`ToolDockItem`, `FolderItem`, `SortableFolderWidget`, etc.).
+**Root Cause:** "God Component" pattern; features like drag-and-drop, popovers, and folders were implemented inline.
+**Plan:** Extracted `ToolDockItem`, `FolderItem`, `SortableFolderWidget`, `QuickAccessButton`, and `DockLabel` into dedicated files in `components/layout/dock/`. Added unit tests for `Dock`.
