@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   TimeToolConfig,
   WidgetData,
@@ -122,9 +122,9 @@ const Keypad: React.FC<{
   const btnBase =
     'aspect-square flex items-center justify-center rounded-2xl font-black transition-all active:scale-90';
   const btnColor =
-    'bg-white/10 text-slate-700 hover:bg-white/20 hover:text-brand-blue-primary';
+    'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
   const presetBtnColor =
-    'bg-white/5 text-slate-500 hover:bg-white/15 hover:text-brand-blue-primary';
+    'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600';
 
   return (
     <div
@@ -272,6 +272,19 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
     [updateWidget, widget.id, config]
   );
 
+  // ─── Parse time into parts ───────────────────────────────────────
+
+  const timeParts = useMemo(() => {
+    const mins = Math.floor(displayTime / 60)
+      .toString()
+      .padStart(2, '0');
+    const secs = Math.floor(displayTime % 60)
+      .toString()
+      .padStart(2, '0');
+    const tenths = Math.floor((displayTime % 1) * 10).toString();
+    return { mins, secs, tenths };
+  }, [displayTime]);
+
   // ─── Derived styles ──────────────────────────────────────────────
 
   const getTimeColor = () => {
@@ -283,8 +296,12 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const getRingColor = () => {
-    if (displayTime <= 60) return STANDARD_COLORS.red;
-    if (displayTime / config.duration <= 0.25) return STANDARD_COLORS.amber;
+    if (mode === 'timer') {
+      if (displayTime <= 60) return STANDARD_COLORS.red;
+      if (config.duration > 0 && displayTime / config.duration <= 0.25) {
+        return STANDARD_COLORS.amber;
+      }
+    }
     return themeColor;
   };
 
@@ -373,7 +390,11 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     }}
                   >
                     {clockStyle === 'lcd' && !isVisual && (
-                      <div className="absolute opacity-5 pointer-events-none select-none flex">
+                      <div
+                        className="absolute opacity-5 pointer-events-none select-none flex"
+                        aria-hidden="true"
+                        role="presentation"
+                      >
                         <span>88</span>
                         <span className="mx-[0.25em]">:</span>
                         <span>88</span>
@@ -387,21 +408,13 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     )}
 
                     {/* Minutes and colon (shared between timer/stopwatch) */}
-                    <span>
-                      {Math.floor(displayTime / 60)
-                        .toString()
-                        .padStart(2, '0')}
-                    </span>
+                    <span>{timeParts.mins}</span>
                     <span
                       className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-[0.1em] opacity-30`}
                     >
                       :
                     </span>
-                    <span>
-                      {Math.floor(displayTime % 60)
-                        .toString()
-                        .padStart(2, '0')}
-                    </span>
+                    <span>{timeParts.secs}</span>
                     {/* Tenths digit (stopwatch only) */}
                     {mode === 'stopwatch' && (
                       <>
@@ -415,7 +428,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                           className="opacity-60"
                           style={{ fontSize: '0.5em' }}
                         >
-                          {Math.floor((displayTime % 1) * 10)}
+                          {timeParts.tenths}
                         </span>
                       </>
                     )}
