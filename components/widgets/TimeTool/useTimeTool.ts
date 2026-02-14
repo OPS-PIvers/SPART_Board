@@ -8,35 +8,29 @@ import {
 import { useDashboard } from '../../../context/useDashboard';
 import { playTimerAlert, resumeAudio } from '../../../utils/timeToolAudio';
 
-export const useTimeTool = (widget: WidgetData) => {
-  const { updateWidget, activeDashboard } = useDashboard();
+export const useTimeToolActions = (widget: WidgetData) => {
+  const { updateWidget } = useDashboard();
   const config = widget.config as TimeToolConfig;
-
-  const [runningDisplayTime, setRunningDisplayTime] = useState(
-    config.elapsedTime
-  );
-  const runningDisplayTimeRef = useRef(runningDisplayTime);
-  const rafRef = useRef<number | null>(null);
-
-  // Keep the ref in sync so handleStop can read the latest value
-  useEffect(() => {
-    runningDisplayTimeRef.current = runningDisplayTime;
-  }, [runningDisplayTime]);
-
-  const displayTime = config.isRunning
-    ? runningDisplayTime
-    : config.elapsedTime;
-
-  const cancelRaf = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  }, []);
 
   const handleStop = useCallback(
     (finalTime?: number) => {
-      const timeToSave = finalTime ?? runningDisplayTimeRef.current;
+      let timeToSave = finalTime;
+
+      // If no explicit finalTime provided, calculate it from start time
+      if (timeToSave === undefined && config.isRunning && config.startTime) {
+        const delta = (Date.now() - config.startTime) / 1000;
+        if (config.mode === 'timer') {
+          timeToSave = Math.max(0, config.elapsedTime - delta);
+        } else {
+          timeToSave = config.elapsedTime + delta;
+        }
+      }
+
+      // Fallback to current elapsed time if not running or calculation logic skipped
+      if (timeToSave === undefined) {
+        timeToSave = config.elapsedTime;
+      }
+
       updateWidget(widget.id, {
         config: {
           ...config,
@@ -45,9 +39,8 @@ export const useTimeTool = (widget: WidgetData) => {
           startTime: null,
         },
       });
-      cancelRaf();
     },
-    [config, updateWidget, widget.id, cancelRaf]
+    [config, updateWidget, widget.id]
   );
 
   const handleStart = useCallback(async () => {
@@ -58,11 +51,11 @@ export const useTimeTool = (widget: WidgetData) => {
         ...config,
         isRunning: true,
         startTime: now,
-        elapsedTime: displayTime,
+        // When starting, we resume from current elapsedTime
+        elapsedTime: config.elapsedTime,
       },
     });
-    setRunningDisplayTime(displayTime);
-  }, [config, updateWidget, widget.id, displayTime]);
+  }, [config, updateWidget, widget.id]);
 
   const handleReset = useCallback(() => {
     const resetTime = config.mode === 'timer' ? config.duration : 0;
@@ -74,9 +67,7 @@ export const useTimeTool = (widget: WidgetData) => {
         startTime: null,
       },
     });
-    setRunningDisplayTime(resetTime);
-    cancelRaf();
-  }, [config, updateWidget, widget.id, cancelRaf]);
+  }, [config, updateWidget, widget.id]);
 
   const setTime = useCallback(
     (s: number) => {
@@ -89,10 +80,47 @@ export const useTimeTool = (widget: WidgetData) => {
           startTime: null,
         },
       });
-      setRunningDisplayTime(s);
     },
     [config, updateWidget, widget.id]
   );
+
+  return {
+    isRunning: config.isRunning,
+    mode: config.mode,
+    config,
+    handleStart,
+    handleStop,
+    handleReset,
+    setTime,
+  };
+};
+
+export const useTimeToolTicker = (
+  widget: WidgetData,
+  onStop: (finalTime: number) => void
+) => {
+  const { updateWidget, activeDashboard } = useDashboard();
+  const config = widget.config as TimeToolConfig;
+  const rafRef = useRef<number | null>(null);
+
+  // Local state for smooth animation
+  const [runningDisplayTime, setRunningDisplayTime] = useState(
+    config.elapsedTime
+  );
+
+  // Sync local state when config updates (e.g. reset/stopped)
+  useEffect(() => {
+    if (!config.isRunning) {
+      setRunningDisplayTime(config.elapsedTime);
+    }
+  }, [config.elapsedTime, config.isRunning]);
+
+  const cancelRaf = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
 
   // RAF tick loop
   useEffect(() => {
@@ -112,7 +140,8 @@ export const useTimeTool = (widget: WidgetData) => {
         setRunningDisplayTime(nextTime);
 
         if (nextTime === 0) {
-          handleStop(0);
+          // Timer finished
+          onStop(0);
           playTimerAlert(config.selectedSound);
 
           // Auto-switch expectations voice level
@@ -129,9 +158,11 @@ export const useTimeTool = (widget: WidgetData) => {
               });
             }
           }
+          cancelRaf();
           return;
         }
       } else {
+        // Stopwatch
         setRunningDisplayTime(baseTime + delta);
       }
 
@@ -150,18 +181,13 @@ export const useTimeTool = (widget: WidgetData) => {
     config.timerEndVoiceLevel,
     activeDashboard,
     updateWidget,
-    handleStop,
+    onStop,
     cancelRaf,
   ]);
 
-  return {
-    displayTime,
-    isRunning: config.isRunning,
-    mode: config.mode,
-    config,
-    handleStart,
-    handleStop,
-    handleReset,
-    setTime,
-  };
+  const displayTime = config.isRunning
+    ? runningDisplayTime
+    : config.elapsedTime;
+
+  return displayTime;
 };
