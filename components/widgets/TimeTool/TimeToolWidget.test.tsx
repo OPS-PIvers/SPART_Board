@@ -24,6 +24,14 @@ const mockDashboardContext = {
   updateWidget: mockUpdateWidget,
 };
 
+// Helper: find the time display button whose text is split across child spans.
+// getByText can't match text distributed across multiple <span> elements,
+// so we match on the button's aggregate textContent instead.
+const getTimeButton = (time: string) =>
+  screen.getByText((_content, el) => {
+    return el?.tagName === 'BUTTON' && el?.textContent === time;
+  });
+
 // Helper to render widget
 const renderWidget = (widget: WidgetData) => {
   return render(<TimeToolWidget widget={widget} />);
@@ -67,15 +75,14 @@ describe('TimeToolWidget', () => {
   it('renders time correctly', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
-    expect(screen.getByText('05:00')).toBeInTheDocument();
+    expect(getTimeButton('05:00')).toBeInTheDocument();
   });
 
   it('enters editing mode when clicking time display in timer mode', () => {
     const widget = createWidget({ mode: 'timer', isRunning: false });
     renderWidget(widget);
 
-    const timeDisplay = screen.getByText('05:00');
-    fireEvent.click(timeDisplay);
+    fireEvent.click(getTimeButton('05:00'));
 
     expect(screen.getByText('005')).toBeInTheDocument(); // 3-digit minutes
     expect(screen.getByText('00')).toBeInTheDocument();
@@ -88,8 +95,7 @@ describe('TimeToolWidget', () => {
     const widget = createWidget({ mode: 'timer', isRunning: true });
     renderWidget(widget);
 
-    const timeDisplay = screen.getByText('05:00');
-    fireEvent.click(timeDisplay);
+    fireEvent.click(getTimeButton('05:00'));
 
     // Should NOT show the keypad (buttons 1-9)
     expect(screen.queryByText('1')).not.toBeInTheDocument();
@@ -99,7 +105,7 @@ describe('TimeToolWidget', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
 
-    fireEvent.click(screen.getByText('05:00'));
+    fireEvent.click(getTimeButton('05:00'));
 
     // Initial is 005. Type 0, 1, 2 -> 050 -> 501 -> 012
     fireEvent.click(screen.getByText('0'));
@@ -113,7 +119,7 @@ describe('TimeToolWidget', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
 
-    fireEvent.click(screen.getByText('05:00'));
+    fireEvent.click(getTimeButton('05:00'));
 
     // Set to 010:00
     fireEvent.click(screen.getByText('0'));
@@ -138,7 +144,7 @@ describe('TimeToolWidget', () => {
   it('caps seconds at 59', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
-    fireEvent.click(screen.getByText('05:00'));
+    fireEvent.click(getTimeButton('05:00'));
 
     // Switch to seconds
     fireEvent.click(screen.getByText('00'));
@@ -153,7 +159,7 @@ describe('TimeToolWidget', () => {
   it('supports backspace functionality', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
-    fireEvent.click(screen.getByText('05:00'));
+    fireEvent.click(getTimeButton('05:00'));
 
     // Minutes is 005. Type 1 -> 051
     fireEvent.click(screen.getByText('1'));
@@ -167,7 +173,7 @@ describe('TimeToolWidget', () => {
   it('cancels editing when clicking X button', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
-    fireEvent.click(screen.getByText('05:00'));
+    fireEvent.click(getTimeButton('05:00'));
 
     // Should be in editing mode
     expect(screen.getByLabelText('Close keypad')).toBeInTheDocument();
@@ -177,13 +183,13 @@ describe('TimeToolWidget', () => {
 
     // Should be back to normal display
     expect(screen.queryByLabelText('Close keypad')).not.toBeInTheDocument();
-    expect(screen.getByText('05:00')).toBeInTheDocument();
+    expect(getTimeButton('05:00')).toBeInTheDocument();
   });
 
   it('supports 3-digit minutes (e.g., 2 hours / 120 minutes)', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);
-    fireEvent.click(screen.getByText('05:00'));
+    fireEvent.click(getTimeButton('05:00'));
 
     // Set minutes to 120
     fireEvent.click(screen.getByText('1'));

@@ -386,23 +386,25 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       </div>
                     )}
 
-                    {mode === 'stopwatch' ? (
+                    {/* Minutes and colon (shared between timer/stopwatch) */}
+                    <span>
+                      {Math.floor(displayTime / 60)
+                        .toString()
+                        .padStart(2, '0')}
+                    </span>
+                    <span
+                      className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-[0.1em] opacity-30`}
+                    >
+                      :
+                    </span>
+                    <span>
+                      {Math.floor(displayTime % 60)
+                        .toString()
+                        .padStart(2, '0')}
+                    </span>
+                    {/* Tenths digit (stopwatch only) */}
+                    {mode === 'stopwatch' && (
                       <>
-                        <span>
-                          {Math.floor(displayTime / 60)
-                            .toString()
-                            .padStart(2, '0')}
-                        </span>
-                        <span
-                          className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-[0.1em] opacity-30`}
-                        >
-                          :
-                        </span>
-                        <span>
-                          {Math.floor(displayTime % 60)
-                            .toString()
-                            .padStart(2, '0')}
-                        </span>
                         <span
                           className="opacity-30 mx-[0.05em]"
                           style={{ fontSize: '0.5em' }}
@@ -414,24 +416,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                           style={{ fontSize: '0.5em' }}
                         >
                           {Math.floor((displayTime % 1) * 10)}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span>
-                          {Math.floor(displayTime / 60)
-                            .toString()
-                            .padStart(2, '0')}
-                        </span>
-                        <span
-                          className={`${clockStyle === 'minimal' ? '' : 'animate-pulse'} mx-[0.1em] opacity-30`}
-                        >
-                          :
-                        </span>
-                        <span>
-                          {Math.floor(displayTime % 60)
-                            .toString()
-                            .padStart(2, '0')}
                         </span>
                       </>
                     )}
@@ -593,7 +577,12 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, activeDashboard } = useDashboard();
   const config = widget.config as TimeToolConfig;
-  const { timerEndVoiceLevel } = config;
+  const {
+    timerEndVoiceLevel,
+    fontFamily = 'global',
+    clockStyle = 'modern',
+    themeColor = STANDARD_COLORS.slate,
+  } = config;
 
   const hasExpectations = activeDashboard?.widgets.some(
     (w) => w.type === 'expectations'
@@ -700,9 +689,13 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                   config: { ...config, fontFamily: f.id },
                 })
               }
-              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${(config.fontFamily ?? 'global') === f.id ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
+              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${fontFamily === f.id ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
             >
-              <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
+              <span
+                className={`text-sm ${f.id === 'global' ? 'font-sans' : f.id} text-slate-900`}
+              >
+                {f.icon}
+              </span>
               <span className="text-xxxs uppercase text-slate-600">
                 {f.label}
               </span>
@@ -723,7 +716,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                   config: { ...config, clockStyle: s.id },
                 })
               }
-              className={`flex-1 py-1.5 text-xxs rounded-lg transition-all ${(config.clockStyle ?? 'modern') === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`flex-1 py-1.5 text-xxs rounded-lg transition-all ${clockStyle === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             >
               {s.label.toUpperCase()}
             </button>
@@ -744,7 +737,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                     config: { ...config, themeColor: c },
                   })
                 }
-                className={`w-6 h-6 rounded-full border-2 transition-all ${(config.themeColor ?? STANDARD_COLORS.slate) === c ? 'border-slate-800 scale-125 shadow-md' : 'border-transparent hover:scale-110'}`}
+                className={`w-6 h-6 rounded-full border-2 transition-all ${themeColor === c ? 'border-slate-800 scale-125 shadow-md' : 'border-transparent hover:scale-110'}`}
                 style={{ backgroundColor: c }}
               />
             ))}
