@@ -351,13 +351,16 @@ export interface InstructionalRoutinesConfig {
 export interface TimeToolConfig {
   mode: 'timer' | 'stopwatch';
   visualType: 'digital' | 'visual';
-  theme: 'light' | 'dark' | 'glass';
   duration: number; // in seconds
   elapsedTime: number; // in seconds
   isRunning: boolean;
   startTime?: number | null; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
+  themeColor?: string;
+  glow?: boolean;
+  fontFamily?: string;
+  clockStyle?: string;
 }
 
 // 1. Define the Data Model for a Mini App

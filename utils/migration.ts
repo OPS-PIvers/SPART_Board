@@ -32,11 +32,14 @@ export const migrateWidget = (widget: WidgetData): WidgetData => {
       config: {
         mode: isTimer ? 'timer' : 'stopwatch',
         visualType: 'digital',
-        theme: 'light',
         duration: isTimer ? (oldConfig.duration ?? 600) : 0,
         elapsedTime: isTimer ? (oldConfig.duration ?? 600) : 0,
         isRunning: false,
         selectedSound: 'Gong',
+        themeColor: '#2d3f89', // brand-blue-primary
+        glow: false,
+        fontFamily: 'sans',
+        clockStyle: 'standard',
       } as TimeToolConfig,
     };
   }
