@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { WeatherWidget } from './WeatherWidget';
-import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../types';
+import { WeatherWidget } from './Widget';
+import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../../types';
 import { vi, describe, it, expect } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
-vi.mock('../../context/useDashboard', () => ({
+vi.mock('../../../context/useDashboard', () => ({
   useDashboard: () => ({
     updateWidget: vi.fn(),
     addToast: vi.fn(),
@@ -36,7 +36,7 @@ const mockFeaturePermissions = [
   },
 ];
 
-vi.mock('../../context/useAuth', () => ({
+vi.mock('../../../context/useAuth', () => ({
   useAuth: () => ({
     featurePermissions: mockFeaturePermissions,
   }),
@@ -46,9 +46,10 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   onSnapshot: vi.fn(() => vi.fn()),
   getFirestore: vi.fn(),
+  getDoc: vi.fn(),
 }));
 
-vi.mock('../../config/firebase', () => ({
+vi.mock('../../../config/firebase', () => ({
   db: {},
 }));
 

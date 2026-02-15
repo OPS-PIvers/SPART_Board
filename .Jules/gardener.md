@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2025-06-06 - Refactor WeatherWidget and AdminWeatherFetcher
+
+**Weed:** `WeatherWidget.tsx` was ~1000 lines and duplicated API fetching logic with `AdminWeatherFetcher.tsx` and `WeatherSettings`.
+**Root Cause:** The widget grew to handle multiple weather sources (OpenWeather, EarthNetworks) and a complex "Admin Proxy" mode, leading to code duplication and a "God Component".
+**Plan:** Decomposed into `components/widgets/Weather/` with `Widget.tsx`, `Settings.tsx`, `weatherService.ts`, `types.ts`, and `constants.ts`. Consolidated fetching logic into `weatherService.ts` used by both the widget and the admin fetcher.
