@@ -87,3 +87,9 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Widget settings panels used inconsistent typography for section headers (variations of `text-xxs`, `text-xs`, `text-[10px]`, `font-bold` vs `font-black`, `text-slate-400` vs `text-slate-500`, inconsistent margins).
 **Fix:** Created `components/common/SettingsLabel.tsx` to enforce the standard style (`text-xxs font-black text-slate-400 uppercase tracking-widest mb-2`). Refactored 12 widgets to use this component.
+
+## 2026-02-14 - Standardized Modal Component
+
+**Drift:** Identified hardcoded modal patterns in `CategoryEditor.tsx` and `RoutineEditor.tsx` using `z-[100000]` and repetitive overlay/centering styles, violating z-index standardization and component reuse principles.
+
+**Fix:** Created `components/common/Modal.tsx` as a reusable portal-based component. Refactored the editors to use this component with standard `z-modal-deep` (10200) layering.
