@@ -17,6 +17,7 @@ describe('useWindowSize', () => {
     window.innerWidth = originalInnerWidth;
     window.innerHeight = originalInnerHeight;
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('should return the current window size initially', () => {
@@ -26,7 +27,14 @@ describe('useWindowSize', () => {
   });
 
   it('should update size when window is resized and enabled (default)', () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useWindowSize());
+
+    // Initial mount calls handleResize, setting lastRun to current time (0)
+    // We need to advance time to ensuring the next resize isn't throttled
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
 
     act(() => {
       window.innerWidth = 500;
@@ -108,5 +116,46 @@ describe('useWindowSize', () => {
     // Should sync to current window size immediately
     expect(result.current.width).toBe(500);
     expect(result.current.height).toBe(500);
+  });
+
+  it('should throttle rapid resize events', () => {
+    vi.useFakeTimers();
+    // Use a specific throttle time to test
+    const throttleMs = 100;
+    const { result } = renderHook(() => useWindowSize(true, throttleMs));
+
+    // Initial mount sets lastRun. Advance to clear it.
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+
+    act(() => {
+      // First event - should trigger immediate update (leading edge)
+      window.innerWidth = 500;
+      window.innerHeight = 500;
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    // Should update immediately
+    expect(result.current.width).toBe(500);
+
+    act(() => {
+      // Second event - within throttle window (e.g. 50ms later)
+      vi.advanceTimersByTime(50);
+      window.innerWidth = 600;
+      window.innerHeight = 600;
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    // Should NOT update yet (still 500)
+    expect(result.current.width).toBe(500);
+
+    act(() => {
+      // Advance past throttle window (another 60ms => total 110ms from previous run)
+      vi.advanceTimersByTime(60);
+    });
+
+    // Should update now (trailing edge)
+    expect(result.current.width).toBe(600);
   });
 });
