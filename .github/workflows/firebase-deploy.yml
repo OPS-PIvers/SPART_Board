@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -26,23 +26,22 @@ jobs:
             functions/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm run install:ci
 
-      - name: Install functions dependencies
-        working-directory: functions
-        run: pnpm install --frozen-lockfile
+      - name: Run validation (Lint, Format, Type Check, Test)
+        run: pnpm run validate
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'test-key' }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN || 'test.firebaseapp.com' }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || 'test-project' }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET || 'test.appspot.com' }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789' }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || '1:123456789:web:abc123' }}
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || 'test-key' }}
+          VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
 
-      - name: Run type check
-        run: pnpm run type-check
-
-      - name: Run linter
-        run: pnpm run lint
-
-      - name: Check code formatting
-        run: pnpm run format:check
-
-      - name: Build project
-        run: pnpm run build
+      - name: Build All
+        run: pnpm run build:all
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -53,23 +52,12 @@ jobs:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY }}
 
-      - name: Build functions
-        working-directory: functions
-        run: pnpm run build
-
-      - name: Deploy to Firebase Hosting (Live)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: spartboard
-          channelId: live
-
       - name: Create Service Account File
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
 
-      - name: Deploy Firebase Rules and Functions
-        run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard
+      - name: Deploy to Firebase
+        if: github.ref == 'refs/heads/main'
+        run: pnpm exec firebase deploy --project spartboard --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
 
