@@ -70,6 +70,7 @@ const defaultRoutine: InstructionalRoutine = {
   structure: 'linear',
   audience: 'student',
   gradeLevels: ['k-2', '3-5'],
+  grades: 'K-2, 3-5',
   steps: [
     {
       text: 'Step 1',
@@ -100,7 +101,7 @@ describe('LibraryManager', () => {
         formData: vi.fn(),
         json: vi.fn(),
         text: vi.fn(),
-      } as Response)
+      } as unknown as Response)
     );
   });
 
