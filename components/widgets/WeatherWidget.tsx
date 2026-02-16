@@ -72,7 +72,7 @@ const EARTH_NETWORKS_API = {
 const EARTH_NETWORKS_ICONS = {
   SNOW: [140, 186, 210, 102],
   CLOUDY: [1, 13, 24, 70, 71, 73, 79],
-  SUNNY: [2, 3, 4],
+  SUNNY: [0, 2, 3, 4, 7],
   RAIN: [10, 11, 12, 14, 15, 16, 17, 18, 19],
 };
 
@@ -88,7 +88,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     feelsLike,
     condition = 'sunny',
     isAuto = false,
-    locationName = 'Classroom',
+    locationName: _locationName = 'Classroom',
     lastSync = null,
     showFeelsLike: localShowFeelsLike,
     hideClothing,
@@ -256,34 +256,24 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           }}
         >
           <div
-            className="font-black uppercase tracking-widest text-slate-600 flex items-center leading-none"
-            style={{
-              gap: '1cqw',
-              fontSize: hideClothing
-                ? 'min(10cqh, 70cqw)'
-                : 'min(14px, 5.5cqmin)',
-            }}
-          >
-            <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
-            {locationName}
-          </div>
-
-          <div
-            className="flex items-center justify-center w-full"
-            style={{
-              gap: hideClothing ? '4cqw' : 'min(24px, 6cqmin)',
-            }}
+            className="flex flex-col items-center justify-center w-full"
+            style={{ gap: hideClothing ? '1cqh' : 'min(4px, 1cqmin)' }}
           >
             <div
+              className="flex items-center justify-center w-full"
               style={{
-                fontSize: hideClothing
-                  ? 'min(60cqh, 30cqw)'
-                  : 'min(80px, 25cqmin)',
+                gap: hideClothing ? '4cqw' : 'min(24px, 6cqmin)',
               }}
             >
-              {getIcon('1em')}
-            </div>
-            <div className="flex flex-col items-center justify-center">
+              <div
+                style={{
+                  fontSize: hideClothing
+                    ? 'min(60cqh, 30cqw)'
+                    : 'min(80px, 25cqmin)',
+                }}
+              >
+                {getIcon('1em')}
+              </div>
               <div
                 className="font-black text-slate-800 tabular-nums leading-none"
                 style={{
@@ -297,34 +287,23 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   : Math.round(temp)}
                 °
               </div>
-              {showFeelsLike ? (
-                <div
-                  className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap leading-none"
-                  style={{
-                    fontSize: hideClothing
-                      ? 'min(10cqh, 40cqw)'
-                      : 'min(14px, 5cqmin)',
-                    marginTop: hideClothing ? '1cqh' : 'min(4px, 1cqmin)',
-                  }}
-                >
-                  Actual {Math.round(temp)}°
-                </div>
-              ) : (
-                feelsLike !== undefined && (
-                  <div
-                    className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap leading-none"
-                    style={{
-                      fontSize: hideClothing
-                        ? 'min(10cqh, 40cqw)'
-                        : 'min(14px, 5cqmin)',
-                      marginTop: hideClothing ? '1cqh' : 'min(4px, 1cqmin)',
-                    }}
-                  >
-                    Feels like {Math.round(feelsLike)}°
-                  </div>
-                )
-              )}
             </div>
+
+            {(showFeelsLike || feelsLike !== undefined) && (
+              <div
+                className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap leading-none text-center"
+                style={{
+                  fontSize: hideClothing
+                    ? 'min(10cqh, 40cqw)'
+                    : 'min(14px, 5cqmin)',
+                  marginTop: hideClothing ? '1cqh' : 'min(2px, 0.5cqmin)',
+                }}
+              >
+                {showFeelsLike
+                  ? `Actual ${Math.round(temp)}°`
+                  : `Feels like ${Math.round(feelsLike ?? temp)}°`}
+              </div>
+            )}
           </div>
 
           {!hideClothing && (
