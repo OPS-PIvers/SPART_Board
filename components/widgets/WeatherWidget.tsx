@@ -374,13 +374,18 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       content={
         <div
           className={`flex flex-col items-center justify-center h-full w-full font-${globalStyle.fontFamily}`}
-          style={{ gap: 'min(12px, 2.5cqmin)', padding: 'min(8px, 2cqmin)' }}
+          style={{
+            gap: hideClothing ? 'min(20px, 4cqh)' : 'min(12px, 2.5cqmin)',
+            padding: hideClothing ? 'min(16px, 4cqh)' : 'min(8px, 2cqmin)',
+          }}
         >
           <div
             className="font-black uppercase tracking-widest text-slate-600 flex items-center"
             style={{
               gap: 'min(6px, 1.5cqmin)',
-              fontSize: 'min(14px, 5.5cqmin)',
+              fontSize: hideClothing
+                ? 'min(18px, 5cqh)'
+                : 'min(14px, 5.5cqmin)',
             }}
           >
             <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
@@ -389,15 +394,27 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           <div
             className="flex items-center justify-center w-full"
-            style={{ gap: 'min(24px, 6cqmin)' }}
+            style={{
+              gap: hideClothing ? 'min(40px, 10cqw)' : 'min(24px, 6cqmin)',
+            }}
           >
-            <div style={{ fontSize: 'min(80px, 25cqmin)' }}>
+            <div
+              style={{
+                fontSize: hideClothing
+                  ? 'min(140px, 45cqh, 35cqw)'
+                  : 'min(80px, 25cqmin)',
+              }}
+            >
               {getIcon('1em')}
             </div>
             <div className="flex flex-col items-center">
               <div
                 className="font-black text-slate-800 tabular-nums leading-none"
-                style={{ fontSize: 'clamp(32px, 35cqmin, 400px)' }}
+                style={{
+                  fontSize: hideClothing
+                    ? 'min(400px, 65cqh, 50cqw)'
+                    : 'clamp(32px, 35cqmin, 400px)',
+                }}
               >
                 {showFeelsLike && feelsLike !== undefined
                   ? Math.round(feelsLike)
@@ -408,7 +425,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <div
                   className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap"
                   style={{
-                    fontSize: 'min(14px, 5cqmin)',
+                    fontSize: hideClothing
+                      ? 'min(18px, 6cqh)'
+                      : 'min(14px, 5cqmin)',
                     marginTop: 'min(4px, 1cqmin)',
                   }}
                 >
@@ -419,7 +438,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   <div
                     className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap"
                     style={{
-                      fontSize: 'min(14px, 5cqmin)',
+                      fontSize: hideClothing
+                        ? 'min(18px, 6cqh)'
+                        : 'min(14px, 5cqmin)',
                       marginTop: 'min(4px, 1cqmin)',
                     }}
                   >
