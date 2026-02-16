@@ -384,7 +384,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
           className={`h-full w-full flex flex-col items-center justify-center transition-all duration-500 ${
             clockStyle === 'lcd' ? 'bg-black/5' : ''
           }`}
-          style={{ padding: 'min(4px, 1cqmin)' }}
         >
           {isEditing ? (
             <Keypad
@@ -427,8 +426,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       fontSize: isVisual
                         ? 'min(25cqmin, 12rem)'
                         : mode === 'stopwatch'
-                          ? 'min(75cqh, 18cqw)'
-                          : 'min(75cqh, 25cqw)',
+                          ? 'min(82cqh, 18cqw)'
+                          : 'min(82cqh, 25cqw)',
                       color: timeColor,
                       textShadow: glow
                         ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
