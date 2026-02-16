@@ -18,6 +18,7 @@ import {
 import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
+import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
@@ -102,7 +103,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const [shouldRenderSettings, setShouldRenderSettings] = useState(
     widget.flipped
   );
-  const [isAnimating, setIsAnimating] = useState(false);
 
   // OPTIMIZATION: Transient drag state for direct DOM manipulation
   // This allows us to update the DOM directly during drag/resize without triggering React re-renders for the whole tree
@@ -114,14 +114,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   } | null>(null);
 
   // OPTIMIZATION: Lazy initialization of settings
-  // We only set this to true once the widget is flipped for the first time.
+  // We only set this to true once the widget is opened for the first time.
   // This prevents downloading and rendering the settings chunk for every widget on load.
   useEffect(() => {
     if (widget.flipped && !shouldRenderSettings) {
       setShouldRenderSettings(true);
     }
-    // Set animating when flipped changes
-    setIsAnimating(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.flipped]);
 
@@ -178,7 +176,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   const handleMaximizeToggle = () => {
     const newMaximized = !isMaximized;
-    updateWidget(widget.id, { maximized: newMaximized });
+    updateWidget(widget.id, { maximized: newMaximized, flipped: false });
     if (newMaximized) {
       bringToFront(widget.id);
     }
@@ -205,6 +203,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     // Don't drag if annotating
     if (isAnnotating) return;
+
+    // Close settings panel on drag start to prevent position desync
+    // (panel position is based on widget.x/y which don't update during DOM-level drag)
+    if (widget.flipped) {
+      updateWidget(widget.id, { flipped: false });
+    }
 
     // Prevent default browser behavior (like scroll or selection)
     e.preventDefault();
@@ -294,6 +298,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (isMaximized) return;
     e.stopPropagation();
     e.preventDefault();
+
+    // Close settings panel on resize start to prevent position desync
+    if (widget.flipped) {
+      updateWidget(widget.id, { flipped: false });
+    }
 
     setIsResizing(true);
     // Initialize transient state
@@ -409,7 +418,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   };
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
-  const isSelected = !isMaximized && (showTools || isDragging || isResizing);
+  const isSelected =
+    !isMaximized && (showTools || isDragging || isResizing || widget.flipped);
 
   const handleWidgetClick = (e: React.MouseEvent) => {
     // Avoid triggering when clicking interactive elements
@@ -511,7 +521,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         onClick={handleWidgetClick}
         transparency={transparency}
         allowInvisible={true}
-        disableBlur={isAnimating}
         selected={isSelected}
         cornerRadius={isMaximized ? 'none' : undefined}
         className={`absolute select-none widget group will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 ${
@@ -548,279 +557,176 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           ...style, // Merge custom styles
         }}
       >
-        <div className="flip-container h-full rounded-[inherit] overflow-hidden">
-          <div
-            className={`flipper h-full ${widget.flipped ? 'flip-active' : ''}`}
-            onTransitionEnd={() => setIsAnimating(false)}
-          >
-            {/* Front Face */}
+        {/* Widget Content (always visible) */}
+        <div
+          data-testid="drag-surface"
+          className="h-full w-full flex flex-col rounded-[inherit] overflow-hidden"
+          onPointerDown={handleDragStart}
+          style={{ touchAction: 'none' }}
+        >
+          {showConfirm && (
             <div
-              className="front absolute inset-0 w-full h-full flex flex-col"
-              onPointerDown={handleDragStart}
-              style={{
-                pointerEvents: widget.flipped ? 'none' : 'auto',
-                touchAction: 'none',
-              }}
+              className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
+              role="alertdialog"
+              aria-labelledby={`dialog-title-${widget.id}`}
+              aria-describedby={`dialog-desc-${widget.id}`}
             >
-              {showConfirm && (
-                <div
-                  className="absolute inset-0 z-confirm-overlay bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200 backdrop-blur-sm rounded-[inherit]"
-                  role="alertdialog"
-                  aria-labelledby={`dialog-title-${widget.id}`}
-                  aria-describedby={`dialog-desc-${widget.id}`}
-                >
-                  <p
-                    id={`dialog-title-${widget.id}`}
-                    className="text-white font-semibold mb-4 text-sm"
-                  >
-                    Close widget? Data will be lost.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowConfirm(false);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeWidget(widget.id);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div
-                ref={contentRef}
-                className="flex-1 overflow-hidden relative p-0"
+              <p
+                id={`dialog-title-${widget.id}`}
+                className="text-white font-semibold mb-4 text-sm"
               >
-                {/* Flash Overlay */}
-                {isFlashing && (
-                  <div
-                    data-screenshot="flash"
-                    className="absolute inset-0 bg-white z-50 animate-out fade-out duration-300 pointer-events-none isFlashing"
-                  />
-                )}
-                {children}
-
-                {isAnnotating && (
-                  <>
-                    <AnnotationCanvas
-                      className="absolute inset-0 z-40 pointer-events-auto"
-                      paths={widget.annotation?.paths ?? []}
-                      color={annotationColor}
-                      width={annotationWidth}
-                      canvasWidth={isMaximized ? window.innerWidth : widget.w}
-                      canvasHeight={isMaximized ? window.innerHeight : widget.h}
-                      onPathsChange={(newPaths: Path[]) => {
-                        updateWidget(widget.id, {
-                          annotation: {
-                            mode: 'window',
-                            paths: newPaths,
-                            color: annotationColor,
-                            width: annotationWidth,
-                          },
-                        });
-                      }}
-                    />
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1 bg-white/90 backdrop-blur shadow-lg rounded-full border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200">
-                      <div className="flex items-center gap-1 px-1">
-                        {WIDGET_PALETTE.slice(0, 5).map((c) => (
-                          <button
-                            key={c}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAnnotationColor(c);
-                            }}
-                            className={`w-5 h-5 rounded-full border border-slate-100 transition-transform ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
-                            style={{ backgroundColor: c }}
-                          />
-                        ))}
-                      </div>
-                      <div className="w-px h-4 bg-slate-300 mx-1" />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAnnotationColor('eraser');
-                        }}
-                        className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
-                        title="Eraser"
-                      >
-                        <Eraser className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const paths = widget.annotation?.paths ?? [];
-                          if (paths.length > 0) {
-                            updateWidget(widget.id, {
-                              annotation: {
-                                ...widget.annotation,
-                                mode: 'window',
-                                paths: paths.slice(0, -1),
-                              },
-                            });
-                          }
-                        }}
-                        className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
-                        title="Undo"
-                      >
-                        <Undo2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateWidget(widget.id, {
-                            annotation: {
-                              mode: 'window',
-                              paths: [],
-                              color: annotationColor,
-                              width: annotationWidth,
-                            },
-                          });
-                        }}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                        title="Clear All"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="w-px h-4 bg-slate-300 mx-1" />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsAnnotating(false);
-                        }}
-                        className="px-2 py-0.5 text-xxs font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
-                      >
-                        DONE
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Resize Handles (Corners Only) */}
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'nw')}
-                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
-              />
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'ne')}
-                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
-              />
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'sw')}
-                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
-              />
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'se')}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
-              >
-                <ResizeHandleIcon
-                  className="text-slate-400"
-                  style={{ opacity: isSelected ? 1 : transparency }}
-                />
-              </div>
-            </div>
-
-            {/* Back Face (Settings) */}
-            <div
-              className="back absolute inset-0 w-full h-full rounded-3xl overflow-hidden flex flex-col bg-white/60 backdrop-blur-xl"
-              onPointerDown={handleDragStart}
-              style={{ pointerEvents: widget.flipped ? 'auto' : 'none' }}
-            >
-              <div className="flex items-center justify-between px-3 py-2 bg-white/50 border-b border-white/30 relative z-30">
-                <span className="text-xs font-bold text-slate-700 uppercase">
-                  Settings
-                </span>
+                Close widget? Data will be lost.
+              </p>
+              <div className="flex gap-2">
                 <button
-                  onClick={() => updateWidget(widget.id, { flipped: false })}
-                  className="p-1 bg-slate-700 text-white rounded-md hover:bg-slate-800 transition-colors flex items-center gap-1 text-xxs font-bold px-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowConfirm(false);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
                 >
-                  DONE
+                  Cancel
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeWidget(widget.id);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                >
+                  Close
                 </button>
               </div>
-              <div className="flex-1 p-4 overflow-y-auto">
-                {shouldRenderSettings && settings && (
-                  <div className="mb-6">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                      Widget Options
-                    </h4>
-                    {settings}
-                  </div>
-                )}
-
-                <div className="pt-6 border-t border-slate-200">
-                  <div className="flex flex-col gap-2 bg-white/40 px-3 py-2 rounded-xl border border-white/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                        Transparency{' '}
-                        {widget.transparency === undefined ? '(Global)' : ''}
-                      </span>
-                      {widget.transparency !== undefined && (
-                        <button
-                          onClick={() =>
-                            updateWidget(widget.id, { transparency: undefined })
-                          }
-                          className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
-                        >
-                          Reset to Global
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex-1 flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={transparency}
-                        onChange={(e) =>
-                          updateWidget(widget.id, {
-                            transparency: parseFloat(e.target.value),
-                          })
-                        }
-                        className="flex-1 accent-indigo-600 h-1.5"
-                      />
-                      <span className="text-xxs font-mono font-bold text-slate-600 w-8 text-right">
-                        {Math.round(transparency * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resize Handles (Settings Face) */}
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'nw')}
-                className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
-              />
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'ne')}
-                className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
-              />
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'sw')}
-                className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
-              />
-              <div
-                onPointerDown={(e) => handleResizeStart(e, 'se')}
-                className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
-              >
-                <ResizeHandleIcon
-                  className="text-slate-500"
-                  style={{ opacity: isSelected ? 1 : transparency }}
-                />
-              </div>
             </div>
+          )}
+
+          <div ref={contentRef} className="flex-1 overflow-hidden relative p-0">
+            {/* Flash Overlay */}
+            {isFlashing && (
+              <div
+                data-screenshot="flash"
+                className="absolute inset-0 bg-white z-50 animate-out fade-out duration-300 pointer-events-none isFlashing"
+              />
+            )}
+            {children}
+
+            {isAnnotating && (
+              <>
+                <AnnotationCanvas
+                  className="absolute inset-0 z-40 pointer-events-auto"
+                  paths={widget.annotation?.paths ?? []}
+                  color={annotationColor}
+                  width={annotationWidth}
+                  canvasWidth={isMaximized ? window.innerWidth : widget.w}
+                  canvasHeight={isMaximized ? window.innerHeight : widget.h}
+                  onPathsChange={(newPaths: Path[]) => {
+                    updateWidget(widget.id, {
+                      annotation: {
+                        mode: 'window',
+                        paths: newPaths,
+                        color: annotationColor,
+                        width: annotationWidth,
+                      },
+                    });
+                  }}
+                />
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1 bg-white/90 backdrop-blur shadow-lg rounded-full border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200">
+                  <div className="flex items-center gap-1 px-1">
+                    {WIDGET_PALETTE.slice(0, 5).map((c) => (
+                      <button
+                        key={c}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAnnotationColor(c);
+                        }}
+                        className={`w-5 h-5 rounded-full border border-slate-100 transition-transform ${annotationColor === c ? 'scale-125 ring-2 ring-slate-400 z-10' : 'hover:scale-110'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                  <div className="w-px h-4 bg-slate-300 mx-1" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAnnotationColor('eraser');
+                    }}
+                    className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+                    title="Eraser"
+                  >
+                    <Eraser className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const paths = widget.annotation?.paths ?? [];
+                      if (paths.length > 0) {
+                        updateWidget(widget.id, {
+                          annotation: {
+                            ...widget.annotation,
+                            mode: 'window',
+                            paths: paths.slice(0, -1),
+                          },
+                        });
+                      }
+                    }}
+                    className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                    title="Undo"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateWidget(widget.id, {
+                        annotation: {
+                          mode: 'window',
+                          paths: [],
+                          color: annotationColor,
+                          width: annotationWidth,
+                        },
+                      });
+                    }}
+                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                    title="Clear All"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-px h-4 bg-slate-300 mx-1" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsAnnotating(false);
+                    }}
+                    className="px-2 py-0.5 text-xxs font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
+                  >
+                    DONE
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Resize Handles (Corners Only) */}
+          <div
+            onPointerDown={(e) => handleResizeStart(e, 'nw')}
+            className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
+          />
+          <div
+            onPointerDown={(e) => handleResizeStart(e, 'ne')}
+            className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
+          />
+          <div
+            onPointerDown={(e) => handleResizeStart(e, 'sw')}
+            className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
+          />
+          <div
+            onPointerDown={(e) => handleResizeStart(e, 'se')}
+            className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
+          >
+            <ResizeHandleIcon
+              className="text-slate-400"
+              style={{ opacity: isSelected ? 1 : transparency }}
+            />
           </div>
         </div>
       </GlassCard>
@@ -831,6 +737,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         createPortal(
           <div
             ref={menuRef}
+            data-settings-exclude
             style={menuStyle}
             className={`flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl font-${globalStyle.fontFamily}`}
             onClick={(e) => e.stopPropagation()}
@@ -871,11 +778,17 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   <div className="flex items-center -mr-1">
                     <button
                       onClick={() => {
-                        updateWidget(widget.id, { flipped: true });
+                        updateWidget(widget.id, {
+                          flipped: !widget.flipped,
+                        });
                         setShowTools(false);
                       }}
-                      className="p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                      title="Settings"
+                      className={`p-1 hover:bg-slate-800/10 rounded-full transition-all ${
+                        widget.flipped
+                          ? 'text-indigo-600 bg-indigo-100/60'
+                          : 'text-slate-600'
+                      }`}
+                      title={widget.flipped ? 'Close Settings' : 'Settings'}
                     >
                       <Settings className="w-3.5 h-3.5" />
                     </button>
@@ -960,7 +873,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   )}
                 </button>
                 <button
-                  onClick={() => updateWidget(widget.id, { minimized: true })}
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      minimized: true,
+                      flipped: false,
+                    })
+                  }
                   className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
                   title="Minimize"
                 >
@@ -971,6 +889,20 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           </div>,
           document.body
         )}
+
+      {/* SETTINGS PANEL PORTAL */}
+      {widget.flipped && typeof document !== 'undefined' && (
+        <SettingsPanel
+          widget={widget}
+          widgetRef={windowRef}
+          settings={settings}
+          shouldRenderSettings={shouldRenderSettings}
+          onClose={() => updateWidget(widget.id, { flipped: false })}
+          updateWidget={updateWidget}
+          globalStyle={globalStyle}
+          title={title}
+        />
+      )}
     </>
   );
 };
