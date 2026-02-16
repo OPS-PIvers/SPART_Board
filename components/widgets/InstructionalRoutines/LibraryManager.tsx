@@ -176,6 +176,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
         <button
           onClick={onCancel}
           className="p-1 hover:bg-slate-200 rounded-full"
+          aria-label="Go back"
         >
           <ArrowLeft size={18} />
         </button>
@@ -406,6 +407,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                         type="file"
                         accept="image/*"
                         className="hidden"
+                        aria-label="Upload sticker"
                         onChange={(e) => {
                           if (e.target.files?.[0])
                             void handleStickerUpload(e.target.files[0], i);
@@ -456,6 +458,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                         type="file"
                         accept="image/*"
                         className="hidden"
+                        aria-label="Upload display image"
                         onChange={(e) => {
                           if (e.target.files?.[0])
                             void handleDisplayImageUpload(e.target.files[0], i);
@@ -524,6 +527,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                   });
                 }}
                 className="p-2 text-red-400 hover:bg-red-50 rounded-lg"
+                aria-label="Delete step"
               >
                 <Trash2 size={14} />
               </button>
