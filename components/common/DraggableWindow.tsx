@@ -18,6 +18,7 @@ import {
 import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
+import { FloatingPanel } from './FloatingPanel';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
 import { WIDGET_PALETTE } from '@/config/colors';
@@ -631,7 +632,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         });
                       }}
                     />
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1 bg-white/90 backdrop-blur shadow-lg rounded-full border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200">
+                    <FloatingPanel
+                      variant="glass"
+                      shape="pill"
+                      padding="sm"
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    >
                       <div className="flex items-center gap-1 px-1">
                         {WIDGET_PALETTE.slice(0, 5).map((c) => (
                           <button
@@ -702,7 +708,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       >
                         DONE
                       </button>
-                    </div>
+                    </FloatingPanel>
                   </>
                 )}
               </div>
@@ -829,10 +835,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       {showTools &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div
+          <FloatingPanel
             ref={menuRef}
             style={menuStyle}
-            className={`flex items-center gap-1.5 p-1.5 bg-white/40 backdrop-blur-xl rounded-full border border-white/50 shadow-2xl font-${globalStyle.fontFamily}`}
+            variant="glass"
+            shape="pill"
+            padding="sm"
+            className={`flex items-center gap-1.5 font-${globalStyle.fontFamily}`}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -968,7 +977,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 </button>
               </div>
             </div>
-          </div>,
+          </FloatingPanel>,
           document.body
         )}
     </>

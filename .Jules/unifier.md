@@ -87,3 +87,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Widget settings panels used inconsistent typography for section headers (variations of `text-xxs`, `text-xs`, `text-[10px]`, `font-bold` vs `font-black`, `text-slate-400` vs `text-slate-500`, inconsistent margins).
 **Fix:** Created `components/common/SettingsLabel.tsx` to enforce the standard style (`text-xxs font-black text-slate-400 uppercase tracking-widest mb-2`). Refactored 12 widgets to use this component.
+
+## 2026-02-13 - Standardize Floating Menus (DraggableWindow & Drawing)
+
+**Drift:** `DraggableWindow` (tool menu, annotation toolbar) and `DrawingWidget` (overlay toolbar) were using manually styled glass panels that were inconsistent with the design system.
+**Fix:** Refactored them to use the shared `FloatingPanel` component with `variant="glass"`. Updated `FloatingPanel` to support `forwardRef` to handle click-outside logic in `DraggableWindow`.

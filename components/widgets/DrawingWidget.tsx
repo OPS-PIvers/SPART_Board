@@ -20,6 +20,7 @@ import { useScreenshot } from '../../hooks/useScreenshot';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { Button } from '../common/Button';
+import { FloatingPanel } from '../common/FloatingPanel';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../config/colors';
 import { SettingsLabel } from '../common/SettingsLabel';
 
@@ -403,9 +404,11 @@ export const DrawingWidget: React.FC<{
             />
             {/* Floating Toolbar at the Top */}
             {!isStudentView && (
-              <div
+              <FloatingPanel
                 data-screenshot="exclude"
-                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto bg-white/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 p-1 flex items-center gap-1 animate-in slide-in-from-top duration-300"
+                variant="glass"
+                padding="sm"
+                className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-1 animate-in slide-in-from-top duration-300"
               >
                 <div className="px-3 flex items-center gap-2 border-r border-white/30 mr-1">
                   <MousePointer2 className="w-4 h-4 text-indigo-600 animate-pulse" />
@@ -414,7 +417,7 @@ export const DrawingWidget: React.FC<{
                   </span>
                 </div>
                 {PaletteUI}
-              </div>
+              </FloatingPanel>
             )}
           </div>,
           portalTarget
