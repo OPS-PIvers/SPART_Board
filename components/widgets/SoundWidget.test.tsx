@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { SoundWidget } from './SoundWidget';
-import { WidgetData, SoundConfig, Dashboard } from '../../types';
+import {
+  WidgetData,
+  SoundConfig,
+  Dashboard,
+  ExpectationsConfig,
+} from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
 // Mock useDashboard
@@ -207,6 +212,38 @@ describe('SoundWidget', () => {
     // Should switch to Green because it's below threshold
     expect(mockUpdateWidget).toHaveBeenCalledWith('traffic-1', {
       config: { active: 'green' },
+    });
+  });
+
+  it('updates sensitivity when synced with Expectations widget', async () => {
+    // Setup dashboard with an Expectations widget set to Silence (Level 0)
+    mockActiveDashboard.widgets = [
+      {
+        id: 'expectations-1',
+        type: 'expectations',
+        config: { voiceLevel: 0 } as ExpectationsConfig,
+      } as unknown as WidgetData,
+    ];
+
+    // Configure Sound Widget with sync enabled and default sensitivity
+    const widget = createWidget({
+      sensitivity: 1, // Default
+      syncExpectations: true,
+    });
+
+    render(<SoundWidget widget={widget} />);
+
+    // Flush effects
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Should update sensitivity to 4.0 (for Level 0 Silence)
+    expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      config: expect.objectContaining({
+        sensitivity: 4.0,
+      }),
     });
   });
 });

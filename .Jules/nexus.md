@@ -16,6 +16,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `QRWidget.tsx` monitors the content of any active text widget and updates its URL if syncing is enabled.
 **Configuration:** Enabled via the "Sync with Text Widget" toggle in QR Settings.
 
+### Expectations -> Sound (Auto-Sensitivity)
+
+**Description:** Automatically adjusts microphone sensitivity based on the Voice Level set in the Expectations widget (e.g., stricter for "Silence", looser for "Group Work").
+**Implementation:** `SoundWidget.tsx` monitors `ExpectationsWidget` configuration and updates its own `sensitivity` setting.
+**Configuration:** Enabled via the "Sync with Expectations" toggle in Sound Widget settings.
+
 ## Planned Connections
 
 - **Poll -> Scoreboard:** Update team scores based on poll results.

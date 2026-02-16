@@ -4,9 +4,10 @@ import {
   WidgetData,
   SoundConfig,
   TrafficConfig,
+  ExpectationsConfig,
   WidgetConfig,
 } from '../../types';
-import { Thermometer, Gauge, Activity, Citrus, Zap } from 'lucide-react';
+import { Thermometer, Gauge, Activity, Citrus, Zap, Ear } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { Toggle } from '../common/Toggle';
 
@@ -326,6 +327,53 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     updateWidget,
   ]);
 
+  // Nexus Connection: Auto-Adjust Sensitivity from Expectations
+  const { syncExpectations } = widget.config as SoundConfig;
+  useEffect(() => {
+    if (!syncExpectations || !activeDashboard) return;
+
+    const expectationsWidget = activeDashboard.widgets.find(
+      (w) => w.type === 'expectations'
+    );
+    if (!expectationsWidget) return;
+
+    const expConfig = expectationsWidget.config as ExpectationsConfig;
+    const voiceLevel = expConfig.voiceLevel;
+
+    if (voiceLevel === null) return;
+
+    // Map Voice Level (0-4) to Sensitivity (High -> Low)
+    // 0 (Silence) -> 4.0
+    // 1 (Whisper) -> 2.5
+    // 2 (Conversation) -> 1.5
+    // 3 (Presenter) -> 1.0
+    // 4 (Outside) -> 0.5
+    const SENSITIVITY_MAP: Record<number, number> = {
+      0: 4.0,
+      1: 2.5,
+      2: 1.5,
+      3: 1.0,
+      4: 0.5,
+    };
+
+    const targetSensitivity = SENSITIVITY_MAP[voiceLevel];
+    if (targetSensitivity !== undefined && sensitivity !== targetSensitivity) {
+      updateWidget(widget.id, {
+        config: {
+          ...widget.config,
+          sensitivity: targetSensitivity,
+        } as WidgetConfig,
+      });
+    }
+  }, [
+    syncExpectations,
+    activeDashboard,
+    sensitivity,
+    updateWidget,
+    widget.id,
+    widget.config,
+  ]);
+
   return (
     <WidgetLayout
       padding="p-0"
@@ -387,6 +435,9 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const hasTrafficLight = activeDashboard?.widgets.some(
     (w) => w.type === 'traffic'
   );
+  const hasExpectations = activeDashboard?.widgets.some(
+    (w) => w.type === 'expectations'
+  );
 
   const modes = [
     { id: 'thermometer', icon: Thermometer, label: 'Meter' },
@@ -407,13 +458,19 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           max="5"
           step="0.1"
           value={sensitivity}
+          disabled={config.syncExpectations}
           onChange={(e) =>
             updateWidget(widget.id, {
               config: { ...config, sensitivity: parseFloat(e.target.value) },
             })
           }
-          className="w-full accent-indigo-600"
+          className={`w-full accent-indigo-600 ${config.syncExpectations ? 'opacity-50 cursor-not-allowed' : ''}`}
         />
+        {config.syncExpectations && (
+          <p className="text-xxxs text-indigo-500 mt-1 font-medium">
+            Controlled by Expectations widget
+          </p>
+        )}
       </div>
 
       <div>
@@ -505,6 +562,47 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Nexus Connection: Expectations */}
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+        <div className="flex items-center gap-2 text-slate-700">
+          <Ear className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Sync with Expectations
+          </span>
+        </div>
+
+        {!hasExpectations && (
+          <div className="text-xxs text-slate-400 font-medium bg-slate-100 p-2 rounded-lg">
+            Tip: Add an Expectations widget to use this feature.
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-slate-600">
+            Auto-Adjust Sensitivity
+          </span>
+          <Toggle
+            checked={config.syncExpectations ?? false}
+            onChange={(checked: boolean) =>
+              updateWidget(widget.id, {
+                config: { ...config, syncExpectations: checked },
+              })
+            }
+            disabled={!hasExpectations}
+            size="sm"
+            activeColor="bg-slate-600"
+            showLabels={false}
+          />
+        </div>
+
+        {config.syncExpectations && (
+          <p className="text-xxxs text-slate-400 leading-relaxed">
+            Microphone sensitivity will automatically adjust based on the Voice
+            Level set in the Expectations widget.
+          </p>
         )}
       </div>
     </div>

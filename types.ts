@@ -209,6 +209,7 @@ export interface SoundConfig {
   visual: 'thermometer' | 'speedometer' | 'line' | 'balls';
   autoTrafficLight?: boolean;
   trafficLightThreshold?: number;
+  syncExpectations?: boolean;
 }
 
 export interface DrawingConfig {
