@@ -22,6 +22,7 @@ import {
   RefreshCw,
   AlertCircle,
   Loader2,
+  Shirt,
 } from 'lucide-react';
 
 interface OpenWeatherData {
@@ -93,6 +94,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     source = 'openweather',
     city = '',
     showFeelsLike: localShowFeelsLike,
+    hideClothing,
   } = config;
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -428,30 +430,32 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
           </div>
 
-          <div
-            className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
-            style={{
-              gap: 'min(16px, 4cqmin)',
-              padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)',
-            }}
-          >
+          {!hideClothing && (
             <div
-              className="shrink-0 flex items-center justify-center overflow-hidden"
+              className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
               style={{
-                fontSize: 'min(48px, 12cqmin)',
-                width: 'min(64px, 15cqmin)',
-                height: 'min(64px, 15cqmin)',
+                gap: 'min(16px, 4cqmin)',
+                padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)',
               }}
             >
-              {displayImage}
+              <div
+                className="shrink-0 flex items-center justify-center overflow-hidden"
+                style={{
+                  fontSize: 'min(48px, 12cqmin)',
+                  width: 'min(64px, 15cqmin)',
+                  height: 'min(64px, 15cqmin)',
+                }}
+              >
+                {displayImage}
+              </div>
+              <div
+                className="font-bold text-slate-700 leading-tight"
+                style={{ fontSize: 'min(20px, 6cqmin)' }}
+              >
+                {displayMessage}
+              </div>
             </div>
-            <div
-              className="font-bold text-slate-700 leading-tight"
-              style={{ fontSize: 'min(20px, 6cqmin)' }}
-            >
-              {displayMessage}
-            </div>
-          </div>
+          )}
         </div>
       }
       footer={
@@ -524,6 +528,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     locationName: _locationName = 'Classroom',
     source = 'openweather',
     showFeelsLike: localShowFeelsLike,
+    hideClothing,
   } = config;
 
   // We should also access global config to hide controls if forced by admin proxy
@@ -752,6 +757,26 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           onChange={(checked) =>
             updateWidget(widget.id, {
               config: { ...config, showFeelsLike: checked },
+            })
+          }
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
+            <Shirt className="w-3 h-3" /> Hide Clothing Suggestions
+          </span>
+          <span className="text-xxs text-slate-400 leading-tight">
+            Remove the clothing and message container from the widget.
+          </span>
+        </div>
+        <Toggle
+          size="sm"
+          checked={hideClothing ?? false}
+          onChange={(checked) =>
+            updateWidget(widget.id, {
+              config: { ...config, hideClothing: checked },
             })
           }
         />
