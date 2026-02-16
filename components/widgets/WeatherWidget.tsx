@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
@@ -21,7 +21,6 @@ import {
   MapPin,
   RefreshCw,
   AlertCircle,
-  Loader2,
   Shirt,
 } from 'lucide-react';
 
@@ -80,7 +79,7 @@ const EARTH_NETWORKS_ICONS = {
 import { WidgetLayout } from './WidgetLayout';
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, addToast, activeDashboard } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const { featurePermissions } = useAuth();
   const config = widget.config as WeatherConfig;
@@ -91,13 +90,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     isAuto = false,
     locationName = 'Classroom',
     lastSync = null,
-    source = 'openweather',
-    city = '',
     showFeelsLike: localShowFeelsLike,
     hideClothing,
   } = config;
-
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const weatherPermission = featurePermissions.find(
     (p) => p.widgetType === 'weather'
@@ -109,10 +104,6 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // Use local config if set, otherwise fallback to global config
   const showFeelsLike =
     localShowFeelsLike ?? globalConfig?.showFeelsLike ?? false;
-
-  const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
-    | string
-    | undefined;
 
   // Initial Admin Proxy Fetch
   useEffect(() => {
@@ -188,121 +179,6 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     condition,
     lastSync,
     config,
-  ]);
-
-  const handleRefresh = useCallback(async () => {
-    if (!isAuto || isSyncing) return;
-
-    // If Admin Proxy is on, we don't fetch manually, we just wait for subscription.
-    // But user clicked "Refresh", so maybe we can trigger a check or just toast.
-    if (globalConfig?.fetchingStrategy === 'admin_proxy') {
-      addToast('Syncing with school station...', 'info');
-      return;
-    }
-
-    setIsSyncing(true);
-
-    try {
-      if (source === 'earth_networks') {
-        const queryParams = new URLSearchParams({
-          ...EARTH_NETWORKS_API.PARAMS,
-          si: STATION_CONFIG.id,
-          locstr: `${STATION_CONFIG.lat},${STATION_CONFIG.lon}`,
-        }).toString();
-
-        const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
-        const proxies = [
-          (u: string) =>
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-          (u: string) =>
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-        ];
-
-        let data: EarthNetworksResponse | null = null;
-        for (const getProxyUrl of proxies) {
-          try {
-            const res = await fetch(getProxyUrl(url));
-            if (!res.ok) continue;
-            const text = await res.text();
-            const trimmed = text.trim();
-
-            if (
-              !trimmed ||
-              trimmed.startsWith('<') ||
-              trimmed.toLowerCase().startsWith('<!doctype')
-            ) {
-              continue;
-            }
-
-            data = JSON.parse(trimmed) as EarthNetworksResponse;
-            if (data && data.o) break;
-          } catch (_) {
-            /* try next */
-          }
-        }
-
-        if (!data?.o) throw new Error('Station data unavailable');
-
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            temp: data.o.t,
-            feelsLike: data.o.fl ?? data.o.t,
-            condition: EARTH_NETWORKS_ICONS.SNOW.includes(data.o.ic)
-              ? 'snowy'
-              : EARTH_NETWORKS_ICONS.CLOUDY.includes(data.o.ic)
-                ? 'cloudy'
-                : EARTH_NETWORKS_ICONS.SUNNY.includes(data.o.ic)
-                  ? 'sunny'
-                  : EARTH_NETWORKS_ICONS.RAIN.includes(data.o.ic)
-                    ? 'rainy'
-                    : 'cloudy',
-            locationName: STATION_CONFIG.name,
-            lastSync: Date.now(),
-          },
-        });
-      } else {
-        // OpenWeather sync
-        if (!systemKey) throw new Error('API Key missing');
-        const params = city.trim()
-          ? `q=${encodeURIComponent(city.trim())}`
-          : `lat=${STATION_CONFIG.lat}&lon=${STATION_CONFIG.lon}`;
-
-        const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
-        );
-        const data = (await res.json()) as OpenWeatherData;
-        if (Number(data.cod) !== 200) throw new Error(String(data.message));
-
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            temp: data.main.temp,
-            feelsLike: data.main.feels_like,
-            condition: data.weather[0].main.toLowerCase(),
-            locationName: data.name,
-            lastSync: Date.now(),
-          },
-        });
-      }
-      addToast('Weather updated', 'success');
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Update failed', 'error');
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [
-    isAuto,
-    globalConfig?.fetchingStrategy,
-    source,
-    city,
-    systemKey,
-    widget.id,
-    config,
-    updateWidget,
-    addToast,
-    isSyncing,
   ]);
 
   const getIcon = (size: string) => {
@@ -478,59 +354,6 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             </div>
           )}
         </div>
-      }
-      footer={
-        isAuto ? (
-          <div
-            className="flex items-center w-full justify-start border-t border-slate-50"
-            style={{
-              gap: 'min(8px, 2cqmin)',
-              padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
-            }}
-          >
-            <button
-              onClick={handleRefresh}
-              disabled={isSyncing}
-              className="bg-white hover:bg-slate-50 text-slate-500 hover:text-indigo-600 rounded-lg transition-all border border-slate-200 disabled:opacity-50 shadow-sm"
-              style={{ padding: 'min(6px, 1.5cqmin)' }}
-              title="Refresh Weather"
-            >
-              {isSyncing ? (
-                <Loader2
-                  style={{
-                    width: 'min(14px, 4cqmin)',
-                    height: 'min(14px, 4cqmin)',
-                  }}
-                  className="animate-spin"
-                />
-              ) : (
-                <RefreshCw
-                  style={{
-                    width: 'min(14px, 4cqmin)',
-                    height: 'min(14px, 4cqmin)',
-                  }}
-                />
-              )}
-            </button>
-            <div
-              className="text-slate-600 uppercase flex items-center font-bold"
-              style={{
-                gap: 'min(6px, 1.5cqmin)',
-                fontSize: 'min(10px, 3.5cqmin)',
-              }}
-            >
-              <span>Last Sync</span>
-              {lastSync && (
-                <span className="text-slate-400 font-mono">
-                  {new Date(lastSync).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              )}
-            </div>
-          </div>
-        ) : undefined
       }
     />
   );
