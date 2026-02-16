@@ -645,4 +645,86 @@ describe('DraggableWindow', () => {
       expect.objectContaining({ maximized: true, flipped: false })
     );
   });
+
+  it('drag start closes settings panel', () => {
+    const flippedWidget = { ...mockWidget, flipped: true };
+    render(
+      <DraggableWindow
+        widget={flippedWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
+
+    // Start a drag
+    fireEvent.pointerDown(dragSurface, {
+      clientX: 110,
+      clientY: 110,
+      pointerId: 1,
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: false,
+    });
+
+    // Clean up
+    fireEvent.pointerUp(window, { pointerId: 1 });
+  });
+
+  it('resize start closes settings panel', () => {
+    const flippedWidget = { ...mockWidget, flipped: true };
+    render(
+      <DraggableWindow
+        widget={flippedWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    // Find a resize handle (SE corner)
+    const handles = document.querySelectorAll('.resize-handle');
+    const seHandle = handles[
+      handles.length - 1
+    ] as unknown as HTMLElementWithCapture;
+    seHandle.setPointerCapture = vi.fn();
+    seHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
+    seHandle.releasePointerCapture = vi.fn();
+
+    // Start a resize
+    fireEvent.pointerDown(seHandle, {
+      clientX: 300,
+      clientY: 300,
+      pointerId: 1,
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: false,
+    });
+
+    // Clean up
+    fireEvent.pointerUp(window, { pointerId: 1 });
+  });
 });

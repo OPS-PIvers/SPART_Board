@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { WidgetData, GlobalStyle } from '@/types';
 import { Z_INDEX } from '@/config/zIndex';
+import { useWindowSize } from '@/hooks/useWindowSize';
 
 interface SettingsPanelProps {
   widget: WidgetData;
@@ -18,23 +19,6 @@ interface SettingsPanelProps {
 const PANEL_WIDTH = 380;
 const PANEL_MARGIN = 12;
 
-/** Hook that returns current viewport dimensions, updating on resize. */
-function useViewportSize() {
-  const [size, setSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  useEffect(() => {
-    const handler = () =>
-      setSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
-
-  return size;
-}
-
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   widget,
   widgetRef,
@@ -47,7 +31,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const viewport = useViewportSize();
+  const viewport = useWindowSize();
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
 
@@ -112,6 +96,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       cancelAnimationFrame(innerRaf);
     };
   }, []);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   // Click outside to close (exclude widget itself and tool menu)
   useEffect(() => {
@@ -201,10 +196,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   </span>
                   {widget.transparency !== undefined && (
                     <button
+                      type="button"
                       onClick={() =>
                         updateWidget(widget.id, { transparency: undefined })
                       }
                       className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      aria-label="Reset transparency to global default"
                     >
                       Reset
                     </button>
@@ -223,6 +220,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       })
                     }
                     className="flex-1 accent-indigo-600 h-1.5"
+                    aria-label="Transparency percentage"
                   />
                   <span className="text-xs font-mono font-bold text-slate-500 w-10 text-right">
                     {Math.round(transparency * 100)}%
