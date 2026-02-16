@@ -176,7 +176,7 @@ describe('DraggableWindow', () => {
   });
 
   it('updates position on pointer drag (using direct DOM manipulation for standard widgets)', () => {
-    const { container } = render(
+    render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -192,18 +192,17 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const frontFace = container.querySelector(
-      '.front'
-    ) as HTMLElementWithCapture;
-    if (!frontFace) throw new Error('Front face not found');
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
     const windowEl = screen.getByTestId('draggable-window');
 
-    frontFace.setPointerCapture = vi.fn();
-    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
-    frontFace.releasePointerCapture = vi.fn();
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
 
     // Start pointer at (110, 110)
-    fireEvent.pointerDown(frontFace, {
+    fireEvent.pointerDown(dragSurface, {
       clientX: 110,
       clientY: 110,
       pointerId: 1,
@@ -238,7 +237,7 @@ describe('DraggableWindow', () => {
   });
 
   it('allows dragging from below the old 40px handle area', () => {
-    const { container } = render(
+    render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -254,17 +253,17 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const frontFace = container.querySelector(
-      '.front'
-    ) as HTMLElementWithCapture;
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
     const windowEl = screen.getByTestId('draggable-window');
 
-    frontFace.setPointerCapture = vi.fn();
-    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
-    frontFace.releasePointerCapture = vi.fn();
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
 
     // Start pointer at (110, 150)
-    fireEvent.pointerDown(frontFace, {
+    fireEvent.pointerDown(dragSurface, {
       clientX: 110,
       clientY: 150,
       pointerId: 1,
@@ -412,7 +411,7 @@ describe('DraggableWindow', () => {
       type: 'catalyst' as const, // Force type
     };
 
-    const { container } = render(
+    render(
       <DraggableWindow
         widget={catalystWidget}
         title="Catalyst"
@@ -428,14 +427,14 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const frontFace = container.querySelector(
-      '.front'
-    ) as HTMLElementWithCapture;
-    frontFace.setPointerCapture = vi.fn();
-    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
-    frontFace.releasePointerCapture = vi.fn();
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
 
-    fireEvent.pointerDown(frontFace, {
+    fireEvent.pointerDown(dragSurface, {
       clientX: 100,
       clientY: 100,
       pointerId: 1,

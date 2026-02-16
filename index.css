@@ -2,18 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Settings panel entrance animation */
-@keyframes settingsPanelIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* Traffic Light Glows */
 .light-red.active {
   background-color: #ef4444;

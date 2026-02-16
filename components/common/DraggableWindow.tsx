@@ -548,6 +548,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       >
         {/* Widget Content (always visible) */}
         <div
+          data-testid="drag-surface"
           className="h-full w-full flex flex-col rounded-[inherit] overflow-hidden"
           onPointerDown={handleDragStart}
           style={{ touchAction: 'none' }}

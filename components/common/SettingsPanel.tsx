@@ -91,14 +91,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       top,
       left: Math.max(PANEL_MARGIN, (vw - PANEL_WIDTH) / 2),
     };
-  }, [widget.x, widget.y, widget.w, widget.h, widget.maximized, viewport]);
+  }, [widget.x, widget.y, widget.w, widget.maximized, viewport]);
 
-  // Animate in on mount
+  // Animate in on mount (track both rAF handles for safe cleanup)
   useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setIsVisible(true));
+    let outerRaf = 0;
+    let innerRaf = 0;
+    outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => setIsVisible(true));
     });
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(outerRaf);
+      cancelAnimationFrame(innerRaf);
+    };
   }, []);
 
   // Click outside to close (exclude widget itself and tool menu)
@@ -139,6 +144,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         maxHeight: '80vh',
         zIndex: Z_INDEX.popover,
         opacity: isVisible ? 1 : 0,
+        transform: isVisible
+          ? 'translateY(0) scale(1)'
+          : 'translateY(8px) scale(0.98)',
         transition: 'opacity 0.15s ease, transform 0.15s ease',
       }}
       onPointerDown={(e) => e.stopPropagation()}
@@ -158,9 +166,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </span>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 hover:bg-slate-200/80 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
             title="Close settings (Esc)"
+            aria-label="Close settings"
           >
             <X className="w-4 h-4" />
           </button>
