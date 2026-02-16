@@ -39,13 +39,23 @@ vi.mock('../../../config/firebase', () => ({
 }));
 
 vi.mock('../../../utils/imageProcessing', () => ({
-  removeBackground: vi.fn().mockResolvedValue('data:image/png;base64,mocked-bg-removed'),
-  trimImageWhitespace: vi.fn().mockResolvedValue('data:image/png;base64,mocked-trimmed'),
+  removeBackground: vi
+    .fn()
+    .mockResolvedValue('data:image/png;base64,mocked-bg-removed'),
+  trimImageWhitespace: vi
+    .fn()
+    .mockResolvedValue('data:image/png;base64,mocked-trimmed'),
 }));
 
 // Mock IconPicker to simplify testing
 vi.mock('./IconPicker', () => ({
-  IconPicker: ({ currentIcon, onSelect }: { currentIcon: string; onSelect: (icon: string) => void }) => (
+  IconPicker: ({
+    currentIcon,
+    onSelect,
+  }: {
+    currentIcon: string;
+    onSelect: (icon: string) => void;
+  }) => (
     <button onClick={() => onSelect('Zap')} data-testid="icon-picker">
       {currentIcon}
     </button>
@@ -76,8 +86,22 @@ describe('LibraryManager', () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         blob: () => Promise.resolve(new Blob(['mock-blob'])),
-      })
-    ) as any;
+        ok: true,
+        headers: new Headers(),
+        redirected: false,
+        status: 200,
+        statusText: 'OK',
+        type: 'basic',
+        url: '',
+        clone: vi.fn(),
+        body: null,
+        bodyUsed: false,
+        arrayBuffer: vi.fn(),
+        formData: vi.fn(),
+        json: vi.fn(),
+        text: vi.fn(),
+      } as Response)
+    );
   });
 
   it('renders correctly with initial routine data', () => {
@@ -149,9 +173,12 @@ describe('LibraryManager', () => {
     const gradeButton = screen.getByText('6-8');
     fireEvent.click(gradeButton);
 
-    expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({
-      gradeLevels: expect.arrayContaining(['k-2', '3-5', '6-8']),
-    }));
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        gradeLevels: expect.arrayContaining(['k-2', '3-5', '6-8']),
+      })
+    );
   });
 
   it('removes a grade level when clicked', () => {
@@ -168,9 +195,12 @@ describe('LibraryManager', () => {
     const gradeButton = screen.getByText('k-2');
     fireEvent.click(gradeButton);
 
-    expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({
-      gradeLevels: expect.not.arrayContaining(['k-2']),
-    }));
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        gradeLevels: expect.not.arrayContaining(['k-2']),
+      })
+    );
   });
 
   it('adds a new step', () => {
@@ -217,7 +247,7 @@ describe('LibraryManager', () => {
   });
 
   it('updates step text', () => {
-     render(
+    render(
       <LibraryManager
         routine={defaultRoutine}
         onChange={mockOnChange}
@@ -229,11 +259,11 @@ describe('LibraryManager', () => {
     const stepInput = screen.getByDisplayValue('Step 1');
     fireEvent.change(stepInput, { target: { value: 'Updated Step' } });
 
-     expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({
-        steps: [
-            expect.objectContaining({ text: 'Updated Step' })
-        ]
-     }));
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        steps: [expect.objectContaining({ text: 'Updated Step' })] as unknown[],
+      })
+    );
   });
 
   it('calls onSave when save button is clicked', () => {
@@ -291,7 +321,9 @@ describe('LibraryManager', () => {
     fireEvent.click(magicButton);
 
     // Dialog should appear
-    expect(screen.getByText('Describe the instructional routine you want to create')).toBeInTheDocument();
+    expect(
+      screen.getByText('Describe the instructional routine you want to create')
+    ).toBeInTheDocument();
 
     // Enter prompt
     const promptInput = screen.getByPlaceholderText(/e.g., "A 3-step routine/i);
@@ -302,19 +334,21 @@ describe('LibraryManager', () => {
     fireEvent.click(generateButton);
 
     await waitFor(() => {
-        expect(mockHttpsCallable).toHaveBeenCalledWith({
-            type: 'instructional-routine',
-            prompt: 'Test Prompt',
-        });
+      expect(mockHttpsCallable).toHaveBeenCalledWith({
+        type: 'instructional-routine',
+        prompt: 'Test Prompt',
+      });
     });
 
     // Check if onChange was called with new data
-    expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
         name: 'Magic Routine',
         steps: expect.arrayContaining([
-            expect.objectContaining({ text: 'Magic Step 1' })
-        ])
-    }));
+          expect.objectContaining({ text: 'Magic Step 1' }),
+        ]) as unknown[],
+      })
+    );
   });
 
   it('handles sticker upload', async () => {
@@ -338,14 +372,18 @@ describe('LibraryManager', () => {
     fireEvent.change(uploadInput, { target: { files: [file] } });
 
     await waitFor(() => {
-        expect(mockUploadSticker).toHaveBeenCalled();
+      expect(mockUploadSticker).toHaveBeenCalled();
     });
 
-    expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
         steps: [
-            expect.objectContaining({ stickerUrl: 'https://example.com/sticker.png' })
-        ]
-    }));
+          expect.objectContaining({
+            stickerUrl: 'https://example.com/sticker.png',
+          }),
+        ] as unknown[],
+      })
+    );
   });
 
   it('handles display image upload', async () => {
@@ -367,13 +405,17 @@ describe('LibraryManager', () => {
     fireEvent.change(uploadInput, { target: { files: [file] } });
 
     await waitFor(() => {
-        expect(mockUploadDisplayImage).toHaveBeenCalled();
+      expect(mockUploadDisplayImage).toHaveBeenCalled();
     });
 
-    expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
         steps: [
-            expect.objectContaining({ imageUrl: 'https://example.com/image.png' })
-        ]
-    }));
+          expect.objectContaining({
+            imageUrl: 'https://example.com/image.png',
+          }),
+        ] as unknown[],
+      })
+    );
   });
 });
