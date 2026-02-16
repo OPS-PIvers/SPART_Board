@@ -204,6 +204,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     // Don't drag if annotating
     if (isAnnotating) return;
 
+    // Close settings panel on drag start to prevent position desync
+    // (panel position is based on widget.x/y which don't update during DOM-level drag)
+    if (widget.flipped) {
+      updateWidget(widget.id, { flipped: false });
+    }
+
     // Prevent default browser behavior (like scroll or selection)
     e.preventDefault();
 
@@ -292,6 +298,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (isMaximized) return;
     e.stopPropagation();
     e.preventDefault();
+
+    // Close settings panel on resize start to prevent position desync
+    if (widget.flipped) {
+      updateWidget(widget.id, { flipped: false });
+    }
 
     setIsResizing(true);
     // Initialize transient state

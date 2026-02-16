@@ -518,4 +518,131 @@ describe('DraggableWindow', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('settings button toggles flipped to true when closed', () => {
+    render(
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    // Click widget to show toolbar
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    // Find settings button and click it
+    const settingsBtn = screen.getByTitle('Settings');
+    fireEvent.click(settingsBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: true,
+    });
+  });
+
+  it('settings button toggles flipped to false when open', () => {
+    const flippedWidget = { ...mockWidget, flipped: true };
+    render(
+      <DraggableWindow
+        widget={flippedWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    // Click widget to show toolbar
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    // Find settings button (should show "Close Settings" when open)
+    const settingsBtn = screen.getByTitle('Close Settings');
+    fireEvent.click(settingsBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: false,
+    });
+  });
+
+  it('minimize closes settings panel', () => {
+    const flippedWidget = { ...mockWidget, flipped: true };
+    render(
+      <DraggableWindow
+        widget={flippedWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    // Click widget to show toolbar, then minimize
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    const minimizeBtn = screen.getByTitle('Minimize');
+    fireEvent.click(minimizeBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ minimized: true, flipped: false })
+    );
+  });
+
+  it('maximize closes settings panel', () => {
+    const flippedWidget = { ...mockWidget, flipped: true };
+    render(
+      <DraggableWindow
+        widget={flippedWidget}
+        title="Test Widget"
+        settings={<div>Settings</div>}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        <div>Content</div>
+      </DraggableWindow>
+    );
+
+    // Click widget to show toolbar, then maximize
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    const maximizeBtn = screen.getByTitle('Maximize');
+    fireEvent.click(maximizeBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ maximized: true, flipped: false })
+    );
+  });
 });

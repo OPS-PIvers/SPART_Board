@@ -51,16 +51,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const transparency = widget.transparency ?? globalStyle.windowTransparency;
 
+  // Clamp panel width so it never overflows narrow viewports
+  const effectiveWidth = Math.min(
+    PANEL_WIDTH,
+    viewport.width - 2 * PANEL_MARGIN
+  );
+
   // Compute panel position from widget props + viewport (no DOM measurement)
   const position = useMemo(() => {
     const { width: vw, height: vh } = viewport;
     const panelMaxH = vh * 0.8;
+    const pw = Math.min(PANEL_WIDTH, vw - 2 * PANEL_MARGIN);
 
     // Maximized widgets: center the panel
     if (widget.maximized) {
       return {
         top: Math.max(PANEL_MARGIN, (vh - panelMaxH) / 2),
-        left: Math.max(PANEL_MARGIN, (vw - PANEL_WIDTH) / 2),
+        left: Math.max(PANEL_MARGIN, (vw - pw) / 2),
       };
     }
 
@@ -76,12 +83,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
     // Try right side of widget
     const rightX = widgetRight + PANEL_MARGIN;
-    if (rightX + PANEL_WIDTH + PANEL_MARGIN <= vw) {
+    if (rightX + pw + PANEL_MARGIN <= vw) {
       return { top, left: rightX };
     }
 
     // Try left side of widget
-    const leftX = widgetLeft - PANEL_MARGIN - PANEL_WIDTH;
+    const leftX = widgetLeft - PANEL_MARGIN - pw;
     if (leftX >= PANEL_MARGIN) {
       return { top, left: leftX };
     }
@@ -89,7 +96,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     // Fallback: center horizontally
     return {
       top,
-      left: Math.max(PANEL_MARGIN, (vw - PANEL_WIDTH) / 2),
+      left: Math.max(PANEL_MARGIN, (vw - pw) / 2),
     };
   }, [widget.x, widget.y, widget.w, widget.maximized, viewport]);
 
@@ -140,7 +147,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         position: 'fixed',
         top: position.top,
         left: position.left,
-        width: PANEL_WIDTH,
+        width: effectiveWidth,
         maxHeight: '80vh',
         zIndex: Z_INDEX.popover,
         opacity: isVisible ? 1 : 0,
