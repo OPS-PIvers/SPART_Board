@@ -399,10 +399,11 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
               {/* Time display - matches Clock structure */}
               <div className="flex-1 min-h-0 w-full flex items-center justify-center">
                 <div
-                  className="relative flex items-center justify-center"
+                  className="relative flex flex-col items-center justify-center"
                   style={{
                     width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
                     aspectRatio: isVisual ? '1' : undefined,
+                    gap: '2cqh',
                   }}
                 >
                   {isVisual && (
@@ -424,10 +425,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     }`}
                     style={{
                       fontSize: isVisual
-                        ? 'min(25cqmin, 12rem)'
+                        ? 'min(22cqmin, 12rem)'
                         : mode === 'stopwatch'
-                          ? 'min(82cqh, 18cqw)'
-                          : 'min(82cqh, 25cqw)',
+                          ? 'min(70cqh, 18cqw)'
+                          : 'min(70cqh, 25cqw)',
                       color: timeColor,
                       textShadow: glow
                         ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
@@ -478,6 +479,64 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       </>
                     )}
                   </button>
+
+                  {/* Square Controls - integrated into hero content */}
+                  <div
+                    className="flex items-center justify-center relative z-10"
+                    style={{ gap: 'min(12px, 3cqmin)' }}
+                  >
+                    <button
+                      onClick={
+                        isRunning
+                          ? () => handleStop()
+                          : () => void handleStart()
+                      }
+                      className={`aspect-square flex items-center justify-center rounded-2xl transition-all active:scale-95 shadow-lg ${
+                        isRunning
+                          ? 'bg-slate-200/60 text-slate-500'
+                          : 'bg-brand-blue-primary text-white shadow-brand-blue-primary/20'
+                      }`}
+                      style={{
+                        width: isVisual
+                          ? 'min(15cqmin, 80px)'
+                          : 'min(15cqh, 12cqw)',
+                        height: isVisual
+                          ? 'min(15cqmin, 80px)'
+                          : 'min(15cqh, 12cqw)',
+                      }}
+                    >
+                      {isRunning ? (
+                        <Pause
+                          style={{ width: '50%', height: '50%' }}
+                          fill="currentColor"
+                        />
+                      ) : (
+                        <Play
+                          style={{
+                            width: '50%',
+                            height: '50%',
+                            marginLeft: '10%',
+                          }}
+                          fill="currentColor"
+                        />
+                      )}
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      className="aspect-square flex items-center justify-center rounded-2xl bg-slate-200/60 text-slate-400 hover:bg-slate-300/70 hover:text-brand-blue-primary transition-all active:scale-95 shadow-sm"
+                      style={{
+                        width: isVisual
+                          ? 'min(15cqmin, 80px)'
+                          : 'min(15cqh, 12cqw)',
+                        height: isVisual
+                          ? 'min(15cqmin, 80px)'
+                          : 'min(15cqh, 12cqw)',
+                      }}
+                      aria-label="Reset"
+                    >
+                      <RotateCcw style={{ width: '50%', height: '50%' }} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -489,51 +548,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   gap: 'min(6px, 1.5cqmin)',
                 }}
               >
-                {/* Play/Pause + Reset */}
-                <div className="flex" style={{ gap: 'min(6px, 1.5cqmin)' }}>
-                  <button
-                    onClick={
-                      isRunning ? () => handleStop() : () => void handleStart()
-                    }
-                    className={`flex-[3] flex items-center justify-center rounded-lg font-black uppercase tracking-widest transition-all active:scale-[0.97] ${
-                      isRunning
-                        ? 'bg-slate-200/60 text-slate-500 hover:bg-slate-300/70'
-                        : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
-                    }`}
-                    style={{
-                      height: 'min(44px, 10cqmin)',
-                      fontSize: 'min(12px, 3cqmin)',
-                      gap: 'min(6px, 1.5cqmin)',
-                    }}
-                  >
-                    {isRunning ? (
-                      <Pause
-                        className="w-[1.2em] h-[1.2em]"
-                        fill="currentColor"
-                      />
-                    ) : (
-                      <Play
-                        className="w-[1.2em] h-[1.2em]"
-                        fill="currentColor"
-                      />
-                    )}
-                    {isRunning ? 'PAUSE' : 'START'}
-                  </button>
-                  <button
-                    onClick={handleReset}
-                    className="aspect-square flex items-center justify-center rounded-lg bg-slate-200/60 text-slate-400 hover:bg-slate-300/70 hover:text-brand-blue-primary transition-all active:scale-95"
-                    style={{ height: 'min(44px, 10cqmin)' }}
-                    aria-label="Reset"
-                  >
-                    <RotateCcw
-                      style={{
-                        width: 'min(16px, 4cqmin)',
-                        height: 'min(16px, 4cqmin)',
-                      }}
-                    />
-                  </button>
-                </div>
-
                 {/* Sound picker row */}
                 <div className="flex justify-between items-center">
                   <div className="relative">
