@@ -1,26 +1,48 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth';
 import { DashboardProvider } from './context/DashboardContext';
-import { LoginScreen } from './components/auth/LoginScreen';
-import { DashboardView } from './components/layout/DashboardView';
 import { UpdateNotification } from './components/layout/UpdateNotification';
 import { isConfigured } from './config/firebase';
-import { StudentApp } from './components/student/StudentApp';
 import { StudentProvider } from './components/student/StudentContexts';
 import { AdminWeatherFetcher } from './components/admin/AdminWeatherFetcher';
+import { LoadingFallback } from './components/common/LoadingFallback';
+
+// Lazy load large components to improve initial bundle size
+// We use a helper function pattern since these are named exports
+const StudentApp = lazy(() =>
+  import('./components/student/StudentApp').then((module) => ({
+    default: module.StudentApp,
+  }))
+);
+const LoginScreen = lazy(() =>
+  import('./components/auth/LoginScreen').then((module) => ({
+    default: module.LoginScreen,
+  }))
+);
+const DashboardView = lazy(() =>
+  import('./components/layout/DashboardView').then((module) => ({
+    default: module.DashboardView,
+  }))
+);
 
 const AuthenticatedApp: React.FC = () => {
   const { user, isAdmin } = useAuth();
 
   if (!user) {
-    return <LoginScreen />;
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <LoginScreen />
+      </Suspense>
+    );
   }
 
   return (
     <DashboardProvider>
       {isAdmin && <AdminWeatherFetcher />}
-      <DashboardView />
+      <Suspense fallback={<LoadingFallback />}>
+        <DashboardView />
+      </Suspense>
       <UpdateNotification />
     </DashboardProvider>
   );
@@ -34,7 +56,9 @@ const App: React.FC = () => {
   if (isStudentRoute) {
     return (
       <StudentProvider>
-        <StudentApp />
+        <Suspense fallback={<LoadingFallback />}>
+          <StudentApp />
+        </Suspense>
       </StudentProvider>
     );
   }
