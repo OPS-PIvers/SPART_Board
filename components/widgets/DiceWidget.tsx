@@ -217,12 +217,9 @@ export const DiceSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       </div>
 
       <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
-        <div className="flex items-center gap-3 text-purple-700 mb-2">
-          <Dices className="w-5 h-5" />
-          <span className="text-xs  uppercase tracking-wider">
-            Instructions
-          </span>
-        </div>
+        <SettingsLabel icon={Dices} className="text-purple-700 mb-2">
+          Instructions
+        </SettingsLabel>
         <p className="text-xxs text-purple-600 leading-relaxed ">
           Select between 1 and 3 dice for your classroom activities. The dice
           will scale to fit the window as you add more.

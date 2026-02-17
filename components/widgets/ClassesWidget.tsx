@@ -9,6 +9,7 @@ import {
 import { useDashboard } from '../../context/useDashboard';
 import { Plus, Trash2, Save, Star, Edit2, RefreshCw } from 'lucide-react';
 import { classLinkService } from '../../utils/classlinkService';
+import { SettingsLabel } from '../common/SettingsLabel';
 
 interface Props {
   widget: WidgetData;
@@ -152,9 +153,9 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
         >
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-end mb-1">
-              <label className="text-xxs  text-slate-500 uppercase tracking-widest font-black">
+              <SettingsLabel className="text-slate-500 mb-0">
                 {showLastNames ? 'First Names' : 'Names (One per line)'}
-              </label>
+              </SettingsLabel>
               {!showLastNames && (
                 <button
                   onClick={handleToggleToLastNames}
@@ -178,9 +179,9 @@ const RosterEditor: React.FC<EditorProps> = ({ roster, onSave, onBack }) => {
           {showLastNames && (
             <div className="flex flex-col h-full">
               <div className="flex justify-between items-end mb-1">
-                <label className="text-xxs  text-slate-500 uppercase tracking-widest font-black">
+                <SettingsLabel className="text-slate-500 mb-0">
                   Last Names
-                </label>
+                </SettingsLabel>
                 <button
                   onClick={handleToggleToSingleField}
                   className="text-xxs text-slate-400 hover:text-red-500 font-black uppercase tracking-wider transition-colors"
