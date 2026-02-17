@@ -96,7 +96,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const iconWrapperClasses = `absolute top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center ${iconColorClass}`;
 
     const renderIcon = (
-      Icon: React.ReactElement | React.ComponentType<{ className?: string }>,
+      Icon:
+        | React.ReactElement
+        | React.ComponentType<{ className?: string }>
+        | undefined,
       position: 'left' | 'right'
     ) => {
       if (!Icon) return null;
@@ -107,10 +110,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       return (
         <div className={`${iconWrapperClasses} ${positionClass}`}>
           {React.isValidElement(Icon)
-            ? React.cloneElement(Icon, {
-                className: `${iconSize} ${
-                  (Icon.props as { className?: string }).className ?? ''
-                }`,
+            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              React.cloneElement(Icon as React.ReactElement<any>, {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                className: `${iconSize} ${(Icon.props as any).className ?? ''}`,
               })
             : // Render as component
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
