@@ -127,6 +127,30 @@ describe('DraggableWindow', () => {
     vi.restoreAllMocks();
   });
 
+  // Helper function to render DraggableWindow with common props
+  const renderComponent = (
+    widgetProps: Partial<WidgetData> = {},
+    children: React.ReactNode = <div>Content</div>,
+    settings: React.ReactNode = <div>Settings</div>
+  ) => {
+    const widget = { ...mockWidget, ...widgetProps };
+    return render(
+      <DraggableWindow
+        widget={widget}
+        title="Test Widget"
+        settings={settings}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        {children}
+      </DraggableWindow>
+    );
+  };
+
   it('conditionally loads settings only after flip (optimization)', async () => {
     const SettingsContent = () => (
       <div data-testid="settings-content">Settings Loaded</div>
@@ -520,21 +544,7 @@ describe('DraggableWindow', () => {
   });
 
   it('settings button toggles flipped to true when closed', () => {
-    render(
-      <DraggableWindow
-        widget={mockWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div>Content</div>
-      </DraggableWindow>
-    );
+    renderComponent();
 
     // Click widget to show toolbar
     const widgetEl = screen.getByText('Content').closest('.widget');
@@ -551,22 +561,7 @@ describe('DraggableWindow', () => {
   });
 
   it('settings button toggles flipped to false when open', () => {
-    const flippedWidget = { ...mockWidget, flipped: true };
-    render(
-      <DraggableWindow
-        widget={flippedWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div>Content</div>
-      </DraggableWindow>
-    );
+    renderComponent({ flipped: true });
 
     // Click widget to show toolbar
     const widgetEl = screen.getByText('Content').closest('.widget');
@@ -583,22 +578,7 @@ describe('DraggableWindow', () => {
   });
 
   it('minimize closes settings panel', () => {
-    const flippedWidget = { ...mockWidget, flipped: true };
-    render(
-      <DraggableWindow
-        widget={flippedWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div>Content</div>
-      </DraggableWindow>
-    );
+    renderComponent({ flipped: true });
 
     // Click widget to show toolbar, then minimize
     const widgetEl = screen.getByText('Content').closest('.widget');
@@ -615,22 +595,7 @@ describe('DraggableWindow', () => {
   });
 
   it('maximize closes settings panel', () => {
-    const flippedWidget = { ...mockWidget, flipped: true };
-    render(
-      <DraggableWindow
-        widget={flippedWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div>Content</div>
-      </DraggableWindow>
-    );
+    renderComponent({ flipped: true });
 
     // Click widget to show toolbar, then maximize
     const widgetEl = screen.getByText('Content').closest('.widget');
@@ -647,22 +612,7 @@ describe('DraggableWindow', () => {
   });
 
   it('drag start closes settings panel', () => {
-    const flippedWidget = { ...mockWidget, flipped: true };
-    render(
-      <DraggableWindow
-        widget={flippedWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div>Content</div>
-      </DraggableWindow>
-    );
+    renderComponent({ flipped: true });
 
     const dragSurface = screen.getByTestId(
       'drag-surface'
@@ -687,22 +637,7 @@ describe('DraggableWindow', () => {
   });
 
   it('resize start closes settings panel', () => {
-    const flippedWidget = { ...mockWidget, flipped: true };
-    render(
-      <DraggableWindow
-        widget={flippedWidget}
-        title="Test Widget"
-        settings={<div>Settings</div>}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
-      >
-        <div>Content</div>
-      </DraggableWindow>
-    );
+    renderComponent({ flipped: true });
 
     // Find a resize handle (SE corner)
     const handles = document.querySelectorAll('.resize-handle');
