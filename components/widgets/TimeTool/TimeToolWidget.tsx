@@ -387,25 +387,29 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             />
           ) : (
             <>
-              {/* Time display - matches Clock structure */}
+              {/* Main centering container for the time */}
               <div className="flex-1 min-h-0 w-full flex items-center justify-center relative">
-                <div
-                  className="flex flex-col items-center justify-center"
-                  style={{
-                    width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
-                    aspectRatio: isVisual ? '1' : undefined,
-                    gap: isVisual ? '0' : 'min(12px, 3cqh)',
-                  }}
-                >
-                  {isVisual && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <ProgressRing
-                        progress={progress}
-                        ringColor={getRingColor()}
-                      />
-                    </div>
-                  )}
+                {/* Visual Ring (Absolute to widget, behind everything) */}
+                {isVisual && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      width: 'min(90%, 90cqmin)',
+                      height: 'min(90%, 90cqmin)',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <ProgressRing
+                      progress={progress}
+                      ringColor={getRingColor()}
+                    />
+                  </div>
+                )}
 
+                {/* The core centering unit: Time + Absolute Controls */}
+                <div className="relative flex flex-col items-center justify-center">
                   <button
                     onClick={() => {
                       if (!isRunning && mode === 'timer') setIsEditing(true);
@@ -420,8 +424,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       fontSize: isVisual
                         ? 'min(22cqmin, 12rem)'
                         : mode === 'stopwatch'
-                          ? 'min(50cqh, 18cqw)'
-                          : 'min(50cqh, 25cqw)',
+                          ? 'min(55cqh, 18cqw)'
+                          : 'min(55cqh, 25cqw)',
                       color: timeColor,
                       textShadow: glow
                         ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
@@ -473,10 +477,13 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     )}
                   </button>
 
-                  {/* Square Controls - positioned below the time */}
+                  {/* Square Controls - Positioned below the centerline without pushing it */}
                   <div
-                    className="flex items-center justify-center relative z-10"
-                    style={{ gap: 'min(12px, 3cqmin)' }}
+                    className="absolute z-10 flex items-center justify-center"
+                    style={{
+                      top: isVisual ? '120%' : '110%',
+                      gap: 'min(12px, 3cqmin)',
+                    }}
                   >
                     <button
                       onClick={
