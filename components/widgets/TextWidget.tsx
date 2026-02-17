@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { WidgetData, TextConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 import { STICKY_NOTE_COLORS } from '../../config/colors';
@@ -7,6 +7,8 @@ import { sanitizeHtml } from '../../utils/security';
 
 import { WidgetLayout } from './WidgetLayout';
 import { SettingsLabel } from '../common/SettingsLabel';
+
+const PLACEHOLDER_TEXT = 'Click to edit...';
 
 export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -17,6 +19,80 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     bgColor = STICKY_NOTE_COLORS.yellow,
     fontSize = 18,
   } = config;
+
+  const editorRef = useRef<HTMLDivElement>(null);
+  const isEditingRef = useRef(false);
+  const lastExternalContent = useRef(content);
+
+  // Sync external content changes into the DOM only when not actively editing
+  // and only when the content actually changed externally (e.g. template applied)
+  useEffect(() => {
+    if (
+      editorRef.current &&
+      !isEditingRef.current &&
+      content !== lastExternalContent.current
+    ) {
+      lastExternalContent.current = content;
+      editorRef.current.innerHTML = content || '';
+    }
+  }, [content]);
+
+  // Set initial content on mount only. The `content` dep is intentionally
+  // omitted — ongoing external changes are handled by the effect above,
+  // and including `content` here would overwrite the DOM during typing.
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = content || '';
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isPlaceholder = !content || content === PLACEHOLDER_TEXT;
+
+  const handleFocus = useCallback(() => {
+    isEditingRef.current = true;
+    // Clear placeholder content when user focuses
+    if (editorRef.current && isPlaceholder) {
+      editorRef.current.innerHTML = '';
+    }
+  }, [isPlaceholder]);
+
+  /** Normalize browser empty-editor markup (<br>, <div><br></div>) to '' */
+  const readEditorContent = useCallback((): string => {
+    if (!editorRef.current) return '';
+    const html = editorRef.current.innerHTML;
+    // Browsers leave <br> or <div><br></div> when content is fully deleted
+    const stripped = html
+      .replace(/<br\s*\/?>/gi, '')
+      .replace(/<div>\s*<\/div>/gi, '')
+      .trim();
+    return stripped === '' ? '' : sanitizeHtml(html);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    isEditingRef.current = false;
+    const content = readEditorContent();
+    // Update the ref so the useEffect doesn't re-apply the same content
+    lastExternalContent.current = content;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        content,
+      } as TextConfig,
+    });
+  }, [widget.id, config, updateWidget, readEditorContent]);
+
+  const handleInput = useCallback(() => {
+    // Save on every input for immediate persistence (debounced by DashboardContext)
+    const content = readEditorContent();
+    lastExternalContent.current = content;
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        content,
+      } as TextConfig,
+    });
+  }, [widget.id, config, updateWidget, readEditorContent]);
 
   return (
     <WidgetLayout
@@ -46,22 +122,18 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             style={{ backgroundColor: bgColor }}
           />
           <div
-            className="relative z-10 h-full w-full outline-none"
+            ref={editorRef}
+            className="relative z-10 h-full w-full outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 empty:before:pointer-events-none"
             style={{
               fontSize: `min(${fontSize}px, ${fontSize * 0.5}cqmin)`,
               lineHeight: 1.5,
             }}
+            data-placeholder={PLACEHOLDER_TEXT}
             contentEditable
             suppressContentEditableWarning
-            dangerouslySetInnerHTML={{ __html: content }}
-            onBlur={(e) =>
-              updateWidget(widget.id, {
-                config: {
-                  ...config,
-                  content: sanitizeHtml(e.currentTarget.innerHTML),
-                } as TextConfig,
-              })
-            }
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onInput={handleInput}
           />
         </div>
       }
