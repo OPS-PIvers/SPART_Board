@@ -27,6 +27,20 @@ const getLevelData = (volume: number) => {
   return POSTER_LEVELS[0];
 };
 
+// Map Voice Level (0-4) to Sensitivity (High -> Low)
+// 0 (Silence) -> 4.0
+// 1 (Whisper) -> 2.5
+// 2 (Conversation) -> 1.5
+// 3 (Presenter) -> 1.0
+// 4 (Outside) -> 0.5
+const SENSITIVITY_MAP: Record<number, number> = {
+  0: 4.0,
+  1: 2.5,
+  2: 1.5,
+  3: 1.0,
+  4: 0.5,
+};
+
 // --- Sub-Components for Visuals ---
 
 const ThermometerView: React.FC<{ volume: number }> = ({ volume }) => {
@@ -215,6 +229,7 @@ const PopcornBallsView: React.FC<{
 // --- Main Widget ---
 
 import { WidgetLayout } from './WidgetLayout';
+import { useMemo } from 'react';
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -329,34 +344,20 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Nexus Connection: Auto-Adjust Sensitivity from Expectations
   const { syncExpectations } = widget.config as SoundConfig;
-  useEffect(() => {
-    if (!syncExpectations || !activeDashboard) return;
 
-    const expectationsWidget = activeDashboard.widgets.find(
+  const expectationsVoiceLevel = useMemo(() => {
+    if (!activeDashboard) return null;
+    const expWidget = activeDashboard.widgets.find(
       (w) => w.type === 'expectations'
     );
-    if (!expectationsWidget) return;
+    if (!expWidget) return null;
+    return (expWidget.config as ExpectationsConfig).voiceLevel;
+  }, [activeDashboard]);
 
-    const expConfig = expectationsWidget.config as ExpectationsConfig;
-    const voiceLevel = expConfig.voiceLevel;
+  useEffect(() => {
+    if (!syncExpectations || expectationsVoiceLevel === null) return;
 
-    if (voiceLevel === null) return;
-
-    // Map Voice Level (0-4) to Sensitivity (High -> Low)
-    // 0 (Silence) -> 4.0
-    // 1 (Whisper) -> 2.5
-    // 2 (Conversation) -> 1.5
-    // 3 (Presenter) -> 1.0
-    // 4 (Outside) -> 0.5
-    const SENSITIVITY_MAP: Record<number, number> = {
-      0: 4.0,
-      1: 2.5,
-      2: 1.5,
-      3: 1.0,
-      4: 0.5,
-    };
-
-    const targetSensitivity = SENSITIVITY_MAP[voiceLevel];
+    const targetSensitivity = SENSITIVITY_MAP[expectationsVoiceLevel];
     if (targetSensitivity !== undefined && sensitivity !== targetSensitivity) {
       updateWidget(widget.id, {
         config: {
@@ -367,7 +368,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }, [
     syncExpectations,
-    activeDashboard,
+    expectationsVoiceLevel,
     sensitivity,
     updateWidget,
     widget.id,
