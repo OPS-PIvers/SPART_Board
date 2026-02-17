@@ -34,6 +34,10 @@ const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
   return visibleTools.map((type) => ({ type: 'tool', toolType: type }));
 };
 
+/** Serialize dashboard state for change-detection comparisons. */
+const serializeDashboard = (d: Dashboard): string =>
+  JSON.stringify(d.widgets) + d.background + d.name;
+
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -285,10 +289,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           const hasUnsavedLocalChanges =
             currentActive &&
             lastSavedDataRef.current !== '' &&
-            JSON.stringify(currentActive.widgets) +
-              currentActive.background +
-              currentActive.name !==
-              lastSavedDataRef.current;
+            serializeDashboard(currentActive) !== lastSavedDataRef.current;
 
           if (
             hasPendingWrites ||
@@ -391,8 +392,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const active = dashboards.find((d) => d.id === activeId);
     if (!active) return;
 
-    const currentData =
-      JSON.stringify(active.widgets) + active.background + active.name;
+    const currentData = serializeDashboard(active);
 
     // Always clear any pending timer, even if data hasn't changed
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -452,8 +452,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const active = dashboards.find((d) => d.id === activeId);
     if (!active) return;
 
-    const currentData =
-      JSON.stringify(active.widgets) + active.background + active.name;
+    const currentData = serializeDashboard(active);
 
     if (currentData === lastExportedDataRef.current) return;
 

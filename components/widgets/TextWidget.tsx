@@ -37,7 +37,9 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }, [content]);
 
-  // Set initial content on mount
+  // Set initial content on mount only. The `content` dep is intentionally
+  // omitted — ongoing external changes are handled by the effect above,
+  // and including `content` here would overwrite the DOM during typing.
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = content || '';
