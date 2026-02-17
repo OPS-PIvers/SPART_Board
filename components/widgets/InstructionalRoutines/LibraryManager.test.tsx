@@ -200,9 +200,7 @@ describe('LibraryManager', () => {
 
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        steps: [
-          expect.objectContaining({ icon: 'Star' }),
-        ] as unknown[],
+        steps: [expect.objectContaining({ icon: 'Star' })] as unknown[],
       })
     );
   });
