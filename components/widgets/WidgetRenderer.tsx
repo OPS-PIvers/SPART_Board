@@ -66,7 +66,7 @@ interface WidgetRendererProps {
   dashboardSettings?: DashboardSettings;
 }
 
-const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
+const StandardWidgetRenderer: React.FC<WidgetRendererProps> = ({
   widget,
   isStudentView = false,
   session,
@@ -230,10 +230,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     HEADER_HEIGHT,
   ]);
 
-  if (widget.type === 'sticker') {
-    return <StickerItemWidget widget={widget} />;
-  }
-
   if (isStudentView) {
     const isDrawing = widget.type === 'drawing';
     return (
@@ -293,6 +289,14 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       {finalContent}
     </DraggableWindow>
   );
+};
+
+// Dispatcher Component
+const WidgetRendererComponent: React.FC<WidgetRendererProps> = (props) => {
+  if (props.widget.type === 'sticker') {
+    return <StickerItemWidget widget={props.widget} />;
+  }
+  return <StandardWidgetRenderer {...props} />;
 };
 
 // Internal optimized wrapper to prevent re-renders when x/y coordinates change during drag
