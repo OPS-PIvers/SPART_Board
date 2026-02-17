@@ -541,7 +541,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      const sessionId = session.name?.split('/').pop() || session.id;
+      // Use optional chaining carefully to avoid TS2532 "Object is possibly 'undefined'"
+      const nameParts = session.name ? session.name.split('/') : [];
+      const sessionId = nameParts.pop() || session.id;
       console.log(`Jules session created: ${sessionId}`);
 
       return {

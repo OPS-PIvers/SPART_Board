@@ -47,3 +47,9 @@
 **Weed:** `TimeToolWidget.tsx` was 815 lines and contained multiple inline components (`ProgressRing`, `Keypad`, `TimeToolSettings`).
 **Root Cause:** "God Component" pattern; components were defined in the same file as the main widget.
 **Plan:** Extracted `ProgressRing`, `Keypad`, and `Settings` (renamed from `TimeToolSettings`) into separate files in `components/widgets/TimeTool/`. Updated `WidgetRegistry.ts` to import settings from the new location.
+
+## 2026-02-17 - Fix CI Failure in Cloud Functions
+
+**Weed:** `functions/src/index.ts` contained a potential `TS2532: Object is possibly 'undefined'` error at line 443 due to chained optional access + array method.
+**Root Cause:** Ambiguous TypeScript inference with `session.name?.split('/').pop()`.
+**Plan:** Replaced with explicit check: `const nameParts = session.name ? session.name.split('/') : []; const sessionId = nameParts.pop() || session.id;` to ensure type safety.
