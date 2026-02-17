@@ -15,13 +15,13 @@ import {
   Trash2,
   Highlighter,
 } from 'lucide-react';
-import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
-import { useScreenshot } from '@/hooks/useScreenshot';
+import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
+import { useScreenshot } from '../../hooks/useScreenshot';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
-import { useClickOutside } from '@/hooks/useClickOutside';
+import { useClickOutside } from '../../hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
-import { WIDGET_PALETTE } from '@/config/colors';
+import { WIDGET_PALETTE } from '../../config/colors';
 import { Z_INDEX } from '../../config/zIndex';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { WidgetData, GlobalStyle } from '@/types';
-import { Z_INDEX } from '@/config/zIndex';
-import { useWindowSize } from '@/hooks/useWindowSize';
+import { WidgetData, GlobalStyle } from '../../types';
+import { Z_INDEX } from '../../config/zIndex';
+import { useWindowSize } from '../../hooks/useWindowSize';
 
 interface SettingsPanelProps {
   widget: WidgetData;
