@@ -13,6 +13,9 @@ interface ModalProps {
   className?: string; // For additional styling on the content container
 }
 
+// Track number of open modals to handle nested locking correctly
+let openModalCount = 0;
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -27,14 +30,22 @@ export const Modal: React.FC<ModalProps> = ({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+
     if (isOpen) {
+      if (openModalCount === 0) {
+        document.body.style.overflow = 'hidden';
+      }
+      openModalCount++;
       window.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+
+      return () => {
+        openModalCount--;
+        if (openModalCount === 0) {
+          document.body.style.overflow = 'unset';
+        }
+        window.removeEventListener('keydown', handleEscape);
+      };
     }
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
