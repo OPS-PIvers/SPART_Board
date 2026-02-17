@@ -77,6 +77,9 @@ export const FeaturePermissionsManager: React.FC = () => {
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
   const [uploadingRangeId, setUploadingRangeId] = useState<string | null>(null);
   const { uploadWeatherImage } = useStorage();
+  const betaUserRefs = React.useRef<Map<WidgetType, HTMLInputElement>>(
+    new Map()
+  );
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -419,10 +422,10 @@ export const FeaturePermissionsManager: React.FC = () => {
                           displayName: val || undefined,
                         });
                       }}
-                      variant="ghost"
+                      variant="underline"
                       size="xs"
                       fullWidth
-                      className="font-bold border-b rounded-none hover:bg-transparent focus:bg-transparent px-0 py-0.5 hover:border-slate-300 focus:ring-0 focus:border-brand-blue-primary"
+                      className="font-bold"
                       placeholder={tool.label}
                     />
                     <p className="text-xs text-slate-500">{tool.type}</p>
@@ -1110,6 +1113,10 @@ export const FeaturePermissionsManager: React.FC = () => {
 
                     <div className="flex gap-2">
                       <Input
+                        ref={(el) => {
+                          if (el) betaUserRefs.current.set(tool.type, el);
+                          else betaUserRefs.current.delete(tool.type);
+                        }}
                         type="email"
                         placeholder="user@example.com"
                         fullWidth
@@ -1124,11 +1131,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                         }}
                       />
                       <button
-                        onClick={(e) => {
-                          const input =
-                            e.currentTarget.previousElementSibling?.querySelector(
-                              'input'
-                            ) as HTMLInputElement;
+                        onClick={() => {
+                          const input = betaUserRefs.current.get(tool.type);
                           if (input) {
                             addBetaUser(tool.type, input.value);
                             input.value = '';

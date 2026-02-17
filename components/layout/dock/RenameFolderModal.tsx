@@ -34,7 +34,10 @@ export const RenameFolderModal: React.FC<RenameFolderModalProps> = ({
           onChange={(e) => setVal(e.target.value)}
           autoFocus
           placeholder="Folder name..."
-          className="mb-6 bg-slate-100 border-none h-12 text-sm font-bold"
+          variant="filled"
+          size="lg"
+          fullWidth
+          className="mb-6 font-bold text-sm"
           onKeyDown={(e) => e.key === 'Enter' && onSave(val)}
         />
         <div className="flex gap-3">
