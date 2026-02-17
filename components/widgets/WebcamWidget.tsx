@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Camera,
-  RefreshCw,
   Download,
   Trash2,
   X,
@@ -10,7 +9,8 @@ import {
   Loader2,
   Copy,
   Check,
-  Camera as CameraIcon,
+  Video,
+  FlipHorizontal,
 } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
@@ -297,7 +297,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Mirror Camera"
                   >
-                    <RefreshCw
+                    <FlipHorizontal
                       className={isMirrored ? 'rotate-180' : ''}
                       style={{
                         width: 'min(20px, 5cqmin)',
@@ -313,7 +313,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                       style={{ padding: 'min(12px, 2.5cqmin)' }}
                       title="Switch Camera"
                     >
-                      <CameraIcon
+                      <Video
                         style={{
                           width: 'min(20px, 5cqmin)',
                           height: 'min(20px, 5cqmin)',
