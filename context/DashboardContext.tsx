@@ -417,6 +417,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }>({ widgets: '', background: '', name: '' });
 
   useEffect(() => {
+    // Capture ref value for stable cleanup (react-hooks/exhaustive-deps)
+    const auxTimers = auxTimersRef.current;
+
     if (!user || loading || !activeId) return;
 
     const active = dashboards.find((d) => d.id === activeId);
@@ -447,7 +450,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const debounceMs = isStructuralChange ? 200 : 800; // 200ms for add/remove, 800ms for config/moving
 
     const showSavingTimer = setTimeout(() => setIsSaving(true), 0);
-    auxTimersRef.current.add(showSavingTimer);
+    auxTimers.add(showSavingTimer);
     saveTimerRef.current = setTimeout(() => {
       const savedData = currentData;
       // Capture per-field state at save time for field-granular merge decisions
@@ -470,12 +473,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           // Clear isSaving after a brief delay to let onSnapshot catch up.
           // If another save is still in-flight, isSaving stays true.
           const delayTimer = setTimeout(() => {
-            auxTimersRef.current.delete(delayTimer);
+            auxTimers.delete(delayTimer);
             if (pendingSaveCountRef.current === 0) {
               setIsSaving(false);
             }
           }, 300);
-          auxTimersRef.current.add(delayTimer);
+          auxTimers.add(delayTimer);
         })
         .catch((err) => {
           pendingSaveCountRef.current = Math.max(
@@ -500,8 +503,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       // Clean up all auxiliary timeouts (setIsSaving delay, etc.)
-      for (const t of auxTimersRef.current) clearTimeout(t);
-      auxTimersRef.current.clear();
+      for (const t of auxTimers) clearTimeout(t);
+      auxTimers.clear();
     };
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
