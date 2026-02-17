@@ -127,6 +127,30 @@ describe('DraggableWindow', () => {
     vi.restoreAllMocks();
   });
 
+  // Helper function to render DraggableWindow with common props
+  const renderComponent = (
+    widgetProps: Partial<WidgetData> = {},
+    children: React.ReactNode = <div>Content</div>,
+    settings: React.ReactNode = <div>Settings</div>
+  ) => {
+    const widget = { ...mockWidget, ...widgetProps };
+    return render(
+      <DraggableWindow
+        widget={widget}
+        title="Test Widget"
+        settings={settings}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        globalStyle={mockGlobalStyle}
+      >
+        {children}
+      </DraggableWindow>
+    );
+  };
+
   it('conditionally loads settings only after flip (optimization)', async () => {
     const SettingsContent = () => (
       <div data-testid="settings-content">Settings Loaded</div>
@@ -176,7 +200,7 @@ describe('DraggableWindow', () => {
   });
 
   it('updates position on pointer drag (using direct DOM manipulation for standard widgets)', () => {
-    const { container } = render(
+    render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -192,18 +216,17 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const frontFace = container.querySelector(
-      '.front'
-    ) as HTMLElementWithCapture;
-    if (!frontFace) throw new Error('Front face not found');
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
     const windowEl = screen.getByTestId('draggable-window');
 
-    frontFace.setPointerCapture = vi.fn();
-    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
-    frontFace.releasePointerCapture = vi.fn();
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
 
     // Start pointer at (110, 110)
-    fireEvent.pointerDown(frontFace, {
+    fireEvent.pointerDown(dragSurface, {
       clientX: 110,
       clientY: 110,
       pointerId: 1,
@@ -238,7 +261,7 @@ describe('DraggableWindow', () => {
   });
 
   it('allows dragging from below the old 40px handle area', () => {
-    const { container } = render(
+    render(
       <DraggableWindow
         widget={mockWidget}
         title="Test Widget"
@@ -254,17 +277,17 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const frontFace = container.querySelector(
-      '.front'
-    ) as HTMLElementWithCapture;
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
     const windowEl = screen.getByTestId('draggable-window');
 
-    frontFace.setPointerCapture = vi.fn();
-    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
-    frontFace.releasePointerCapture = vi.fn();
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
 
     // Start pointer at (110, 150)
-    fireEvent.pointerDown(frontFace, {
+    fireEvent.pointerDown(dragSurface, {
       clientX: 110,
       clientY: 150,
       pointerId: 1,
@@ -412,7 +435,7 @@ describe('DraggableWindow', () => {
       type: 'catalyst' as const, // Force type
     };
 
-    const { container } = render(
+    render(
       <DraggableWindow
         widget={catalystWidget}
         title="Catalyst"
@@ -428,14 +451,14 @@ describe('DraggableWindow', () => {
       </DraggableWindow>
     );
 
-    const frontFace = container.querySelector(
-      '.front'
-    ) as HTMLElementWithCapture;
-    frontFace.setPointerCapture = vi.fn();
-    frontFace.hasPointerCapture = vi.fn().mockReturnValue(true);
-    frontFace.releasePointerCapture = vi.fn();
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
 
-    fireEvent.pointerDown(frontFace, {
+    fireEvent.pointerDown(dragSurface, {
       clientX: 100,
       clientY: 100,
       pointerId: 1,
@@ -518,5 +541,125 @@ describe('DraggableWindow', () => {
         screen.getByText(/Close widget\? Data will be lost\./i)
       ).toBeInTheDocument();
     });
+  });
+
+  it('settings button toggles flipped to true when closed', () => {
+    renderComponent();
+
+    // Click widget to show toolbar
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    // Find settings button and click it
+    const settingsBtn = screen.getByTitle('Settings');
+    fireEvent.click(settingsBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: true,
+    });
+  });
+
+  it('settings button toggles flipped to false when open', () => {
+    renderComponent({ flipped: true });
+
+    // Click widget to show toolbar
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    // Find settings button (should show "Close Settings" when open)
+    const settingsBtn = screen.getByTitle('Close Settings');
+    fireEvent.click(settingsBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: false,
+    });
+  });
+
+  it('minimize closes settings panel', () => {
+    renderComponent({ flipped: true });
+
+    // Click widget to show toolbar, then minimize
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    const minimizeBtn = screen.getByTitle('Minimize');
+    fireEvent.click(minimizeBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ minimized: true, flipped: false })
+    );
+  });
+
+  it('maximize closes settings panel', () => {
+    renderComponent({ flipped: true });
+
+    // Click widget to show toolbar, then maximize
+    const widgetEl = screen.getByText('Content').closest('.widget');
+    if (!widgetEl) throw new Error('Widget element not found');
+    fireEvent.click(widgetEl);
+
+    const maximizeBtn = screen.getByTitle('Maximize');
+    fireEvent.click(maximizeBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ maximized: true, flipped: false })
+    );
+  });
+
+  it('drag start closes settings panel', () => {
+    renderComponent({ flipped: true });
+
+    const dragSurface = screen.getByTestId(
+      'drag-surface'
+    ) as unknown as HTMLElementWithCapture;
+    dragSurface.setPointerCapture = vi.fn();
+    dragSurface.hasPointerCapture = vi.fn().mockReturnValue(true);
+    dragSurface.releasePointerCapture = vi.fn();
+
+    // Start a drag
+    fireEvent.pointerDown(dragSurface, {
+      clientX: 110,
+      clientY: 110,
+      pointerId: 1,
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: false,
+    });
+
+    // Clean up
+    fireEvent.pointerUp(window, { pointerId: 1 });
+  });
+
+  it('resize start closes settings panel', () => {
+    renderComponent({ flipped: true });
+
+    // Find a resize handle (SE corner)
+    const handles = document.querySelectorAll('.resize-handle');
+    const seHandle = handles[
+      handles.length - 1
+    ] as unknown as HTMLElementWithCapture;
+    seHandle.setPointerCapture = vi.fn();
+    seHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
+    seHandle.releasePointerCapture = vi.fn();
+
+    // Start a resize
+    fireEvent.pointerDown(seHandle, {
+      clientX: 300,
+      clientY: 300,
+      pointerId: 1,
+    });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      flipped: false,
+    });
+
+    // Clean up
+    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 });

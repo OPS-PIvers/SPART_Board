@@ -111,4 +111,17 @@ describe('WeatherWidget', () => {
     // We can't easily test the icon character rendering in jsdom without inspecting text content.
     // But we know 'It is hot!' is there.
   });
+
+  it('hides clothing container when hideClothing is true', () => {
+    const widget: WidgetData = {
+      ...baseWidget,
+      config: {
+        ...baseWidget.config,
+        temp: 72,
+        hideClothing: true,
+      } as WeatherConfig,
+    };
+    render(<WeatherWidget widget={widget} />);
+    expect(screen.queryByText(/Long Sleeves/i)).not.toBeInTheDocument();
+  });
 });

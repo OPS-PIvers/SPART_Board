@@ -287,6 +287,7 @@ export interface WeatherConfig {
   source?: 'openweather' | 'earth_networks';
   feelsLike?: number;
   showFeelsLike?: boolean;
+  hideClothing?: boolean;
 }
 
 export interface WeatherTemperatureRange {

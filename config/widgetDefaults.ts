@@ -20,7 +20,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     w: 300,
     h: 250,
     config: {
-      content: 'Click to edit...',
+      content: '',
       bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },

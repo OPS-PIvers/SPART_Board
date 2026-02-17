@@ -25,7 +25,7 @@ const EARTH_NETWORKS_API = {
 const EARTH_NETWORKS_ICONS = {
   SNOW: [140, 186, 210, 102],
   CLOUDY: [1, 13, 24, 70, 71, 73, 79],
-  SUNNY: [2, 3, 4],
+  SUNNY: [0, 2, 3, 4, 7],
   RAIN: [10, 11, 12, 14, 15, 16, 17, 18, 19],
 };
 
