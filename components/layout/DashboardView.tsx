@@ -394,7 +394,8 @@ export const DashboardView: React.FC = () => {
               key={widget.id}
               widget={widget}
               isStudentView={false}
-              session={session}
+              sessionCode={session?.code}
+              isGlobalFrozen={session?.frozen ?? false}
               isLive={isLive ?? false}
               students={isLive ? students : EMPTY_STUDENTS}
               updateSessionConfig={updateSessionConfig}
