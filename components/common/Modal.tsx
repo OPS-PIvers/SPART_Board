@@ -27,25 +27,25 @@ export const Modal: React.FC<ModalProps> = ({
   className = '',
 }) => {
   useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
 
-    if (isOpen) {
-      if (openModalCount === 0) {
-        document.body.style.overflow = 'hidden';
-      }
-      openModalCount++;
-      window.addEventListener('keydown', handleEscape);
-
-      return () => {
-        openModalCount--;
-        if (openModalCount === 0) {
-          document.body.style.overflow = 'unset';
-        }
-        window.removeEventListener('keydown', handleEscape);
-      };
+    if (openModalCount === 0) {
+      document.body.style.overflow = 'hidden';
     }
+    openModalCount++;
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      openModalCount--;
+      if (openModalCount === 0) {
+        document.body.style.overflow = 'unset';
+      }
+      window.removeEventListener('keydown', handleEscape);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
