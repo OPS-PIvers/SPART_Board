@@ -6,6 +6,16 @@ import { DockIcon } from './DockIcon';
 import { Z_INDEX } from '../../../config/zIndex';
 import { WidgetType, ToolMetadata } from '../../../types';
 
+interface SortableFolderWidgetProps {
+  type: WidgetType;
+  tool: ToolMetadata;
+  minimizedCount: number;
+  isEditMode: boolean;
+  onRemove: () => void;
+  onAdd: () => void;
+  onLongPress: () => void;
+}
+
 // Sortable Widget Icon within Folder
 export const SortableFolderWidget = ({
   type,
@@ -15,15 +25,7 @@ export const SortableFolderWidget = ({
   onRemove,
   onAdd,
   onLongPress,
-}: {
-  type: WidgetType;
-  tool: ToolMetadata;
-  minimizedCount: number;
-  isEditMode: boolean;
-  onRemove: () => void;
-  onAdd: () => void;
-  onLongPress: () => void;
-}) => {
+}: SortableFolderWidgetProps) => {
   const {
     attributes,
     listeners,

@@ -11,6 +11,19 @@ import { getTitle } from '../../../utils/widgetHelpers';
 import { Z_INDEX } from '../../../config/zIndex';
 import { ToolMetadata, WidgetData, GlobalStyle } from '../../../types';
 
+interface ToolDockItemProps {
+  tool: ToolMetadata;
+  minimizedWidgets: WidgetData[];
+  onAdd: () => void;
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDeleteAll: () => void;
+  onRemoveFromDock: () => void;
+  isEditMode: boolean;
+  onLongPress: () => void;
+  globalStyle: GlobalStyle;
+}
+
 // Tool Item with Popover Logic
 export const ToolDockItem = ({
   tool,
@@ -23,18 +36,7 @@ export const ToolDockItem = ({
   isEditMode,
   onLongPress,
   globalStyle,
-}: {
-  tool: ToolMetadata;
-  minimizedWidgets: WidgetData[];
-  onAdd: () => void;
-  onRestore: (id: string) => void;
-  onDelete: (id: string) => void;
-  onDeleteAll: () => void;
-  onRemoveFromDock: () => void;
-  isEditMode: boolean;
-  onLongPress: () => void;
-  globalStyle: GlobalStyle;
-}) => {
+}: ToolDockItemProps) => {
   const {
     attributes,
     listeners,

@@ -2,13 +2,15 @@ import React from 'react';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType } from '../../../types';
 
+interface QuickAccessButtonProps {
+  type: WidgetType;
+  onClick: () => void;
+}
+
 export const QuickAccessButton = ({
   type,
   onClick,
-}: {
-  type: WidgetType;
-  onClick: () => void;
-}) => {
+}: QuickAccessButtonProps) => {
   const tool = TOOLS.find((t) => t.type === type);
   if (!tool) return null;
 
