@@ -21,8 +21,8 @@ export const useWindowSize = (
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
 
-  const timeoutId = useRef<NodeJS.Timeout | null>(null);
-  const lastRun = useRef<number>(0);
+  const timeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRun = useRef<number | null>(null);
 
   const handleResize = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -47,7 +47,7 @@ export const useWindowSize = (
       timeoutId.current = null;
     };
 
-    if (now - lastRun.current >= throttleMs) {
+    if (lastRun.current === null || now - lastRun.current >= throttleMs) {
       // If enough time has passed, run immediately
       if (timeoutId.current) {
         clearTimeout(timeoutId.current);
@@ -57,7 +57,9 @@ export const useWindowSize = (
     } else {
       // Otherwise, schedule for the end of the throttle period (trailing edge)
       if (!timeoutId.current) {
-        const wait = throttleMs - (now - lastRun.current);
+        // If lastRun.current is somehow null here (it shouldn't be due to the check above), use 0
+        const lastRunTime = lastRun.current || 0;
+        const wait = throttleMs - (now - lastRunTime);
         timeoutId.current = setTimeout(updateSize, wait);
       }
     }

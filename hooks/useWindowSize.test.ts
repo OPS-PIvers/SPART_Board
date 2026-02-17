@@ -30,8 +30,7 @@ describe('useWindowSize', () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useWindowSize());
 
-    // Initial mount calls handleResize, setting lastRun to current time (0)
-    // We need to advance time to ensuring the next resize isn't throttled
+    // Advance time to clear the throttle window from the initial mount call
     act(() => {
       vi.advanceTimersByTime(150);
     });
@@ -124,13 +123,14 @@ describe('useWindowSize', () => {
     const throttleMs = 100;
     const { result } = renderHook(() => useWindowSize(true, throttleMs));
 
-    // Initial mount sets lastRun. Advance to clear it.
+    // Advance time to clear the throttle window from the initial mount call
     act(() => {
       vi.advanceTimersByTime(150);
     });
 
     act(() => {
       // First event - should trigger immediate update (leading edge)
+      // because lastRun starts as null
       window.innerWidth = 500;
       window.innerHeight = 500;
       window.dispatchEvent(new Event('resize'));
