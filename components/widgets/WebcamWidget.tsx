@@ -10,6 +10,7 @@ import {
   Loader2,
   Copy,
   Check,
+  Camera as CameraIcon,
 } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
@@ -49,6 +50,9 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [showTextModal, setShowTextModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const [showCaptureSuccess, setShowCaptureSuccess] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -57,10 +61,27 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
     async function startCamera() {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
+        // Enumerate devices if not already done
+        if (devices.length === 0) {
+          const allDevices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = allDevices.filter(
+            (d) => d.kind === 'videoinput'
+          );
+          setDevices(videoDevices);
+          if (videoDevices.length > 0 && !selectedDeviceId) {
+            setSelectedDeviceId(videoDevices[0].deviceId);
+          }
+        }
+
+        const constraints: MediaStreamConstraints = {
+          video: selectedDeviceId
+            ? { deviceId: { exact: selectedDeviceId } }
+            : { facingMode: 'user' },
           audio: false,
-        });
+        };
+
+        const mediaStream =
+          await navigator.mediaDevices.getUserMedia(constraints);
         currentStream = mediaStream;
         setStream(mediaStream);
         if (videoRef.current) {
@@ -80,7 +101,16 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         currentStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [selectedDeviceId, devices.length]);
+
+  const switchCamera = useCallback(() => {
+    if (devices.length < 2) return;
+    const currentIndex = devices.findIndex(
+      (d) => d.deviceId === selectedDeviceId
+    );
+    const nextIndex = (currentIndex + 1) % devices.length;
+    setSelectedDeviceId(devices[nextIndex].deviceId);
+  }, [devices, selectedDeviceId]);
 
   const extractText = useCallback(async () => {
     if (!videoRef.current) return;
@@ -146,6 +176,10 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
           status: 'captured',
         };
         setCapturedItems((prev) => [newItem, ...prev]);
+
+        // Visual feedback
+        setShowCaptureSuccess(true);
+        setTimeout(() => setShowCaptureSuccess(false), 1500);
       }
     }
   }, [isMirrored]);
@@ -271,6 +305,22 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                       }}
                     />
                   </button>
+                  {devices.length > 1 && (
+                    <button
+                      onClick={switchCamera}
+                      disabled={!stream}
+                      className="hover:bg-white/30 rounded-2xl text-white"
+                      style={{ padding: 'min(12px, 2.5cqmin)' }}
+                      title="Switch Camera"
+                    >
+                      <CameraIcon
+                        style={{
+                          width: 'min(20px, 5cqmin)',
+                          height: 'min(20px, 5cqmin)',
+                        }}
+                      />
+                    </button>
+                  )}
                 </div>
 
                 <button
@@ -290,6 +340,40 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   )}
                 </button>
               </div>
+
+              {/* Status Overlays */}
+              {showCaptureSuccess && (
+                <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 backdrop-blur-sm z-40 animate-in fade-in zoom-in duration-300">
+                  <div className="bg-green-500 text-white rounded-full p-6 shadow-2xl">
+                    <Check
+                      style={{
+                        width: 'min(48px, 12cqmin)',
+                        height: 'min(48px, 12cqmin)',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isExtracting && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-500/20 backdrop-blur-sm z-40 animate-in fade-in duration-300">
+                  <div className="bg-brand-blue-primary text-white rounded-full p-6 shadow-2xl mb-4">
+                    <Loader2
+                      className="animate-spin"
+                      style={{
+                        width: 'min(48px, 12cqmin)',
+                        height: 'min(48px, 12cqmin)',
+                      }}
+                    />
+                  </div>
+                  <div
+                    className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white font-bold tracking-widest uppercase"
+                    style={{ fontSize: 'min(12px, 3cqmin)' }}
+                  >
+                    Processing Text...
+                  </div>
+                </div>
+              )}
             </>
           )}
 
