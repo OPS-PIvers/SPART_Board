@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../config/firebase';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import {
@@ -396,59 +397,77 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
 
-      // Use a list of proxies to improve reliability.
-      const proxies = [
-        (u: string) =>
-          `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-        (u: string) =>
-          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-      ];
+      // Use our own Cloud Function proxy to avoid CORS issues entirely
+      const fetchProxy = httpsCallable<{ url: string }, EarthNetworksResponse>(
+        functions,
+        'fetchWeatherProxy'
+      );
 
-      let lastError: Error | null = null;
       let data: EarthNetworksResponse | null = null;
 
-      for (const getProxyUrl of proxies) {
-        try {
-          const proxyUrl = getProxyUrl(url);
-          const res = await fetch(proxyUrl);
-          if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+      try {
+        const result = await fetchProxy({ url });
+        data = result.data;
+        console.warn(
+          '[WeatherWidget] Fetched Earth Networks Data via Cloud Proxy'
+        );
+      } catch (_proxyErr) {
+        console.warn(
+          '[WeatherWidget] Cloud Proxy failed, trying public proxies'
+        );
 
-          const text = await res.text();
-          const trimmed = text.trim();
+        // Fallback to public proxies
+        const proxies = [
+          (u: string) =>
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+          (u: string) =>
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+        ];
 
-          if (
-            !trimmed ||
-            trimmed.startsWith('<') ||
-            trimmed.toLowerCase().startsWith('<!doctype')
-          ) {
-            throw new Error(
-              'Proxy returned HTML or empty response instead of JSON'
-            );
-          }
+        let lastError: Error | null =
+          _proxyErr instanceof Error ? _proxyErr : new Error(String(_proxyErr));
 
+        for (const getProxyUrl of proxies) {
           try {
-            data = JSON.parse(trimmed) as EarthNetworksResponse;
+            const proxyUrl = getProxyUrl(url);
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
 
+            const text = await res.text();
+            const trimmed = text.trim();
+
+            if (
+              !trimmed ||
+              trimmed.startsWith('<') ||
+              trimmed.toLowerCase().startsWith('<!doctype')
+            ) {
+              throw new Error(
+                'Proxy returned HTML or empty response instead of JSON'
+              );
+            }
+
+            try {
+              data = JSON.parse(trimmed) as EarthNetworksResponse;
+              console.warn(
+                '[WeatherWidget] Fetched Earth Networks Data via Public Proxy'
+              );
+            } catch (_) {
+              throw new Error('Failed to parse response as JSON');
+            }
+
+            if (data && data.o) break;
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
             console.warn(
-              '[WeatherWidget] Fetched Earth Networks Data successfully'
+              `[WeatherWidget] Public proxy attempt failed: ${lastError.message}`
             );
-          } catch (_) {
-            throw new Error('Failed to parse response as JSON');
           }
-
-          if (data && data.o) break;
-        } catch (e) {
-          lastError = e instanceof Error ? e : new Error(String(e));
-
-          console.warn(
-            `[WeatherWidget] Proxy attempt failed: ${lastError.message}`
-          );
         }
-      }
 
-      if (!data) {
-        throw lastError ?? new Error('All proxy attempts failed');
+        if (!data) {
+          throw lastError ?? new Error('All proxy attempts failed');
+        }
       }
 
       const obs = data.o; // Current observations
