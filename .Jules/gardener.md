@@ -53,3 +53,9 @@
 **Weed:** `functions/src/index.ts` contained a potential `TS2532: Object is possibly 'undefined'` error at line 443 due to chained optional access + array method.
 **Root Cause:** Ambiguous TypeScript inference with `session.name?.split('/').pop()`.
 **Plan:** Replaced with explicit check: `const nameParts = session.name ? session.name.split('/') : []; const sessionId = nameParts.pop() || session.id;` to ensure type safety.
+
+## 2026-02-17 - Fix Persistent CI TypeScript Errors
+
+**Weed:** `functions/src/index.ts` continued to fail in CI with `TS2532: Object is possibly 'undefined'` despite previous fixes.
+**Root Cause:** Ambiguity in CI environment (likely newer TypeScript 5.9.3 vs 5.8.2 local) inferring generic types from Axios (`session.name`) and Google GenAI (`result.text`) as potentially undefined.
+**Plan:** Implemented robust, explicit checks. Replaced `session.name?.split` with a type-checked extraction (`typeof sessionName === 'string'`) and safeguarded `result?.text`.

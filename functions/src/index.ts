@@ -424,7 +424,7 @@ export const generateWithAI = functionsV1
         },
       });
 
-      const text = result.text;
+      const text = result?.text;
 
       if (!text) {
         throw new Error('Empty response from AI');
@@ -541,9 +541,13 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      // Use optional chaining carefully to avoid TS2532 "Object is possibly 'undefined'"
-      const nameParts = session.name ? session.name.split('/') : [];
-      const sessionId = nameParts.pop() || session.id;
+      // Robust handling for session object which might be undefined/any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = session as any;
+      const sessionName = s?.name;
+
+      const nameParts = (typeof sessionName === 'string') ? sessionName.split('/') : [];
+      const sessionId = nameParts.pop() || s?.id;
       console.log(`Jules session created: ${sessionId}`);
 
       return {
