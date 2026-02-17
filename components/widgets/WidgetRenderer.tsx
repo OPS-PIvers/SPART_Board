@@ -70,7 +70,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   widget,
   isStudentView = false,
   sessionCode,
-  isGlobalFrozen,
+  isGlobalFrozen = false,
   isLive,
   students,
   updateSessionConfig,
