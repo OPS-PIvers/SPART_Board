@@ -56,7 +56,7 @@ vi.mock('./IconPicker', () => ({
     currentIcon: string;
     onSelect: (icon: string) => void;
   }) => (
-    <button onClick={() => onSelect('Zap')} data-testid="icon-picker">
+    <button onClick={() => onSelect('Star')} data-testid="icon-picker">
       {currentIcon}
     </button>
   ),
@@ -178,6 +178,66 @@ describe('LibraryManager', () => {
       expect.objectContaining({
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         gradeLevels: expect.arrayContaining(['k-2', '3-5', '6-8']),
+      })
+    );
+  });
+
+  it('updates step icon when selected', () => {
+    render(
+      <LibraryManager
+        routine={defaultRoutine}
+        onChange={mockOnChange}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    // The mock IconPicker renders a button that calls onSelect('Star')
+    // There are multiple icon pickers (main routine and steps). We target the step one (index 1).
+    const iconPickers = screen.getAllByTestId('icon-picker');
+    const stepIconPicker = iconPickers[1];
+    fireEvent.click(stepIconPicker);
+
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        steps: [
+          expect.objectContaining({ icon: 'Star' }),
+        ] as unknown[],
+      })
+    );
+  });
+
+  it('removes a specific step from multiple steps', () => {
+    const multipleStepsRoutine = {
+      ...defaultRoutine,
+      steps: [
+        { ...defaultRoutine.steps[0], text: 'Step 1' },
+        { ...defaultRoutine.steps[0], text: 'Step 2' },
+        { ...defaultRoutine.steps[0], text: 'Step 3' },
+      ],
+    };
+
+    render(
+      <LibraryManager
+        routine={multipleStepsRoutine}
+        onChange={mockOnChange}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    const deleteButtons = screen.getAllByLabelText('Delete step');
+    expect(deleteButtons).toHaveLength(3);
+
+    // Delete the second step (index 1)
+    fireEvent.click(deleteButtons[1]);
+
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        steps: [
+          expect.objectContaining({ text: 'Step 1' }),
+          expect.objectContaining({ text: 'Step 3' }),
+        ] as unknown[],
       })
     );
   });
@@ -304,6 +364,9 @@ describe('LibraryManager', () => {
     mockHttpsCallable.mockResolvedValue({
       data: {
         name: 'Magic Routine',
+        grades: '3-5, 6-8',
+        icon: 'MagicIcon',
+        color: 'purple',
         steps: [{ text: 'Magic Step 1', icon: 'Star' }],
       },
     });
@@ -345,6 +408,9 @@ describe('LibraryManager', () => {
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Magic Routine',
+        grades: '3-5, 6-8',
+        icon: 'MagicIcon',
+        color: 'purple',
         steps: expect.arrayContaining([
           expect.objectContaining({ text: 'Magic Step 1' }),
         ]) as unknown[],
