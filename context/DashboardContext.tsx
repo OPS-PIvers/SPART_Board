@@ -130,6 +130,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Refs to prevent race conditions
   const lastLocalUpdateAt = useRef<number>(0);
+  const pendingSaveRef = useRef<boolean>(false);
 
   // Sync activeId to ref
   useEffect(() => {
@@ -264,28 +265,47 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           widgets: db.widgets.map(migrateWidget),
         }));
 
-        // Update saving status based on Firestore metadata
-        setIsSaving(hasPendingWrites);
+        // Update saving status: clear when Firestore confirms no pending writes
+        // and we have no local save in flight
+        if (!hasPendingWrites && !pendingSaveRef.current) {
+          setIsSaving(false);
+        } else if (hasPendingWrites) {
+          setIsSaving(true);
+        }
 
         setDashboards((prev) => {
           const now = Date.now();
           const isRecentlyUpdatedLocally =
             now - lastLocalUpdateAt.current < 5000;
 
-          if (hasPendingWrites || isRecentlyUpdatedLocally) {
+          // Check if local state has unsaved changes by comparing against
+          // what was last saved. This prevents server data from overwriting
+          // local edits that haven't been flushed yet.
+          const currentActive = prev.find((p) => p.id === activeIdRef.current);
+          const hasUnsavedLocalChanges =
+            currentActive &&
+            lastSavedDataRef.current !== '' &&
+            JSON.stringify(currentActive.widgets) +
+              currentActive.background +
+              currentActive.name !==
+              lastSavedDataRef.current;
+
+          if (
+            hasPendingWrites ||
+            isRecentlyUpdatedLocally ||
+            hasUnsavedLocalChanges ||
+            pendingSaveRef.current
+          ) {
             return migratedDashboards.map((db) => {
-              if (db.id === activeIdRef.current) {
-                const currentActive = prev.find(
-                  (p) => p.id === activeIdRef.current
-                );
-                if (currentActive) {
-                  // SURGICAL MERGE: Keep server-side metadata (name, background, settings, style)
-                  // but preserve local widget positions and configurations to prevent reverts.
-                  return {
-                    ...db, // Get latest metadata from server
-                    widgets: currentActive.widgets, // Preserve local widget state
-                  };
-                }
+              if (db.id === activeIdRef.current && currentActive) {
+                // SURGICAL MERGE: Keep server-side metadata (name, background, settings, style)
+                // but preserve local widget positions and configurations to prevent reverts.
+                return {
+                  ...db, // Get latest metadata from server
+                  widgets: currentActive.widgets, // Preserve local widget state
+                  background: currentActive.background,
+                  name: currentActive.name,
+                };
               }
               return db;
             });
@@ -385,16 +405,23 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const debounceMs = isStructuralChange ? 200 : 800; // 200ms for add/remove, 800ms for config/moving
 
     setTimeout(() => setIsSaving(true), 0);
+    pendingSaveRef.current = true;
     saveTimerRef.current = setTimeout(() => {
       lastSavedDataRef.current = currentData;
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
         .then(() => {
-          // If Firestore is fast, we might want to clear isSaving here,
-          // but onSnapshot will also handle it via hasPendingWrites.
-          // We'll keep it true for a bit longer if hasPendingWrites is still true.
+          pendingSaveRef.current = false;
+          // Clear isSaving after a brief delay to let onSnapshot catch up.
+          // If another save starts before the delay, isSaving will stay true.
+          setTimeout(() => {
+            if (!pendingSaveRef.current) {
+              setIsSaving(false);
+            }
+          }, 300);
         })
         .catch((err) => {
+          pendingSaveRef.current = false;
           console.error('Auto-save failed:', err);
           setIsSaving(false);
           setToasts((prev) => [
