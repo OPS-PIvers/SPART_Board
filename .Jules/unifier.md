@@ -91,4 +91,4 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 ## 2026-02-13 - Sidebar Micro-Typography
 
 **Drift:** The Sidebar component contained multiple hardcoded font sizes (`text-[8px]`, `text-[7px]`, `text-[10px]`, `text-[11px]`) creating visual inconsistencies and ignoring the design system's typography scale.
-**Fix:** Standardized all instances to use `text-xxs` (10px) and `text-xxxs` (8px) utility classes, enforcing consistent scaling and readability across the interface.
+**Fix:** Standardized all sidebar micro-typography instances to use `text-xxs` (10px) and `text-xxxs` (8px) utility classes, with `text-xs` (12px) intentionally reserved for the signed-in user's display name to preserve readability, enforcing consistent scaling and clarity across the interface.
