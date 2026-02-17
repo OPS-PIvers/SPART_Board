@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2026-02-17 - Refactor TimeToolWidget
+
+**Weed:** `TimeToolWidget.tsx` was 815 lines and contained multiple inline components (`ProgressRing`, `Keypad`, `TimeToolSettings`).
+**Root Cause:** "God Component" pattern; components were defined in the same file as the main widget.
+**Plan:** Extracted `ProgressRing`, `Keypad`, and `Settings` (renamed from `TimeToolSettings`) into separate files in `components/widgets/TimeTool/`. Updated `WidgetRegistry.ts` to import settings from the new location.
