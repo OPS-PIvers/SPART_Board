@@ -388,20 +388,22 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
           ) : (
             <>
               {/* Time display - matches Clock structure */}
-              <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+              <div className="flex-1 min-h-0 w-full flex items-center justify-center relative">
                 <div
-                  className="relative flex flex-col items-center justify-center"
+                  className="flex flex-col items-center justify-center"
                   style={{
                     width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
                     aspectRatio: isVisual ? '1' : undefined,
-                    gap: '2cqh',
+                    gap: isVisual ? '0' : 'min(12px, 3cqh)',
                   }}
                 >
                   {isVisual && (
-                    <ProgressRing
-                      progress={progress}
-                      ringColor={getRingColor()}
-                    />
+                    <div className="absolute inset-0 pointer-events-none">
+                      <ProgressRing
+                        progress={progress}
+                        ringColor={getRingColor()}
+                      />
+                    </div>
                   )}
 
                   <button
@@ -418,8 +420,8 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       fontSize: isVisual
                         ? 'min(22cqmin, 12rem)'
                         : mode === 'stopwatch'
-                          ? 'min(70cqh, 18cqw)'
-                          : 'min(70cqh, 25cqw)',
+                          ? 'min(50cqh, 18cqw)'
+                          : 'min(50cqh, 25cqw)',
                       color: timeColor,
                       textShadow: glow
                         ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
@@ -471,7 +473,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     )}
                   </button>
 
-                  {/* Square Controls - integrated into hero content */}
+                  {/* Square Controls - positioned below the time */}
                   <div
                     className="flex items-center justify-center relative z-10"
                     style={{ gap: 'min(12px, 3cqmin)' }}
@@ -489,10 +491,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       }`}
                       style={{
                         width: isVisual
-                          ? 'min(15cqmin, 80px)'
+                          ? 'min(15cqmin, 64px)'
                           : 'min(15cqh, 12cqw)',
                         height: isVisual
-                          ? 'min(15cqmin, 80px)'
+                          ? 'min(15cqmin, 64px)'
                           : 'min(15cqh, 12cqw)',
                       }}
                     >
@@ -517,10 +519,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       className="aspect-square flex items-center justify-center rounded-2xl bg-slate-200/60 text-slate-400 hover:bg-slate-300/70 hover:text-brand-blue-primary transition-all active:scale-95 shadow-sm"
                       style={{
                         width: isVisual
-                          ? 'min(15cqmin, 80px)'
+                          ? 'min(15cqmin, 64px)'
                           : 'min(15cqh, 12cqw)',
                         height: isVisual
-                          ? 'min(15cqmin, 80px)'
+                          ? 'min(15cqmin, 64px)'
                           : 'min(15cqh, 12cqw)',
                       }}
                       aria-label="Reset"
