@@ -308,6 +308,10 @@ export interface WeatherGlobalConfig {
   showFeelsLike?: boolean;
 }
 
+export interface WebcamGlobalConfig {
+  ocrMode?: 'standard' | 'gemini';
+}
+
 export interface ScheduleConfig {
   items: ScheduleItem[];
   fontFamily?: string;

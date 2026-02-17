@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Content } from '@google/genai';
 
 admin.initializeApp();
 
@@ -32,8 +32,14 @@ interface ClassLinkStudent {
 }
 
 interface AIData {
-  type: 'mini-app' | 'poll' | 'dashboard-layout' | 'instructional-routine';
-  prompt: string;
+  type:
+    | 'mini-app'
+    | 'poll'
+    | 'dashboard-layout'
+    | 'instructional-routine'
+    | 'ocr';
+  prompt?: string;
+  image?: string; // base64 data
 }
 
 interface GlobalPermConfig {
@@ -404,6 +410,15 @@ export const generateWithAI = functionsV1
           }
         `;
         userPrompt = `Description: ${data.prompt}`;
+      } else if (data.type === 'ocr') {
+        systemPrompt = `
+          You are an expert at extracting text from images (OCR).
+          Analyze the provided image and extract all readable text accurately.
+          Maintain the structure as best as possible.
+          If there are multiple paragraphs, separate them with double newlines.
+          Return JSON: { "text": "extracted text here" }
+        `;
+        userPrompt = 'Extract text from this image.';
       } else {
         throw new functionsV1.https.HttpsError(
           'invalid-argument',
@@ -411,14 +426,31 @@ export const generateWithAI = functionsV1
         );
       }
 
+      const contents: Content[] = [
+        {
+          role: 'user',
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
+        },
+      ];
+
+      // Add image if provided (for OCR or multi-modal prompts)
+      if (data.image) {
+        // Strip data:image/png;base64, prefix if present
+        const base64Data = data.image.includes(',')
+          ? data.image.split(',')[1]
+          : data.image;
+
+        contents[0].parts.push({
+          inlineData: {
+            mimeType: 'image/png',
+            data: base64Data,
+          },
+        });
+      }
+
       const result = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
-          },
-        ],
+        contents,
         config: {
           responseMimeType: 'application/json',
         },

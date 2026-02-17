@@ -15,6 +15,7 @@ import {
   GradeLevel,
   LunchCountGlobalConfig,
   WeatherGlobalConfig,
+  WebcamGlobalConfig,
   WeatherTemperatureRange,
 } from '../../types';
 import { useStorage } from '../../hooks/useStorage';
@@ -969,6 +970,66 @@ export const FeaturePermissionsManager: React.FC = () => {
                     </div>
                   )}
 
+                  {tool.type === 'webcam' && (
+                    <div className="space-y-4">
+                      {(() => {
+                        const config = (permission.config ??
+                          {}) as unknown as WebcamGlobalConfig;
+                        return (
+                          <div>
+                            <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+                              OCR Mode
+                            </label>
+                            <div className="flex bg-white rounded-lg border border-slate-200 p-1">
+                              <button
+                                onClick={() =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...(permission.config ?? {}),
+                                      ocrMode: 'standard',
+                                    },
+                                  })
+                                }
+                                className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
+                                  config.ocrMode === 'standard' ||
+                                  !config.ocrMode
+                                    ? 'bg-brand-blue-primary text-white shadow-sm'
+                                    : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                              >
+                                Standard (Local)
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...(permission.config ?? {}),
+                                      ocrMode: 'gemini',
+                                    },
+                                  })
+                                }
+                                className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
+                                  config.ocrMode === 'gemini'
+                                    ? 'bg-brand-blue-primary text-white shadow-sm'
+                                    : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                              >
+                                Gemini (AI)
+                              </button>
+                            </div>
+                            <p className="text-xxs text-slate-400 mt-1">
+                              <strong>Standard:</strong> Uses browser-local OCR
+                              (no API usage).
+                              <br />
+                              <strong>Gemini:</strong> Uses Gemini 3 Flash for
+                              higher accuracy (uses AI limits).
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {tool.type === 'catalyst' && (
                     <div className="space-y-4">
                       <CatalystPermissionEditor
@@ -995,6 +1056,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                     'weather',
                     'instructionalRoutines',
                     'catalyst',
+                    'webcam',
                   ].includes(tool.type) && (
                     <p className="text-xs text-slate-500 italic">
                       No additional configuration available for this widget.
