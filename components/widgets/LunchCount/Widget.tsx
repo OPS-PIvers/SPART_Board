@@ -178,17 +178,20 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         header={
           <div
             className="flex justify-between items-center border-b border-slate-100 bg-slate-50/50"
-            style={{ padding: 'min(10px, 2cqmin)' }}
+            style={{
+              padding: 'min(10px, 2cqmin)',
+              gap: 'min(12px, 2.5cqmin)',
+            }}
           >
-            <div className="flex flex-col">
+            <div className="flex flex-col shrink-0">
               <h3
-                style={{ fontSize: 'min(16px, 5cqmin)' }}
+                style={{ fontSize: 'min(14px, 4.5cqmin)' }}
                 className="font-black text-slate-700 uppercase tracking-widest"
               >
                 Daily Lunch Count
               </h3>
               <p
-                style={{ fontSize: 'min(14px, 4cqmin)' }}
+                style={{ fontSize: 'min(12px, 3.5cqmin)' }}
                 className="font-bold text-slate-500 uppercase tracking-tighter"
               >
                 {new Date().toLocaleDateString('en-US', {
@@ -198,7 +201,56 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                 })}
               </p>
             </div>
-            <div className="flex" style={{ gap: 'min(6px, 1.5cqmin)' }}>
+
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              disabled={stats.remaining > 0 || stats.total === 0}
+              variant={
+                stats.remaining === 0 && stats.total > 0
+                  ? 'primary'
+                  : 'secondary'
+              }
+              className="flex-1 rounded-xl font-black uppercase tracking-widest transition-all shadow-sm"
+              style={{
+                padding: 'min(6px, 1.5cqmin) min(16px, 4cqmin)',
+                fontSize: 'min(12px, 4cqmin)',
+                height: 'min(36px, 9cqmin)',
+                maxWidth: 'min(280px, 50%)',
+              }}
+            >
+              {stats.remaining === 0 && stats.total > 0 ? (
+                <div
+                  className="flex items-center justify-center"
+                  style={{ gap: 'min(8px, 2cqmin)' }}
+                >
+                  <CheckCircle2
+                    style={{
+                      width: 'min(18px, 4.5cqmin)',
+                      height: 'min(18px, 4.5cqmin)',
+                    }}
+                  />
+                  Submit Report
+                </div>
+              ) : (
+                <div
+                  className="flex items-center justify-center opacity-60"
+                  style={{ gap: 'min(8px, 2cqmin)' }}
+                >
+                  <Users
+                    style={{
+                      width: 'min(18px, 4.5cqmin)',
+                      height: 'min(18px, 4.5cqmin)',
+                    }}
+                  />
+                  Assign {stats.remaining} More Students
+                </div>
+              )}
+            </Button>
+
+            <div
+              className="flex shrink-0"
+              style={{ gap: 'min(6px, 1.5cqmin)' }}
+            >
               <Button
                 onClick={() => void fetchNutrislice()}
                 variant="ghost"
@@ -533,69 +585,23 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
         }
-        footer={
-          <div style={{ padding: '0 min(16px, 3cqmin) min(16px, 3cqmin)' }}>
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              disabled={stats.remaining > 0 || stats.total === 0}
-              variant={
-                stats.remaining === 0 && stats.total > 0
-                  ? 'primary'
-                  : 'secondary'
-              }
-              className="w-full rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all"
-              style={{
-                padding: 'min(14px, 3cqmin)',
-                fontSize: 'min(16px, 5cqmin)',
-              }}
-            >
-              {stats.remaining === 0 && stats.total > 0 ? (
-                <div
-                  className="flex items-center justify-center"
-                  style={{ gap: 'min(10px, 2cqmin)' }}
-                >
-                  <CheckCircle2
-                    style={{
-                      width: 'min(20px, 5cqmin)',
-                      height: 'min(20px, 5cqmin)',
-                    }}
-                  />
-                  Submit Report
-                </div>
-              ) : (
-                <div
-                  className="flex items-center justify-center"
-                  style={{ gap: 'min(10px, 2cqmin)' }}
-                >
-                  <Users
-                    style={{
-                      width: 'min(20px, 5cqmin)',
-                      height: 'min(20px, 5cqmin)',
-                    }}
-                  />
-                  Assign {stats.remaining} More Students
-                </div>
-              )}
-            </Button>
+      />
 
-            {/* Modal */}
-            <SubmitReportModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              onSubmit={handleSubmitReport}
-              data={{
-                date: new Date().toLocaleDateString(),
-                staffName: user?.displayName ?? 'Unknown Staff',
-                hotLunch: stats.hotLunch,
-                bentoBox: stats.bentoBox,
-                hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
-                bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
-                schoolSite: config.schoolSite ?? 'schumann-elementary',
-              }}
-              isSubmitting={isSubmitting}
-            />
-          </div>
-        }
+      {/* Modal */}
+      <SubmitReportModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmitReport}
+        data={{
+          date: new Date().toLocaleDateString(),
+          staffName: user?.displayName ?? 'Unknown Staff',
+          hotLunch: stats.hotLunch,
+          bentoBox: stats.bentoBox,
+          hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
+          bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
+          schoolSite: config.schoolSite ?? 'schumann-elementary',
+        }}
+        isSubmitting={isSubmitting}
       />
       <DragOverlay
         dropAnimation={dropAnimation}
