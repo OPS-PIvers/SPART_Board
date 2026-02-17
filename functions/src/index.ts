@@ -434,7 +434,7 @@ export const generateWithAI = functionsV1
       ];
 
       // Add image if provided (for OCR or multi-modal prompts)
-      if (data.image) {
+      if (data.image && contents[0] && contents[0].parts) {
         // Strip data:image/png;base64, prefix if present
         const base64Data = data.image.includes(',')
           ? data.image.split(',')[1]
