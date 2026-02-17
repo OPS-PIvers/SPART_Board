@@ -270,12 +270,9 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {/* Import Section */}
       <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col gap-3">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 text-indigo-900">
-            <Users className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">
-              Import from Class
-            </span>
-          </div>
+          <SettingsLabel icon={Users} className="text-indigo-900 mb-0">
+            Import from Class
+          </SettingsLabel>
           <Button
             size="sm"
             variant="secondary"
@@ -292,7 +289,7 @@ export const PollSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           </Button>
         </div>
         {!activeRoster && (
-          <div className="text-[10px] text-indigo-400 font-medium">
+          <div className="text-xxs text-indigo-400 font-medium">
             Tip: Select a class in the Classes widget to import student names.
           </div>
         )}
