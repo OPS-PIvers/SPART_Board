@@ -167,6 +167,8 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       assignments: {},
       gridSize: 20,
       rosterMode: 'class',
+      template: 'freeform',
+      templateRows: 6,
     },
   },
   catalyst: {

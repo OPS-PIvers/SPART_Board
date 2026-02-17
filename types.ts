@@ -462,12 +462,16 @@ export interface FurnitureItem {
   label?: string;
 }
 
+export type SeatingChartTemplate = 'freeform' | 'rows' | 'horseshoe' | 'pods';
+
 export interface SeatingChartConfig {
   furniture: FurnitureItem[];
   assignments: Record<string, string>; // studentId -> furnitureId
   gridSize: number;
   rosterMode?: 'class' | 'custom';
   names?: string; // Line separated names for custom roster
+  template?: SeatingChartTemplate;
+  templateRows?: number; // Number of rows for 'rows' template
 }
 
 export interface NotebookItem {
