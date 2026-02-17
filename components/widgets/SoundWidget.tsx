@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -229,7 +229,6 @@ const PopcornBallsView: React.FC<{
 // --- Main Widget ---
 
 import { WidgetLayout } from './WidgetLayout';
-import { useMemo } from 'react';
 
 export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, activeDashboard } = useDashboard();
@@ -592,7 +591,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 config: { ...config, syncExpectations: checked },
               })
             }
-            disabled={!hasExpectations}
+            disabled={!hasExpectations && !config.syncExpectations}
             size="sm"
             activeColor="bg-slate-600"
             showLabels={false}

@@ -18,7 +18,7 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 
 ### Expectations -> Sound (Auto-Sensitivity)
 
-**Description:** Automatically adjusts microphone sensitivity based on the Voice Level set in the Expectations widget (e.g., stricter for "Silence", looser for "Group Work").
+**Description:** Automatically adjusts microphone sensitivity based on the Voice Level set in the Expectations widget (e.g., stricter for "Silence", looser for "Outside").
 **Implementation:** `SoundWidget.tsx` monitors `ExpectationsWidget` configuration and updates its own `sensitivity` setting.
 **Configuration:** Enabled via the "Sync with Expectations" toggle in Sound Widget settings.
 

@@ -6,6 +6,7 @@ import {
   SoundConfig,
   Dashboard,
   ExpectationsConfig,
+  WidgetConfig,
 } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
@@ -239,11 +240,13 @@ describe('SoundWidget', () => {
     });
 
     // Should update sensitivity to 4.0 (for Level 0 Silence)
-    expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      config: expect.objectContaining({
-        sensitivity: 4.0,
-      }),
-    });
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'sound-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          sensitivity: 4.0,
+        }) as unknown as WidgetConfig,
+      })
+    );
   });
 });
