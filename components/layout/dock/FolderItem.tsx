@@ -25,6 +25,19 @@ import {
   WidgetData,
 } from '../../../types';
 
+interface FolderItemProps {
+  folder: DockFolder;
+  onAdd: (type: WidgetType) => void;
+  onRename: (id: string) => void;
+  onDelete: (id: string) => void;
+  isEditMode: boolean;
+  onLongPress: () => void;
+  minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
+  onRemoveItem: (folderId: string, type: WidgetType) => void;
+  onReorder: (folderId: string, newItems: WidgetType[]) => void;
+  globalStyle: GlobalStyle;
+}
+
 // Folder Item Component
 export const FolderItem = ({
   folder,
@@ -37,18 +50,7 @@ export const FolderItem = ({
   onRemoveItem,
   onReorder,
   globalStyle,
-}: {
-  folder: DockFolder;
-  onAdd: (type: WidgetType) => void;
-  onRename: (id: string) => void;
-  onDelete: (id: string) => void;
-  isEditMode: boolean;
-  onLongPress: () => void;
-  minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
-  onRemoveItem: (folderId: string, type: WidgetType) => void;
-  onReorder: (folderId: string, newItems: WidgetType[]) => void;
-  globalStyle: GlobalStyle;
-}) => {
+}: FolderItemProps) => {
   const {
     attributes,
     listeners,
