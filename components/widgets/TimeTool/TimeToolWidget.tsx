@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   TimeToolConfig,
   WidgetData,
@@ -21,7 +21,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../../config/colors';
-import { FloatingPanel } from '../../common/FloatingPanel';
 import { WidgetLayout } from '../WidgetLayout';
 import { SettingsLabel } from '../../common/SettingsLabel';
 
@@ -286,7 +285,7 @@ const Keypad: React.FC<{
 export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, activeDashboard } = useDashboard();
+  const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const {
     displayTime,
@@ -300,7 +299,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   } = useTimeTool(widget);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [showSoundPicker, setShowSoundPicker] = useState(false);
 
   const isVisual = config.visualType === 'visual';
 
@@ -310,13 +308,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
     fontFamily = 'global',
     clockStyle = 'modern',
   } = config;
-
-  const updateConfig = useCallback(
-    (patch: Partial<TimeToolConfig>) => {
-      updateWidget(widget.id, { config: { ...config, ...patch } });
-    },
-    [updateWidget, widget.id, config]
-  );
 
   // ─── Parse time into parts ───────────────────────────────────────
 
@@ -539,101 +530,6 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                   </div>
                 </div>
               </div>
-
-              {/* Controls footer - compact, transparent */}
-              <div
-                className="shrink-0 w-full flex flex-col"
-                style={{
-                  padding: '0 min(12px, 2.5cqmin) min(8px, 1.5cqmin)',
-                  gap: 'min(6px, 1.5cqmin)',
-                }}
-              >
-                {/* Sound picker row */}
-                <div className="flex justify-between items-center">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowSoundPicker((v) => !v)}
-                      className="flex items-center rounded-full transition-all text-slate-400 hover:text-brand-blue-primary"
-                      style={{
-                        gap: 'min(4px, 1cqmin)',
-                        paddingLeft: 'min(8px, 2cqmin)',
-                        paddingRight: 'min(8px, 2cqmin)',
-                        paddingTop: 'min(4px, 1cqmin)',
-                        paddingBottom: 'min(4px, 1cqmin)',
-                      }}
-                    >
-                      <Bell
-                        className={
-                          isRunning
-                            ? 'animate-pulse text-brand-blue-primary'
-                            : ''
-                        }
-                        style={{
-                          width: 'min(12px, 3cqmin)',
-                          height: 'min(12px, 3cqmin)',
-                        }}
-                      />
-                      <span
-                        className="font-black uppercase tracking-widest"
-                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                      >
-                        {config.selectedSound}
-                      </span>
-                    </button>
-
-                    {showSoundPicker && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setShowSoundPicker(false)}
-                        />
-                        <FloatingPanel
-                          padding="sm"
-                          className="absolute bottom-full left-0 mb-3 w-48 origin-bottom-left"
-                        >
-                          {SOUNDS.map((s) => (
-                            <button
-                              key={s}
-                              onClick={() => {
-                                updateConfig({ selectedSound: s });
-                                setShowSoundPicker(false);
-                              }}
-                              className={`w-full text-left px-4 py-3 rounded-xl text-xxs font-black uppercase tracking-widest transition-all ${
-                                config.selectedSound === s
-                                  ? 'bg-brand-blue-primary text-white shadow-md'
-                                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-brand-blue-primary'
-                              }`}
-                            >
-                              {s}
-                            </button>
-                          ))}
-                        </FloatingPanel>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Mode indicator */}
-                  <div
-                    className="flex items-center opacity-30 select-none"
-                    style={{ gap: 'min(4px, 1cqmin)' }}
-                  >
-                    <div
-                      className="rounded-full"
-                      style={{
-                        width: 'min(5px, 1.2cqmin)',
-                        height: 'min(5px, 1.2cqmin)',
-                        backgroundColor: themeColor,
-                      }}
-                    />
-                    <span
-                      className="font-black text-slate-400 uppercase tracking-tighter"
-                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                    >
-                      {mode === 'timer' ? 'Timer' : 'Stopwatch'}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </div>
@@ -744,6 +640,30 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
               }`}
             >
               {v === 'digital' ? 'Digital' : 'Visual Ring'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sound Selector */}
+      <div>
+        <SettingsLabel icon={Bell}>Alert Sound</SettingsLabel>
+        <div className="grid grid-cols-4 gap-2">
+          {SOUNDS.map((s) => (
+            <button
+              key={s}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, selectedSound: s },
+                })
+              }
+              className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                config.selectedSound === s
+                  ? 'bg-blue-600 border-blue-600 text-white'
+                  : 'bg-white border-slate-200 text-slate-600'
+              }`}
+            >
+              {s}
             </button>
           ))}
         </div>
