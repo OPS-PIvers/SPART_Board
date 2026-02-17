@@ -19,7 +19,7 @@
     "build:all": "pnpm run build && pnpm -C functions run build",
     "type-check:all": "pnpm run type-check && pnpm -C functions run type-check",
     "lint:all": "pnpm run lint",
-    "validate": "pnpm type-check:all && pnpm lint && pnpm format:check && pnpm test:all",
+    "validate": "pnpm type-check && pnpm lint && pnpm format:check && pnpm run test:all",
     "test:all": "pnpm run test && pnpm -C functions run test",
     "test": "vitest run",
     "test:e2e": "playwright test",
