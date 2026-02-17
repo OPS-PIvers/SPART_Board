@@ -29,22 +29,18 @@ const DashboardView = lazy(() =>
 const AuthenticatedApp: React.FC = () => {
   const { user, isAdmin } = useAuth();
 
-  if (!user) {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <LoginScreen />
-      </Suspense>
-    );
-  }
-
   return (
-    <DashboardProvider>
-      {isAdmin && <AdminWeatherFetcher />}
-      <Suspense fallback={<LoadingFallback />}>
-        <DashboardView />
-      </Suspense>
-      <UpdateNotification />
-    </DashboardProvider>
+    <Suspense fallback={<LoadingFallback />}>
+      {!user ? (
+        <LoginScreen />
+      ) : (
+        <DashboardProvider>
+          {isAdmin && <AdminWeatherFetcher />}
+          <DashboardView />
+          <UpdateNotification />
+        </DashboardProvider>
+      )}
+    </Suspense>
   );
 };
 
