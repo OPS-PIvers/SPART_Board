@@ -31,6 +31,32 @@ vi.mock('../../../hooks/useClickOutside', () => ({
 }));
 
 describe('Dock Component', () => {
+  const baseDashboardMock = {
+    addWidget: vi.fn(),
+    removeWidget: vi.fn(),
+    removeWidgets: vi.fn(),
+    visibleTools: [],
+    dockItems: [], // Empty dock items for basic render
+    reorderDockItems: vi.fn(),
+    activeDashboard: {
+      id: 'db-1',
+      globalStyle: DEFAULT_GLOBAL_STYLE,
+      widgets: [],
+      settings: {
+        quickAccessWidgets: [],
+      },
+    },
+    updateWidget: vi.fn(),
+    toggleToolVisibility: vi.fn(),
+    addFolder: vi.fn(),
+    renameFolder: vi.fn(),
+    deleteFolder: vi.fn(),
+    addItemToFolder: vi.fn(),
+    moveItemOutOfFolder: vi.fn(),
+    reorderFolderItems: vi.fn(),
+    addToast: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -45,31 +71,9 @@ describe('Dock Component', () => {
       session: null,
     });
 
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      addWidget: vi.fn(),
-      removeWidget: vi.fn(),
-      removeWidgets: vi.fn(),
-      visibleTools: [],
-      dockItems: [], // Empty dock items for basic render
-      reorderDockItems: vi.fn(),
-      activeDashboard: {
-        id: 'db-1',
-        globalStyle: DEFAULT_GLOBAL_STYLE,
-        widgets: [],
-        settings: {
-          quickAccessWidgets: [],
-        },
-      },
-      updateWidget: vi.fn(),
-      toggleToolVisibility: vi.fn(),
-      addFolder: vi.fn(),
-      renameFolder: vi.fn(),
-      deleteFolder: vi.fn(),
-      addItemToFolder: vi.fn(),
-      moveItemOutOfFolder: vi.fn(),
-      reorderFolderItems: vi.fn(),
-      addToast: vi.fn(),
-    });
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      baseDashboardMock
+    );
   });
 
   it('renders the dock container', () => {
@@ -79,18 +83,13 @@ describe('Dock Component', () => {
 
   it('renders quick access buttons in collapsed mode', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      addWidget: vi.fn(),
-      canAccessFeature: () => true,
+      ...baseDashboardMock,
       activeDashboard: {
-        id: 'db-1',
-        globalStyle: DEFAULT_GLOBAL_STYLE,
-        widgets: [],
+        ...baseDashboardMock.activeDashboard,
         settings: {
           quickAccessWidgets: ['timer'],
         },
       },
-      addToast: vi.fn(),
-      dockItems: [],
     });
 
     render(<Dock />);
