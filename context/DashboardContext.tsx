@@ -36,7 +36,11 @@ const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
 
 /** Serialize dashboard state for change-detection comparisons. */
 const serializeDashboard = (d: Dashboard): string =>
-  JSON.stringify(d.widgets) + d.background + d.name;
+  JSON.stringify({
+    widgets: d.widgets,
+    background: d.background,
+    name: d.name,
+  });
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -300,13 +304,28 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           ) {
             return migratedDashboards.map((db) => {
               if (db.id === activeIdRef.current && currentActive) {
-                // SURGICAL MERGE: Keep server-side metadata (name, background, settings, style)
-                // but preserve local widget positions and configurations to prevent reverts.
+                // SURGICAL MERGE: Start from server snapshot but only preserve
+                // locally-modified fields. Fields unchanged locally accept the
+                // server value, so remote edits (e.g. name change in another
+                // tab) aren't discarded when only widgets changed locally.
+                const localWidgets = JSON.stringify(currentActive.widgets);
+                const widgetsChangedLocally =
+                  localWidgets !== lastSavedFieldsRef.current.widgets;
+                const backgroundChangedLocally =
+                  currentActive.background !==
+                  lastSavedFieldsRef.current.background;
+                const nameChangedLocally =
+                  currentActive.name !== lastSavedFieldsRef.current.name;
+
                 return {
-                  ...db, // Get latest metadata from server
-                  widgets: currentActive.widgets, // Preserve local widget state
-                  background: currentActive.background,
-                  name: currentActive.name,
+                  ...db,
+                  ...(widgetsChangedLocally && {
+                    widgets: currentActive.widgets,
+                  }),
+                  ...(backgroundChangedLocally && {
+                    background: currentActive.background,
+                  }),
+                  ...(nameChangedLocally && { name: currentActive.name }),
                 };
               }
               return db;
@@ -384,8 +403,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Auto-save to Firestore with debouncing
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track auxiliary timeouts spawned by save handlers so they can be
+  // cleaned up when the effect re-runs or the component unmounts.
+  const auxTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const lastSavedDataRef = useRef<string>('');
   const lastWidgetCountRef = useRef<number>(0);
+  // Track per-field last-saved state so the surgical merge can determine
+  // which fields actually changed locally vs. which should accept server updates.
+  const lastSavedFieldsRef = useRef<{
+    widgets: string;
+    background: string;
+    name: string;
+  }>({ widgets: '', background: '', name: '' });
 
   useEffect(() => {
     if (!user || loading || !activeId) return;
@@ -417,26 +446,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       active.widgets.length !== lastWidgetCountRef.current;
     const debounceMs = isStructuralChange ? 200 : 800; // 200ms for add/remove, 800ms for config/moving
 
-    setTimeout(() => setIsSaving(true), 0);
+    const showSavingTimer = setTimeout(() => setIsSaving(true), 0);
+    auxTimersRef.current.add(showSavingTimer);
     saveTimerRef.current = setTimeout(() => {
       const savedData = currentData;
+      // Capture per-field state at save time for field-granular merge decisions
+      const savedFields = {
+        widgets: JSON.stringify(active.widgets),
+        background: active.background,
+        name: active.name,
+      };
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
         .then(() => {
-          // Only update lastSavedDataRef on success so failed saves are retried
+          // Only update refs on success so failed saves are retried
           lastSavedDataRef.current = savedData;
+          lastSavedFieldsRef.current = savedFields;
           pendingSaveCountRef.current = Math.max(
             0,
             pendingSaveCountRef.current - 1
           );
           // Clear isSaving after a brief delay to let onSnapshot catch up.
           // If another save is still in-flight, isSaving stays true.
-          setTimeout(() => {
+          const delayTimer = setTimeout(() => {
+            auxTimersRef.current.delete(delayTimer);
             if (pendingSaveCountRef.current === 0) {
               setIsSaving(false);
             }
           }, 300);
+          auxTimersRef.current.add(delayTimer);
         })
         .catch((err) => {
           pendingSaveCountRef.current = Math.max(
@@ -460,6 +499,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      // Clean up all auxiliary timeouts (setIsSaving delay, etc.)
+      for (const t of auxTimersRef.current) clearTimeout(t);
+      auxTimersRef.current.clear();
     };
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
