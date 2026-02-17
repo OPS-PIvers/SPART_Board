@@ -57,34 +57,42 @@ export const TextWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   }, [isPlaceholder]);
 
+  /** Normalize browser empty-editor markup (<br>, <div><br></div>) to '' */
+  const readEditorContent = useCallback((): string => {
+    if (!editorRef.current) return '';
+    const html = editorRef.current.innerHTML;
+    // Browsers leave <br> or <div><br></div> when content is fully deleted
+    const stripped = html
+      .replace(/<br\s*\/?>/gi, '')
+      .replace(/<div>\s*<\/div>/gi, '')
+      .trim();
+    return stripped === '' ? '' : sanitizeHtml(html);
+  }, []);
+
   const handleBlur = useCallback(() => {
     isEditingRef.current = false;
-    if (!editorRef.current) return;
-    const html = editorRef.current.innerHTML;
-    const sanitized = sanitizeHtml(html);
+    const content = readEditorContent();
     // Update the ref so the useEffect doesn't re-apply the same content
-    lastExternalContent.current = sanitized;
+    lastExternalContent.current = content;
     updateWidget(widget.id, {
       config: {
         ...config,
-        content: sanitized,
+        content,
       } as TextConfig,
     });
-  }, [widget.id, config, updateWidget]);
+  }, [widget.id, config, updateWidget, readEditorContent]);
 
   const handleInput = useCallback(() => {
     // Save on every input for immediate persistence (debounced by DashboardContext)
-    if (!editorRef.current) return;
-    const html = editorRef.current.innerHTML;
-    const sanitized = sanitizeHtml(html);
-    lastExternalContent.current = sanitized;
+    const content = readEditorContent();
+    lastExternalContent.current = content;
     updateWidget(widget.id, {
       config: {
         ...config,
-        content: sanitized,
+        content,
       } as TextConfig,
     });
-  }, [widget.id, config, updateWidget]);
+  }, [widget.id, config, updateWidget, readEditorContent]);
 
   return (
     <WidgetLayout

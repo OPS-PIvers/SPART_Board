@@ -134,7 +134,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Refs to prevent race conditions
   const lastLocalUpdateAt = useRef<number>(0);
-  const pendingSaveRef = useRef<boolean>(false);
+  // Counter (not boolean) to correctly track overlapping in-flight saves
+  const pendingSaveCountRef = useRef<number>(0);
 
   // Sync activeId to ref
   useEffect(() => {
@@ -270,8 +271,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         }));
 
         // Update saving status: clear when Firestore confirms no pending writes
-        // and we have no local save in flight
-        if (!hasPendingWrites && !pendingSaveRef.current) {
+        // and we have no local saves in flight
+        if (!hasPendingWrites && pendingSaveCountRef.current === 0) {
           setIsSaving(false);
         } else if (hasPendingWrites) {
           setIsSaving(true);
@@ -295,7 +296,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             hasPendingWrites ||
             isRecentlyUpdatedLocally ||
             hasUnsavedLocalChanges ||
-            pendingSaveRef.current
+            pendingSaveCountRef.current > 0
           ) {
             return migratedDashboards.map((db) => {
               if (db.id === activeIdRef.current && currentActive) {
@@ -395,9 +396,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const currentData = serializeDashboard(active);
 
     // Always clear any pending timer, even if data hasn't changed
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
 
-    if (currentData === lastSavedDataRef.current) return;
+    if (currentData === lastSavedDataRef.current) {
+      // No unsaved changes — if no saves are in-flight either, clear the flag.
+      // This handles the case where a debounced timer was cancelled and state
+      // reverted to match the last-saved data, so pendingSaveCountRef doesn't
+      // get stuck positive.
+      if (pendingSaveCountRef.current === 0) {
+        setIsSaving(false);
+      }
+      return;
+    }
 
     // Detect structural changes (adding/removing widgets) for more aggressive saving
     const isStructuralChange =
@@ -405,25 +418,35 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const debounceMs = isStructuralChange ? 200 : 800; // 200ms for add/remove, 800ms for config/moving
 
     setTimeout(() => setIsSaving(true), 0);
-    pendingSaveRef.current = true;
     saveTimerRef.current = setTimeout(() => {
-      lastSavedDataRef.current = currentData;
+      const savedData = currentData;
+      pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
       saveDashboard(active)
         .then(() => {
-          pendingSaveRef.current = false;
+          // Only update lastSavedDataRef on success so failed saves are retried
+          lastSavedDataRef.current = savedData;
+          pendingSaveCountRef.current = Math.max(
+            0,
+            pendingSaveCountRef.current - 1
+          );
           // Clear isSaving after a brief delay to let onSnapshot catch up.
-          // If another save starts before the delay, isSaving will stay true.
+          // If another save is still in-flight, isSaving stays true.
           setTimeout(() => {
-            if (!pendingSaveRef.current) {
+            if (pendingSaveCountRef.current === 0) {
               setIsSaving(false);
             }
           }, 300);
         })
         .catch((err) => {
-          pendingSaveRef.current = false;
+          pendingSaveCountRef.current = Math.max(
+            0,
+            pendingSaveCountRef.current - 1
+          );
           console.error('Auto-save failed:', err);
-          setIsSaving(false);
+          if (pendingSaveCountRef.current === 0) {
+            setIsSaving(false);
+          }
           setToasts((prev) => [
             ...prev,
             {
