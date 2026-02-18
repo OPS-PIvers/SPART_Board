@@ -733,7 +733,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   {/* Apply button */}
                   <button
                     onClick={applyTemplate}
-                    disabled={template === 'freeform' || studentCount === 0}
+                    disabled={
+                      template === 'freeform' ||
+                      (studentCount === 0 && template !== 'horseshoe')
+                    }
                     className="mt-2 w-full flex items-center justify-center gap-1.5 p-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
                   >
                     <RefreshCw className="w-3 h-3" />
@@ -752,7 +755,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     max="50"
                     value={bulkCount}
                     onChange={(e) =>
-                      setBulkCount(parseInt(e.target.value) || 1)
+                      setBulkCount(Number.parseInt(e.target.value, 10) || 1)
                     }
                     placeholder="Qty"
                     className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black mb-2"
