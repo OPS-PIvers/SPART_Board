@@ -183,6 +183,16 @@ export const useStorage = () => {
     return getDownloadURL(snapshot.ref);
   };
 
+  const uploadPdf = async (
+    userId: string,
+    file: File
+  ): Promise<{ url: string; storagePath: string }> => {
+    const timestamp = Date.now();
+    const storagePath = `users/${userId}/pdfs/${timestamp}-${file.name}`;
+    const url = await uploadFile(storagePath, file);
+    return { url, storagePath };
+  };
+
   return {
     uploading,
     uploadFile,
@@ -193,5 +203,6 @@ export const useStorage = () => {
     deleteFile,
     uploadAdminBackground,
     uploadWeatherImage,
+    uploadPdf,
   };
 };

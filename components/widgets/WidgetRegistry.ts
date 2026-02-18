@@ -106,6 +106,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     'SmartNotebookWidget'
   ),
   recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearWidget'),
+  pdf: lazyNamed(() => import('./PdfWidget'), 'PdfWidget'),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -164,6 +165,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     () => import('./RecessGearWidget'),
     'RecessGearSettings'
   ),
+  pdf: lazyNamed(() => import('./PdfWidget'), 'PdfSettings'),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
@@ -393,5 +395,12 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     baseHeight: 280,
     canSpread: true,
     skipScaling: true,
+  },
+  pdf: {
+    baseWidth: 600,
+    baseHeight: 750,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
   },
 };

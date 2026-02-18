@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
+import { useStorage } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
@@ -10,7 +12,9 @@ import {
   DEFAULT_GLOBAL_STYLE,
   LiveStudent,
   SpartStickerDropPayload,
+  PdfItem,
 } from '../../types';
+import { db } from '../../config/firebase';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -57,6 +61,7 @@ export const DashboardView: React.FC = () => {
     addToast,
     loadDashboard,
   } = useDashboard();
+  const { uploadPdf } = useStorage();
 
   const {
     session,
@@ -232,10 +237,63 @@ export const DashboardView: React.FC = () => {
     ) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
+      return;
+    }
+    // Allow PDF files dragged from the filesystem
+    if (e.dataTransfer.types.includes('Files')) {
+      const items = Array.from(e.dataTransfer.items);
+      if (items.some((item) => item.type === 'application/pdf')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      }
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    // Handle PDF files dragged from the filesystem
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      const pdfFile = files.find((f) => f.type === 'application/pdf');
+      if (pdfFile && user) {
+        e.preventDefault();
+        const dropX = Math.max(0, e.clientX - 300);
+        const dropY = Math.max(0, e.clientY - 375);
+        addToast('Uploading PDF…', 'info');
+        void (async () => {
+          try {
+            const { url, storagePath } = await uploadPdf(user.uid, pdfFile);
+            const pdfId = crypto.randomUUID() as string;
+            const pdfData: PdfItem = {
+              id: pdfId,
+              name: pdfFile.name.replace(/\.pdf$/i, ''),
+              storageUrl: url,
+              storagePath,
+              size: pdfFile.size,
+              uploadedAt: Date.now(),
+              order: 0,
+            };
+            await setDoc(doc(db, 'users', user.uid, 'pdfs', pdfId), pdfData);
+            addWidget('pdf', {
+              x: dropX,
+              y: dropY,
+              w: 600,
+              h: 750,
+              config: {
+                activePdfId: pdfId,
+                activePdfUrl: url,
+                activePdfName: pdfData.name,
+              },
+            });
+            addToast(`"${pdfData.name}" added to board`, 'success');
+          } catch (err) {
+            console.error('PDF drop upload failed', err);
+            addToast('Failed to upload PDF', 'error');
+          }
+        })();
+        return;
+      }
+    }
+
     const stickerData = e.dataTransfer.getData('application/sticker');
     const spartStickerData = e.dataTransfer.getData(
       'application/spart-sticker'
