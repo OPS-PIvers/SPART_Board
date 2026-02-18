@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
+import {
+  WidgetData,
+  SeatingChartConfig,
+  FurnitureItem,
+  SeatingChartTemplate,
+} from '../../types';
 import {
   Armchair,
   LayoutGrid,
@@ -13,9 +18,18 @@ import {
   User,
   Copy,
   UserPlus,
+  RefreshCw,
+  Rows3,
+  Grip,
+  LayoutTemplate,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FloatingPanel } from '../common/FloatingPanel';
+import {
+  generateRowsLayout,
+  generateHorseshoeLayout,
+  generatePodsLayout,
+} from './seatingChartLayouts';
 
 // Furniture definitions for palette
 const FURNITURE_TYPES: {
@@ -39,9 +53,50 @@ const FURNITURE_TYPES: {
     w: 100,
     h: 100,
     icon: LayoutGrid,
-  }, // Using css radius
+  },
   { type: 'rug', label: 'Rug', w: 150, h: 100, icon: Armchair },
   { type: 'teacher-desk', label: 'Teacher', w: 100, h: 60, icon: User },
+];
+
+// UI chrome sizes — must match the Tailwind classes used in the layout
+// (w-48 sidebar = 192px, h-12 toolbar = 48px). Named here so a future
+// layout change only requires updating one place.
+const SETUP_SIDEBAR_W = 192;
+const TOOLBAR_H = 48;
+// Minimum safe canvas dimension to avoid zero/negative spacing in generators
+const MIN_CANVAS_DIM = 200;
+
+// Template metadata for UI
+const TEMPLATES: {
+  id: SeatingChartTemplate;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+}[] = [
+  {
+    id: 'freeform',
+    label: 'Freeform',
+    icon: LayoutTemplate,
+    description: 'Place desks freely',
+  },
+  {
+    id: 'rows',
+    label: 'Rows',
+    icon: Rows3,
+    description: 'Evenly spaced rows',
+  },
+  {
+    id: 'horseshoe',
+    label: 'Horseshoe',
+    icon: Armchair,
+    description: 'Inner & outer U',
+  },
+  {
+    id: 'pods',
+    label: 'Pods',
+    icon: Grip,
+    description: 'Groups of 4',
+  },
 ];
 
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
@@ -54,6 +109,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     assignments = {},
     gridSize = 20,
     rosterMode = 'class',
+    template = 'freeform',
+    templateRows = 6,
   } = config;
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
@@ -70,14 +127,18 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     width: number;
     height: number;
   } | null>(null);
-  const [randomHighlight, setRandomHighlight] = useState<string | null>(null); // Furniture ID
+  const [randomHighlight, setRandomHighlight] = useState<string | null>(null);
+  // Local state for the rows-count input so users can clear/type freely
+  // without the field snapping back to the previous valid value on each keystroke.
+  const [localTemplateRows, setLocalTemplateRows] = useState(
+    String(templateRows)
+  );
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
 
-  // Clear animation on unmount
   useEffect(() => {
     return () => {
       if (animationIntervalRef.current) {
@@ -85,6 +146,12 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       }
     };
   }, []);
+
+  // Keep local input in sync when templateRows changes from outside
+  // (e.g. a different client updates the config via Firestore).
+  useEffect(() => {
+    setLocalTemplateRows(String(templateRows));
+  }, [templateRows]);
 
   // Roster logic
   const activeRoster = useMemo(
@@ -98,22 +165,30 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         `${s.firstName} ${s.lastName}`.trim()
       );
     }
-
     if (rosterMode === 'custom' && config.names) {
       return config.names
         .split('\n')
         .map((n) => n.trim())
         .filter((n) => n !== '');
     }
-
     return [];
   }, [activeRoster, rosterMode, config.names]);
 
-  // Determine unassigned students
   const assignedStudentNames = new Set(Object.keys(assignments));
   const unassignedStudents = students.filter(
     (s) => !assignedStudentNames.has(s)
   );
+
+  // --- SCALE HELPER ---
+  // Returns the ratio of screen pixels to canvas coordinate units.
+  // The canvas is inside a CSS-transformed ScalableWidget, so 1 canvas unit
+  // may not equal 1 screen pixel. Dividing pointer deltas by this factor keeps
+  // drag movement 1-to-1 with the cursor.
+  const getCanvasScale = (): number => {
+    const el = canvasRef.current;
+    if (!el || el.offsetWidth === 0) return 1;
+    return el.getBoundingClientRect().width / el.offsetWidth;
+  };
 
   // --- FURNITURE ACTIONS ---
 
@@ -129,7 +204,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       newItems.push({
         id: crypto.randomUUID(),
         type,
-        x: widget.w / 2 - def.w / 2 + offset, // Offset slightly so they aren't perfectly stacked
+        x: widget.w / 2 - def.w / 2 + offset,
         y: widget.h / 2 - def.h / 2 + offset,
         width: def.w,
         height: def.h,
@@ -173,13 +248,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const newItem: FurnitureItem = {
       ...item,
       id: crypto.randomUUID(),
-      x: item.x + 20,
-      y: item.y + 20,
+      x: Math.round((item.x + 20) / gridSize) * gridSize,
+      y: Math.round((item.y + 20) / gridSize) * gridSize,
     };
-
-    // Snap new position to grid to be safe
-    newItem.x = Math.round(newItem.x / gridSize) * gridSize;
-    newItem.y = Math.round(newItem.y / gridSize) * gridSize;
 
     updateWidget(widget.id, {
       config: { ...config, furniture: [...furniture, newItem] },
@@ -189,26 +260,79 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   const removeFurniture = (id: string) => {
     const next = furniture.filter((f) => f.id !== id);
-    // Remove assignments for this furniture
     const nextAssignments = { ...assignments };
-    // Find students assigned to this furniture
     Object.entries(assignments).forEach(([student, furnId]) => {
       if (furnId === id) delete nextAssignments[student];
     });
-
     updateWidget(widget.id, {
       config: { ...config, furniture: next, assignments: nextAssignments },
     });
     setSelectedId(null);
   };
 
+  // --- TEMPLATE ACTIONS ---
+
+  const applyTemplate = () => {
+    const numStudents = students.length;
+
+    if (numStudents === 0) {
+      addToast(
+        'No students found. Set a class or custom roster first.',
+        'error'
+      );
+      return;
+    }
+
+    const canvasEl = canvasRef.current;
+    const rawCanvasW = canvasEl
+      ? canvasEl.offsetWidth
+      : widget.w - SETUP_SIDEBAR_W;
+    const rawCanvasH = canvasEl ? canvasEl.offsetHeight : widget.h - TOOLBAR_H;
+    // Clamp to a minimum safe size so generators never receive zero or
+    // negative dimensions, which would cause division-by-zero in spacing math.
+    const canvasW = Math.max(MIN_CANVAS_DIM, rawCanvasW);
+    const canvasH = Math.max(MIN_CANVAS_DIM, rawCanvasH);
+
+    let newFurniture: FurnitureItem[] = [];
+
+    if (template === 'rows') {
+      const rows = Math.max(1, templateRows);
+      newFurniture = generateRowsLayout(
+        numStudents,
+        rows,
+        canvasW,
+        canvasH,
+        gridSize
+      );
+    } else if (template === 'horseshoe') {
+      newFurniture = generateHorseshoeLayout(
+        numStudents,
+        canvasW,
+        canvasH,
+        gridSize
+      );
+    } else if (template === 'pods') {
+      newFurniture = generatePodsLayout(
+        numStudents,
+        canvasW,
+        canvasH,
+        gridSize
+      );
+    }
+
+    updateWidget(widget.id, {
+      config: { ...config, furniture: newFurniture, assignments: {} },
+    });
+    setSelectedId(null);
+    addToast(
+      `Applied ${template} layout with ${newFurniture.length} desks.`,
+      'success'
+    );
+  };
+
   const handleStudentClick = (studentName: string) => {
     if (mode !== 'assign') return;
-    if (selectedStudent === studentName) {
-      setSelectedStudent(null);
-    } else {
-      setSelectedStudent(studentName);
-    }
+    setSelectedStudent(selectedStudent === studentName ? null : studentName);
   };
 
   const handleFurnitureClick = (furnitureId: string) => {
@@ -216,7 +340,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       setSelectedId(furnitureId);
       return;
     }
-
     if (mode === 'assign' && selectedStudent) {
       updateWidget(widget.id, {
         config: {
@@ -240,26 +363,23 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
     setSelectedId(id);
 
-    // Calculate offset from item top-left
     const startX = e.clientX;
     const startY = e.clientY;
     const origX = item.x;
     const origY = item.y;
     const currentPos = { x: origX, y: origY };
 
-    // Set initial drag state
+    // Capture scale at drag start so it stays consistent during the drag
+    const canvasScale = getCanvasScale();
+
     setDragState({ id, x: origX, y: origY });
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
+      const dx = (moveEvent.clientX - startX) / canvasScale;
+      const dy = (moveEvent.clientY - startY) / canvasScale;
 
-      let newX = origX + dx;
-      let newY = origY + dy;
-
-      // Snap to grid
-      newX = Math.round(newX / gridSize) * gridSize;
-      newY = Math.round(newY / gridSize) * gridSize;
+      const newX = Math.round((origX + dx) / gridSize) * gridSize;
+      const newY = Math.round((origY + dy) / gridSize) * gridSize;
 
       currentPos.x = newX;
       currentPos.y = newY;
@@ -269,7 +389,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-
       updateFurniture(id, { x: currentPos.x, y: currentPos.y });
       setDragState(null);
     };
@@ -290,20 +409,17 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const startH = item.height;
     const currentSize = { w: startW, h: startH };
 
+    const canvasScale = getCanvasScale();
+
     setResizeState({ id, width: startW, height: startH });
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
+      const dx = (moveEvent.clientX - startX) / canvasScale;
+      const dy = (moveEvent.clientY - startY) / canvasScale;
 
-      let newW = startW + dx;
-      let newH = startH + dy;
+      let newW = Math.round((startW + dx) / gridSize) * gridSize;
+      let newH = Math.round((startH + dy) / gridSize) * gridSize;
 
-      // Snap to grid
-      newW = Math.round(newW / gridSize) * gridSize;
-      newH = Math.round(newH / gridSize) * gridSize;
-
-      // Min size constraint
       if (newW < gridSize) newW = gridSize;
       if (newH < gridSize) newH = gridSize;
 
@@ -315,7 +431,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-
       updateFurniture(id, { width: currentSize.w, height: currentSize.h });
       setResizeState(null);
     };
@@ -334,9 +449,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const studentName = e.dataTransfer.getData('studentName');
     if (!studentName) return;
 
-    // Check if moving from another furniture
-    const prevFurnitureId = assignments[studentName];
-    if (prevFurnitureId === furnitureId) return; // No change
+    if (assignments[studentName] === furnitureId) return;
 
     updateWidget(widget.id, {
       config: {
@@ -349,9 +462,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   const handleRemoveAssignment = (studentName: string) => {
     const next = { ...assignments };
     delete next[studentName];
-    updateWidget(widget.id, {
-      config: { ...config, assignments: next },
-    });
+    updateWidget(widget.id, { config: { ...config, assignments: next } });
   };
 
   const addAllRandomly = () => {
@@ -370,13 +481,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    // Shuffle students
     for (let i = unassigned.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [unassigned[i], unassigned[j]] = [unassigned[j], unassigned[i]];
     }
 
-    // Find empty target furniture
     const occupiedIds = new Set(Object.values(assignments));
     const emptySpots = targetFurniture
       .filter((f) => !occupiedIds.has(f.id))
@@ -387,7 +496,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    // Shuffle empty spots too for true randomness
     for (let i = emptySpots.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [emptySpots[i], emptySpots[j]] = [emptySpots[j], emptySpots[i]];
@@ -421,7 +529,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   // --- INTERACT LOGIC ---
 
   const pickRandom = () => {
-    // Prevent multiple animations
     if (animationIntervalRef.current) {
       clearInterval(animationIntervalRef.current);
       animationIntervalRef.current = null;
@@ -433,10 +540,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    // Pick a random furniture ID that has a student
     const uniqueIds = [...new Set(occupiedFurnitureIds)];
 
-    // Animate
     let count = 0;
     const max = 15;
     animationIntervalRef.current = setInterval(() => {
@@ -448,7 +553,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
           clearInterval(animationIntervalRef.current);
           animationIntervalRef.current = null;
         }
-        // Final pick
         const winner = uniqueIds[Math.floor(Math.random() * uniqueIds.length)];
         setRandomHighlight(winner);
       }
@@ -484,7 +588,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       bg = 'bg-slate-200';
       border = 'border-slate-400';
     }
-
     if (isHighlighted) {
       bg = 'bg-yellow-300';
       border = 'border-yellow-500';
@@ -493,12 +596,13 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     return `absolute border-2 flex items-center justify-center transition-all ${bg} ${border} ${isSelected ? 'ring-2 ring-blue-500 z-10' : ''} ${item.type === 'table-round' ? 'rounded-full' : 'rounded-lg'} shadow-sm`;
   };
 
-  // Find students assigned to a specific furniture item
   const getAssignedStudents = (furnitureId: string) => {
     return Object.entries(assignments)
-      .filter(([_, fId]) => fId === furnitureId)
+      .filter(([, fId]) => fId === furnitureId)
       .map(([name]) => name);
   };
+
+  const studentCount = students.length;
 
   return (
     <div className="h-full flex flex-col">
@@ -544,10 +648,90 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         {(mode === 'setup' || mode === 'assign') && (
           <div className="w-48 bg-slate-50 border-r border-slate-200 flex flex-col overflow-hidden shrink-0 animate-in slide-in-from-left-4 duration-200">
             {mode === 'setup' && (
-              <div className="flex flex-col h-full">
+              <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
+                {/* Template Picker */}
                 <div className="p-3 border-b border-slate-200">
                   <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-2">
-                    Bulk Add Quantity
+                    Template
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {TEMPLATES.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() =>
+                          updateWidget(widget.id, {
+                            config: { ...config, template: t.id },
+                          })
+                        }
+                        title={t.description}
+                        className={`flex flex-col items-center justify-center gap-1 p-2 border rounded-lg transition-all text-xxs font-black uppercase leading-none ${
+                          template === t.id
+                            ? 'bg-indigo-50 border-indigo-400 text-indigo-700 ring-1 ring-indigo-300'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <t.icon className="w-4 h-4" />
+                        <span>{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Rows count input */}
+                  {template === 'rows' && (
+                    <div className="mt-2">
+                      <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-1">
+                        # of Rows
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={localTemplateRows}
+                        onChange={(e) => {
+                          setLocalTemplateRows(e.target.value);
+                          const parsed = Number.parseInt(e.target.value, 10);
+                          if (!Number.isNaN(parsed)) {
+                            updateWidget(widget.id, {
+                              config: {
+                                ...config,
+                                templateRows: Math.min(20, Math.max(1, parsed)),
+                              },
+                            });
+                          }
+                        }}
+                        onBlur={() => {
+                          const parsed = Number.parseInt(localTemplateRows, 10);
+                          if (Number.isNaN(parsed)) {
+                            setLocalTemplateRows(String(templateRows));
+                          }
+                        }}
+                        className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
+                      />
+                    </div>
+                  )}
+
+                  {/* Student count hint */}
+                  <p className="text-xxs text-slate-400 mt-2 text-center">
+                    {studentCount > 0
+                      ? `${studentCount} students`
+                      : 'No roster set'}
+                  </p>
+
+                  {/* Apply button */}
+                  <button
+                    onClick={applyTemplate}
+                    disabled={template === 'freeform' || studentCount === 0}
+                    className="mt-2 w-full flex items-center justify-center gap-1.5 p-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Apply Layout
+                  </button>
+                </div>
+
+                {/* Manual Add */}
+                <div className="p-3 border-b border-slate-200">
+                  <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-2">
+                    Add Manually
                   </label>
                   <input
                     type="number"
@@ -557,32 +741,33 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     onChange={(e) =>
                       setBulkCount(parseInt(e.target.value) || 1)
                     }
-                    className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
+                    placeholder="Qty"
+                    className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black mb-2"
                   />
+                  <div className="grid grid-cols-2 gap-2">
+                    {FURNITURE_TYPES.map((t) => (
+                      <button
+                        key={t.type}
+                        onClick={() => addFurniture(t.type)}
+                        className="flex flex-col items-center justify-center gap-1 p-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg transition-colors aspect-square shadow-sm"
+                      >
+                        <t.icon className="w-6 h-6 text-slate-600" />
+                        <span className="text-xxs font-black uppercase text-slate-500">
+                          {t.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="p-3 grid grid-cols-2 gap-2">
-                  {FURNITURE_TYPES.map((t) => (
-                    <button
-                      key={t.type}
-                      onClick={() => addFurniture(t.type)}
-                      className="flex flex-col items-center justify-center gap-1 p-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-lg transition-colors aspect-square shadow-sm"
-                    >
-                      <t.icon className="w-6 h-6 text-slate-600" />
-                      <span className="text-xxs font-black uppercase text-slate-500">
-                        {t.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-auto p-3 border-t border-slate-200">
+                {/* Reset */}
+                <div className="mt-auto p-3">
                   <button
                     onClick={clearAllFurniture}
                     className="w-full flex items-center justify-center gap-2 p-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 rounded-lg transition-colors text-xxs font-black uppercase tracking-wider"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Clear All
+                    Reset Canvas
                   </button>
                 </div>
               </div>
@@ -593,7 +778,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 <div className="p-2 border-b border-slate-200 bg-slate-100 text-xxs font-black uppercase text-slate-600 tracking-widest text-center">
                   Unassigned Students
                 </div>
-
                 <div className="p-2 border-b border-slate-200">
                   <button
                     onClick={addAllRandomly}
@@ -603,7 +787,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     Add All Random
                   </button>
                 </div>
-
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
                   {unassignedStudents.length === 0 ? (
                     <div className="text-center text-xs text-slate-400 py-4 italic font-bold">
@@ -708,7 +891,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       >
                         <RotateCcw className="w-4 h-4" />
                       </button>
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -721,9 +903,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       >
                         <RotateCw className="w-4 h-4" />
                       </button>
-
                       <div className="w-px h-4 bg-slate-200 mx-0.5" />
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -734,7 +914,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       >
                         <Copy className="w-4 h-4" />
                       </button>
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -750,7 +929,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
                 {/* Content */}
                 <div className="flex flex-col items-center justify-center p-1 w-full h-full overflow-hidden pointer-events-none">
-                  {/* Show type icon if empty or setup */}
                   {assigned.length === 0 && (
                     <div className="opacity-20">
                       {item.type === 'desk' && <Monitor className="w-5 h-5" />}
@@ -763,8 +941,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                       {item.type === 'rug' && <Armchair className="w-6 h-6" />}
                     </div>
                   )}
-
-                  {/* Assigned Students */}
                   {assigned.length > 0 && (
                     <div className="flex flex-col items-center justify-center gap-1 w-full h-full overflow-hidden">
                       {assigned.map((name) => (
@@ -801,6 +977,20 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
               </p>
               <p className="text-xs">
                 Switch to &quot;Setup&quot; to arrange furniture.
+              </p>
+            </div>
+          )}
+
+          {furniture.length === 0 && mode === 'setup' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none">
+              <LayoutTemplate className="w-12 h-12 opacity-20 mb-2" />
+              <p className="text-sm font-bold uppercase tracking-widest">
+                No Furniture
+              </p>
+              <p className="text-xs">
+                {template === 'freeform'
+                  ? 'Add furniture from the sidebar.'
+                  : 'Pick a template and click Apply Layout.'}
               </p>
             </div>
           )}

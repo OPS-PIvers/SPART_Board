@@ -1,5 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SeatingChartWidget } from './SeatingChartWidget';
+import {
+  generateRowsLayout,
+  generateHorseshoeLayout,
+  generatePodsLayout,
+} from './seatingChartLayouts';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
@@ -168,5 +173,141 @@ describe('SeatingChartWidget', () => {
     // 5. Verify deselection
     expect(furnitureItem.className).not.toContain('ring-2');
     expect(screen.queryByTitle('Rotate Left')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pure layout generator tests — no React rendering needed
+// ---------------------------------------------------------------------------
+
+const CANVAS_W = 400;
+const CANVAS_H = 400;
+const GRID = 20;
+
+const allSnapped = (items: { x: number; y: number }[]) =>
+  items.every((i) => i.x % GRID === 0 && i.y % GRID === 0);
+
+const allUniqueIds = (items: { id: string }[]) =>
+  new Set(items.map((i) => i.id)).size === items.length;
+
+const allDesks = (items: { type: string }[]) =>
+  items.every((i) => i.type === 'desk');
+
+describe('generateRowsLayout', () => {
+  it('returns empty array for 0 students', () => {
+    expect(generateRowsLayout(0, 6, CANVAS_W, CANVAS_H, GRID)).toEqual([]);
+  });
+
+  it('returns correct desk count for 30 students in 6 rows', () => {
+    expect(generateRowsLayout(30, 6, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      30
+    );
+  });
+
+  it('does not exceed student count when rows × desksPerRow > students', () => {
+    // 5 students, 3 rows → desksPerRow=2 → 6 slots but only 5 filled
+    expect(generateRowsLayout(5, 3, CANVAS_W, CANVAS_H, GRID)).toHaveLength(5);
+  });
+
+  it('handles a single student', () => {
+    expect(generateRowsLayout(1, 1, CANVAS_W, CANVAS_H, GRID)).toHaveLength(1);
+  });
+
+  it('snaps all positions to the grid', () => {
+    expect(
+      allSnapped(generateRowsLayout(15, 3, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
+  });
+
+  it('all items are desks', () => {
+    expect(allDesks(generateRowsLayout(10, 2, CANVAS_W, CANVAS_H, GRID))).toBe(
+      true
+    );
+  });
+
+  it('all items have unique IDs', () => {
+    expect(
+      allUniqueIds(generateRowsLayout(12, 3, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
+  });
+});
+
+describe('generateHorseshoeLayout', () => {
+  it('returns empty array for 0 students', () => {
+    expect(generateHorseshoeLayout(0, CANVAS_W, CANVAS_H, GRID)).toEqual([]);
+  });
+
+  it('returns correct desk count for 30 students', () => {
+    expect(generateHorseshoeLayout(30, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      30
+    );
+  });
+
+  it('does not create more desks than students when count < MIN_INNER_HORSESHOE_COUNT', () => {
+    // Bug regression: innerCount was clamped to 3 even for 2 students,
+    // making outerCount negative and producing 3 desks for 2 students.
+    expect(generateHorseshoeLayout(2, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      2
+    );
+  });
+
+  it('handles exactly MIN_INNER_HORSESHOE_COUNT students', () => {
+    expect(generateHorseshoeLayout(3, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      3
+    );
+  });
+
+  it('snaps all positions to the grid', () => {
+    expect(
+      allSnapped(generateHorseshoeLayout(20, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
+  });
+
+  it('all items are desks', () => {
+    expect(
+      allDesks(generateHorseshoeLayout(15, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
+  });
+
+  it('all items have unique IDs', () => {
+    expect(
+      allUniqueIds(generateHorseshoeLayout(10, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
+  });
+});
+
+describe('generatePodsLayout', () => {
+  it('returns empty array for 0 students', () => {
+    expect(generatePodsLayout(0, CANVAS_W, CANVAS_H, GRID)).toEqual([]);
+  });
+
+  it('returns correct desk count for 30 students (7 pods of 4 + 1 pod of 2)', () => {
+    expect(generatePodsLayout(30, CANVAS_W, CANVAS_H, GRID)).toHaveLength(30);
+  });
+
+  it('returns correct desk count for an exact multiple of 4', () => {
+    expect(generatePodsLayout(8, CANVAS_W, CANVAS_H, GRID)).toHaveLength(8);
+  });
+
+  it('handles a single student', () => {
+    expect(generatePodsLayout(1, CANVAS_W, CANVAS_H, GRID)).toHaveLength(1);
+  });
+
+  it('snaps all positions to the grid', () => {
+    expect(allSnapped(generatePodsLayout(12, CANVAS_W, CANVAS_H, GRID))).toBe(
+      true
+    );
+  });
+
+  it('all items are desks', () => {
+    expect(allDesks(generatePodsLayout(9, CANVAS_W, CANVAS_H, GRID))).toBe(
+      true
+    );
+  });
+
+  it('all items have unique IDs', () => {
+    expect(allUniqueIds(generatePodsLayout(16, CANVAS_W, CANVAS_H, GRID))).toBe(
+      true
+    );
   });
 });
