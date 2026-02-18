@@ -104,13 +104,18 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, rosters, activeRosterId, addToast } = useDashboard();
   const config = widget.config as SeatingChartConfig;
+  // Fall back to the legacy templateRows field so existing Firestore widgets
+  // preserve their saved column count after the rename to templateColumns.
+  const legacyTemplateRows = (
+    config as SeatingChartConfig & { templateRows?: number }
+  ).templateRows;
   const {
     furniture = [],
     assignments = {},
     gridSize = 20,
     rosterMode = 'class',
     template = 'freeform',
-    templateColumns = 6,
+    templateColumns = legacyTemplateRows ?? 6,
   } = config;
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');

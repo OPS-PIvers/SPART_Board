@@ -94,7 +94,7 @@ export function generateHorseshoeLayout(
   const INNER_BOTTOM = 4;
   const INNER_RIGHT = 4;
 
-  const HORSESHOE_GAP = 90; // edge-to-edge gap between inner and outer U desks
+  const HORSESHOE_GAP = 50; // edge-to-edge gap between inner and outer U desks
   const TEACHER_AREA_MARGIN = 60; // vertical space reserved at top for teacher desk
 
   const items: FurnitureItem[] = [];
@@ -162,17 +162,19 @@ export function generateHorseshoeLayout(
   const outerTop_y = HORSESHOE_MARGIN + TEACHER_AREA_MARGIN;
   const outerBottom_y = canvasH - HORSESHOE_MARGIN - DESK_H;
 
+  // xEnd is the left edge of the last desk; subtracting DESK_W ensures the
+  // last desk's right edge lands at outerRight_x - ARM_PADDING, not beyond.
+  const bottomRowXStart = outerLeft_x + DESK_W + HORSESHOE_ARM_PADDING;
+  const bottomRowXEnd = outerRight_x - HORSESHOE_ARM_PADDING - DESK_W;
+
   placeVerticalArm(OUTER_LEFT, outerLeft_x, outerTop_y, outerBottom_y, 90);
   placeVerticalArm(OUTER_RIGHT, outerRight_x, outerTop_y, outerBottom_y, 270);
-  placeHorizontalRow(
-    OUTER_BOTTOM,
-    outerBottom_y,
-    outerLeft_x + DESK_W + HORSESHOE_ARM_PADDING,
-    outerRight_x - HORSESHOE_ARM_PADDING,
-    0
-  );
+  placeHorizontalRow(OUTER_BOTTOM, outerBottom_y, bottomRowXStart, bottomRowXEnd, 0);
 
-  // Inner U bounds — gap is measured edge-to-edge consistently on all sides
+  // Inner U bounds — gap is measured edge-to-edge consistently on all sides.
+  // The inner bottom row reuses the same x-bounds as the outer bottom row so
+  // the 4 desks spread across the full interior width rather than being
+  // squeezed between the narrower inner arm positions.
   const innerLeft_x = outerLeft_x + DESK_W + HORSESHOE_GAP;
   const innerRight_x = outerRight_x - DESK_W - HORSESHOE_GAP;
   const innerTop_y = outerTop_y + HORSESHOE_INNER_INSET;
@@ -180,13 +182,7 @@ export function generateHorseshoeLayout(
 
   placeVerticalArm(INNER_LEFT, innerLeft_x, innerTop_y, innerBottom_y, 90);
   placeVerticalArm(INNER_RIGHT, innerRight_x, innerTop_y, innerBottom_y, 270);
-  placeHorizontalRow(
-    INNER_BOTTOM,
-    innerBottom_y,
-    innerLeft_x + DESK_W + HORSESHOE_ARM_PADDING,
-    innerRight_x - HORSESHOE_ARM_PADDING,
-    0
-  );
+  placeHorizontalRow(INNER_BOTTOM, innerBottom_y, bottomRowXStart, bottomRowXEnd, 0);
 
   return items;
 }
