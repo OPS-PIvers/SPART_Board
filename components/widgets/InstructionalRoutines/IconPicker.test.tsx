@@ -81,7 +81,9 @@ describe('IconPicker', () => {
     // Check if icons are in the list
     const panel = screen.getByTestId('floating-panel');
     const zapInPanel = panel.querySelector('[data-testid="icon-zap"]');
-    const lightbulbInPanel = panel.querySelector('[data-testid="icon-lightbulb"]');
+    const lightbulbInPanel = panel.querySelector(
+      '[data-testid="icon-lightbulb"]'
+    );
 
     expect(zapInPanel).toBeInTheDocument();
     expect(lightbulbInPanel).toBeInTheDocument();
@@ -100,8 +102,10 @@ describe('IconPicker', () => {
     const lightbulbIcon = panel.querySelector('[data-testid="icon-lightbulb"]');
     expect(lightbulbIcon).toBeInTheDocument();
 
-    const lightbulbButton = lightbulbIcon!.closest('button');
-    await user.click(lightbulbButton!);
+    const lightbulbButton = lightbulbIcon?.closest('button');
+    if (lightbulbButton) {
+      await user.click(lightbulbButton);
+    }
 
     expect(mockOnSelect).toHaveBeenCalledWith('Lightbulb');
 
@@ -120,7 +124,9 @@ describe('IconPicker', () => {
 
     // Close
     const closeButton = screen.getByTestId('icon-x').closest('button');
-    await user.click(closeButton!);
+    if (closeButton) {
+      await user.click(closeButton);
+    }
 
     expect(screen.queryByTestId('floating-panel')).not.toBeInTheDocument();
     expect(mockOnSelect).not.toHaveBeenCalled();
