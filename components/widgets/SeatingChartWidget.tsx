@@ -128,6 +128,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     height: number;
   } | null>(null);
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null);
+  // Local state for the rows-count input so users can clear/type freely
+  // without the field snapping back to the previous valid value on each keystroke.
+  const [localTemplateRows, setLocalTemplateRows] = useState(
+    String(templateRows)
+  );
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
@@ -141,6 +146,12 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       }
     };
   }, []);
+
+  // Keep local input in sync when templateRows changes from outside
+  // (e.g. a different client updates the config via Firestore).
+  useEffect(() => {
+    setLocalTemplateRows(String(templateRows));
+  }, [templateRows]);
 
   // Roster logic
   const activeRoster = useMemo(
@@ -675,17 +686,24 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                         type="number"
                         min="1"
                         max="20"
-                        value={templateRows}
+                        value={localTemplateRows}
                         onChange={(e) => {
-                          if (e.target.value === '') return;
+                          setLocalTemplateRows(e.target.value);
                           const parsed = Number.parseInt(e.target.value, 10);
-                          if (Number.isNaN(parsed)) return;
-                          updateWidget(widget.id, {
-                            config: {
-                              ...config,
-                              templateRows: Math.min(20, Math.max(1, parsed)),
-                            },
-                          });
+                          if (!Number.isNaN(parsed)) {
+                            updateWidget(widget.id, {
+                              config: {
+                                ...config,
+                                templateRows: Math.min(20, Math.max(1, parsed)),
+                              },
+                            });
+                          }
+                        }}
+                        onBlur={() => {
+                          const parsed = Number.parseInt(localTemplateRows, 10);
+                          if (Number.isNaN(parsed)) {
+                            setLocalTemplateRows(String(templateRows));
+                          }
                         }}
                         className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
                       />

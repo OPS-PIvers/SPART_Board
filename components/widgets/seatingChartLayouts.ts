@@ -3,6 +3,15 @@ import { FurnitureItem } from '../../types';
 const DESK_W = 60;
 const DESK_H = 50;
 
+// Named layout constants — keeps geometry calculations self-documenting
+// and ensures a single place to adjust spacing if desk sizes change.
+const ROWS_MARGIN = 40; // canvas edge margin for rows layout
+const HORSESHOE_MARGIN = 30; // canvas edge margin for horseshoe layout
+const HORSESHOE_ARM_PADDING = 20; // padding between vertical arm ends and horizontal row
+const HORSESHOE_INNER_INSET = 20; // how far inner U top is below outer U top
+const PODS_MARGIN = 30; // canvas edge margin for pods layout
+const PODS_HEADER_OFFSET = 40; // extra top offset so pods don't crowd the top edge
+
 function snapToGrid(val: number, gridSize: number): number {
   return Math.round(val / gridSize) * gridSize;
 }
@@ -17,32 +26,32 @@ export function generateRowsLayout(
   if (numStudents <= 0 || numRows <= 0) return [];
 
   const desksPerRow = Math.ceil(numStudents / numRows);
-  const margin = 40;
-  const availW = canvasW - margin * 2;
-  const availH = canvasH - margin * 2;
+  const availW = canvasW - ROWS_MARGIN * 2;
+  const availH = canvasH - ROWS_MARGIN * 2;
 
-  // Inter-column and inter-row spacing between desk top-left corners.
-  // The single-item fallback value (availW/2 or availH/2) is never used
-  // in layout: when numRows===1 or desksPerRow===1 the x/y branches below
-  // hard-code a centred position instead of referencing these variables.
+  // Spacing between desk top-left corners along each axis.
+  // When there is only one row or one column the spacing value is unused —
+  // the position branches below hard-code a centred coordinate instead.
   const colSpacing =
-    numRows > 1 ? (availW - DESK_W) / (numRows - 1) : availW / 2;
+    desksPerRow > 1 ? (availW - DESK_W) / (desksPerRow - 1) : availW / 2;
   const rowSpacing =
-    desksPerRow > 1 ? (availH - DESK_H) / (desksPerRow - 1) : availH / 2;
+    numRows > 1 ? (availH - DESK_H) / (numRows - 1) : availH / 2;
 
   const items: FurnitureItem[] = [];
   let count = 0;
 
-  for (let col = 0; col < numRows && count < numStudents; col++) {
-    const x = snapToGrid(
-      numRows === 1 ? canvasW / 2 - DESK_W / 2 : margin + col * colSpacing,
+  // Outer loop = rows (y-axis); inner loop = desks within each row (x-axis).
+  // "numRows" therefore controls vertical row count as teachers expect.
+  for (let row = 0; row < numRows && count < numStudents; row++) {
+    const y = snapToGrid(
+      numRows === 1 ? canvasH / 2 - DESK_H / 2 : ROWS_MARGIN + row * rowSpacing,
       gridSize
     );
-    for (let row = 0; row < desksPerRow && count < numStudents; row++) {
-      const y = snapToGrid(
+    for (let col = 0; col < desksPerRow && count < numStudents; col++) {
+      const x = snapToGrid(
         desksPerRow === 1
-          ? canvasH / 2 - DESK_H / 2
-          : margin + row * rowSpacing,
+          ? canvasW / 2 - DESK_W / 2
+          : ROWS_MARGIN + col * colSpacing,
         gridSize
       );
       items.push({
@@ -70,7 +79,7 @@ export function generateHorseshoeLayout(
   if (numStudents <= 0) return [];
 
   const MIN_INNER_HORSESHOE_COUNT = 3;
-  const HORSESHOE_GAP = 90; // pixel gap between inner and outer U walls
+  const HORSESHOE_GAP = 90; // edge-to-edge gap between inner and outer U desks
   const TEACHER_AREA_MARGIN = 60; // vertical space reserved at top for teacher desk
 
   // Inner U is ~35% of students, outer U is ~65%.
@@ -90,15 +99,9 @@ export function generateHorseshoeLayout(
   const [outerLeft, outerBottom, outerRight] = distributeU(outerCount);
   const [innerLeft, innerBottom, innerRight] = distributeU(innerCount);
 
-  const margin = 30;
-  const gap = HORSESHOE_GAP;
   const items: FurnitureItem[] = [];
 
   // Outer U — opens toward the top (teacher is at top)
-  // Left arm: vertical column on left side
-  // Right arm: vertical column on right side
-  // Bottom: horizontal row at the bottom
-
   function placeVerticalArm(
     count: number,
     x: number,
@@ -150,33 +153,36 @@ export function generateHorseshoeLayout(
   }
 
   // Outer U bounds
-  const outerLeft_x = margin;
-  const outerRight_x = canvasW - margin - DESK_W;
-  const outerTop_y = margin + TEACHER_AREA_MARGIN;
-  const outerBottom_y = canvasH - margin - DESK_H;
+  const outerLeft_x = HORSESHOE_MARGIN;
+  const outerRight_x = canvasW - HORSESHOE_MARGIN - DESK_W;
+  const outerTop_y = HORSESHOE_MARGIN + TEACHER_AREA_MARGIN;
+  const outerBottom_y = canvasH - HORSESHOE_MARGIN - DESK_H;
 
   placeVerticalArm(outerLeft, outerLeft_x, outerTop_y, outerBottom_y);
   placeVerticalArm(outerRight, outerRight_x, outerTop_y, outerBottom_y);
   placeHorizontalRow(
     outerBottom,
     outerBottom_y,
-    outerLeft_x + DESK_W + 20,
-    outerRight_x - 20
+    outerLeft_x + DESK_W + HORSESHOE_ARM_PADDING,
+    outerRight_x - HORSESHOE_ARM_PADDING
   );
 
-  // Inner U bounds (inset by gap from outer)
-  const innerLeft_x = outerLeft_x + DESK_W + gap;
-  const innerRight_x = outerRight_x - gap;
-  const innerTop_y = outerTop_y + 20;
-  const innerBottom_y = outerBottom_y - gap;
+  // Inner U bounds — gap is measured edge-to-edge consistently on all sides:
+  //   innerLeft_x  + DESK_W + HORSESHOE_GAP = outerLeft_x  (left edge of outer left arm)  ← left
+  //   innerRight_x + DESK_W + HORSESHOE_GAP = outerRight_x (right edge → left edge gap)    ← right
+  //   innerBottom_y + DESK_H + HORSESHOE_GAP = outerBottom_y                               ← bottom
+  const innerLeft_x = outerLeft_x + DESK_W + HORSESHOE_GAP;
+  const innerRight_x = outerRight_x - DESK_W - HORSESHOE_GAP;
+  const innerTop_y = outerTop_y + HORSESHOE_INNER_INSET;
+  const innerBottom_y = outerBottom_y - DESK_H - HORSESHOE_GAP;
 
   placeVerticalArm(innerLeft, innerLeft_x, innerTop_y, innerBottom_y);
   placeVerticalArm(innerRight, innerRight_x, innerTop_y, innerBottom_y);
   placeHorizontalRow(
     innerBottom,
     innerBottom_y,
-    innerLeft_x + DESK_W + 20,
-    innerRight_x - 20
+    innerLeft_x + DESK_W + HORSESHOE_ARM_PADDING,
+    innerRight_x - HORSESHOE_ARM_PADDING
   );
 
   return items;
@@ -195,13 +201,12 @@ export function generatePodsLayout(
   const numPods = fullPods + (remainder > 0 ? 1 : 0);
 
   // Pod is 2x2 arrangement of desks
-  const podGapInner = 10; // gap between desks within pod
+  const podGapInner = 10; // gap between desks within a pod
   const podW = DESK_W * 2 + podGapInner;
   const podH = DESK_H * 2 + podGapInner;
   const podGapOuter = 40; // gap between pods
 
-  const margin = 30;
-  const availW = canvasW - margin * 2;
+  const availW = canvasW - PODS_MARGIN * 2;
 
   const podsPerRow = Math.max(
     1,
@@ -209,8 +214,8 @@ export function generatePodsLayout(
   );
 
   const totalGridW = podsPerRow * podW + (podsPerRow - 1) * podGapOuter;
-  const startX = Math.max(margin, (canvasW - totalGridW) / 2);
-  const startY = margin + 40;
+  const startX = Math.max(PODS_MARGIN, (canvasW - totalGridW) / 2);
+  const startY = PODS_MARGIN + PODS_HEADER_OFFSET;
 
   // 2x2 desk offsets: top-left, top-right, bottom-left, bottom-right
   const podDeskOffsets = [
