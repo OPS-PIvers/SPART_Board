@@ -471,7 +471,7 @@ export interface SeatingChartConfig {
   rosterMode?: 'class' | 'custom';
   names?: string; // Line separated names for custom roster
   template?: SeatingChartTemplate;
-  templateRows?: number; // Number of rows for 'rows' template
+  templateColumns?: number; // Number of columns for 'rows' template
 }
 
 export interface NotebookItem {
