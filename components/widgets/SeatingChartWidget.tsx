@@ -62,7 +62,7 @@ function snapToGrid(val: number, gridSize: number): number {
   return Math.round(val / gridSize) * gridSize;
 }
 
-function generateRowsLayout(
+export function generateRowsLayout(
   numStudents: number,
   numRows: number,
   canvasW: number,
@@ -112,7 +112,7 @@ function generateRowsLayout(
   return items;
 }
 
-function generateHorseshoeLayout(
+export function generateHorseshoeLayout(
   numStudents: number,
   canvasW: number,
   canvasH: number,
@@ -124,10 +124,11 @@ function generateHorseshoeLayout(
   const HORSESHOE_GAP = 90; // pixel gap between inner and outer U walls
   const TEACHER_AREA_MARGIN = 60; // vertical space reserved at top for teacher desk
 
-  // Inner U is ~35% of students, outer U is ~65%
-  const innerCount = Math.max(
-    MIN_INNER_HORSESHOE_COUNT,
-    Math.round(numStudents * 0.35)
+  // Inner U is ~35% of students, outer U is ~65%.
+  // Capped at numStudents so outerCount never goes negative with small classes.
+  const innerCount = Math.min(
+    numStudents,
+    Math.max(MIN_INNER_HORSESHOE_COUNT, Math.round(numStudents * 0.35))
   );
   const outerCount = numStudents - innerCount;
 
@@ -232,7 +233,7 @@ function generateHorseshoeLayout(
   return items;
 }
 
-function generatePodsLayout(
+export function generatePodsLayout(
   numStudents: number,
   canvasW: number,
   canvasH: number,
