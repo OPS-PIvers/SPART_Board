@@ -1,26 +1,58 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth';
 import { DashboardProvider } from './context/DashboardContext';
-import { LoginScreen } from './components/auth/LoginScreen';
-import { DashboardView } from './components/layout/DashboardView';
 import { UpdateNotification } from './components/layout/UpdateNotification';
 import { isConfigured } from './config/firebase';
-import { StudentApp } from './components/student/StudentApp';
 import { StudentProvider } from './components/student/StudentContexts';
-import { AdminWeatherFetcher } from './components/admin/AdminWeatherFetcher';
+
+// Lazy load heavy components for code splitting
+// Using named export pattern: import(...).then(module => ({ default: module.ExportName }))
+const StudentApp = lazy(() =>
+  import('./components/student/StudentApp').then((module) => ({
+    default: module.StudentApp,
+  }))
+);
+const LoginScreen = lazy(() =>
+  import('./components/auth/LoginScreen').then((module) => ({
+    default: module.LoginScreen,
+  }))
+);
+const DashboardView = lazy(() =>
+  import('./components/layout/DashboardView').then((module) => ({
+    default: module.DashboardView,
+  }))
+);
+const AdminWeatherFetcher = lazy(() =>
+  import('./components/admin/AdminWeatherFetcher').then((module) => ({
+    default: module.AdminWeatherFetcher,
+  }))
+);
+
+const FullPageLoader = () => (
+  <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+    <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+  </div>
+);
 
 const AuthenticatedApp: React.FC = () => {
   const { user, isAdmin } = useAuth();
 
   if (!user) {
-    return <LoginScreen />;
+    return (
+      <Suspense fallback={<FullPageLoader />}>
+        <LoginScreen />
+      </Suspense>
+    );
   }
 
   return (
     <DashboardProvider>
-      {isAdmin && <AdminWeatherFetcher />}
-      <DashboardView />
+      <Suspense fallback={<FullPageLoader />}>
+        {isAdmin && <AdminWeatherFetcher />}
+        <DashboardView />
+      </Suspense>
       <UpdateNotification />
     </DashboardProvider>
   );
@@ -34,7 +66,9 @@ const App: React.FC = () => {
   if (isStudentRoute) {
     return (
       <StudentProvider>
-        <StudentApp />
+        <Suspense fallback={<FullPageLoader />}>
+          <StudentApp />
+        </Suspense>
       </StudentProvider>
     );
   }
