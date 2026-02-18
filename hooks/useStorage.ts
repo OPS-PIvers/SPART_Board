@@ -142,17 +142,17 @@ export const useStorage = () => {
   };
 
   const deleteFile = async (filePath: string): Promise<void> => {
-    // If it's a Drive link, we try to delete it from Drive
+    // If it's a Drive link, extract the file ID and delete via Drive API
     if (
       filePath.startsWith('https://lh3.googleusercontent.com') ||
       filePath.includes('drive.google.com')
     ) {
       if (!isAdmin && driveService) {
         try {
-          // Deletion of Drive assets by URL is not yet fully implemented
-          console.warn(
-            'Deletion of Drive assets by URL is not yet fully implemented'
-          );
+          const match = /\/file\/d\/([^/?#]+)/.exec(filePath);
+          if (match) {
+            await driveService.deleteFile(match[1]);
+          }
         } catch (e) {
           console.error('Failed to delete from Drive:', e);
         }
