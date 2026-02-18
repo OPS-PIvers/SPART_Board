@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { SeatingChartWidget } from './SeatingChartWidget';
 import {
-  SeatingChartWidget,
   generateRowsLayout,
   generateHorseshoeLayout,
   generatePodsLayout,
-} from './SeatingChartWidget';
+} from './seatingChartLayouts';
 import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
