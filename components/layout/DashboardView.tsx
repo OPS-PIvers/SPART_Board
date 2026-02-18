@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
-import { doc, setDoc } from 'firebase/firestore';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
-import { useStorage } from '../../hooks/useStorage';
+import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
@@ -12,9 +11,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
   LiveStudent,
   SpartStickerDropPayload,
-  PdfItem,
 } from '../../types';
-import { db } from '../../config/firebase';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
@@ -61,7 +58,7 @@ export const DashboardView: React.FC = () => {
     addToast,
     loadDashboard,
   } = useDashboard();
-  const { uploadPdf } = useStorage();
+  const { uploadAndRegisterPdf } = useStorage();
 
   const {
     session,
@@ -256,31 +253,24 @@ export const DashboardView: React.FC = () => {
       const pdfFile = files.find((f) => f.type === 'application/pdf');
       if (pdfFile && user) {
         e.preventDefault();
+        if (pdfFile.size > MAX_PDF_SIZE_BYTES) {
+          addToast('PDF is too large. Maximum size is 50MB.', 'error');
+          return;
+        }
         const dropX = Math.max(0, e.clientX - 300);
         const dropY = Math.max(0, e.clientY - 375);
         addToast('Uploading PDF…', 'info');
         void (async () => {
           try {
-            const { url, storagePath } = await uploadPdf(user.uid, pdfFile);
-            const pdfId = crypto.randomUUID() as string;
-            const pdfData: PdfItem = {
-              id: pdfId,
-              name: pdfFile.name.replace(/\.pdf$/i, ''),
-              storageUrl: url,
-              storagePath,
-              size: pdfFile.size,
-              uploadedAt: Date.now(),
-              order: 0,
-            };
-            await setDoc(doc(db, 'users', user.uid, 'pdfs', pdfId), pdfData);
+            const pdfData = await uploadAndRegisterPdf(user.uid, pdfFile);
             addWidget('pdf', {
               x: dropX,
               y: dropY,
               w: 600,
               h: 750,
               config: {
-                activePdfId: pdfId,
-                activePdfUrl: url,
+                activePdfId: pdfData.id,
+                activePdfUrl: pdfData.storageUrl,
                 activePdfName: pdfData.name,
               },
             });

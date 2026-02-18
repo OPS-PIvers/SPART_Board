@@ -11,7 +11,6 @@ import {
   collection,
   onSnapshot,
   doc,
-  setDoc,
   deleteDoc,
   query,
   orderBy,
@@ -37,7 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
-import { useStorage } from '@/hooks/useStorage';
+import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
 import { WidgetData, PdfItem, PdfConfig } from '@/types';
 import { WidgetLayout } from './WidgetLayout';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
@@ -159,7 +158,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ pdf, onOpen, onDelete }) => {
 export const PdfWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const { updateWidget, addToast } = useDashboard();
   const { user } = useAuth();
-  const { uploadPdf, deleteFile, uploading } = useStorage();
+  const { uploadAndRegisterPdf, deleteFile, uploading } = useStorage();
   const config = widget.config as PdfConfig;
 
   const [library, setLibrary] = useState<PdfItem[]>([]);
@@ -174,7 +173,11 @@ export const PdfWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     if (!user) return;
     const pdfsRef = collection(db, 'users', user.uid, 'pdfs');
-    const q = query(pdfsRef, orderBy('uploadedAt', 'desc'));
+    const q = query(
+      pdfsRef,
+      orderBy('order', 'asc'),
+      orderBy('uploadedAt', 'desc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const pdfs = snapshot.docs.map(
         (d) => ({ ...d.data(), id: d.id }) as PdfItem
@@ -210,25 +213,14 @@ export const PdfWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     if (!user) return;
     try {
       addToast('Uploading PDF…', 'info');
-      const { url, storagePath } = await uploadPdf(user.uid, file);
-      const pdfId = crypto.randomUUID() as string;
-      const pdfData: PdfItem = {
-        id: pdfId,
-        name: file.name.replace(/\.pdf$/i, ''),
-        storageUrl: url,
-        storagePath,
-        size: file.size,
-        uploadedAt: Date.now(),
-        order: 0,
-      };
-      await setDoc(doc(db, 'users', user.uid, 'pdfs', pdfId), pdfData);
+      const pdfData = await uploadAndRegisterPdf(user.uid, file);
       addToast(`"${pdfData.name}" saved to library`, 'success');
       // Auto-open the newly uploaded PDF
       updateWidget(widget.id, {
         config: {
           ...config,
-          activePdfId: pdfId,
-          activePdfUrl: url,
+          activePdfId: pdfData.id,
+          activePdfUrl: pdfData.storageUrl,
           activePdfName: pdfData.name,
         },
       });
@@ -240,7 +232,18 @@ export const PdfWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) void handleUpload(file);
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      addToast('Please upload a PDF file.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (file.size > MAX_PDF_SIZE_BYTES) {
+      addToast('PDF is too large. Maximum size is 50MB.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    void handleUpload(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

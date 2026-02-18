@@ -5,9 +5,13 @@ import {
   getDownloadURL,
   deleteObject,
 } from 'firebase/storage';
-import { storage } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { storage, db } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
+import { PdfItem } from '../types';
+
+export const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
@@ -193,6 +197,25 @@ export const useStorage = () => {
     return { url, storagePath };
   };
 
+  const uploadAndRegisterPdf = async (
+    userId: string,
+    file: File
+  ): Promise<PdfItem> => {
+    const { url, storagePath } = await uploadPdf(userId, file);
+    const pdfId = crypto.randomUUID() as string;
+    const pdfData: PdfItem = {
+      id: pdfId,
+      name: file.name.replace(/\.pdf$/i, ''),
+      storageUrl: url,
+      storagePath,
+      size: file.size,
+      uploadedAt: Date.now(),
+      order: 0,
+    };
+    await setDoc(doc(db, 'users', userId, 'pdfs', pdfId), pdfData);
+    return pdfData;
+  };
+
   return {
     uploading,
     uploadFile,
@@ -204,5 +227,6 @@ export const useStorage = () => {
     uploadAdminBackground,
     uploadWeatherImage,
     uploadPdf,
+    uploadAndRegisterPdf,
   };
 };
