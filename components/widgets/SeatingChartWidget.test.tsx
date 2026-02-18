@@ -199,16 +199,16 @@ describe('generateColumnsLayout', () => {
   });
 
   it('returns correct desk count for 30 students in 6 columns', () => {
-    expect(
-      generateColumnsLayout(30, 6, CANVAS_W, CANVAS_H, GRID)
-    ).toHaveLength(30);
+    expect(generateColumnsLayout(30, 6, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      30
+    );
   });
 
   it('does not exceed student count when columns × desksPerColumn > students', () => {
     // 5 students, 3 columns → desksPerColumn=2 → 6 slots but only 5 filled
-    expect(
-      generateColumnsLayout(5, 3, CANVAS_W, CANVAS_H, GRID)
-    ).toHaveLength(5);
+    expect(generateColumnsLayout(5, 3, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      5
+    );
   });
 
   it('handles a single student', () => {

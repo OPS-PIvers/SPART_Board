@@ -47,7 +47,9 @@ export function generateColumnsLayout(
   // "numColumns" therefore controls horizontal column count as teachers expect.
   for (let col = 0; col < numColumns && count < numStudents; col++) {
     const x = snapToGrid(
-      numColumns === 1 ? canvasW / 2 - DESK_W / 2 : ROWS_MARGIN + col * colSpacing,
+      numColumns === 1
+        ? canvasW / 2 - DESK_W / 2
+        : ROWS_MARGIN + col * colSpacing,
       gridSize
     );
     for (let row = 0; row < desksPerColumn && count < numStudents; row++) {
