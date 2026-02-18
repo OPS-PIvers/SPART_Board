@@ -347,6 +347,224 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
                           ...editingRoutine,
                           associatedWidgets: newWidgets,
                         });
+                        // Also cleanup state for removed widget
+                        setJsonTexts((prev) => {
+                          const { [aw.id]: _removed, ...rest } = prev;
+                          return rest;
+                        });
+                        setJsonErrors((prev) => {
+                          const { [aw.id]: _removed, ...rest } = prev;
+                          return rest;
+                        });
+                      }}
+                      className="p-1 text-slate-400 hover:text-red-500 rounded hover:bg-red-50"
+                      title="Remove Widget"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-black uppercase text-slate-400">
+                        Config (JSON)
+                      </label>
+                      {jsonErrors[aw.id] && (
+                        <span className="text-[10px] font-bold text-red-500">
+                          {jsonErrors[aw.id]}
+                        </span>
+                      )}
+                    </div>
+                    <textarea
+                      value={jsonTexts[aw.id] ?? JSON.stringify(aw.config ?? {})}
+                      onChange={(e) => handleJsonChange(aw.id, e.target.value)}
+                      onBlur={() => handleJsonBlur(aw.id)}
+                      rows={2}
+                      className={`w-full border rounded px-2 py-1 text-xs font-mono ${
+                        jsonErrors[aw.id]
+                          ? 'border-red-300 bg-red-50'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                      placeholder="{}"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            <button
+              onClick={() =>
+                setEditingRoutine({
+                  ...editingRoutine,
+                  associatedWidgets: [
+                    ...(editingRoutine.associatedWidgets ?? []),
+                    {
+                      id: crypto.randomUUID(),
+                      type: 'timer',
+                      config: undefined,
+                    },
+                  ],
+                })
+              }
+              className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+            >
+              <Plus size={14} /> Add Widget
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+            onClick={onCancel}
+            className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700"
+          >
+            Save
+          </button>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+            Title
+          </label>
+          <input
+            type="text"
+            value={editingRoutine.title}
+            onChange={(e) =>
+              setEditingRoutine({
+                ...editingRoutine,
+                title: e.target.value,
+              })
+            }
+            className="w-full border border-slate-300 rounded px-3 py-2"
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+            Category
+          </label>
+          <select
+            value={editingRoutine.category}
+            onChange={(e) =>
+              setEditingRoutine({
+                ...editingRoutine,
+                category: e.target.value,
+              })
+            }
+            className="w-full border border-slate-300 rounded px-3 py-2"
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+            Short Description
+          </label>
+          <input
+            type="text"
+            value={editingRoutine.shortDesc}
+            onChange={(e) =>
+              setEditingRoutine({
+                ...editingRoutine,
+                shortDesc: e.target.value,
+              })
+            }
+            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="col-span-2">
+          {renderIconPicker(editingRoutine.icon, (val) =>
+            setEditingRoutine({ ...editingRoutine, icon: val })
+          )}
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+            Teacher Instructions
+          </label>
+          <textarea
+            value={editingRoutine.instructions}
+            onChange={(e) =>
+              setEditingRoutine({
+                ...editingRoutine,
+                instructions: e.target.value,
+              })
+            }
+            rows={4}
+            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="col-span-2 border-t border-slate-200 pt-4 mt-2">
+          <label className="block text-xs font-black uppercase text-indigo-600 mb-2">
+            Associated Widgets (Go Mode)
+          </label>
+          <div className="space-y-3">
+            {(editingRoutine.associatedWidgets ?? []).map((aw) => {
+              return (
+                <div
+                  key={aw.id}
+                  className="flex flex-col gap-2 p-3 bg-slate-50 rounded border border-slate-200"
+                >
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={aw.type}
+                      onChange={(e) => {
+                        const newType = e.target.value as WidgetType;
+                        const newWidgets = (
+                          editingRoutine.associatedWidgets ?? []
+                        ).map((w) =>
+                          w.id === aw.id
+                            ? { id: w.id, type: newType, config: undefined }
+                            : w
+                        );
+                        setEditingRoutine({
+                          ...editingRoutine,
+                          associatedWidgets: newWidgets,
+                        });
+                        // Reset JSON text and clear any errors using functional updates
+                        setJsonTexts((prev) => ({
+                          ...prev,
+                          [aw.id]: '{}',
+                        }));
+                        setJsonErrors((prev) => {
+                          if (!prev[aw.id]) {
+                            return prev;
+                          }
+                          const { [aw.id]: _removed, ...rest } = prev;
+                          return rest;
+                        });
+                      }}
+                      className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                    >
+                      {WIDGET_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        const newWidgets = (
+                          editingRoutine.associatedWidgets ?? []
+                        ).filter((w) => w.id !== aw.id);
+                        setEditingRoutine({
+                          ...editingRoutine,
+                          associatedWidgets: newWidgets,
+                        });
                         // Clean up state using functional updates
                         setJsonErrors((prev) => {
                           if (!prev[aw.id]) {
