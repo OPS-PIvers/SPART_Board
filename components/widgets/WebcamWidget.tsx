@@ -379,7 +379,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
           {/* Extracted Text Modal */}
           {showTextModal && (
-            <div className="absolute inset-0 z-[60] bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in duration-300">
+            <div className="absolute inset-0 z-widget-resize bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in duration-300">
               <div
                 className="flex items-center justify-between border-b border-white/20 shrink-0"
                 style={{ padding: 'min(16px, 3.5cqmin)' }}
