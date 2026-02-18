@@ -257,8 +257,10 @@ export const DashboardView: React.FC = () => {
           addToast('PDF is too large. Maximum size is 50MB.', 'error');
           return;
         }
-        const dropX = Math.max(0, e.clientX - 300);
-        const dropY = Math.max(0, e.clientY - 375);
+        const w = 600;
+        const h = 750;
+        const dropX = Math.max(0, e.clientX - w / 2);
+        const dropY = Math.max(0, e.clientY - h / 2);
         addToast('Uploading PDF…', 'info');
         void (async () => {
           try {

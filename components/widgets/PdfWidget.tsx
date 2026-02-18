@@ -33,11 +33,11 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { db } from '@/config/firebase';
-import { useAuth } from '@/context/useAuth';
-import { useDashboard } from '@/context/useDashboard';
-import { useStorage, MAX_PDF_SIZE_BYTES } from '@/hooks/useStorage';
-import { WidgetData, PdfItem, PdfConfig } from '@/types';
+import { db } from '../../config/firebase';
+import { useAuth } from '../../context/useAuth';
+import { useDashboard } from '../../context/useDashboard';
+import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
+import { WidgetData, PdfItem, PdfConfig } from '../../types';
 import { WidgetLayout } from './WidgetLayout';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 
