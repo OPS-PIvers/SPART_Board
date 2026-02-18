@@ -191,6 +191,25 @@ export const useStorage = () => {
     userId: string,
     file: File
   ): Promise<{ url: string; storagePath: string }> => {
+    if (!isAdmin && driveService) {
+      setUploading(true);
+      try {
+        const driveFile = await driveService.uploadFile(
+          file,
+          `pdf-${Date.now()}-${file.name}`,
+          'Assets/PDFs'
+        );
+        await driveService.makePublic(driveFile.id);
+        const previewUrl = `https://drive.google.com/file/d/${driveFile.id}/preview`;
+        return {
+          url: previewUrl,
+          storagePath: driveFile.webViewLink ?? previewUrl,
+        };
+      } finally {
+        setUploading(false);
+      }
+    }
+
     const timestamp = Date.now();
     const storagePath = `users/${userId}/pdfs/${timestamp}-${file.name}`;
     const url = await uploadFile(storagePath, file);
