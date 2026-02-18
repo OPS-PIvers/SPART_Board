@@ -1,7 +1,7 @@
 import { FurnitureItem } from '../../types';
 
-const DESK_W = 60;
-const DESK_H = 50;
+const DESK_W = 80;
+const DESK_H = 65;
 
 // Named layout constants — keeps geometry calculations self-documenting
 // and ensures a single place to adjust spacing if desk sizes change.
@@ -16,42 +16,45 @@ function snapToGrid(val: number, gridSize: number): number {
   return Math.round(val / gridSize) * gridSize;
 }
 
-export function generateRowsLayout(
+// Columns layout: the teacher's "rows" input is really a column count.
+// Each column is a vertical stack of desks; numColumns controls how many
+// side-by-side columns are placed across the canvas.
+export function generateColumnsLayout(
   numStudents: number,
-  numRows: number,
+  numColumns: number,
   canvasW: number,
   canvasH: number,
   gridSize: number
 ): FurnitureItem[] {
-  if (numStudents <= 0 || numRows <= 0) return [];
+  if (numStudents <= 0 || numColumns <= 0) return [];
 
-  const desksPerRow = Math.ceil(numStudents / numRows);
+  const desksPerColumn = Math.ceil(numStudents / numColumns);
   const availW = canvasW - ROWS_MARGIN * 2;
   const availH = canvasH - ROWS_MARGIN * 2;
 
   // Spacing between desk top-left corners along each axis.
-  // When there is only one row or one column the spacing value is unused —
-  // the position branches below hard-code a centred coordinate instead.
+  // When there is only one column or one desk-per-column the spacing value
+  // is unused — the branch below hard-codes a centred coordinate instead.
   const colSpacing =
-    desksPerRow > 1 ? (availW - DESK_W) / (desksPerRow - 1) : availW / 2;
+    numColumns > 1 ? (availW - DESK_W) / (numColumns - 1) : availW / 2;
   const rowSpacing =
-    numRows > 1 ? (availH - DESK_H) / (numRows - 1) : availH / 2;
+    desksPerColumn > 1 ? (availH - DESK_H) / (desksPerColumn - 1) : availH / 2;
 
   const items: FurnitureItem[] = [];
   let count = 0;
 
-  // Outer loop = rows (y-axis); inner loop = desks within each row (x-axis).
-  // "numRows" therefore controls vertical row count as teachers expect.
-  for (let row = 0; row < numRows && count < numStudents; row++) {
-    const y = snapToGrid(
-      numRows === 1 ? canvasH / 2 - DESK_H / 2 : ROWS_MARGIN + row * rowSpacing,
+  // Outer loop = columns (x-axis); inner loop = desks within each column (y-axis).
+  // "numColumns" therefore controls horizontal column count as teachers expect.
+  for (let col = 0; col < numColumns && count < numStudents; col++) {
+    const x = snapToGrid(
+      numColumns === 1 ? canvasW / 2 - DESK_W / 2 : ROWS_MARGIN + col * colSpacing,
       gridSize
     );
-    for (let col = 0; col < desksPerRow && count < numStudents; col++) {
-      const x = snapToGrid(
-        desksPerRow === 1
-          ? canvasW / 2 - DESK_W / 2
-          : ROWS_MARGIN + col * colSpacing,
+    for (let row = 0; row < desksPerColumn && count < numStudents; row++) {
+      const y = snapToGrid(
+        desksPerColumn === 1
+          ? canvasH / 2 - DESK_H / 2
+          : ROWS_MARGIN + row * rowSpacing,
         gridSize
       );
       items.push({
@@ -70,43 +73,39 @@ export function generateRowsLayout(
   return items;
 }
 
+// Fixed 32-desk horseshoe: outer U = 6 left + 8 bottom + 6 right (20 desks),
+// inner U = 4 left + 4 bottom + 4 right (12 desks).
+// Side arms face inward (rotation 90° / 270°); bottom rows face up toward teacher (0°).
+// The numStudents parameter is retained for API compatibility but is not used to
+// determine desk count — teachers delete unneeded desks from the fixed layout.
 export function generateHorseshoeLayout(
-  numStudents: number,
+  _numStudents: number,
   canvasW: number,
   canvasH: number,
   gridSize: number
 ): FurnitureItem[] {
-  if (numStudents <= 0) return [];
+  // Fixed counts
+  const OUTER_LEFT = 6;
+  const OUTER_BOTTOM = 8;
+  const OUTER_RIGHT = 6;
+  const INNER_LEFT = 4;
+  const INNER_BOTTOM = 4;
+  const INNER_RIGHT = 4;
 
-  const MIN_INNER_HORSESHOE_COUNT = 3;
   const HORSESHOE_GAP = 90; // edge-to-edge gap between inner and outer U desks
   const TEACHER_AREA_MARGIN = 60; // vertical space reserved at top for teacher desk
 
-  // Inner U is ~35% of students, outer U is ~65%.
-  // Capped at numStudents so outerCount never goes negative with small classes.
-  const innerCount = Math.min(
-    numStudents,
-    Math.max(MIN_INNER_HORSESHOE_COUNT, Math.round(numStudents * 0.35))
-  );
-  const outerCount = numStudents - innerCount;
-
-  // Distribute each U as left-bottom-right
-  function distributeU(total: number): [number, number, number] {
-    const side = Math.floor(total / 3);
-    return [side, total - 2 * side, side]; // [left, bottom, right]
-  }
-
-  const [outerLeft, outerBottom, outerRight] = distributeU(outerCount);
-  const [innerLeft, innerBottom, innerRight] = distributeU(innerCount);
-
   const items: FurnitureItem[] = [];
 
-  // Outer U — opens toward the top (teacher is at top)
+  // Place desks along a vertical arm, all at the same x, evenly spaced from
+  // yStart to yEnd.  rotation: 90 = faces right (inward on left arm),
+  //                            270 = faces left (inward on right arm).
   function placeVerticalArm(
     count: number,
     x: number,
     yStart: number,
-    yEnd: number
+    yEnd: number,
+    rotation: number
   ) {
     if (count <= 0) return;
     const spacing = count > 1 ? (yEnd - yStart) / (count - 1) : 0;
@@ -122,16 +121,19 @@ export function generateHorseshoeLayout(
         y,
         width: DESK_W,
         height: DESK_H,
-        rotation: 0,
+        rotation,
       });
     }
   }
 
+  // Place desks along a horizontal row, all at the same y, evenly spaced from
+  // xStart to xEnd.  rotation: 0 = faces up (toward the teacher at the top).
   function placeHorizontalRow(
     count: number,
     y: number,
     xStart: number,
-    xEnd: number
+    xEnd: number,
+    rotation: number
   ) {
     if (count <= 0) return;
     const spacing = count > 1 ? (xEnd - xStart) / (count - 1) : 0;
@@ -147,42 +149,41 @@ export function generateHorseshoeLayout(
         y: snapToGrid(y, gridSize),
         width: DESK_W,
         height: DESK_H,
-        rotation: 0,
+        rotation,
       });
     }
   }
 
-  // Outer U bounds
+  // Outer U bounds (opens upward — teacher at top)
   const outerLeft_x = HORSESHOE_MARGIN;
   const outerRight_x = canvasW - HORSESHOE_MARGIN - DESK_W;
   const outerTop_y = HORSESHOE_MARGIN + TEACHER_AREA_MARGIN;
   const outerBottom_y = canvasH - HORSESHOE_MARGIN - DESK_H;
 
-  placeVerticalArm(outerLeft, outerLeft_x, outerTop_y, outerBottom_y);
-  placeVerticalArm(outerRight, outerRight_x, outerTop_y, outerBottom_y);
+  placeVerticalArm(OUTER_LEFT, outerLeft_x, outerTop_y, outerBottom_y, 90);
+  placeVerticalArm(OUTER_RIGHT, outerRight_x, outerTop_y, outerBottom_y, 270);
   placeHorizontalRow(
-    outerBottom,
+    OUTER_BOTTOM,
     outerBottom_y,
     outerLeft_x + DESK_W + HORSESHOE_ARM_PADDING,
-    outerRight_x - HORSESHOE_ARM_PADDING
+    outerRight_x - HORSESHOE_ARM_PADDING,
+    0
   );
 
-  // Inner U bounds — gap is measured edge-to-edge consistently on all sides:
-  //   innerLeft_x  + DESK_W + HORSESHOE_GAP = outerLeft_x  (left edge of outer left arm)  ← left
-  //   innerRight_x + DESK_W + HORSESHOE_GAP = outerRight_x (right edge → left edge gap)    ← right
-  //   innerBottom_y + DESK_H + HORSESHOE_GAP = outerBottom_y                               ← bottom
+  // Inner U bounds — gap is measured edge-to-edge consistently on all sides
   const innerLeft_x = outerLeft_x + DESK_W + HORSESHOE_GAP;
   const innerRight_x = outerRight_x - DESK_W - HORSESHOE_GAP;
   const innerTop_y = outerTop_y + HORSESHOE_INNER_INSET;
   const innerBottom_y = outerBottom_y - DESK_H - HORSESHOE_GAP;
 
-  placeVerticalArm(innerLeft, innerLeft_x, innerTop_y, innerBottom_y);
-  placeVerticalArm(innerRight, innerRight_x, innerTop_y, innerBottom_y);
+  placeVerticalArm(INNER_LEFT, innerLeft_x, innerTop_y, innerBottom_y, 90);
+  placeVerticalArm(INNER_RIGHT, innerRight_x, innerTop_y, innerBottom_y, 270);
   placeHorizontalRow(
-    innerBottom,
+    INNER_BOTTOM,
     innerBottom_y,
     innerLeft_x + DESK_W + HORSESHOE_ARM_PADDING,
-    innerRight_x - HORSESHOE_ARM_PADDING
+    innerRight_x - HORSESHOE_ARM_PADDING,
+    0
   );
 
   return items;

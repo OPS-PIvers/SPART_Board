@@ -26,7 +26,7 @@ import {
 import { Button } from '../common/Button';
 import { FloatingPanel } from '../common/FloatingPanel';
 import {
-  generateRowsLayout,
+  generateColumnsLayout,
   generateHorseshoeLayout,
   generatePodsLayout,
 } from './seatingChartLayouts';
@@ -39,7 +39,7 @@ const FURNITURE_TYPES: {
   h: number;
   icon: React.ElementType;
 }[] = [
-  { type: 'desk', label: 'Desk', w: 60, h: 50, icon: Monitor },
+  { type: 'desk', label: 'Desk', w: 80, h: 65, icon: Monitor },
   {
     type: 'table-rect',
     label: 'Table (Rect)',
@@ -110,7 +110,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     gridSize = 20,
     rosterMode = 'class',
     template = 'freeform',
-    templateRows = 6,
+    templateColumns = 6,
   } = config;
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
@@ -128,10 +128,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     height: number;
   } | null>(null);
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null);
-  // Local state for the rows-count input so users can clear/type freely
+  // Local state for the columns-count input so users can clear/type freely
   // without the field snapping back to the previous valid value on each keystroke.
-  const [localTemplateRows, setLocalTemplateRows] = useState(
-    String(templateRows)
+  const [localTemplateColumns, setLocalTemplateColumns] = useState(
+    String(templateColumns)
   );
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -147,11 +147,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     };
   }, []);
 
-  // Keep local input in sync when templateRows changes from outside
+  // Keep local input in sync when templateColumns changes from outside
   // (e.g. a different client updates the config via Firestore).
   useEffect(() => {
-    setLocalTemplateRows(String(templateRows));
-  }, [templateRows]);
+    setLocalTemplateColumns(String(templateColumns));
+  }, [templateColumns]);
 
   // Roster logic
   const activeRoster = useMemo(
@@ -275,7 +275,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   const applyTemplate = () => {
     const numStudents = students.length;
 
-    if (numStudents === 0) {
+    // Horseshoe always places a fixed 32-desk layout regardless of roster size.
+    // All other templates require students to know how many desks to generate.
+    if (numStudents === 0 && template !== 'horseshoe') {
       addToast(
         'No students found. Set a class or custom roster first.',
         'error'
@@ -296,10 +298,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     let newFurniture: FurnitureItem[] = [];
 
     if (template === 'rows') {
-      const rows = Math.max(1, templateRows);
-      newFurniture = generateRowsLayout(
+      const cols = Math.max(1, templateColumns);
+      newFurniture = generateColumnsLayout(
         numStudents,
-        rows,
+        cols,
         canvasW,
         canvasH,
         gridSize
@@ -676,33 +678,39 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     ))}
                   </div>
 
-                  {/* Rows count input */}
+                  {/* Columns count input (teachers call this "rows") */}
                   {template === 'rows' && (
                     <div className="mt-2">
                       <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-1">
-                        # of Rows
+                        # of Columns
                       </label>
                       <input
                         type="number"
                         min="1"
                         max="20"
-                        value={localTemplateRows}
+                        value={localTemplateColumns}
                         onChange={(e) => {
-                          setLocalTemplateRows(e.target.value);
+                          setLocalTemplateColumns(e.target.value);
                           const parsed = Number.parseInt(e.target.value, 10);
                           if (!Number.isNaN(parsed)) {
                             updateWidget(widget.id, {
                               config: {
                                 ...config,
-                                templateRows: Math.min(20, Math.max(1, parsed)),
+                                templateColumns: Math.min(
+                                  20,
+                                  Math.max(1, parsed)
+                                ),
                               },
                             });
                           }
                         }}
                         onBlur={() => {
-                          const parsed = Number.parseInt(localTemplateRows, 10);
+                          const parsed = Number.parseInt(
+                            localTemplateColumns,
+                            10
+                          );
                           if (Number.isNaN(parsed)) {
-                            setLocalTemplateRows(String(templateRows));
+                            setLocalTemplateColumns(String(templateColumns));
                           }
                         }}
                         className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"

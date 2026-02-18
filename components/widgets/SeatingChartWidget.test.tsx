@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SeatingChartWidget } from './SeatingChartWidget';
 import {
-  generateRowsLayout,
+  generateColumnsLayout,
   generateHorseshoeLayout,
   generatePodsLayout,
 } from './seatingChartLayouts';
@@ -193,68 +193,72 @@ const allUniqueIds = (items: { id: string }[]) =>
 const allDesks = (items: { type: string }[]) =>
   items.every((i) => i.type === 'desk');
 
-describe('generateRowsLayout', () => {
+describe('generateColumnsLayout', () => {
   it('returns empty array for 0 students', () => {
-    expect(generateRowsLayout(0, 6, CANVAS_W, CANVAS_H, GRID)).toEqual([]);
+    expect(generateColumnsLayout(0, 6, CANVAS_W, CANVAS_H, GRID)).toEqual([]);
   });
 
-  it('returns correct desk count for 30 students in 6 rows', () => {
-    expect(generateRowsLayout(30, 6, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
-      30
-    );
+  it('returns correct desk count for 30 students in 6 columns', () => {
+    expect(
+      generateColumnsLayout(30, 6, CANVAS_W, CANVAS_H, GRID)
+    ).toHaveLength(30);
   });
 
-  it('does not exceed student count when rows × desksPerRow > students', () => {
-    // 5 students, 3 rows → desksPerRow=2 → 6 slots but only 5 filled
-    expect(generateRowsLayout(5, 3, CANVAS_W, CANVAS_H, GRID)).toHaveLength(5);
+  it('does not exceed student count when columns × desksPerColumn > students', () => {
+    // 5 students, 3 columns → desksPerColumn=2 → 6 slots but only 5 filled
+    expect(
+      generateColumnsLayout(5, 3, CANVAS_W, CANVAS_H, GRID)
+    ).toHaveLength(5);
   });
 
   it('handles a single student', () => {
-    expect(generateRowsLayout(1, 1, CANVAS_W, CANVAS_H, GRID)).toHaveLength(1);
+    expect(generateColumnsLayout(1, 1, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      1
+    );
   });
 
   it('snaps all positions to the grid', () => {
     expect(
-      allSnapped(generateRowsLayout(15, 3, CANVAS_W, CANVAS_H, GRID))
+      allSnapped(generateColumnsLayout(15, 3, CANVAS_W, CANVAS_H, GRID))
     ).toBe(true);
   });
 
   it('all items are desks', () => {
-    expect(allDesks(generateRowsLayout(10, 2, CANVAS_W, CANVAS_H, GRID))).toBe(
-      true
-    );
+    expect(
+      allDesks(generateColumnsLayout(10, 2, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
   });
 
   it('all items have unique IDs', () => {
     expect(
-      allUniqueIds(generateRowsLayout(12, 3, CANVAS_W, CANVAS_H, GRID))
+      allUniqueIds(generateColumnsLayout(12, 3, CANVAS_W, CANVAS_H, GRID))
     ).toBe(true);
   });
 });
 
 describe('generateHorseshoeLayout', () => {
-  it('returns empty array for 0 students', () => {
-    expect(generateHorseshoeLayout(0, CANVAS_W, CANVAS_H, GRID)).toEqual([]);
-  });
+  // The horseshoe always generates a fixed 32-desk layout regardless of roster size:
+  // outer U = 6 left + 8 bottom + 6 right, inner U = 4 left + 4 bottom + 4 right.
+  const FIXED_DESK_COUNT = 32;
 
-  it('returns correct desk count for 30 students', () => {
+  it('always returns 32 desks regardless of student count', () => {
+    expect(generateHorseshoeLayout(0, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      FIXED_DESK_COUNT
+    );
     expect(generateHorseshoeLayout(30, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
-      30
+      FIXED_DESK_COUNT
     );
-  });
-
-  it('does not create more desks than students when count < MIN_INNER_HORSESHOE_COUNT', () => {
-    // Bug regression: innerCount was clamped to 3 even for 2 students,
-    // making outerCount negative and producing 3 desks for 2 students.
     expect(generateHorseshoeLayout(2, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
-      2
+      FIXED_DESK_COUNT
     );
   });
 
-  it('handles exactly MIN_INNER_HORSESHOE_COUNT students', () => {
-    expect(generateHorseshoeLayout(3, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
-      3
-    );
+  it('side arm desks are rotated inward (90° or 270°), bottom rows are 0°', () => {
+    const items = generateHorseshoeLayout(0, CANVAS_W, CANVAS_H, GRID);
+    // All rotations should be 0, 90, or 270 only
+    expect(items.every((i) => [0, 90, 270].includes(i.rotation))).toBe(true);
+    // Some desks must be rotated (the arm desks)
+    expect(items.some((i) => i.rotation !== 0)).toBe(true);
   });
 
   it('snaps all positions to the grid', () => {
