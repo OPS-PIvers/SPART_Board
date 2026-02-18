@@ -214,9 +214,9 @@ describe('generateRowsLayout', () => {
   });
 
   it('snaps all positions to the grid', () => {
-    expect(allSnapped(generateRowsLayout(15, 3, CANVAS_W, CANVAS_H, GRID))).toBe(
-      true
-    );
+    expect(
+      allSnapped(generateRowsLayout(15, 3, CANVAS_W, CANVAS_H, GRID))
+    ).toBe(true);
   });
 
   it('all items are desks', () => {
@@ -238,23 +238,23 @@ describe('generateHorseshoeLayout', () => {
   });
 
   it('returns correct desk count for 30 students', () => {
-    expect(
-      generateHorseshoeLayout(30, CANVAS_W, CANVAS_H, GRID)
-    ).toHaveLength(30);
+    expect(generateHorseshoeLayout(30, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      30
+    );
   });
 
   it('does not create more desks than students when count < MIN_INNER_HORSESHOE_COUNT', () => {
     // Bug regression: innerCount was clamped to 3 even for 2 students,
     // making outerCount negative and producing 3 desks for 2 students.
-    expect(
-      generateHorseshoeLayout(2, CANVAS_W, CANVAS_H, GRID)
-    ).toHaveLength(2);
+    expect(generateHorseshoeLayout(2, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      2
+    );
   });
 
   it('handles exactly MIN_INNER_HORSESHOE_COUNT students', () => {
-    expect(
-      generateHorseshoeLayout(3, CANVAS_W, CANVAS_H, GRID)
-    ).toHaveLength(3);
+    expect(generateHorseshoeLayout(3, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
+      3
+    );
   });
 
   it('snaps all positions to the grid', () => {
@@ -306,8 +306,8 @@ describe('generatePodsLayout', () => {
   });
 
   it('all items have unique IDs', () => {
-    expect(
-      allUniqueIds(generatePodsLayout(16, CANVAS_W, CANVAS_H, GRID))
-    ).toBe(true);
+    expect(allUniqueIds(generatePodsLayout(16, CANVAS_W, CANVAS_H, GRID))).toBe(
+      true
+    );
   });
 });
