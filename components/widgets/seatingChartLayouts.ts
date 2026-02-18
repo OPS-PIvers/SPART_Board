@@ -169,7 +169,13 @@ export function generateHorseshoeLayout(
 
   placeVerticalArm(OUTER_LEFT, outerLeft_x, outerTop_y, outerBottom_y, 90);
   placeVerticalArm(OUTER_RIGHT, outerRight_x, outerTop_y, outerBottom_y, 270);
-  placeHorizontalRow(OUTER_BOTTOM, outerBottom_y, bottomRowXStart, bottomRowXEnd, 0);
+  placeHorizontalRow(
+    OUTER_BOTTOM,
+    outerBottom_y,
+    bottomRowXStart,
+    bottomRowXEnd,
+    0
+  );
 
   // Inner U bounds — gap is measured edge-to-edge consistently on all sides.
   // The inner bottom row reuses the same x-bounds as the outer bottom row so
@@ -182,7 +188,13 @@ export function generateHorseshoeLayout(
 
   placeVerticalArm(INNER_LEFT, innerLeft_x, innerTop_y, innerBottom_y, 90);
   placeVerticalArm(INNER_RIGHT, innerRight_x, innerTop_y, innerBottom_y, 270);
-  placeHorizontalRow(INNER_BOTTOM, innerBottom_y, bottomRowXStart, bottomRowXEnd, 0);
+  placeHorizontalRow(
+    INNER_BOTTOM,
+    innerBottom_y,
+    bottomRowXStart,
+    bottomRowXEnd,
+    0
+  );
 
   return items;
 }
