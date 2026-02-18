@@ -120,8 +120,15 @@ function generateHorseshoeLayout(
 ): FurnitureItem[] {
   if (numStudents <= 0) return [];
 
+  const MIN_INNER_HORSESHOE_COUNT = 3;
+  const HORSESHOE_GAP = 90; // pixel gap between inner and outer U walls
+  const TEACHER_AREA_MARGIN = 60; // vertical space reserved at top for teacher desk
+
   // Inner U is ~35% of students, outer U is ~65%
-  const innerCount = Math.max(3, Math.round(numStudents * 0.35));
+  const innerCount = Math.max(
+    MIN_INNER_HORSESHOE_COUNT,
+    Math.round(numStudents * 0.35)
+  );
   const outerCount = numStudents - innerCount;
 
   // Distribute each U as left-bottom-right
@@ -134,7 +141,7 @@ function generateHorseshoeLayout(
   const [innerLeft, innerBottom, innerRight] = distributeU(innerCount);
 
   const margin = 30;
-  const gap = 90; // gap between inner and outer U walls
+  const gap = HORSESHOE_GAP;
   const items: FurnitureItem[] = [];
 
   // Outer U — opens toward the top (teacher is at top)
@@ -189,7 +196,7 @@ function generateHorseshoeLayout(
   // Outer U bounds
   const outerLeft_x = margin;
   const outerRight_x = canvasW - margin - DESK_W;
-  const outerTop_y = margin + 60; // leave space at top for teacher
+  const outerTop_y = margin + TEACHER_AREA_MARGIN;
   const outerBottom_y = canvasH - margin - DESK_H;
 
   placeVerticalArm(outerLeft, outerLeft_x, outerTop_y, outerBottom_y);
@@ -244,14 +251,20 @@ function generatePodsLayout(
     1,
     Math.floor((availW + podGapOuter) / (podW + podGapOuter))
   );
-  const numPodRows = Math.ceil(numPods / podsPerRow);
 
   const totalGridW = podsPerRow * podW + (podsPerRow - 1) * podGapOuter;
   const startX = Math.max(margin, (canvasW - totalGridW) / 2);
   const startY = margin + 40;
 
+  // 2x2 desk offsets: top-left, top-right, bottom-left, bottom-right
+  const podDeskOffsets = [
+    { dx: 0, dy: 0 },
+    { dx: DESK_W + podGapInner, dy: 0 },
+    { dx: 0, dy: DESK_H + podGapInner },
+    { dx: DESK_W + podGapInner, dy: DESK_H + podGapInner },
+  ];
+
   const items: FurnitureItem[] = [];
-  let studentsPlaced = 0;
 
   for (let pi = 0; pi < numPods; pi++) {
     const podRow = Math.floor(pi / podsPerRow);
@@ -262,30 +275,18 @@ function generatePodsLayout(
     const isLast = pi === numPods - 1 && remainder > 0;
     const desksInThisPod = isLast ? remainder : 4;
 
-    // 2x2 offsets: top-left, top-right, bottom-left, bottom-right
-    const offsets = [
-      { dx: 0, dy: 0 },
-      { dx: DESK_W + podGapInner, dy: 0 },
-      { dx: 0, dy: DESK_H + podGapInner },
-      { dx: DESK_W + podGapInner, dy: DESK_H + podGapInner },
-    ];
-
     for (let di = 0; di < desksInThisPod; di++) {
       items.push({
         id: crypto.randomUUID(),
         type: 'desk',
-        x: snapToGrid(podX + offsets[di].dx, gridSize),
-        y: snapToGrid(podY + offsets[di].dy, gridSize),
+        x: snapToGrid(podX + podDeskOffsets[di].dx, gridSize),
+        y: snapToGrid(podY + podDeskOffsets[di].dy, gridSize),
         width: DESK_W,
         height: DESK_H,
         rotation: 0,
       });
-      studentsPlaced++;
     }
   }
-
-  void numPodRows; // suppress unused warning
-  void studentsPlaced;
 
   return items;
 }
@@ -502,8 +503,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     const canvasEl = canvasRef.current;
-    const canvasW = canvasEl ? canvasEl.offsetWidth : 400;
-    const canvasH = canvasEl ? canvasEl.offsetHeight : 460;
+    // Fallback: derive from widget dimensions minus known chrome (w-48 sidebar = 192px, h-12 toolbar = 48px)
+    const canvasW = canvasEl ? canvasEl.offsetWidth : widget.w - 192;
+    const canvasH = canvasEl ? canvasEl.offsetHeight : widget.h - 48;
 
     let newFurniture: FurnitureItem[] = [];
 
