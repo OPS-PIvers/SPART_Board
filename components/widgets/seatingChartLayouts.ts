@@ -21,6 +21,10 @@ export function generateRowsLayout(
   const availW = canvasW - margin * 2;
   const availH = canvasH - margin * 2;
 
+  // Inter-column and inter-row spacing between desk top-left corners.
+  // The single-item fallback value (availW/2 or availH/2) is never used
+  // in layout: when numRows===1 or desksPerRow===1 the x/y branches below
+  // hard-code a centred position instead of referencing these variables.
   const colSpacing =
     numRows > 1 ? (availW - DESK_W) / (numRows - 1) : availW / 2;
   const rowSpacing =

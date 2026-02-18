@@ -58,6 +58,14 @@ const FURNITURE_TYPES: {
   { type: 'teacher-desk', label: 'Teacher', w: 100, h: 60, icon: User },
 ];
 
+// UI chrome sizes — must match the Tailwind classes used in the layout
+// (w-48 sidebar = 192px, h-12 toolbar = 48px). Named here so a future
+// layout change only requires updating one place.
+const SETUP_SIDEBAR_W = 192;
+const TOOLBAR_H = 48;
+// Minimum safe canvas dimension to avoid zero/negative spacing in generators
+const MIN_CANVAS_DIM = 200;
+
 // Template metadata for UI
 const TEMPLATES: {
   id: SeatingChartTemplate;
@@ -75,7 +83,7 @@ const TEMPLATES: {
     id: 'rows',
     label: 'Rows',
     icon: Rows3,
-    description: 'Evenly spaced columns',
+    description: 'Evenly spaced rows',
   },
   {
     id: 'horseshoe',
@@ -264,15 +272,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    if (template === 'freeform') {
-      addToast('Freeform selected — add furniture manually below.', 'info');
-      return;
-    }
-
     const canvasEl = canvasRef.current;
-    // Fallback: derive from widget dimensions minus known chrome (w-48 sidebar = 192px, h-12 toolbar = 48px)
-    const canvasW = canvasEl ? canvasEl.offsetWidth : widget.w - 192;
-    const canvasH = canvasEl ? canvasEl.offsetHeight : widget.h - 48;
+    const rawCanvasW = canvasEl
+      ? canvasEl.offsetWidth
+      : widget.w - SETUP_SIDEBAR_W;
+    const rawCanvasH = canvasEl ? canvasEl.offsetHeight : widget.h - TOOLBAR_H;
+    // Clamp to a minimum safe size so generators never receive zero or
+    // negative dimensions, which would cause division-by-zero in spacing math.
+    const canvasW = Math.max(MIN_CANVAS_DIM, rawCanvasW);
+    const canvasH = Math.max(MIN_CANVAS_DIM, rawCanvasH);
 
     let newFurniture: FurnitureItem[] = [];
 
@@ -668,14 +676,17 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                         min="1"
                         max="20"
                         value={templateRows}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          if (e.target.value === '') return;
+                          const parsed = Number.parseInt(e.target.value, 10);
+                          if (Number.isNaN(parsed)) return;
                           updateWidget(widget.id, {
                             config: {
                               ...config,
-                              templateRows: parseInt(e.target.value) || 1,
+                              templateRows: Math.min(20, Math.max(1, parsed)),
                             },
-                          })
-                        }
+                          });
+                        }}
                         className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
                       />
                     </div>
