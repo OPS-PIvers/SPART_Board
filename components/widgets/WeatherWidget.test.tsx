@@ -5,10 +5,20 @@ import { vi, describe, it, expect } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
+const { mockSetBackground, mockUpdateWidget, mockActiveDashboard } = vi.hoisted(
+  () => ({
+    mockSetBackground: vi.fn(),
+    mockUpdateWidget: vi.fn(),
+    mockActiveDashboard: { background: 'bg-existing', globalStyle: {} },
+  })
+);
+
 vi.mock('../../context/useDashboard', () => ({
   useDashboard: () => ({
-    updateWidget: vi.fn(),
+    updateWidget: mockUpdateWidget,
     addToast: vi.fn(),
+    setBackground: mockSetBackground,
+    activeDashboard: mockActiveDashboard,
   }),
 }));
 
@@ -123,5 +133,22 @@ describe('WeatherWidget', () => {
     };
     render(<WeatherWidget widget={widget} />);
     expect(screen.queryByText(/Long Sleeves/i)).not.toBeInTheDocument();
+  });
+
+  it('syncs background when enabled', () => {
+    const widget: WidgetData = {
+      ...baseWidget,
+      config: {
+        ...baseWidget.config,
+        condition: 'sunny',
+        syncBackground: true,
+      } as WeatherConfig,
+    };
+    render(<WeatherWidget widget={widget} />);
+
+    // Expected sunny gradient
+    const expectedBg =
+      'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
+    expect(mockSetBackground).toHaveBeenCalledWith(expectedBg);
   });
 });

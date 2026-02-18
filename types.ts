@@ -288,6 +288,7 @@ export interface WeatherConfig {
   feelsLike?: number;
   showFeelsLike?: boolean;
   hideClothing?: boolean;
+  syncBackground?: boolean;
 }
 
 export interface WeatherTemperatureRange {

@@ -16,6 +16,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `QRWidget.tsx` monitors the content of any active text widget and updates its URL if syncing is enabled.
 **Configuration:** Enabled via the "Sync with Text Widget" toggle in QR Settings.
 
+### Weather Widget -> Dashboard Background
+
+**Description:** Automatically changes the dashboard background theme to match the current weather conditions (e.g., Blue gradient for Sunny, Dark gradient for Rainy).
+**Implementation:** `WeatherWidget.tsx` monitors the `condition` state and calls `setBackground` on the dashboard context when `syncBackground` is enabled.
+**Configuration:** Enabled via the "Sync Background with Weather" toggle in Weather Settings.
+
 ## Planned Connections
 
 - **Poll -> Scoreboard:** Update team scores based on poll results.
