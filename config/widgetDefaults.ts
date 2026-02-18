@@ -160,13 +160,15 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     config: { url: '', rotation: 0, size: 150 },
   },
   'seating-chart': {
-    w: 600,
-    h: 500,
+    w: 900,
+    h: 650,
     config: {
       furniture: [],
       assignments: {},
       gridSize: 20,
       rosterMode: 'class',
+      template: 'freeform',
+      templateColumns: 6,
     },
   },
   catalyst: {
