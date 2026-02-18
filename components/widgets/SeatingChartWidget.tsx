@@ -158,7 +158,10 @@ function generateHorseshoeLayout(
     if (count <= 0) return;
     const spacing = count > 1 ? (yEnd - yStart) / (count - 1) : 0;
     for (let i = 0; i < count; i++) {
-      const y = snapToGrid(count === 1 ? (yStart + yEnd) / 2 : yStart + i * spacing, gridSize);
+      const y = snapToGrid(
+        count === 1 ? (yStart + yEnd) / 2 : yStart + i * spacing,
+        gridSize
+      );
       items.push({
         id: crypto.randomUUID(),
         type: 'desk',
@@ -180,7 +183,10 @@ function generateHorseshoeLayout(
     if (count <= 0) return;
     const spacing = count > 1 ? (xEnd - xStart) / (count - 1) : 0;
     for (let i = 0; i < count; i++) {
-      const x = snapToGrid(count === 1 ? (xStart + xEnd) / 2 : xStart + i * spacing, gridSize);
+      const x = snapToGrid(
+        count === 1 ? (xStart + xEnd) / 2 : xStart + i * spacing,
+        gridSize
+      );
       items.push({
         id: crypto.randomUUID(),
         type: 'desk',
@@ -526,7 +532,12 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         gridSize
       );
     } else if (template === 'pods') {
-      newFurniture = generatePodsLayout(numStudents, canvasW, canvasH, gridSize);
+      newFurniture = generatePodsLayout(
+        numStudents,
+        canvasW,
+        canvasH,
+        gridSize
+      );
     }
 
     updateWidget(widget.id, {
