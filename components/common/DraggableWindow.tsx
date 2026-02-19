@@ -170,8 +170,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const isMaximized = widget.maximized ?? false;
   const canScreenshot = !SCREENSHOT_BLACKLIST.includes(widget.type);
 
-  const handlePointerDown = (_e: React.PointerEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     bringToFront(widget.id);
+    // Explicitly focus the widget so it can receive keyboard events
+    (e.currentTarget as HTMLElement).focus();
   };
 
   const handleMaximizeToggle = useCallback(() => {

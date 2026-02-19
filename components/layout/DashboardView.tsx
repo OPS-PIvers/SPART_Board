@@ -114,8 +114,8 @@ export const DashboardView: React.FC = () => {
           return;
         }
 
-        // Alt + Escape: Minimize all widgets
-        if (e.altKey) {
+        // Ctrl + Alt + Escape: Minimize all widgets
+        if (e.ctrlKey && e.altKey) {
           e.preventDefault();
           minimizeAllWidgets();
           return;
@@ -134,19 +134,12 @@ export const DashboardView: React.FC = () => {
         return;
       }
 
-      // Delete: Handle delete all if alt is pressed
+      // Delete: Handle delete all if ctrl + alt is pressed
       if (e.key === 'Delete') {
-        if (e.altKey) {
+        if (e.ctrlKey && e.altKey) {
           e.preventDefault();
           deleteAllWidgets();
         }
-        return;
-      }
-
-      // Alt + M: Toggle minimize
-      if (e.altKey && (e.key === 'm' || e.key === 'M')) {
-        e.preventDefault();
-        setIsMinimized((prev) => !prev);
         return;
       }
 

@@ -96,16 +96,13 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(screen.getByTestId('dock')).toBeInTheDocument();
   });
 
-  it('toggles minimize on Alt + M', () => {
+  it('does NOT toggle minimize on Alt + M (now handled by widgets)', () => {
     render(<DashboardView />);
-
-    // Initial state: not minimized
-    // (We can't easily check state directly, but we can check styles or side effects if any)
 
     // Fire Alt+M
     fireEvent.keyDown(window, { key: 'm', altKey: true });
 
-    // Let's verify loadDashboard is NOT called
+    // Let's verify loadDashboard is NOT called (indirect check)
     expect(mockLoadDashboard).not.toHaveBeenCalled();
   });
 
@@ -119,6 +116,36 @@ describe('DashboardView Gestures & Navigation', () => {
     render(<DashboardView />);
     fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true });
     expect(mockLoadDashboard).toHaveBeenCalledWith('db-3');
+  });
+
+  it('triggers minimize all on Ctrl + Alt + Escape', () => {
+    const mockMinimizeAll = vi.fn();
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      activeDashboard: mockDashboards[1],
+      dashboards: mockDashboards,
+      minimizeAllWidgets: mockMinimizeAll,
+      loadDashboard: mockLoadDashboard,
+      toasts: [],
+    });
+
+    render(<DashboardView />);
+    fireEvent.keyDown(window, { key: 'Escape', ctrlKey: true, altKey: true });
+    expect(mockMinimizeAll).toHaveBeenCalled();
+  });
+
+  it('triggers delete all on Ctrl + Alt + Delete', () => {
+    const mockDeleteAll = vi.fn();
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      activeDashboard: mockDashboards[1],
+      dashboards: mockDashboards,
+      deleteAllWidgets: mockDeleteAll,
+      loadDashboard: mockLoadDashboard,
+      toasts: [],
+    });
+
+    render(<DashboardView />);
+    fireEvent.keyDown(window, { key: 'Delete', ctrlKey: true, altKey: true });
+    expect(mockDeleteAll).toHaveBeenCalled();
   });
 
   it('wraps around when navigating at boundaries', () => {
