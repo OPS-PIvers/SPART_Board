@@ -93,7 +93,7 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 **Drift:** Identified hardcoded modal patterns and inconsistent z-indices (`z-[100000]`, `z-[60]`) in `CategoryEditor.tsx`, `RoutineEditor.tsx`, and `WebcamWidget.tsx` that bypassed the centralized design system.
 
 **Fix:**
+
 1.  Created `components/common/Modal.tsx` as a reusable portal-based component.
 2.  Refactored `CategoryEditor` and `RoutineEditor` to use this new component with standardized `z-modal-deep` (10200) layering.
 3.  Standardized `WebcamWidget` to use `z-widget-resize` (60), aligning it with the established `config/zIndex.ts` hierarchy.
-

@@ -5,6 +5,7 @@ import {
   SoundConfig,
   TrafficConfig,
   WidgetConfig,
+  ExpectationsConfig,
 } from '../../types';
 import { Thermometer, Gauge, Activity, Citrus, Zap } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
@@ -235,6 +236,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     visual = 'thermometer',
     autoTrafficLight,
     trafficLightThreshold = 4,
+    syncExpectations = false,
   } = widget.config as SoundConfig;
 
   // ⚡ Bolt Optimization: Use ref for sensitivity to prevent audio stream restart
@@ -242,6 +244,52 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     sensitivityRef.current = sensitivity;
   }, [sensitivity]);
+
+  // Nexus Connection: Sync with Expectations
+  useEffect(() => {
+    if (!syncExpectations || !activeDashboard) return;
+
+    const expectationsWidget = activeDashboard.widgets.find(
+      (w) => w.type === 'expectations'
+    );
+    if (!expectationsWidget) return;
+
+    const expectationsConfig = expectationsWidget.config as ExpectationsConfig;
+    const { voiceLevel } = expectationsConfig;
+    if (voiceLevel === null || voiceLevel === undefined) return;
+
+    // Map Voice Level (0-4) to Sensitivity (5.0 - 0.5)
+    // 0 -> 5.0 (Silent/Very sensitive)
+    // 1 -> 3.5
+    // 2 -> 2.0
+    // 3 -> 1.0
+    // 4 -> 0.5 (Loud/Less sensitive)
+    const mapping: Record<number, number> = {
+      0: 5.0,
+      1: 3.5,
+      2: 2.0,
+      3: 1.0,
+      4: 0.5,
+    };
+
+    const targetSensitivity = mapping[voiceLevel] ?? 1.0;
+
+    if (sensitivity !== targetSensitivity) {
+      updateWidget(widget.id, {
+        config: {
+          ...widget.config,
+          sensitivity: targetSensitivity,
+        } as SoundConfig,
+      });
+    }
+  }, [
+    syncExpectations,
+    activeDashboard,
+    sensitivity,
+    widget.id,
+    widget.config,
+    updateWidget,
+  ]);
 
   useEffect(() => {
     const startAudio = async () => {
@@ -382,10 +430,15 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     visual = 'thermometer',
     autoTrafficLight,
     trafficLightThreshold = 4,
+    syncExpectations = false,
   } = config;
 
   const hasTrafficLight = activeDashboard?.widgets.some(
     (w) => w.type === 'traffic'
+  );
+
+  const hasExpectations = activeDashboard?.widgets.some(
+    (w) => w.type === 'expectations'
   );
 
   const modes = [
@@ -397,6 +450,44 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="space-y-6">
+      {/* Nexus Connection: Expectations Sync */}
+      <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl space-y-3">
+        <div className="flex items-center gap-2 text-blue-900">
+          <Activity className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Auto-Sensitivity (Expectations)
+          </span>
+        </div>
+
+        {!hasExpectations && (
+          <div className="text-xxs text-blue-400 font-medium bg-blue-50 p-2 rounded-lg">
+            Tip: Add an Expectations widget to use this feature.
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-blue-800">Sync with Expectations</span>
+          <Toggle
+            checked={syncExpectations}
+            onChange={(checked: boolean) =>
+              updateWidget(widget.id, {
+                config: { ...config, syncExpectations: checked },
+              })
+            }
+            disabled={!hasExpectations}
+            size="sm"
+            activeColor="bg-blue-600"
+            showLabels={false}
+          />
+        </div>
+
+        {syncExpectations && (
+          <div className="text-xxs text-blue-500 font-medium italic">
+            Sensitivity is auto-adjusted based on the selected Voice Level.
+          </div>
+        )}
+      </div>
+
       <div>
         <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">
           Sensitivity
@@ -413,6 +504,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             })
           }
           className="w-full accent-indigo-600"
+          disabled={syncExpectations}
         />
       </div>
 
