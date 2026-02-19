@@ -44,16 +44,33 @@ function formatGradeLabel(grade: string): string {
  * e.g. "Jane Smith" → "J. Smith". Returns the cleaned name as-is for single-word names.
  */
 function formatTeacherName(displayName: string): string {
-  const trimmed = displayName.trim();
-  if (!trimmed) return '';
-  const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) return parts[0];
-  const [first, ...rest] = parts;
-  const last = rest[rest.length - 1];
-  if (first && first.length > 0) {
-    return `${first[0]}. ${last}`;
+  if (!displayName) return 'Staff';
+  const name = displayName.trim();
+  if (!name) return 'Staff';
+
+  // Handle "Last, First" (e.g. "Smith, Jane")
+  if (name.includes(',')) {
+    const parts = name.split(',').map((s) => s.trim());
+    if (parts.length >= 2) {
+      const last = parts[0];
+      const first = parts[1];
+      if (first.length > 0) {
+        return `${first[0].toUpperCase()}. ${last}`;
+      }
+    }
   }
-  return trimmed;
+
+  // Handle "First Last" or "First Middle Last"
+  const parts = name.split(/\s+/);
+  if (parts.length >= 2) {
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    if (first.length > 0) {
+      return `${first[0].toUpperCase()}. ${last}`;
+    }
+  }
+
+  return name;
 }
 
 /**
@@ -235,15 +252,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    const teacherName = formatTeacherName(user?.displayName ?? 'Unknown Staff');
+    const teacherName = formatTeacherName(user?.displayName ?? 'Staff');
     const gradeLabel = formatGradeLabel(gradeLevel);
     const lunchTime = formatLunchTime(lunchTimeHour, lunchTimeMinute);
 
     const timestamp = getCentralTimestamp();
     // Column B: [Lunch Time] - [Grade] - [Teacher]
-    const label = [lunchTime, gradeLabel, teacherName]
-      .filter(Boolean)
-      .join(' - ');
+    // We use placeholders if some data is missing to ensure the format is consistent
+    const label = `${lunchTime || '??:??'} - ${gradeLabel || 'Grade ?'} - ${teacherName}`;
 
     // Columns C-F mapped for each school:
     //   Schumann:     C=hotLunch, D=bentoBox, E=(blank), F=notes
@@ -748,6 +764,13 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           schoolSite,
           lunchTime: formatLunchTime(lunchTimeHour, lunchTimeMinute),
           gradeLabel: formatGradeLabel(gradeLevel),
+          submissionLabel: [
+            formatLunchTime(lunchTimeHour, lunchTimeMinute),
+            formatGradeLabel(gradeLevel),
+            formatTeacherName(user?.displayName ?? 'Unknown Staff'),
+          ]
+            .filter(Boolean)
+            .join(' - '),
         }}
         isSubmitting={isSubmitting}
       />

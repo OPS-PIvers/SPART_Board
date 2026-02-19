@@ -25,6 +25,8 @@ interface SubmitReportModalProps {
     lunchTime: string;
     /** Formatted grade label for the submission row, e.g. "GR3" */
     gradeLabel: string;
+    /** The fully formatted label for the spreadsheet, e.g. "11:30 - GR3 - J. Smith" */
+    submissionLabel: string;
   };
   /** Whether the report is currently being submitted */
   isSubmitting: boolean;
@@ -67,9 +69,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
   const isIntermediate = data.schoolSite === 'orono-intermediate-school';
 
   /** The formatted label that will appear in column B of the spreadsheet */
-  const columnBLabel = [data.lunchTime, data.gradeLabel, data.staffName]
-    .filter(Boolean)
-    .join(' - ');
+  const columnBLabel = data.submissionLabel;
 
   return (
     <div
