@@ -49,7 +49,8 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
     try {
       const url = await onUploadImage(file);
       setEditingCat((prev) => (prev ? { ...prev, imageUrl: url } : prev));
-    } catch {
+    } catch (error) {
+      console.error('Image upload failed:', error);
       onShowMessage('error', 'Image upload failed. Please try again.');
     } finally {
       setUploadingImage(false);

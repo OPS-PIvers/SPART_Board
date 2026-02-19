@@ -14,8 +14,8 @@ import {
 } from '../widgets/catalystHelpers';
 import { CategoryEditor } from './catalyst/CategoryEditor';
 import { RoutineEditor } from './catalyst/RoutineEditor';
-import { useStorage } from '../../hooks/useStorage';
-import { useAuth } from '../../context/useAuth';
+import { useStorage } from '@/hooks/useStorage';
+import { useAuth } from '@/context/useAuth';
 
 /**
  * Compares two categories for equality by comparing relevant fields explicitly.
@@ -90,8 +90,9 @@ export const CatalystPermissionEditor: React.FC<
 
   const handleUploadImage = async (file: File): Promise<string> => {
     const uid = user?.uid ?? 'admin';
+    const uniqueId = crypto.randomUUID();
     return uploadFile(
-      `admin_catalyst_icons/${uid}/${Date.now()}-${file.name}`,
+      `admin_catalyst_icons/${uid}/${uniqueId}-${file.name}`,
       file
     );
   };

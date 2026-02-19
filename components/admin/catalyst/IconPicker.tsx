@@ -508,7 +508,7 @@ const ALL_ICONS = [
 ];
 
 // Deduplicate the list
-const UNIQUE_ICONS = [...new Set(ALL_ICONS)];
+const UNIQUE_ICONS = Array.from(new Set(ALL_ICONS));
 
 interface IconPickerProps {
   value: string;

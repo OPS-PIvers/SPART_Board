@@ -146,7 +146,8 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
     try {
       const url = await onUploadImage(file);
       setEditingRoutine({ ...editingRoutine, icon: url });
-    } catch {
+    } catch (error) {
+      console.error('Image upload failed:', error);
       onShowMessage('error', 'Image upload failed. Please try again.');
     } finally {
       setUploadingImage(false);
