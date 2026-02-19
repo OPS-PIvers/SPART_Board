@@ -14,7 +14,11 @@ import {
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
-import { WidgetData, LunchCountConfig } from '../../../types';
+import {
+  WidgetData,
+  LunchCountConfig,
+  LunchCountGlobalConfig,
+} from '../../../types';
 import { Button } from '../../common/Button';
 import { RefreshCw, Undo2, CheckCircle2, Box, Users } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
@@ -24,18 +28,100 @@ import { DroppableZone } from './components/DroppableZone';
 
 import { WidgetLayout } from '../WidgetLayout';
 
+/**
+ * Format a grade value into the spreadsheet label used in column B.
+ *   Schumann: K → K, 1 → GR1, 2 → GR2, MAC → MAC
+ *   Intermediate: 3 → GR3, 4 → GR4, 5 → GR5
+ */
+function formatGradeLabel(grade: string): string {
+  if (!grade) return '';
+  if (grade === 'K' || grade === 'MAC') return grade;
+  return `GR${grade}`;
+}
+
+/**
+ * Format a display name to "F. Last" (first initial + last name).
+ * e.g. "Jane Smith" → "J. Smith". Returns the cleaned name as-is for single-word names.
+ */
+function formatTeacherName(displayName: string): string {
+  const trimmed = displayName.trim();
+  if (!trimmed) return '';
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const [first, ...rest] = parts;
+  const last = rest[rest.length - 1];
+  if (first && first.length > 0) {
+    return `${first[0]}. ${last}`;
+  }
+  return trimmed;
+}
+
+/**
+ * Format hour/minute strings into "H:MM" for display and submission.
+ * Returns an empty string if hour is not set or falls outside 1-12.
+ * Invalid minute values are silently clamped to 0.
+ */
+function formatLunchTime(hour: string, minute: string): string {
+  if (!hour) return '';
+  const parsedHour = Number(hour);
+  if (!Number.isFinite(parsedHour) || parsedHour < 1 || parsedHour > 12) {
+    return '';
+  }
+  const parsedMinute = Number(minute || '0');
+  const safeMinute =
+    Number.isFinite(parsedMinute) && parsedMinute >= 0 && parsedMinute < 60
+      ? parsedMinute
+      : 0;
+  return `${String(parsedHour)}:${String(safeMinute).padStart(2, '0')}`;
+}
+
+/**
+ * Build a Central Time (America/Chicago) timestamp string.
+ * Falls back to the user's local time if the Intl API isn't available.
+ */
+function getCentralTimestamp(): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    }).format(new Date());
+  } catch (error) {
+    console.warn(
+      '[LunchCountWidget] Failed to format timestamp in America/Chicago timezone; falling back to local time. Timestamps may not be in Central Time.',
+      error
+    );
+    return new Date().toLocaleString();
+  }
+}
+
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
-  const { user } = useAuth();
+  const { user, featurePermissions } = useAuth();
   const config = widget.config as LunchCountConfig;
   const {
     cachedMenu = null,
     assignments = {},
     roster = [],
     rosterMode = 'class',
+    schoolSite = 'schumann-elementary',
+    lunchTimeHour = '',
+    lunchTimeMinute = '',
+    gradeLevel = '',
   } = config;
+
+  // Resolve global lunch count settings from feature permissions
+  const lunchGlobalConfig = useMemo((): LunchCountGlobalConfig => {
+    const perm = featurePermissions.find((p) => p.widgetType === 'lunchCount');
+    return (perm?.config ?? {}) as LunchCountGlobalConfig;
+  }, [featurePermissions]);
 
   const { isSyncing, fetchNutrislice } = useNutrislice({
     widgetId: widget.id,
@@ -125,24 +211,76 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const handleSubmitReport = async (notes: string, extraPizza?: number) => {
+    const { submissionUrl, schumannSheetId, intermediateSheetId } =
+      lunchGlobalConfig;
+
+    if (!submissionUrl) {
+      addToast(
+        'No submission URL configured. Contact your administrator.',
+        'error'
+      );
+      return;
+    }
+
+    const sheetId =
+      schoolSite === 'orono-intermediate-school'
+        ? intermediateSheetId
+        : schumannSheetId;
+
+    if (!sheetId) {
+      addToast(
+        'No Google Sheet ID configured for this school site. Contact your administrator.',
+        'error'
+      );
+      return;
+    }
+
+    const teacherName = formatTeacherName(user?.displayName ?? 'Unknown Staff');
+    const gradeLabel = formatGradeLabel(gradeLevel);
+    const lunchTime = formatLunchTime(lunchTimeHour, lunchTimeMinute);
+
+    const timestamp = getCentralTimestamp();
+    // Column B: [Lunch Time] - [Grade] - [Teacher]
+    const label = [lunchTime, gradeLabel, teacherName]
+      .filter(Boolean)
+      .join(' - ');
+
+    // Columns C-F mapped for each school:
+    //   Schumann:     C=hotLunch, D=bentoBox, E=(blank), F=notes
+    //   Intermediate: C=hotLunch, D=bentoBox, E=extraPizza, F=notes
+    const isIntermediate = schoolSite === 'orono-intermediate-school';
+
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.warn('Lunch Report Submitted:', {
-        date: new Date().toLocaleDateString(),
-        staff: user?.displayName ?? 'Unknown',
-        hotLunch: stats.hotLunch,
-        bentoBox: stats.bentoBox,
-        homeLunch: stats.homeLunch,
+      const body = new URLSearchParams({
+        timestamp,
+        label,
+        hotLunch: String(stats.hotLunch),
+        bentoBox: String(stats.bentoBox),
+        extraPizza: isIntermediate ? String(extraPizza ?? 0) : '',
         notes,
-        extraPizza,
+        sheetId,
       });
+
+      const response = await fetch(submissionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Submission failed with status ${response.status}`);
+      }
 
       addToast('Lunch report submitted successfully!', 'success');
       setIsModalOpen(false);
     } catch (_err) {
-      addToast('Failed to submit report', 'error');
+      addToast(
+        'Failed to submit report. Check your connection and try again.',
+        'error'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -594,12 +732,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         onSubmit={handleSubmitReport}
         data={{
           date: new Date().toLocaleDateString(),
-          staffName: user?.displayName ?? 'Unknown Staff',
+          staffName: formatTeacherName(user?.displayName ?? 'Unknown Staff'),
           hotLunch: stats.hotLunch,
           bentoBox: stats.bentoBox,
           hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
           bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
-          schoolSite: config.schoolSite ?? 'schumann-elementary',
+          schoolSite,
+          lunchTime: formatLunchTime(lunchTimeHour, lunchTimeMinute),
+          gradeLabel: formatGradeLabel(gradeLevel),
         }}
         isSubmitting={isSubmitting}
       />

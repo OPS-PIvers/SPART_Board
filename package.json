@@ -61,6 +61,7 @@
     "@types/node": "^22.19.7",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "@types/tesseract.js": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-react": "^5.1.2",

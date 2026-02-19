@@ -205,6 +205,7 @@ export interface SoundConfig {
   visual: 'thermometer' | 'speedometer' | 'line' | 'balls';
   autoTrafficLight?: boolean;
   trafficLightThreshold?: number;
+  syncExpectations?: boolean;
 }
 
 export interface DrawingConfig {
@@ -337,6 +338,12 @@ export interface LunchCountConfig {
   recipient?: string;
   syncError?: string | null; // To display E-SYNC-404 etc.
   rosterMode?: 'class' | 'custom';
+  /** Hour portion of the lunch time (e.g. "11") */
+  lunchTimeHour?: string;
+  /** Minute portion of the lunch time (e.g. "30") */
+  lunchTimeMinute?: string;
+  /** Selected grade level (K, 1, 2, MAC for Schumann; 3, 4, 5 for Intermediate) */
+  gradeLevel?: string;
 }
 
 export type ClassesConfig = Record<string, never>;
@@ -786,7 +793,11 @@ export interface FeaturePermission {
 }
 
 export interface LunchCountGlobalConfig {
-  googleSheetId?: string;
+  /** Google Sheet ID for Schumann Elementary submissions */
+  schumannSheetId?: string;
+  /** Google Sheet ID for Intermediate School submissions */
+  intermediateSheetId?: string;
+  /** Apps Script web app URL used to POST submission data */
   submissionUrl?: string;
 }
 

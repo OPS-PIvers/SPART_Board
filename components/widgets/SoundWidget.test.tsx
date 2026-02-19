@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { SoundWidget } from './SoundWidget';
-import { WidgetData, SoundConfig, Dashboard } from '../../types';
+import {
+  WidgetData,
+  SoundConfig,
+  Dashboard,
+  ExpectationsConfig,
+} from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 
 // Mock useDashboard
@@ -207,6 +212,61 @@ describe('SoundWidget', () => {
     // Should switch to Green because it's below threshold
     expect(mockUpdateWidget).toHaveBeenCalledWith('traffic-1', {
       config: { active: 'green' },
+    });
+  });
+
+  it('updates sensitivity when Expectations voice level changes and sync is enabled', async () => {
+    // 1. Setup dashboard with an Expectations widget
+    mockActiveDashboard.widgets = [
+      {
+        id: 'expectations-1',
+        type: 'expectations',
+        config: { voiceLevel: 1 }, // Whisper
+      } as unknown as WidgetData,
+    ];
+
+    // 2. Configure Sound Widget with syncExpectations enabled
+    const widget = createWidget({
+      syncExpectations: true,
+      sensitivity: 1, // Initial value
+    });
+
+    render(<SoundWidget widget={widget} />);
+
+    // 3. Flush microtasks
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // 4. Verify sensitivity update (Level 1 mapping is 3.5)
+    expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
+      config: expect.objectContaining({ sensitivity: 3.5 }) as SoundConfig,
+    });
+
+    // 5. Simulate voice level change to 4 (Outside)
+    (useDashboard as Mock).mockReturnValue({
+      updateWidget: mockUpdateWidget,
+      activeDashboard: {
+        widgets: [
+          {
+            id: 'expectations-1',
+            type: 'expectations',
+            config: { voiceLevel: 4 } as ExpectationsConfig,
+          },
+        ],
+      } as Dashboard,
+    });
+
+    // Re-render occurs when activeDashboard changes.
+    render(<SoundWidget widget={widget} />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // 6. Verify sensitivity update (Level 4 mapping is 0.5)
+    expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
+      config: expect.objectContaining({ sensitivity: 0.5 }) as SoundConfig,
     });
   });
 });
