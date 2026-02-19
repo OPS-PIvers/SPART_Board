@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { WeatherWidget } from './WeatherWidget';
-import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../types';
-import { vi, describe, it, expect } from 'vitest';
+import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '@/types';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
@@ -80,6 +80,10 @@ describe('WeatherWidget', () => {
     },
   };
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('displays default clothing message when no range matches', () => {
     const widget: WidgetData = {
       ...baseWidget,
@@ -135,7 +139,7 @@ describe('WeatherWidget', () => {
     expect(screen.queryByText(/Long Sleeves/i)).not.toBeInTheDocument();
   });
 
-  it('syncs background when enabled', () => {
+  it('syncs background when enabled', async () => {
     const widget: WidgetData = {
       ...baseWidget,
       config: {
@@ -149,6 +153,8 @@ describe('WeatherWidget', () => {
     // Expected sunny gradient
     const expectedBg =
       'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
-    expect(mockSetBackground).toHaveBeenCalledWith(expectedBg);
+    await waitFor(() => {
+      expect(mockSetBackground).toHaveBeenCalledWith(expectedBg);
+    });
   });
 });
