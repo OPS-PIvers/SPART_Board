@@ -31,13 +31,23 @@ vi.mock('firebase/functions', () => ({
 }));
 
 vi.mock('../../../utils/imageProcessing', () => ({
-  removeBackground: vi.fn().mockResolvedValue('data:image/png;base64,mock-no-bg'),
-  trimImageWhitespace: vi.fn().mockResolvedValue('data:image/png;base64,mock-trimmed'),
+  removeBackground: vi
+    .fn()
+    .mockResolvedValue('data:image/png;base64,mock-no-bg'),
+  trimImageWhitespace: vi
+    .fn()
+    .mockResolvedValue('data:image/png;base64,mock-trimmed'),
 }));
 
 // Mock IconPicker component since it's complex
 vi.mock('./IconPicker', () => ({
-  IconPicker: ({ onSelect, currentIcon }: { onSelect: (icon: string) => void; currentIcon: string }) => (
+  IconPicker: ({
+    onSelect,
+    currentIcon,
+  }: {
+    onSelect: (icon: string) => void;
+    currentIcon: string;
+  }) => (
     <button onClick={() => onSelect('Star')} aria-label="Icon Picker">
       {currentIcon}
     </button>
@@ -46,7 +56,13 @@ vi.mock('./IconPicker', () => ({
 
 // Mock PromptDialog component
 vi.mock('./PromptDialog', () => ({
-  PromptDialog: ({ onConfirm, onCancel }: { onConfirm: (text: string) => void; onCancel: () => void }) => (
+  PromptDialog: ({
+    onConfirm,
+    onCancel,
+  }: {
+    onConfirm: (text: string) => void;
+    onCancel: () => void;
+  }) => (
     <div role="dialog">
       <button onClick={() => onConfirm('Test Prompt')}>Confirm</button>
       <button onClick={onCancel}>Cancel</button>
@@ -82,7 +98,8 @@ describe('LibraryManager', () => {
     vi.clearAllMocks();
     // Mock fetch for image upload
     global.fetch = vi.fn().mockResolvedValue({
-      blob: () => Promise.resolve(new Blob(['mock-blob'], { type: 'image/png' })),
+      blob: () =>
+        Promise.resolve(new Blob(['mock-blob'], { type: 'image/png' })),
     } as unknown as Response);
   });
 
@@ -102,8 +119,12 @@ describe('LibraryManager', () => {
     const selects = screen.getAllByRole('combobox');
     expect(selects.length).toBeGreaterThan(0);
     // Alternatively, check if the option exists
-    expect(screen.getByRole('option', { name: 'Linear Steps' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'For Students' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: 'Linear Steps' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: 'For Students' })
+    ).toBeInTheDocument();
     // Grade levels are rendered as buttons with text from ALL_GRADE_LEVELS (e.g. 'k-2')
     // CSS transforms it to uppercase, but text content remains 'k-2'
     expect(screen.getByText('k-2')).toBeInTheDocument();
@@ -144,25 +165,35 @@ describe('LibraryManager', () => {
     // Structure select (currently Linear Steps)
     // The label is "Structure & Audience" but it's not associated with `htmlFor`.
     // Let's find by display value
-    const linearOption = screen.getByRole('option', { name: 'Linear Steps' }) as HTMLOptionElement;
-    const structureSelectElement = linearOption.closest('select');
+    const linearOption = screen.getByRole('option', {
+      name: 'Linear Steps',
+    });
+
+    const structureSelectElement = linearOption.closest(
+      'select'
+    ) as HTMLSelectElement;
 
     if (structureSelectElement) {
-       await userEvent.selectOptions(structureSelectElement, 'cycle');
-       expect(mockOnChange).toHaveBeenCalledWith(
-         expect.objectContaining({ structure: 'cycle' })
-       );
+      await userEvent.selectOptions(structureSelectElement, 'cycle');
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({ structure: 'cycle' })
+      );
     }
 
     // Audience select (currently For Students)
-    const studentOption = screen.getByRole('option', { name: 'For Students' }) as HTMLOptionElement;
-    const audienceSelectElement = studentOption.closest('select');
+    const studentOption = screen.getByRole('option', {
+      name: 'For Students',
+    });
+
+    const audienceSelectElement = studentOption.closest(
+      'select'
+    ) as HTMLSelectElement;
 
     if (audienceSelectElement) {
-       await userEvent.selectOptions(audienceSelectElement, 'teacher');
-       expect(mockOnChange).toHaveBeenCalledWith(
-         expect.objectContaining({ audience: 'teacher' })
-       );
+      await userEvent.selectOptions(audienceSelectElement, 'teacher');
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({ audience: 'teacher' })
+      );
     }
   });
 
@@ -276,7 +307,10 @@ describe('LibraryManager', () => {
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Magic Routine',
-        steps: expect.arrayContaining([expect.objectContaining({ text: 'Magic Step 1' })]),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        steps: expect.arrayContaining([
+          expect.objectContaining({ text: 'Magic Step 1' }),
+        ]),
       })
     );
   });
@@ -312,8 +346,11 @@ describe('LibraryManager', () => {
 
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         steps: expect.arrayContaining([
-          expect.objectContaining({ stickerUrl: 'https://mock-url.com/sticker.png' }),
+          expect.objectContaining({
+            stickerUrl: 'https://mock-url.com/sticker.png',
+          }),
         ]),
       })
     );
