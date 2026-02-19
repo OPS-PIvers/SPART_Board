@@ -20,7 +20,7 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 
 **Description:** Automatically changes the dashboard background theme to match the current weather conditions (e.g., Blue gradient for Sunny, Dark gradient for Rainy).
 **Implementation:** `WeatherWidget.tsx` monitors the `condition` state and calls `setBackground` on the dashboard context when `syncBackground` is enabled.
-**Configuration:** Enabled via the "Sync Background with Weather" toggle in Weather Settings.
+**Configuration:** Enabled via the "Sync Background" toggle in Weather Settings.
 
 ## Planned Connections
 
