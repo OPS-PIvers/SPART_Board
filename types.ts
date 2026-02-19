@@ -226,6 +226,8 @@ export interface EmbedConfig {
   mode?: string;
   html?: string;
   refreshInterval?: number;
+  isEmbeddable?: boolean;
+  blockedReason?: string;
 }
 
 export interface PollConfig {

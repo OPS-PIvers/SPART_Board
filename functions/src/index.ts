@@ -526,6 +526,70 @@ export const fetchWeatherProxy = functionsV1
     }
   });
 
+export const checkUrlCompatibility = functionsV1
+  .runWith({
+    memory: '128MB',
+    timeoutSeconds: 20,
+  })
+  .https.onCall(async (data: { url: string }, context) => {
+    if (!context.auth) {
+      throw new functionsV1.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+
+    try {
+      const response = await axios.head(data.url, {
+        timeout: 10000,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      });
+
+      const xFrameOptions = (
+        (response.headers['x-frame-options'] as string) || ''
+      ).toLowerCase();
+      const csp = (
+        (response.headers['content-security-policy'] as string) || ''
+      ).toLowerCase();
+
+      let isEmbeddable = true;
+      let reason = '';
+
+      if (xFrameOptions === 'deny' || xFrameOptions === 'sameorigin') {
+        isEmbeddable = false;
+        reason = `Site specifies 'X-Frame-Options: ${xFrameOptions.toUpperCase()}'.`;
+      } else if (csp.includes('frame-ancestors')) {
+        // Very basic check - if frame-ancestors is present and doesn't explicitly allow all or the current origin
+        // In a real scenario, we'd need to parse the CSP properly, but 'self' or 'none' are the most common blocks.
+        if (csp.includes("'self'") || csp.includes("'none'")) {
+          isEmbeddable = false;
+          reason =
+            'Site has a strict Content Security Policy (frame-ancestors).';
+        }
+      }
+
+      return {
+        isEmbeddable,
+        reason,
+        headers: {
+          'x-frame-options': xFrameOptions,
+          'content-security-policy': csp,
+        },
+      };
+    } catch (error: unknown) {
+      console.error('Compatibility Check Error:', error);
+      // Some sites block HEAD requests or have other issues
+      return {
+        isEmbeddable: true, // Assume okay if we can't check, but we'll flag the error
+        error: error instanceof Error ? error.message : 'Failed to check site',
+        uncertain: true,
+      };
+    }
+  });
+
 interface JulesData {
   widgetName: string;
   description: string;
