@@ -6,10 +6,14 @@ on:
       - main
       - dev-*
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
+  code-quality:
     runs-on: ubuntu-latest
-    name: Code Quality Checks
+    name: Code Quality
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,7 +42,7 @@ jobs:
       - name: Run type check
         run: pnpm run type-check:all
 
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
     name: Unit Tests
     steps:
@@ -71,6 +75,46 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || '1:123456789:web:abc123' }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || 'test-key' }}
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: E2E Tests
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm run install:ci
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run E2E tests
+        run: pnpm exec playwright test
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY || 'test-key' }}
+          VITE_AUTH_BYPASS: 'true'
+
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
 
   build:
     runs-on: ubuntu-latest
@@ -106,13 +150,36 @@ jobs:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || 'test-key' }}
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY || 'test-key' }}
 
+  security-audit:
+    runs-on: ubuntu-latest
+    name: Security Audit
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
+
+      - name: Run Security Audit
+        run: pnpm audit --audit-level=high
+
   summary:
-    needs: [quality, test, build]
+    needs: [code-quality, unit-tests, e2e-tests, build]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Add PR Comment
-        if: ${{ needs.quality.result == 'success' && needs.test.result == 'success' && needs.build.result == 'success' }}
+        if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
         continue-on-error: true
         uses: actions/github-script@v7
         with:
@@ -122,11 +189,11 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ All validation checks passed! Code quality looks good.'
+              body: '✅ All validation checks passed! Code quality, tests, and build look good.'
             })
 
       - name: Add PR Comment on Failure
-        if: ${{ needs.quality.result == 'failure' || needs.test.result == 'failure' || needs.build.result == 'failure' }}
+        if: ${{ contains(needs.*.result, 'failure') }}
         continue-on-error: true
         uses: actions/github-script@v7
         with:
