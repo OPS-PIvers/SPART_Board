@@ -365,7 +365,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       { maxLength: 24, size: '18cqmin' },
     ];
 
-    const step = sizeSteps.find(s => maxNameLength <= s.maxLength);
+    const step = sizeSteps.find((s) => maxNameLength <= s.maxLength);
     return step ? step.size : '14cqmin';
   }, [maxNameLength]);
 
