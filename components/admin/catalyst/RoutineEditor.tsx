@@ -372,7 +372,7 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
                     ...(editingRoutine.associatedWidgets ?? []),
                     {
                       id: crypto.randomUUID(),
-                      type: 'timer',
+                      type: 'timer' as WidgetType,
                       config: undefined,
                     },
                   ],
