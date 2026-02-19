@@ -41,23 +41,38 @@ function formatGradeLabel(grade: string): string {
 
 /**
  * Format a display name to "F. Last" (first initial + last name).
- * e.g. "Jane Smith" → "J. Smith"
+ * e.g. "Jane Smith" → "J. Smith". Returns the cleaned name as-is for single-word names.
  */
 function formatTeacherName(displayName: string): string {
-  const parts = displayName.trim().split(/\s+/);
-  if (parts.length >= 2 && parts[0].length > 0) {
-    return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+  const trimmed = displayName.trim();
+  if (!trimmed) return '';
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const [first, ...rest] = parts;
+  const last = rest[rest.length - 1];
+  if (first && first.length > 0) {
+    return `${first[0]}. ${last}`;
   }
-  return displayName;
+  return trimmed;
 }
 
 /**
  * Format hour/minute strings into "H:MM" for display and submission.
- * Returns an empty string if hour is not set.
+ * Returns an empty string if hour is not set or falls outside 1-12.
+ * Invalid minute values are silently clamped to 0.
  */
 function formatLunchTime(hour: string, minute: string): string {
   if (!hour) return '';
-  return `${hour}:${(minute || '00').padStart(2, '0')}`;
+  const parsedHour = Number(hour);
+  if (!Number.isFinite(parsedHour) || parsedHour < 1 || parsedHour > 12) {
+    return '';
+  }
+  const parsedMinute = Number(minute || '0');
+  const safeMinute =
+    Number.isFinite(parsedMinute) && parsedMinute >= 0 && parsedMinute < 60
+      ? parsedMinute
+      : 0;
+  return `${String(parsedHour)}:${String(safeMinute).padStart(2, '0')}`;
 }
 
 /**
@@ -244,7 +259,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         bentoBox: String(stats.bentoBox),
         extraPizza: isIntermediate ? String(extraPizza ?? 0) : '',
         notes,
-        ...(sheetId ? { sheetId } : {}),
+        sheetId,
       });
 
       const response = await fetch(submissionUrl, {
