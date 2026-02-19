@@ -253,17 +253,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
     setIsSubmitting(true);
     try {
       const payload = {
-        date: timestamp,
-        site: schoolSite,
-        staffName: label,
+        timestamp,
+        label,
         hotLunch: stats.hotLunch,
         bentoBox: stats.bentoBox,
         extraPizza: isIntermediate ? (extraPizza ?? 0) : 0,
         notes,
         spreadsheetId: sheetId,
       };
-
-      console.log('[LunchCountWidget] Submitting payload:', payload);
 
       const response = await fetch(submissionUrl, {
         method: 'POST',
@@ -273,15 +270,11 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         body: JSON.stringify(payload),
       });
 
-      console.log('[LunchCountWidget] Response status:', response.status);
-
       if (!response.ok) {
         throw new Error(`Submission failed with status ${response.status}`);
       }
 
       const result = await response.text();
-      console.log('[LunchCountWidget] Response body:', result);
-
       if (result.startsWith('Error')) {
         throw new Error(result);
       }
