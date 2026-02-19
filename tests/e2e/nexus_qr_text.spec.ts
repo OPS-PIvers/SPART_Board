@@ -69,14 +69,13 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // 5. Enable Sync
   // The settings panel is open.
   // Find the checkbox for sync.
-  const syncToggle = page.locator('input[type="checkbox"]').first();
+  // The toggle is a button with role="switch"
+  const syncToggle = page.getByRole('switch').first();
   // Or better, find by text nearby
   await expect(page.getByText('Sync with Text Widget')).toBeVisible();
 
-  // Click the checkbox (toggle)
-  // Input is hidden (sr-only), so we force the check
-  // Retry if check doesn't take immediately (state update race)
-  await syncToggle.evaluate((el) => (el as HTMLInputElement).click());
+  // Click the toggle
+  await syncToggle.click();
   await expect(syncToggle).toBeChecked();
 
   // 6. Verify Sync
@@ -96,14 +95,17 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // But the "DONE" button is what we need to click.
   // The 'qrWidget' locator was based on 'https://google.com' which might be gone.
 
-  // Let's find the widget that contains the synced text OR the settings input with that value.
+  // Close settings
+  // Use the 'Close settings' button (X icon) in the settings panel header
+  await page.getByLabel('Close settings').click();
+
+  // Find the widget by text content after closing settings
+  // Must exclude the Text Widget which also has this text!
   const syncedWidget = page
     .locator('.widget')
-    .filter({ has: page.locator('input[value="https://nexus.test/link"]') })
+    .filter({ hasText: 'https://nexus.test/link' })
+    .filter({ hasNot: page.locator('[contenteditable]') })
     .first();
-
-  // Close settings
-  await syncedWidget.getByText('DONE').click();
 
   // Verify "Linked" badge exists in the widget
   const linkedBadge = syncedWidget.locator('text=Linked');
