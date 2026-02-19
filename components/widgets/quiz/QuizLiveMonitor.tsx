@@ -17,6 +17,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { QuizSession, QuizResponse, QuizQuestion, QuizData } from '@/types';
+import { gradeAnswer } from '@/hooks/useQuizSession';
 
 interface QuizLiveMonitorProps {
   session: QuizSession;
@@ -350,9 +351,7 @@ const MCDistribution: React.FC<{
         ).length;
         const pct =
           totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
-        const isCorrect =
-          opt.toLowerCase().trim() ===
-          question.correctAnswer.toLowerCase().trim();
+        const isCorrect = gradeAnswer(question, opt);
         return (
           <div key={opt}>
             <div className="flex items-center justify-between text-xs mb-0.5">

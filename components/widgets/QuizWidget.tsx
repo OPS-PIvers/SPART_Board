@@ -298,6 +298,8 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
               view: 'manager',
               selectedQuizId: null,
               selectedQuizTitle: null,
+              activeLiveSessionCode: null,
+              resultsSessionId: null,
             } as QuizConfig,
           })
         }
