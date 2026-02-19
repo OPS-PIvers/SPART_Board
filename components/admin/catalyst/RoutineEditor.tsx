@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   CatalystRoutine,
   CatalystCategory,
@@ -6,9 +6,9 @@ import {
   WidgetConfig,
 } from '../../../types';
 import { TOOLS } from '../../../config/tools';
-import * as Icons from 'lucide-react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Loader2 } from 'lucide-react';
 import { Modal } from '../../common/Modal';
+import { IconPicker } from './IconPicker';
 
 interface RoutineEditorProps {
   routine: CatalystRoutine | null;
@@ -17,33 +17,8 @@ interface RoutineEditorProps {
   onSave: (routine: CatalystRoutine) => void;
   onCancel: () => void;
   onShowMessage: (type: 'success' | 'error', text: string) => void;
+  onUploadImage: (file: File) => Promise<string>;
 }
-
-const COMMON_ICONS = [
-  'LayoutGrid',
-  'Brain',
-  'Settings2',
-  'HelpCircle',
-  'Zap',
-  'BookOpen',
-  'Hand',
-  'Megaphone',
-  'Users',
-  'ListTodo',
-  'Smile',
-  'Star',
-  'Heart',
-  'Music',
-  'Video',
-  'Image',
-  'FileText',
-  'Calendar',
-  'Clock',
-  'Bell',
-  'CheckCircle',
-  'AlertCircle',
-  'Info',
-];
 
 // Derive widget types from TOOLS registry, excluding catalyst-related widgets
 const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
@@ -99,12 +74,15 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
   onSave,
   onCancel,
   onShowMessage,
+  onUploadImage,
 }) => {
   const [editingRoutine, setEditingRoutine] = useState<CatalystRoutine | null>(
     null
   );
   const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
   const [jsonTexts, setJsonTexts] = useState<Record<string, string>>({});
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setEditingRoutine(routine);
@@ -153,44 +131,27 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
     }
   };
 
-  const renderIconPicker = (value: string, onChange: (val: string) => void) => {
-    return (
-      <div className="space-y-2">
-        <label className="block text-xs font-bold uppercase text-slate-500">
-          Icon (Lucide Name or URL)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="flex-1 border border-slate-300 rounded px-2 py-1 text-sm"
-            placeholder="e.g. Zap or https://..."
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded border border-slate-200 max-h-32 overflow-y-auto">
-          {COMMON_ICONS.map((name) => {
-            const Icon = (
-              Icons as unknown as Record<string, React.ElementType>
-            )[name];
-            if (!Icon) return null;
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => onChange(name)}
-                className={`p-1 rounded hover:bg-slate-200 ${
-                  value === name ? 'bg-indigo-100 text-indigo-600' : ''
-                }`}
-                title={name}
-              >
-                <Icon size={16} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingRoutine) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (file.size > MAX_SIZE) {
+      onShowMessage('error', 'Image must be under 5 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const url = await onUploadImage(file);
+      setEditingRoutine({ ...editingRoutine, icon: url });
+    } catch {
+      onShowMessage('error', 'Image upload failed. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -269,9 +230,40 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
         </div>
 
         <div className="col-span-2">
-          {renderIconPicker(editingRoutine.icon, (val) =>
-            setEditingRoutine({ ...editingRoutine, icon: val })
-          )}
+          <IconPicker
+            value={editingRoutine.icon}
+            onChange={(val) =>
+              setEditingRoutine({ ...editingRoutine, icon: val })
+            }
+          />
+          {/* Image upload — sets icon to the uploaded image URL */}
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500 hover:border-indigo-400 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+            >
+              {uploadingImage ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Uploading…
+                </>
+              ) : (
+                <>
+                  <Upload size={13} />
+                  Upload image as icon
+                </>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+          </div>
         </div>
 
         <div className="col-span-2">

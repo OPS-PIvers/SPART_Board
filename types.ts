@@ -413,6 +413,7 @@ export interface CatalystCategory {
   icon: string;
   color: string;
   isCustom?: boolean;
+  imageUrl?: string;
 }
 
 export interface CatalystRoutine {

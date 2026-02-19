@@ -103,19 +103,39 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
           <button
             key={cat.id}
             onClick={() => navigateTo(cat.id, null)}
-            className={`${cat.color} rounded-3xl flex flex-col items-center justify-center text-white shadow-lg hover:scale-105 transition-transform`}
+            className={`${cat.imageUrl ? '' : cat.color} rounded-3xl flex flex-col items-center justify-center text-white shadow-lg hover:scale-105 transition-transform overflow-hidden relative`}
             style={{
               gap: 'min(12px, 2.5cqmin)',
               padding: 'min(16px, 3cqmin)',
             }}
           >
-            {renderCatalystIcon(cat.icon, 'min(32px, 10cqmin)')}
-            <span
-              className="font-black uppercase tracking-widest"
-              style={{ fontSize: 'min(12px, 3.5cqmin)' }}
-            >
-              {cat.label}
-            </span>
+            {cat.imageUrl ? (
+              <>
+                <img
+                  src={cat.imageUrl}
+                  alt={cat.label}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-black/35" />
+                <span
+                  className="relative z-10 font-black uppercase tracking-widest drop-shadow"
+                  style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+                >
+                  {cat.label}
+                </span>
+              </>
+            ) : (
+              <>
+                {renderCatalystIcon(cat.icon, 'min(32px, 10cqmin)')}
+                <span
+                  className="font-black uppercase tracking-widest"
+                  style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+                >
+                  {cat.label}
+                </span>
+              </>
+            )}
           </button>
         );
       })}
