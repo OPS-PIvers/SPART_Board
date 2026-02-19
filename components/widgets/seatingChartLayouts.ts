@@ -262,3 +262,77 @@ export function generatePodsLayout(
 
   return items;
 }
+
+export function generateGroupedLayout(
+  groups: { names: string[] }[],
+  canvasW: number,
+  canvasH: number,
+  gridSize: number
+): { furniture: FurnitureItem[]; assignments: Record<string, string> } {
+  if (groups.length === 0) return { furniture: [], assignments: {} };
+
+  const items: FurnitureItem[] = [];
+  const assignments: Record<string, string> = {};
+
+  // Estimate max pod size to determine spacing
+  let maxGroupSize = 0;
+  groups.forEach((g) => (maxGroupSize = Math.max(maxGroupSize, g.names.length)));
+
+  // Standard pod dimensions calculation
+  // Let's assume a "standard" max pod is around 6-9 students for spacing purposes
+  // A 3x3 grid of desks
+  const podGapInner = 10;
+  // Calculate pod W/H based on a hypothetical square layout of maxGroupSize
+  const maxCols = Math.ceil(Math.sqrt(maxGroupSize));
+  const maxRows = Math.ceil(maxGroupSize / maxCols);
+
+  const podW = maxCols * DESK_W + (maxCols - 1) * podGapInner;
+  const podH = maxRows * DESK_H + (maxRows - 1) * podGapInner;
+  const podGapOuter = 40;
+
+  const availW = canvasW - PODS_MARGIN * 2;
+  const podsPerRow = Math.max(
+    1,
+    Math.floor((availW + podGapOuter) / (podW + podGapOuter))
+  );
+
+  const totalGridW =
+    Math.min(groups.length, podsPerRow) * podW +
+    (Math.min(groups.length, podsPerRow) - 1) * podGapOuter;
+  const startX = Math.max(PODS_MARGIN, (canvasW - totalGridW) / 2);
+  const startY = PODS_MARGIN + PODS_HEADER_OFFSET;
+
+  groups.forEach((group, i) => {
+    const podRow = Math.floor(i / podsPerRow);
+    const podCol = i % podsPerRow;
+    const podX = startX + podCol * (podW + podGapOuter);
+    const podY = startY + podRow * (podH + podGapOuter);
+
+    // Layout desks within this pod
+    const groupSize = group.names.length;
+    const cols = Math.ceil(Math.sqrt(groupSize));
+
+    group.names.forEach((studentName, j) => {
+      const row = Math.floor(j / cols);
+      const col = j % cols;
+
+      const deskId = crypto.randomUUID();
+      const x = snapToGrid(podX + col * (DESK_W + podGapInner), gridSize);
+      const y = snapToGrid(podY + row * (DESK_H + podGapInner), gridSize);
+
+      items.push({
+        id: deskId,
+        type: 'desk',
+        x,
+        y,
+        width: DESK_W,
+        height: DESK_H,
+        rotation: 0,
+      });
+
+      assignments[studentName] = deskId;
+    });
+  });
+
+  return { furniture: items, assignments };
+}

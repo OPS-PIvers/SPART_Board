@@ -22,6 +22,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `WeatherWidget.tsx` monitors the `condition` state and calls `setBackground` on the dashboard context when `syncBackground` is enabled.
 **Configuration:** Enabled via the "Sync Background" toggle in Weather Settings.
 
+### Random Picker -> Seating Chart
+
+**Description:** Automatically generates a grouped seating layout based on random groups.
+**Implementation:** `SeatingChartSettings.tsx` imports groups from `RandomWidget` via `generateGroupedLayout`.
+**Configuration:** Enabled via the "Import Groups" button in Seating Chart settings.
+
 ## Planned Connections
 
 - **Poll -> Scoreboard:** Update team scores based on poll results.
