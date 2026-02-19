@@ -204,4 +204,15 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     h: 750,
     config: { activePdfId: null, activePdfUrl: null, activePdfName: null },
   },
+  quiz: {
+    w: 620,
+    h: 560,
+    config: {
+      view: 'manager',
+      selectedQuizId: null,
+      selectedQuizTitle: null,
+      activeLiveSessionCode: null,
+      resultsSessionId: null,
+    },
+  },
 };

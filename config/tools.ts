@@ -25,6 +25,7 @@ import {
   Shirt,
   Zap,
   FileText,
+  ClipboardList,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -127,5 +128,11 @@ export const TOOLS: ToolMetadata[] = [
     icon: FileText,
     label: 'PDF Viewer',
     color: 'bg-red-700',
+  },
+  {
+    type: 'quiz',
+    icon: ClipboardList,
+    label: 'Quiz',
+    color: 'bg-violet-600',
   },
 ];
