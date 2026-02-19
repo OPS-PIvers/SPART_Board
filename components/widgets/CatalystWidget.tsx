@@ -11,6 +11,7 @@ import {
 import { Zap, BookOpen, ChevronLeft } from 'lucide-react';
 import {
   renderCatalystIcon,
+  isSafeIconUrl,
   mergeCatalystCategories,
   mergeCatalystRoutines,
 } from './catalystHelpers';
@@ -109,7 +110,7 @@ export const CatalystWidget: React.FC<{ widget: WidgetData }> = ({
               padding: 'min(16px, 3cqmin)',
             }}
           >
-            {cat.imageUrl ? (
+            {cat.imageUrl && isSafeIconUrl(cat.imageUrl) ? (
               <>
                 <img
                   src={cat.imageUrl}

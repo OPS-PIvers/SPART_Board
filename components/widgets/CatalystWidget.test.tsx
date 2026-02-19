@@ -196,6 +196,74 @@ describe('CatalystWidget', () => {
     expect(screen.queryByText('Signal for Silence')).not.toBeInTheDocument();
   });
 
+  it('renders category background image when imageUrl is a safe HTTPS URL', () => {
+    const imageUrl = 'https://example.com/cat-bg.jpg';
+    const categoriesWithImage: CatalystCategory[] = [
+      {
+        id: 'cat-img',
+        label: 'Image Category',
+        icon: 'Zap',
+        color: 'bg-red-500',
+        isCustom: true,
+        imageUrl,
+      },
+    ];
+
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: { customCategories: categoriesWithImage },
+        } as FeaturePermission,
+      ],
+    });
+
+    render(<CatalystWidget widget={createWidget()} />);
+
+    // Label should be visible (rendered in the image overlay branch)
+    expect(screen.getByText('Image Category')).toBeInTheDocument();
+
+    // Background img should be present with the correct src
+    const img = screen.getByAltText('Image Category');
+    expect(img).toHaveAttribute('src', imageUrl);
+  });
+
+  it('falls back to icon/color when imageUrl is not a safe URL', () => {
+    const categoriesWithBadImage: CatalystCategory[] = [
+      {
+        id: 'cat-bad',
+        label: 'Bad Image Category',
+        icon: 'Zap',
+        color: 'bg-red-500',
+        isCustom: true,
+        imageUrl: 'http://insecure.example.com/cat.jpg', // HTTP, not HTTPS
+      },
+    ];
+
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'catalyst',
+          accessLevel: 'public',
+          betaUsers: [],
+          enabled: true,
+          config: { customCategories: categoriesWithBadImage },
+        } as FeaturePermission,
+      ],
+    });
+
+    render(<CatalystWidget widget={createWidget()} />);
+
+    // Label should still be visible
+    expect(screen.getByText('Bad Image Category')).toBeInTheDocument();
+
+    // No background img should be rendered (falls back to icon branch)
+    expect(screen.queryByAltText('Bad Image Category')).not.toBeInTheDocument();
+  });
+
   it('combines removed IDs with custom overrides correctly', () => {
     const customCategories: CatalystCategory[] = [
       {
