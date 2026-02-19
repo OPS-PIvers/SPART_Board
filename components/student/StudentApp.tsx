@@ -227,7 +227,7 @@ export const StudentApp = () => {
           widget={activeWidgetStub}
           isStudentView={true}
           sessionCode={session?.code}
-          sessionFrozen={session?.frozen}
+          sessionFrozen={session?.frozen ?? false}
           isLive={true}
           students={[]}
           updateSessionConfig={asyncNoop}
