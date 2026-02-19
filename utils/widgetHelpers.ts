@@ -5,6 +5,7 @@ import {
   WidgetConfig,
   CatalystInstructionConfig,
   CatalystVisualConfig,
+  QuizConfig,
   WidgetOutput,
   WidgetLayout,
 } from '../types';
@@ -42,6 +43,10 @@ export const getTitle = (widget: WidgetData): string => {
   if (widget.type === 'catalyst-visual') {
     const cfg = widget.config as CatalystVisualConfig;
     return cfg.title ?? 'Visual Anchor';
+  }
+  if (widget.type === 'quiz') {
+    const cfg = widget.config as QuizConfig;
+    return cfg.selectedQuizTitle ? `Quiz: ${cfg.selectedQuizTitle}` : 'Quiz';
   }
   return widget.type.charAt(0).toUpperCase() + widget.type.slice(1);
 };

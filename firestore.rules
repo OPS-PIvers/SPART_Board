@@ -45,6 +45,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Quiz metadata - users can only access their own quiz metadata
+    match /users/{userId}/quizzes/{quizId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // User data collection
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -131,6 +136,32 @@ service cloud.firestore {
         allow update, delete: if request.auth != null &&
           (request.auth.uid == userId ||
            isAdmin());
+      }
+    }
+
+    // Quiz Sessions — Teacher owns it, authenticated students submit responses
+    match /quiz_sessions/{teacherUid} {
+      // All authenticated users can read (to find sessions by code and listen to question index)
+      allow read: if request.auth != null;
+      // Only the teacher (session owner) can create/update/delete the session document
+      allow write: if request.auth != null && request.auth.uid == teacherUid;
+
+      match /responses/{studentUid} {
+        // Teacher can read/write all responses (for monitoring)
+        // Students can only read/write their own response
+        allow read: if request.auth != null &&
+          (request.auth.uid == teacherUid ||
+           request.auth.uid == studentUid ||
+           isAdmin());
+        allow create: if request.auth != null &&
+          request.auth.uid == studentUid &&
+          request.resource.data.studentUid == studentUid;
+        allow update: if request.auth != null &&
+          (request.auth.uid == teacherUid ||
+           request.auth.uid == studentUid ||
+           isAdmin());
+        allow delete: if request.auth != null &&
+          (request.auth.uid == teacherUid || isAdmin());
       }
     }
 

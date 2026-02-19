@@ -51,6 +51,11 @@ if (isConfigured) {
   // Add Google Drive scopes
   googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
   googleProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
+  // Add Google Sheets scopes for quiz import and results export
+  googleProvider.addScope(
+    'https://www.googleapis.com/auth/spreadsheets.readonly'
+  );
+  googleProvider.addScope('https://www.googleapis.com/auth/spreadsheets');
 } else {
   // Mock objects to prevent crashes when importing
   auth = {

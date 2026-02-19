@@ -30,7 +30,8 @@ export type WidgetType =
   | 'catalyst-visual'
   | 'smartNotebook'
   | 'recessGear'
-  | 'pdf';
+  | 'pdf'
+  | 'quiz';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -514,6 +515,102 @@ export interface RecessGearConfig {
   useFeelsLike?: boolean;
 }
 
+// --- QUIZ TYPES ---
+
+/**
+ * Question types supported in the quiz widget.
+ * MC = Multiple Choice, FIB = Fill in the Blank,
+ * Matching = Match left to right, Ordering = Place items in correct sequence.
+ */
+export type QuizQuestionType = 'MC' | 'FIB' | 'Matching' | 'Ordering';
+
+export interface QuizQuestion {
+  id: string;
+  /** Time limit in seconds. 0 = no time limit. */
+  timeLimit: number;
+  text: string;
+  type: QuizQuestionType;
+  /**
+   * MC/FIB: the correct answer text.
+   * Matching: pipe-separated pairs "term1:def1|term2:def2"
+   * Ordering: pipe-separated items in correct order "item1|item2|item3"
+   */
+  correctAnswer: string;
+  /** MC only: up to 4 incorrect answer choices */
+  incorrectAnswers: string[];
+}
+
+/** Full quiz data stored in Google Drive as JSON */
+export interface QuizData {
+  id: string;
+  title: string;
+  questions: QuizQuestion[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Lightweight metadata stored in Firestore (avoids Drive API on every list) */
+export interface QuizMetadata {
+  id: string;
+  title: string;
+  driveFileId: string;
+  questionCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type QuizSessionStatus = 'waiting' | 'active' | 'ended';
+
+/** Live quiz session document in Firestore (/quiz_sessions/{teacherUid}) */
+export interface QuizSession {
+  id: string; // teacher's UID
+  quizId: string;
+  quizTitle: string;
+  teacherUid: string;
+  status: QuizSessionStatus;
+  /** -1 = lobby/waiting room, 0+ = currently displayed question index */
+  currentQuestionIndex: number;
+  startedAt: number | null;
+  endedAt: number | null;
+  /** Short alphanumeric code students use to join */
+  code: string;
+  totalQuestions: number;
+}
+
+export interface QuizResponseAnswer {
+  questionId: string;
+  /** MC/FIB: string. Matching: "term1:def1|term2:def2". Ordering: "item1|item2|item3" */
+  answer: string;
+  answeredAt: number;
+  isCorrect: boolean;
+}
+
+export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';
+
+/** Per-student response document in Firestore (/quiz_sessions/{sessionId}/responses/{studentUid}) */
+export interface QuizResponse {
+  studentUid: string;
+  studentEmail: string;
+  studentName: string;
+  joinedAt: number;
+  status: QuizResponseStatus;
+  answers: QuizResponseAnswer[];
+  /** Percentage score 0–100, calculated server-side on completion */
+  score: number | null;
+  submittedAt: number | null;
+}
+
+/** Widget configuration for the quiz widget (teacher side) */
+export interface QuizConfig {
+  view: 'manager' | 'import' | 'editor' | 'preview' | 'results' | 'monitor';
+  selectedQuizId: string | null;
+  selectedQuizTitle: string | null;
+  /** Session code when a live quiz is running */
+  activeLiveSessionCode: string | null;
+  /** Quiz session ID for viewing historical results */
+  resultsSessionId: string | null;
+}
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -547,7 +644,8 @@ export type WidgetConfig =
   | CatalystVisualConfig
   | SmartNotebookConfig
   | RecessGearConfig
-  | PdfConfig;
+  | PdfConfig
+  | QuizConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -614,7 +712,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                               ? RecessGearConfig
                                                               : T extends 'pdf'
                                                                 ? PdfConfig
-                                                                : never;
+                                                                : T extends 'quiz'
+                                                                  ? QuizConfig
+                                                                  : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

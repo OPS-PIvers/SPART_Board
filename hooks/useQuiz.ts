@@ -1,0 +1,184 @@
+/**
+ * useQuiz hook
+ *
+ * Manages quiz metadata in Firestore and quiz content in Google Drive.
+ * Teachers create/read/update/delete quizzes through this hook.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+  query,
+  orderBy,
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/useAuth';
+import { useGoogleDrive } from './useGoogleDrive';
+import { QuizData, QuizMetadata } from '../types';
+import { QuizDriveService } from '../utils/quizDriveService';
+
+const QUIZZES_COLLECTION = 'quizzes';
+
+export interface UseQuizResult {
+  quizzes: QuizMetadata[];
+  loading: boolean;
+  error: string | null;
+  /** Save or update a quiz (saves to Drive + upserts Firestore metadata) */
+  saveQuiz: (
+    quiz: QuizData,
+    existingDriveFileId?: string
+  ) => Promise<QuizMetadata>;
+  /** Load full quiz data from Drive by its driveFileId */
+  loadQuizData: (driveFileId: string) => Promise<QuizData>;
+  /** Delete a quiz from Drive and Firestore */
+  deleteQuiz: (quizId: string, driveFileId: string) => Promise<void>;
+  /** Parse a Google Sheet URL and return quiz questions */
+  importFromSheet: (sheetUrl: string, title: string) => Promise<QuizData>;
+  /** Is a Drive service available? */
+  isDriveConnected: boolean;
+}
+
+export const useQuiz = (userId: string | undefined): UseQuizResult => {
+  const { googleAccessToken } = useAuth();
+  const { isConnected } = useGoogleDrive();
+  const [quizzes, setQuizzes] = useState<QuizMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Real-time listener for quiz metadata from Firestore
+  useEffect(() => {
+    if (!userId) {
+      setTimeout(() => {
+        setQuizzes([]);
+        setLoading(false);
+      }, 0);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'users', userId, QUIZZES_COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const list: QuizMetadata[] = snap.docs.map(
+          (d) => d.data() as QuizMetadata
+        );
+        setQuizzes(list);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useQuiz] Firestore error:', err);
+        setError('Failed to load quizzes');
+        setLoading(false);
+      }
+    );
+
+    return unsub;
+  }, [userId]);
+
+  const getDriveService = useCallback((): QuizDriveService => {
+    if (!googleAccessToken) {
+      throw new Error(
+        'Not connected to Google Drive. Please sign in again to grant access.'
+      );
+    }
+    return new QuizDriveService(googleAccessToken);
+  }, [googleAccessToken]);
+
+  const saveQuiz = useCallback(
+    async (
+      quiz: QuizData,
+      existingDriveFileId?: string
+    ): Promise<QuizMetadata> => {
+      if (!userId) throw new Error('Not authenticated');
+      const drive = getDriveService();
+      const updatedQuiz: QuizData = { ...quiz, updatedAt: Date.now() };
+
+      const driveFileId = await drive.saveQuiz(
+        updatedQuiz,
+        existingDriveFileId
+      );
+
+      const metadata: QuizMetadata = {
+        id: quiz.id,
+        title: quiz.title,
+        driveFileId,
+        questionCount: quiz.questions.length,
+        createdAt: quiz.createdAt,
+        updatedAt: updatedQuiz.updatedAt,
+      };
+
+      await setDoc(
+        doc(db, 'users', userId, QUIZZES_COLLECTION, quiz.id),
+        metadata
+      );
+
+      return metadata;
+    },
+    [userId, getDriveService]
+  );
+
+  const loadQuizData = useCallback(
+    async (driveFileId: string): Promise<QuizData> => {
+      const drive = getDriveService();
+      return drive.loadQuiz(driveFileId);
+    },
+    [getDriveService]
+  );
+
+  const deleteQuiz = useCallback(
+    async (quizId: string, driveFileId: string): Promise<void> => {
+      if (!userId) throw new Error('Not authenticated');
+      const drive = getDriveService();
+
+      // Delete from Drive (ignore 404 — file may already be gone)
+      await drive.deleteQuizFile(driveFileId).catch((err: Error) => {
+        console.warn('[useQuiz] Drive delete warning:', err.message);
+      });
+
+      // Delete metadata from Firestore
+      await deleteDoc(doc(db, 'users', userId, QUIZZES_COLLECTION, quizId));
+    },
+    [userId, getDriveService]
+  );
+
+  const importFromSheet = useCallback(
+    async (sheetUrl: string, title: string): Promise<QuizData> => {
+      const sheetId = QuizDriveService.extractSheetId(sheetUrl);
+      if (!sheetId) {
+        throw new Error(
+          'Invalid Google Sheet URL. Copy the URL directly from your browser.'
+        );
+      }
+      const drive = getDriveService();
+      const questions = await drive.importFromGoogleSheet(sheetId);
+      const now = Date.now();
+      return {
+        id: crypto.randomUUID(),
+        title,
+        questions,
+        createdAt: now,
+        updatedAt: now,
+      };
+    },
+    [getDriveService]
+  );
+
+  return {
+    quizzes,
+    loading,
+    error,
+    saveQuiz,
+    loadQuizData,
+    deleteQuiz,
+    importFromSheet,
+    isDriveConnected: isConnected,
+  };
+};

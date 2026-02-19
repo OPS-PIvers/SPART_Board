@@ -14,6 +14,11 @@ const StudentApp = lazy(() =>
     default: module.StudentApp,
   }))
 );
+const QuizStudentApp = lazy(() =>
+  import('./components/quiz/QuizStudentApp').then((module) => ({
+    default: module.QuizStudentApp,
+  }))
+);
 const LoginScreen = lazy(() =>
   import('./components/auth/LoginScreen').then((module) => ({
     default: module.LoginScreen,
@@ -62,6 +67,7 @@ const App: React.FC = () => {
   // Simple routing for Student View
   const pathname = window.location.pathname;
   const isStudentRoute = pathname === '/join' || pathname.startsWith('/join/');
+  const isQuizRoute = pathname === '/quiz' || pathname.startsWith('/quiz/');
 
   if (isStudentRoute) {
     return (
@@ -70,6 +76,17 @@ const App: React.FC = () => {
           <StudentApp />
         </Suspense>
       </StudentProvider>
+    );
+  }
+
+  // Quiz student route — requires real Firebase auth (org Google account)
+  if (isQuizRoute) {
+    return (
+      <AuthProvider>
+        <Suspense fallback={<FullPageLoader />}>
+          <QuizStudentApp />
+        </Suspense>
+      </AuthProvider>
     );
   }
 

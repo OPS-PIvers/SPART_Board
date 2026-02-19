@@ -1,0 +1,410 @@
+/**
+ * Quiz Drive Service
+ *
+ * Handles all Google Drive and Google Sheets API interactions for the quiz widget:
+ * - Saving quiz JSON files to Google Drive ("SPART Board/Quizzes/" folder)
+ * - Loading quiz data from Drive
+ * - Deleting quiz files from Drive
+ * - Importing questions from a Google Sheet (using the Sheets API)
+ * - Exporting quiz results to a new Google Sheet
+ */
+
+import {
+  QuizData,
+  QuizQuestion,
+  QuizQuestionType,
+  QuizResponse,
+} from '../types';
+
+const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
+const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
+const SHEETS_API_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
+
+/** Column indices in the teacher's Google Sheet (0-based) */
+const COL_TIME_LIMIT = 0;
+const COL_QUESTION_TEXT = 1;
+const COL_QUESTION_TYPE = 2;
+const COL_CORRECT_ANSWER = 3;
+const COL_INCORRECT_1 = 4;
+const COL_INCORRECT_4 = 7;
+
+const APP_FOLDER_NAME = 'SPART Board';
+const QUIZ_FOLDER_NAME = 'Quizzes';
+
+interface DriveFileCreateResponse {
+  id: string;
+  name: string;
+}
+
+interface DriveFileListResponse {
+  files?: { id: string; name: string }[];
+}
+
+interface SheetsValueRange {
+  values?: string[][];
+}
+
+export class QuizDriveService {
+  private accessToken: string;
+
+  constructor(accessToken: string) {
+    this.accessToken = accessToken;
+  }
+
+  private get authHeaders() {
+    return { Authorization: `Bearer ${this.accessToken}` };
+  }
+
+  private get jsonHeaders() {
+    return {
+      Authorization: `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+    };
+  }
+
+  // ─── Folder helpers ────────────────────────────────────────────────────────
+
+  private async getOrCreateFolder(
+    folderName: string,
+    parentId?: string
+  ): Promise<string> {
+    let q = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    if (parentId) q += ` and '${parentId}' in parents`;
+
+    const listRes = await fetch(
+      `${DRIVE_API_URL}/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+      { headers: this.authHeaders }
+    );
+    if (!listRes.ok) throw new Error('Failed to list Drive folders');
+    const listData = (await listRes.json()) as DriveFileListResponse;
+    if (listData.files && listData.files.length > 0)
+      return listData.files[0].id;
+
+    const body: { name: string; mimeType: string; parents?: string[] } = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+    };
+    if (parentId) body.parents = [parentId];
+
+    const createRes = await fetch(`${DRIVE_API_URL}/files`, {
+      method: 'POST',
+      headers: this.jsonHeaders,
+      body: JSON.stringify(body),
+    });
+    if (!createRes.ok)
+      throw new Error(`Failed to create folder: ${folderName}`);
+    const created = (await createRes.json()) as DriveFileCreateResponse;
+    return created.id;
+  }
+
+  private async getQuizFolderId(): Promise<string> {
+    const appFolderId = await this.getOrCreateFolder(APP_FOLDER_NAME);
+    return this.getOrCreateFolder(QUIZ_FOLDER_NAME, appFolderId);
+  }
+
+  // ─── Quiz CRUD ──────────────────────────────────────────────────────────────
+
+  /**
+   * Save a quiz to Google Drive.
+   * If quizData.id already has a driveFileId (passed separately), updates that file.
+   * Returns the Drive file ID.
+   */
+  async saveQuiz(quiz: QuizData, existingFileId?: string): Promise<string> {
+    const folderId = await this.getQuizFolderId();
+    const fileName = `${quiz.title}.quiz.json`;
+    const content = JSON.stringify(quiz, null, 2);
+
+    // Try to update existing file
+    if (existingFileId) {
+      const updateRes = await fetch(
+        `${UPLOAD_API_URL}/files/${existingFileId}?uploadType=media`,
+        {
+          method: 'PATCH',
+          headers: { ...this.authHeaders, 'Content-Type': 'application/json' },
+          body: content,
+        }
+      );
+      if (updateRes.ok) return existingFileId;
+      // Fall through to create if update fails (e.g., file deleted from Drive)
+    }
+
+    // Check if a file with the same name already exists in the folder
+    const existingRes = await fetch(
+      `${DRIVE_API_URL}/files?q=${encodeURIComponent(
+        `name = '${fileName}' and '${folderId}' in parents and trashed = false`
+      )}&fields=files(id)`,
+      { headers: this.authHeaders }
+    );
+    if (existingRes.ok) {
+      const existing = (await existingRes.json()) as DriveFileListResponse;
+      if (existing.files && existing.files.length > 0) {
+        const fileId = existing.files[0].id;
+        await fetch(`${UPLOAD_API_URL}/files/${fileId}?uploadType=media`, {
+          method: 'PATCH',
+          headers: { ...this.authHeaders, 'Content-Type': 'application/json' },
+          body: content,
+        });
+        return fileId;
+      }
+    }
+
+    // Create new file
+    const metaRes = await fetch(`${DRIVE_API_URL}/files`, {
+      method: 'POST',
+      headers: this.jsonHeaders,
+      body: JSON.stringify({
+        name: fileName,
+        parents: [folderId],
+        mimeType: 'application/json',
+      }),
+    });
+    if (!metaRes.ok) throw new Error('Failed to create quiz file in Drive');
+    const meta = (await metaRes.json()) as DriveFileCreateResponse;
+
+    const uploadRes = await fetch(
+      `${UPLOAD_API_URL}/files/${meta.id}?uploadType=media`,
+      {
+        method: 'PATCH',
+        headers: { ...this.authHeaders, 'Content-Type': 'application/json' },
+        body: content,
+      }
+    );
+    if (!uploadRes.ok)
+      throw new Error('Failed to upload quiz content to Drive');
+    return meta.id;
+  }
+
+  /** Load full quiz data from a Drive file */
+  async loadQuiz(fileId: string): Promise<QuizData> {
+    const res = await fetch(`${DRIVE_API_URL}/files/${fileId}?alt=media`, {
+      headers: this.authHeaders,
+    });
+    if (!res.ok) {
+      if (res.status === 404) throw new Error('Quiz file not found in Drive');
+      throw new Error('Failed to download quiz from Drive');
+    }
+    return (await res.json()) as QuizData;
+  }
+
+  /** Delete a quiz file from Google Drive */
+  async deleteQuizFile(fileId: string): Promise<void> {
+    const res = await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
+      method: 'DELETE',
+      headers: this.authHeaders,
+    });
+    if (!res.ok && res.status !== 404) {
+      throw new Error('Failed to delete quiz file from Drive');
+    }
+  }
+
+  // ─── Google Sheet import ────────────────────────────────────────────────────
+
+  /**
+   * Extract the Google Sheet ID from a sheet URL.
+   * Supports both /spreadsheets/d/{id} and /spreadsheets/d/{id}/edit formats.
+   */
+  static extractSheetId(url: string): string | null {
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Import questions from a Google Sheet.
+   * Expected column layout (1-based in UI, 0-based here):
+   *   A: Time Limit (seconds, blank = no limit)
+   *   B: Question Text
+   *   C: Question Type (MC | FIB | Matching | Ordering)
+   *   D: Correct Answer
+   *   E-H: Incorrect 1-4 (MC only)
+   *
+   * For Matching: D = "term1:def1|term2:def2|term3:def3"
+   * For Ordering: D = "item1|item2|item3" (in correct order)
+   */
+  async importFromGoogleSheet(
+    sheetId: string,
+    sheetName?: string
+  ): Promise<QuizQuestion[]> {
+    const range = sheetName ? `${sheetName}!A:H` : 'A:H';
+    const url = `${SHEETS_API_URL}/${sheetId}/values/${encodeURIComponent(range)}`;
+
+    const res = await fetch(url, { headers: this.authHeaders });
+    if (!res.ok) {
+      if (res.status === 403) {
+        throw new Error(
+          'Access denied. Make sure the sheet is shared or sign in again to grant Sheets access.'
+        );
+      }
+      if (res.status === 404) {
+        throw new Error('Sheet not found. Check the URL and try again.');
+      }
+      throw new Error(`Failed to read Google Sheet (${res.status})`);
+    }
+
+    const data = (await res.json()) as SheetsValueRange;
+    const rows = data.values ?? [];
+
+    // Skip header row if present (detect by checking if row 0 col B is not a question)
+    let startRow = 0;
+    if (rows.length > 0) {
+      const firstCell = (rows[0][COL_QUESTION_TYPE] ?? '').toUpperCase().trim();
+      if (!['MC', 'FIB', 'MATCHING', 'ORDERING'].includes(firstCell)) {
+        startRow = 1;
+      }
+    }
+
+    const questions: QuizQuestion[] = [];
+    for (let i = startRow; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 3) continue;
+
+      const timeLimitRaw = (row[COL_TIME_LIMIT] ?? '').trim();
+      const questionText = (row[COL_QUESTION_TEXT] ?? '').trim();
+      const typeRaw = (row[COL_QUESTION_TYPE] ?? '').toUpperCase().trim();
+      const correctAnswer = (row[COL_CORRECT_ANSWER] ?? '').trim();
+
+      if (!questionText || !typeRaw) continue;
+
+      const typeMap: Record<string, QuizQuestionType> = {
+        MC: 'MC',
+        FIB: 'FIB',
+        MATCHING: 'Matching',
+        ORDERING: 'Ordering',
+      };
+      const questionType: QuizQuestionType = typeMap[typeRaw] ?? 'MC';
+
+      const incorrectAnswers: string[] = [];
+      for (let c = COL_INCORRECT_1; c <= COL_INCORRECT_4; c++) {
+        const val = (row[c] ?? '').trim();
+        if (val) incorrectAnswers.push(val);
+      }
+
+      questions.push({
+        id: crypto.randomUUID(),
+        timeLimit: timeLimitRaw ? parseInt(timeLimitRaw, 10) || 0 : 0,
+        text: questionText,
+        type: questionType,
+        correctAnswer,
+        incorrectAnswers,
+      });
+    }
+
+    if (questions.length === 0) {
+      throw new Error(
+        'No valid questions found. Check the sheet format: Column A=Time Limit, B=Question, C=Type (MC/FIB/Matching/Ordering), D=Correct Answer, E-H=Incorrect Answers.'
+      );
+    }
+
+    return questions;
+  }
+
+  // ─── Results export ─────────────────────────────────────────────────────────
+
+  /**
+   * Export quiz results to a new Google Sheet.
+   * Returns the URL of the newly created spreadsheet.
+   */
+  async exportResultsToSheet(
+    quizTitle: string,
+    responses: QuizResponse[],
+    questions: QuizQuestion[]
+  ): Promise<string> {
+    // Build header row
+    const headers = [
+      'Student Name',
+      'Email',
+      'Status',
+      'Score (%)',
+      'Submitted At',
+      ...questions.map((q, i) => `Q${i + 1}: ${q.text.substring(0, 40)}`),
+    ];
+
+    // Build data rows
+    const dataRows = responses.map((r) => {
+      const submitted = r.submittedAt
+        ? new Date(r.submittedAt).toLocaleString()
+        : '';
+      const answerCols = questions.map((q) => {
+        const ans = r.answers.find((a) => a.questionId === q.id);
+        if (!ans) return '';
+        return `${ans.answer}${ans.isCorrect ? ' ✓' : ' ✗'}`;
+      });
+      return [
+        r.studentName,
+        r.studentEmail,
+        r.status,
+        r.score !== null ? `${r.score}%` : '',
+        submitted,
+        ...answerCols,
+      ];
+    });
+
+    // Question-level stats
+    const statsRows: string[][] = [];
+    statsRows.push([]);
+    statsRows.push(['Question Analysis']);
+    statsRows.push([
+      'Question',
+      'Type',
+      'Correct Answer',
+      '# Correct',
+      '# Answered',
+      '% Correct',
+    ]);
+    for (const q of questions) {
+      const answered = responses.filter((r) =>
+        r.answers.some((a) => a.questionId === q.id)
+      ).length;
+      const correct = responses.filter((r) =>
+        r.answers.some((a) => a.questionId === q.id && a.isCorrect)
+      ).length;
+      const pct = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+      statsRows.push([
+        q.text.substring(0, 60),
+        q.type,
+        q.correctAnswer.substring(0, 40),
+        String(correct),
+        String(answered),
+        `${pct}%`,
+      ]);
+    }
+
+    const allRows = [headers, ...dataRows, ...statsRows];
+
+    // Create the spreadsheet
+    const createRes = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets',
+      {
+        method: 'POST',
+        headers: this.jsonHeaders,
+        body: JSON.stringify({
+          properties: { title: `${quizTitle} – Results` },
+          sheets: [
+            {
+              properties: { title: 'Results' },
+              data: [
+                {
+                  startRow: 0,
+                  startColumn: 0,
+                  rowData: allRows.map((row) => ({
+                    values: row.map((cell) => ({
+                      userEnteredValue: { stringValue: cell },
+                    })),
+                  })),
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!createRes.ok) {
+      const err = await createRes.text();
+      console.error('Sheets create error:', err);
+      throw new Error('Failed to create results spreadsheet');
+    }
+
+    const sheet = (await createRes.json()) as { spreadsheetUrl: string };
+    return sheet.spreadsheetUrl;
+  }
+}
