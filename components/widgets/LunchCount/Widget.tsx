@@ -252,33 +252,42 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
 
     setIsSubmitting(true);
     try {
-      const body = new URLSearchParams({
-        timestamp,
-        label,
-        hotLunch: String(stats.hotLunch),
-        bentoBox: String(stats.bentoBox),
-        extraPizza: isIntermediate ? String(extraPizza ?? 0) : '',
+      const payload = {
+        date: timestamp,
+        site: schoolSite,
+        staffName: label,
+        hotLunch: stats.hotLunch,
+        bentoBox: stats.bentoBox,
+        extraPizza: isIntermediate ? (extraPizza ?? 0) : 0,
         notes,
-        sheetId,
-      });
+        spreadsheetId: sheetId,
+      };
 
       const response = await fetch(submissionUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'Content-Type': 'text/plain;charset=utf-8',
         },
-        body,
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         throw new Error(`Submission failed with status ${response.status}`);
       }
 
+      const result = await response.text();
+      if (result.startsWith('Error')) {
+        throw new Error(result);
+      }
+
       addToast('Lunch report submitted successfully!', 'success');
       setIsModalOpen(false);
-    } catch (_err) {
+    } catch (err) {
+      console.error('[LunchCountWidget] Submission error:', err);
       addToast(
-        'Failed to submit report. Check your connection and try again.',
+        err instanceof Error
+          ? err.message
+          : 'Failed to submit report. Check your connection and try again.',
         'error'
       );
     } finally {
