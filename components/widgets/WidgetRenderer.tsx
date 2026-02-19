@@ -37,7 +37,7 @@ interface WidgetRendererProps {
   isStudentView?: boolean;
   // Session Props
   sessionCode?: string;
-  sessionFrozen?: boolean;
+  sessionFrozen: boolean;
   isLive: boolean;
   students: LiveStudent[];
   updateSessionConfig: (config: WidgetConfig) => Promise<void>;
