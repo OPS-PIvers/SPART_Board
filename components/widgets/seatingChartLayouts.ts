@@ -16,6 +16,14 @@ function snapToGrid(val: number, gridSize: number): number {
   return Math.round(val / gridSize) * gridSize;
 }
 
+function generateId(): string {
+  // Safe fallback for environments without crypto.randomUUID (e.g. some CI/test setups)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
 // Columns layout: the teacher's "rows" input is really a column count.
 // Each column is a vertical stack of desks; numColumns controls how many
 // side-by-side columns are placed across the canvas.
@@ -60,7 +68,7 @@ export function generateColumnsLayout(
         gridSize
       );
       items.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: 'desk',
         x,
         y,
@@ -117,7 +125,7 @@ export function generateHorseshoeLayout(
         gridSize
       );
       items.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: 'desk',
         x: snapToGrid(x, gridSize),
         y,
@@ -145,7 +153,7 @@ export function generateHorseshoeLayout(
         gridSize
       );
       items.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: 'desk',
         x,
         y: snapToGrid(y, gridSize),
@@ -249,7 +257,7 @@ export function generatePodsLayout(
 
     for (let di = 0; di < desksInThisPod; di++) {
       items.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: 'desk',
         x: snapToGrid(podX + podDeskOffsets[di].dx, gridSize),
         y: snapToGrid(podY + podDeskOffsets[di].dy, gridSize),
@@ -276,7 +284,9 @@ export function generateGroupedLayout(
 
   // Estimate max pod size to determine spacing
   let maxGroupSize = 0;
-  groups.forEach((g) => (maxGroupSize = Math.max(maxGroupSize, g.names.length)));
+  groups.forEach(
+    (g) => (maxGroupSize = Math.max(maxGroupSize, g.names.length))
+  );
 
   // Standard pod dimensions calculation
   // Let's assume a "standard" max pod is around 6-9 students for spacing purposes
@@ -316,7 +326,7 @@ export function generateGroupedLayout(
       const row = Math.floor(j / cols);
       const col = j % cols;
 
-      const deskId = crypto.randomUUID();
+      const deskId = generateId();
       const x = snapToGrid(podX + col * (DESK_W + podGapInner), gridSize);
       const y = snapToGrid(podY + row * (DESK_H + podGapInner), gridSize);
 
