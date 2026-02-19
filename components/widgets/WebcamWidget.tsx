@@ -1,22 +1,15 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Camera,
+  RefreshCw,
   Download,
   Trash2,
   X,
   Grid,
   FileText,
-  Loader2,
-  Copy,
-  Check,
-  Video,
-  FlipHorizontal,
 } from 'lucide-react';
 import { WidgetData } from '../../types';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
-import { useAuth } from '../../context/useAuth';
-import { extractTextWithGemini } from '../../utils/ai';
-import Tesseract from 'tesseract.js';
 
 interface CapturedItem {
   id: string;
@@ -27,33 +20,14 @@ interface CapturedItem {
 
 import { WidgetLayout } from './WidgetLayout';
 
-interface WebcamGlobalConfig {
-  ocrMode?: 'standard' | 'gemini';
-}
-
 export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
   widget: _widget,
 }) => {
-  const { featurePermissions } = useAuth();
-  const webcamPermission = featurePermissions.find(
-    (p) => p.widgetType === 'webcam'
-  );
-  const config = (webcamPermission?.config ?? {}) as WebcamGlobalConfig;
-  const ocrMode = config.ocrMode ?? 'standard';
-
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isMirrored, setIsMirrored] = useState(true);
   const [capturedItems, setCapturedItems] = useState<CapturedItem[]>([]);
   const [showGallery, setShowGallery] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedText, setExtractedText] = useState<string | null>(null);
-  const [showTextModal, setShowTextModal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
-  const [showCaptureSuccess, setShowCaptureSuccess] = useState(false);
-
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -61,27 +35,10 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
 
     async function startCamera() {
       try {
-        // Enumerate devices if not already done
-        if (devices.length === 0) {
-          const allDevices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = allDevices.filter(
-            (d) => d.kind === 'videoinput'
-          );
-          setDevices(videoDevices);
-          if (videoDevices.length > 0 && !selectedDeviceId) {
-            setSelectedDeviceId(videoDevices[0].deviceId);
-          }
-        }
-
-        const constraints: MediaStreamConstraints = {
-          video: selectedDeviceId
-            ? { deviceId: { exact: selectedDeviceId } }
-            : { facingMode: 'user' },
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
           audio: false,
-        };
-
-        const mediaStream =
-          await navigator.mediaDevices.getUserMedia(constraints);
+        });
         currentStream = mediaStream;
         setStream(mediaStream);
         if (videoRef.current) {
@@ -101,60 +58,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
         currentStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [selectedDeviceId, devices.length]);
-
-  const switchCamera = useCallback(() => {
-    if (devices.length < 2) return;
-    const currentIndex = devices.findIndex(
-      (d) => d.deviceId === selectedDeviceId
-    );
-    const nextIndex = (currentIndex + 1) % devices.length;
-    setSelectedDeviceId(devices[nextIndex].deviceId);
-  }, [devices, selectedDeviceId]);
-
-  const extractText = useCallback(async () => {
-    if (!videoRef.current) return;
-
-    setIsExtracting(true);
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
-
-      if (isMirrored) {
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-      }
-      ctx.drawImage(videoRef.current, 0, 0);
-      const dataUrl = canvas.toDataURL('image/png');
-
-      let text = '';
-      if (ocrMode === 'gemini') {
-        text = await extractTextWithGemini(dataUrl);
-      } else {
-        const result = await Tesseract.recognize(dataUrl, 'eng');
-        text = result.data.text;
-      }
-
-      setExtractedText(text);
-      setShowTextModal(true);
-    } catch (err) {
-      console.error('OCR Error:', err);
-      alert('Failed to extract text. Please try again.');
-    } finally {
-      setIsExtracting(false);
-    }
-  }, [isMirrored, ocrMode]);
-
-  const handleCopy = useCallback(() => {
-    if (extractedText) {
-      void navigator.clipboard.writeText(extractedText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [extractedText]);
+  }, []);
 
   const takePhoto = useCallback(() => {
     if (videoRef.current) {
@@ -176,10 +80,6 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
           status: 'captured',
         };
         setCapturedItems((prev) => [newItem, ...prev]);
-
-        // Visual feedback
-        setShowCaptureSuccess(true);
-        setTimeout(() => setShowCaptureSuccess(false), 1500);
       }
     }
   }, [isMirrored]);
@@ -267,37 +167,13 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                     />
                   </button>
                   <button
-                    onClick={extractText}
-                    disabled={!stream || isExtracting}
-                    className={`rounded-2xl text-white transition-all ${isExtracting ? 'bg-blue-500/30 text-blue-400 animate-pulse' : 'hover:bg-white/30'}`}
-                    style={{ padding: 'min(12px, 2.5cqmin)' }}
-                    title="Extract Text (OCR)"
-                  >
-                    {isExtracting ? (
-                      <Loader2
-                        className="animate-spin"
-                        style={{
-                          width: 'min(20px, 5cqmin)',
-                          height: 'min(20px, 5cqmin)',
-                        }}
-                      />
-                    ) : (
-                      <FileText
-                        style={{
-                          width: 'min(20px, 5cqmin)',
-                          height: 'min(20px, 5cqmin)',
-                        }}
-                      />
-                    )}
-                  </button>
-                  <button
                     onClick={toggleMirror}
                     disabled={!stream}
                     className={`rounded-2xl text-white transition-all ${isMirrored ? 'bg-blue-500/30 text-blue-400' : 'hover:bg-white/30'}`}
                     style={{ padding: 'min(12px, 2.5cqmin)' }}
                     title="Mirror Camera"
                   >
-                    <FlipHorizontal
+                    <RefreshCw
                       className={isMirrored ? 'rotate-180' : ''}
                       style={{
                         width: 'min(20px, 5cqmin)',
@@ -305,22 +181,6 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                       }}
                     />
                   </button>
-                  {devices.length > 1 && (
-                    <button
-                      onClick={switchCamera}
-                      disabled={!stream}
-                      className="hover:bg-white/30 rounded-2xl text-white"
-                      style={{ padding: 'min(12px, 2.5cqmin)' }}
-                      title="Switch Camera"
-                    >
-                      <Video
-                        style={{
-                          width: 'min(20px, 5cqmin)',
-                          height: 'min(20px, 5cqmin)',
-                        }}
-                      />
-                    </button>
-                  )}
                 </div>
 
                 <button
@@ -340,115 +200,7 @@ export const WebcamWidget: React.FC<{ widget: WidgetData }> = ({
                   )}
                 </button>
               </div>
-
-              {/* Status Overlays */}
-              {showCaptureSuccess && (
-                <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 backdrop-blur-sm z-40 animate-in fade-in zoom-in duration-300">
-                  <div className="bg-green-500 text-white rounded-full p-6 shadow-2xl">
-                    <Check
-                      style={{
-                        width: 'min(48px, 12cqmin)',
-                        height: 'min(48px, 12cqmin)',
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {isExtracting && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-blue-500/20 backdrop-blur-sm z-40 animate-in fade-in duration-300">
-                  <div className="bg-brand-blue-primary text-white rounded-full p-6 shadow-2xl mb-4">
-                    <Loader2
-                      className="animate-spin"
-                      style={{
-                        width: 'min(48px, 12cqmin)',
-                        height: 'min(48px, 12cqmin)',
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white font-bold tracking-widest uppercase"
-                    style={{ fontSize: 'min(12px, 3cqmin)' }}
-                  >
-                    Processing Text...
-                  </div>
-                </div>
-              )}
             </>
-          )}
-
-          {/* Extracted Text Modal */}
-          {showTextModal && (
-            <div className="absolute inset-0 z-[60] bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in duration-300">
-              <div
-                className="flex items-center justify-between border-b border-white/20 shrink-0"
-                style={{ padding: 'min(16px, 3.5cqmin)' }}
-              >
-                <div className="flex items-center gap-2">
-                  <FileText
-                    className="text-blue-400"
-                    style={{
-                      width: 'min(16px, 4cqmin)',
-                      height: 'min(16px, 4cqmin)',
-                    }}
-                  />
-                  <h3
-                    className="text-white uppercase tracking-widest font-bold"
-                    style={{ fontSize: 'min(12px, 3cqmin)' }}
-                  >
-                    Extracted Text
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowTextModal(false)}
-                  className="hover:bg-white/30 rounded-lg text-white"
-                  style={{ padding: 'min(8px, 2cqmin)' }}
-                >
-                  <X
-                    style={{
-                      width: 'min(16px, 4cqmin)',
-                      height: 'min(16px, 4cqmin)',
-                    }}
-                  />
-                </button>
-              </div>
-
-              <div
-                className="flex-1 overflow-y-auto custom-scrollbar p-4"
-                style={{ padding: 'min(16px, 3.5cqmin)' }}
-              >
-                <div
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 text-white/90 whitespace-pre-wrap font-mono selection:bg-blue-500/30"
-                  style={{
-                    fontSize: 'min(14px, 3.5cqmin)',
-                    lineHeight: '1.6',
-                  }}
-                >
-                  {extractedText ?? 'No text found.'}
-                </div>
-              </div>
-
-              <div
-                className="p-4 border-t border-white/10 flex justify-end gap-3"
-                style={{ padding: 'min(16px, 3.5cqmin)' }}
-              >
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-lg active:scale-95"
-                  style={{
-                    fontSize: 'min(12px, 3cqmin)',
-                    padding: 'min(8px, 1.5cqmin) min(16px, 3cqmin)',
-                  }}
-                >
-                  {copied ? (
-                    <Check style={{ width: 'min(14px, 3.5cqmin)' }} />
-                  ) : (
-                    <Copy style={{ width: 'min(14px, 3.5cqmin)' }} />
-                  )}
-                  {copied ? 'Copied!' : 'Copy Text'}
-                </button>
-              </div>
-            </div>
           )}
 
           {/* Gallery Overlay */}

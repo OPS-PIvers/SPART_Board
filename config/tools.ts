@@ -24,7 +24,6 @@ import {
   LayoutGrid,
   Shirt,
   Zap,
-  FileText,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -121,11 +120,5 @@ export const TOOLS: ToolMetadata[] = [
     icon: Shirt,
     label: 'Recess Gear',
     color: 'bg-emerald-500',
-  },
-  {
-    type: 'pdf',
-    icon: FileText,
-    label: 'PDF Viewer',
-    color: 'bg-red-700',
   },
 ];

@@ -21,45 +21,6 @@ interface AIResponseData {
   question?: string;
   options?: string[];
   widgets?: GeneratedWidget[];
-  text?: string;
-}
-
-/**
- * Extracts text from an image using Gemini AI via a Firebase Function proxy.
- *
- * @param base64Image - The base64 encoded image data.
- * @returns A promise resolving to the extracted text.
- */
-export async function extractTextWithGemini(
-  base64Image: string
-): Promise<string> {
-  try {
-    const generateWithAI = httpsCallable<
-      {
-        type:
-          | 'mini-app'
-          | 'poll'
-          | 'dashboard-layout'
-          | 'instructional-routine'
-          | 'ocr';
-        prompt?: string;
-        image?: string;
-      },
-      AIResponseData
-    >(functions, 'generateWithAI');
-
-    const result = await generateWithAI({ type: 'ocr', image: base64Image });
-    const data = result.data;
-
-    if (typeof data.text !== 'string') {
-      throw new Error('Invalid response format from AI');
-    }
-
-    return data.text;
-  } catch (error) {
-    console.error('Gemini OCR Error:', error);
-    throw new Error('Failed to extract text using Gemini.');
-  }
 }
 
 /**

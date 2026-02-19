@@ -350,26 +350,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
-  const maxNameLength = useMemo(
-    () => students.reduce((max, name) => Math.max(max, name.length), 0),
-    [students]
-  );
-
-  // Scale font down for longer names so they always fit without resizing the widget
-  const resFontSize = useMemo(() => {
-    const sizeSteps = [
-      { maxLength: 6, size: '45cqmin' },
-      { maxLength: 10, size: '35cqmin' },
-      { maxLength: 14, size: '28cqmin' },
-      { maxLength: 18, size: '22cqmin' },
-      { maxLength: 24, size: '18cqmin' },
-    ];
-
-    const step = sizeSteps.find((s) => maxNameLength <= s.maxLength);
-    return step ? step.size : '14cqmin';
-  }, [maxNameLength]);
-
   const renderSinglePick = () => {
+    const resFontSize = '45cqmin'; // Hero text - fill available space
+
     if (visualStyle === 'wheel' && students.length > 0) {
       const wheelSize = Math.min(widget.w * 0.95, widget.h * 0.8);
 

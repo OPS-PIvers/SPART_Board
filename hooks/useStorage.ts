@@ -5,13 +5,9 @@ import {
   getDownloadURL,
   deleteObject,
 } from 'firebase/storage';
-import { doc, setDoc } from 'firebase/firestore';
-import { storage, db } from '../config/firebase';
+import { storage } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
-import { PdfItem } from '../types';
-
-export const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
@@ -142,17 +138,17 @@ export const useStorage = () => {
   };
 
   const deleteFile = async (filePath: string): Promise<void> => {
-    // If it's a Drive link, extract the file ID and delete via Drive API
+    // If it's a Drive link, we try to delete it from Drive
     if (
       filePath.startsWith('https://lh3.googleusercontent.com') ||
       filePath.includes('drive.google.com')
     ) {
       if (!isAdmin && driveService) {
         try {
-          const match = /\/file\/d\/([^/?#]+)/.exec(filePath);
-          if (match) {
-            await driveService.deleteFile(match[1]);
-          }
+          // Deletion of Drive assets by URL is not yet fully implemented
+          console.warn(
+            'Deletion of Drive assets by URL is not yet fully implemented'
+          );
         } catch (e) {
           console.error('Failed to delete from Drive:', e);
         }
@@ -187,54 +183,6 @@ export const useStorage = () => {
     return getDownloadURL(snapshot.ref);
   };
 
-  const uploadPdf = async (
-    userId: string,
-    file: File
-  ): Promise<{ url: string; storagePath: string }> => {
-    if (!isAdmin && driveService) {
-      setUploading(true);
-      try {
-        const driveFile = await driveService.uploadFile(
-          file,
-          `pdf-${Date.now()}-${file.name}`,
-          'Assets/PDFs'
-        );
-        await driveService.makePublic(driveFile.id);
-        const previewUrl = `https://drive.google.com/file/d/${driveFile.id}/preview`;
-        return {
-          url: previewUrl,
-          storagePath: driveFile.webViewLink ?? previewUrl,
-        };
-      } finally {
-        setUploading(false);
-      }
-    }
-
-    const timestamp = Date.now();
-    const storagePath = `users/${userId}/pdfs/${timestamp}-${file.name}`;
-    const url = await uploadFile(storagePath, file);
-    return { url, storagePath };
-  };
-
-  const uploadAndRegisterPdf = async (
-    userId: string,
-    file: File
-  ): Promise<PdfItem> => {
-    const { url, storagePath } = await uploadPdf(userId, file);
-    const pdfId = crypto.randomUUID() as string;
-    const pdfData: PdfItem = {
-      id: pdfId,
-      name: file.name.replace(/\.pdf$/i, ''),
-      storageUrl: url,
-      storagePath,
-      size: file.size,
-      uploadedAt: Date.now(),
-      order: 0,
-    };
-    await setDoc(doc(db, 'users', userId, 'pdfs', pdfId), pdfData);
-    return pdfData;
-  };
-
   return {
     uploading,
     uploadFile,
@@ -245,7 +193,5 @@ export const useStorage = () => {
     deleteFile,
     uploadAdminBackground,
     uploadWeatherImage,
-    uploadPdf,
-    uploadAndRegisterPdf,
   };
 };

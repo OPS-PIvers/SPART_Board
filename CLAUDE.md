@@ -71,8 +71,6 @@ SPART Board is an interactive classroom management dashboard built with React 19
 - **Check formatting**: `npm run format:check`
 - **Validate all**: `npm run validate` (type-check + lint + format-check)
 
-> **IMPORTANT — Pre-push requirement:** You **must not push any commit** that contains TypeScript type errors, ESLint errors or warnings, or Prettier formatting violations. Always run `npm run validate` (or at minimum `npm run lint` and `npm run format:check`) before committing and pushing. If the environment does not have node_modules installed, note that CI will still enforce these checks and will block the PR. Fix all issues before pushing.
-
 See [LINTING_SETUP.md](LINTING_SETUP.md) for detailed linting and CI/CD configuration.
 
 ## Environment Configuration

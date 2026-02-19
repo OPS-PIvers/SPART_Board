@@ -55,12 +55,7 @@ export class GoogleDriveService {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Google Drive access expired. Please sign in again.');
-      }
-      throw new Error(
-        `Failed to list Drive files: ${response.statusText} (${response.status})`
-      );
+      throw new Error(`Failed to list Drive files: ${response.statusText}`);
     }
 
     const data = (await response.json()) as DriveFileListResponse;

@@ -164,18 +164,16 @@ describe('useStorage', () => {
       expect(mockDeleteObject).toHaveBeenCalledWith('mock-ref');
     });
 
-    it('should skip deletion for Drive-hosted URLs without a parseable file ID', async () => {
+    it('should ignore Google Drive links (for now)', async () => {
       mockUseAuth.mockReturnValue({ isAdmin: false });
-      const mockDriveServiceLocal = {
+      const mockDriveService = {
         uploadFile: vi.fn(),
         makePublic: vi.fn(),
-        deleteFile: vi.fn(),
       };
-      mockUseGoogleDrive.mockReturnValue({
-        driveService: mockDriveServiceLocal,
-      });
+      mockUseGoogleDrive.mockReturnValue({ driveService: mockDriveService });
 
       const { result } = renderHook(() => useStorage());
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(vi.fn());
 
       await act(async () => {
         await result.current.deleteFile(
@@ -184,32 +182,10 @@ describe('useStorage', () => {
       });
 
       expect(mockDeleteObject).not.toHaveBeenCalled();
-      expect(mockDriveServiceLocal.deleteFile).not.toHaveBeenCalled();
-    });
-
-    it('should delete file from Google Drive when URL contains a file ID', async () => {
-      mockUseAuth.mockReturnValue({ isAdmin: false });
-      const mockDriveServiceLocal = {
-        uploadFile: vi.fn(),
-        makePublic: vi.fn(),
-        deleteFile: vi.fn().mockResolvedValue(undefined),
-      };
-      mockUseGoogleDrive.mockReturnValue({
-        driveService: mockDriveServiceLocal,
-      });
-
-      const { result } = renderHook(() => useStorage());
-
-      await act(async () => {
-        await result.current.deleteFile(
-          'https://drive.google.com/file/d/abc123xyz/view'
-        );
-      });
-
-      expect(mockDeleteObject).not.toHaveBeenCalled();
-      expect(mockDriveServiceLocal.deleteFile).toHaveBeenCalledWith(
-        'abc123xyz'
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Deletion of Drive assets by URL is not yet fully implemented'
       );
+      consoleSpy.mockRestore();
     });
   });
 });

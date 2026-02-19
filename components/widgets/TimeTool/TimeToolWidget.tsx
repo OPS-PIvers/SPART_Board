@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   TimeToolConfig,
   WidgetData,
@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { WIDGET_PALETTE, STANDARD_COLORS } from '../../../config/colors';
+import { FloatingPanel } from '../../common/FloatingPanel';
 import { WidgetLayout } from '../WidgetLayout';
 import { SettingsLabel } from '../../common/SettingsLabel';
 
@@ -285,7 +286,7 @@ const Keypad: React.FC<{
 export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { activeDashboard } = useDashboard();
+  const { updateWidget, activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const {
     displayTime,
@@ -299,6 +300,7 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
   } = useTimeTool(widget);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showSoundPicker, setShowSoundPicker] = useState(false);
 
   const isVisual = config.visualType === 'visual';
 
@@ -308,6 +310,13 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
     fontFamily = 'global',
     clockStyle = 'modern',
   } = config;
+
+  const updateConfig = useCallback(
+    (patch: Partial<TimeToolConfig>) => {
+      updateWidget(widget.id, { config: { ...config, ...patch } });
+    },
+    [updateWidget, widget.id, config]
+  );
 
   // ─── Parse time into parts ───────────────────────────────────────
 
@@ -387,29 +396,22 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
             />
           ) : (
             <>
-              {/* Main centering container for the time */}
-              <div className="flex-1 min-h-0 w-full flex items-center justify-center relative">
-                {/* Visual Ring (Absolute to widget, behind everything) */}
-                {isVisual && (
-                  <div
-                    className="absolute pointer-events-none"
-                    style={{
-                      width: 'min(90%, 90cqmin)',
-                      height: 'min(90%, 90cqmin)',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                  >
+              {/* Time display - matches Clock structure */}
+              <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+                <div
+                  className="relative flex items-center justify-center"
+                  style={{
+                    width: isVisual ? 'min(90%, 90cqmin)' : 'auto',
+                    aspectRatio: isVisual ? '1' : undefined,
+                  }}
+                >
+                  {isVisual && (
                     <ProgressRing
                       progress={progress}
                       ringColor={getRingColor()}
                     />
-                  </div>
-                )}
+                  )}
 
-                {/* The core centering unit: Time + Absolute Controls */}
-                <div className="relative flex flex-col items-center justify-center">
                   <button
                     onClick={() => {
                       if (!isRunning && mode === 'timer') setIsEditing(true);
@@ -422,10 +424,10 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                     }`}
                     style={{
                       fontSize: isVisual
-                        ? 'min(22cqmin, 12rem)'
+                        ? 'min(25cqmin, 12rem)'
                         : mode === 'stopwatch'
-                          ? 'min(55cqh, 18cqw)'
-                          : 'min(55cqh, 25cqw)',
+                          ? 'min(82cqh, 18cqw)'
+                          : 'min(82cqh, 25cqw)',
                       color: timeColor,
                       textShadow: glow
                         ? `0 0 0.1em ${timeColor}, 0 0 0.25em ${timeColor}66`
@@ -476,66 +478,145 @@ export const TimeToolWidget: React.FC<{ widget: WidgetData }> = ({
                       </>
                     )}
                   </button>
+                </div>
+              </div>
 
-                  {/* Square Controls - Positioned below the centerline without pushing it */}
-                  <div
-                    className="absolute z-10 flex items-center justify-center"
+              {/* Controls footer - compact, transparent */}
+              <div
+                className="shrink-0 w-full flex flex-col"
+                style={{
+                  padding: '0 min(12px, 2.5cqmin) min(8px, 1.5cqmin)',
+                  gap: 'min(6px, 1.5cqmin)',
+                }}
+              >
+                {/* Play/Pause + Reset */}
+                <div className="flex" style={{ gap: 'min(6px, 1.5cqmin)' }}>
+                  <button
+                    onClick={
+                      isRunning ? () => handleStop() : () => void handleStart()
+                    }
+                    className={`flex-[3] flex items-center justify-center rounded-lg font-black uppercase tracking-widest transition-all active:scale-[0.97] ${
+                      isRunning
+                        ? 'bg-slate-200/60 text-slate-500 hover:bg-slate-300/70'
+                        : 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark hover:-translate-y-0.5'
+                    }`}
                     style={{
-                      top: isVisual ? '120%' : '110%',
-                      gap: 'min(12px, 3cqmin)',
+                      height: 'min(44px, 10cqmin)',
+                      fontSize: 'min(12px, 3cqmin)',
+                      gap: 'min(6px, 1.5cqmin)',
                     }}
                   >
-                    <button
-                      onClick={
-                        isRunning
-                          ? () => handleStop()
-                          : () => void handleStart()
-                      }
-                      className={`aspect-square flex items-center justify-center rounded-2xl transition-all active:scale-95 shadow-lg ${
-                        isRunning
-                          ? 'bg-slate-200/60 text-slate-500'
-                          : 'bg-brand-blue-primary text-white shadow-brand-blue-primary/20'
-                      }`}
+                    {isRunning ? (
+                      <Pause
+                        className="w-[1.2em] h-[1.2em]"
+                        fill="currentColor"
+                      />
+                    ) : (
+                      <Play
+                        className="w-[1.2em] h-[1.2em]"
+                        fill="currentColor"
+                      />
+                    )}
+                    {isRunning ? 'PAUSE' : 'START'}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="aspect-square flex items-center justify-center rounded-lg bg-slate-200/60 text-slate-400 hover:bg-slate-300/70 hover:text-brand-blue-primary transition-all active:scale-95"
+                    style={{ height: 'min(44px, 10cqmin)' }}
+                    aria-label="Reset"
+                  >
+                    <RotateCcw
                       style={{
-                        width: isVisual
-                          ? 'min(15cqmin, 64px)'
-                          : 'min(15cqh, 12cqw)',
-                        height: isVisual
-                          ? 'min(15cqmin, 64px)'
-                          : 'min(15cqh, 12cqw)',
+                        width: 'min(16px, 4cqmin)',
+                        height: 'min(16px, 4cqmin)',
+                      }}
+                    />
+                  </button>
+                </div>
+
+                {/* Sound picker row */}
+                <div className="flex justify-between items-center">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowSoundPicker((v) => !v)}
+                      className="flex items-center rounded-full transition-all text-slate-400 hover:text-brand-blue-primary"
+                      style={{
+                        gap: 'min(4px, 1cqmin)',
+                        paddingLeft: 'min(8px, 2cqmin)',
+                        paddingRight: 'min(8px, 2cqmin)',
+                        paddingTop: 'min(4px, 1cqmin)',
+                        paddingBottom: 'min(4px, 1cqmin)',
                       }}
                     >
-                      {isRunning ? (
-                        <Pause
-                          style={{ width: '50%', height: '50%' }}
-                          fill="currentColor"
-                        />
-                      ) : (
-                        <Play
-                          style={{
-                            width: '50%',
-                            height: '50%',
-                            marginLeft: '10%',
-                          }}
-                          fill="currentColor"
-                        />
-                      )}
+                      <Bell
+                        className={
+                          isRunning
+                            ? 'animate-pulse text-brand-blue-primary'
+                            : ''
+                        }
+                        style={{
+                          width: 'min(12px, 3cqmin)',
+                          height: 'min(12px, 3cqmin)',
+                        }}
+                      />
+                      <span
+                        className="font-black uppercase tracking-widest"
+                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                      >
+                        {config.selectedSound}
+                      </span>
                     </button>
-                    <button
-                      onClick={handleReset}
-                      className="aspect-square flex items-center justify-center rounded-2xl bg-slate-200/60 text-slate-400 hover:bg-slate-300/70 hover:text-brand-blue-primary transition-all active:scale-95 shadow-sm"
+
+                    {showSoundPicker && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowSoundPicker(false)}
+                        />
+                        <FloatingPanel
+                          padding="sm"
+                          className="absolute bottom-full left-0 mb-3 w-48 origin-bottom-left"
+                        >
+                          {SOUNDS.map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                updateConfig({ selectedSound: s });
+                                setShowSoundPicker(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-xl text-xxs font-black uppercase tracking-widest transition-all ${
+                                config.selectedSound === s
+                                  ? 'bg-brand-blue-primary text-white shadow-md'
+                                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-brand-blue-primary'
+                              }`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </FloatingPanel>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Mode indicator */}
+                  <div
+                    className="flex items-center opacity-30 select-none"
+                    style={{ gap: 'min(4px, 1cqmin)' }}
+                  >
+                    <div
+                      className="rounded-full"
                       style={{
-                        width: isVisual
-                          ? 'min(15cqmin, 64px)'
-                          : 'min(15cqh, 12cqw)',
-                        height: isVisual
-                          ? 'min(15cqmin, 64px)'
-                          : 'min(15cqh, 12cqw)',
+                        width: 'min(5px, 1.2cqmin)',
+                        height: 'min(5px, 1.2cqmin)',
+                        backgroundColor: themeColor,
                       }}
-                      aria-label="Reset"
+                    />
+                    <span
+                      className="font-black text-slate-400 uppercase tracking-tighter"
+                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                     >
-                      <RotateCcw style={{ width: '50%', height: '50%' }} />
-                    </button>
+                      {mode === 'timer' ? 'Timer' : 'Stopwatch'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -649,30 +730,6 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
               }`}
             >
               {v === 'digital' ? 'Digital' : 'Visual Ring'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Sound Selector */}
-      <div>
-        <SettingsLabel icon={Bell}>Alert Sound</SettingsLabel>
-        <div className="grid grid-cols-4 gap-2">
-          {SOUNDS.map((s) => (
-            <button
-              key={s}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, selectedSound: s },
-                })
-              }
-              className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
-                config.selectedSound === s
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-white border-slate-200 text-slate-600'
-              }`}
-            >
-              {s}
             </button>
           ))}
         </div>

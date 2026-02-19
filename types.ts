@@ -29,8 +29,7 @@ export type WidgetType =
   | 'catalyst-instruction'
   | 'catalyst-visual'
   | 'smartNotebook'
-  | 'recessGear'
-  | 'pdf';
+  | 'recessGear';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -156,6 +155,11 @@ export interface ClockConfig {
   fontFamily?: string;
   clockStyle?: string;
   glow?: boolean;
+}
+
+export interface TimerConfig {
+  duration: number;
+  sound: boolean; // This is the completion sound toggle
 }
 
 export interface TrafficConfig {
@@ -284,8 +288,6 @@ export interface WeatherConfig {
   source?: 'openweather' | 'earth_networks';
   feelsLike?: number;
   showFeelsLike?: boolean;
-  hideClothing?: boolean;
-  syncBackground?: boolean;
 }
 
 export interface WeatherTemperatureRange {
@@ -304,10 +306,6 @@ export interface WeatherGlobalConfig {
   source?: 'openweather' | 'earth_networks';
   city?: string;
   showFeelsLike?: boolean;
-}
-
-export interface WebcamGlobalConfig {
-  ocrMode?: 'standard' | 'gemini';
 }
 
 export interface ScheduleConfig {
@@ -378,22 +376,6 @@ export interface MiniAppItem {
 // 2. Define the Widget Configuration
 export interface MiniAppConfig {
   activeApp: MiniAppItem | null;
-}
-
-export interface PdfItem {
-  id: string;
-  name: string;
-  storageUrl: string;
-  storagePath: string;
-  size: number;
-  uploadedAt: number;
-  order?: number;
-}
-
-export interface PdfConfig {
-  activePdfId: string | null;
-  activePdfUrl: string | null;
-  activePdfName: string | null;
 }
 
 export interface MaterialsConfig {
@@ -476,16 +458,12 @@ export interface FurnitureItem {
   label?: string;
 }
 
-export type SeatingChartTemplate = 'freeform' | 'rows' | 'horseshoe' | 'pods';
-
 export interface SeatingChartConfig {
   furniture: FurnitureItem[];
   assignments: Record<string, string>; // studentId -> furnitureId
   gridSize: number;
   rosterMode?: 'class' | 'custom';
   names?: string; // Line separated names for custom roster
-  template?: SeatingChartTemplate;
-  templateColumns?: number; // Number of columns for 'rows' template
 }
 
 export interface NotebookItem {
@@ -509,6 +487,7 @@ export interface RecessGearConfig {
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
+  | TimerConfig
   | TrafficConfig
   | TextConfig
   | ChecklistConfig
@@ -538,8 +517,7 @@ export type WidgetConfig =
   | CatalystInstructionConfig
   | CatalystVisualConfig
   | SmartNotebookConfig
-  | RecessGearConfig
-  | PdfConfig;
+  | RecessGearConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -604,9 +582,7 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                             ? SmartNotebookConfig
                                                             : T extends 'recessGear'
                                                               ? RecessGearConfig
-                                                              : T extends 'pdf'
-                                                                ? PdfConfig
-                                                                : never;
+                                                              : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

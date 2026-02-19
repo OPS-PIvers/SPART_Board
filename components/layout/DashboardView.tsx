@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
-import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
@@ -58,7 +57,6 @@ export const DashboardView: React.FC = () => {
     addToast,
     loadDashboard,
   } = useDashboard();
-  const { uploadAndRegisterPdf } = useStorage();
 
   const {
     session,
@@ -234,58 +232,10 @@ export const DashboardView: React.FC = () => {
     ) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
-      return;
-    }
-    // Allow PDF files dragged from the filesystem
-    if (e.dataTransfer.types.includes('Files')) {
-      const items = Array.from(e.dataTransfer.items);
-      if (items.some((item) => item.type === 'application/pdf')) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-      }
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    // Handle PDF files dragged from the filesystem
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const files = Array.from(e.dataTransfer.files);
-      const pdfFile = files.find((f) => f.type === 'application/pdf');
-      if (pdfFile && user) {
-        e.preventDefault();
-        if (pdfFile.size > MAX_PDF_SIZE_BYTES) {
-          addToast('PDF is too large. Maximum size is 50MB.', 'error');
-          return;
-        }
-        const w = 600;
-        const h = 750;
-        const dropX = Math.max(0, e.clientX - w / 2);
-        const dropY = Math.max(0, e.clientY - h / 2);
-        addToast('Uploading PDF…', 'info');
-        void (async () => {
-          try {
-            const pdfData = await uploadAndRegisterPdf(user.uid, pdfFile);
-            addWidget('pdf', {
-              x: dropX,
-              y: dropY,
-              w: 600,
-              h: 750,
-              config: {
-                activePdfId: pdfData.id,
-                activePdfUrl: pdfData.storageUrl,
-                activePdfName: pdfData.name,
-              },
-            });
-            addToast(`"${pdfData.name}" added to board`, 'success');
-          } catch (err) {
-            console.error('PDF drop upload failed', err);
-            addToast('Failed to upload PDF', 'error');
-          }
-        })();
-        return;
-      }
-    }
-
     const stickerData = e.dataTransfer.getData('application/sticker');
     const spartStickerData = e.dataTransfer.getData(
       'application/spart-sticker'

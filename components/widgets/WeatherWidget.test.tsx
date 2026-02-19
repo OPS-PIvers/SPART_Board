@@ -1,24 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { WeatherWidget } from './WeatherWidget';
-import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '@/types';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../types';
+import { vi, describe, it, expect } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
-const { mockSetBackground, mockUpdateWidget, mockActiveDashboard } = vi.hoisted(
-  () => ({
-    mockSetBackground: vi.fn(),
-    mockUpdateWidget: vi.fn(),
-    mockActiveDashboard: { background: 'bg-existing', globalStyle: {} },
-  })
-);
-
-vi.mock('@/context/useDashboard', () => ({
+vi.mock('../../context/useDashboard', () => ({
   useDashboard: () => ({
-    updateWidget: mockUpdateWidget,
+    updateWidget: vi.fn(),
     addToast: vi.fn(),
-    setBackground: mockSetBackground,
-    activeDashboard: mockActiveDashboard,
   }),
 }));
 
@@ -46,7 +36,7 @@ const mockFeaturePermissions = [
   },
 ];
 
-vi.mock('@/context/useAuth', () => ({
+vi.mock('../../context/useAuth', () => ({
   useAuth: () => ({
     featurePermissions: mockFeaturePermissions,
   }),
@@ -58,7 +48,7 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
 }));
 
-vi.mock('@/config/firebase', () => ({
+vi.mock('../../config/firebase', () => ({
   db: {},
 }));
 
@@ -79,10 +69,6 @@ describe('WeatherWidget', () => {
       locationName: 'Test Loc',
     },
   };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
 
   it('displays default clothing message when no range matches', () => {
     const widget: WidgetData = {
@@ -124,37 +110,5 @@ describe('WeatherWidget', () => {
     // So yes, it shows clothing icon.
     // We can't easily test the icon character rendering in jsdom without inspecting text content.
     // But we know 'It is hot!' is there.
-  });
-
-  it('hides clothing container when hideClothing is true', () => {
-    const widget: WidgetData = {
-      ...baseWidget,
-      config: {
-        ...baseWidget.config,
-        temp: 72,
-        hideClothing: true,
-      } as WeatherConfig,
-    };
-    render(<WeatherWidget widget={widget} />);
-    expect(screen.queryByText(/Long Sleeves/i)).not.toBeInTheDocument();
-  });
-
-  it('syncs background when enabled', async () => {
-    const widget: WidgetData = {
-      ...baseWidget,
-      config: {
-        ...baseWidget.config,
-        condition: 'sunny',
-        syncBackground: true,
-      } as WeatherConfig,
-    };
-    render(<WeatherWidget widget={widget} />);
-
-    // Expected sunny gradient
-    const expectedBg =
-      'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
-    await waitFor(() => {
-      expect(mockSetBackground).toHaveBeenCalledWith(expectedBg);
-    });
   });
 });
