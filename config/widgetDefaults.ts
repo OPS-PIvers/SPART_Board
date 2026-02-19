@@ -199,4 +199,9 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     h: 280,
     config: { linkedWeatherWidgetId: null, useFeelsLike: true },
   },
+  pdf: {
+    w: 600,
+    h: 750,
+    config: { activePdfId: null, activePdfUrl: null, activePdfName: null },
+  },
 };
