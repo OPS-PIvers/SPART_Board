@@ -13,7 +13,7 @@ const { mockSetBackground, mockUpdateWidget, mockActiveDashboard } = vi.hoisted(
   })
 );
 
-vi.mock('../../context/useDashboard', () => ({
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: () => ({
     updateWidget: mockUpdateWidget,
     addToast: vi.fn(),
@@ -46,7 +46,7 @@ const mockFeaturePermissions = [
   },
 ];
 
-vi.mock('../../context/useAuth', () => ({
+vi.mock('@/context/useAuth', () => ({
   useAuth: () => ({
     featurePermissions: mockFeaturePermissions,
   }),
@@ -58,7 +58,7 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
 }));
 
-vi.mock('../../config/firebase', () => ({
+vi.mock('@/config/firebase', () => ({
   db: {},
 }));
 

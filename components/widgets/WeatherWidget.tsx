@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../config/firebase';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
+import { db, functions } from '@/config/firebase';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   WeatherConfig,
@@ -204,7 +204,8 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       case 'tornado':
         return 'bg-gradient-to-br from-teal-600 via-emerald-500 to-teal-400';
       default:
-        return 'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
+        console.warn(`[WeatherWidget] Unhandled condition for background sync: ${cond}`);
+        return 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-100';
     }
   };
 
