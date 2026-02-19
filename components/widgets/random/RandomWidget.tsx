@@ -357,12 +357,16 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   // Scale font down for longer names so they always fit without resizing the widget
   const resFontSize = useMemo(() => {
-    if (maxNameLength <= 6) return '45cqmin';
-    if (maxNameLength <= 10) return '35cqmin';
-    if (maxNameLength <= 14) return '28cqmin';
-    if (maxNameLength <= 18) return '22cqmin';
-    if (maxNameLength <= 24) return '18cqmin';
-    return '14cqmin';
+    const sizeSteps = [
+      { maxLength: 6, size: '45cqmin' },
+      { maxLength: 10, size: '35cqmin' },
+      { maxLength: 14, size: '28cqmin' },
+      { maxLength: 18, size: '22cqmin' },
+      { maxLength: 24, size: '18cqmin' },
+    ];
+
+    const step = sizeSteps.find(s => maxNameLength <= s.maxLength);
+    return step ? step.size : '14cqmin';
   }, [maxNameLength]);
 
   const renderSinglePick = () => {

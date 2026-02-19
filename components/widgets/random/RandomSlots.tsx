@@ -30,8 +30,6 @@ export const RandomSlots: React.FC<RandomSlotsProps> = ({
         style={{
           fontSize: `min(250px, ${fontStyle})`,
           lineHeight: 1,
-          wordBreak: 'break-word',
-          overflowWrap: 'break-word',
           maxWidth: '100%',
         }}
       >
