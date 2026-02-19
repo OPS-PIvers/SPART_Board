@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CatalystCategory } from '../../../types';
 import * as Icons from 'lucide-react';
 import { COLORS } from '../../../config/catalystColors';
+import { Modal } from '../../common/Modal';
 
 interface CategoryEditorProps {
   category: CatalystCategory | null;
@@ -95,52 +96,14 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100000] p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="font-black text-lg text-slate-800 mb-4">
-          {isNew ? 'New Category' : 'Edit Category'}
-        </h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
-              Label
-            </label>
-            <input
-              type="text"
-              value={editingCat.label}
-              onChange={(e) =>
-                setEditingCat({
-                  ...editingCat,
-                  label: e.target.value,
-                })
-              }
-              className="w-full border border-slate-300 rounded px-3 py-2"
-            />
-          </div>
-          {renderIconPicker(editingCat.icon, (val) =>
-            setEditingCat({ ...editingCat, icon: val })
-          )}
-          <div>
-            <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
-              Color
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setEditingCat({ ...editingCat, color })}
-                  className={`w-8 h-8 rounded-full ${color} ${
-                    editingCat.color === color
-                      ? 'ring-2 ring-offset-2 ring-slate-800'
-                      : ''
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2 mt-6 justify-end">
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title={isNew ? 'New Category' : 'Edit Category'}
+      zIndex="z-modal-deep"
+      maxWidth="max-w-md"
+      footer={
+        <div className="flex gap-2 justify-end w-full">
           <button
             onClick={onCancel}
             className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold"
@@ -154,7 +117,48 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
             Save
           </button>
         </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+            Label
+          </label>
+          <input
+            type="text"
+            value={editingCat.label}
+            onChange={(e) =>
+              setEditingCat({
+                ...editingCat,
+                label: e.target.value,
+              })
+            }
+            className="w-full border border-slate-300 rounded px-3 py-2"
+          />
+        </div>
+        {renderIconPicker(editingCat.icon, (val) =>
+          setEditingCat({ ...editingCat, icon: val })
+        )}
+        <div>
+          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+            Color
+          </label>
+          <div className="grid grid-cols-6 gap-2">
+            {COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setEditingCat({ ...editingCat, color })}
+                className={`w-8 h-8 rounded-full ${color} ${
+                  editingCat.color === color
+                    ? 'ring-2 ring-offset-2 ring-slate-800'
+                    : ''
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 };

@@ -3,7 +3,6 @@ import {
   WidgetData,
   DrawingConfig,
   WidgetConfig,
-  LiveSession,
   LiveStudent,
   GlobalStyle,
   WidgetType,
@@ -37,7 +36,8 @@ interface WidgetRendererProps {
   widget: WidgetData;
   isStudentView?: boolean;
   // Session Props
-  session: LiveSession | null;
+  sessionCode?: string;
+  isGlobalFrozen?: boolean;
   isLive: boolean;
   students: LiveStudent[];
   updateSessionConfig: (config: WidgetConfig) => Promise<void>;
@@ -69,7 +69,8 @@ interface WidgetRendererProps {
 const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   widget,
   isStudentView = false,
-  session,
+  sessionCode,
+  isGlobalFrozen = false,
   isLive,
   students,
   updateSessionConfig,
@@ -257,7 +258,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
             isLive={isLive}
             studentCount={students.length}
             students={students}
-            code={session?.code}
+            code={sessionCode}
             joinUrl={getJoinUrl()}
             onToggleLive={handleToggleLive}
             onFreezeStudent={(id, status) => {
@@ -271,7 +272,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
               );
             }}
             onFreezeAll={() => {
-              void toggleGlobalFreeze(!session?.frozen).catch((err) =>
+              void toggleGlobalFreeze(!isGlobalFrozen).catch((err) =>
                 console.error('Failed to toggle global freeze:', err)
               );
             }}
