@@ -149,7 +149,7 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
         return rest;
       });
     } catch (_e) {
-      setJsonErrors((prev) => ({ ...prev, [id]: 'Invalid JSON' }));
+      setJsonErrors((prev) => ({ ...prev, [id]: 'Invalid JSON format' }));
     }
   };
 
