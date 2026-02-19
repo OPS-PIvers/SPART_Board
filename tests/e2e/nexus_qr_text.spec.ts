@@ -76,7 +76,7 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   // Click the checkbox (toggle)
   // Input is hidden (sr-only), so we force the check
   // Retry if check doesn't take immediately (state update race)
-  await syncToggle.click({ force: true });
+  await syncToggle.evaluate((el) => (el as HTMLInputElement).click());
   await expect(syncToggle).toBeChecked();
 
   // 6. Verify Sync

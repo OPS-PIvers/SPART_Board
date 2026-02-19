@@ -17,9 +17,18 @@ test.describe(APP_NAME, () => {
     await menuButton.click();
 
     // Verify sidebar header
-    await expect(page.getByText(APP_NAME.toUpperCase())).toBeVisible();
+    // The sidebar header displays "Classroom Manager" when in the main section
+    await expect(page.getByText('Classroom Manager')).toBeVisible();
 
     // Verify Widgets tab is active (by checking for "Available Widgets" text)
+    // Note: Widgets are in the 'main' section now under "Workspace" -> "Widgets" button to navigate?
+    // Wait, the Sidebar implementation shows navigation buttons first.
+    // "Workspace" -> "Widgets" button.
+    const widgetsButton = page.getByRole('button', { name: 'Widgets' });
+    await expect(widgetsButton).toBeVisible();
+    await widgetsButton.click();
+
+    // Now we should see "Available Widgets"
     await expect(page.getByText('Available Widgets')).toBeVisible();
   });
 
@@ -31,9 +40,10 @@ test.describe(APP_NAME, () => {
 
     // Click Clock widget in the Dock
     // The Dock renders buttons with the tool label.
+    // Use force: true to bypass aria-disabled from dnd-kit
     const clockButton = page.getByRole('button', { name: /Clock/i }).first();
     await expect(clockButton).toBeVisible();
-    await clockButton.click();
+    await clockButton.click({ force: true });
 
     // Verify Clock widget is on the dashboard
     // The widget has class 'widget'.

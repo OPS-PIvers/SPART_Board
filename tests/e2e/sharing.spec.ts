@@ -32,10 +32,13 @@ test.describe('Board Sharing', () => {
 
   test('can share and import a board', async ({ page }) => {
     await page.getByTitle('Open Menu').click();
-    await expect(page.getByText(APP_NAME)).toBeVisible();
-    await page
-      .getByRole('button', { name: 'Boards Manage and switch between' })
-      .click();
+
+    // Verify sidebar opened by checking for "Classroom Manager"
+    await expect(page.getByText('Classroom Manager')).toBeVisible();
+
+    // Navigate to Boards section
+    await page.getByRole('button', { name: 'Boards' }).click();
+
     await expect(page.getByText('My Boards')).toBeVisible();
 
     const boardCard = page
@@ -87,9 +90,8 @@ test.describe('Board Sharing', () => {
     await expect(page.getByText('Import Board')).not.toBeVisible();
 
     await page.getByTitle('Open Menu').click();
-    await page
-      .getByRole('button', { name: 'Boards Manage and switch between' })
-      .click();
+    // Navigate to Boards section again to check import
+    await page.getByRole('button', { name: 'Boards' }).click();
 
     // Use a more generic locator for the imported board if specific text fails
     await expect(
