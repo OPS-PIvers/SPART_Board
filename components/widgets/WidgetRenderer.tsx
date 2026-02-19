@@ -80,11 +80,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   removeStudent,
   toggleFreezeStudent,
   toggleGlobalFreeze,
-  updateWidget,
-  removeWidget,
-  duplicateWidget,
-  bringToFront,
-  addToast,
   globalStyle,
   dashboardBackground,
   dashboardSettings,
@@ -246,11 +241,6 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       skipCloseConfirmation={
         widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
       }
-      updateWidget={updateWidget}
-      removeWidget={removeWidget}
-      duplicateWidget={duplicateWidget}
-      bringToFront={bringToFront}
-      addToast={addToast}
       globalStyle={globalStyle}
       headerActions={
         (isLive || canAccessFeature('live-session')) && (

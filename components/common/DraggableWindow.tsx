@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
 import { useScreenshot } from '../../hooks/useScreenshot';
+import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '../../hooks/useClickOutside';
@@ -47,11 +48,6 @@ interface DraggableWindowProps {
   style?: React.CSSProperties; // Added style prop
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
-  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
-  removeWidget: (id: string) => void;
-  duplicateWidget: (id: string) => void;
-  bringToFront: (id: string) => void;
-  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
   globalStyle: GlobalStyle;
 }
 
@@ -86,13 +82,17 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   style,
   skipCloseConfirmation = false,
   headerActions,
-  updateWidget,
-  removeWidget,
-  duplicateWidget,
-  bringToFront,
-  addToast,
   globalStyle,
 }) => {
+  const {
+    updateWidget,
+    removeWidget,
+    duplicateWidget,
+    bringToFront,
+    addToast,
+    resetWidgetSize,
+  } = useDashboard();
+
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -174,13 +174,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     bringToFront(widget.id);
   };
 
-  const handleMaximizeToggle = () => {
+  const handleMaximizeToggle = useCallback(() => {
     const newMaximized = !isMaximized;
     updateWidget(widget.id, { maximized: newMaximized, flipped: false });
     if (newMaximized) {
       bringToFront(widget.id);
     }
-  };
+  }, [isMaximized, widget.id, updateWidget, bringToFront]);
 
   const saveTitle = () => {
     if (tempTitle.trim()) {
@@ -191,6 +191,74 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       setTempTitle(title);
     }
     setIsEditingTitle(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Stop propagation if we're in an input to prevent global shortcuts
+    const target = e.target as HTMLElement;
+    const isInput =
+      ['INPUT', 'TEXTAREA'].includes(target?.tagName || '') ||
+      target?.isContentEditable;
+
+    if (isInput) {
+      if (e.key === 'Escape') {
+        target.blur();
+        e.stopPropagation();
+      }
+      return;
+    }
+
+    // Keyboard Shortcuts for Focused Widget
+    if (e.key === 'Escape') {
+      // NEW BEHAVIOR: Esc minimizes the widget (unless in sub-state like confirm or settings)
+      e.preventDefault();
+      if (showConfirm) {
+        setShowConfirm(false);
+      } else if (widget.flipped) {
+        updateWidget(widget.id, { flipped: false });
+      } else if (isAnnotating) {
+        setIsAnnotating(false);
+      } else {
+        updateWidget(widget.id, { minimized: true, flipped: false });
+      }
+      return;
+    }
+
+    if (e.key === 'Delete') {
+      // NEW BEHAVIOR: Delete removes the widget
+      e.preventDefault();
+      if (skipCloseConfirmation) {
+        removeWidget(widget.id);
+      } else {
+        setShowConfirm(true);
+        setShowTools(false);
+      }
+      return;
+    }
+
+    // ALT Shortcuts
+    if (e.altKey) {
+      switch (e.key.toLowerCase()) {
+        case 's': // Settings
+          e.preventDefault();
+          updateWidget(widget.id, { flipped: !widget.flipped });
+          setShowTools(false);
+          break;
+        case 'd': // Draw tool
+          e.preventDefault();
+          setIsAnnotating((prev) => !prev);
+          setShowTools(false);
+          break;
+        case 'm': // Maximize/Restore
+          e.preventDefault();
+          handleMaximizeToggle();
+          break;
+        case 'r': // Reset size
+          e.preventDefault();
+          resetWidgetSize(widget.id);
+          break;
+      }
+    }
   };
 
   const handleDragStart = (e: React.PointerEvent) => {
@@ -474,37 +542,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     return undefined;
   }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized]);
 
-  useEffect(() => {
-    const handleEscapePress = (e: Event) => {
-      const customEvent = e as CustomEvent<{ widgetId: string }>;
-      if (customEvent.detail?.widgetId !== widget.id) return;
-
-      if (showConfirm) {
-        setShowConfirm(false);
-      } else if (widget.flipped) {
-        updateWidget(widget.id, { flipped: false });
-      } else {
-        if (skipCloseConfirmation) {
-          removeWidget(widget.id);
-        } else {
-          setShowConfirm(true);
-          setShowTools(false);
-        }
-      }
-    };
-
-    window.addEventListener('widget-escape-press', handleEscapePress);
-    return () =>
-      window.removeEventListener('widget-escape-press', handleEscapePress);
-  }, [
-    widget.id,
-    widget.flipped,
-    showConfirm,
-    skipCloseConfirmation,
-    removeWidget,
-    updateWidget,
-  ]);
-
   // Fallback to widget state if not dragging/resizing or if position-aware
   const shouldUseDragState =
     (isDragging || isResizing) &&
@@ -519,6 +556,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         tabIndex={0}
         onPointerDown={handlePointerDown}
         onClick={handleWidgetClick}
+        onKeyDown={handleKeyDown}
         transparency={transparency}
         allowInvisible={true}
         selected={isSelected}

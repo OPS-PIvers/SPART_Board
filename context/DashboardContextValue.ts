@@ -43,6 +43,9 @@ export interface DashboardContextValue {
   updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   bringToFront: (id: string) => void;
   moveWidgetLayer: (id: string, direction: 'up' | 'down') => void;
+  minimizeAllWidgets: () => void;
+  deleteAllWidgets: () => void;
+  resetWidgetSize: (id: string) => void;
   setBackground: (bg: string) => void;
   setGlobalStyle: (style: Partial<GlobalStyle>) => void;
   toggleToolVisibility: (type: WidgetType) => void;

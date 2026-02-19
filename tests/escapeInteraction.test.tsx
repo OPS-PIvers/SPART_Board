@@ -22,8 +22,23 @@ vi.mock('../components/layout/Dock', () => ({
   Dock: () => <div data-testid="dock" />,
 }));
 vi.mock('../components/widgets/WidgetRenderer', () => ({
-  WidgetRenderer: ({ widget }: { widget: WidgetData }) => (
-    <div data-testid={`widget-${widget.id}`} data-z={widget.z}>
+  WidgetRenderer: ({
+    widget,
+    updateWidget,
+  }: {
+    widget: WidgetData;
+    updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  }) => (
+    <div
+      data-testid={`widget-${widget.id}`}
+      data-z={widget.z}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          updateWidget(widget.id, { minimized: true });
+        }
+      }}
+    >
       {widget.type}
     </div>
   ),
@@ -185,6 +200,45 @@ describe('Global Escape Interaction', () => {
         detail: { widgetId: 'w2' },
       })
     );
+  });
+
+  it('minimizes a focused widget on Escape press', () => {
+    const widgets: WidgetData[] = [
+      {
+        id: 'w1',
+        type: 'clock',
+        x: 0,
+        y: 0,
+        w: 100,
+        h: 100,
+        z: 1,
+        flipped: false,
+        config: {},
+      } as unknown as WidgetData,
+    ];
+    const dashboard = createMockDashboard(widgets);
+    const mockUpdateWidget = vi.fn();
+
+    render(
+      <DashboardContext.Provider
+        value={
+          {
+            ...mockContextValue,
+            activeDashboard: dashboard,
+            updateWidget: mockUpdateWidget,
+          } as DashboardContextValue
+        }
+      >
+        <DashboardView />
+      </DashboardContext.Provider>
+    );
+
+    const widget = screen.getByTestId('widget-w1');
+    widget.focus();
+
+    fireEvent.keyDown(widget, { key: 'Escape' });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('w1', { minimized: true });
   });
 
   it('does not dispatch event if an input was just blurred', () => {

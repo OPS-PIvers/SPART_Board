@@ -1435,6 +1435,59 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
+  const minimizeAllWidgets = useCallback(() => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) =>
+        d.id === activeId
+          ? {
+              ...d,
+              widgets: d.widgets.map((w) => ({
+                ...w,
+                minimized: true,
+                flipped: false,
+              })),
+            }
+          : d
+      )
+    );
+  }, [activeId]);
+
+  const deleteAllWidgets = useCallback(() => {
+    if (!activeId) return;
+    lastLocalUpdateAt.current = Date.now();
+    setDashboards((prev) =>
+      prev.map((d) => (d.id === activeId ? { ...d, widgets: [] } : d))
+    );
+    addToast('All widgets removed');
+  }, [activeId, addToast]);
+
+  const resetWidgetSize = useCallback(
+    (id: string) => {
+      if (!activeId) return;
+      lastLocalUpdateAt.current = Date.now();
+      setDashboards((prev) =>
+        prev.map((d) => {
+          if (d.id !== activeId) return d;
+          return {
+            ...d,
+            widgets: d.widgets.map((w) => {
+              if (w.id !== id) return w;
+              const defaults = WIDGET_DEFAULTS[w.type] ?? {};
+              return {
+                ...w,
+                w: defaults.w ?? w.w,
+                h: defaults.h ?? w.h,
+              };
+            }),
+          };
+        })
+      );
+    },
+    [activeId]
+  );
+
   const setBackground = useCallback((bg: string) => {
     if (!activeIdRef.current) return;
     lastLocalUpdateAt.current = Date.now();
@@ -1521,6 +1574,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       updateWidget,
       bringToFront,
       moveWidgetLayer,
+      minimizeAllWidgets,
+      deleteAllWidgets,
+      resetWidgetSize,
       setBackground,
       updateDashboardSettings,
       updateDashboard,
@@ -1578,6 +1634,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       updateWidget,
       bringToFront,
       moveWidgetLayer,
+      minimizeAllWidgets,
+      deleteAllWidgets,
+      resetWidgetSize,
       setBackground,
       updateDashboardSettings,
       updateDashboard,

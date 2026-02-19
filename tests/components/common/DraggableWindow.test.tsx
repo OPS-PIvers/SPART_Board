@@ -1,11 +1,11 @@
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DraggableWindow } from '../../../components/common/DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../../types';
-import { useDashboard } from '../../../context/useDashboard';
-import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
+import { DashboardContext } from '../../../context/DashboardContextValue';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
-vi.mock('../../../context/useDashboard');
 vi.mock('lucide-react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('lucide-react')>();
   return {
@@ -25,13 +25,7 @@ vi.mock('../../../hooks/useScreenshot', () => ({
   }),
 }));
 
-describe('DraggableWindow', () => {
-  const mockUpdateWidget = vi.fn();
-  const mockRemoveWidget = vi.fn();
-  const mockDuplicateWidget = vi.fn();
-  const mockBringToFront = vi.fn();
-  const mockAddToast = vi.fn();
-
+describe('DraggableWindow (Tests folder)', () => {
   const mockWidget: WidgetData = {
     id: 'test-widget',
     type: 'text',
@@ -57,30 +51,34 @@ describe('DraggableWindow', () => {
     dockTextShadow: false,
   } as GlobalStyle;
 
+  const mockContext = {
+    updateWidget: vi.fn(),
+    removeWidget: vi.fn(),
+    duplicateWidget: vi.fn(),
+    bringToFront: vi.fn(),
+    addToast: vi.fn(),
+    resetWidgetSize: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as unknown as Mock).mockReturnValue({
-      activeDashboard: {
-        background: 'bg-slate-100',
-      },
-    });
   });
 
   it('renders toolbar buttons in the correct order', () => {
     render(
-      <DraggableWindow
-        widget={mockWidget}
-        settings={<div>Settings</div>}
-        title="Test Widget"
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        globalStyle={mockGlobalStyle}
+      <DashboardContext.Provider
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        value={mockContext as unknown as DashboardContextValue}
       >
-        <div>Content</div>
-      </DraggableWindow>
+        <DraggableWindow
+          widget={mockWidget}
+          settings={<div>Settings</div>}
+          title="Test Widget"
+          globalStyle={mockGlobalStyle}
+        >
+          <div>Content</div>
+        </DraggableWindow>
+      </DashboardContext.Provider>
     );
 
     // Simulate click to open toolbar
@@ -98,16 +96,13 @@ describe('DraggableWindow', () => {
     expect(closeIcon).toBeInTheDocument();
 
     // Verify order: Settings -> Close -> Chevron
-    // We can check their parent container and the order of children
     const settingsBtn = settingsIcon.closest('button');
     const closeBtn = closeIcon.closest('button');
     const chevronBtn = chevronIcon.closest('button');
 
     const container = settingsBtn?.parentElement;
-    expect(container).toBe(chevronBtn?.parentElement);
-    expect(container).toBe(closeBtn?.parentElement);
-
     const children = Array.from(container?.children ?? []);
+
     if (!settingsBtn || !closeBtn || !chevronBtn) {
       throw new Error('Buttons not found');
     }

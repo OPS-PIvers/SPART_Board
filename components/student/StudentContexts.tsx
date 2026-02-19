@@ -101,6 +101,15 @@ const mockDashboard: DashboardContextValue = {
   moveWidgetLayer: () => {
     // No-op
   },
+  minimizeAllWidgets: () => {
+    // No-op
+  },
+  deleteAllWidgets: () => {
+    // No-op
+  },
+  resetWidgetSize: () => {
+    // No-op
+  },
   setBackground: () => {
     // No-op
   },

@@ -57,6 +57,8 @@ export const DashboardView: React.FC = () => {
     bringToFront,
     addToast,
     loadDashboard,
+    minimizeAllWidgets,
+    deleteAllWidgets,
   } = useDashboard();
   const { uploadAndRegisterPdf } = useStorage();
 
@@ -76,11 +78,15 @@ export const DashboardView: React.FC = () => {
   const [animationClass, setAnimationClass] =
     React.useState<string>('animate-fade-in');
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const [zoom, setZoom] = React.useState(1);
+  const [zoomOrigin, setZoomOrigin] = React.useState({ x: 50, y: 50 });
 
   // Gesture Tracking
   const gestureStart = React.useRef<{ x: number; y: number } | null>(null);
   const gestureCurrent = React.useRef<{ x: number; y: number } | null>(null);
   const isFourFingerGesture = React.useRef(false);
+  const initialPinchDistance = React.useRef<number | null>(null);
+  const initialZoom = React.useRef<number>(1);
   const MIN_SWIPE_DISTANCE_PX = 100;
 
   const currentIndex = useMemo(() => {
@@ -90,6 +96,7 @@ export const DashboardView: React.FC = () => {
 
   React.useEffect(() => {
     setIsMinimized(false);
+    setZoom(1);
   }, [activeDashboard?.id, currentIndex]);
 
   // Keyboard Navigation
@@ -107,6 +114,13 @@ export const DashboardView: React.FC = () => {
           return;
         }
 
+        // Alt + Escape: Minimize all widgets
+        if (e.altKey) {
+          e.preventDefault();
+          minimizeAllWidgets();
+          return;
+        }
+
         if (activeDashboard && activeDashboard.widgets.length > 0) {
           const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
           const topWidget = sorted[0];
@@ -120,6 +134,15 @@ export const DashboardView: React.FC = () => {
         return;
       }
 
+      // Delete: Handle delete all if alt is pressed
+      if (e.key === 'Delete') {
+        if (e.altKey) {
+          e.preventDefault();
+          deleteAllWidgets();
+        }
+        return;
+      }
+
       // Alt + M: Toggle minimize
       if (e.altKey && (e.key === 'm' || e.key === 'M')) {
         e.preventDefault();
@@ -127,29 +150,36 @@ export const DashboardView: React.FC = () => {
         return;
       }
 
-      // Alt + Left/Right: Navigate boards
+      // Alt + Left/Right: Navigate boards (with wrap-around)
       if (e.altKey && e.key === 'ArrowLeft') {
         e.preventDefault();
-        if (currentIndex > 0) {
-          loadDashboard(dashboards[currentIndex - 1].id);
+        if (dashboards.length > 1) {
+          const nextIdx =
+            (currentIndex - 1 + dashboards.length) % dashboards.length;
+          loadDashboard(dashboards[nextIdx].id);
         }
       } else if (e.altKey && e.key === 'ArrowRight') {
         e.preventDefault();
-        if (currentIndex < dashboards.length - 1) {
-          loadDashboard(dashboards[currentIndex + 1].id);
+        if (dashboards.length > 1) {
+          const nextIdx = (currentIndex + 1) % dashboards.length;
+          loadDashboard(dashboards[nextIdx].id);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, dashboards, loadDashboard, activeDashboard]);
+  }, [
+    currentIndex,
+    dashboards,
+    loadDashboard,
+    activeDashboard,
+    minimizeAllWidgets,
+    deleteAllWidgets,
+  ]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 4) {
-      // e.preventDefault(); // Note: Calling preventDefault here might block scrolling/zooming if not careful, but for 4-finger gestures it's usually safe to claim.
-      // However, React synthetic events might complain if we call it asynchronously or late.
-      // For now, we just track.
       isFourFingerGesture.current = true;
       gestureStart.current = {
         x: e.touches[0].clientX,
@@ -159,16 +189,33 @@ export const DashboardView: React.FC = () => {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
       };
+    } else if (e.touches.length === 2) {
+      // Pinch tracking
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dist = Math.hypot(
+        touch1.clientX - touch2.clientX,
+        touch1.clientY - touch2.clientY
+      );
+      initialPinchDistance.current = dist;
+      initialZoom.current = zoom;
+
+      // Set zoom origin to midpoint of the two fingers
+      const midX = (touch1.clientX + touch2.clientX) / 2;
+      const midY = (touch1.clientY + touch2.clientY) / 2;
+      const percentX = (midX / window.innerWidth) * 100;
+      const percentY = (midY / window.innerHeight) * 100;
+      setZoomOrigin({ x: percentX, y: percentY });
     } else {
       isFourFingerGesture.current = false;
       gestureStart.current = null;
       gestureCurrent.current = null;
+      initialPinchDistance.current = null;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (isFourFingerGesture.current && gestureStart.current) {
-      // Verify we still have 4 fingers
       if (e.touches.length !== 4) {
         isFourFingerGesture.current = false;
         gestureStart.current = null;
@@ -176,11 +223,26 @@ export const DashboardView: React.FC = () => {
         return;
       }
 
-      e.preventDefault(); // Prevent native browser gestures (like back/forward) when using 4 fingers
+      e.preventDefault();
       gestureCurrent.current = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
       };
+    } else if (
+      e.touches.length === 2 &&
+      initialPinchDistance.current !== null
+    ) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dist = Math.hypot(
+        touch1.clientX - touch2.clientX,
+        touch1.clientY - touch2.clientY
+      );
+
+      const ratio = dist / initialPinchDistance.current;
+      const newZoom = Math.min(Math.max(0.5, initialZoom.current * ratio), 3);
+      setZoom(newZoom);
     }
   };
 
@@ -199,23 +261,26 @@ export const DashboardView: React.FC = () => {
       if (absY > absX && absY > MIN_SWIPE_DISTANCE_PX) {
         // Vertical Swipe
         if (deltaY > 0) {
-          // Swipe Down -> Minimize
-          setIsMinimized(true);
+          // Swipe Down -> Minimize All to Dock
+          minimizeAllWidgets();
         } else {
           // Swipe Up -> Restore
           setIsMinimized(false);
         }
       } else if (absX > absY && absX > MIN_SWIPE_DISTANCE_PX) {
-        // Horizontal Swipe
+        // Horizontal Swipe (with wrapping)
         if (deltaX < 0) {
           // Swipe Left -> Next Board
-          if (currentIndex < dashboards.length - 1) {
-            loadDashboard(dashboards[currentIndex + 1].id);
+          if (dashboards.length > 1) {
+            const nextIdx = (currentIndex + 1) % dashboards.length;
+            loadDashboard(dashboards[nextIdx].id);
           }
         } else {
           // Swipe Right -> Prev Board
-          if (currentIndex > 0) {
-            loadDashboard(dashboards[currentIndex - 1].id);
+          if (dashboards.length > 1) {
+            const nextIdx =
+              (currentIndex - 1 + dashboards.length) % dashboards.length;
+            loadDashboard(dashboards[nextIdx].id);
           }
         }
       }
@@ -225,6 +290,7 @@ export const DashboardView: React.FC = () => {
       gestureStart.current = null;
       gestureCurrent.current = null;
     }
+    initialPinchDistance.current = null;
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -430,8 +496,12 @@ export const DashboardView: React.FC = () => {
         key={activeDashboard.id}
         className={`relative w-full h-full ${animationClass} transition-all duration-500 ease-in-out`}
         style={{
-          transform: isMinimized ? 'translateY(80vh)' : 'none',
-          transformOrigin: 'bottom center',
+          transform: isMinimized
+            ? `translateY(80vh) scale(${zoom})`
+            : `scale(${zoom})`,
+          transformOrigin: isMinimized
+            ? 'bottom center'
+            : `${zoomOrigin.x}% ${zoomOrigin.y}%`,
           opacity: isMinimized ? 0 : 1,
           pointerEvents: isMinimized ? 'none' : 'auto',
         }}
