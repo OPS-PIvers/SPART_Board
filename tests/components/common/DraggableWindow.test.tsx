@@ -2,7 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DraggableWindow } from '../../../components/common/DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../../types';
-import { DashboardContext } from '../../../context/DashboardContextValue';
+import {
+  DashboardContext,
+  DashboardContextValue,
+} from '../../../context/DashboardContextValue';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
@@ -67,7 +70,6 @@ describe('DraggableWindow (Tests folder)', () => {
   it('renders toolbar buttons in the correct order', () => {
     render(
       <DashboardContext.Provider
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         value={mockContext as unknown as DashboardContextValue}
       >
         <DraggableWindow
