@@ -1,5 +1,11 @@
 # Gardener's Journal
 
+## 2025-06-06 - Refactor SeatingChartWidget
+
+**Weed:** `SeatingChartWidget.tsx` was ~1000 lines, mixing UI components (Widget, Settings, Sidebar), complex state management (drag & drop, layout generation), and constants.
+**Root Cause:** "God Component" pattern; features like drag-and-drop, multiple layout templates, and random assignment were implemented inline.
+**Plan:** Decomposed into `components/widgets/SeatingChart/` directory. Extracted `Settings.tsx`, `Sidebar.tsx`, `FurnitureItem.tsx`, `constants.ts`, and `layouts.ts`. Moved complex logic to `useSeatingChart.ts` hook.
+
 ## 2025-06-04 - Refactor LunchCountWidget
 
 **Weed:** `LunchCountWidget.tsx` was ~1000 lines, mixing UI components (Widget, Settings, Modal) with complex API fetching logic.
