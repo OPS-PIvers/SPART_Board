@@ -158,11 +158,6 @@ export interface ClockConfig {
   glow?: boolean;
 }
 
-export interface TimerConfig {
-  duration: number;
-  sound: boolean; // This is the completion sound toggle
-}
-
 export interface TrafficConfig {
   active?: string;
 }
@@ -512,7 +507,6 @@ export interface RecessGearConfig {
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
-  | TimerConfig
   | TrafficConfig
   | TextConfig
   | ChecklistConfig
