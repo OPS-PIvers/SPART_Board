@@ -109,6 +109,8 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
                 src={editingCat.imageUrl}
                 alt="Card background preview"
                 className="w-16 h-16 object-cover rounded-lg border border-slate-200 shrink-0"
+                referrerPolicy="no-referrer"
+                loading="lazy"
               />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-slate-700">Image set</p>

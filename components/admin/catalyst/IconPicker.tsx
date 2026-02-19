@@ -468,7 +468,7 @@ const ALL_ICONS = [
   'Gift',
   'GiftIcon',
   'Send',
-  'SendHorizonal',
+  'SendHorizontal',
   'Share',
   'Share2',
   'Link',
@@ -500,8 +500,10 @@ const ALL_ICONS = [
   'Circle',
 ];
 
-// Deduplicate the list
-const UNIQUE_ICONS = Array.from(new Set(ALL_ICONS));
+// Deduplicate and keep only names that resolve to a real lucide-react component
+const VALID_ICONS = Array.from(new Set(ALL_ICONS)).filter(
+  (name) => name in (Icons as Record<string, unknown>)
+);
 
 interface IconPickerProps {
   value: string;
@@ -512,10 +514,10 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange }) => {
   const [search, setSearch] = useState('');
 
   const filteredIcons = search.trim()
-    ? UNIQUE_ICONS.filter((name) =>
+    ? VALID_ICONS.filter((name) =>
         name.toLowerCase().includes(search.toLowerCase())
       )
-    : UNIQUE_ICONS;
+    : VALID_ICONS;
 
   return (
     <div className="space-y-2">
@@ -539,7 +541,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange }) => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full border border-slate-200 rounded pl-7 pr-3 py-1 text-xs bg-slate-50 focus:outline-none focus:border-indigo-300"
-          placeholder={`Search ${UNIQUE_ICONS.length}+ icons…`}
+          placeholder={`Search ${VALID_ICONS.length}+ icons…`}
         />
       </div>
       <div className="flex flex-wrap gap-1 p-2 bg-slate-50 rounded border border-slate-200 max-h-44 overflow-y-auto">

@@ -9,6 +9,7 @@ import { DEFAULT_CATALYST_CATEGORIES } from '../../config/catalystDefaults';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import {
   renderCatalystIcon,
+  isSafeIconUrl,
   mergeCatalystCategories,
   mergeCatalystRoutines,
 } from '../widgets/catalystHelpers';
@@ -272,7 +273,7 @@ export const CatalystPermissionEditor: React.FC<
                   key={cat.id}
                   className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm"
                 >
-                  {cat.imageUrl ? (
+                  {cat.imageUrl && isSafeIconUrl(cat.imageUrl) ? (
                     <img
                       src={cat.imageUrl}
                       alt={cat.label}
