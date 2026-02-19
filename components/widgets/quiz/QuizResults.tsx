@@ -20,6 +20,17 @@ import { QuizResponse, QuizData } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { QuizDriveService } from '@/utils/quizDriveService';
 
+/**
+ * Compute a student's percentage score from their isCorrect answer fields.
+ * Falls back to response.score if already stored (legacy sessions).
+ */
+function getResponseScore(r: QuizResponse, totalQuestions: number): number {
+  if (r.score !== null) return r.score;
+  if (totalQuestions === 0) return 0;
+  const correct = r.answers.filter((a) => a.isCorrect).length;
+  return Math.round((correct / totalQuestions) * 100);
+}
+
 interface QuizResultsProps {
   quiz: QuizData;
   responses: QuizResponse[];
@@ -39,12 +50,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     'overview' | 'questions' | 'students'
   >('overview');
 
+  const totalQuestions = quiz.questions.length;
   const completed = responses.filter((r) => r.status === 'completed');
   const avgScore =
     completed.length > 0
       ? Math.round(
-          completed.reduce((sum, r) => sum + (r.score ?? 0), 0) /
-            completed.length
+          completed.reduce(
+            (sum, r) => sum + getResponseScore(r, totalQuestions),
+            0
+          ) / completed.length
         )
       : null;
 
@@ -178,7 +192,7 @@ const OverviewTab: React.FC<{
   completed: QuizResponse[];
   avgScore: number | null;
   totalQuestions: number;
-}> = ({ responses, completed, avgScore }) => {
+}> = ({ responses, completed, avgScore, totalQuestions }) => {
   // Score distribution buckets: 0-59, 60-79, 80-89, 90-100
   const buckets = [
     { label: '90-100%', min: 90, max: 100, color: 'bg-emerald-500' },
@@ -214,9 +228,10 @@ const OverviewTab: React.FC<{
         </p>
         <div className="space-y-2">
           {buckets.map((b) => {
-            const count = completed.filter(
-              (r) => (r.score ?? 0) >= b.min && (r.score ?? 0) <= b.max
-            ).length;
+            const count = completed.filter((r) => {
+              const s = getResponseScore(r, totalQuestions);
+              return s >= b.min && s <= b.max;
+            }).length;
             const pct =
               completed.length > 0
                 ? Math.round((count / completed.length) * 100)
@@ -304,7 +319,13 @@ const StudentsTab: React.FC<{
   <div className="space-y-2">
     {responses
       .slice()
-      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+      .sort((a, b) => {
+        const scoreA =
+          a.status === 'completed' ? getResponseScore(a, totalQuestions) : -1;
+        const scoreB =
+          b.status === 'completed' ? getResponseScore(b, totalQuestions) : -1;
+        return scoreB - scoreA;
+      })
       .map((r) => {
         const correct = r.answers.filter((a) => a.isCorrect).length;
         return (
@@ -323,7 +344,9 @@ const StudentsTab: React.FC<{
             <div className="text-right shrink-0">
               {r.status === 'completed' ? (
                 <>
-                  <p className="text-sm font-bold text-white">{r.score}%</p>
+                  <p className="text-sm font-bold text-white">
+                    {getResponseScore(r, totalQuestions)}%
+                  </p>
                   <p className="text-xs text-slate-400">
                     {correct}/{totalQuestions}
                   </p>

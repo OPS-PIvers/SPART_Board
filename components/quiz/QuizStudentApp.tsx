@@ -253,7 +253,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
           await submitAnswer(questionId, answer, question);
         }}
         onComplete={async () => {
-          await completeQuiz(quizQuestions);
+          await completeQuiz();
         }}
         questions={quizQuestions}
         setQuestions={setQuizQuestions}

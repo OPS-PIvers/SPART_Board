@@ -177,6 +177,10 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }
 
   if (view === 'results' && loadedQuizData) {
+    // NOTE: responses here come from the teacher's current quiz_sessions/{uid} document.
+    // This means results are only available while the session data is in Firestore
+    // (immediately after or during a session). Historical sessions are not yet persisted
+    // separately; config.resultsSessionId is reserved for future per-session history.
     return (
       <QuizResults
         quiz={loadedQuizData}
