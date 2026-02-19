@@ -21,6 +21,10 @@ interface SubmitReportModalProps {
     hotLunchName: string;
     bentoBoxName: string;
     schoolSite: 'schumann-elementary' | 'orono-intermediate-school';
+    /** Formatted lunch time string, e.g. "11:30" */
+    lunchTime: string;
+    /** Formatted grade label for the submission row, e.g. "GR3" */
+    gradeLabel: string;
   };
   /** Whether the report is currently being submitted */
   isSubmitting: boolean;
@@ -55,6 +59,11 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
 
   const isIntermediate = data.schoolSite === 'orono-intermediate-school';
 
+  /** The formatted label that will appear in column B of the spreadsheet */
+  const columnBLabel = [data.lunchTime, data.gradeLabel, data.staffName]
+    .filter(Boolean)
+    .join(' - ');
+
   return (
     <div
       className="absolute inset-0 z-modal flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 rounded-3xl overflow-hidden"
@@ -78,7 +87,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
               >
                 Submit Lunch Report
               </h3>
-              <p className="text-white/70 text-xxs  uppercase tracking-widest font-bold">
+              <p className="text-white/70 text-xxs uppercase tracking-widest font-bold">
                 Review and add notes
               </p>
             </div>
@@ -94,6 +103,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Date / Staff */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <span className="text-xxs font-black text-slate-400 uppercase tracking-widest">
@@ -111,6 +121,19 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             </div>
           </div>
 
+          {/* Spreadsheet row preview (column B) */}
+          {columnBLabel && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+              <span className="text-xxs font-black text-slate-400 uppercase tracking-widest block mb-1">
+                Submission Label
+              </span>
+              <p className="text-sm font-bold text-slate-700 font-mono">
+                {columnBLabel}
+              </p>
+            </div>
+          )}
+
+          {/* Lunch counts */}
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-2xl border border-orange-300">
               <div className="flex flex-col">
@@ -170,6 +193,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             )}
           </div>
 
+          {/* Notes */}
           <div className="space-y-2">
             <label
               htmlFor="report-notes"
@@ -186,6 +210,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             />
           </div>
 
+          {/* Actions */}
           <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
             <Button
               onClick={onClose}

@@ -14,7 +14,11 @@ import {
 import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
-import { WidgetData, LunchCountConfig } from '../../../types';
+import {
+  WidgetData,
+  LunchCountConfig,
+  LunchCountGlobalConfig,
+} from '../../../types';
 import { Button } from '../../common/Button';
 import { RefreshCw, Undo2, CheckCircle2, Box, Users } from 'lucide-react';
 import { SubmitReportModal } from './SubmitReportModal';
@@ -24,18 +28,72 @@ import { DroppableZone } from './components/DroppableZone';
 
 import { WidgetLayout } from '../WidgetLayout';
 
+/**
+ * Format a grade value into the spreadsheet label used in column B.
+ *   Schumann: K → K, 1 → GR1, 2 → GR2, MAC → MAC
+ *   Intermediate: 3 → GR3, 4 → GR4, 5 → GR5
+ */
+function formatGradeLabel(grade: string): string {
+  if (!grade) return '';
+  if (grade === 'K' || grade === 'MAC') return grade;
+  return `GR${grade}`;
+}
+
+/**
+ * Format a display name to "F. Last" (first initial + last name).
+ * e.g. "Jane Smith" → "J. Smith"
+ */
+function formatTeacherName(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/);
+  if (parts.length >= 2 && parts[0].length > 0) {
+    return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+  }
+  return displayName;
+}
+
+/**
+ * Build a Central Time (America/Chicago) timestamp string.
+ * Falls back to the user's local time if the Intl API isn't available.
+ */
+function getCentralTimestamp(): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    }).format(new Date());
+  } catch {
+    return new Date().toLocaleString();
+  }
+}
+
 export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addToast, rosters, activeRosterId } = useDashboard();
-  const { user } = useAuth();
+  const { user, featurePermissions } = useAuth();
   const config = widget.config as LunchCountConfig;
   const {
     cachedMenu = null,
     assignments = {},
     roster = [],
     rosterMode = 'class',
+    schoolSite = 'schumann-elementary',
+    lunchTimeHour = '',
+    lunchTimeMinute = '',
+    gradeLevel = '',
   } = config;
+
+  // Resolve global lunch count settings from feature permissions
+  const lunchGlobalConfig = useMemo((): LunchCountGlobalConfig => {
+    const perm = featurePermissions.find((p) => p.widgetType === 'lunchCount');
+    return (perm?.config ?? {}) as LunchCountGlobalConfig;
+  }, [featurePermissions]);
 
   const { isSyncing, fetchNutrislice } = useNutrislice({
     widgetId: widget.id,
@@ -125,24 +183,64 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const handleSubmitReport = async (notes: string, extraPizza?: number) => {
+    const { submissionUrl, schumannSheetId, intermediateSheetId } =
+      lunchGlobalConfig;
+
+    if (!submissionUrl) {
+      addToast(
+        'No submission URL configured. Contact your administrator.',
+        'error'
+      );
+      return;
+    }
+
+    const sheetId =
+      schoolSite === 'orono-intermediate-school'
+        ? intermediateSheetId
+        : schumannSheetId;
+
+    const teacherName = formatTeacherName(user?.displayName ?? 'Unknown');
+    const gradeLabel = formatGradeLabel(gradeLevel);
+    const lunchTime = lunchTimeHour
+      ? `${lunchTimeHour}:${(lunchTimeMinute || '00').padStart(2, '0')}`
+      : '';
+
+    const timestamp = getCentralTimestamp();
+    // Column B: [Lunch Time] - [Grade] - [Teacher]
+    const label = [lunchTime, gradeLabel, teacherName]
+      .filter(Boolean)
+      .join(' - ');
+
+    // Columns C-F mapped for each school:
+    //   Schumann:     C=hotLunch, D=bentoBox, E=(blank), F=notes
+    //   Intermediate: C=hotLunch, D=bentoBox, E=extraPizza, F=notes
+    const isIntermediate = schoolSite === 'orono-intermediate-school';
+
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.warn('Lunch Report Submitted:', {
-        date: new Date().toLocaleDateString(),
-        staff: user?.displayName ?? 'Unknown',
-        hotLunch: stats.hotLunch,
-        bentoBox: stats.bentoBox,
-        homeLunch: stats.homeLunch,
+      const body = new URLSearchParams({
+        timestamp,
+        label,
+        hotLunch: String(stats.hotLunch),
+        bentoBox: String(stats.bentoBox),
+        extraPizza: isIntermediate ? String(extraPizza ?? 0) : '',
         notes,
-        extraPizza,
+        ...(sheetId ? { sheetId } : {}),
+      });
+
+      await fetch(submissionUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body,
       });
 
       addToast('Lunch report submitted successfully!', 'success');
       setIsModalOpen(false);
     } catch (_err) {
-      addToast('Failed to submit report', 'error');
+      addToast(
+        'Failed to submit report. Check your connection and try again.',
+        'error'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -594,12 +692,16 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         onSubmit={handleSubmitReport}
         data={{
           date: new Date().toLocaleDateString(),
-          staffName: user?.displayName ?? 'Unknown Staff',
+          staffName: formatTeacherName(user?.displayName ?? 'Unknown Staff'),
           hotLunch: stats.hotLunch,
           bentoBox: stats.bentoBox,
           hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
           bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
-          schoolSite: config.schoolSite ?? 'schumann-elementary',
+          schoolSite,
+          lunchTime: lunchTimeHour
+            ? `${lunchTimeHour}:${(lunchTimeMinute || '00').padStart(2, '0')}`
+            : '',
+          gradeLabel: formatGradeLabel(gradeLevel),
         }}
         isSubmitting={isSubmitting}
       />
