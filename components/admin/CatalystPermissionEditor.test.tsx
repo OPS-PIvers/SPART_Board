@@ -10,6 +10,20 @@ import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 import { CatalystGlobalConfig, CatalystRoutine } from '../../types';
 import { CATALYST_ROUTINES } from '../../config/catalystRoutines';
 
+vi.mock('../../context/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: { uid: 'test-user' },
+    isAdmin: true,
+  })),
+}));
+
+vi.mock('../../hooks/useStorage', () => ({
+  useStorage: vi.fn(() => ({
+    uploadFile: vi.fn().mockResolvedValue('https://example.com/image.png'),
+    uploading: false,
+  })),
+}));
+
 describe('CatalystPermissionEditor', () => {
   const mockOnChange = vi.fn();
   const mockOnShowMessage = vi.fn();

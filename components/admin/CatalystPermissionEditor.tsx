@@ -14,6 +14,8 @@ import {
 } from '../widgets/catalystHelpers';
 import { CategoryEditor } from './catalyst/CategoryEditor';
 import { RoutineEditor } from './catalyst/RoutineEditor';
+import { useStorage } from '../../hooks/useStorage';
+import { useAuth } from '../../context/useAuth';
 
 /**
  * Compares two categories for equality by comparing relevant fields explicitly.
@@ -26,7 +28,8 @@ const areCategoriesEqual = (
     a.id === b.id &&
     a.label === b.label &&
     a.icon === b.icon &&
-    a.color === b.color
+    a.color === b.color &&
+    (a.imageUrl ?? '') === (b.imageUrl ?? '')
   );
 };
 
@@ -82,6 +85,16 @@ export const CatalystPermissionEditor: React.FC<
 > = ({ config, onChange, onShowMessage }) => {
   // Track the previous config to detect changes
   const prevConfigRef = useRef<CatalystGlobalConfig | undefined>(config);
+  const { uploadFile } = useStorage();
+  const { user } = useAuth();
+
+  const handleUploadImage = async (file: File): Promise<string> => {
+    const uid = user?.uid ?? 'admin';
+    return uploadFile(
+      `admin_catalyst_icons/${uid}/${Date.now()}-${file.name}`,
+      file
+    );
+  };
 
   // Initialize state using shared helper functions
   const [categories, setCategories] = useState<CatalystCategory[]>(() =>
@@ -258,11 +271,20 @@ export const CatalystPermissionEditor: React.FC<
                   key={cat.id}
                   className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm"
                 >
-                  <div
-                    className={`w-10 h-10 rounded-lg ${cat.color} flex items-center justify-center text-white shrink-0`}
-                  >
-                    {renderCatalystIcon(cat.icon, 20)}
-                  </div>
+                  {cat.imageUrl ? (
+                    <img
+                      src={cat.imageUrl}
+                      alt={cat.label}
+                      className="w-10 h-10 rounded-lg object-cover shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div
+                      className={`w-10 h-10 rounded-lg ${cat.color} flex items-center justify-center text-white shrink-0`}
+                    >
+                      {renderCatalystIcon(cat.icon, 20)}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-slate-700 text-sm truncate">
                       {cat.label}
@@ -367,6 +389,8 @@ export const CatalystPermissionEditor: React.FC<
         categories={categories}
         onSave={handleSaveCategory}
         onCancel={() => setEditingCategory(null)}
+        onShowMessage={onShowMessage}
+        onUploadImage={handleUploadImage}
       />
       <RoutineEditor
         routine={editingRoutine}
@@ -375,6 +399,7 @@ export const CatalystPermissionEditor: React.FC<
         onSave={handleSaveRoutine}
         onCancel={() => setEditingRoutine(null)}
         onShowMessage={onShowMessage}
+        onUploadImage={handleUploadImage}
       />
     </div>
   );
