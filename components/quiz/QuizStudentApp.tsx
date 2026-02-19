@@ -125,14 +125,6 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     completeQuiz,
   } = useQuizSessionStudent();
 
-  // Auto-join if code is in URL
-  useEffect(() => {
-    if (urlCode && !joined && user) {
-      void handleJoin(urlCode);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlCode, user]);
-
   const handleJoin = useCallback(
     async (joinCode: string) => {
       if (!user.email) {
@@ -148,6 +140,15 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     },
     [user, joinQuizSession]
   );
+
+  // Auto-join if code is in URL. handleJoin is async — setState runs after
+  // await (not synchronously), so set-state-in-effect is a false positive here.
+  useEffect(() => {
+    if (urlCode && !joined && user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void handleJoin(urlCode);
+    }
+  }, [urlCode, user, joined, handleJoin]);
 
   const handleSignOut = () => void signOut(auth);
 

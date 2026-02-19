@@ -13,6 +13,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { QuizData, QuizQuestion } from '@/types';
+import { gradeAnswer } from '@/hooks/useQuizSession';
 
 interface QuizPreviewProps {
   quiz: QuizData;
@@ -144,7 +145,7 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
           <MCAnswerArea
             options={shuffledOptions}
             selectedAnswer={selectedAnswer}
-            correctAnswer={question.correctAnswer}
+            question={question}
             showAnswer={showAnswer}
             onSelect={(ans) => {
               setSelectedAnswer(ans);
@@ -231,15 +232,14 @@ function getShuffledOptions(q: QuizQuestion): string[] {
 const MCAnswerArea: React.FC<{
   options: string[];
   selectedAnswer: string | null;
-  correctAnswer: string;
+  question: QuizQuestion;
   showAnswer: boolean;
   onSelect: (ans: string) => void;
-}> = ({ options, selectedAnswer, correctAnswer, showAnswer, onSelect }) => (
+}> = ({ options, selectedAnswer, question, showAnswer, onSelect }) => (
   <div className="space-y-2">
     {options.map((opt) => {
       const isSelected = selectedAnswer === opt;
-      const isCorrect =
-        opt.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+      const isCorrect = gradeAnswer(question, opt);
       let cls =
         'w-full text-left px-4 py-3 rounded-xl border text-sm transition-all font-medium ';
       if (!showAnswer) {
