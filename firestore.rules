@@ -155,11 +155,17 @@ service cloud.firestore {
            isAdmin());
         allow create: if request.auth != null &&
           request.auth.uid == studentUid &&
-          request.resource.data.studentUid == studentUid;
-        allow update: if request.auth != null &&
-          (request.auth.uid == teacherUid ||
-           request.auth.uid == studentUid ||
-           isAdmin());
+          request.resource.data.studentUid == studentUid &&
+          // Students cannot forge a score on creation
+          request.resource.data.score == null;
+        allow update: if request.auth != null && (
+          // Teacher and admins can update any field (including score for future use)
+          request.auth.uid == teacherUid || isAdmin() ||
+          // Students can update their own response but cannot modify the score field
+          // (score is derived from isCorrect answer fields, not written by the student)
+          (request.auth.uid == studentUid &&
+           request.resource.data.score == resource.data.score)
+        );
         allow delete: if request.auth != null &&
           (request.auth.uid == teacherUid || isAdmin());
       }

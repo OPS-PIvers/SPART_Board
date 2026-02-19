@@ -321,8 +321,8 @@ const StudentRow: React.FC<{
         {response.studentName}
       </span>
       <span className={`text-xs ${statusColor}`}>
-        {response.status === 'completed' && response.score !== null
-          ? `${response.score}%`
+        {response.status === 'completed'
+          ? `${Math.round((response.answers.filter((a) => a.isCorrect).length / Math.max(totalQuestions, 1)) * 100)}%`
           : `${response.answers.length}/${totalQuestions}`}
       </span>
     </div>

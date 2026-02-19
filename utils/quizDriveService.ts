@@ -31,6 +31,19 @@ const COL_INCORRECT_4 = 7;
 const APP_FOLDER_NAME = 'SPART Board';
 const QUIZ_FOLDER_NAME = 'Quizzes';
 
+/** Escape single quotes in Drive API q-string values (single-quote is the delimiter). */
+function driveQueryEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/**
+ * Sanitize a title for use as a Drive file name.
+ * Drive disallows `/` and some OS-reserved characters; replace them with underscores.
+ */
+function sanitizeDriveFileName(title: string): string {
+  return title.replace(/[/\\:*?"<>|]/g, '_').trim() || 'untitled';
+}
+
 interface DriveFileCreateResponse {
   id: string;
   name: string;
@@ -68,7 +81,7 @@ export class QuizDriveService {
     folderName: string,
     parentId?: string
   ): Promise<string> {
-    let q = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    let q = `name = '${driveQueryEscape(folderName)}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     if (parentId) q += ` and '${parentId}' in parents`;
 
     const listRes = await fetch(
@@ -111,7 +124,7 @@ export class QuizDriveService {
    */
   async saveQuiz(quiz: QuizData, existingFileId?: string): Promise<string> {
     const folderId = await this.getQuizFolderId();
-    const fileName = `${quiz.title}.quiz.json`;
+    const fileName = `${sanitizeDriveFileName(quiz.title)}.quiz.json`;
     const content = JSON.stringify(quiz, null, 2);
 
     // Try to update existing file
@@ -131,7 +144,7 @@ export class QuizDriveService {
     // Check if a file with the same name already exists in the folder
     const existingRes = await fetch(
       `${DRIVE_API_URL}/files?q=${encodeURIComponent(
-        `name = '${fileName}' and '${folderId}' in parents and trashed = false`
+        `name = '${driveQueryEscape(fileName)}' and '${folderId}' in parents and trashed = false`
       )}&fields=files(id)`,
       { headers: this.authHeaders }
     );
@@ -139,12 +152,19 @@ export class QuizDriveService {
       const existing = (await existingRes.json()) as DriveFileListResponse;
       if (existing.files && existing.files.length > 0) {
         const fileId = existing.files[0].id;
-        await fetch(`${UPLOAD_API_URL}/files/${fileId}?uploadType=media`, {
-          method: 'PATCH',
-          headers: { ...this.authHeaders, 'Content-Type': 'application/json' },
-          body: content,
-        });
-        return fileId;
+        const patchRes = await fetch(
+          `${UPLOAD_API_URL}/files/${fileId}?uploadType=media`,
+          {
+            method: 'PATCH',
+            headers: {
+              ...this.authHeaders,
+              'Content-Type': 'application/json',
+            },
+            body: content,
+          }
+        );
+        if (patchRes.ok) return fileId;
+        // Fall through to create a new file if the patch fails
       }
     }
 
@@ -243,7 +263,7 @@ export class QuizDriveService {
     const data = (await res.json()) as SheetsValueRange;
     const rows = data.values ?? [];
 
-    // Skip header row if present (detect by checking if row 0 col B is not a question)
+    // Skip header row if present (detect by checking if row 0 col C is not a valid question type)
     let startRow = 0;
     if (rows.length > 0) {
       const firstCell = (rows[0][COL_QUESTION_TYPE] ?? '').toUpperCase().trim();
@@ -328,11 +348,17 @@ export class QuizDriveService {
         if (!ans) return '';
         return `${ans.answer}${ans.isCorrect ? ' ✓' : ' ✗'}`;
       });
+      // Compute score from isCorrect answer fields (score field may be null for newer responses)
+      const correct = r.answers.filter((a) => a.isCorrect).length;
+      const scoreDisplay =
+        r.status === 'completed' && questions.length > 0
+          ? `${Math.round((correct / questions.length) * 100)}%`
+          : '';
       return [
         r.studentName,
         r.studentEmail,
         r.status,
-        r.score !== null ? `${r.score}%` : '',
+        scoreDisplay,
         submitted,
         ...answerCols,
       ];

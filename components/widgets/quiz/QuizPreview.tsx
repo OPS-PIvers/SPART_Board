@@ -3,7 +3,7 @@
  * Teachers navigate through questions and see correct/incorrect highlighting.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,6 +14,16 @@ import {
 } from 'lucide-react';
 import { QuizData, QuizQuestion } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
+
+/** Unbiased Fisher-Yates in-place shuffle (returns new array) */
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
 
 interface QuizPreviewProps {
   quiz: QuizData;
@@ -54,6 +64,18 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
     return () => clearInterval(id);
   }, [timeLeft, showAnswer]);
 
+  // Shuffle once per question object to avoid reshuffling on every timer tick or
+  // answer-state change. question is stable between state changes within the same
+  // question (only changes when currentIndex changes). Must run before any early return.
+  const shuffledOptions = useMemo(() => {
+    if (question?.type !== 'MC') return [];
+    const all = [
+      question.correctAnswer,
+      ...question.incorrectAnswers.filter(Boolean),
+    ];
+    return fisherYatesShuffle(all);
+  }, [question]);
+
   if (!question) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
@@ -67,8 +89,6 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
       </div>
     );
   }
-
-  const shuffledOptions = getShuffledOptions(question);
 
   return (
     <div className="flex flex-col h-full bg-slate-900/50">
@@ -222,12 +242,6 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
 };
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
-
-function getShuffledOptions(q: QuizQuestion): string[] {
-  if (q.type !== 'MC') return [];
-  const all = [q.correctAnswer, ...q.incorrectAnswers.filter(Boolean)];
-  return all.sort(() => Math.random() - 0.5);
-}
 
 const MCAnswerArea: React.FC<{
   options: string[];

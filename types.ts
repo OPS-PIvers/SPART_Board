@@ -596,7 +596,7 @@ export interface QuizResponse {
   joinedAt: number;
   status: QuizResponseStatus;
   answers: QuizResponseAnswer[];
-  /** Percentage score 0–100, calculated server-side on completion */
+  /** Percentage score 0–100, computed from isCorrect answer fields on completion */
   score: number | null;
   submittedAt: number | null;
 }

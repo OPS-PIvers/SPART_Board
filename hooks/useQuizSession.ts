@@ -117,9 +117,7 @@ export const useQuizSessionTeacher = (
       responsesRef,
       (snap) => {
         const list = snap.docs.map((d) => d.data() as QuizResponse);
-        setResponses((prev) =>
-          JSON.stringify(prev) === JSON.stringify(list) ? prev : list
-        );
+        setResponses(list);
       },
       (err) => console.error('[useQuizSessionTeacher] responses:', err)
     );
@@ -211,7 +209,7 @@ export interface UseQuizSessionStudentResult {
     answer: string,
     question: QuizQuestion
   ) => Promise<void>;
-  completeQuiz: (questions: QuizQuestion[]) => Promise<void>;
+  completeQuiz: () => Promise<void>;
 }
 
 export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
@@ -358,16 +356,13 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     []
   );
 
-  const completeQuiz = useCallback(async (questions: QuizQuestion[]) => {
+  const completeQuiz = useCallback(async () => {
     const teacherUid = teacherUidRef.current;
     const studentUid = studentUidRef.current;
     if (!teacherUid || !studentUid) return;
 
-    const answers = myResponseRef.current?.answers ?? [];
-    const correct = answers.filter((a) => a.isCorrect).length;
-    const score =
-      questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
-
+    // Score is computed from isCorrect answer fields by the teacher/results view,
+    // not written by the student, to prevent client-side forgery of the score field.
     await updateDoc(
       doc(
         db,
@@ -376,7 +371,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         RESPONSES_COLLECTION,
         studentUid
       ),
-      { status: 'completed', score, submittedAt: Date.now() }
+      { status: 'completed', submittedAt: Date.now() }
     );
   }, []);
 
