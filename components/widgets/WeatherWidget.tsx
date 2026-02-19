@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../config/firebase';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
+import { db, functions } from '@/config/firebase';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   WeatherConfig,
@@ -80,7 +80,7 @@ const EARTH_NETWORKS_ICONS = {
 import { WidgetLayout } from './WidgetLayout';
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, activeDashboard } = useDashboard();
+  const { updateWidget, activeDashboard, setBackground } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const { featurePermissions } = useAuth();
   const config = widget.config as WeatherConfig;
@@ -93,6 +93,7 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     lastSync = null,
     showFeelsLike: localShowFeelsLike,
     hideClothing,
+    syncBackground,
   } = config;
 
   const weatherPermission = featurePermissions.find(
@@ -180,6 +181,51 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     condition,
     lastSync,
     config,
+  ]);
+
+  // Nexus Connection: Weather -> Background Theme
+  // Maps weather conditions to preset IDs from BACKGROUND_GRADIENTS
+  useEffect(() => {
+    if (!syncBackground || !activeDashboard) return;
+
+    const getBackgroundForCondition = (cond: string) => {
+      switch (cond.toLowerCase()) {
+        case 'sunny':
+        case 'clear':
+          return 'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
+        case 'cloudy':
+        case 'clouds':
+          return 'bg-gradient-to-br from-slate-500 via-slate-400 to-slate-300';
+        case 'rainy':
+        case 'rain':
+        case 'drizzle':
+          return 'bg-gradient-to-br from-slate-800 via-blue-900 to-slate-900';
+        case 'snowy':
+        case 'snow':
+          return 'bg-gradient-to-br from-blue-100 via-white to-blue-50';
+        case 'windy':
+        case 'squall':
+        case 'tornado':
+          return 'bg-gradient-to-br from-teal-600 via-emerald-500 to-teal-400';
+        default:
+          console.warn(
+            `[WeatherWidget] Unhandled condition for background sync: ${cond}`
+          );
+          return 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-100';
+      }
+    };
+
+    const targetBg = getBackgroundForCondition(condition);
+    // Only update if different to avoid loops/fighting
+    if (activeDashboard.background !== targetBg) {
+      setBackground(targetBg);
+    }
+  }, [
+    condition,
+    syncBackground,
+    activeDashboard?.background,
+    setBackground,
+    activeDashboard,
   ]);
 
   const getIcon = (size: string) => {
@@ -353,6 +399,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     source = 'openweather',
     showFeelsLike: localShowFeelsLike,
     hideClothing,
+    syncBackground,
   } = config;
 
   // We should also access global config to hide controls if forced by admin proxy
@@ -619,6 +666,26 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           onChange={(checked) =>
             updateWidget(widget.id, {
               config: { ...config, hideClothing: checked },
+            })
+          }
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
+            <Palette className="w-3 h-3" /> Sync Background
+          </span>
+          <span className="text-xxs text-slate-400 leading-tight">
+            Automatically change dashboard background to match weather.
+          </span>
+        </div>
+        <Toggle
+          size="sm"
+          checked={syncBackground ?? false}
+          onChange={(checked) =>
+            updateWidget(widget.id, {
+              config: { ...config, syncBackground: checked },
             })
           }
         />
