@@ -334,7 +334,8 @@ describe('LibraryManager', () => {
     // First one is sticker.
 
     const fileInputs = container.querySelectorAll('input[type="file"]');
-    const stickerInput = fileInputs[0];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    const stickerInput = fileInputs[0] as HTMLInputElement;
 
     const file = new File(['(⌐□_□)'], 'sticker.png', { type: 'image/png' });
 
