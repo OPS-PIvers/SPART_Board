@@ -366,7 +366,6 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   }, [maxNameLength]);
 
   const renderSinglePick = () => {
-
     if (visualStyle === 'wheel' && students.length > 0) {
       const wheelSize = Math.min(widget.w * 0.95, widget.h * 0.8);
 
