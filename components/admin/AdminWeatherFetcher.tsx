@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { WeatherGlobalConfig } from '@/types';
 
@@ -25,7 +26,7 @@ const EARTH_NETWORKS_API = {
 const EARTH_NETWORKS_ICONS = {
   SNOW: [140, 186, 210, 102],
   CLOUDY: [1, 13, 24, 70, 71, 73, 79],
-  SUNNY: [2, 3, 4],
+  SUNNY: [0, 2, 3, 4, 7],
   RAIN: [10, 11, 12, 14, 15, 16, 17, 18, 19],
 };
 
@@ -80,37 +81,57 @@ export const AdminWeatherFetcher: React.FC = () => {
           }).toString();
 
           const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
-          const proxies = [
-            (u: string) =>
-              `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-            (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-            (u: string) =>
-              `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-          ];
+
+          // Use our own Cloud Function proxy to avoid CORS issues entirely
+          const fetchProxy = httpsCallable<
+            { url: string },
+            EarthNetworksResponse
+          >(functions, 'fetchWeatherProxy');
 
           let data: EarthNetworksResponse | null = null;
-          for (const getProxyUrl of proxies) {
-            try {
-              const res = await fetch(getProxyUrl(url), {
-                signal: abortController.signal,
-              });
-              if (!res.ok) continue;
-              const text = await res.text();
-              const trimmed = text.trim();
-              if (
-                !trimmed ||
-                trimmed.startsWith('<') ||
-                trimmed.toLowerCase().startsWith('<!doctype')
-              ) {
-                continue;
+
+          try {
+            const result = await fetchProxy({ url });
+            data = result.data;
+            console.warn('[AdminWeatherFetcher] Fetched via Cloud Proxy');
+          } catch (_proxyErr) {
+            console.warn(
+              '[AdminWeatherFetcher] Cloud Proxy failed, trying public proxies'
+            );
+            const proxies = [
+              (u: string) =>
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+              (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+              (u: string) =>
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+            ];
+
+            for (const getProxyUrl of proxies) {
+              try {
+                const res = await fetch(getProxyUrl(url), {
+                  signal: abortController.signal,
+                });
+                if (!res.ok) continue;
+                const text = await res.text();
+                const trimmed = text.trim();
+                if (
+                  !trimmed ||
+                  trimmed.startsWith('<') ||
+                  trimmed.toLowerCase().startsWith('<!doctype')
+                ) {
+                  continue;
+                }
+                data = JSON.parse(trimmed) as EarthNetworksResponse;
+                if (data && data.o) break;
+              } catch (innerErr) {
+                if (
+                  innerErr instanceof Error &&
+                  innerErr.name === 'AbortError'
+                ) {
+                  return;
+                }
+                /* try next proxy */
               }
-              data = JSON.parse(trimmed) as EarthNetworksResponse;
-              if (data && data.o) break;
-            } catch (innerErr) {
-              if (innerErr instanceof Error && innerErr.name === 'AbortError') {
-                return;
-              }
-              /* try next proxy */
             }
           }
 

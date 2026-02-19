@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '@/config/firebase';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import {
   WidgetData,
   WeatherConfig,
@@ -21,7 +22,7 @@ import {
   MapPin,
   RefreshCw,
   AlertCircle,
-  Loader2,
+  Shirt,
 } from 'lucide-react';
 
 interface OpenWeatherData {
@@ -72,14 +73,14 @@ const EARTH_NETWORKS_API = {
 const EARTH_NETWORKS_ICONS = {
   SNOW: [140, 186, 210, 102],
   CLOUDY: [1, 13, 24, 70, 71, 73, 79],
-  SUNNY: [2, 3, 4],
+  SUNNY: [0, 2, 3, 4, 7],
   RAIN: [10, 11, 12, 14, 15, 16, 17, 18, 19],
 };
 
 import { WidgetLayout } from './WidgetLayout';
 
 export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { updateWidget, addToast, activeDashboard } = useDashboard();
+  const { updateWidget, activeDashboard, setBackground } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const { featurePermissions } = useAuth();
   const config = widget.config as WeatherConfig;
@@ -88,14 +89,12 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     feelsLike,
     condition = 'sunny',
     isAuto = false,
-    locationName = 'Classroom',
+    locationName: _locationName = 'Classroom',
     lastSync = null,
-    source = 'openweather',
-    city = '',
     showFeelsLike: localShowFeelsLike,
+    hideClothing,
+    syncBackground,
   } = config;
-
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const weatherPermission = featurePermissions.find(
     (p) => p.widgetType === 'weather'
@@ -107,10 +106,6 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // Use local config if set, otherwise fallback to global config
   const showFeelsLike =
     localShowFeelsLike ?? globalConfig?.showFeelsLike ?? false;
-
-  const systemKey = import.meta.env.VITE_OPENWEATHER_API_KEY as
-    | string
-    | undefined;
 
   // Initial Admin Proxy Fetch
   useEffect(() => {
@@ -188,119 +183,49 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     config,
   ]);
 
-  const handleRefresh = useCallback(async () => {
-    if (!isAuto || isSyncing) return;
+  // Nexus Connection: Weather -> Background Theme
+  // Maps weather conditions to preset IDs from BACKGROUND_GRADIENTS
+  useEffect(() => {
+    if (!syncBackground || !activeDashboard) return;
 
-    // If Admin Proxy is on, we don't fetch manually, we just wait for subscription.
-    // But user clicked "Refresh", so maybe we can trigger a check or just toast.
-    if (globalConfig?.fetchingStrategy === 'admin_proxy') {
-      addToast('Syncing with school station...', 'info');
-      return;
-    }
-
-    setIsSyncing(true);
-
-    try {
-      if (source === 'earth_networks') {
-        const queryParams = new URLSearchParams({
-          ...EARTH_NETWORKS_API.PARAMS,
-          si: STATION_CONFIG.id,
-          locstr: `${STATION_CONFIG.lat},${STATION_CONFIG.lon}`,
-        }).toString();
-
-        const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
-        const proxies = [
-          (u: string) =>
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-          (u: string) =>
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-        ];
-
-        let data: EarthNetworksResponse | null = null;
-        for (const getProxyUrl of proxies) {
-          try {
-            const res = await fetch(getProxyUrl(url));
-            if (!res.ok) continue;
-            const text = await res.text();
-            const trimmed = text.trim();
-
-            if (
-              !trimmed ||
-              trimmed.startsWith('<') ||
-              trimmed.toLowerCase().startsWith('<!doctype')
-            ) {
-              continue;
-            }
-
-            data = JSON.parse(trimmed) as EarthNetworksResponse;
-            if (data && data.o) break;
-          } catch (_) {
-            /* try next */
-          }
-        }
-
-        if (!data?.o) throw new Error('Station data unavailable');
-
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            temp: data.o.t,
-            feelsLike: data.o.fl ?? data.o.t,
-            condition: EARTH_NETWORKS_ICONS.SNOW.includes(data.o.ic)
-              ? 'snowy'
-              : EARTH_NETWORKS_ICONS.CLOUDY.includes(data.o.ic)
-                ? 'cloudy'
-                : EARTH_NETWORKS_ICONS.SUNNY.includes(data.o.ic)
-                  ? 'sunny'
-                  : EARTH_NETWORKS_ICONS.RAIN.includes(data.o.ic)
-                    ? 'rainy'
-                    : 'cloudy',
-            locationName: STATION_CONFIG.name,
-            lastSync: Date.now(),
-          },
-        });
-      } else {
-        // OpenWeather sync
-        if (!systemKey) throw new Error('API Key missing');
-        const params = city.trim()
-          ? `q=${encodeURIComponent(city.trim())}`
-          : `lat=${STATION_CONFIG.lat}&lon=${STATION_CONFIG.lon}`;
-
-        const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?${params}&appid=${systemKey}&units=imperial`
-        );
-        const data = (await res.json()) as OpenWeatherData;
-        if (Number(data.cod) !== 200) throw new Error(String(data.message));
-
-        updateWidget(widget.id, {
-          config: {
-            ...config,
-            temp: data.main.temp,
-            feelsLike: data.main.feels_like,
-            condition: data.weather[0].main.toLowerCase(),
-            locationName: data.name,
-            lastSync: Date.now(),
-          },
-        });
+    const getBackgroundForCondition = (cond: string) => {
+      switch (cond.toLowerCase()) {
+        case 'sunny':
+        case 'clear':
+          return 'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
+        case 'cloudy':
+        case 'clouds':
+          return 'bg-gradient-to-br from-slate-500 via-slate-400 to-slate-300';
+        case 'rainy':
+        case 'rain':
+        case 'drizzle':
+          return 'bg-gradient-to-br from-slate-800 via-blue-900 to-slate-900';
+        case 'snowy':
+        case 'snow':
+          return 'bg-gradient-to-br from-blue-100 via-white to-blue-50';
+        case 'windy':
+        case 'squall':
+        case 'tornado':
+          return 'bg-gradient-to-br from-teal-600 via-emerald-500 to-teal-400';
+        default:
+          console.warn(
+            `[WeatherWidget] Unhandled condition for background sync: ${cond}`
+          );
+          return 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-100';
       }
-      addToast('Weather updated', 'success');
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Update failed', 'error');
-    } finally {
-      setIsSyncing(false);
+    };
+
+    const targetBg = getBackgroundForCondition(condition);
+    // Only update if different to avoid loops/fighting
+    if (activeDashboard.background !== targetBg) {
+      setBackground(targetBg);
     }
   }, [
-    isAuto,
-    globalConfig?.fetchingStrategy,
-    source,
-    city,
-    systemKey,
-    widget.id,
-    config,
-    updateWidget,
-    addToast,
-    isSyncing,
+    condition,
+    syncBackground,
+    activeDashboard?.background,
+    setBackground,
+    activeDashboard,
   ]);
 
   const getIcon = (size: string) => {
@@ -372,140 +297,89 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       content={
         <div
           className={`flex flex-col items-center justify-center h-full w-full font-${globalStyle.fontFamily}`}
-          style={{ gap: 'min(12px, 2.5cqmin)', padding: 'min(8px, 2cqmin)' }}
+          style={{
+            gap: hideClothing ? '2cqh' : 'min(12px, 2.5cqmin)',
+            padding: hideClothing ? '4cqh' : 'min(8px, 2cqmin)',
+          }}
         >
           <div
-            className="font-black uppercase tracking-widest text-slate-600 flex items-center"
-            style={{
-              gap: 'min(6px, 1.5cqmin)',
-              fontSize: 'min(14px, 5.5cqmin)',
-            }}
+            className="flex flex-col items-center justify-center w-full"
+            style={{ gap: hideClothing ? '1cqh' : 'min(4px, 1cqmin)' }}
           >
-            <MapPin style={{ width: '1.2em', height: '1.2em' }} />{' '}
-            {locationName}
-          </div>
-
-          <div
-            className="flex items-center justify-center w-full"
-            style={{ gap: 'min(24px, 6cqmin)' }}
-          >
-            <div style={{ fontSize: 'min(80px, 25cqmin)' }}>
-              {getIcon('1em')}
-            </div>
-            <div className="flex flex-col items-center">
+            <div
+              className="flex items-center justify-center w-full"
+              style={{
+                gap: hideClothing ? '4cqw' : 'min(24px, 6cqmin)',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: hideClothing
+                    ? 'min(60cqh, 30cqw)'
+                    : 'min(80px, 25cqmin)',
+                }}
+              >
+                {getIcon('1em')}
+              </div>
               <div
                 className="font-black text-slate-800 tabular-nums leading-none"
-                style={{ fontSize: 'clamp(32px, 35cqmin, 400px)' }}
+                style={{
+                  fontSize: hideClothing
+                    ? 'min(75cqh, 40cqw)'
+                    : 'clamp(32px, 35cqmin, 400px)',
+                }}
               >
                 {showFeelsLike && feelsLike !== undefined
                   ? Math.round(feelsLike)
                   : Math.round(temp)}
                 °
               </div>
-              {showFeelsLike ? (
-                <div
-                  className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap"
-                  style={{
-                    fontSize: 'min(14px, 5cqmin)',
-                    marginTop: 'min(4px, 1cqmin)',
-                  }}
-                >
-                  Actual {Math.round(temp)}°
-                </div>
-              ) : (
-                feelsLike !== undefined && (
-                  <div
-                    className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap"
-                    style={{
-                      fontSize: 'min(14px, 5cqmin)',
-                      marginTop: 'min(4px, 1cqmin)',
-                    }}
-                  >
-                    Feels like {Math.round(feelsLike)}°
-                  </div>
-                )
-              )}
             </div>
+
+            {(showFeelsLike || feelsLike !== undefined) && (
+              <div
+                className="font-black text-slate-600 uppercase tracking-wider whitespace-nowrap leading-none text-center"
+                style={{
+                  fontSize: hideClothing
+                    ? 'min(10cqh, 40cqw)'
+                    : 'min(14px, 5cqmin)',
+                  marginTop: hideClothing ? '1cqh' : 'min(2px, 0.5cqmin)',
+                }}
+              >
+                {showFeelsLike
+                  ? `Actual ${Math.round(temp)}°`
+                  : `Feels like ${Math.round(feelsLike ?? temp)}°`}
+              </div>
+            )}
           </div>
 
-          <div
-            className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
-            style={{
-              gap: 'min(16px, 4cqmin)',
-              padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)',
-            }}
-          >
+          {!hideClothing && (
             <div
-              className="shrink-0 flex items-center justify-center overflow-hidden"
+              className="w-full bg-white border border-slate-200 rounded-2xl flex items-center shadow-sm"
               style={{
-                fontSize: 'min(48px, 12cqmin)',
-                width: 'min(64px, 15cqmin)',
-                height: 'min(64px, 15cqmin)',
+                gap: 'min(16px, 4cqmin)',
+                padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)',
               }}
             >
-              {displayImage}
+              <div
+                className="shrink-0 flex items-center justify-center overflow-hidden"
+                style={{
+                  fontSize: 'min(48px, 12cqmin)',
+                  width: 'min(64px, 15cqmin)',
+                  height: 'min(64px, 15cqmin)',
+                }}
+              >
+                {displayImage}
+              </div>
+              <div
+                className="font-bold text-slate-700 leading-tight"
+                style={{ fontSize: 'min(20px, 6cqmin)' }}
+              >
+                {displayMessage}
+              </div>
             </div>
-            <div
-              className="font-bold text-slate-700 leading-tight"
-              style={{ fontSize: 'min(20px, 6cqmin)' }}
-            >
-              {displayMessage}
-            </div>
-          </div>
+          )}
         </div>
-      }
-      footer={
-        isAuto ? (
-          <div
-            className="flex items-center w-full justify-start border-t border-slate-50"
-            style={{
-              gap: 'min(8px, 2cqmin)',
-              padding: 'min(8px, 1.5cqmin) min(12px, 2.5cqmin)',
-            }}
-          >
-            <button
-              onClick={handleRefresh}
-              disabled={isSyncing}
-              className="bg-white hover:bg-slate-50 text-slate-500 hover:text-indigo-600 rounded-lg transition-all border border-slate-200 disabled:opacity-50 shadow-sm"
-              style={{ padding: 'min(6px, 1.5cqmin)' }}
-              title="Refresh Weather"
-            >
-              {isSyncing ? (
-                <Loader2
-                  style={{
-                    width: 'min(14px, 4cqmin)',
-                    height: 'min(14px, 4cqmin)',
-                  }}
-                  className="animate-spin"
-                />
-              ) : (
-                <RefreshCw
-                  style={{
-                    width: 'min(14px, 4cqmin)',
-                    height: 'min(14px, 4cqmin)',
-                  }}
-                />
-              )}
-            </button>
-            <div
-              className="text-slate-600 uppercase flex items-center font-bold"
-              style={{
-                gap: 'min(6px, 1.5cqmin)',
-                fontSize: 'min(10px, 3.5cqmin)',
-              }}
-            >
-              <span>Last Sync</span>
-              {lastSync && (
-                <span className="text-slate-400 font-mono">
-                  {new Date(lastSync).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              )}
-            </div>
-          </div>
-        ) : undefined
       }
     />
   );
@@ -524,6 +398,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
     locationName: _locationName = 'Classroom',
     source = 'openweather',
     showFeelsLike: localShowFeelsLike,
+    hideClothing,
+    syncBackground,
   } = config;
 
   // We should also access global config to hide controls if forced by admin proxy
@@ -568,59 +444,77 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
       const url = `${EARTH_NETWORKS_API.BASE_URL}?${queryParams}`;
 
-      // Use a list of proxies to improve reliability.
-      const proxies = [
-        (u: string) =>
-          `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-        (u: string) =>
-          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-      ];
+      // Use our own Cloud Function proxy to avoid CORS issues entirely
+      const fetchProxy = httpsCallable<{ url: string }, EarthNetworksResponse>(
+        functions,
+        'fetchWeatherProxy'
+      );
 
-      let lastError: Error | null = null;
       let data: EarthNetworksResponse | null = null;
 
-      for (const getProxyUrl of proxies) {
-        try {
-          const proxyUrl = getProxyUrl(url);
-          const res = await fetch(proxyUrl);
-          if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+      try {
+        const result = await fetchProxy({ url });
+        data = result.data;
+        console.warn(
+          '[WeatherWidget] Fetched Earth Networks Data via Cloud Proxy'
+        );
+      } catch (_proxyErr) {
+        console.warn(
+          '[WeatherWidget] Cloud Proxy failed, trying public proxies'
+        );
 
-          const text = await res.text();
-          const trimmed = text.trim();
+        // Fallback to public proxies
+        const proxies = [
+          (u: string) =>
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+          (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+          (u: string) =>
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+        ];
 
-          if (
-            !trimmed ||
-            trimmed.startsWith('<') ||
-            trimmed.toLowerCase().startsWith('<!doctype')
-          ) {
-            throw new Error(
-              'Proxy returned HTML or empty response instead of JSON'
-            );
-          }
+        let lastError: Error | null =
+          _proxyErr instanceof Error ? _proxyErr : new Error(String(_proxyErr));
 
+        for (const getProxyUrl of proxies) {
           try {
-            data = JSON.parse(trimmed) as EarthNetworksResponse;
+            const proxyUrl = getProxyUrl(url);
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
 
+            const text = await res.text();
+            const trimmed = text.trim();
+
+            if (
+              !trimmed ||
+              trimmed.startsWith('<') ||
+              trimmed.toLowerCase().startsWith('<!doctype')
+            ) {
+              throw new Error(
+                'Proxy returned HTML or empty response instead of JSON'
+              );
+            }
+
+            try {
+              data = JSON.parse(trimmed) as EarthNetworksResponse;
+              console.warn(
+                '[WeatherWidget] Fetched Earth Networks Data via Public Proxy'
+              );
+            } catch (_) {
+              throw new Error('Failed to parse response as JSON');
+            }
+
+            if (data && data.o) break;
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
             console.warn(
-              '[WeatherWidget] Fetched Earth Networks Data successfully'
+              `[WeatherWidget] Public proxy attempt failed: ${lastError.message}`
             );
-          } catch (_) {
-            throw new Error('Failed to parse response as JSON');
           }
-
-          if (data && data.o) break;
-        } catch (e) {
-          lastError = e instanceof Error ? e : new Error(String(e));
-
-          console.warn(
-            `[WeatherWidget] Proxy attempt failed: ${lastError.message}`
-          );
         }
-      }
 
-      if (!data) {
-        throw lastError ?? new Error('All proxy attempts failed');
+        if (!data) {
+          throw lastError ?? new Error('All proxy attempts failed');
+        }
       }
 
       const obs = data.o; // Current observations
@@ -752,6 +646,46 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
           onChange={(checked) =>
             updateWidget(widget.id, {
               config: { ...config, showFeelsLike: checked },
+            })
+          }
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
+            <Shirt className="w-3 h-3" /> Hide Clothing Suggestions
+          </span>
+          <span className="text-xxs text-slate-400 leading-tight">
+            Remove the clothing and message container from the widget.
+          </span>
+        </div>
+        <Toggle
+          size="sm"
+          checked={hideClothing ?? false}
+          onChange={(checked) =>
+            updateWidget(widget.id, {
+              config: { ...config, hideClothing: checked },
+            })
+          }
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
+            <Palette className="w-3 h-3" /> Sync Background
+          </span>
+          <span className="text-xxs text-slate-400 leading-tight">
+            Automatically change dashboard background to match weather.
+          </span>
+        </div>
+        <Toggle
+          size="sm"
+          checked={syncBackground ?? false}
+          onChange={(checked) =>
+            updateWidget(widget.id, {
+              config: { ...config, syncBackground: checked },
             })
           }
         />

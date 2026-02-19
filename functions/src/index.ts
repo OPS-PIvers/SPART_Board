@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Content } from '@google/genai';
 
 admin.initializeApp();
 
@@ -32,8 +32,14 @@ interface ClassLinkStudent {
 }
 
 interface AIData {
-  type: 'mini-app' | 'poll' | 'dashboard-layout' | 'instructional-routine';
-  prompt: string;
+  type:
+    | 'mini-app'
+    | 'poll'
+    | 'dashboard-layout'
+    | 'instructional-routine'
+    | 'ocr';
+  prompt?: string;
+  image?: string; // base64 data
 }
 
 interface GlobalPermConfig {
@@ -325,13 +331,22 @@ export const generateWithAI = functionsV1
     }
 
     try {
-      console.log(`AI Gen starting for type: ${data.type}`);
+      console.log('DEBUG: Full data object keys:', Object.keys(data || {}));
+      console.log(
+        `DEBUG: Received type: "${data?.type}" (Type: ${typeof data?.type})`
+      );
+
+      const genType = String(data?.type || '')
+        .toLowerCase()
+        .trim();
+      console.log(`AI Gen starting for type: ${genType}`);
+
       const ai = new GoogleGenAI({ apiKey });
 
       let systemPrompt = '';
       let userPrompt = '';
 
-      if (data.type === 'mini-app') {
+      if (genType === 'mini-app') {
         systemPrompt = `
           You are an expert frontend developer. Create a single-file HTML/JS mini-app based on the user's request.
           Requirements:
@@ -340,13 +355,13 @@ export const generateWithAI = functionsV1
           3. Return JSON: { "title": "...", "html": "..." }
         `;
         userPrompt = `User Request: ${data.prompt}`;
-      } else if (data.type === 'poll') {
+      } else if (genType === 'poll') {
         systemPrompt = `
           You are an expert teacher. Create a 4-option multiple choice poll JSON:
           { "question": "...", "options": ["...", "...", "...", "..."] }
         `;
         userPrompt = `Topic: ${data.prompt}`;
-      } else if (data.type === 'dashboard-layout') {
+      } else if (genType === 'dashboard-layout') {
         systemPrompt = `
           You are an expert instructional designer. Based on the user's lesson description, suggest a set of interactive widgets to place on their digital whiteboard.
           
@@ -363,7 +378,7 @@ export const generateWithAI = functionsV1
           - qr: QR code generator
           - embed: Website embedder
           - poll: Multiple choice poll
-          - webcam: Live camera feed
+          - webcam: Live camera feed with OCR capabilities
           - scoreboard: Point tracker
           - expectations: Classroom expectations icons
           - weather: Local weather display
@@ -383,7 +398,7 @@ export const generateWithAI = functionsV1
           3. 'config' should be an empty object {} unless you are setting a specific property known to that widget (like 'question' for 'poll').
         `;
         userPrompt = `Lesson/Activity Description: ${data.prompt}`;
-      } else if (data.type === 'instructional-routine') {
+      } else if (genType === 'instructional-routine') {
         systemPrompt = `
           You are an expert instructional designer. Create a classroom instructional routine based on the user's description.
 
@@ -404,21 +419,57 @@ export const generateWithAI = functionsV1
           }
         `;
         userPrompt = `Description: ${data.prompt}`;
+      } else if (genType === 'ocr') {
+        systemPrompt = `
+          You are an expert at extracting text from images (OCR).
+          Analyze the provided image and extract all readable text accurately.
+          Maintain the structure as best as possible.
+          If there are multiple paragraphs, separate them with double newlines.
+          Return JSON: { "text": "extracted text here" }
+        `;
+        userPrompt = 'Extract text from this image.';
       } else {
+        const debugData = {
+          receivedType: data?.type,
+          typeOfReceivedType: typeof data?.type,
+          genType,
+          keys: Object.keys(data || {}),
+        };
+        console.error(
+          'CRITICAL: Invalid generation type encountered:',
+          JSON.stringify(debugData)
+        );
         throw new functionsV1.https.HttpsError(
           'invalid-argument',
-          'Invalid generation type'
+          `V3 ERROR: Invalid generation type: "${data?.type}". Received keys: ${Object.keys(data || {}).join(', ')}`
         );
+      }
+
+      const contents: Content[] = [
+        {
+          role: 'user',
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
+        },
+      ];
+
+      // Add image if provided (for OCR or multi-modal prompts)
+      if (data.image && contents[0] && contents[0].parts) {
+        // Strip data:image/png;base64, prefix if present
+        const base64Data = data.image.includes(',')
+          ? data.image.split(',')[1]
+          : data.image;
+
+        contents[0].parts.push({
+          inlineData: {
+            mimeType: 'image/png',
+            data: base64Data,
+          },
+        });
       }
 
       const result = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: systemPrompt + '\n\n' + userPrompt }],
-          },
-        ],
+        contents,
         config: {
           responseMimeType: 'application/json',
         },
@@ -434,8 +485,43 @@ export const generateWithAI = functionsV1
       return JSON.parse(text) as Record<string, unknown>;
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
+
+      // If it's already an HttpsError, just re-throw it
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        'message' in error
+      ) {
+        throw error;
+      }
+
       const msg =
         error instanceof Error ? error.message : 'AI Generation failed';
+      throw new functionsV1.https.HttpsError('internal', msg);
+    }
+  });
+
+export const fetchWeatherProxy = functionsV1
+  .runWith({
+    memory: '128MB',
+    timeoutSeconds: 30,
+  })
+  .https.onCall(async (data: { url: string }, context) => {
+    if (!context.auth) {
+      throw new functionsV1.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+
+    try {
+      const response = await axios.get(data.url);
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Weather Proxy Error:', error);
+      const msg =
+        error instanceof Error ? error.message : 'Weather fetch failed';
       throw new functionsV1.https.HttpsError('internal', msg);
     }
   });

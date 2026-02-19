@@ -21,6 +21,11 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Description:** Automatically adjusts microphone sensitivity based on the Voice Level set in the Expectations widget (e.g., stricter for "Silence", looser for "Outside").
 **Implementation:** `SoundWidget.tsx` monitors `ExpectationsWidget` configuration and updates its own `sensitivity` setting.
 **Configuration:** Enabled via the "Sync with Expectations" toggle in Sound Widget settings.
+### Weather Widget -> Dashboard Background
+
+**Description:** Automatically changes the dashboard background theme to match the current weather conditions (e.g., Blue gradient for Sunny, Dark gradient for Rainy).
+**Implementation:** `WeatherWidget.tsx` monitors the `condition` state and calls `setBackground` on the dashboard context when `syncBackground` is enabled.
+**Configuration:** Enabled via the "Sync Background" toggle in Weather Settings.
 
 ## Planned Connections
 

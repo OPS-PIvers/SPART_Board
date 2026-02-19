@@ -20,7 +20,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     w: 300,
     h: 250,
     config: {
-      content: 'Click to edit...',
+      content: '',
       bgColor: STICKY_NOTE_COLORS.yellow,
       fontSize: 18,
     },
@@ -160,13 +160,15 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     config: { url: '', rotation: 0, size: 150 },
   },
   'seating-chart': {
-    w: 600,
-    h: 500,
+    w: 900,
+    h: 650,
     config: {
       furniture: [],
       assignments: {},
       gridSize: 20,
       rosterMode: 'class',
+      template: 'freeform',
+      templateColumns: 6,
     },
   },
   catalyst: {
@@ -196,5 +198,10 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     w: 250,
     h: 280,
     config: { linkedWeatherWidgetId: null, useFeelsLike: true },
+  },
+  pdf: {
+    w: 600,
+    h: 750,
+    config: { activePdfId: null, activePdfUrl: null, activePdfName: null },
   },
 };
