@@ -53,6 +53,7 @@ import { TOOLS } from '../../../config/tools';
 import { getWidgetGradeLevels } from '../../../config/widgetGradeLevels';
 import { AdminSettings } from '../../admin/AdminSettings';
 import { GlassCard } from '../../common/GlassCard';
+import { IconButton } from '../../common/IconButton';
 import { Toggle } from '../../common/Toggle';
 import { SortableDashboardItem } from './SortableDashboardItem';
 import { StylePanel } from './StylePanel';
@@ -307,39 +308,42 @@ export const Sidebar: React.FC = () => {
         data-screenshot="exclude"
         className="fixed top-6 left-6 z-dock flex items-center gap-2 p-2 rounded-full transition-all"
       >
-        <button
+        <IconButton
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-lighter"
-          title="Open Menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+          variant="primary"
+          size="md"
+          tooltip="Open Menu"
+          icon={<Menu className="w-5 h-5" />}
+          className="shadow-brand-blue-lighter"
+        />
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
         {isAdmin && (
-          <button
+          <IconButton
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
-            title="Admin Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+            variant="brand-ghost"
+            size="md"
+            tooltip="Admin Settings"
+            icon={<Settings className="w-5 h-5" />}
+          />
         )}
 
-        <button
+        <IconButton
           onClick={toggleFullscreen}
-          className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-        >
-          {isFullscreen ? (
-            <Minimize className="w-5 h-5" />
-          ) : (
-            <Maximize className="w-5 h-5" />
-          )}
-        </button>
+          variant="brand-ghost"
+          size="md"
+          tooltip={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          icon={
+            isFullscreen ? (
+              <Minimize className="w-5 h-5" />
+            ) : (
+              <Maximize className="w-5 h-5" />
+            )
+          }
+        />
 
-        <button
+        <IconButton
           onClick={() => {
             if (
               window.confirm(
@@ -349,27 +353,26 @@ export const Sidebar: React.FC = () => {
               clearAllWidgets();
             }
           }}
-          className="p-2 text-brand-red-primary bg-brand-red-lighter/50 hover:bg-brand-red-primary hover:text-white rounded-full transition-all shadow-sm"
-          title="Clear All Windows"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+          variant="brand-danger-ghost"
+          size="md"
+          tooltip="Clear All Windows"
+          icon={<Trash2 className="w-5 h-5" />}
+        />
 
-        <button
+        <IconButton
           onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
-          className={`p-2 rounded-full transition-all duration-300 ${
-            isBoardSwitcherExpanded
-              ? 'bg-brand-blue-primary text-white shadow-md'
-              : 'text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-lighter'
-          }`}
-          title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
-        >
-          <ChevronRight
-            className={`w-5 h-5 transition-transform duration-500 ${
-              isBoardSwitcherExpanded ? 'rotate-180' : 'rotate-0'
-            }`}
-          />
-        </button>
+          variant="brand-ghost"
+          size="md"
+          active={isBoardSwitcherExpanded}
+          tooltip={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
+          icon={
+            <ChevronRight
+              className={`w-5 h-5 transition-transform duration-500 ${
+                isBoardSwitcherExpanded ? 'rotate-180' : 'rotate-0'
+              }`}
+            />
+          }
+        />
 
         {/* Board Switcher Sliding Toggle Bar */}
         <div

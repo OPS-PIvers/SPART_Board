@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { LayoutGrid, Plus, X } from 'lucide-react';
 import { GlassCard } from '../../common/GlassCard';
+import { IconButton } from '../../common/IconButton';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType, GlobalStyle } from '../../../types';
 
@@ -32,12 +33,13 @@ export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
             Widget Library
           </h3>
         </div>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-2 hover:bg-slate-200/50 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5 text-slate-500" />
-        </button>
+          variant="ghost"
+          size="md"
+          tooltip="Close"
+          icon={<X className="w-5 h-5" />}
+        />
       </div>
       <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
