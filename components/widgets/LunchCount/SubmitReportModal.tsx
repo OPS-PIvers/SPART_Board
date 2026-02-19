@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../common/Button';
 import { FileSpreadsheet, X, Send } from 'lucide-react';
 
@@ -44,16 +44,23 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
   const [notes, setNotes] = useState('');
   const [extraPizza, setExtraPizza] = useState<number | ''>('');
 
+  // Reset form fields and close — ensures a clean slate for each new opening.
+  const handleClose = useCallback(() => {
+    setNotes('');
+    setExtraPizza('');
+    onClose();
+  }, [onClose]);
+
   // Handle keyboard events (Escape to close)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !isSubmitting) {
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, isSubmitting]);
+  }, [isOpen, handleClose, isSubmitting]);
 
   if (!isOpen) return null;
 
@@ -68,7 +75,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
     <div
       className="absolute inset-0 z-modal flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 rounded-3xl overflow-hidden"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) onClose();
+        if (e.target === e.currentTarget && !isSubmitting) handleClose();
       }}
       role="dialog"
       aria-modal="true"
@@ -93,7 +100,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isSubmitting}
             className="p-2 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             aria-label="Close modal"
@@ -213,7 +220,7 @@ export const SubmitReportModal: React.FC<SubmitReportModalProps> = ({
           {/* Actions */}
           <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
             <Button
-              onClick={onClose}
+              onClick={handleClose}
               variant="secondary"
               className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest"
               disabled={isSubmitting}

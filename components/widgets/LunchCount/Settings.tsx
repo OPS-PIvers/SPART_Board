@@ -100,11 +100,17 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 max="12"
                 value={lunchTimeHour}
                 aria-label="Lunch hour"
-                onChange={(e) =>
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const n = parseInt(raw);
+                  const value =
+                    !isNaN(n) && raw !== ''
+                      ? String(Math.min(12, Math.max(1, n)))
+                      : raw;
                   updateWidget(widget.id, {
-                    config: { ...config, lunchTimeHour: e.target.value },
-                  })
-                }
+                    config: { ...config, lunchTimeHour: value },
+                  });
+                }}
                 onBlur={(e) => {
                   const n = parseInt(e.target.value);
                   if (!isNaN(n) && e.target.value !== '') {
@@ -126,11 +132,17 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
                 max="59"
                 value={lunchTimeMinute}
                 aria-label="Lunch minute"
-                onChange={(e) =>
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const n = parseInt(raw);
+                  const value =
+                    !isNaN(n) && raw !== ''
+                      ? String(Math.min(59, Math.max(0, n)))
+                      : raw;
                   updateWidget(widget.id, {
-                    config: { ...config, lunchTimeMinute: e.target.value },
-                  })
-                }
+                    config: { ...config, lunchTimeMinute: value },
+                  });
+                }}
                 onBlur={(e) => {
                   const n = parseInt(e.target.value);
                   if (!isNaN(n) && e.target.value !== '') {
