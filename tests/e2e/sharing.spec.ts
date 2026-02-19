@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/require-await */
 import { test, expect } from '@playwright/test';
 
 test.describe('Board Sharing', () => {
@@ -64,7 +63,7 @@ test.describe('Board Sharing', () => {
           value: mockClipboard,
           configurable: true,
         });
-      } catch (e) {
+      } catch {
         (navigator as any).clipboard = mockClipboard;
       }
     });
