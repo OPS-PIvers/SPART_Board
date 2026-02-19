@@ -14,6 +14,7 @@ export const Z_INDEX = {
   // Widget internal layers
   stickerControl: 50, // Sticker controls (above sticker content)
   widgetResize: 60, // Resize handles (above widget content)
+  widgetInternalOverlay: 60, // Overlays inside a widget (e.g. modals)
   dropdown: 110, // Local dropdowns within widgets (must be > widget base)
 
   // Widget layers
