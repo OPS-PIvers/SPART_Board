@@ -524,6 +524,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                   });
                 }}
                 className="p-2 text-red-400 hover:bg-red-50 rounded-lg"
+                aria-label="Delete step"
               >
                 <Trash2 size={14} />
               </button>
