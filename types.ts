@@ -29,7 +29,8 @@ export type WidgetType =
   | 'catalyst-instruction'
   | 'catalyst-visual'
   | 'smartNotebook'
-  | 'recessGear';
+  | 'recessGear'
+  | 'pdf';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -382,6 +383,22 @@ export interface MiniAppConfig {
   activeApp: MiniAppItem | null;
 }
 
+export interface PdfItem {
+  id: string;
+  name: string;
+  storageUrl: string;
+  storagePath: string;
+  size: number;
+  uploadedAt: number;
+  order?: number;
+}
+
+export interface PdfConfig {
+  activePdfId: string | null;
+  activePdfUrl: string | null;
+  activePdfName: string | null;
+}
+
 export interface MaterialsConfig {
   selectedItems: string[];
   activeItems: string[];
@@ -525,7 +542,8 @@ export type WidgetConfig =
   | CatalystInstructionConfig
   | CatalystVisualConfig
   | SmartNotebookConfig
-  | RecessGearConfig;
+  | RecessGearConfig
+  | PdfConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -590,7 +608,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                             ? SmartNotebookConfig
                                                             : T extends 'recessGear'
                                                               ? RecessGearConfig
-                                                              : never;
+                                                              : T extends 'pdf'
+                                                                ? PdfConfig
+                                                                : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
