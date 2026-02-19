@@ -204,7 +204,9 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       case 'tornado':
         return 'bg-gradient-to-br from-teal-600 via-emerald-500 to-teal-400';
       default:
-        console.warn(`[WeatherWidget] Unhandled condition for background sync: ${cond}`);
+        console.warn(
+          `[WeatherWidget] Unhandled condition for background sync: ${cond}`
+        );
         return 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-100';
     }
   };
