@@ -74,6 +74,12 @@ const ResizeHandleIcon = ({
   </svg>
 );
 
+interface KeyboardActionDetail {
+  widgetId: string;
+  key: string;
+  shiftKey: boolean;
+}
+
 export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   widget,
   children,
@@ -211,7 +217,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     }
 
     // Keyboard Shortcuts for Focused Widget
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
       // NEW BEHAVIOR: Esc minimizes the widget (unless in sub-state like confirm or settings)
       e.preventDefault();
       if (showConfirm) {
@@ -226,7 +232,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       return;
     }
 
-    if (e.key === 'Delete') {
+    if (e.key === 'Delete' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
       // NEW BEHAVIOR: Delete removes the widget
       e.preventDefault();
       if (skipCloseConfirmation) {
@@ -544,6 +550,49 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     return undefined;
   }, [showTools, widget.x, widget.y, widget.w, widget.h, isMaximized]);
 
+  useEffect(() => {
+    const handleCustomKeyboard = (e: Event) => {
+      const { widgetId, key, shiftKey } = (
+        e as CustomEvent<KeyboardActionDetail>
+      ).detail;
+      if (widgetId !== widget.id || shiftKey) return;
+
+      if (key === 'Escape') {
+        if (showConfirm) {
+          setShowConfirm(false);
+        } else if (widget.flipped) {
+          updateWidget(widget.id, { flipped: false });
+        } else if (isAnnotating) {
+          setIsAnnotating(false);
+        } else {
+          updateWidget(widget.id, { minimized: true, flipped: false });
+        }
+      } else if (key === 'Delete') {
+        if (skipCloseConfirmation) {
+          removeWidget(widget.id);
+        } else {
+          setShowConfirm(true);
+          setShowTools(false);
+        }
+      }
+    };
+
+    window.addEventListener('widget-keyboard-action', handleCustomKeyboard);
+    return () =>
+      window.removeEventListener(
+        'widget-keyboard-action',
+        handleCustomKeyboard
+      );
+  }, [
+    widget.id,
+    widget.flipped,
+    showConfirm,
+    isAnnotating,
+    skipCloseConfirmation,
+    removeWidget,
+    updateWidget,
+  ]);
+
   // Fallback to widget state if not dragging/resizing or if position-aware
   const shouldUseDragState =
     (isDragging || isResizing) &&
@@ -556,6 +605,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         globalStyle={globalStyle}
         ref={windowRef}
         tabIndex={0}
+        data-widget-id={widget.id}
         onPointerDown={handlePointerDown}
         onClick={handleWidgetClick}
         onKeyDown={handleKeyDown}

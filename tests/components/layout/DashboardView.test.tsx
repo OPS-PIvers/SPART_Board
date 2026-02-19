@@ -118,7 +118,7 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(mockLoadDashboard).toHaveBeenCalledWith('db-3');
   });
 
-  it('triggers minimize all on Ctrl + Alt + Escape', () => {
+  it('triggers minimize all on Shift + Escape', () => {
     const mockMinimizeAll = vi.fn();
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: mockDashboards[1],
@@ -129,11 +129,11 @@ describe('DashboardView Gestures & Navigation', () => {
     });
 
     render(<DashboardView />);
-    fireEvent.keyDown(window, { key: 'Escape', ctrlKey: true, altKey: true });
+    fireEvent.keyDown(window, { key: 'Escape', shiftKey: true });
     expect(mockMinimizeAll).toHaveBeenCalled();
   });
 
-  it('triggers delete all on Ctrl + Alt + Delete', () => {
+  it('triggers delete all on Shift + Delete', () => {
     const mockDeleteAll = vi.fn();
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: mockDashboards[1],
@@ -144,7 +144,7 @@ describe('DashboardView Gestures & Navigation', () => {
     });
 
     render(<DashboardView />);
-    fireEvent.keyDown(window, { key: 'Delete', ctrlKey: true, altKey: true });
+    fireEvent.keyDown(window, { key: 'Delete', shiftKey: true });
     expect(mockDeleteAll).toHaveBeenCalled();
   });
 

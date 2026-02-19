@@ -196,8 +196,8 @@ describe('Global Escape Interaction', () => {
     // Should target w2 (z=10)
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'widget-escape-press',
-        detail: { widgetId: 'w2' },
+        type: 'widget-keyboard-action',
+        detail: { widgetId: 'w2', key: 'Escape', shiftKey: false },
       })
     );
   });
@@ -290,7 +290,10 @@ describe('Global Escape Interaction', () => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
     expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'widget-escape-press' })
+      expect.objectContaining({
+        type: 'widget-keyboard-action',
+        detail: { widgetId: 'w1', key: 'Escape', shiftKey: false },
+      })
     );
   });
 });

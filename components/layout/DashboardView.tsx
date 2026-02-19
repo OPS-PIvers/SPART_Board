@@ -114,8 +114,8 @@ export const DashboardView: React.FC = () => {
           return;
         }
 
-        // Ctrl + Alt + Escape: Minimize all widgets
-        if (e.ctrlKey && e.altKey) {
+        // Shift + Escape: Minimize all widgets
+        if (e.shiftKey) {
           e.preventDefault();
           minimizeAllWidgets();
           return;
@@ -125,20 +125,48 @@ export const DashboardView: React.FC = () => {
           const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
           const topWidget = sorted[0];
 
-          // Dispatch custom event to notify the widget to close
-          const event = new CustomEvent('widget-escape-press', {
-            detail: { widgetId: topWidget.id },
+          // Use the focused element if it's a widget, otherwise target top widget
+          const targetId = document.activeElement?.closest('.widget')
+            ? (document.activeElement as HTMLElement).getAttribute(
+                'data-widget-id'
+              )
+            : topWidget.id;
+
+          if (!targetId) return;
+
+          // Dispatch custom event to notify the specific widget
+          const event = new CustomEvent('widget-keyboard-action', {
+            detail: { widgetId: targetId, key: 'Escape', shiftKey: e.shiftKey },
           });
           window.dispatchEvent(event);
         }
         return;
       }
 
-      // Delete: Handle delete all if ctrl + alt is pressed
+      // Delete: Handle clear board if shift is pressed
       if (e.key === 'Delete') {
-        if (e.ctrlKey && e.altKey) {
+        if (e.shiftKey) {
           e.preventDefault();
           deleteAllWidgets();
+          return;
+        }
+
+        if (activeDashboard && activeDashboard.widgets.length > 0) {
+          const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
+          const topWidget = sorted[0];
+
+          const targetId = document.activeElement?.closest('.widget')
+            ? (document.activeElement as HTMLElement).getAttribute(
+                'data-widget-id'
+              )
+            : topWidget.id;
+
+          if (!targetId) return;
+
+          const event = new CustomEvent('widget-keyboard-action', {
+            detail: { widgetId: targetId, key: 'Delete', shiftKey: e.shiftKey },
+          });
+          window.dispatchEvent(event);
         }
         return;
       }
