@@ -52,6 +52,15 @@ function formatTeacherName(displayName: string): string {
 }
 
 /**
+ * Format hour/minute strings into "H:MM" for display and submission.
+ * Returns an empty string if hour is not set.
+ */
+function formatLunchTime(hour: string, minute: string): string {
+  if (!hour) return '';
+  return `${hour}:${(minute || '00').padStart(2, '0')}`;
+}
+
+/**
  * Build a Central Time (America/Chicago) timestamp string.
  * Falls back to the user's local time if the Intl API isn't available.
  */
@@ -67,7 +76,11 @@ function getCentralTimestamp(): string {
       second: '2-digit',
       hour12: true,
     }).format(new Date());
-  } catch {
+  } catch (error) {
+    console.warn(
+      '[LunchCountWidget] Failed to format timestamp in America/Chicago timezone; falling back to local time. Timestamps may not be in Central Time.',
+      error
+    );
     return new Date().toLocaleString();
   }
 }
@@ -199,11 +212,17 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         ? intermediateSheetId
         : schumannSheetId;
 
-    const teacherName = formatTeacherName(user?.displayName ?? 'Unknown');
+    if (!sheetId) {
+      addToast(
+        'No Google Sheet ID configured for this school site. Contact your administrator.',
+        'error'
+      );
+      return;
+    }
+
+    const teacherName = formatTeacherName(user?.displayName ?? 'Unknown Staff');
     const gradeLabel = formatGradeLabel(gradeLevel);
-    const lunchTime = lunchTimeHour
-      ? `${lunchTimeHour}:${(lunchTimeMinute || '00').padStart(2, '0')}`
-      : '';
+    const lunchTime = formatLunchTime(lunchTimeHour, lunchTimeMinute);
 
     const timestamp = getCentralTimestamp();
     // Column B: [Lunch Time] - [Grade] - [Teacher]
@@ -228,11 +247,17 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
         ...(sheetId ? { sheetId } : {}),
       });
 
-      await fetch(submissionUrl, {
+      const response = await fetch(submissionUrl, {
         method: 'POST',
-        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
         body,
       });
+
+      if (!response.ok) {
+        throw new Error(`Submission failed with status ${response.status}`);
+      }
 
       addToast('Lunch report submitted successfully!', 'success');
       setIsModalOpen(false);
@@ -698,9 +723,7 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
           hotLunchName: cachedMenu?.hotLunch ?? 'Hot Lunch',
           bentoBoxName: cachedMenu?.bentoBox ?? 'Bento Box',
           schoolSite,
-          lunchTime: lunchTimeHour
-            ? `${lunchTimeHour}:${(lunchTimeMinute || '00').padStart(2, '0')}`
-            : '',
+          lunchTime: formatLunchTime(lunchTimeHour, lunchTimeMinute),
           gradeLabel: formatGradeLabel(gradeLevel),
         }}
         isSubmitting={isSubmitting}
