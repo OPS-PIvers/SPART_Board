@@ -85,6 +85,8 @@ describe('DashboardView Gestures & Navigation', () => {
       duplicateWidget: vi.fn(),
       bringToFront: vi.fn(),
       addToast: vi.fn(),
+      minimizeAllWidgets: vi.fn(),
+      deleteAllWidgets: vi.fn(),
     });
   });
 
@@ -119,8 +121,8 @@ describe('DashboardView Gestures & Navigation', () => {
     expect(mockLoadDashboard).toHaveBeenCalledWith('db-3');
   });
 
-  it('does not navigate if at boundaries', () => {
-    // Case 1: First board
+  it('wraps around when navigating at boundaries', () => {
+    // Case 1: First board, navigate left -> should go to last board
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: mockDashboards[0],
       dashboards: mockDashboards,
@@ -128,14 +130,17 @@ describe('DashboardView Gestures & Navigation', () => {
       addWidget: mockAddWidget,
       loadDashboard: mockLoadDashboard,
       removeToast: vi.fn(),
+      minimizeAllWidgets: vi.fn(),
+      deleteAllWidgets: vi.fn(),
     });
 
     const { unmount } = render(<DashboardView />);
     fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true });
-    expect(mockLoadDashboard).not.toHaveBeenCalled();
+    expect(mockLoadDashboard).toHaveBeenCalledWith('db-3');
     unmount();
 
-    // Case 2: Last board
+    // Case 2: Last board, navigate right -> should go to first board
+    mockLoadDashboard.mockClear();
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: mockDashboards[2],
       dashboards: mockDashboards,
@@ -143,11 +148,13 @@ describe('DashboardView Gestures & Navigation', () => {
       addWidget: mockAddWidget,
       loadDashboard: mockLoadDashboard,
       removeToast: vi.fn(),
+      minimizeAllWidgets: vi.fn(),
+      deleteAllWidgets: vi.fn(),
     });
 
     render(<DashboardView />);
     fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true });
-    expect(mockLoadDashboard).not.toHaveBeenCalled();
+    expect(mockLoadDashboard).toHaveBeenCalledWith('db-1');
   });
 
   it('calls addWidget with correct config when spart-sticker with url is dropped', () => {
