@@ -474,51 +474,78 @@ export const FeaturePermissionsManager: React.FC = () => {
                       {(() => {
                         const config = (permission.config ??
                           {}) as LunchCountGlobalConfig;
-                        const isIdMalformed =
-                          config.googleSheetId &&
-                          config.googleSheetId.includes('/');
+                        const isSchumannIdMalformed =
+                          config.schumannSheetId &&
+                          config.schumannSheetId.includes('/');
+                        const isIntermediateIdMalformed =
+                          config.intermediateSheetId &&
+                          config.intermediateSheetId.includes('/');
                         const isUrlMalformed =
                           config.submissionUrl &&
                           !config.submissionUrl.startsWith('https://');
 
                         return (
                           <>
+                            <p className="text-xxs text-slate-400 leading-tight">
+                              Found in the URL: docs.google.com/spreadsheets/d/
+                              <b>[ID]</b>/edit
+                            </p>
                             <div>
                               <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                Google Sheet ID
+                                Schumann Elementary — Sheet ID
                               </label>
                               <input
                                 type="text"
-                                value={config.googleSheetId ?? ''}
+                                value={config.schumannSheetId ?? ''}
                                 onChange={(e) =>
                                   updatePermission(tool.type, {
                                     config: {
                                       ...config,
-                                      googleSheetId: e.target.value.trim(),
+                                      schumannSheetId: e.target.value.trim(),
                                     },
                                   })
                                 }
                                 className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
-                                  isIdMalformed
+                                  isSchumannIdMalformed
                                     ? 'border-red-300 bg-red-50 focus:ring-red-500'
                                     : 'border-slate-300 focus:ring-brand-blue-primary'
                                 }`}
-                                placeholder="Spreadsheet ID from URL"
+                                placeholder="Schumann spreadsheet ID"
                               />
-                              {isIdMalformed && (
+                              {isSchumannIdMalformed && (
                                 <p className="text-xxs text-red-600 font-bold mt-1">
                                   Warning: Enter only the ID, not the full URL.
                                 </p>
                               )}
-                              <p className="text-xxs text-slate-400 mt-1">
-                                Found in the URL:
-                                docs.google.com/spreadsheets/d/<b>[ID]</b>/edit
-                                <br />
-                                <span className="text-orange-600 font-bold">
-                                  Tip: For better security, hardcode this ID in
-                                  your Apps Script instead.
-                                </span>
-                              </p>
+                            </div>
+                            <div>
+                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
+                                Intermediate School — Sheet ID
+                              </label>
+                              <input
+                                type="text"
+                                value={config.intermediateSheetId ?? ''}
+                                onChange={(e) =>
+                                  updatePermission(tool.type, {
+                                    config: {
+                                      ...config,
+                                      intermediateSheetId:
+                                        e.target.value.trim(),
+                                    },
+                                  })
+                                }
+                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
+                                  isIntermediateIdMalformed
+                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                                    : 'border-slate-300 focus:ring-brand-blue-primary'
+                                }`}
+                                placeholder="Intermediate spreadsheet ID"
+                              />
+                              {isIntermediateIdMalformed && (
+                                <p className="text-xxs text-red-600 font-bold mt-1">
+                                  Warning: Enter only the ID, not the full URL.
+                                </p>
+                              )}
                             </div>
                             <div>
                               <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
