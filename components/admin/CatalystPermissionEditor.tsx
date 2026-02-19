@@ -14,8 +14,8 @@ import {
 } from '../widgets/catalystHelpers';
 import { CategoryEditor } from './catalyst/CategoryEditor';
 import { RoutineEditor } from './catalyst/RoutineEditor';
-import { useStorage } from '@/hooks/useStorage';
-import { useAuth } from '@/context/useAuth';
+import { useStorage } from '../../hooks/useStorage';
+import { useAuth } from '../../context/useAuth';
 
 /**
  * Compares two categories for equality by comparing relevant fields explicitly.
