@@ -1,14 +1,24 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { WeatherWidget } from './WeatherWidget';
-import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '../../types';
-import { vi, describe, it, expect } from 'vitest';
+import { WidgetData, WeatherGlobalConfig, WeatherConfig } from '@/types';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
-vi.mock('../../context/useDashboard', () => ({
+const { mockSetBackground, mockUpdateWidget, mockActiveDashboard } = vi.hoisted(
+  () => ({
+    mockSetBackground: vi.fn(),
+    mockUpdateWidget: vi.fn(),
+    mockActiveDashboard: { background: 'bg-existing', globalStyle: {} },
+  })
+);
+
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: () => ({
-    updateWidget: vi.fn(),
+    updateWidget: mockUpdateWidget,
     addToast: vi.fn(),
+    setBackground: mockSetBackground,
+    activeDashboard: mockActiveDashboard,
   }),
 }));
 
@@ -36,7 +46,7 @@ const mockFeaturePermissions = [
   },
 ];
 
-vi.mock('../../context/useAuth', () => ({
+vi.mock('@/context/useAuth', () => ({
   useAuth: () => ({
     featurePermissions: mockFeaturePermissions,
   }),
@@ -48,7 +58,7 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
 }));
 
-vi.mock('../../config/firebase', () => ({
+vi.mock('@/config/firebase', () => ({
   db: {},
 }));
 
@@ -69,6 +79,10 @@ describe('WeatherWidget', () => {
       locationName: 'Test Loc',
     },
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('displays default clothing message when no range matches', () => {
     const widget: WidgetData = {
@@ -123,5 +137,24 @@ describe('WeatherWidget', () => {
     };
     render(<WeatherWidget widget={widget} />);
     expect(screen.queryByText(/Long Sleeves/i)).not.toBeInTheDocument();
+  });
+
+  it('syncs background when enabled', async () => {
+    const widget: WidgetData = {
+      ...baseWidget,
+      config: {
+        ...baseWidget.config,
+        condition: 'sunny',
+        syncBackground: true,
+      } as WeatherConfig,
+    };
+    render(<WeatherWidget widget={widget} />);
+
+    // Expected sunny gradient
+    const expectedBg =
+      'bg-gradient-to-br from-blue-400 via-sky-300 to-blue-200';
+    await waitFor(() => {
+      expect(mockSetBackground).toHaveBeenCalledWith(expectedBg);
+    });
   });
 });
