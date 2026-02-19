@@ -92,58 +92,67 @@ export const LunchCountSettings: React.FC<{ widget: WidgetData }> = ({
           <label className="text-xxs text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
             <Clock className="w-3 h-3" /> Lunch Time
           </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="1"
-              max="12"
-              value={lunchTimeHour}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, lunchTimeHour: e.target.value },
-                })
-              }
-              onBlur={(e) => {
-                const n = parseInt(e.target.value);
-                if (!isNaN(n) && e.target.value !== '') {
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="12"
+                value={lunchTimeHour}
+                aria-label="Lunch hour"
+                onChange={(e) =>
                   updateWidget(widget.id, {
-                    config: {
-                      ...config,
-                      lunchTimeHour: String(Math.min(12, Math.max(1, n))),
-                    },
-                  });
+                    config: { ...config, lunchTimeHour: e.target.value },
+                  })
                 }
-              }}
-              placeholder="HR"
-              className="w-16 p-2.5 text-xs text-center border border-slate-200 rounded-xl outline-none bg-white font-mono"
-            />
-            <span className="font-black text-slate-400 text-sm">:</span>
-            <input
-              type="number"
-              min="0"
-              max="59"
-              value={lunchTimeMinute}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: { ...config, lunchTimeMinute: e.target.value },
-                })
-              }
-              onBlur={(e) => {
-                const n = parseInt(e.target.value);
-                if (!isNaN(n) && e.target.value !== '') {
+                onBlur={(e) => {
+                  const n = parseInt(e.target.value);
+                  if (!isNaN(n) && e.target.value !== '') {
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        lunchTimeHour: String(Math.min(12, Math.max(1, n))),
+                      },
+                    });
+                  }
+                }}
+                placeholder="HR"
+                className="w-16 p-2.5 text-xs text-center border border-slate-200 rounded-xl outline-none bg-white font-mono"
+              />
+              <span className="font-black text-slate-400 text-sm">:</span>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={lunchTimeMinute}
+                aria-label="Lunch minute"
+                onChange={(e) =>
                   updateWidget(widget.id, {
-                    config: {
-                      ...config,
-                      lunchTimeMinute: pad(
-                        String(Math.min(59, Math.max(0, n)))
-                      ),
-                    },
-                  });
+                    config: { ...config, lunchTimeMinute: e.target.value },
+                  })
                 }
-              }}
-              placeholder="MM"
-              className="w-16 p-2.5 text-xs text-center border border-slate-200 rounded-xl outline-none bg-white font-mono"
-            />
+                onBlur={(e) => {
+                  const n = parseInt(e.target.value);
+                  if (!isNaN(n) && e.target.value !== '') {
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        lunchTimeMinute: pad(
+                          String(Math.min(59, Math.max(0, n)))
+                        ),
+                      },
+                    });
+                  }
+                }}
+                placeholder="MM"
+                className="w-16 p-2.5 text-xs text-center border border-slate-200 rounded-xl outline-none bg-white font-mono"
+              />
+            </div>
+            {lunchTimeHour && (
+              <p className="mt-1 text-[10px] text-slate-400">
+                Preview: {lunchTimeHour}:{pad(lunchTimeMinute || '0')}
+              </p>
+            )}
           </div>
         </div>
 
