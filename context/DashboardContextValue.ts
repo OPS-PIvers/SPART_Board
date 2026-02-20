@@ -52,7 +52,9 @@ export interface DashboardContextValue {
   toggleToolVisibility: (type: WidgetType | InternalToolType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
   reorderTools: (tools: (WidgetType | InternalToolType)[]) => void;
+  reorderLibrary: (tools: (WidgetType | InternalToolType)[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
+  libraryOrder: (WidgetType | InternalToolType)[];
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   updateDashboard: (updates: Partial<Dashboard>) => void;
   clearAllStickers: () => void;

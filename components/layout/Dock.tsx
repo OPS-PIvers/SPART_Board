@@ -68,6 +68,8 @@ export const Dock: React.FC = () => {
     activeDashboard,
     updateWidget,
     toggleToolVisibility,
+    reorderLibrary,
+    libraryOrder,
     addFolder,
     renameFolder,
     deleteFolder,
@@ -549,6 +551,8 @@ export const Dock: React.FC = () => {
               }}
               globalStyle={globalStyle}
               triggerRef={moreButtonRef}
+              libraryOrder={libraryOrder}
+              onReorderLibrary={reorderLibrary}
             />
           )}
 

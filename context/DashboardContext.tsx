@@ -92,6 +92,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     return TOOLS.map((t) => t.type);
   });
 
+  const [libraryOrder, setLibraryOrder] = useState<
+    (WidgetType | InternalToolType)[]
+  >(() => {
+    const saved = localStorage.getItem('spartboard_library_order');
+    if (saved) {
+      try {
+        return JSON.parse(saved) as (WidgetType | InternalToolType)[];
+      } catch (e) {
+        console.error('Failed to parse library order', e);
+      }
+    }
+    return TOOLS.map((t) => t.type);
+  });
+
   const [dockItems, setDockItems] = useState<DockItem[]>(() => {
     const saved = localStorage.getItem('classroom_dock_items');
     if (saved) {
@@ -642,6 +656,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (tools: (WidgetType | InternalToolType)[]) => {
       setVisibleTools(tools);
       localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
+    },
+    []
+  );
+
+  const reorderLibrary = useCallback(
+    (tools: (WidgetType | InternalToolType)[]) => {
+      setLibraryOrder(tools);
+      localStorage.setItem('spartboard_library_order', JSON.stringify(tools));
     },
     []
   );
@@ -1598,7 +1620,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       toggleToolVisibility,
       setAllToolsVisibility,
       reorderTools,
+      reorderLibrary,
       reorderDockItems,
+      libraryOrder,
       clearAllStickers,
       clearAllWidgets,
       rosters,
@@ -1658,7 +1682,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       toggleToolVisibility,
       setAllToolsVisibility,
       reorderTools,
+      reorderLibrary,
       reorderDockItems,
+      libraryOrder,
       clearAllStickers,
       clearAllWidgets,
       rosters,
