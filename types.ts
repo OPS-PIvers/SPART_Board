@@ -854,6 +854,7 @@ export interface Dashboard {
   isDefault?: boolean;
   order?: number;
   settings?: DashboardSettings;
+  libraryOrder?: (WidgetType | InternalToolType)[];
 }
 
 export interface Toast {

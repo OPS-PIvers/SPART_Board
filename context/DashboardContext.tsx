@@ -43,6 +43,7 @@ const serializeDashboard = (d: Dashboard): string =>
     widgets: d.widgets,
     background: d.background,
     name: d.name,
+    libraryOrder: d.libraryOrder,
   });
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -304,6 +305,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           setIsSaving(true);
         }
 
+        if (import.meta.env.DEV) {
+          console.log('[DashboardContext] onSnapshot update:', {
+            dashboardsCount: updatedDashboards.length,
+            hasPendingWrites,
+            pendingSaveCount: pendingSaveCountRef.current,
+          });
+        }
+
         setDashboards((prev) => {
           const now = Date.now();
           const isRecentlyUpdatedLocally =
@@ -338,6 +347,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                   lastSavedFieldsRef.current.background;
                 const nameChangedLocally =
                   currentActive.name !== lastSavedFieldsRef.current.name;
+                const libraryOrderChangedLocally =
+                  JSON.stringify(currentActive.libraryOrder) !==
+                  lastSavedFieldsRef.current.libraryOrder;
 
                 return {
                   ...db,
@@ -348,6 +360,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                     background: currentActive.background,
                   }),
                   ...(nameChangedLocally && { name: currentActive.name }),
+                  ...(libraryOrderChangedLocally && {
+                    libraryOrder: currentActive.libraryOrder,
+                  }),
                 };
               }
               return db;
@@ -355,6 +370,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           }
           return migratedDashboards;
         });
+
+        // Update libraryOrder state from active dashboard if it changed on server
+        const activeOnServer = migratedDashboards.find(
+          (d) => d.id === activeIdRef.current
+        );
+        if (activeOnServer?.libraryOrder) {
+          setLibraryOrder(activeOnServer.libraryOrder);
+        }
 
         if (migratedDashboards.length > 0 && !activeIdRef.current) {
           // Try to load default dashboard first
@@ -436,7 +459,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     widgets: string;
     background: string;
     name: string;
-  }>({ widgets: '', background: '', name: '' });
+    libraryOrder: string;
+  }>({ widgets: '', background: '', name: '', libraryOrder: '' });
 
   useEffect(() => {
     // Capture ref value for stable cleanup (react-hooks/exhaustive-deps)
@@ -480,6 +504,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         widgets: JSON.stringify(active.widgets),
         background: active.background,
         name: active.name,
+        libraryOrder: JSON.stringify(active.libraryOrder),
       };
       pendingSaveCountRef.current++;
       lastWidgetCountRef.current = active.widgets.length;
@@ -664,6 +689,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     (tools: (WidgetType | InternalToolType)[]) => {
       setLibraryOrder(tools);
       localStorage.setItem('spartboard_library_order', JSON.stringify(tools));
+
+      if (!activeIdRef.current) return;
+      setDashboards((prev) =>
+        prev.map((d) =>
+          d.id === activeIdRef.current ? { ...d, libraryOrder: tools } : d
+        )
+      );
     },
     []
   );
