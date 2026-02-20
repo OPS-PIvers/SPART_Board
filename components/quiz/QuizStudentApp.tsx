@@ -121,6 +121,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     joinQuizSession,
     submitAnswer,
     completeQuiz,
+    reportTabSwitch,
   } = useQuizSessionStudent();
 
   const handleJoin = useCallback(
@@ -254,6 +255,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
         onComplete={async () => {
           await completeQuiz();
         }}
+        reportTabSwitch={reportTabSwitch}
       />
     );
   }
@@ -311,6 +313,7 @@ const ActiveQuiz: React.FC<{
   myResponse: ReturnType<typeof useQuizSessionStudent>['myResponse'];
   onAnswer: (qId: string, answer: string) => Promise<void>;
   onComplete: () => Promise<void>;
+  reportTabSwitch: () => Promise<number>;
 }> = ({
   session,
   currentQuestion: sessionQuestion,
@@ -318,8 +321,8 @@ const ActiveQuiz: React.FC<{
   myResponse,
   onAnswer,
   onComplete,
+  reportTabSwitch,
 }) => {
-  const { reportTabSwitch } = useQuizSessionStudent();
   const [showCheatWarning, setShowCheatWarning] = useState(false);
   const [warningCount, setWarningCount] = useState(
     myResponse?.tabSwitchWarnings ?? 0
