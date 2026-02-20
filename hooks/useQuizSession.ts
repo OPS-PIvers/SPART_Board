@@ -401,6 +401,19 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   const myResponseRef = useRef<QuizResponse | null>(null);
   myResponseRef.current = myResponse;
 
+  // Optimistic local counter to prevent "Warning 1 of 3" loops if snapshot lags
+  const optimisticWarningsRef = useRef<number>(0);
+
+  // Sync optimistic ref with server truth, but never decrement locally
+  useEffect(() => {
+    if (myResponse?.tabSwitchWarnings !== undefined) {
+      optimisticWarningsRef.current = Math.max(
+        optimisticWarningsRef.current,
+        myResponse.tabSwitchWarnings
+      );
+    }
+  }, [myResponse?.tabSwitchWarnings]);
+
   // Session listener — only subscribes once teacherUid is known
   const [teacherUidState, setTeacherUidState] = useState<string | null>(null);
 
@@ -575,8 +588,12 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       tabSwitchWarnings: increment(1),
     });
 
-    const currentWarnings = myResponseRef.current?.tabSwitchWarnings ?? 0;
-    return currentWarnings + 1;
+    const currentServerCount = myResponseRef.current?.tabSwitchWarnings ?? 0;
+    const nextCount =
+      Math.max(currentServerCount, optimisticWarningsRef.current) + 1;
+
+    optimisticWarningsRef.current = nextCount;
+    return nextCount;
   }, []);
 
   return {
