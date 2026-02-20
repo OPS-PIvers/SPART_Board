@@ -264,6 +264,7 @@ export const Dock: React.FC = () => {
 
   const classesButtonRef = useRef<HTMLButtonElement>(null);
   const liveButtonRef = useRef<HTMLButtonElement>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
   const [classesAnchorRect, setClassesAnchorRect] = useState<DOMRect | null>(
     null
   );
@@ -547,6 +548,7 @@ export const Dock: React.FC = () => {
                 setShowLibrary(false);
               }}
               globalStyle={globalStyle}
+              triggerRef={moreButtonRef}
             />
           )}
 
@@ -860,7 +862,8 @@ export const Dock: React.FC = () => {
                 <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
 
                 <button
-                  onClick={() => setShowMoreMenu(true)}
+                  ref={moreButtonRef}
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
                   className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
                   title="More Widgets"
                 >

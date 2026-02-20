@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { LayoutGrid, Plus, X } from 'lucide-react';
 import { GlassCard } from '../../common/GlassCard';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
+import { useClickOutside } from '../../../hooks/useClickOutside';
 
 interface WidgetLibraryProps {
   onToggle: (type: WidgetType | InternalToolType) => void;
@@ -11,6 +12,7 @@ interface WidgetLibraryProps {
   canAccess: (type: WidgetType | InternalToolType) => boolean;
   onClose: () => void;
   globalStyle: GlobalStyle;
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
@@ -19,9 +21,14 @@ export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
   canAccess,
   onClose,
   globalStyle,
+  triggerRef,
 }) => {
+  const libraryRef = useRef<HTMLDivElement>(null);
+  useClickOutside(libraryRef, onClose, triggerRef ? [triggerRef] : []);
+
   return createPortal(
     <GlassCard
+      ref={libraryRef}
       globalStyle={globalStyle}
       className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-2xl max-h-[60vh] overflow-hidden flex flex-col p-0 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 z-modal"
     >

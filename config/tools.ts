@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
+import { RecordIcon } from '../components/layout/dock/RecordIcon';
+
 export const TOOLS: ToolMetadata[] = [
   { type: 'clock', icon: Clock, label: 'Clock', color: 'bg-blue-500' },
   { type: 'time-tool', icon: Timer, label: 'Timer', color: 'bg-red-500' },
@@ -138,9 +140,9 @@ export const TOOLS: ToolMetadata[] = [
   },
   {
     type: 'record',
-    icon: Video,
+    icon: RecordIcon,
     label: 'Record',
-    color: 'bg-slate-800',
+    color: 'bg-red-500',
   },
   {
     type: 'magic',
