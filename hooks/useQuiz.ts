@@ -38,6 +38,8 @@ export interface UseQuizResult {
   deleteQuiz: (quizId: string, driveFileId: string) => Promise<void>;
   /** Parse a Google Sheet URL and return quiz questions */
   importFromSheet: (sheetUrl: string, title: string) => Promise<QuizData>;
+  /** Parse a CSV string and return quiz questions */
+  importFromCSV: (csvContent: string, title: string) => Promise<QuizData>;
   /** Is a Drive service available? */
   isDriveConnected: boolean;
 }
@@ -139,8 +141,9 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       const drive = getDriveService();
 
       // Delete from Drive (ignore 404 — file may already be gone)
-      await drive.deleteQuizFile(driveFileId).catch((err: Error) => {
-        console.warn('[useQuiz] Drive delete warning:', err.message);
+      await drive.deleteQuizFile(driveFileId).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn('[useQuiz] Drive delete warning:', msg);
       });
 
       // Delete metadata from Firestore
@@ -171,6 +174,21 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
     [getDriveService]
   );
 
+  const importFromCSV = useCallback(
+    (csvContent: string, title: string): Promise<QuizData> => {
+      const questions = QuizDriveService.parseCSVQuestions(csvContent);
+      const now = Date.now();
+      return Promise.resolve({
+        id: crypto.randomUUID(),
+        title,
+        questions,
+        createdAt: now,
+        updatedAt: now,
+      });
+    },
+    []
+  );
+
   return {
     quizzes,
     loading,
@@ -179,6 +197,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
     loadQuizData,
     deleteQuiz,
     importFromSheet,
+    importFromCSV,
     isDriveConnected: isConnected,
   };
 };

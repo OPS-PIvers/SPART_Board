@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import {
   FileSpreadsheet,
+  FileUp,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
@@ -19,12 +20,14 @@ interface QuizImporterProps {
   onBack: () => void;
   onSave: (quiz: QuizData) => Promise<void>;
   importFromSheet: (sheetUrl: string, title: string) => Promise<QuizData>;
+  importFromCSV: (csvContent: string, title: string) => Promise<QuizData>;
 }
 
 export const QuizImporter: React.FC<QuizImporterProps> = ({
   onBack,
   onSave,
   importFromSheet,
+  importFromCSV,
 }) => {
   const [sheetUrl, setSheetUrl] = useState('');
   const [title, setTitle] = useState('');
@@ -33,6 +36,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFormat, setShowFormat] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleParse = async () => {
     if (!sheetUrl.trim()) {
@@ -53,6 +57,32 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to import sheet');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!title.trim()) {
+      setError('Please enter a title before uploading a CSV.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setParsedQuiz(null);
+
+    try {
+      const content = await file.text();
+      const quiz = await importFromCSV(content, title.trim());
+      setParsedQuiz(quiz);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to parse CSV');
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -80,9 +110,9 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-2">
-          <FileSpreadsheet className="w-4 h-4 text-green-400" />
+          <FileUp className="w-4 h-4 text-violet-400" />
           <span className="text-sm font-semibold text-white">
-            Import from Google Sheet
+            Import Quiz Questions
           </span>
         </div>
       </div>
@@ -94,14 +124,16 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
           className="w-full flex items-center gap-2 px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 rounded-xl text-blue-300 text-xs transition-colors"
         >
           <Info className="w-3.5 h-3.5 shrink-0" />
-          <span className="font-medium">View required spreadsheet format</span>
+          <span className="font-medium">
+            View required format (CSV or Sheet)
+          </span>
           <span className="ml-auto">{showFormat ? '▲' : '▼'}</span>
         </button>
 
         {showFormat && (
           <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 space-y-2 text-xs">
             <p className="text-slate-300 font-semibold">
-              Column layout (left to right):
+              CSV/Sheet column layout (left to right):
             </p>
             <div className="space-y-1 text-slate-400 font-mono">
               <p>
@@ -140,8 +172,9 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
               </p>
             </div>
             <p className="text-slate-500 text-xs pt-1">
-              The first row may be a header — it will be auto-detected and
-              skipped.
+              <strong>Tip:</strong> CSV is more secure as it doesn&apos;t
+              require making your sheet public. Export any Sheet or Excel file
+              as &ldquo;Comma Separated Values (.csv)&rdquo;.
             </p>
           </div>
         )}
@@ -161,21 +194,61 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Google Sheet URL
+          <div className="pt-2">
+            <label className="block text-xs font-medium text-slate-300 mb-2">
+              Option 1: Upload CSV File (Recommended)
             </label>
             <input
-              type="url"
-              value={sheetUrl}
-              onChange={(e) => setSheetUrl(e.target.value)}
-              placeholder="https://docs.google.com/spreadsheets/d/…"
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              type="file"
+              ref={fileInputRef}
+              accept=".csv"
+              onChange={(e) => void handleFileUpload(e)}
+              className="hidden"
             />
-            <p className="text-xs text-slate-500 mt-1">
-              The sheet must be shared with your Google account or set to
-              &ldquo;Anyone with the link can view.&rdquo;
-            </p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || !title.trim()}
+              className="w-full py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
+            >
+              <FileUp className="w-5 h-5 text-violet-400" />
+              <span className="text-xs font-medium text-slate-300">
+                Click to select CSV file
+              </span>
+            </button>
+          </div>
+
+          <div className="relative py-2 flex items-center">
+            <div className="flex-grow border-t border-slate-700"></div>
+            <span className="flex-shrink mx-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Or
+            </span>
+            <div className="flex-grow border-t border-slate-700"></div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Option 2: Google Sheet URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={sheetUrl}
+                onChange={(e) => setSheetUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/…"
+                className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+              <button
+                onClick={() => void handleParse()}
+                disabled={loading || !sheetUrl.trim() || !title.trim()}
+                className="px-4 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-xl text-white transition-colors"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -186,30 +259,9 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
           </div>
         )}
 
-        {/* Parse button */}
-        {!parsedQuiz && (
-          <button
-            onClick={() => void handleParse()}
-            disabled={loading || !sheetUrl.trim() || !title.trim()}
-            className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Importing…
-              </>
-            ) : (
-              <>
-                <FileSpreadsheet className="w-4 h-4" />
-                Import & Preview
-              </>
-            )}
-          </button>
-        )}
-
         {/* Preview of parsed questions */}
         {parsedQuiz && (
-          <div className="space-y-3">
+          <div className="space-y-3 pt-2 border-t border-white/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-green-400">
                 <CheckCircle2 className="w-4 h-4" />
@@ -231,28 +283,20 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
               ))}
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setParsedQuiz(null)}
-                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-xl transition-colors"
-              >
-                Re-import
-              </button>
-              <button
-                onClick={() => void handleSave()}
-                disabled={saving}
-                className="flex-1 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  'Save to Drive'
-                )}
-              </button>
-            </div>
+            <button
+              onClick={() => void handleSave()}
+              disabled={saving}
+              className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save to Drive'
+              )}
+            </button>
           </div>
         )}
       </div>

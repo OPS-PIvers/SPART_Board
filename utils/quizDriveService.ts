@@ -320,6 +320,110 @@ export class QuizDriveService {
     return questions;
   }
 
+  // ─── CSV import ────────────────────────────────────────────────────────────
+
+  /**
+   * Parse a raw CSV string into an array of QuizQuestion objects.
+   * Matches the Google Sheet column layout (A=Time, B=Text, C=Type, D=Correct, E-H=Incorrect).
+   */
+  static parseCSVQuestions(csvContent: string): QuizQuestion[] {
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentCell = '';
+    let inQuotes = false;
+
+    // Simple robust CSV parser that handles quoted strings and newlines within quotes
+    for (let i = 0; i < csvContent.length; i++) {
+      const char = csvContent[i];
+      const nextChar = csvContent[i + 1];
+
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') {
+          currentCell += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          currentCell += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ',') {
+          currentRow.push(currentCell.trim());
+          currentCell = '';
+        } else if (char === '\n' || char === '\r') {
+          if (char === '\r' && nextChar === '\n') i++;
+          currentRow.push(currentCell.trim());
+          if (currentRow.some((c) => c)) rows.push(currentRow);
+          currentRow = [];
+          currentCell = '';
+        } else {
+          currentCell += char;
+        }
+      }
+    }
+    if (currentCell || currentRow.length > 0) {
+      currentRow.push(currentCell.trim());
+      if (currentRow.some((c) => c)) rows.push(currentRow);
+    }
+
+    // Skip header row if present (detect by checking if row 0 col C is not a valid question type)
+    let startRow = 0;
+    if (rows.length > 0) {
+      const typeMap = ['MC', 'FIB', 'MATCHING', 'ORDERING'];
+      const firstCell = (rows[0][COL_QUESTION_TYPE] ?? '').toUpperCase().trim();
+      if (!typeMap.includes(firstCell)) {
+        startRow = 1;
+      }
+    }
+
+    const questions: QuizQuestion[] = [];
+    const questionTypeMap: Record<string, QuizQuestionType> = {
+      MC: 'MC',
+      FIB: 'FIB',
+      MATCHING: 'Matching',
+      ORDERING: 'Ordering',
+    };
+
+    for (let i = startRow; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 3) continue;
+
+      const timeLimitRaw = (row[COL_TIME_LIMIT] ?? '').trim();
+      const questionText = (row[COL_QUESTION_TEXT] ?? '').trim();
+      const typeRaw = (row[COL_QUESTION_TYPE] ?? '').toUpperCase().trim();
+      const correctAnswer = (row[COL_CORRECT_ANSWER] ?? '').trim();
+
+      if (!questionText || !typeRaw) continue;
+
+      const questionType: QuizQuestionType = questionTypeMap[typeRaw] ?? 'MC';
+
+      const incorrectAnswers: string[] = [];
+      for (let c = COL_INCORRECT_1; c <= COL_INCORRECT_4; c++) {
+        const val = (row[c] ?? '').trim();
+        if (val) incorrectAnswers.push(val);
+      }
+
+      questions.push({
+        id: crypto.randomUUID(),
+        timeLimit: timeLimitRaw ? parseInt(timeLimitRaw, 10) || 0 : 0,
+        text: questionText,
+        type: questionType,
+        correctAnswer,
+        incorrectAnswers,
+      });
+    }
+
+    if (questions.length === 0) {
+      throw new Error(
+        'No valid questions found in CSV. Expected columns: Time Limit, Question, Type (MC/FIB/Matching/Ordering), Correct Answer, Incorrect 1-4.'
+      );
+    }
+
+    return questions;
+  }
+
   // ─── Results export ─────────────────────────────────────────────────────────
 
   /**

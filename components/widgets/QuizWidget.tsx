@@ -37,6 +37,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     loadQuizData,
     deleteQuiz,
     importFromSheet,
+    importFromCSV,
     isDriveConnected,
   } = useQuiz(user?.uid);
 
@@ -162,6 +163,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       <QuizImporter
         onBack={() => setView('manager')}
         importFromSheet={importFromSheet}
+        importFromCSV={importFromCSV}
         onSave={async (quiz) => {
           try {
             await saveQuiz(quiz);
