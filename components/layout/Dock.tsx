@@ -8,7 +8,6 @@ import React, {
 import { createPortal } from 'react-dom';
 import {
   LayoutGrid,
-  ChevronDown,
   Plus,
   Users,
   Cast,
@@ -130,6 +129,7 @@ export const Dock: React.FC = () => {
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showMagicLayout, setShowMagicLayout] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Drag-to-collapse state
   const [dragY, setDragY] = useState(0);
@@ -530,7 +530,7 @@ export const Dock: React.FC = () => {
           }`}
         >
           {/* Widget Library Modal (Triggered by button) */}
-          {isEditMode && showLibrary && (
+          {(showMoreMenu || (isEditMode && showLibrary)) && (
             <WidgetLibrary
               visibleTools={visibleTools}
               onToggle={(type) => {
@@ -542,7 +542,10 @@ export const Dock: React.FC = () => {
                 if (type === 'magic') return canAccessFeature('magic-layout');
                 return canAccessWidget(type as WidgetType);
               }}
-              onClose={() => setShowLibrary(false)}
+              onClose={() => {
+                setShowMoreMenu(false);
+                setShowLibrary(false);
+              }}
               globalStyle={globalStyle}
             />
           )}
@@ -853,22 +856,22 @@ export const Dock: React.FC = () => {
                   </>
                 )}
 
-                {/* Separator and Hide Button */}
+                {/* Separator and More Button */}
                 <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
 
                 <button
-                  onClick={() => setIsExpanded(false)}
+                  onClick={() => setShowMoreMenu(true)}
                   className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
-                  title="Minimize Toolbar"
+                  title="More Widgets"
                 >
                   <DockIcon
-                    color="bg-slate-700 shadow-lg shadow-slate-900/20"
-                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-slate-800 transition-all"
+                    color="bg-brand-blue-primary shadow-lg shadow-brand-blue-primary/20"
+                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-brand-blue-dark transition-all"
                   >
-                    <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
+                    <LayoutGrid className="w-5 h-5 md:w-6 md:h-6" />
                   </DockIcon>
                   <DockLabel className="text-slate-600 font-bold">
-                    Hide
+                    More
                   </DockLabel>
                 </button>
               </>
