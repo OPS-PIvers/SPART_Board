@@ -5,6 +5,7 @@ import axios, { AxiosError } from 'axios';
 import OAuth from 'oauth-1.0a';
 import * as CryptoJS from 'crypto-js';
 import { GoogleGenAI, Content } from '@google/genai';
+import { GoogleAuth } from 'google-auth-library';
 
 admin.initializeApp();
 
@@ -597,7 +598,6 @@ interface JulesData {
 
 export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
   {
-    secrets: ['JULES_API_KEY'],
     timeoutSeconds: 300,
     memory: '256MiB',
     cors: true,
@@ -630,11 +630,17 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       );
     }
 
-    const julesApiKey = process.env.JULES_API_KEY;
-    if (!julesApiKey) {
+    // Generate OAuth 2.0 Access Token
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    });
+    const client = await auth.getClient();
+    const accessToken = await client.getAccessToken();
+
+    if (!accessToken.token) {
       throw new functionsV2.https.HttpsError(
         'internal',
-        'Jules API Key is missing on the server.'
+        'Failed to generate OAuth token.'
       );
     }
 
@@ -685,7 +691,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         },
         {
           headers: {
-            'X-Goog-Api-Key': julesApiKey,
+            Authorization: `Bearer ${accessToken.token}`,
             'Content-Type': 'application/json',
           },
         }
