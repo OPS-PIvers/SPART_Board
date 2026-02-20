@@ -39,13 +39,9 @@ export function generateColumnsLayout(
   // Spacing between desk top-left corners along each axis.
   // Base spacing on actual columns placed so the grid fills the canvas evenly.
   const colSpacing =
-    actualColumns > 1
-      ? (availW - DESK_W) / (actualColumns - 1)
-      : availW / 2;
+    actualColumns > 1 ? (availW - DESK_W) / (actualColumns - 1) : availW / 2;
   const rowSpacing =
-    desksPerColumn > 1
-      ? (availH - DESK_H) / (desksPerColumn - 1)
-      : availH / 2;
+    desksPerColumn > 1 ? (availH - DESK_H) / (desksPerColumn - 1) : availH / 2;
 
   const items: FurnitureItem[] = [];
   let count = 0;
@@ -167,8 +163,7 @@ export function generateHorseshoeLayout(
     const cssY = snap(vTop);
     const step = n > 1 ? (xLast - xFirst) / (n - 1) : 0;
     for (let i = 0; i < n; i++) {
-      const x =
-        n === 1 ? snap((xFirst + xLast) / 2) : snap(xFirst + i * step);
+      const x = n === 1 ? snap((xFirst + xLast) / 2) : snap(xFirst + i * step);
       items.push({
         id: crypto.randomUUID(),
         type: 'desk',

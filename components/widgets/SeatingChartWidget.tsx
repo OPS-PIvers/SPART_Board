@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -448,12 +454,13 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const startY = e.clientY;
     const canvasScale = getCanvasScale();
 
-    // Capture the initial positions of every item in the drag set
+    // Capture the initial positions of every item in the drag set (single O(N) pass)
     const origPositions = new Map<string, { x: number; y: number }>();
-    for (const selId of idsForDrag) {
-      const item = furniture.find((f) => f.id === selId);
-      if (item) origPositions.set(selId, { x: item.x, y: item.y });
-    }
+    furniture.forEach((item) => {
+      if (idsForDrag.has(item.id)) {
+        origPositions.set(item.id, { x: item.x, y: item.y });
+      }
+    });
 
     // Mutable copy updated on every pointermove (used in the pointerup closure)
     const currentPositions = new Map(origPositions);
