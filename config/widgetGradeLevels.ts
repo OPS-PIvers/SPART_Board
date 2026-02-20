@@ -1,4 +1,9 @@
-import { WidgetType, GradeLevel, GradeFilter } from '../types';
+import {
+  WidgetType,
+  GradeLevel,
+  GradeFilter,
+  InternalToolType,
+} from '../types';
 
 export const ALL_GRADE_LEVELS: GradeLevel[] = ['k-2', '3-5', '6-8', '9-12'];
 
@@ -20,7 +25,10 @@ export const ALL_GRADE_LEVELS: GradeLevel[] = ['k-2', '3-5', '6-8', '9-12'];
  * - Each grade level will be displayed as a separate chip in the UI
  * - Use ALL_GRADE_LEVELS for widgets appropriate for all grades
  */
-export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
+export const WIDGET_GRADE_LEVELS: Record<
+  WidgetType | InternalToolType,
+  GradeLevel[]
+> = {
   // Clock & Time Tools
   clock: ALL_GRADE_LEVELS,
   'time-tool': ALL_GRADE_LEVELS,
@@ -67,12 +75,16 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   recessGear: ['k-2', '3-5'],
   pdf: ALL_GRADE_LEVELS,
   quiz: ALL_GRADE_LEVELS,
+  record: ALL_GRADE_LEVELS,
+  magic: ALL_GRADE_LEVELS,
 };
 
 /**
  * Helper function to get grade levels for a specific widget type
  */
-export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
+export function getWidgetGradeLevels(
+  widgetType: WidgetType | InternalToolType
+): GradeLevel[] {
   const levels = WIDGET_GRADE_LEVELS[widgetType];
 
   // Development-mode warning for missing widget configuration
@@ -104,7 +116,7 @@ export function getWidgetGradeLevels(widgetType: WidgetType): GradeLevel[] {
  * - '9-12': Shows widgets tagged with '9-12'
  */
 export function widgetMatchesGradeFilter(
-  widgetType: WidgetType,
+  widgetType: WidgetType | InternalToolType,
   filter: GradeFilter
 ): boolean {
   if (filter === 'all') return true;

@@ -20,11 +20,14 @@ interface RoutineEditorProps {
   onUploadImage: (file: File) => Promise<string>;
 }
 
-// Derive widget types from TOOLS registry, excluding catalyst-related widgets
+// Derive widget types from TOOLS registry, excluding catalyst-related widgets and internal tools
 const WIDGET_TYPES: WidgetType[] = TOOLS.filter(
   (tool) =>
-    !tool.type.startsWith('catalyst') && tool.type !== 'instructionalRoutines'
-).map((tool) => tool.type);
+    !tool.type.startsWith('catalyst') &&
+    tool.type !== 'instructionalRoutines' &&
+    tool.type !== 'record' &&
+    tool.type !== 'magic'
+).map((tool) => tool.type as WidgetType);
 
 /**
  * Validates and sanitizes parsed JSON to prevent prototype pollution.

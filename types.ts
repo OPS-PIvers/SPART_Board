@@ -814,15 +814,17 @@ export interface WidgetData {
 export interface DockFolder {
   id: string;
   name: string;
-  items: WidgetType[];
+  items: (WidgetType | InternalToolType)[];
 }
 
+export type InternalToolType = 'record' | 'magic';
+
 export type DockItem =
-  | { type: 'tool'; toolType: WidgetType }
+  | { type: 'tool'; toolType: WidgetType | InternalToolType }
   | { type: 'folder'; folder: DockFolder };
 
 export interface DashboardSettings {
-  quickAccessWidgets?: WidgetType[];
+  quickAccessWidgets?: (WidgetType | InternalToolType)[];
   disableCloseConfirmation?: boolean;
 }
 
@@ -861,7 +863,7 @@ export interface Toast {
 }
 
 export interface ToolMetadata {
-  type: WidgetType;
+  type: WidgetType | InternalToolType;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   color: string;
@@ -927,7 +929,7 @@ export type GradeFilter = GradeLevel | 'all';
  */
 export interface FeaturePermission {
   /** The type of widget this permission applies to */
-  widgetType: WidgetType;
+  widgetType: WidgetType | InternalToolType;
   /** The access level determining who can use this widget */
   accessLevel: AccessLevel;
   /** Array of email addresses for beta testing access (only used when accessLevel is 'beta') */

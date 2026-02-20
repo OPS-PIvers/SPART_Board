@@ -22,6 +22,11 @@ interface ToolDockItemProps {
   isEditMode: boolean;
   onLongPress: () => void;
   globalStyle: GlobalStyle;
+  customIcon?: React.ComponentType<{ className?: string }>;
+  customLabel?: string;
+  customColor?: string;
+  onClickOverride?: (e: React.MouseEvent) => void;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 // Tool Item with Popover Logic
@@ -36,7 +41,16 @@ export const ToolDockItem = ({
   isEditMode,
   onLongPress,
   globalStyle,
+  customIcon,
+  customLabel,
+  customColor,
+  onClickOverride,
+  buttonRef: externalButtonRef,
 }: ToolDockItemProps) => {
+  const Icon = customIcon ?? tool.icon;
+  const label = customLabel ?? tool.label;
+  const color = customColor ?? tool.color;
+
   const {
     attributes,
     listeners,
@@ -52,7 +66,8 @@ export const ToolDockItem = ({
   const [showPopover, setShowPopover] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const internalButtonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = externalButtonRef ?? internalButtonRef;
   const [popoverPos, setPopoverPos] = useState<{
     left: number;
     bottom: number;
@@ -80,6 +95,11 @@ export const ToolDockItem = ({
     if (isEditMode) {
       e.preventDefault();
       e.stopPropagation();
+      return;
+    }
+
+    if (onClickOverride) {
+      onClickOverride(e);
       return;
     }
 
@@ -228,15 +248,15 @@ export const ToolDockItem = ({
           }`}
         >
           <DockIcon
-            color={tool.color}
+            color={color}
             className={`flex items-center justify-center ${
               isEditMode ? '' : 'group-hover:scale-110'
             }`}
             badgeCount={minimizedWidgets.length}
           >
-            <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
+            <Icon className="w-5 h-5 md:w-6 md:h-6" />
           </DockIcon>
-          <DockLabel>{tool.label}</DockLabel>
+          <DockLabel>{label}</DockLabel>
         </button>
       </div>
     </div>

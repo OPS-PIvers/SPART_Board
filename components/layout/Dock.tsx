@@ -13,8 +13,6 @@ import {
   Users,
   Cast,
   FolderPlus,
-  Wand2,
-  Video,
   Square,
 } from 'lucide-react';
 import {
@@ -79,8 +77,7 @@ export const Dock: React.FC = () => {
     reorderFolderItems,
     addToast,
   } = useDashboard();
-  const { canAccessWidget, canAccessFeature, featurePermissions, user } =
-    useAuth();
+  const { canAccessWidget, canAccessFeature, user } = useAuth();
   const { driveService } = useGoogleDrive();
 
   const handleRecordingComplete = useCallback(
@@ -278,20 +275,6 @@ export const Dock: React.FC = () => {
   const handleLongPress = () => {
     setIsEditMode(true);
   };
-
-  const classToolMetadata = useMemo(() => {
-    const tool = TOOLS.find((t) => t.type === 'classes');
-    if (!tool) return { label: 'Class', color: 'bg-brand-blue-primary' };
-
-    const permission = featurePermissions.find(
-      (p) => p.widgetType === 'classes'
-    );
-    const displayName = permission?.displayName?.trim();
-    return {
-      ...tool,
-      label: displayName ?? tool.label,
-    };
-  }, [featurePermissions]);
 
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
@@ -501,7 +484,12 @@ export const Dock: React.FC = () => {
                 onToggle={(type) => {
                   toggleToolVisibility(type);
                 }}
-                canAccess={canAccessWidget}
+                canAccess={(type) => {
+                  if (type === 'record')
+                    return canAccessFeature('screen-recording');
+                  if (type === 'magic') return canAccessFeature('magic-layout');
+                  return canAccessWidget(type as WidgetType);
+                }}
                 onClose={() => setShowLibrary(false)}
                 globalStyle={globalStyle}
               />
@@ -540,16 +528,118 @@ export const Dock: React.FC = () => {
                           const tool = TOOLS.find(
                             (t) => t.type === item.toolType
                           );
-                          if (!tool || !canAccessWidget(tool.type)) return null;
+                          if (
+                            !tool ||
+                            !canAccessWidget(tool.type as WidgetType)
+                          )
+                            return null;
+
+                          // Handle special internal tools that aren't standard widgets
+                          if (
+                            item.toolType === 'record' ||
+                            item.toolType === 'magic'
+                          ) {
+                            if (
+                              !canAccessFeature(
+                                item.toolType === 'record'
+                                  ? 'screen-recording'
+                                  : 'magic-layout'
+                              )
+                            )
+                              return null;
+
+                            return (
+                              <ToolDockItem
+                                key={item.toolType}
+                                tool={tool}
+                                minimizedWidgets={[]}
+                                onAdd={() => {
+                                  if (item.toolType === 'record') {
+                                    if (isRecording) void stopRecording();
+                                    else void startRecording();
+                                  } else {
+                                    setShowMagicLayout(true);
+                                  }
+                                }}
+                                onRestore={() => undefined}
+                                onDelete={() => undefined}
+                                onDeleteAll={() => undefined}
+                                onRemoveFromDock={() => {
+                                  toggleToolVisibility(item.toolType);
+                                }}
+                                isEditMode={isEditMode}
+                                onLongPress={handleLongPress}
+                                globalStyle={globalStyle}
+                                // Special handling for recording state
+                                customColor={
+                                  item.toolType === 'record' && isRecording
+                                    ? 'bg-red-500'
+                                    : undefined
+                                }
+                                customIcon={
+                                  item.toolType === 'record' && isRecording
+                                    ? Square
+                                    : undefined
+                                }
+                                customLabel={
+                                  item.toolType === 'record' && isRecording
+                                    ? `${Math.floor(duration / 60)
+                                        .toString()
+                                        .padStart(
+                                          2,
+                                          '0'
+                                        )}:${(duration % 60).toString().padStart(2, '0')}`
+                                    : undefined
+                                }
+                              />
+                            );
+                          }
+
+                          // Handle "classes" as a tool with special popover logic
+                          if (item.toolType === 'classes') {
+                            const minimizedWidgets =
+                              minimizedWidgetsByType[tool.type as WidgetType] ??
+                              [];
+                            return (
+                              <ToolDockItem
+                                key={tool.type}
+                                tool={tool}
+                                minimizedWidgets={minimizedWidgets}
+                                onAdd={openClassEditor}
+                                onRestore={(id) =>
+                                  updateWidget(id, { minimized: false })
+                                }
+                                onDelete={(id) => removeWidget(id)}
+                                onDeleteAll={() =>
+                                  removeWidgets(
+                                    minimizedWidgets.map((w) => w.id)
+                                  )
+                                }
+                                onRemoveFromDock={() =>
+                                  toggleToolVisibility(tool.type)
+                                }
+                                isEditMode={isEditMode}
+                                onLongPress={handleLongPress}
+                                globalStyle={globalStyle}
+                                onClickOverride={
+                                  minimizedWidgets.length === 0
+                                    ? handleToggleRosterMenu
+                                    : undefined
+                                }
+                                buttonRef={classesButtonRef}
+                              />
+                            );
+                          }
 
                           const minimizedWidgets =
-                            minimizedWidgetsByType[tool.type] ?? [];
+                            minimizedWidgetsByType[tool.type as WidgetType] ??
+                            [];
                           return (
                             <ToolDockItem
                               key={tool.type}
                               tool={tool}
                               minimizedWidgets={minimizedWidgets}
-                              onAdd={() => addWidget(tool.type)}
+                              onAdd={() => addWidget(tool.type as WidgetType)}
                               onRestore={(id) =>
                                 updateWidget(id, { minimized: false })
                               }
@@ -572,7 +662,16 @@ export const Dock: React.FC = () => {
                             <FolderItem
                               key={item.folder.id}
                               folder={item.folder}
-                              onAdd={addWidget}
+                              onAdd={(type) => {
+                                if (type === 'record') {
+                                  if (isRecording) void stopRecording();
+                                  else void startRecording();
+                                } else if (type === 'magic') {
+                                  setShowMagicLayout(true);
+                                } else {
+                                  addWidget(type as WidgetType);
+                                }
+                              }}
                               onRename={setRenamingFolderId}
                               onDelete={deleteFolder}
                               isEditMode={isEditMode}
@@ -633,12 +732,12 @@ export const Dock: React.FC = () => {
                     )}
                   </DndContext>
 
-                  {/* Separator and Roster/Classes Button */}
-                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-
-                  {/* LIVE INFO BUTTON (Visible when active) */}
+                  {/* Separator and Live Info Button */}
                   {session?.isActive && (
                     <>
+                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                      {/* LIVE INFO BUTTON (Visible when active) */}
                       <button
                         ref={liveButtonRef}
                         onClick={() => {
@@ -708,82 +807,11 @@ export const Dock: React.FC = () => {
                           </GlassCard>,
                           document.body
                         )}
-
-                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
                     </>
                   )}
 
-                  <button
-                    ref={classesButtonRef}
-                    onClick={handleToggleRosterMenu}
-                    aria-label="Toggle class roster menu"
-                    className={`group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative`}
-                  >
-                    <DockIcon
-                      color={classToolMetadata.color}
-                      className="flex items-center justify-center group-hover:scale-110"
-                    >
-                      <Users className="w-5 h-5 md:w-6 md:h-6" />
-                    </DockIcon>
-                    <DockLabel>{classToolMetadata.label}</DockLabel>
-                  </button>
-
-                  {/* RECORD BUTTON */}
-                  {canAccessFeature('screen-recording') && (
-                    <>
-                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-                      <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
-                        title={
-                          isRecording ? 'Stop Recording' : 'Record Dashboard'
-                        }
-                      >
-                        <DockIcon
-                          color={isRecording ? 'bg-red-500' : 'bg-slate-800'}
-                          className={`flex items-center justify-center transition-all ${
-                            isRecording
-                              ? 'animate-pulse text-white shadow-lg shadow-red-500/30'
-                              : 'text-white group-hover:scale-110 group-hover:bg-slate-900 group-hover:shadow-lg'
-                          }`}
-                        >
-                          {isRecording ? (
-                            <Square className="w-5 h-5 md:w-6 md:h-6" />
-                          ) : (
-                            <Video className="w-5 h-5 md:w-6 md:h-6" />
-                          )}
-                        </DockIcon>
-                        <DockLabel>
-                          {isRecording
-                            ? `${Math.floor(duration / 60)
-                                .toString()
-                                .padStart(2, '0')}:${(duration % 60)
-                                .toString()
-                                .padStart(2, '0')}`
-                            : 'Record'}
-                        </DockLabel>
-                      </button>
-                    </>
-                  )}
-
-                  {/* Separator and Roster/Classes Button */}
+                  {/* Separator and Hide Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-
-                  {canAccessFeature('magic-layout') && (
-                    <button
-                      onClick={() => setShowMagicLayout(true)}
-                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
-                      title="Magic Layout"
-                    >
-                      <DockIcon
-                        color="bg-gradient-to-br from-indigo-500 to-purple-600"
-                        className="flex items-center justify-center group-hover:scale-110"
-                      >
-                        <Wand2 className="w-5 h-5 md:w-6 md:h-6" />
-                      </DockIcon>
-                      <DockLabel>Magic</DockLabel>
-                    </button>
-                  )}
 
                   <button
                     onClick={() => setIsExpanded(false)}
@@ -791,12 +819,14 @@ export const Dock: React.FC = () => {
                     title="Minimize Toolbar"
                   >
                     <DockIcon
-                      color="bg-slate-100"
-                      className="flex items-center justify-center text-slate-400 shadow-sm group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600"
+                      color="bg-slate-700 shadow-lg shadow-slate-900/20"
+                      className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-slate-800 transition-all"
                     >
                       <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
                     </DockIcon>
-                    <DockLabel>Hide</DockLabel>
+                    <DockLabel className="text-slate-600 font-bold">
+                      Hide
+                    </DockLabel>
                   </button>
                 </>
               ) : (
@@ -819,7 +849,16 @@ export const Dock: React.FC = () => {
                 onClick={() => {
                   const type =
                     activeDashboard.settings?.quickAccessWidgets?.[0];
-                  if (type) addWidget(type);
+                  if (!type) return;
+
+                  if (type === 'record') {
+                    if (isRecording) void stopRecording();
+                    else void startRecording();
+                  } else if (type === 'magic') {
+                    setShowMagicLayout(true);
+                  } else {
+                    addWidget(type as WidgetType);
+                  }
                 }}
               />
             )}
@@ -845,7 +884,16 @@ export const Dock: React.FC = () => {
                 onClick={() => {
                   const type =
                     activeDashboard.settings?.quickAccessWidgets?.[1];
-                  if (type) addWidget(type);
+                  if (!type) return;
+
+                  if (type === 'record') {
+                    if (isRecording) void stopRecording();
+                    else void startRecording();
+                  } else if (type === 'magic') {
+                    setShowMagicLayout(true);
+                  } else {
+                    addWidget(type as WidgetType);
+                  }
                 }}
               />
             )}

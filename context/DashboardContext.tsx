@@ -13,6 +13,7 @@ import {
   Toast,
   GradeFilter,
   DockItem,
+  InternalToolType,
   DockFolder,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
@@ -30,7 +31,9 @@ import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import { DashboardContext } from './DashboardContextValue';
 
 // Helper to migrate legacy visibleTools to dockItems
-const migrateToDockItems = (visibleTools: WidgetType[]): DockItem[] => {
+const migrateToDockItems = (
+  visibleTools: (WidgetType | InternalToolType)[]
+): DockItem[] => {
   return visibleTools.map((type) => ({ type: 'tool', toolType: type }));
 };
 
@@ -75,11 +78,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const activeIdRef = useRef(activeId);
   const dashboardsRef = useRef(dashboards);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [visibleTools, setVisibleTools] = useState<WidgetType[]>(() => {
+  const [visibleTools, setVisibleTools] = useState<
+    (WidgetType | InternalToolType)[]
+  >(() => {
     const saved = localStorage.getItem('classroom_visible_tools');
     if (saved) {
       try {
-        return JSON.parse(saved) as WidgetType[];
+        return JSON.parse(saved) as (WidgetType | InternalToolType)[];
       } catch (e) {
         console.error('Failed to parse saved tools', e);
       }
@@ -100,7 +105,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     const savedTools = localStorage.getItem('classroom_visible_tools');
     if (savedTools) {
       try {
-        const tools = JSON.parse(savedTools) as WidgetType[];
+        const tools = JSON.parse(savedTools) as (
+          | WidgetType
+          | InternalToolType
+        )[];
         return migrateToDockItems(tools);
       } catch (e) {
         console.error('Failed to migrate tools to dock items', e);
@@ -572,7 +580,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [dashboards, activeId, user, loading, saveDashboard]);
 
   const toggleToolVisibility = useCallback(
-    (type: WidgetType) => {
+    (type: WidgetType | InternalToolType) => {
       setVisibleTools((prev) => {
         const next = prev.includes(type)
           ? prev.filter((t) => t !== type)
@@ -630,10 +638,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem('classroom_dock_items', JSON.stringify(nextDock));
   }, []);
 
-  const reorderTools = useCallback((tools: WidgetType[]) => {
-    setVisibleTools(tools);
-    localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
-  }, []);
+  const reorderTools = useCallback(
+    (tools: (WidgetType | InternalToolType)[]) => {
+      setVisibleTools(tools);
+      localStorage.setItem('classroom_visible_tools', JSON.stringify(tools));
+    },
+    []
+  );
 
   const reorderDockItems = useCallback((items: DockItem[]) => {
     setDockItems(items);
@@ -760,7 +771,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const createFolderWithItems = useCallback(
-    (name: string, items: WidgetType[]) => {
+    (name: string, items: (WidgetType | InternalToolType)[]) => {
       setDockItems((prev) => {
         // 1. Remove items from their current locations
         let currentItems = [...prev];
@@ -841,44 +852,47 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [addToast]
   );
 
-  const addItemToFolder = useCallback((folderId: string, type: WidgetType) => {
-    setDockItems((prev) => {
-      // 1. Remove the tool from wherever it was (top-level or another folder)
-      const cleaned = prev
-        .map((item) => {
-          if (item.type === 'folder') {
-            return {
-              ...item,
-              folder: {
-                ...item.folder,
-                items: item.folder.items.filter((t) => t !== type),
-              },
-            };
-          }
-          return item;
-        })
-        .filter((item) => !(item.type === 'tool' && item.toolType === type));
-
-      // 2. Add it to the target folder
-      const next = cleaned.map((item) =>
-        item.type === 'folder' && item.folder.id === folderId
-          ? {
-              ...item,
-              folder: {
-                ...item.folder,
-                items: [...item.folder.items, type],
-              },
+  const addItemToFolder = useCallback(
+    (folderId: string, type: WidgetType | InternalToolType) => {
+      setDockItems((prev) => {
+        // 1. Remove the tool from wherever it was (top-level or another folder)
+        const cleaned = prev
+          .map((item) => {
+            if (item.type === 'folder') {
+              return {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: item.folder.items.filter((t) => t !== type),
+                },
+              };
             }
-          : item
-      );
+            return item;
+          })
+          .filter((item) => !(item.type === 'tool' && item.toolType === type));
 
-      localStorage.setItem('classroom_dock_items', JSON.stringify(next));
-      return next;
-    });
-  }, []);
+        // 2. Add it to the target folder
+        const next = cleaned.map((item) =>
+          item.type === 'folder' && item.folder.id === folderId
+            ? {
+                ...item,
+                folder: {
+                  ...item.folder,
+                  items: [...item.folder.items, type],
+                },
+              }
+            : item
+        );
+
+        localStorage.setItem('classroom_dock_items', JSON.stringify(next));
+        return next;
+      });
+    },
+    []
+  );
 
   const removeItemFromFolder = useCallback(
-    (folderId: string, type: WidgetType) => {
+    (folderId: string, type: WidgetType | InternalToolType) => {
       setDockItems((prev) => {
         const next = prev.map((item) =>
           item.type === 'folder' && item.folder.id === folderId
@@ -899,7 +913,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const moveItemOutOfFolder = useCallback(
-    (folderId: string, type: WidgetType, index: number) => {
+    (folderId: string, type: WidgetType | InternalToolType, index: number) => {
       setDockItems((prev) => {
         // Remove from folder
         const cleaned = prev.map((item) =>
@@ -926,7 +940,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const reorderFolderItems = useCallback(
-    (folderId: string, newItems: WidgetType[]) => {
+    (folderId: string, newItems: (WidgetType | InternalToolType)[]) => {
       setDockItems((prev) => {
         const next = prev.map((item) =>
           item.type === 'folder' && item.folder.id === folderId

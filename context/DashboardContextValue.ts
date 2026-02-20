@@ -7,6 +7,7 @@ import {
   GradeFilter,
   ClassRoster,
   DockItem,
+  InternalToolType,
   WidgetConfig,
   GlobalStyle,
   Student,
@@ -16,7 +17,7 @@ export interface DashboardContextValue {
   dashboards: Dashboard[];
   activeDashboard: Dashboard | null;
   toasts: Toast[];
-  visibleTools: WidgetType[];
+  visibleTools: (WidgetType | InternalToolType)[];
   dockItems: DockItem[];
   loading: boolean;
   isSaving: boolean;
@@ -48,9 +49,9 @@ export interface DashboardContextValue {
   resetWidgetSize: (id: string) => void;
   setBackground: (bg: string) => void;
   setGlobalStyle: (style: Partial<GlobalStyle>) => void;
-  toggleToolVisibility: (type: WidgetType) => void;
+  toggleToolVisibility: (type: WidgetType | InternalToolType) => void;
   setAllToolsVisibility: (visible: boolean) => void;
-  reorderTools: (tools: WidgetType[]) => void;
+  reorderTools: (tools: (WidgetType | InternalToolType)[]) => void;
   reorderDockItems: (items: DockItem[]) => void;
   updateDashboardSettings: (settings: Partial<Dashboard['settings']>) => void;
   updateDashboard: (updates: Partial<Dashboard>) => void;
@@ -72,17 +73,29 @@ export interface DashboardContextValue {
 
   // Folder system
   addFolder: (name: string) => void;
-  createFolderWithItems: (name: string, items: WidgetType[]) => void;
+  createFolderWithItems: (
+    name: string,
+    items: (WidgetType | InternalToolType)[]
+  ) => void;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
-  addItemToFolder: (folderId: string, type: WidgetType) => void;
-  removeItemFromFolder: (folderId: string, type: WidgetType) => void;
+  addItemToFolder: (
+    folderId: string,
+    type: WidgetType | InternalToolType
+  ) => void;
+  removeItemFromFolder: (
+    folderId: string,
+    type: WidgetType | InternalToolType
+  ) => void;
   moveItemOutOfFolder: (
     folderId: string,
-    type: WidgetType,
+    type: WidgetType | InternalToolType,
     index: number
   ) => void;
-  reorderFolderItems: (folderId: string, newItems: WidgetType[]) => void;
+  reorderFolderItems: (
+    folderId: string,
+    newItems: (WidgetType | InternalToolType)[]
+  ) => void;
 }
 
 export const DashboardContext = createContext<

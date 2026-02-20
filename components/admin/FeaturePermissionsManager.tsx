@@ -13,6 +13,7 @@ import {
   AccessLevel,
   WidgetType,
   GradeLevel,
+  InternalToolType,
   LunchCountGlobalConfig,
   WeatherGlobalConfig,
   WebcamGlobalConfig,
@@ -62,18 +63,22 @@ export const FeaturePermissionsManager: React.FC = () => {
     routineName: string;
   } | null>(null);
   const [permissions, setPermissions] = useState<
-    Map<WidgetType, FeaturePermission>
+    Map<WidgetType | InternalToolType, FeaturePermission>
   >(new Map());
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<Set<WidgetType>>(new Set());
+  const [saving, setSaving] = useState<Set<WidgetType | InternalToolType>>(
+    new Set()
+  );
   const [message, setMessage] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
-  const [unsavedChanges, setUnsavedChanges] = useState<Set<WidgetType>>(
-    new Set()
-  );
-  const [editingConfig, setEditingConfig] = useState<WidgetType | null>(null);
+  const [unsavedChanges, setUnsavedChanges] = useState<
+    Set<WidgetType | InternalToolType>
+  >(new Set());
+  const [editingConfig, setEditingConfig] = useState<
+    WidgetType | InternalToolType | null
+  >(null);
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
   const [uploadingRangeId, setUploadingRangeId] = useState<string | null>(null);
   const { uploadWeatherImage } = useStorage();
@@ -93,7 +98,10 @@ export const FeaturePermissionsManager: React.FC = () => {
     try {
       setLoading(true);
       const snapshot = await getDocs(collection(db, 'feature_permissions'));
-      const permMap = new Map<WidgetType, FeaturePermission>();
+      const permMap = new Map<
+        WidgetType | InternalToolType,
+        FeaturePermission
+      >();
 
       snapshot.forEach((doc) => {
         const data = doc.data() as FeaturePermission;
@@ -121,7 +129,9 @@ export const FeaturePermissionsManager: React.FC = () => {
     void loadPermissions();
   }, [loadPermissions]);
 
-  const getPermission = (widgetType: WidgetType): FeaturePermission => {
+  const getPermission = (
+    widgetType: WidgetType | InternalToolType
+  ): FeaturePermission => {
     return (
       permissions.get(widgetType) ?? {
         widgetType,
@@ -133,7 +143,7 @@ export const FeaturePermissionsManager: React.FC = () => {
   };
 
   const updatePermission = (
-    widgetType: WidgetType,
+    widgetType: WidgetType | InternalToolType,
     updates: Partial<FeaturePermission>
   ) => {
     const current = getPermission(widgetType);
@@ -143,7 +153,7 @@ export const FeaturePermissionsManager: React.FC = () => {
     setUnsavedChanges(new Set(unsavedChanges).add(widgetType));
   };
 
-  const savePermission = async (widgetType: WidgetType) => {
+  const savePermission = async (widgetType: WidgetType | InternalToolType) => {
     try {
       setSaving(new Set(saving).add(widgetType));
       const permission = getPermission(widgetType);
@@ -170,7 +180,9 @@ export const FeaturePermissionsManager: React.FC = () => {
     }
   };
 
-  const deletePermission = async (widgetType: WidgetType) => {
+  const deletePermission = async (
+    widgetType: WidgetType | InternalToolType
+  ) => {
     if (
       !confirm(
         `Remove permission rules for ${widgetType}? It will revert to default (public access).`
@@ -209,7 +221,10 @@ export const FeaturePermissionsManager: React.FC = () => {
     }
   };
 
-  const addBetaUser = (widgetType: WidgetType, email: string) => {
+  const addBetaUser = (
+    widgetType: WidgetType | InternalToolType,
+    email: string
+  ) => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) return;
 
@@ -228,14 +243,17 @@ export const FeaturePermissionsManager: React.FC = () => {
     }
   };
 
-  const removeBetaUser = (widgetType: WidgetType, email: string) => {
+  const removeBetaUser = (
+    widgetType: WidgetType | InternalToolType,
+    email: string
+  ) => {
     const permission = getPermission(widgetType);
     updatePermission(widgetType, {
       betaUsers: permission.betaUsers.filter((e) => e !== email),
     });
   };
 
-  const addWeatherRange = (widgetType: WidgetType) => {
+  const addWeatherRange = (widgetType: WidgetType | InternalToolType) => {
     const permission = getPermission(widgetType);
     const config = (permission.config ?? {
       fetchingStrategy: 'client',
@@ -259,7 +277,7 @@ export const FeaturePermissionsManager: React.FC = () => {
   };
 
   const updateWeatherRange = (
-    widgetType: WidgetType,
+    widgetType: WidgetType | InternalToolType,
     rangeId: string,
     updates: Partial<WeatherTemperatureRange>
   ) => {
@@ -276,7 +294,10 @@ export const FeaturePermissionsManager: React.FC = () => {
     });
   };
 
-  const removeWeatherRange = (widgetType: WidgetType, rangeId: string) => {
+  const removeWeatherRange = (
+    widgetType: WidgetType | InternalToolType,
+    rangeId: string
+  ) => {
     const permission = getPermission(widgetType);
     const config = (permission.config ?? {}) as unknown as WeatherGlobalConfig;
     const ranges = config.temperatureRanges ?? [];
@@ -290,7 +311,7 @@ export const FeaturePermissionsManager: React.FC = () => {
   };
 
   const handleWeatherImageUpload = async (
-    widgetType: WidgetType,
+    widgetType: WidgetType | InternalToolType,
     rangeId: string,
     file: File
   ) => {
@@ -308,7 +329,10 @@ export const FeaturePermissionsManager: React.FC = () => {
     }
   };
 
-  const toggleGradeLevel = (widgetType: WidgetType, level: GradeLevel) => {
+  const toggleGradeLevel = (
+    widgetType: WidgetType | InternalToolType,
+    level: GradeLevel
+  ) => {
     const permission = getPermission(widgetType);
     const currentLevels =
       permission.gradeLevels ?? getWidgetGradeLevels(widgetType);
@@ -326,7 +350,7 @@ export const FeaturePermissionsManager: React.FC = () => {
     updatePermission(widgetType, { gradeLevels: newLevels });
   };
 
-  const toggleAllGradeLevels = (widgetType: WidgetType) => {
+  const toggleAllGradeLevels = (widgetType: WidgetType | InternalToolType) => {
     const permission = getPermission(widgetType);
     const currentLevels =
       permission.gradeLevels ?? getWidgetGradeLevels(widgetType);

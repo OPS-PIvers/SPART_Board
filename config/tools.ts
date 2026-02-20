@@ -26,6 +26,7 @@ import {
   Zap,
   FileText,
   ClipboardList,
+  Wand2,
 } from 'lucide-react';
 import { ToolMetadata } from '../types';
 
@@ -134,5 +135,17 @@ export const TOOLS: ToolMetadata[] = [
     icon: ClipboardList,
     label: 'Quiz',
     color: 'bg-violet-600',
+  },
+  {
+    type: 'record',
+    icon: Video,
+    label: 'Record',
+    color: 'bg-slate-800',
+  },
+  {
+    type: 'magic',
+    icon: Wand2,
+    label: 'Magic',
+    color: 'bg-gradient-to-br from-indigo-500 to-purple-600',
   },
 ];

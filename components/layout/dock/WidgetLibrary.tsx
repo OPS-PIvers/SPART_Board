@@ -3,12 +3,12 @@ import { createPortal } from 'react-dom';
 import { LayoutGrid, Plus, X } from 'lucide-react';
 import { GlassCard } from '../../common/GlassCard';
 import { TOOLS } from '../../../config/tools';
-import { WidgetType, GlobalStyle } from '../../../types';
+import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
 
 interface WidgetLibraryProps {
-  onToggle: (type: WidgetType) => void;
-  visibleTools: WidgetType[];
-  canAccess: (type: WidgetType) => boolean;
+  onToggle: (type: WidgetType | InternalToolType) => void;
+  visibleTools: (WidgetType | InternalToolType)[];
+  canAccess: (type: WidgetType | InternalToolType) => boolean;
   onClose: () => void;
   globalStyle: GlobalStyle;
 }

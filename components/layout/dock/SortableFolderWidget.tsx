@@ -4,10 +4,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { X } from 'lucide-react';
 import { DockIcon } from './DockIcon';
 import { Z_INDEX } from '../../../config/zIndex';
-import { WidgetType, ToolMetadata } from '../../../types';
+import { WidgetType, ToolMetadata, InternalToolType } from '../../../types';
 
 interface SortableFolderWidgetProps {
-  type: WidgetType;
+  type: WidgetType | InternalToolType;
   tool: ToolMetadata;
   minimizedCount: number;
   isEditMode: boolean;

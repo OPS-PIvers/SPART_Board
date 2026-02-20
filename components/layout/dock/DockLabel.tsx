@@ -6,13 +6,19 @@ import { DEFAULT_GLOBAL_STYLE } from '../../../types';
  * Custom Label Component for consistent readability
  * Adjusts text color based on background brightness or global settings.
  */
-export const DockLabel = ({ children }: { children: React.ReactNode }) => {
+export const DockLabel = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
   return (
     <span
-      className={`text-xxs font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily}`}
+      className={`text-xxs font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily} ${className ?? ''}`}
       style={{
         color: globalStyle.dockTextColor,
         textShadow: globalStyle.dockTextShadow

@@ -23,18 +23,22 @@ import {
   WidgetType,
   GlobalStyle,
   WidgetData,
+  InternalToolType,
 } from '../../../types';
 
 interface FolderItemProps {
   folder: DockFolder;
-  onAdd: (type: WidgetType) => void;
+  onAdd: (type: WidgetType | InternalToolType) => void;
   onRename: (id: string) => void;
   onDelete: (id: string) => void;
   isEditMode: boolean;
   onLongPress: () => void;
   minimizedWidgetsByType: Record<WidgetType, WidgetData[]>;
-  onRemoveItem: (folderId: string, type: WidgetType) => void;
-  onReorder: (folderId: string, newItems: WidgetType[]) => void;
+  onRemoveItem: (folderId: string, type: WidgetType | InternalToolType) => void;
+  onReorder: (
+    folderId: string,
+    newItems: (WidgetType | InternalToolType)[]
+  ) => void;
   globalStyle: GlobalStyle;
 }
 
@@ -97,8 +101,12 @@ export const FolderItem = ({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      const oldIndex = folder.items.indexOf(active.id as WidgetType);
-      const newIndex = folder.items.indexOf(over?.id as WidgetType);
+      const oldIndex = folder.items.indexOf(
+        active.id as WidgetType | InternalToolType
+      );
+      const newIndex = folder.items.indexOf(
+        over?.id as WidgetType | InternalToolType
+      );
       if (oldIndex !== -1 && newIndex !== -1) {
         onReorder(folder.id, arrayMove(folder.items, oldIndex, newIndex));
       }
@@ -149,8 +157,14 @@ export const FolderItem = ({
                   {folder.items.map((type) => {
                     const tool = TOOLS.find((t) => t.type === type);
                     if (!tool) return null;
+
+                    // Internal tools don't have minimized widgets
                     const minimizedCount =
-                      minimizedWidgetsByType[type]?.length ?? 0;
+                      type === 'record' || type === 'magic'
+                        ? 0
+                        : (minimizedWidgetsByType[type as WidgetType]?.length ??
+                          0);
+
                     return (
                       <SortableFolderWidget
                         key={type}
