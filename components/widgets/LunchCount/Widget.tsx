@@ -678,14 +678,14 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             >
               <DroppableZone
                 id="unassigned"
-                className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner"
+                className="flex-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner"
                 style={{
                   padding: 'min(12px, 2.5cqmin)',
                   minHeight: 'min(56px, 10cqmin)',
                 }}
                 activeClassName="bg-slate-100 border-brand-blue-primary ring-4 ring-brand-blue-lighter/20"
               >
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center h-full">
                   <div
                     className="flex items-center"
                     style={{
