@@ -174,10 +174,37 @@ export const useQuizSessionTeacher = (
     );
   }, [teacherUid, session]);
 
+  const finalizeAllResponses = useCallback(async () => {
+    if (!teacherUid) return;
+    const responsesRef = collection(
+      db,
+      QUIZ_SESSIONS_COLLECTION,
+      teacherUid,
+      RESPONSES_COLLECTION
+    );
+    const snap = await getDocs(responsesRef);
+    const batch = writeBatch(db);
+    let count = 0;
+    snap.docs.forEach((d) => {
+      const data = d.data() as QuizResponse;
+      if (data.status === 'in-progress' || data.status === 'joined') {
+        batch.update(d.ref, {
+          status: 'completed',
+          submittedAt: Date.now(),
+        });
+        count++;
+      }
+    });
+    if (count > 0) {
+      await batch.commit();
+    }
+  }, [teacherUid]);
+
   const advanceQuestion = useCallback(async () => {
     if (!teacherUid || !session) return;
     const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
     const nextIndex = session.currentQuestionIndex + 1;
+
     if (nextIndex >= session.totalQuestions) {
       await updateDoc(sessionRef, {
         status: 'ended' as QuizSessionStatus,
@@ -185,6 +212,7 @@ export const useQuizSessionTeacher = (
         endedAt: Date.now(),
         autoProgressAt: null,
       });
+      await finalizeAllResponses();
       return;
     }
     await updateDoc(sessionRef, {
@@ -193,16 +221,21 @@ export const useQuizSessionTeacher = (
       autoProgressAt: null,
       ...(session.startedAt === null ? { startedAt: Date.now() } : {}),
     });
-  }, [teacherUid, session]);
+  }, [teacherUid, session, finalizeAllResponses]);
 
   const endQuizSession = useCallback(async () => {
     if (!teacherUid) return;
+
+    // 1. End the session
     await updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
       status: 'ended' as QuizSessionStatus,
       endedAt: Date.now(),
       autoProgressAt: null,
     });
-  }, [teacherUid]);
+
+    // 2. Mark all active students as completed so their data is preserved in results
+    await finalizeAllResponses();
+  }, [teacherUid, finalizeAllResponses]);
 
   // ─── Auto-progress logic ────────────────────────────────────────────────────
   useEffect(() => {

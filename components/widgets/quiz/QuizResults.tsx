@@ -472,9 +472,13 @@ const StudentsTab: React.FC<{
       .slice()
       .sort((a, b) => {
         const scoreA =
-          a.status === 'completed' ? getResponseScore(a, questions) : -1;
+          a.status === 'completed' || a.status === 'in-progress'
+            ? getResponseScore(a, questions)
+            : -1;
         const scoreB =
-          b.status === 'completed' ? getResponseScore(b, questions) : -1;
+          b.status === 'completed' || b.status === 'in-progress'
+            ? getResponseScore(b, questions)
+            : -1;
         return scoreB - scoreA;
       })
       .map((r) => {
@@ -505,7 +509,7 @@ const StudentsTab: React.FC<{
             </div>
 
             <div className="text-right shrink-0 ml-4 pl-4 border-l border-brand-blue-primary/5">
-              {r.status === 'completed' ? (
+              {r.status === 'completed' || r.status === 'in-progress' ? (
                 <>
                   <p
                     className={`font-black ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-brand-red-primary'}`}
@@ -518,6 +522,7 @@ const StudentsTab: React.FC<{
                     style={{ fontSize: 'min(10px, 3cqmin)' }}
                   >
                     {correct}/{questions.length} Correct
+                    {r.status === 'in-progress' && ' (In Progress)'}
                   </p>
                 </>
               ) : (
