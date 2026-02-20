@@ -30,6 +30,7 @@ interface QuizManagerProps {
   onEdit: (quiz: QuizMetadata) => void;
   onPreview: (quiz: QuizMetadata) => void;
   onGoLive: (quiz: QuizMetadata, mode: QuizSessionMode) => void;
+  onResume: () => void;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void;
   hasActiveSession: boolean;
@@ -43,6 +44,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onEdit,
   onPreview,
   onGoLive,
+  onResume,
   onResults,
   onDelete,
   hasActiveSession,
@@ -181,6 +183,34 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
           New Quiz
         </button>
       </div>
+
+      {/* Active Session Banner */}
+      {hasActiveSession && (
+        <div
+          className="bg-emerald-50 border-y border-emerald-200 flex items-center justify-between"
+          style={{
+            padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
+            gap: 'min(12px, 3cqmin)',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="text-emerald-600 w-4 h-4 animate-pulse" />
+            <span className="text-emerald-800 font-bold text-xs uppercase tracking-tight">
+              Session in Progress
+            </span>
+          </div>
+          <button
+            onClick={onResume}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-lg transition-all active:scale-95 shadow-sm"
+            style={{
+              padding: 'min(4px, 1cqmin) min(12px, 3cqmin)',
+              fontSize: 'min(11px, 3cqmin)',
+            }}
+          >
+            RESUME MONITOR
+          </button>
+        </div>
+      )}
 
       {/* Error */}
       {error && (

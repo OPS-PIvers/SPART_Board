@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
   LayoutGrid,
@@ -8,6 +14,8 @@ import {
   Cast,
   FolderPlus,
   Wand2,
+  Video,
+  Square,
 } from 'lucide-react';
 import {
   DndContext,
@@ -49,6 +57,8 @@ import { DockLabel } from './dock/DockLabel';
 import { ToolDockItem } from './dock/ToolDockItem';
 import { FolderItem } from './dock/FolderItem';
 import { QuickAccessButton } from './dock/QuickAccessButton';
+import { useScreenRecord } from '../../hooks/useScreenRecord';
+import { useGoogleDrive } from '../../hooks/useGoogleDrive';
 
 export const Dock: React.FC = () => {
   const {
@@ -67,9 +77,53 @@ export const Dock: React.FC = () => {
     addItemToFolder,
     moveItemOutOfFolder,
     reorderFolderItems,
+    addToast,
   } = useDashboard();
   const { canAccessWidget, canAccessFeature, featurePermissions, user } =
     useAuth();
+  const { driveService } = useGoogleDrive();
+
+  const handleRecordingComplete = useCallback(
+    async (blob: Blob) => {
+      const fileName = `SPART-Board-Recording-${new Date().toISOString()}.webm`;
+
+      if (driveService) {
+        addToast('Uploading recording to Google Drive...', 'info');
+        try {
+          await driveService.uploadFile(blob, fileName, 'Recordings');
+          addToast('Recording saved to Google Drive!', 'success');
+        } catch (err) {
+          console.error('Failed to upload recording:', err);
+          addToast('Failed to save to Drive. Downloading locally...', 'error');
+          // Fallback to local download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } else {
+        addToast('No Google Drive connected. Downloading locally...', 'info');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    },
+    [driveService, addToast]
+  );
+
+  const { isRecording, duration, startRecording, stopRecording } =
+    useScreenRecord({
+      onSuccess: handleRecordingComplete,
+      onError: (err) => {
+        addToast(err.message, 'error');
+      },
+    });
+
   const { session } = useLiveSession(user?.uid, 'teacher');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRosterMenu, setShowRosterMenu] = useState(false);
@@ -82,7 +136,6 @@ export const Dock: React.FC = () => {
 
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
-  const { addToast } = useDashboard();
   const { processAndUploadImage } = useImageUpload();
 
   // Smart Paste Handler
@@ -674,6 +727,44 @@ export const Dock: React.FC = () => {
                     </DockIcon>
                     <DockLabel>{classToolMetadata.label}</DockLabel>
                   </button>
+
+                  {/* RECORD BUTTON */}
+                  {canAccessFeature('screen-recording') && (
+                    <>
+                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+                      <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                        title={
+                          isRecording ? 'Stop Recording' : 'Record Dashboard'
+                        }
+                      >
+                        <DockIcon
+                          color={isRecording ? 'bg-red-500' : 'bg-slate-100'}
+                          className={`flex items-center justify-center transition-all ${
+                            isRecording
+                              ? 'animate-pulse text-white shadow-lg shadow-red-500/30'
+                              : 'text-slate-400 group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600'
+                          }`}
+                        >
+                          {isRecording ? (
+                            <Square className="w-5 h-5 md:w-6 md:h-6" />
+                          ) : (
+                            <Video className="w-5 h-5 md:w-6 md:h-6" />
+                          )}
+                        </DockIcon>
+                        <DockLabel>
+                          {isRecording
+                            ? `${Math.floor(duration / 60)
+                                .toString()
+                                .padStart(2, '0')}:${(duration % 60)
+                                .toString()
+                                .padStart(2, '0')}`
+                            : 'Record'}
+                        </DockLabel>
+                      </button>
+                    </>
+                  )}
 
                   {/* Separator and Roster/Classes Button */}
                   <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />

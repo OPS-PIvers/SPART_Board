@@ -83,6 +83,24 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     [loadQuizData, addToast]
   );
 
+  // Auto-load quiz data if we are in monitor view or have an active session, but data is missing
+  // This allows for seamless resumption after page reload.
+  React.useEffect(() => {
+    if (
+      !loadedQuizData &&
+      !loadingQuizData &&
+      quizzes.length > 0 &&
+      liveSession &&
+      liveSession.status !== 'ended'
+    ) {
+      // Prioritize the quiz from the live session document itself
+      const meta = quizzes.find((q) => q.id === liveSession.quizId);
+      if (meta) {
+        void loadQuiz(meta);
+      }
+    }
+  }, [liveSession, loadedQuizData, loadingQuizData, quizzes, loadQuiz]);
+
   // ─── Guard: not signed in ──────────────────────────────────────────────────
   if (!user) {
     return (
@@ -252,6 +270,7 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       error={quizzesError ?? dataError}
       hasActiveSession={!!(liveSession && liveSession.status !== 'ended')}
       onImport={() => setView('import')}
+      onResume={() => setView('monitor')}
       onEdit={async (meta) => {
         const data = await loadQuiz(meta);
         if (data) setView('editor');
@@ -304,8 +323,11 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget } = useDashboard();
+  const { updateWidget, addToast } = useDashboard();
+  const { user } = useAuth();
+  const { session, endQuizSession } = useQuizSessionTeacher(user?.uid);
   const config = widget.config as QuizConfig;
+  const hasActiveSession = !!(session && session.status !== 'ended');
 
   return (
     <div className="p-4 space-y-4">
@@ -328,6 +350,19 @@ export const QuizWidgetSettings: React.FC<{ widget: WidgetData }> = ({
           className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
       </div>
+
+      {hasActiveSession && (
+        <button
+          onClick={async () => {
+            await endQuizSession();
+            addToast('Active session ended.', 'success');
+          }}
+          className="w-full py-2 bg-brand-red-primary hover:bg-brand-red-dark text-white text-sm rounded-xl transition-colors font-bold"
+        >
+          Force End Active Session
+        </button>
+      )}
+
       <button
         onClick={() =>
           updateWidget(widget.id, {
