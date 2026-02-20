@@ -65,6 +65,7 @@ describe('DraggableWindow (Tests folder)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders toolbar buttons in the correct order', () => {
@@ -115,5 +116,43 @@ describe('DraggableWindow (Tests folder)', () => {
     expect(children.indexOf(closeBtn)).toBeLessThan(
       children.indexOf(chevronBtn)
     );
+  });
+
+  it('uses portal and correct z-index when maximized', () => {
+    const maximizedWidget = { ...mockWidget, maximized: true };
+
+    render(
+      <DashboardContext.Provider
+        value={mockContext as unknown as DashboardContextValue}
+      >
+        <div id="dashboard-root">
+          <DraggableWindow
+            widget={maximizedWidget}
+            settings={<div>Settings</div>}
+            title="Maximized Widget"
+            globalStyle={mockGlobalStyle}
+          >
+            <div data-testid="maximized-content">Maximized Content</div>
+          </DraggableWindow>
+        </div>
+      </DashboardContext.Provider>
+    );
+
+    // When maximized, it should NOT be inside #dashboard-root if it's portalled to body
+    const dashboardRoot = document.getElementById('dashboard-root');
+    const content = screen.getByTestId('maximized-content');
+
+    expect(dashboardRoot).not.toContainElement(content);
+    expect(document.body).toContainElement(content);
+
+    // Check z-index (10500)
+    const widgetCard = content.closest('.widget') as HTMLElement;
+    expect(widgetCard.style.zIndex).toBe('10500');
+
+    // Check dimensions
+    expect(widgetCard.style.width).toBe('100vw');
+    expect(widgetCard.style.height).toBe('100vh');
+    expect(widgetCard.style.left).toBe('0px');
+    expect(widgetCard.style.top).toBe('0px');
   });
 });

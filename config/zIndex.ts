@@ -20,7 +20,7 @@ export const Z_INDEX = {
   // Widget layers
   widget: 100, // Standard widget level (DraggableWindow uses this as base + widget.z)
   widgetDrag: 500, // Widget being dragged
-  maximized: 900, // Maximized widget
+  maximized: 10500, // Maximized widget
 
   // System UI layers
   dock: 1000, // Dock bar
