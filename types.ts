@@ -576,6 +576,12 @@ export interface QuizSession {
   /** Short alphanumeric code students use to join */
   code: string;
   totalQuestions: number;
+  /**
+   * Full question data stored in the session so students can render questions
+   * without a separate Drive fetch, and so the teacher's view can re-grade
+   * answers independently of what the student wrote.
+   */
+  questions: QuizQuestion[];
 }
 
 export interface QuizResponseAnswer {
@@ -583,7 +589,13 @@ export interface QuizResponseAnswer {
   /** MC/FIB: string. Matching: "term1:def1|term2:def2". Ordering: "item1|item2|item3" */
   answer: string;
   answeredAt: number;
-  isCorrect: boolean;
+  /**
+   * Not written by the student (to prevent client-side forgery).
+   * Always recomputed from the question + answer using gradeAnswer() on the
+   * teacher / results side. Optional so existing Firestore documents with a
+   * stored value are still valid.
+   */
+  isCorrect?: boolean;
 }
 
 export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';

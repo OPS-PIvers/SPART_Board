@@ -28,7 +28,7 @@ import {
   User,
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/config/firebase';
-import { useQuizSessionStudent } from '@/hooks/useQuizSession';
+import { useQuizSessionStudent, gradeAnswer } from '@/hooks/useQuizSession';
 import { QuizSession, QuizQuestion } from '@/types';
 
 // ─── Root component ───────────────────────────────────────────────────────────
@@ -81,8 +81,7 @@ const SignInScreen: React.FC = () => {
       </div>
       <h1 className="text-3xl font-black text-white mb-2">Student Quiz</h1>
       <p className="text-slate-400 text-sm mb-8 max-w-xs">
-        Sign in with your school Google account to join your teacher&apos;s
-        quiz.
+        Sign in with your Google account to join your teacher&apos;s quiz.
       </p>
       {error && (
         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-sm">
@@ -113,7 +112,6 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
 
   const [code, setCode] = useState(urlCode);
   const [joined, setJoined] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
 
   const {
     session,
@@ -234,9 +232,10 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
 
   // Active quiz
   if (session.status === 'active') {
+    const sessionQuestions = session.questions ?? [];
     const currentQ =
       session.currentQuestionIndex >= 0
-        ? quizQuestions[session.currentQuestionIndex]
+        ? sessionQuestions[session.currentQuestionIndex]
         : undefined;
 
     const alreadyAnswered = currentQ
@@ -255,8 +254,6 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
         onComplete={async () => {
           await completeQuiz();
         }}
-        questions={quizQuestions}
-        setQuestions={setQuizQuestions}
       />
     );
   }
@@ -265,6 +262,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
   return (
     <ResultsScreen
       myResponse={myResponse}
+      questions={session.questions ?? []}
       studentName={user.displayName ?? user.email ?? ''}
       onSignOut={handleSignOut}
     />
@@ -317,8 +315,6 @@ const ActiveQuiz: React.FC<{
     question: QuizQuestion
   ) => Promise<void>;
   onComplete: () => Promise<void>;
-  questions: QuizQuestion[];
-  setQuestions: React.Dispatch<React.SetStateAction<QuizQuestion[]>>;
 }> = ({
   session,
   currentQuestion,
@@ -684,12 +680,18 @@ const StructuredQuestionInput: React.FC<{
 
 const ResultsScreen: React.FC<{
   myResponse: ReturnType<typeof useQuizSessionStudent>['myResponse'];
+  questions: QuizQuestion[];
   studentName: string;
   onSignOut: () => void;
-}> = ({ myResponse, studentName, onSignOut }) => {
-  const score = myResponse?.score;
-  const correct = (myResponse?.answers ?? []).filter((a) => a.isCorrect).length;
-  const total = (myResponse?.answers ?? []).length;
+}> = ({ myResponse, questions, studentName, onSignOut }) => {
+  // Compute score from gradeAnswer so that the display is correct even
+  // though students no longer write isCorrect to Firestore.
+  const correct = (myResponse?.answers ?? []).filter((a) => {
+    const q = questions.find((qn) => qn.id === a.questionId);
+    return q ? gradeAnswer(q, a.answer) : false;
+  }).length;
+  const total = questions.length;
+  const score = total > 0 ? Math.round((correct / total) * 100) : null;
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
@@ -748,5 +750,10 @@ const FullPageLoader: React.FC<{ message: string }> = ({ message }) => (
 );
 
 function shuffleArray<T>(arr: T[]): T[] {
-  return [...arr].sort(() => Math.random() - 0.5);
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
