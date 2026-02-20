@@ -408,7 +408,9 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   // Sync optimistic state with server truth, but never decrement locally
   useEffect(() => {
     if (myResponse?.tabSwitchWarnings !== undefined) {
-      setWarningCount((prev) => Math.max(prev, myResponse.tabSwitchWarnings!));
+      setWarningCount((prev) =>
+        Math.max(prev, myResponse.tabSwitchWarnings ?? 0)
+      );
     }
   }, [myResponse?.tabSwitchWarnings]);
 
