@@ -31,7 +31,13 @@ describe('RandomSlots', () => {
   });
 
   it('applies font size correctly', () => {
-    render(<RandomSlots {...defaultProps} fontSize={48} displayResult="Test Result" />);
+    render(
+      <RandomSlots
+        {...defaultProps}
+        fontSize={48}
+        displayResult="Test Result"
+      />
+    );
     // Find the element by its text content, avoiding implementation details like class names
     const textElement = screen.getByText('Test Result');
     // The style is calculated as `min(250px, ${fontStyle})`

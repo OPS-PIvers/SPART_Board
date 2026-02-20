@@ -39,17 +39,31 @@ describe('RandomWheel', () => {
   });
 
   it('displays the result when not spinning', () => {
-    render(<RandomWheel {...defaultProps} displayResult="Winner!" isSpinning={false} />);
+    render(
+      <RandomWheel
+        {...defaultProps}
+        displayResult="Winner!"
+        isSpinning={false}
+      />
+    );
     expect(screen.getByText('Winner!')).toBeInTheDocument();
   });
 
   it('does not display the result when spinning', () => {
-    render(<RandomWheel {...defaultProps} displayResult="Winner!" isSpinning={true} />);
+    render(
+      <RandomWheel
+        {...defaultProps}
+        displayResult="Winner!"
+        isSpinning={true}
+      />
+    );
     expect(screen.queryByText('Winner!')).not.toBeInTheDocument();
   });
 
   it('handles empty student list gracefully', () => {
-    const { container } = render(<RandomWheel {...defaultProps} students={[]} />);
+    const { container } = render(
+      <RandomWheel {...defaultProps} students={[]} />
+    );
     const paths = container.querySelectorAll('svg > g > path');
     expect(paths.length).toBe(0);
   });
