@@ -241,6 +241,7 @@ export const StudentApp = () => {
           removeWidget={noop}
           duplicateWidget={noop}
           bringToFront={noop}
+          resetWidgetSize={noop}
           addToast={noop}
           globalStyle={DEFAULT_GLOBAL_STYLE}
         />

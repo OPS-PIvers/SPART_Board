@@ -18,10 +18,6 @@ import {
 } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../types';
-import {
-  DashboardContext,
-  DashboardContextValue,
-} from '../../context/DashboardContextValue';
 
 // Mock dependencies
 vi.mock('../../hooks/useScreenshot', () => ({
@@ -155,27 +151,20 @@ describe('DraggableWindow', () => {
   ) => {
     const widget = { ...mockWidget, ...widgetProps };
     return render(
-      <DashboardContext.Provider
-        value={
-          {
-            updateWidget: mockUpdateWidget,
-            removeWidget: mockRemoveWidget,
-            duplicateWidget: mockDuplicateWidget,
-            bringToFront: mockBringToFront,
-            addToast: mockAddToast,
-            resetWidgetSize: mockResetWidgetSize,
-          } as unknown as DashboardContextValue
-        }
+      <DraggableWindow
+        widget={widget}
+        title="Test Widget"
+        settings={settings}
+        globalStyle={mockGlobalStyle}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        resetWidgetSize={mockResetWidgetSize}
       >
-        <DraggableWindow
-          widget={widget}
-          title="Test Widget"
-          settings={settings}
-          globalStyle={mockGlobalStyle}
-        >
-          {children}
-        </DraggableWindow>
-      </DashboardContext.Provider>
+        {children}
+      </DraggableWindow>
     );
   };
 
@@ -185,27 +174,20 @@ describe('DraggableWindow', () => {
     );
 
     const { rerender } = render(
-      <DashboardContext.Provider
-        value={
-          {
-            updateWidget: mockUpdateWidget,
-            removeWidget: mockRemoveWidget,
-            duplicateWidget: mockDuplicateWidget,
-            bringToFront: mockBringToFront,
-            addToast: mockAddToast,
-            resetWidgetSize: mockResetWidgetSize,
-          } as unknown as DashboardContextValue
-        }
+      <DraggableWindow
+        widget={mockWidget}
+        title="Test Widget"
+        settings={<SettingsContent />}
+        globalStyle={mockGlobalStyle}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        resetWidgetSize={mockResetWidgetSize}
       >
-        <DraggableWindow
-          widget={mockWidget}
-          title="Test Widget"
-          settings={<SettingsContent />}
-          globalStyle={mockGlobalStyle}
-        >
-          <div>Widget Content</div>
-        </DraggableWindow>
-      </DashboardContext.Provider>
+        <div>Widget Content</div>
+      </DraggableWindow>
     );
 
     // Initially, settings should NOT be in the document because flipped is false
@@ -214,27 +196,20 @@ describe('DraggableWindow', () => {
     // Rerender with flipped = true
     const flippedWidget = { ...mockWidget, flipped: true };
     rerender(
-      <DashboardContext.Provider
-        value={
-          {
-            updateWidget: mockUpdateWidget,
-            removeWidget: mockRemoveWidget,
-            duplicateWidget: mockDuplicateWidget,
-            bringToFront: mockBringToFront,
-            addToast: mockAddToast,
-            resetWidgetSize: mockResetWidgetSize,
-          } as unknown as DashboardContextValue
-        }
+      <DraggableWindow
+        widget={flippedWidget}
+        title="Test Widget"
+        settings={<SettingsContent />}
+        globalStyle={mockGlobalStyle}
+        updateWidget={mockUpdateWidget}
+        removeWidget={mockRemoveWidget}
+        duplicateWidget={mockDuplicateWidget}
+        bringToFront={mockBringToFront}
+        addToast={mockAddToast}
+        resetWidgetSize={mockResetWidgetSize}
       >
-        <DraggableWindow
-          widget={flippedWidget}
-          title="Test Widget"
-          settings={<SettingsContent />}
-          globalStyle={mockGlobalStyle}
-        >
-          <div>Widget Content</div>
-        </DraggableWindow>
-      </DashboardContext.Provider>
+        <div>Widget Content</div>
+      </DraggableWindow>
     );
 
     // Now settings SHOULD be in the document
@@ -290,6 +265,8 @@ describe('DraggableWindow', () => {
     );
   });
 
+  // ... (Other tests should work fine with renderComponent helper)
+
   it('triggers real-time updates for position-aware widgets (e.g. catalyst)', () => {
     const catalystWidget = {
       ...mockWidget,
@@ -312,13 +289,16 @@ describe('DraggableWindow', () => {
       pointerId: 1,
     });
 
+    // Mock direct DOM update for catalyst (it calls updateWidget, but let's check it)
+
     fireEvent.pointerMove(window, {
       clientX: 110,
       clientY: 110,
       pointerId: 1,
     });
 
-    // Catalyst should trigger updateWidget immediately during drag
+    // Catalyst should trigger updateWidget immediately during drag (via fallback path in DraggableWindow)
+    // Wait, DraggableWindow handles position-aware widgets by calling updateWidget in onPointerMove
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'catalyst-1',
       expect.objectContaining({ x: 110, y: 110 })
