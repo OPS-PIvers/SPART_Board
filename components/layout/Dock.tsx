@@ -740,11 +740,11 @@ export const Dock: React.FC = () => {
                         }
                       >
                         <DockIcon
-                          color={isRecording ? 'bg-red-500' : 'bg-slate-100'}
+                          color={isRecording ? 'bg-red-500' : 'bg-slate-800'}
                           className={`flex items-center justify-center transition-all ${
                             isRecording
                               ? 'animate-pulse text-white shadow-lg shadow-red-500/30'
-                              : 'text-slate-400 group-hover:scale-110 group-hover:bg-slate-200 group-hover:text-slate-600'
+                              : 'text-white group-hover:scale-110 group-hover:bg-slate-900 group-hover:shadow-lg'
                           }`}
                         >
                           {isRecording ? (
