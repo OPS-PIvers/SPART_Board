@@ -6,8 +6,9 @@ import {
   TrafficConfig,
   WidgetConfig,
   ExpectationsConfig,
+  TimeToolConfig,
 } from '../../types';
-import { Thermometer, Gauge, Activity, Citrus, Zap } from 'lucide-react';
+import { Thermometer, Gauge, Activity, Citrus, Zap, Timer } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { Toggle } from '../common/Toggle';
 
@@ -237,6 +238,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     autoTrafficLight,
     trafficLightThreshold = 4,
     syncExpectations = false,
+    syncTimer = false,
   } = widget.config as SoundConfig;
 
   // ⚡ Bolt Optimization: Use ref for sensitivity to prevent audio stream restart
@@ -245,9 +247,54 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     sensitivityRef.current = sensitivity;
   }, [sensitivity]);
 
+  // Nexus Connection: Auto-Quiet on Timer
+  useEffect(() => {
+    if (!syncTimer || !activeDashboard) return;
+
+    const activeTimer = activeDashboard.widgets.find(
+      (w) =>
+        w.type === 'time-tool' &&
+        (w.config as TimeToolConfig).mode === 'timer' &&
+        (w.config as TimeToolConfig).isRunning
+    );
+
+    if (activeTimer) {
+      // Timer is running! Enforce quiet mode (High Sensitivity).
+      // We set it to 4.0 to match a strict "Whisper/Silence" level.
+      const TARGET_SENSITIVITY = 4.0;
+      if (sensitivity !== TARGET_SENSITIVITY) {
+        updateWidget(widget.id, {
+          config: {
+            ...widget.config,
+            sensitivity: TARGET_SENSITIVITY,
+          } as SoundConfig,
+        });
+      }
+    }
+  }, [
+    syncTimer,
+    activeDashboard,
+    sensitivity,
+    widget.id,
+    widget.config,
+    updateWidget,
+  ]);
+
   // Nexus Connection: Sync with Expectations
   useEffect(() => {
     if (!syncExpectations || !activeDashboard) return;
+
+    // If timer sync is active and a timer is running, let the timer logic take precedence
+    // by checking if we have a running timer.
+    if (syncTimer) {
+      const hasRunningTimer = activeDashboard.widgets.some(
+        (w) =>
+          w.type === 'time-tool' &&
+          (w.config as TimeToolConfig).mode === 'timer' &&
+          (w.config as TimeToolConfig).isRunning
+      );
+      if (hasRunningTimer) return;
+    }
 
     const expectationsWidget = activeDashboard.widgets.find(
       (w) => w.type === 'expectations'
@@ -289,6 +336,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     widget.id,
     widget.config,
     updateWidget,
+    syncTimer,
   ]);
 
   useEffect(() => {
@@ -431,6 +479,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     autoTrafficLight,
     trafficLightThreshold = 4,
     syncExpectations = false,
+    syncTimer = false,
   } = config;
 
   const hasTrafficLight = activeDashboard?.widgets.some(
@@ -439,6 +488,15 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const hasExpectations = activeDashboard?.widgets.some(
     (w) => w.type === 'expectations'
+  );
+
+  const hasTimer = activeDashboard?.widgets.some((w) => w.type === 'time-tool');
+
+  const isTimerRunning = activeDashboard?.widgets.some(
+    (w) =>
+      w.type === 'time-tool' &&
+      (w.config as TimeToolConfig).mode === 'timer' &&
+      (w.config as TimeToolConfig).isRunning
   );
 
   const modes = [
@@ -450,6 +508,46 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   return (
     <div className="space-y-6">
+      {/* Nexus Connection: Timer Sync */}
+      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-3">
+        <div className="flex items-center gap-2 text-amber-900">
+          <Timer className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">
+            Auto-Quiet (Timer)
+          </span>
+        </div>
+
+        {!hasTimer && (
+          <div className="text-xxs text-amber-600/70 font-medium bg-amber-100/50 p-2 rounded-lg">
+            Tip: Add a Timer widget to use this feature.
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-amber-800">
+            Max Sensitivity on Timer
+          </span>
+          <Toggle
+            checked={syncTimer}
+            onChange={(checked: boolean) =>
+              updateWidget(widget.id, {
+                config: { ...config, syncTimer: checked },
+              })
+            }
+            disabled={!hasTimer}
+            size="sm"
+            activeColor="bg-amber-600"
+            showLabels={false}
+          />
+        </div>
+
+        {syncTimer && (
+          <div className="text-xxs text-amber-600 font-medium italic">
+            Sensitivity is set to maximum when a timer is running.
+          </div>
+        )}
+      </div>
+
       {/* Nexus Connection: Expectations Sync */}
       <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl space-y-3">
         <div className="flex items-center gap-2 text-blue-900">
@@ -504,7 +602,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             })
           }
           className="w-full accent-indigo-600"
-          disabled={syncExpectations}
+          disabled={syncExpectations || (syncTimer && isTimerRunning)}
         />
       </div>
 
