@@ -49,9 +49,10 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
       return;
     }
     const update = () => {
+      if (!session.autoProgressAt) return;
       const remaining = Math.max(
         0,
-        Math.round((session.autoProgressAt! - Date.now()) / 1000)
+        Math.round((session.autoProgressAt - Date.now()) / 1000)
       );
       setAutoCountdown(remaining);
     };

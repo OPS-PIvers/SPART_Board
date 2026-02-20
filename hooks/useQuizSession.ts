@@ -235,7 +235,7 @@ export const useQuizSessionTeacher = (
     if (!teacherUid || !session?.autoProgressAt) return;
 
     const timer = setInterval(() => {
-      if (Date.now() >= (session.autoProgressAt || 0)) {
+      if (Date.now() >= (session.autoProgressAt ?? 0)) {
         clearInterval(timer);
         advanceQuestion().catch((err) =>
           console.error('[AutoProgress] advance failed:', err)
