@@ -238,6 +238,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                     key={r.studentUid}
                     response={r}
                     totalQuestions={session.totalQuestions}
+                    questions={quizData.questions}
                   />
                 ))}
             </div>
@@ -298,13 +299,19 @@ const StatBox: React.FC<{
 const StudentRow: React.FC<{
   response: QuizResponse;
   totalQuestions: number;
-}> = ({ response, totalQuestions }) => {
+  questions: QuizQuestion[];
+}> = ({ response, totalQuestions, questions }) => {
   const statusColor =
     response.status === 'completed'
       ? 'text-emerald-400'
       : response.status === 'in-progress'
         ? 'text-amber-400'
         : 'text-slate-400';
+
+  const correctCount = response.answers.filter((a) => {
+    const q = questions.find((qn) => qn.id === a.questionId);
+    return q ? gradeAnswer(q, a.answer) : false;
+  }).length;
 
   return (
     <div className="flex items-center gap-3 px-2.5 py-2 bg-white/5 rounded-lg">
@@ -322,7 +329,7 @@ const StudentRow: React.FC<{
       </span>
       <span className={`text-xs ${statusColor}`}>
         {response.status === 'completed'
-          ? `${Math.round((response.answers.filter((a) => a.isCorrect).length / Math.max(totalQuestions, 1)) * 100)}%`
+          ? `${Math.round((correctCount / Math.max(totalQuestions, 1)) * 100)}%`
           : `${response.answers.length}/${totalQuestions}`}
       </span>
     </div>

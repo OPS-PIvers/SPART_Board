@@ -16,19 +16,23 @@ import {
   Loader2,
   ExternalLink,
 } from 'lucide-react';
-import { QuizResponse, QuizData } from '@/types';
+import { QuizResponse, QuizData, QuizQuestion } from '@/types';
 import { useAuth } from '@/context/useAuth';
 import { QuizDriveService } from '@/utils/quizDriveService';
+import { gradeAnswer } from '@/hooks/useQuizSession';
 
 /**
- * Compute a student's percentage score from their isCorrect answer fields.
- * Falls back to response.score if already stored (legacy sessions).
+ * Compute a student's percentage score by re-grading answers with gradeAnswer
+ * so the result is always authoritative and cannot be forged by a student
+ * writing a false isCorrect value.
  */
-function getResponseScore(r: QuizResponse, totalQuestions: number): number {
-  if (r.score !== null) return r.score;
-  if (totalQuestions === 0) return 0;
-  const correct = r.answers.filter((a) => a.isCorrect).length;
-  return Math.round((correct / totalQuestions) * 100);
+function getResponseScore(r: QuizResponse, questions: QuizQuestion[]): number {
+  if (questions.length === 0) return 0;
+  const correct = r.answers.filter((a) => {
+    const q = questions.find((qn) => qn.id === a.questionId);
+    return q ? gradeAnswer(q, a.answer) : false;
+  }).length;
+  return Math.round((correct / questions.length) * 100);
 }
 
 interface QuizResultsProps {
@@ -50,13 +54,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     'overview' | 'questions' | 'students'
   >('overview');
 
-  const totalQuestions = quiz.questions.length;
   const completed = responses.filter((r) => r.status === 'completed');
   const avgScore =
     completed.length > 0
       ? Math.round(
           completed.reduce(
-            (sum, r) => sum + getResponseScore(r, totalQuestions),
+            (sum, r) => sum + getResponseScore(r, quiz.questions),
             0
           ) / completed.length
         )
@@ -166,17 +169,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 responses={responses}
                 completed={completed}
                 avgScore={avgScore}
-                totalQuestions={quiz.questions.length}
+                questions={quiz.questions}
               />
             )}
             {activeTab === 'questions' && (
               <QuestionsTab questions={quiz.questions} responses={responses} />
             )}
             {activeTab === 'students' && (
-              <StudentsTab
-                responses={responses}
-                totalQuestions={quiz.questions.length}
-              />
+              <StudentsTab responses={responses} questions={quiz.questions} />
             )}
           </div>
         </>
@@ -191,8 +191,8 @@ const OverviewTab: React.FC<{
   responses: QuizResponse[];
   completed: QuizResponse[];
   avgScore: number | null;
-  totalQuestions: number;
-}> = ({ responses, completed, avgScore, totalQuestions }) => {
+  questions: QuizQuestion[];
+}> = ({ responses, completed, avgScore, questions }) => {
   // Score distribution buckets: 0-59, 60-79, 80-89, 90-100
   const buckets = [
     { label: '90-100%', min: 90, max: 100, color: 'bg-emerald-500' },
@@ -229,7 +229,7 @@ const OverviewTab: React.FC<{
         <div className="space-y-2">
           {buckets.map((b) => {
             const count = completed.filter((r) => {
-              const s = getResponseScore(r, totalQuestions);
+              const s = getResponseScore(r, questions);
               return s >= b.min && s <= b.max;
             }).length;
             const pct =
@@ -269,7 +269,7 @@ const QuestionsTab: React.FC<{
         r.answers.some((a) => a.questionId === q.id)
       );
       const correct = answered.filter((r) =>
-        r.answers.some((a) => a.questionId === q.id && a.isCorrect)
+        r.answers.some((a) => a.questionId === q.id && gradeAnswer(q, a.answer))
       );
       const pct =
         answered.length > 0
@@ -314,20 +314,23 @@ const QuestionsTab: React.FC<{
 
 const StudentsTab: React.FC<{
   responses: QuizResponse[];
-  totalQuestions: number;
-}> = ({ responses, totalQuestions }) => (
+  questions: QuizQuestion[];
+}> = ({ responses, questions }) => (
   <div className="space-y-2">
     {responses
       .slice()
       .sort((a, b) => {
         const scoreA =
-          a.status === 'completed' ? getResponseScore(a, totalQuestions) : -1;
+          a.status === 'completed' ? getResponseScore(a, questions) : -1;
         const scoreB =
-          b.status === 'completed' ? getResponseScore(b, totalQuestions) : -1;
+          b.status === 'completed' ? getResponseScore(b, questions) : -1;
         return scoreB - scoreA;
       })
       .map((r) => {
-        const correct = r.answers.filter((a) => a.isCorrect).length;
+        const correct = r.answers.filter((a) => {
+          const q = questions.find((qn) => qn.id === a.questionId);
+          return q ? gradeAnswer(q, a.answer) : false;
+        }).length;
         return (
           <div
             key={r.studentUid}
@@ -345,10 +348,10 @@ const StudentsTab: React.FC<{
               {r.status === 'completed' ? (
                 <>
                   <p className="text-sm font-bold text-white">
-                    {getResponseScore(r, totalQuestions)}%
+                    {getResponseScore(r, questions)}%
                   </p>
                   <p className="text-xs text-slate-400">
-                    {correct}/{totalQuestions}
+                    {correct}/{questions.length}
                   </p>
                 </>
               ) : (

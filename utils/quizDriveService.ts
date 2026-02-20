@@ -15,6 +15,7 @@ import {
   QuizQuestionType,
   QuizResponse,
 } from '../types';
+import { gradeAnswer } from '../hooks/useQuizSession';
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
@@ -124,7 +125,9 @@ export class QuizDriveService {
    */
   async saveQuiz(quiz: QuizData, existingFileId?: string): Promise<string> {
     const folderId = await this.getQuizFolderId();
-    const fileName = `${sanitizeDriveFileName(quiz.title)}.quiz.json`;
+    // Embed a stable quiz ID prefix so two quizzes with the same title never
+    // fall back to the same Drive file.
+    const fileName = `${sanitizeDriveFileName(quiz.title)}.${quiz.id.slice(0, 8)}.quiz.json`;
     const content = JSON.stringify(quiz, null, 2);
 
     // Try to update existing file
@@ -346,10 +349,15 @@ export class QuizDriveService {
       const answerCols = questions.map((q) => {
         const ans = r.answers.find((a) => a.questionId === q.id);
         if (!ans) return '';
-        return `${ans.answer}${ans.isCorrect ? ' ✓' : ' ✗'}`;
+        // Re-grade answers authoritatively so forged isCorrect values are ignored.
+        const isCorrect = gradeAnswer(q, ans.answer);
+        return `${ans.answer}${isCorrect ? ' ✓' : ' ✗'}`;
       });
-      // Compute score from isCorrect answer fields (score field may be null for newer responses)
-      const correct = r.answers.filter((a) => a.isCorrect).length;
+      // Re-grade to compute score, ignoring any student-written isCorrect fields.
+      const correct = r.answers.filter((a) => {
+        const q = questions.find((qn) => qn.id === a.questionId);
+        return q ? gradeAnswer(q, a.answer) : false;
+      }).length;
       const scoreDisplay =
         r.status === 'completed' && questions.length > 0
           ? `${Math.round((correct / questions.length) * 100)}%`
@@ -381,7 +389,7 @@ export class QuizDriveService {
         r.answers.some((a) => a.questionId === q.id)
       ).length;
       const correct = responses.filter((r) =>
-        r.answers.some((a) => a.questionId === q.id && a.isCorrect)
+        r.answers.some((a) => a.questionId === q.id && gradeAnswer(q, a.answer))
       ).length;
       const pct = answered > 0 ? Math.round((correct / answered) * 100) : 0;
       statsRows.push([

@@ -21,6 +21,8 @@ import {
   setDoc,
   updateDoc,
   getDocs,
+  getDoc,
+  deleteDoc,
   query,
   where,
 } from 'firebase/firestore';
@@ -106,7 +108,9 @@ export const useQuizSessionTeacher = (
   }, [teacherUid]);
 
   useEffect(() => {
-    if (!teacherUid || session?.status === 'ended' || !session) return;
+    // Keep the listener active even after the session ends so that any
+    // late student submissions still appear in the live monitor / results.
+    if (!teacherUid || !session) return;
     const responsesRef = collection(
       db,
       QUIZ_SESSIONS_COLLECTION,
@@ -121,7 +125,7 @@ export const useQuizSessionTeacher = (
       },
       (err) => console.error('[useQuizSessionTeacher] responses:', err)
     );
-  }, [teacherUid, session?.status, session]);
+  }, [teacherUid, session]);
 
   const startQuizSession = useCallback(
     async (quiz: {
@@ -130,6 +134,19 @@ export const useQuizSessionTeacher = (
       questions: QuizQuestion[];
     }): Promise<string> => {
       if (!teacherUid) throw new Error('Not authenticated');
+
+      // Delete any existing response documents from a previous session so
+      // stale answers don't appear in the new session's live monitor / results.
+      const oldResponses = await getDocs(
+        collection(
+          db,
+          QUIZ_SESSIONS_COLLECTION,
+          teacherUid,
+          RESPONSES_COLLECTION
+        )
+      );
+      await Promise.all(oldResponses.docs.map((d) => deleteDoc(d.ref)));
+
       const code = Math.random()
         .toString(36)
         .substring(2, 8)
@@ -146,6 +163,9 @@ export const useQuizSessionTeacher = (
         endedAt: null,
         code,
         totalQuestions: quiz.questions.length,
+        // Store full questions so students can render them without a Drive
+        // fetch, and so the teacher's view can re-grade answers server-side.
+        questions: quiz.questions,
       };
       await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
       return code;
@@ -295,7 +315,11 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           studentUid
         );
 
-        if (!myResponseRef.current) {
+        // Use getDoc to check whether the student already has a response
+        // document (e.g. after a page reload), rather than relying on the
+        // in-memory ref which may still be null before the snapshot arrives.
+        const existingSnap = await getDoc(responseRef);
+        if (!existingSnap.exists()) {
           const newResponse: QuizResponse = {
             studentUid,
             studentEmail,
@@ -323,17 +347,19 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   );
 
   const submitAnswer = useCallback(
-    async (questionId: string, answer: string, question: QuizQuestion) => {
+    async (questionId: string, answer: string, _question: QuizQuestion) => {
       const teacherUid = teacherUidRef.current;
       const studentUid = studentUidRef.current;
       if (!teacherUid || !studentUid) return;
 
-      const isCorrect = gradeAnswer(question, answer);
+      // isCorrect is intentionally not written by the student to prevent
+      // client-side forgery. It is computed by the teacher's view using
+      // gradeAnswer(question, answer) against the questions stored in the
+      // session document.
       const newAnswer: QuizResponseAnswer = {
         questionId,
         answer,
         answeredAt: Date.now(),
-        isCorrect,
       };
 
       const existingAnswers = myResponseRef.current?.answers ?? [];
