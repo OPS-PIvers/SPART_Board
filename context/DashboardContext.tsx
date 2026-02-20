@@ -327,11 +327,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             lastSavedDataRef.current !== '' &&
             serializeDashboard(currentActive) !== lastSavedDataRef.current;
 
+          // Detect stale snapshots from Firestore latency compensation
+          const serverActive = migratedDashboards.find(
+            (d) => d.id === activeIdRef.current
+          );
+          const isStaleSnapshot =
+            serverActive &&
+            (serverActive.updatedAt ?? 0) < lastSavedAtRef.current;
+
           if (
             hasPendingWrites ||
             isRecentlyUpdatedLocally ||
             hasUnsavedLocalChanges ||
-            pendingSaveCountRef.current > 0
+            pendingSaveCountRef.current > 0 ||
+            isStaleSnapshot
           ) {
             return migratedDashboards.map((db) => {
               if (db.id === activeIdRef.current && currentActive) {
@@ -348,8 +357,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 const nameChangedLocally =
                   currentActive.name !== lastSavedFieldsRef.current.name;
                 const libraryOrderChangedLocally =
+                  currentActive.libraryOrder &&
                   JSON.stringify(currentActive.libraryOrder) !==
-                  lastSavedFieldsRef.current.libraryOrder;
+                    lastSavedFieldsRef.current.libraryOrder;
 
                 return {
                   ...db,
@@ -452,6 +462,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   // cleaned up when the effect re-runs or the component unmounts.
   const auxTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   const lastSavedDataRef = useRef<string>('');
+  const lastSavedAtRef = useRef<number>(0);
   const lastWidgetCountRef = useRef<number>(0);
   // Track per-field last-saved state so the surgical merge can determine
   // which fields actually changed locally vs. which should accept server updates.
@@ -511,8 +522,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       saveDashboard(active)
         .then(() => {
           // Only update refs on success so failed saves are retried
+          const now = Date.now();
           lastSavedDataRef.current = savedData;
           lastSavedFieldsRef.current = savedFields;
+          lastSavedAtRef.current = now;
           pendingSaveCountRef.current = Math.max(
             0,
             pendingSaveCountRef.current - 1
