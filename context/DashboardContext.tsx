@@ -306,7 +306,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         if (import.meta.env.DEV) {
-          console.log('[DashboardContext] onSnapshot update:', {
+          console.warn('[DashboardContext] onSnapshot update:', {
             dashboardsCount: updatedDashboards.length,
             hasPendingWrites,
             pendingSaveCount: pendingSaveCountRef.current,
