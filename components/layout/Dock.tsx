@@ -131,6 +131,42 @@ export const Dock: React.FC = () => {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showMagicLayout, setShowMagicLayout] = useState(false);
 
+  // Drag-to-collapse state
+  const [dragY, setDragY] = useState(0);
+  const [isDraggingDown, setIsDraggingDown] = useState(false);
+  const startY = useRef(0);
+  const threshold = 80; // Distance to trigger collapse
+
+  const handleDockPointerDown = (e: React.PointerEvent) => {
+    if (!isExpanded || isEditMode) return;
+    // Don't drag if clicking a button or interactive element
+    if ((e.target as HTMLElement).closest('button')) return;
+
+    setIsDraggingDown(true);
+    startY.current = e.clientY;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleDockPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingDown) return;
+    const deltaY = e.clientY - startY.current;
+    // Only allow dragging downwards
+    if (deltaY > 0) {
+      setDragY(deltaY);
+    }
+  };
+
+  const handleDockPointerUp = (e: React.PointerEvent) => {
+    if (!isDraggingDown) return;
+    setIsDraggingDown(false);
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+
+    if (dragY > threshold) {
+      setIsExpanded(false);
+    }
+    setDragY(0);
+  };
+
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
 
   const { processAndUploadImage } = useImageUpload();
@@ -389,9 +425,19 @@ export const Dock: React.FC = () => {
   return (
     <div
       ref={dockContainerRef}
+      onPointerDown={handleDockPointerDown}
+      onPointerMove={handleDockPointerMove}
+      onPointerUp={handleDockPointerUp}
+      onPointerCancel={handleDockPointerUp}
       data-testid="dock"
       data-screenshot="exclude"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-dock flex flex-col items-center gap-4"
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-dock flex flex-col items-center gap-4 transition-all duration-300 ${
+        isDraggingDown ? 'transition-none' : 'ease-out'
+      }`}
+      style={{
+        transform: `translateX(-50%) translateY(${dragY}px) scale(${1 - Math.min(dragY / 500, 0.15)})`,
+        opacity: 1 - Math.min(dragY / 400, 0.4),
+      }}
     >
       {showRosterMenu && (
         <ClassRosterMenu
@@ -474,163 +520,131 @@ export const Dock: React.FC = () => {
         />
       )}
 
-      <div className="relative group/dock">
-        {isExpanded ? (
-          <>
-            {/* Widget Library Modal (Triggered by button) */}
-            {isEditMode && showLibrary && (
-              <WidgetLibrary
-                visibleTools={visibleTools}
-                onToggle={(type) => {
-                  toggleToolVisibility(type);
-                }}
-                canAccess={(type) => {
-                  if (type === 'record')
-                    return canAccessFeature('screen-recording');
-                  if (type === 'magic') return canAccessFeature('magic-layout');
-                  return canAccessWidget(type as WidgetType);
-                }}
-                onClose={() => setShowLibrary(false)}
-                globalStyle={globalStyle}
-              />
-            )}
-
-            {/* Expanded Toolbar with integrated minimize button */}
-            <GlassCard
+      <div className="relative group/dock flex items-center justify-center">
+        {/* Expanded View */}
+        <div
+          className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            isExpanded
+              ? 'scale-100 opacity-100 rotate-0'
+              : 'scale-50 opacity-0 pointer-events-none absolute translate-y-12 rotate-3'
+          }`}
+        >
+          {/* Widget Library Modal (Triggered by button) */}
+          {isEditMode && showLibrary && (
+            <WidgetLibrary
+              visibleTools={visibleTools}
+              onToggle={(type) => {
+                toggleToolVisibility(type);
+              }}
+              canAccess={(type) => {
+                if (type === 'record')
+                  return canAccessFeature('screen-recording');
+                if (type === 'magic') return canAccessFeature('magic-layout');
+                return canAccessWidget(type as WidgetType);
+              }}
+              onClose={() => setShowLibrary(false)}
               globalStyle={globalStyle}
-              transparency={globalStyle.dockTransparency}
-              allowInvisible={true}
-              cornerRadius={
-                globalStyle.dockBorderRadius === 'full'
-                  ? 'full'
-                  : globalStyle.dockBorderRadius === 'none'
-                    ? 'none'
-                    : globalStyle.dockBorderRadius
-              }
-              className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar flex-nowrap animate-in zoom-in-95 fade-in duration-300"
-            >
-              {dockItems.length > 0 ? (
-                <>
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={customCollisionDetection}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+            />
+          )}
+
+          {/* Expanded Toolbar with integrated minimize button */}
+          <GlassCard
+            globalStyle={globalStyle}
+            transparency={globalStyle.dockTransparency}
+            allowInvisible={true}
+            cornerRadius={
+              globalStyle.dockBorderRadius === 'full'
+                ? 'full'
+                : globalStyle.dockBorderRadius === 'none'
+                  ? 'none'
+                  : globalStyle.dockBorderRadius
+            }
+            className="relative z-10 px-4 py-3 flex items-center gap-1.5 md:gap-3 max-w-[95vw] overflow-x-auto no-scrollbar flex-nowrap"
+          >
+            {dockItems.length > 0 ? (
+              <>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={customCollisionDetection}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={dockItems.map((item) =>
+                      item.type === 'tool' ? item.toolType : item.folder.id
+                    )}
+                    strategy={horizontalListSortingStrategy}
                   >
-                    <SortableContext
-                      items={dockItems.map((item) =>
-                        item.type === 'tool' ? item.toolType : item.folder.id
-                      )}
-                      strategy={horizontalListSortingStrategy}
-                    >
-                      {dockItems.map((item) => {
-                        if (item.type === 'tool') {
-                          const tool = TOOLS.find(
-                            (t) => t.type === item.toolType
-                          );
+                    {dockItems.map((item) => {
+                      if (item.type === 'tool') {
+                        const tool = TOOLS.find(
+                          (t) => t.type === item.toolType
+                        );
+                        if (!tool || !canAccessWidget(tool.type as WidgetType))
+                          return null;
+
+                        // Handle special internal tools that aren't standard widgets
+                        if (
+                          item.toolType === 'record' ||
+                          item.toolType === 'magic'
+                        ) {
                           if (
-                            !tool ||
-                            !canAccessWidget(tool.type as WidgetType)
+                            !canAccessFeature(
+                              item.toolType === 'record'
+                                ? 'screen-recording'
+                                : 'magic-layout'
+                            )
                           )
                             return null;
 
-                          // Handle special internal tools that aren't standard widgets
-                          if (
-                            item.toolType === 'record' ||
-                            item.toolType === 'magic'
-                          ) {
-                            if (
-                              !canAccessFeature(
-                                item.toolType === 'record'
-                                  ? 'screen-recording'
-                                  : 'magic-layout'
-                              )
-                            )
-                              return null;
+                          return (
+                            <ToolDockItem
+                              key={item.toolType}
+                              tool={tool}
+                              minimizedWidgets={[]}
+                              onAdd={() => {
+                                if (item.toolType === 'record') {
+                                  if (isRecording) void stopRecording();
+                                  else void startRecording();
+                                } else {
+                                  setShowMagicLayout(true);
+                                }
+                              }}
+                              onRestore={() => undefined}
+                              onDelete={() => undefined}
+                              onDeleteAll={() => undefined}
+                              onRemoveFromDock={() => {
+                                toggleToolVisibility(item.toolType);
+                              }}
+                              isEditMode={isEditMode}
+                              onLongPress={handleLongPress}
+                              globalStyle={globalStyle}
+                              // Special handling for recording state
+                              customColor={
+                                item.toolType === 'record' && isRecording
+                                  ? 'bg-red-500'
+                                  : undefined
+                              }
+                              customIcon={
+                                item.toolType === 'record' && isRecording
+                                  ? Square
+                                  : undefined
+                              }
+                              customLabel={
+                                item.toolType === 'record' && isRecording
+                                  ? `${Math.floor(duration / 60)
+                                      .toString()
+                                      .padStart(2, '0')}:${(duration % 60)
+                                      .toString()
+                                      .padStart(2, '0')}`
+                                  : undefined
+                              }
+                            />
+                          );
+                        }
 
-                            return (
-                              <ToolDockItem
-                                key={item.toolType}
-                                tool={tool}
-                                minimizedWidgets={[]}
-                                onAdd={() => {
-                                  if (item.toolType === 'record') {
-                                    if (isRecording) void stopRecording();
-                                    else void startRecording();
-                                  } else {
-                                    setShowMagicLayout(true);
-                                  }
-                                }}
-                                onRestore={() => undefined}
-                                onDelete={() => undefined}
-                                onDeleteAll={() => undefined}
-                                onRemoveFromDock={() => {
-                                  toggleToolVisibility(item.toolType);
-                                }}
-                                isEditMode={isEditMode}
-                                onLongPress={handleLongPress}
-                                globalStyle={globalStyle}
-                                // Special handling for recording state
-                                customColor={
-                                  item.toolType === 'record' && isRecording
-                                    ? 'bg-red-500'
-                                    : undefined
-                                }
-                                customIcon={
-                                  item.toolType === 'record' && isRecording
-                                    ? Square
-                                    : undefined
-                                }
-                                customLabel={
-                                  item.toolType === 'record' && isRecording
-                                    ? `${Math.floor(duration / 60)
-                                        .toString()
-                                        .padStart(
-                                          2,
-                                          '0'
-                                        )}:${(duration % 60).toString().padStart(2, '0')}`
-                                    : undefined
-                                }
-                              />
-                            );
-                          }
-
-                          // Handle "classes" as a tool with special popover logic
-                          if (item.toolType === 'classes') {
-                            const minimizedWidgets =
-                              minimizedWidgetsByType[tool.type as WidgetType] ??
-                              [];
-                            return (
-                              <ToolDockItem
-                                key={tool.type}
-                                tool={tool}
-                                minimizedWidgets={minimizedWidgets}
-                                onAdd={openClassEditor}
-                                onRestore={(id) =>
-                                  updateWidget(id, { minimized: false })
-                                }
-                                onDelete={(id) => removeWidget(id)}
-                                onDeleteAll={() =>
-                                  removeWidgets(
-                                    minimizedWidgets.map((w) => w.id)
-                                  )
-                                }
-                                onRemoveFromDock={() =>
-                                  toggleToolVisibility(tool.type)
-                                }
-                                isEditMode={isEditMode}
-                                onLongPress={handleLongPress}
-                                globalStyle={globalStyle}
-                                onClickOverride={
-                                  minimizedWidgets.length === 0
-                                    ? handleToggleRosterMenu
-                                    : undefined
-                                }
-                                buttonRef={classesButtonRef}
-                              />
-                            );
-                          }
-
+                        // Handle "classes" as a tool with special popover logic
+                        if (item.toolType === 'classes') {
                           const minimizedWidgets =
                             minimizedWidgetsByType[tool.type as WidgetType] ??
                             [];
@@ -639,210 +653,247 @@ export const Dock: React.FC = () => {
                               key={tool.type}
                               tool={tool}
                               minimizedWidgets={minimizedWidgets}
-                              onAdd={() => addWidget(tool.type as WidgetType)}
+                              onAdd={openClassEditor}
                               onRestore={(id) =>
                                 updateWidget(id, { minimized: false })
                               }
                               onDelete={(id) => removeWidget(id)}
-                              onDeleteAll={() => {
-                                removeWidgets(
-                                  minimizedWidgets.map((w) => w.id)
-                                );
-                              }}
-                              onRemoveFromDock={() => {
-                                toggleToolVisibility(tool.type);
-                              }}
-                              isEditMode={isEditMode}
-                              onLongPress={handleLongPress}
-                              globalStyle={globalStyle}
-                            />
-                          );
-                        } else {
-                          return (
-                            <FolderItem
-                              key={item.folder.id}
-                              folder={item.folder}
-                              onAdd={(type) => {
-                                if (type === 'record') {
-                                  if (isRecording) void stopRecording();
-                                  else void startRecording();
-                                } else if (type === 'magic') {
-                                  setShowMagicLayout(true);
-                                } else {
-                                  addWidget(type as WidgetType);
-                                }
-                              }}
-                              onRename={setRenamingFolderId}
-                              onDelete={deleteFolder}
-                              isEditMode={isEditMode}
-                              onLongPress={handleLongPress}
-                              minimizedWidgetsByType={minimizedWidgetsByType}
-                              onRemoveItem={(folderId, type) =>
-                                moveItemOutOfFolder(
-                                  folderId,
-                                  type,
-                                  dockItems.length
-                                )
+                              onDeleteAll={() =>
+                                removeWidgets(minimizedWidgets.map((w) => w.id))
                               }
-                              onReorder={reorderFolderItems}
+                              onRemoveFromDock={() =>
+                                toggleToolVisibility(tool.type)
+                              }
+                              isEditMode={isEditMode}
+                              onLongPress={handleLongPress}
                               globalStyle={globalStyle}
+                              onClickOverride={
+                                minimizedWidgets.length === 0
+                                  ? handleToggleRosterMenu
+                                  : undefined
+                              }
+                              buttonRef={classesButtonRef}
                             />
                           );
                         }
-                      })}
-                    </SortableContext>
 
-                    {/* Drag Preview Overlay - Rendered in Portal to avoid offset bugs */}
-                    {createPortal(
-                      <DragOverlay
-                        zIndex={Z_INDEX.modalContent}
-                        dropAnimation={null}
-                      >
-                        {activeItemId ? (
-                          <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
-                            {TOOLS.find((t) => t.type === activeItemId) ? (
-                              <DockIcon
-                                color={
-                                  TOOLS.find((t) => t.type === activeItemId)
-                                    ?.color
-                                }
-                                className="flex items-center justify-center shadow-2xl ring-2 ring-white/50"
-                              >
-                                {React.createElement(
-                                  TOOLS.find((t) => t.type === activeItemId)
-                                    ?.icon ?? Users,
-                                  { className: 'w-6 h-6' }
-                                )}
-                              </DockIcon>
-                            ) : (
-                              <DockIcon
-                                color="bg-slate-200/80"
-                                className="backdrop-blur-md shadow-2xl ring-2 ring-white/50 border border-white/20 grid grid-cols-2 gap-0.5 p-1.5"
-                              >
-                                <div className="w-3 h-3 bg-slate-400 rounded-sm" />
-                                <div className="w-3 h-3 bg-slate-400 rounded-sm" />
-                                <div className="w-3 h-3 bg-slate-400 rounded-sm" />
-                                <div className="w-3 h-3 bg-slate-400 rounded-sm" />
-                              </DockIcon>
-                            )}
-                          </div>
-                        ) : null}
-                      </DragOverlay>,
-                      document.body
-                    )}
-                  </DndContext>
-
-                  {/* Separator and Live Info Button */}
-                  {session?.isActive && (
-                    <>
-                      <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-
-                      {/* LIVE INFO BUTTON (Visible when active) */}
-                      <button
-                        ref={liveButtonRef}
-                        onClick={() => {
-                          if (showLiveInfo) {
-                            setShowLiveInfo(false);
-                          } else if (liveButtonRef.current) {
-                            const rect =
-                              liveButtonRef.current.getBoundingClientRect();
-                            setLivePopoverPos({
-                              left: rect.left + rect.width / 2,
-                              bottom: window.innerHeight - rect.top + 10,
-                            });
-                            setShowLiveInfo(true);
-                          }
-                        }}
-                        aria-label="View live session information"
-                        className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
-                      >
-                        <DockIcon
-                          color="bg-red-500"
-                          className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
-                        >
-                          <Cast className="w-5 h-5 md:w-6 md:h-6" />
-                        </DockIcon>
-                        <DockLabel>Live</DockLabel>
-                      </button>
-
-                      {/* LIVE POPOVER */}
-                      {showLiveInfo &&
-                        livePopoverPos &&
-                        createPortal(
-                          <GlassCard
-                            globalStyle={globalStyle}
-                            ref={livePopoverRef}
-                            style={{
-                              position: 'fixed',
-                              left: livePopoverPos.left,
-                              bottom: livePopoverPos.bottom,
-                              transform: 'translateX(-50%)',
-                              zIndex: Z_INDEX.popover,
+                        const minimizedWidgets =
+                          minimizedWidgetsByType[tool.type as WidgetType] ?? [];
+                        return (
+                          <ToolDockItem
+                            key={tool.type}
+                            tool={tool}
+                            minimizedWidgets={minimizedWidgets}
+                            onAdd={() => addWidget(tool.type as WidgetType)}
+                            onRestore={(id) =>
+                              updateWidget(id, { minimized: false })
+                            }
+                            onDelete={(id) => removeWidget(id)}
+                            onDeleteAll={() => {
+                              removeWidgets(minimizedWidgets.map((w) => w.id));
                             }}
-                            className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
-                          >
-                            {' '}
-                            <div className="p-4 flex flex-col items-center gap-2 text-center">
-                              <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
-                                Live Session
-                              </h3>
-                              <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
-                                {session.code}
-                              </div>
-                              <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
-                                {getJoinUrl()}
-                              </div>
-                              <div className="text-xxs text-slate-500 mt-2">
-                                Provide this code to your students.
-                              </div>
-                            </div>
-                            <div className="p-2 border-t border-white/30">
-                              <button
-                                onClick={() => setShowLiveInfo(false)}
-                                className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
-                              >
-                                Close
-                              </button>
-                            </div>
-                          </GlassCard>,
-                          document.body
-                        )}
-                    </>
-                  )}
+                            onRemoveFromDock={() => {
+                              toggleToolVisibility(tool.type);
+                            }}
+                            isEditMode={isEditMode}
+                            onLongPress={handleLongPress}
+                            globalStyle={globalStyle}
+                          />
+                        );
+                      } else {
+                        return (
+                          <FolderItem
+                            key={item.folder.id}
+                            folder={item.folder}
+                            onAdd={(type) => {
+                              if (type === 'record') {
+                                if (isRecording) void stopRecording();
+                                else void startRecording();
+                              } else if (type === 'magic') {
+                                setShowMagicLayout(true);
+                              } else {
+                                addWidget(type as WidgetType);
+                              }
+                            }}
+                            onRename={setRenamingFolderId}
+                            onDelete={deleteFolder}
+                            isEditMode={isEditMode}
+                            onLongPress={handleLongPress}
+                            minimizedWidgetsByType={minimizedWidgetsByType}
+                            onRemoveItem={(folderId, type) =>
+                              moveItemOutOfFolder(
+                                folderId,
+                                type,
+                                dockItems.length
+                              )
+                            }
+                            onReorder={reorderFolderItems}
+                            globalStyle={globalStyle}
+                          />
+                        );
+                      }
+                    })}
+                  </SortableContext>
 
-                  {/* Separator and Hide Button */}
-                  <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
-
-                  <button
-                    onClick={() => setIsExpanded(false)}
-                    className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
-                    title="Minimize Toolbar"
-                  >
-                    <DockIcon
-                      color="bg-slate-700 shadow-lg shadow-slate-900/20"
-                      className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-slate-800 transition-all"
+                  {/* Drag Preview Overlay - Rendered in Portal to avoid offset bugs */}
+                  {createPortal(
+                    <DragOverlay
+                      zIndex={Z_INDEX.modalContent}
+                      dropAnimation={null}
                     >
-                      <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
-                    </DockIcon>
-                    <DockLabel className="text-slate-600 font-bold">
-                      Hide
-                    </DockLabel>
-                  </button>
-                </>
-              ) : (
-                <div className="px-6 py-2 text-xxs font-black uppercase text-slate-400 italic">
-                  No apps selected in settings
-                </div>
-              )}
-            </GlassCard>
+                      {activeItemId ? (
+                        <div className="flex flex-col items-center gap-1 scale-110 rotate-3 opacity-90 pointer-events-none">
+                          {TOOLS.find((t) => t.type === activeItemId) ? (
+                            <DockIcon
+                              color={
+                                TOOLS.find((t) => t.type === activeItemId)
+                                  ?.color
+                              }
+                              className="flex items-center justify-center shadow-2xl ring-2 ring-white/50"
+                            >
+                              {React.createElement(
+                                TOOLS.find((t) => t.type === activeItemId)
+                                  ?.icon ?? Users,
+                                { className: 'w-6 h-6' }
+                              )}
+                            </DockIcon>
+                          ) : (
+                            <DockIcon
+                              color="bg-slate-200/80"
+                              className="backdrop-blur-md shadow-2xl ring-2 ring-white/50 border border-white/20 grid grid-cols-2 gap-0.5 p-1.5"
+                            >
+                              <div className="w-3 h-3 bg-slate-400 rounded-sm" />
+                              <div className="w-3 h-3 bg-slate-400 rounded-sm" />
+                              <div className="w-3 h-3 bg-slate-400 rounded-sm" />
+                              <div className="w-3 h-3 bg-slate-400 rounded-sm" />
+                            </DockIcon>
+                          )}
+                        </div>
+                      ) : null}
+                    </DragOverlay>,
+                    document.body
+                  )}
+                </DndContext>
 
-            {showMagicLayout && (
-              <MagicLayoutModal onClose={() => setShowMagicLayout(false)} />
+                {/* Separator and Live Info Button */}
+                {session?.isActive && (
+                  <>
+                    <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                    {/* LIVE INFO BUTTON (Visible when active) */}
+                    <button
+                      ref={liveButtonRef}
+                      onClick={() => {
+                        if (showLiveInfo) {
+                          setShowLiveInfo(false);
+                        } else if (liveButtonRef.current) {
+                          const rect =
+                            liveButtonRef.current.getBoundingClientRect();
+                          setLivePopoverPos({
+                            left: rect.left + rect.width / 2,
+                            bottom: window.innerHeight - rect.top + 10,
+                          });
+                          setShowLiveInfo(true);
+                        }
+                      }}
+                      aria-label="View live session information"
+                      className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none relative focus-visible:outline-none"
+                    >
+                      <DockIcon
+                        color="bg-red-500"
+                        className="flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-red-400 group-focus-visible:ring-offset-2 animate-pulse"
+                      >
+                        <Cast className="w-5 h-5 md:w-6 md:h-6" />
+                      </DockIcon>
+                      <DockLabel>Live</DockLabel>
+                    </button>
+
+                    {/* LIVE POPOVER */}
+                    {showLiveInfo &&
+                      livePopoverPos &&
+                      createPortal(
+                        <GlassCard
+                          globalStyle={globalStyle}
+                          ref={livePopoverRef}
+                          style={{
+                            position: 'fixed',
+                            left: livePopoverPos.left,
+                            bottom: livePopoverPos.bottom,
+                            transform: 'translateX(-50%)',
+                            zIndex: Z_INDEX.popover,
+                          }}
+                          className="w-64 overflow-hidden animate-in slide-in-from-bottom-2 duration-200"
+                        >
+                          {' '}
+                          <div className="p-4 flex flex-col items-center gap-2 text-center">
+                            <h3 className="text-xs font-black uppercase text-slate-600 tracking-wider">
+                              Live Session
+                            </h3>
+                            <div className="text-3xl font-black text-indigo-700 font-mono tracking-widest my-1 drop-shadow-sm">
+                              {session.code}
+                            </div>
+                            <div className="text-xxs text-slate-600 bg-white/50 px-2 py-1 rounded border border-white/30">
+                              {getJoinUrl()}
+                            </div>
+                            <div className="text-xxs text-slate-500 mt-2">
+                              Provide this code to your students.
+                            </div>
+                          </div>
+                          <div className="p-2 border-t border-white/30">
+                            <button
+                              onClick={() => setShowLiveInfo(false)}
+                              className="w-full py-2 bg-white/50 hover:bg-white/60 text-slate-700 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 focus-visible:ring-offset-white"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </GlassCard>,
+                        document.body
+                      )}
+                  </>
+                )}
+
+                {/* Separator and Hide Button */}
+                <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                  title="Minimize Toolbar"
+                >
+                  <DockIcon
+                    color="bg-slate-700 shadow-lg shadow-slate-900/20"
+                    className="flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-slate-800 transition-all"
+                  >
+                    <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
+                  </DockIcon>
+                  <DockLabel className="text-slate-600 font-bold">
+                    Hide
+                  </DockLabel>
+                </button>
+              </>
+            ) : (
+              <div className="px-6 py-2 text-xxs font-black uppercase text-slate-400 italic">
+                No apps selected in settings
+              </div>
             )}
-          </>
-        ) : (
-          /* Compressed down to a single icon (plus quick access) */
-          <div className="flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+          </GlassCard>
+
+          {showMagicLayout && (
+            <MagicLayoutModal onClose={() => setShowMagicLayout(false)} />
+          )}
+        </div>
+
+        {/* Collapsed View (Floating Icon) */}
+        <div
+          className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            !isExpanded
+              ? 'scale-100 opacity-100 rotate-0'
+              : 'scale-150 opacity-0 pointer-events-none absolute -rotate-180'
+          }`}
+        >
+          {/* Compressed down to a single icon (plus quick access) */}
+          <div className="flex items-center gap-4">
             {activeDashboard?.settings?.quickAccessWidgets?.[0] && (
               <QuickAccessButton
                 type={activeDashboard.settings.quickAccessWidgets[0]}
@@ -864,7 +915,7 @@ export const Dock: React.FC = () => {
             )}
             <button
               onClick={() => setIsExpanded(true)}
-              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 animate-in fade-in zoom-in duration-300 ${
+              className={`w-14 h-14 flex items-center justify-center bg-brand-blue-primary text-white active:scale-90 transition-all shadow-xl shadow-brand-blue-primary/40 ${
                 globalStyle.dockBorderRadius === 'none'
                   ? 'rounded-none'
                   : globalStyle.dockBorderRadius === 'full'
@@ -898,7 +949,7 @@ export const Dock: React.FC = () => {
               />
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
