@@ -402,16 +402,13 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   const myResponseRef = useRef<QuizResponse | null>(null);
   myResponseRef.current = myResponse;
 
-  // Optimistic local counter to prevent "Warning 1 of 3" loops if snapshot lags
-  const optimisticWarningsRef = useRef<number>(0);
+  // Optimistic local counter state to ensure UI updates immediately
+  const [warningCount, setWarningCount] = useState(0);
 
-  // Sync optimistic ref with server truth, but never decrement locally
+  // Sync optimistic state with server truth, but never decrement locally
   useEffect(() => {
     if (myResponse?.tabSwitchWarnings !== undefined) {
-      optimisticWarningsRef.current = Math.max(
-        optimisticWarningsRef.current,
-        myResponse.tabSwitchWarnings
-      );
+      setWarningCount((prev) => Math.max(prev, myResponse.tabSwitchWarnings!));
     }
   }, [myResponse?.tabSwitchWarnings]);
 
@@ -512,7 +509,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         setError(msg);
         throw err;
       } finally {
-        optimisticWarningsRef.current = 0;
+        setWarningCount(0);
         setLoading(false);
       }
     },
@@ -590,12 +587,13 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       tabSwitchWarnings: increment(1),
     });
 
-    const currentServerCount = myResponseRef.current?.tabSwitchWarnings ?? 0;
-    const nextCount =
-      Math.max(currentServerCount, optimisticWarningsRef.current) + 1;
-
-    optimisticWarningsRef.current = nextCount;
-    return nextCount;
+    // Update local state immediately
+    let newCount = 0;
+    setWarningCount((prev) => {
+      newCount = prev + 1;
+      return newCount;
+    });
+    return newCount;
   }, []);
 
   return {
@@ -608,6 +606,6 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     submitAnswer,
     completeQuiz,
     reportTabSwitch,
-    warningCount: optimisticWarningsRef.current,
+    warningCount,
   };
 };
