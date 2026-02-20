@@ -478,8 +478,9 @@ const ActiveQuiz: React.FC<{
                   ? 'border-violet-500 bg-violet-500/20 text-white'
                   : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 hover:bg-slate-700/50';
               } else {
-                cls +=
-                  'border-slate-700 bg-slate-800/50 text-slate-500 cursor-default';
+                cls += isSelected
+                  ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                  : 'border-slate-700 bg-slate-800/50 text-slate-500 cursor-default';
               }
               return (
                 <button
@@ -492,6 +493,28 @@ const ActiveQuiz: React.FC<{
                 </button>
               );
             })}
+
+            {submitted && (
+              <div className="pt-4 animate-in fade-in slide-in-from-bottom-2">
+                {isStudentPaced && currentIndex < session.totalQuestions - 1 ? (
+                  <button
+                    onClick={handleNext}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                  >
+                    NEXT QUESTION <ArrowRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <p className="text-emerald-300 text-sm font-bold">
+                      {currentIndex < session.totalQuestions - 1
+                        ? 'Waiting for teacher…'
+                        : 'Quiz complete!'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -507,24 +530,44 @@ const ActiveQuiz: React.FC<{
               onKeyDown={(e) =>
                 e.key === 'Enter' &&
                 fibAnswer.trim() &&
+                !submitted &&
                 void handleSubmit(fibAnswer.trim())
               }
             />
-            {!submitted && (
-              <button
-                onClick={() =>
-                  fibAnswer.trim() && void handleSubmit(fibAnswer.trim())
-                }
-                disabled={!fibAnswer.trim() || submitting}
-                className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
-              >
-                {submitting ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  'Submit Answer'
-                )}
-              </button>
-            )}
+            <div className="animate-in fade-in slide-in-from-bottom-2">
+              {!submitted ? (
+                <button
+                  onClick={() =>
+                    fibAnswer.trim() && void handleSubmit(fibAnswer.trim())
+                  }
+                  disabled={!fibAnswer.trim() || submitting}
+                  className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
+                >
+                  {submitting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Submit Answer'
+                  )}
+                </button>
+              ) : isStudentPaced &&
+                currentIndex < session.totalQuestions - 1 ? (
+                <button
+                  onClick={handleNext}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                >
+                  NEXT QUESTION <ArrowRight className="w-5 h-5" />
+                </button>
+              ) : (
+                <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <p className="text-emerald-300 text-sm font-bold">
+                    {currentIndex < session.totalQuestions - 1
+                      ? 'Waiting for teacher…'
+                      : 'Quiz complete!'}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -536,30 +579,10 @@ const ActiveQuiz: React.FC<{
             submitted={submitted}
             onSubmit={(answer) => void handleSubmit(answer)}
             submitting={submitting}
+            isStudentPaced={isStudentPaced}
+            isLastQuestion={currentIndex >= session.totalQuestions - 1}
+            onNext={handleNext}
           />
-        )}
-
-        {/* Submitted state */}
-        {submitted && (
-          <div className="mt-6 p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              <p className="text-emerald-300 text-sm font-medium">
-                {isStudentPaced
-                  ? 'Answer saved!'
-                  : 'Answer submitted! Waiting for the next question…'}
-              </p>
-            </div>
-
-            {isStudentPaced && currentIndex < session.totalQuestions - 1 && (
-              <button
-                onClick={handleNext}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                Next Question <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
-          </div>
         )}
       </div>
     </div>
@@ -573,7 +596,18 @@ const StructuredQuestionInput: React.FC<{
   submitted: boolean;
   onSubmit: (answer: string) => void;
   submitting: boolean;
-}> = ({ question, submitted, onSubmit, submitting }) => {
+  isStudentPaced: boolean;
+  isLastQuestion: boolean;
+  onNext: () => void;
+}> = ({
+  question,
+  submitted,
+  onSubmit,
+  submitting,
+  isStudentPaced,
+  isLastQuestion,
+  onNext,
+}) => {
   const isMatching = question.type === 'Matching';
 
   // Items come from the pre-computed public question fields — no correctAnswer needed
@@ -624,102 +658,122 @@ const StructuredQuestionInput: React.FC<{
     setDraggedIndex(index);
   };
 
-  if (submitted) return null;
-
   return (
     <div className="space-y-4 flex-1">
-      {isMatching ? (
-        <div className="space-y-3">
-          {leftItems.map((left: string) => (
-            <div key={left} className="flex items-center gap-3">
-              <span className="text-sm text-slate-300 w-1/2">{left}</span>
-              <select
-                value={matchings[left]}
-                onChange={(e) =>
-                  setMatchings((m) => ({ ...m, [left]: e.target.value }))
-                }
-                className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-              >
-                <option value="">Select…</option>
-                {rightItemsShuffled.map((r: string) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+      {!submitted ? (
+        <>
+          {isMatching ? (
+            <div className="space-y-3">
+              {leftItems.map((left: string) => (
+                <div key={left} className="flex items-center gap-3">
+                  <span className="text-sm text-slate-300 w-1/2">{left}</span>
+                  <select
+                    value={matchings[left]}
+                    onChange={(e) =>
+                      setMatchings((m) => ({ ...m, [left]: e.target.value }))
+                    }
+                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  >
+                    <option value="">Select…</option>
+                    {rightItemsShuffled.map((r: string) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 mb-2">
+                Drag or use arrows to set the correct order:
+              </p>
+              {order.map((item: string, i: number) => (
+                <div
+                  key={item}
+                  draggable
+                  onDragStart={() => handleDragStart(i)}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDragEnd={() => setDraggedIndex(null)}
+                  className={`flex items-center gap-2 bg-slate-800 border rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-colors ${draggedIndex === i ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700'}`}
+                >
+                  <span className="text-violet-400 font-bold text-sm w-5">
+                    {i + 1}.
+                  </span>
+                  <span className="flex-1 text-sm text-white select-none">
+                    {item}
+                  </span>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        if (i > 0) {
+                          const newOrder = [...order];
+                          [newOrder[i - 1], newOrder[i]] = [
+                            newOrder[i],
+                            newOrder[i - 1],
+                          ];
+                          setOrder(newOrder);
+                        }
+                      }}
+                      disabled={i === 0}
+                      className="p-1 text-slate-500 hover:text-white disabled:opacity-30 transition-colors"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (i < order.length - 1) {
+                          const newOrder = [...order];
+                          [newOrder[i], newOrder[i + 1]] = [
+                            newOrder[i + 1],
+                            newOrder[i],
+                          ];
+                          setOrder(newOrder);
+                        }
+                      }}
+                      disabled={i === order.length - 1}
+                      className="p-1 text-slate-500 hover:text-white disabled:opacity-30 transition-colors"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={handleSubmitStructured}
+            disabled={!canSubmit || submitting}
+            className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
+          >
+            {submitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              'Submit Answer'
+            )}
+          </button>
+        </>
       ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500">
-            Drag or use arrows to set the correct order:
-          </p>
-          {order.map((item: string, i: number) => (
-            <div
-              key={item}
-              draggable
-              onDragStart={() => handleDragStart(i)}
-              onDragOver={(e) => handleDragOver(e, i)}
-              onDragEnd={() => setDraggedIndex(null)}
-              className={`flex items-center gap-2 bg-slate-800 border rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-colors ${draggedIndex === i ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700'}`}
+        <div className="animate-in fade-in slide-in-from-bottom-2">
+          {isStudentPaced && !isLastQuestion ? (
+            <button
+              onClick={onNext}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
             >
-              <span className="text-violet-400 font-bold text-sm w-5">
-                {i + 1}.
-              </span>
-              <span className="flex-1 text-sm text-white select-none">
-                {item}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => {
-                    if (i > 0) {
-                      const newOrder = [...order];
-                      [newOrder[i - 1], newOrder[i]] = [
-                        newOrder[i],
-                        newOrder[i - 1],
-                      ];
-                      setOrder(newOrder);
-                    }
-                  }}
-                  disabled={i === 0}
-                  className="p-1 text-slate-500 hover:text-white disabled:opacity-30 transition-colors"
-                >
-                  ▲
-                </button>
-                <button
-                  onClick={() => {
-                    if (i < order.length - 1) {
-                      const newOrder = [...order];
-                      [newOrder[i], newOrder[i + 1]] = [
-                        newOrder[i + 1],
-                        newOrder[i],
-                      ];
-                      setOrder(newOrder);
-                    }
-                  }}
-                  disabled={i === order.length - 1}
-                  className="p-1 text-slate-500 hover:text-white disabled:opacity-30 transition-colors"
-                >
-                  ▼
-                </button>
-              </div>
+              NEXT QUESTION <ArrowRight className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <p className="text-emerald-300 text-sm font-bold">
+                {!isLastQuestion ? 'Waiting for teacher…' : 'Quiz complete!'}
+              </p>
             </div>
-          ))}
+          )}
         </div>
       )}
-
-      <button
-        onClick={handleSubmitStructured}
-        disabled={!canSubmit || submitting}
-        className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
-      >
-        {submitting ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          'Submit Answer'
-        )}
-      </button>
     </div>
   );
 };
