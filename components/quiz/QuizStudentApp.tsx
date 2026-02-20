@@ -349,40 +349,70 @@ const ActiveQuiz: React.FC<{
   // The Visibility Tracker
   useEffect(() => {
     const handleVisibilityChange = async () => {
+      // Don't track if the quiz isn't active, if we're already showing a warning,
+      // or if the student has already completed the quiz.
+      if (
+        session.status !== 'active' ||
+        isWarningShowingRef.current ||
+        myResponse?.status === 'completed'
+      )
+        return;
+
       const now = Date.now();
       // Debounce to prevent dual blur/visibility events
       if (now - lastReportTimeRef.current < 1000) return;
 
-      if (
-        (document.visibilityState === 'hidden' || !document.hasFocus()) &&
-        session.status === 'active' &&
-        !isWarningShowingRef.current
-      ) {
+      const isPageHidden = document.visibilityState === 'hidden';
+      const isWindowBlurred = !document.hasFocus();
+
+      if (isPageHidden || isWindowBlurred) {
         lastReportTimeRef.current = now;
         isWarningShowingRef.current = true;
 
-        const newTotal = await reportTabSwitch();
-        setWarningCount(newTotal);
-        setShowCheatWarning(true);
+        try {
+          const newTotal = await reportTabSwitch();
+          setWarningCount(newTotal);
+          setShowCheatWarning(true);
 
-        // Auto-submit if they breach the threshold (e.g., 3 strikes)
-        if (newTotal >= 3) {
-          alert(
-            'You have left the tab 3 times. Your quiz is being auto-submitted.'
-          );
-          await onComplete();
+          // Auto-submit if they breach the threshold (e.g., 3 strikes)
+          if (newTotal >= 3) {
+            // Use a slight delay so the UI can update before the blocking alert
+            setTimeout(async () => {
+              alert(
+                'You have left the quiz 3 times. Your quiz is being auto-submitted.'
+              );
+              await onComplete();
+            }, 100);
+          }
+        } catch (err) {
+          console.error('Failed to report tab switch:', err);
+          // Still show the UI warning even if Firestore update fails
+          setShowCheatWarning(true);
         }
+      }
+    };
+
+    // When the window regains focus, we want to make sure we're ready to catch the next blur
+    const handleFocus = () => {
+      // If the cheat warning is NOT showing, ensure our ref is false
+      if (!showCheatWarning) {
+        isWarningShowingRef.current = false;
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // Initial check just in case they started the quiz in a background tab
+    void handleVisibilityChange();
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [session.status, reportTabSwitch, onComplete]);
+  }, [session.status, reportTabSwitch, onComplete, showCheatWarning]);
 
   // For student-paced mode, the student maintains their own local index
   const [localIndex, setLocalIndex] = useState(0);
