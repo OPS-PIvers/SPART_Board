@@ -245,7 +245,23 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     );
   }
 
-  if (view === 'monitor' && liveSession && loadedQuizData) {
+  if (view === 'monitor' && liveSession) {
+    if (!loadedQuizData) {
+      return (
+        <div
+          className="flex flex-col items-center justify-center h-full text-slate-400"
+          style={{ gap: 'min(12px, 3cqmin)' }}
+        >
+          <Loader2
+            className="animate-spin"
+            style={{ width: 'min(32px, 8cqmin)', height: 'min(32px, 8cqmin)' }}
+          />
+          <span style={{ fontSize: 'min(13px, 4.5cqmin)' }}>
+            Resuming session…
+          </span>
+        </div>
+      );
+    }
     return (
       <QuizLiveMonitor
         session={liveSession}
@@ -269,8 +285,13 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       loading={quizzesLoading}
       error={quizzesError ?? dataError}
       hasActiveSession={!!(liveSession && liveSession.status !== 'ended')}
+      activeQuizId={liveSession?.quizId ?? null}
       onImport={() => setView('import')}
       onResume={() => setView('monitor')}
+      onEndSession={async () => {
+        await endQuizSession();
+        addToast('Session ended.', 'success');
+      }}
       onEdit={async (meta) => {
         const data = await loadQuiz(meta);
         if (data) setView('editor');

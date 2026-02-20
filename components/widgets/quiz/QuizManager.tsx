@@ -31,9 +31,11 @@ interface QuizManagerProps {
   onPreview: (quiz: QuizMetadata) => void;
   onGoLive: (quiz: QuizMetadata, mode: QuizSessionMode) => void;
   onResume: () => void;
+  onEndSession: () => Promise<void>;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void;
   hasActiveSession: boolean;
+  activeQuizId: string | null;
 }
 
 export const QuizManager: React.FC<QuizManagerProps> = ({
@@ -45,9 +47,11 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   onPreview,
   onGoLive,
   onResume,
+  onEndSession,
   onResults,
   onDelete,
   hasActiveSession,
+  activeQuizId,
 }) => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [selectedForLive, setSelectedForLive] = useState<QuizMetadata | null>(
@@ -435,26 +439,66 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                       onClick={() => setConfirmDelete(quiz.id)}
                       variant="danger"
                     />
-                    <div className="ml-auto">
-                      <button
-                        onClick={() => setSelectedForLive(quiz)}
-                        disabled={hasActiveSession}
-                        className="flex items-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter disabled:text-brand-gray-primary text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
-                        style={{
-                          gap: 'min(6px, 1.5cqmin)',
-                          padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
-                          fontSize: 'min(13px, 4cqmin)',
-                        }}
-                      >
-                        <Play
-                          className="group-hover/btn:scale-110 transition-transform fill-current"
+                    <div className="ml-auto flex items-center gap-2">
+                      {hasActiveSession && quiz.id === activeQuizId ? (
+                        <>
+                          <button
+                            onClick={onEndSession}
+                            className="flex items-center bg-brand-red-primary hover:bg-brand-red-dark text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
+                            style={{
+                              gap: 'min(6px, 1.5cqmin)',
+                              padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
+                              fontSize: 'min(11px, 3.5cqmin)',
+                            }}
+                          >
+                            <X
+                              style={{
+                                width: 'min(14px, 4cqmin)',
+                                height: 'min(14px, 4cqmin)',
+                              }}
+                            />
+                            END
+                          </button>
+                          <button
+                            onClick={onResume}
+                            className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
+                            style={{
+                              gap: 'min(6px, 1.5cqmin)',
+                              padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
+                              fontSize: 'min(11px, 3.5cqmin)',
+                            }}
+                          >
+                            <Zap
+                              className="animate-pulse"
+                              style={{
+                                width: 'min(14px, 4cqmin)',
+                                height: 'min(14px, 4cqmin)',
+                              }}
+                            />
+                            RESUME
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedForLive(quiz)}
+                          disabled={hasActiveSession}
+                          className="flex items-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter disabled:text-brand-gray-primary text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
                           style={{
-                            width: 'min(14px, 4cqmin)',
-                            height: 'min(14px, 4cqmin)',
+                            gap: 'min(6px, 1.5cqmin)',
+                            padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
+                            fontSize: 'min(13px, 4cqmin)',
                           }}
-                        />
-                        GO LIVE
-                      </button>
+                        >
+                          <Play
+                            className="group-hover/btn:scale-110 transition-transform fill-current"
+                            style={{
+                              width: 'min(14px, 4cqmin)',
+                              height: 'min(14px, 4cqmin)',
+                            }}
+                          />
+                          GO LIVE
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
