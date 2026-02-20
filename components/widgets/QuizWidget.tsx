@@ -105,7 +105,16 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         setView('manager');
       }
     }
-  }, [liveSession, loadedQuizData, loadingQuizData, quizzes, loadQuiz]);
+  }, [
+    liveSession,
+    loadedQuizData,
+    loadingQuizData,
+    quizzes,
+    loadQuiz,
+    quizzesLoading,
+    endQuizSession,
+    setView,
+  ]);
 
   // ─── Guard: not signed in ──────────────────────────────────────────────────
   if (!user) {
