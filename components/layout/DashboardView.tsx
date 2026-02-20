@@ -55,6 +55,7 @@ export const DashboardView: React.FC = () => {
     removeWidget,
     duplicateWidget,
     bringToFront,
+    resetWidgetSize,
     addToast,
     loadDashboard,
     minimizeAllWidgets,
@@ -550,6 +551,7 @@ export const DashboardView: React.FC = () => {
               removeWidget={removeWidget}
               duplicateWidget={duplicateWidget}
               bringToFront={bringToFront}
+              resetWidgetSize={resetWidgetSize}
               addToast={addToast}
               globalStyle={globalStyle}
               dashboardBackground={activeDashboard.background}

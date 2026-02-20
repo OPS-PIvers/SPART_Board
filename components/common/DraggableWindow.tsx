@@ -15,15 +15,15 @@ import {
   Trash2,
   Highlighter,
 } from 'lucide-react';
-import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
-import { useScreenshot } from '../../hooks/useScreenshot';
-import { useDashboard } from '../../context/useDashboard';
+import { WidgetData, WidgetType, GlobalStyle, Path } from '@/types';
+import { useScreenshot } from '@/hooks/useScreenshot';
+// Removed useDashboard hook dependency to prevent unnecessary re-renders
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
-import { useClickOutside } from '../../hooks/useClickOutside';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
-import { WIDGET_PALETTE } from '../../config/colors';
-import { Z_INDEX } from '../../config/zIndex';
+import { WIDGET_PALETTE } from '@/config/colors';
+import { Z_INDEX } from '@/config/zIndex';
 
 // Widgets that cannot be snapshotted due to CORS/Technical limitations
 const SCREENSHOT_BLACKLIST: WidgetType[] = ['webcam', 'embed'];
@@ -45,10 +45,17 @@ interface DraggableWindowProps {
   children: React.ReactNode;
   settings: React.ReactNode;
   title: string;
-  style?: React.CSSProperties; // Added style prop
+  style?: React.CSSProperties;
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
   globalStyle: GlobalStyle;
+  // Actions passed as props to avoid context subscription
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  resetWidgetSize: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
 }
 
 const ResizeHandleIcon = ({
@@ -89,16 +96,13 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   skipCloseConfirmation = false,
   headerActions,
   globalStyle,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  resetWidgetSize,
+  addToast,
 }) => {
-  const {
-    updateWidget,
-    removeWidget,
-    duplicateWidget,
-    bringToFront,
-    addToast,
-    resetWidgetSize,
-  } = useDashboard();
-
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

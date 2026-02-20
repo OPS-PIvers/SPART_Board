@@ -60,6 +60,7 @@ interface WidgetRendererProps {
   removeWidget: (id: string) => void;
   duplicateWidget: (id: string) => void;
   bringToFront: (id: string) => void;
+  resetWidgetSize: (id: string) => void;
   addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
   globalStyle: GlobalStyle;
   dashboardBackground?: string;
@@ -80,6 +81,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   removeStudent,
   toggleFreezeStudent,
   toggleGlobalFreeze,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  resetWidgetSize,
+  addToast,
   globalStyle,
   dashboardBackground,
   dashboardSettings,
@@ -242,6 +249,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
       }
       globalStyle={globalStyle}
+      updateWidget={updateWidget}
+      removeWidget={removeWidget}
+      duplicateWidget={duplicateWidget}
+      bringToFront={bringToFront}
+      resetWidgetSize={resetWidgetSize}
+      addToast={addToast}
       headerActions={
         (isLive || canAccessFeature('live-session')) && (
           <LiveControl

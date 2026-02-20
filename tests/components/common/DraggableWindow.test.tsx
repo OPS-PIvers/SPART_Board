@@ -1,11 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DraggableWindow } from '../../../components/common/DraggableWindow';
-import { WidgetData, GlobalStyle } from '../../../types';
-import {
-  DashboardContext,
-  DashboardContextValue,
-} from '../../../context/DashboardContextValue';
+import { DraggableWindow } from '@/components/common/DraggableWindow';
+import { WidgetData, GlobalStyle } from '@/types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
@@ -20,7 +16,7 @@ vi.mock('lucide-react', async (importOriginal) => {
 });
 
 // Mock screenshot hook
-vi.mock('../../../hooks/useScreenshot', () => ({
+vi.mock('@/hooks/useScreenshot', () => ({
   useScreenshot: () => ({
     takeScreenshot: vi.fn(),
     isFlashing: false,
@@ -69,18 +65,20 @@ describe('DraggableWindow (Tests folder)', () => {
 
   it('renders toolbar buttons in the correct order', () => {
     render(
-      <DashboardContext.Provider
-        value={mockContext as unknown as DashboardContextValue}
+      <DraggableWindow
+        widget={mockWidget}
+        settings={<div>Settings</div>}
+        title="Test Widget"
+        globalStyle={mockGlobalStyle}
+        updateWidget={mockContext.updateWidget}
+        removeWidget={mockContext.removeWidget}
+        duplicateWidget={mockContext.duplicateWidget}
+        bringToFront={mockContext.bringToFront}
+        addToast={mockContext.addToast}
+        resetWidgetSize={mockContext.resetWidgetSize}
       >
-        <DraggableWindow
-          widget={mockWidget}
-          settings={<div>Settings</div>}
-          title="Test Widget"
-          globalStyle={mockGlobalStyle}
-        >
-          <div>Content</div>
-        </DraggableWindow>
-      </DashboardContext.Provider>
+        <div>Content</div>
+      </DraggableWindow>
     );
 
     // Simulate click to open toolbar
