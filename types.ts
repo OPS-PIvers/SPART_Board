@@ -30,7 +30,8 @@ export type WidgetType =
   | 'catalyst-visual'
   | 'smartNotebook'
   | 'recessGear'
-  | 'pdf';
+  | 'pdf'
+  | 'record';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -404,6 +405,21 @@ export interface PdfConfig {
   activePdfName: string | null;
 }
 
+export interface AudioRecordingItem {
+  id: string;
+  name: string;
+  driveFileId: string;
+  duration: number; // in seconds
+  size: number; // bytes
+  mimeType: string;
+  createdAt: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface RecordConfig {
+  // No persistent UI state — all recordings live in Firestore
+}
+
 export interface MaterialsConfig {
   selectedItems: string[];
   activeItems: string[];
@@ -547,7 +563,8 @@ export type WidgetConfig =
   | CatalystVisualConfig
   | SmartNotebookConfig
   | RecessGearConfig
-  | PdfConfig;
+  | PdfConfig
+  | RecordConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -614,7 +631,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                               ? RecessGearConfig
                                                               : T extends 'pdf'
                                                                 ? PdfConfig
-                                                                : never;
+                                                                : T extends 'record'
+                                                                  ? RecordConfig
+                                                                  : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;

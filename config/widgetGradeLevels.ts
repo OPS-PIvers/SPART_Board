@@ -66,6 +66,7 @@ export const WIDGET_GRADE_LEVELS: Record<WidgetType, GradeLevel[]> = {
   smartNotebook: ALL_GRADE_LEVELS,
   recessGear: ['k-2', '3-5'],
   pdf: ALL_GRADE_LEVELS,
+  record: ALL_GRADE_LEVELS,
 };
 
 /**

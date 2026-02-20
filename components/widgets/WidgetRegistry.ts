@@ -107,6 +107,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   ),
   recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearWidget'),
   pdf: lazyNamed(() => import('./PdfWidget'), 'PdfWidget'),
+  record: lazyNamed(() => import('./RecordWidget'), 'RecordWidget'),
 };
 
 export const WIDGET_SETTINGS_COMPONENTS: Partial<
@@ -166,6 +167,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     'RecessGearSettings'
   ),
   pdf: lazyNamed(() => import('./PdfWidget'), 'PdfSettings'),
+  record: lazyNamed(() => import('./RecordWidget'), 'RecordSettings'),
 };
 
 export const DEFAULT_SCALING_CONFIG: ScalingConfig = {
@@ -399,6 +401,13 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
   pdf: {
     baseWidth: 600,
     baseHeight: 750,
+    canSpread: true,
+    skipScaling: true,
+    padding: 0,
+  },
+  record: {
+    baseWidth: 520,
+    baseHeight: 600,
     canSpread: true,
     skipScaling: true,
     padding: 0,

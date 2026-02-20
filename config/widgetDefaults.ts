@@ -204,4 +204,9 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     h: 750,
     config: { activePdfId: null, activePdfUrl: null, activePdfName: null },
   },
+  record: {
+    w: 520,
+    h: 600,
+    config: {},
+  },
 };
