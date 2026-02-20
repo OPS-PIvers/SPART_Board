@@ -500,6 +500,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   const handleCanvasPointerDown = (e: React.PointerEvent) => {
     if (mode !== 'setup') return;
+    e.stopPropagation();
 
     // Capture from the synthetic event before it gets recycled
     const isCtrl = e.ctrlKey || e.metaKey;
@@ -1039,6 +1040,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         {/* Canvas */}
         <div
           ref={canvasRef}
+          data-no-drag="true"
           className="flex-1 relative bg-white overflow-hidden"
           onPointerDown={handleCanvasPointerDown}
           onClick={handleCanvasClick}
