@@ -19,6 +19,13 @@ import { functions } from '../../config/firebase';
 
 import { WidgetLayout } from './WidgetLayout';
 
+const ensureProtocol = (url: string) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
+
 export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const config = widget.config as EmbedConfig;
   const {
@@ -29,7 +36,8 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     isEmbeddable = true,
     blockedReason = '',
   } = config;
-  const embedUrl = convertToEmbedUrl(url);
+  const sanitizedUrl = ensureProtocol(url);
+  const embedUrl = convertToEmbedUrl(sanitizedUrl);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -117,7 +125,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           />
           {mode === 'url' && url && (
             <a
-              href={url}
+              href={sanitizedUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-400 hover:text-blue-500 transition-colors"
@@ -150,7 +158,7 @@ export const EmbedWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   "This website's security policy prevents it from being displayed here."}
               </p>
               <a
-                href={url}
+                href={sanitizedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xxs font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
@@ -358,7 +366,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
           {url && (
             <a
-              href={url}
+              href={ensureProtocol(url)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full p-2 text-xxs  text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors"
