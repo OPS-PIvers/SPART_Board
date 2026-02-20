@@ -672,14 +672,20 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
 
             {/* Bottom Area: All Unassigned Students */}
-            <div className="flex-1 flex flex-col min-h-0">
+            <div
+              className="flex flex-col transition-all duration-300"
+              style={{ maxHeight: '45cqh' }}
+            >
               <DroppableZone
                 id="unassigned"
-                className="flex-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner"
-                style={{ padding: 'min(12px, 2.5cqmin)' }}
+                className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner"
+                style={{
+                  padding: 'min(12px, 2.5cqmin)',
+                  minHeight: 'min(56px, 10cqmin)',
+                }}
                 activeClassName="bg-slate-100 border-brand-blue-primary ring-4 ring-brand-blue-lighter/20"
               >
-                <div className="flex flex-col items-center h-full">
+                <div className="flex flex-col items-center">
                   <div
                     className="flex items-center"
                     style={{
