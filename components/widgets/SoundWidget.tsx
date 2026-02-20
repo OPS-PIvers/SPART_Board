@@ -7,7 +7,8 @@ import {
   WidgetConfig,
   ExpectationsConfig,
   TimeToolConfig,
-} from '../../types';
+  Dashboard,
+} from '@/types';
 import { Thermometer, Gauge, Activity, Citrus, Zap, Timer } from 'lucide-react';
 import { STANDARD_COLORS } from '../../config/colors';
 import { Toggle } from '../common/Toggle';
@@ -26,6 +27,16 @@ const getLevelData = (volume: number) => {
     if (volume >= POSTER_LEVELS[i].threshold) return POSTER_LEVELS[i];
   }
   return POSTER_LEVELS[0];
+};
+
+const isTimerActive = (dashboard: Dashboard | null): boolean => {
+  if (!dashboard) return false;
+  return dashboard.widgets.some(
+    (w) =>
+      w.type === 'time-tool' &&
+      (w.config as TimeToolConfig).mode === 'timer' &&
+      (w.config as TimeToolConfig).isRunning
+  );
 };
 
 // --- Sub-Components for Visuals ---
@@ -251,14 +262,7 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   useEffect(() => {
     if (!syncTimer || !activeDashboard) return;
 
-    const activeTimer = activeDashboard.widgets.find(
-      (w) =>
-        w.type === 'time-tool' &&
-        (w.config as TimeToolConfig).mode === 'timer' &&
-        (w.config as TimeToolConfig).isRunning
-    );
-
-    if (activeTimer) {
+    if (isTimerActive(activeDashboard)) {
       // Timer is running! Enforce quiet mode (High Sensitivity).
       // We set it to 4.0 to match a strict "Whisper/Silence" level.
       const TARGET_SENSITIVITY = 4.0;
@@ -286,14 +290,8 @@ export const SoundWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
     // If timer sync is active and a timer is running, let the timer logic take precedence
     // by checking if we have a running timer.
-    if (syncTimer) {
-      const hasRunningTimer = activeDashboard.widgets.some(
-        (w) =>
-          w.type === 'time-tool' &&
-          (w.config as TimeToolConfig).mode === 'timer' &&
-          (w.config as TimeToolConfig).isRunning
-      );
-      if (hasRunningTimer) return;
+    if (syncTimer && isTimerActive(activeDashboard)) {
+      return;
     }
 
     const expectationsWidget = activeDashboard.widgets.find(
@@ -492,12 +490,7 @@ export const SoundSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
   const hasTimer = activeDashboard?.widgets.some((w) => w.type === 'time-tool');
 
-  const isTimerRunning = activeDashboard?.widgets.some(
-    (w) =>
-      w.type === 'time-tool' &&
-      (w.config as TimeToolConfig).mode === 'timer' &&
-      (w.config as TimeToolConfig).isRunning
-  );
+  const isTimerRunning = isTimerActive(activeDashboard);
 
   const modes = [
     { id: 'thermometer', icon: Thermometer, label: 'Meter' },

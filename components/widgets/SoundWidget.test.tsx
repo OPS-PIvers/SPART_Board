@@ -244,6 +244,7 @@ describe('SoundWidget', () => {
     });
 
     // 5. Simulate voice level change to 4 (Outside)
+
     (useDashboard as Mock).mockReturnValue({
       updateWidget: mockUpdateWidget,
       activeDashboard: {
@@ -267,6 +268,165 @@ describe('SoundWidget', () => {
     // 6. Verify sensitivity update (Level 4 mapping is 0.5)
     expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
       config: expect.objectContaining({ sensitivity: 0.5 }) as SoundConfig,
+    });
+  });
+
+  describe('Auto-Quiet on Timer', () => {
+    it('sets sensitivity to 4.0 when a timer is running', async () => {
+      // 1. Setup dashboard with a running TimeTool widget
+      mockActiveDashboard.widgets = [
+        {
+          id: 'timer-1',
+          type: 'time-tool',
+          config: {
+            mode: 'timer',
+            isRunning: true,
+          } as TimeToolConfig,
+        } as unknown as WidgetData,
+      ];
+
+      // 2. Create SoundWidget with syncTimer enabled and low sensitivity
+      const widget = createWidget({
+        sensitivity: 1.0,
+        syncTimer: true,
+      });
+
+      render(<SoundWidget widget={widget} />);
+
+      // 3. Verify sensitivity update
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
+        config: expect.objectContaining({ sensitivity: 4.0 }),
+      });
+    });
+
+    it('does NOT update sensitivity if syncTimer is disabled', async () => {
+      mockActiveDashboard.widgets = [
+        {
+          id: 'timer-1',
+          type: 'time-tool',
+          config: {
+            mode: 'timer',
+            isRunning: true,
+          } as TimeToolConfig,
+        } as unknown as WidgetData,
+      ];
+
+      const widget = createWidget({
+        sensitivity: 1.0,
+        syncTimer: false, // Disabled
+      });
+
+      render(<SoundWidget widget={widget} />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(mockUpdateWidget).not.toHaveBeenCalled();
+    });
+
+    it('does NOT update sensitivity if TimeTool is NOT running', async () => {
+      mockActiveDashboard.widgets = [
+        {
+          id: 'timer-1',
+          type: 'time-tool',
+          config: {
+            mode: 'timer',
+            isRunning: false, // Stopped
+          } as TimeToolConfig,
+        } as unknown as WidgetData,
+      ];
+
+      const widget = createWidget({
+        sensitivity: 1.0,
+        syncTimer: true,
+      });
+
+      render(<SoundWidget widget={widget} />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(mockUpdateWidget).not.toHaveBeenCalled();
+    });
+
+    it('does NOT update sensitivity if TimeTool is in stopwatch mode', async () => {
+      mockActiveDashboard.widgets = [
+        {
+          id: 'timer-1',
+          type: 'time-tool',
+          config: {
+            mode: 'stopwatch', // Stopwatch
+            isRunning: true,
+          } as TimeToolConfig,
+        } as unknown as WidgetData,
+      ];
+
+      const widget = createWidget({
+        sensitivity: 1.0,
+        syncTimer: true,
+      });
+
+      render(<SoundWidget widget={widget} />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(mockUpdateWidget).not.toHaveBeenCalled();
+    });
+
+    it('prioritizes Timer over Expectations when Timer is running', async () => {
+      // 1. Setup dashboard with both Timer (Running) and Expectations
+      mockActiveDashboard.widgets = [
+        {
+          id: 'timer-1',
+          type: 'time-tool',
+          config: { mode: 'timer', isRunning: true } as TimeToolConfig,
+        } as unknown as WidgetData,
+        {
+          id: 'expectations-1',
+          type: 'expectations',
+          config: { voiceLevel: 4 } as ExpectationsConfig, // Level 4 -> Sensitivity 0.5 (Low)
+        } as unknown as WidgetData,
+      ];
+
+      const widget = createWidget({
+        sensitivity: 1.0,
+        syncTimer: true,
+        syncExpectations: true,
+      });
+
+      render(<SoundWidget widget={widget} />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      // Should set to 4.0 (Timer High Sensitivity), NOT 0.5 (Expectations Low Sensitivity)
+      // The Timer useEffect runs and sets it to 4.0.
+      // The Expectations useEffect runs but checks for running timer and returns early.
+
+      // Verify Timer update called
+      expect(mockUpdateWidget).toHaveBeenCalledWith('sound-1', {
+        config: expect.objectContaining({ sensitivity: 4.0 }),
+      });
+
+      // Verify NO update to 0.5
+
+      const calls = mockUpdateWidget.mock.calls;
+
+      const setLow = calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (call: any[]) =>
+          (call[1] as { config: SoundConfig }).config.sensitivity === 0.5
+      );
+      expect(setLow).toBeUndefined();
     });
   });
 });
