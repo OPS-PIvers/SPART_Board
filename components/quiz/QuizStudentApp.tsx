@@ -122,6 +122,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     submitAnswer,
     completeQuiz,
     reportTabSwitch,
+    warningCount,
   } = useQuizSessionStudent();
 
   const handleJoin = useCallback(
@@ -263,6 +264,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
         onAnswer={handleAnswer}
         onComplete={handleComplete}
         reportTabSwitch={reportTabSwitch}
+        warningCount={warningCount}
       />
     );
   }
@@ -321,6 +323,7 @@ const ActiveQuiz: React.FC<{
   onAnswer: (qId: string, answer: string) => Promise<void>;
   onComplete: () => Promise<void>;
   reportTabSwitch: () => Promise<number>;
+  warningCount: number;
 }> = ({
   session,
   currentQuestion: sessionQuestion,
@@ -329,19 +332,9 @@ const ActiveQuiz: React.FC<{
   onAnswer,
   onComplete,
   reportTabSwitch,
+  warningCount,
 }) => {
   const [showCheatWarning, setShowCheatWarning] = useState(false);
-  const [warningCount, setWarningCount] = useState(
-    myResponse?.tabSwitchWarnings ?? 0
-  );
-
-  // Sync with Firestore updates
-  useEffect(() => {
-    if (myResponse?.tabSwitchWarnings !== undefined) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setWarningCount(myResponse.tabSwitchWarnings);
-    }
-  }, [myResponse?.tabSwitchWarnings]);
 
   const isWarningShowingRef = useRef<boolean>(false);
   const lastReportTimeRef = useRef<number>(0);
@@ -371,7 +364,6 @@ const ActiveQuiz: React.FC<{
 
         try {
           const newTotal = await reportTabSwitch();
-          setWarningCount(newTotal);
           setShowCheatWarning(true);
 
           // Auto-submit if they breach the threshold (e.g., 3 strikes)

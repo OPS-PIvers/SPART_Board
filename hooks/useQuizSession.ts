@@ -388,6 +388,7 @@ export interface UseQuizSessionStudentResult {
    * Returns the updated count.
    */
   reportTabSwitch: () => Promise<number>;
+  warningCount: number;
 }
 
 export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
@@ -511,6 +512,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         setError(msg);
         throw err;
       } finally {
+        optimisticWarningsRef.current = 0;
         setLoading(false);
       }
     },
@@ -606,5 +608,6 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     submitAnswer,
     completeQuiz,
     reportTabSwitch,
+    warningCount: optimisticWarningsRef.current,
   };
 };
