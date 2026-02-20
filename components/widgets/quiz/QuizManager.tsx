@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import {
   Plus,
-  FileSpreadsheet,
+  FileUp,
   Play,
   Edit2,
   Trash2,
@@ -48,14 +48,14 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   if (loading) {
     return (
       <div
-        className="flex flex-col items-center justify-center h-full text-slate-400"
+        className="flex flex-col items-center justify-center h-full text-brand-blue-primary"
         style={{ gap: 'min(12px, 3cqmin)' }}
       >
         <Loader2
           className="animate-spin"
           style={{ width: 'min(32px, 8cqmin)', height: 'min(32px, 8cqmin)' }}
         />
-        <span style={{ fontSize: 'min(13px, 4.5cqmin)' }}>
+        <span style={{ fontSize: 'min(14px, 4cqmin)', fontWeight: 500 }}>
           Loading quizzes…
         </span>
       </div>
@@ -63,58 +63,65 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full font-sans">
       {/* Header */}
       <div
-        className="flex items-center justify-between border-b border-white/10"
+        className="flex items-center justify-between border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
         style={{ padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)' }}
       >
         <div className="flex items-center" style={{ gap: 'min(8px, 2cqmin)' }}>
-          <BookOpen
-            className="text-violet-400"
-            style={{
-              width: 'min(16px, 4.5cqmin)',
-              height: 'min(16px, 4.5cqmin)',
-            }}
-          />
-          <span
-            className="font-semibold text-white"
-            style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+          <div
+            className="bg-brand-blue-primary text-white flex items-center justify-center rounded-lg"
+            style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
           >
-            My Quizzes
-          </span>
-          <span
-            className="text-slate-400"
-            style={{ fontSize: 'min(11px, 3.5cqmin)' }}
-          >
-            ({quizzes.length})
-          </span>
+            <BookOpen
+              style={{
+                width: 'min(14px, 3.5cqmin)',
+                height: 'min(14px, 3.5cqmin)',
+              }}
+            />
+          </div>
+          <div className="flex flex-col">
+            <span
+              className="font-bold text-brand-blue-dark leading-none"
+              style={{ fontSize: 'min(14px, 4.5cqmin)' }}
+            >
+              Quiz Library
+            </span>
+            <span
+              className="text-brand-blue-primary/70 font-medium"
+              style={{ fontSize: 'min(11px, 3cqmin)' }}
+            >
+              {quizzes.length} saved {quizzes.length === 1 ? 'quiz' : 'quizzes'}
+            </span>
+          </div>
         </div>
         <button
           onClick={onImport}
-          className="flex items-center bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-lg transition-colors"
+          className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all shadow-sm active:scale-95"
           style={{
             gap: 'min(6px, 1.5cqmin)',
             padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-            fontSize: 'min(11px, 3.5cqmin)',
+            fontSize: 'min(12px, 3.5cqmin)',
           }}
         >
           <Plus
             style={{ width: 'min(14px, 4cqmin)', height: 'min(14px, 4cqmin)' }}
           />
-          Import from Sheet
+          New Quiz
         </button>
       </div>
 
       {/* Error */}
       {error && (
         <div
-          className="flex items-center bg-red-500/20 border border-red-500/40 rounded-lg text-red-300"
+          className="flex items-center bg-brand-red-lighter/40 border border-brand-red-primary/30 rounded-xl text-brand-red-dark"
           style={{
             margin: 'min(12px, 2.5cqmin) min(16px, 4cqmin) 0',
             padding: 'min(10px, 2.5cqmin)',
             gap: 'min(8px, 2cqmin)',
             fontSize: 'min(11px, 3.5cqmin)',
+            fontWeight: 500,
           }}
         >
           <AlertCircle
@@ -130,54 +137,59 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
 
       {/* Quiz list */}
       <div
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto custom-scrollbar"
         style={{ padding: 'min(16px, 4cqmin)' }}
       >
         {quizzes.length === 0 ? (
           <div
-            className="flex flex-col items-center justify-center h-full text-slate-400 py-12"
+            className="flex flex-col items-center justify-center h-full text-brand-blue-primary/40 py-12"
             style={{ gap: 'min(16px, 4cqmin)' }}
           >
-            <FileSpreadsheet
-              className="opacity-30"
-              style={{
-                width: 'min(48px, 12cqmin)',
-                height: 'min(48px, 12cqmin)',
-              }}
-            />
+            <div
+              className="bg-brand-blue-lighter/50 p-6 rounded-full border-2 border-dashed border-brand-blue-primary/20"
+              style={{ padding: 'min(24px, 6cqmin)' }}
+            >
+              <FileUp
+                style={{
+                  width: 'min(48px, 12cqmin)',
+                  height: 'min(48px, 12cqmin)',
+                }}
+              />
+            </div>
             <div className="text-center">
               <p
-                className="font-medium text-slate-300"
-                style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                className="font-bold text-brand-blue-primary"
+                style={{ fontSize: 'min(15px, 5cqmin)' }}
               >
                 No quizzes yet
               </p>
               <p
-                className="text-slate-500"
+                className="text-brand-blue-primary/60 font-medium"
                 style={{
-                  fontSize: 'min(11px, 3.5cqmin)',
+                  fontSize: 'min(12px, 3.5cqmin)',
                   marginTop: 'min(4px, 1cqmin)',
+                  maxWidth: '180px',
                 }}
               >
-                Import a Google Sheet to create your first quiz
+                Import a CSV or Google Sheet to build your library
               </p>
             </div>
             <button
               onClick={onImport}
-              className="flex items-center bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl transition-colors"
+              className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-2xl transition-all shadow-md active:scale-95"
               style={{
                 gap: 'min(8px, 2cqmin)',
-                padding: 'min(8px, 2cqmin) min(16px, 4cqmin)',
-                fontSize: 'min(13px, 4.5cqmin)',
+                padding: 'min(10px, 2.5cqmin) min(20px, 5cqmin)',
+                fontSize: 'min(14px, 4.5cqmin)',
               }}
             >
-              <FileSpreadsheet
+              <Plus
                 style={{
-                  width: 'min(16px, 4.5cqmin)',
-                  height: 'min(16px, 4.5cqmin)',
+                  width: 'min(18px, 4.5cqmin)',
+                  height: 'min(18px, 4.5cqmin)',
                 }}
               />
-              Import Google Sheet
+              Start Importing
             </button>
           </div>
         ) : (
@@ -185,7 +197,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
             {quizzes.map((quiz) => (
               <div
                 key={quiz.id}
-                className="bg-white/5 hover:bg-white/8 border border-white/10 rounded-xl transition-colors"
+                className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-blue-primary/20 transition-all group overflow-hidden"
                 style={{ padding: 'min(12px, 3cqmin)' }}
               >
                 {/* Quiz info */}
@@ -198,141 +210,150 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                 >
                   <div className="min-w-0">
                     <h3
-                      className="font-semibold text-white truncate"
-                      style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                      className="font-bold text-brand-blue-dark truncate"
+                      style={{ fontSize: 'min(15px, 5cqmin)' }}
                     >
                       {quiz.title}
                     </h3>
-                    <p
-                      className="text-slate-400"
-                      style={{
-                        fontSize: 'min(11px, 3.5cqmin)',
-                        marginTop: 'min(2px, 0.5cqmin)',
-                      }}
-                    >
-                      {quiz.questionCount} question
-                      {quiz.questionCount !== 1 ? 's' : ''} ·{' '}
-                      {new Date(quiz.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span
+                        className="bg-brand-blue-lighter text-brand-blue-primary font-bold rounded-md"
+                        style={{
+                          fontSize: 'min(10px, 3cqmin)',
+                          padding: 'min(1px, 0.2cqmin) min(6px, 1.5cqmin)',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {quiz.questionCount} Qs
+                      </span>
+                      <span
+                        className="text-brand-gray-primary font-medium"
+                        style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+                      >
+                        Updated{' '}
+                        {new Date(
+                          quiz.updatedAt || quiz.createdAt
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Action buttons */}
                 {confirmDelete === quiz.id ? (
                   <div
-                    className="flex items-center justify-end"
-                    style={{ gap: 'min(8px, 2cqmin)' }}
+                    className="flex items-center justify-end bg-brand-red-lighter/30 rounded-xl"
+                    style={{
+                      gap: 'min(8px, 2cqmin)',
+                      padding: 'min(8px, 2cqmin)',
+                    }}
                   >
                     <span
-                      className="text-red-300"
-                      style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+                      className="text-brand-red-dark font-bold"
+                      style={{ fontSize: 'min(12px, 3.5cqmin)' }}
                     >
-                      Delete this quiz?
+                      Delete?
                     </span>
                     <button
                       onClick={() => {
                         setConfirmDelete(null);
                         onDelete(quiz);
                       }}
-                      className="bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+                      className="bg-brand-red-primary hover:bg-brand-red-dark text-white font-bold rounded-lg transition-colors shadow-sm"
                       style={{
-                        padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
-                        fontSize: 'min(11px, 3.5cqmin)',
+                        padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                        fontSize: 'min(12px, 3.5cqmin)',
                       }}
                     >
-                      Delete
+                      Confirm
                     </button>
                     <button
                       onClick={() => setConfirmDelete(null)}
-                      className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                      className="bg-brand-gray-light hover:bg-brand-gray-primary text-white font-bold rounded-lg transition-colors"
                       style={{
-                        padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
-                        fontSize: 'min(11px, 3.5cqmin)',
+                        padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+                        fontSize: 'min(12px, 3.5cqmin)',
                       }}
                     >
-                      Cancel
+                      Back
                     </button>
                   </div>
                 ) : (
                   <div
                     className="flex items-center flex-wrap"
-                    style={{ gap: 'min(6px, 1.5cqmin)' }}
+                    style={{ gap: 'min(8px, 2cqmin)' }}
                   >
                     <ActionButton
                       icon={
                         <Eye
                           style={{
-                            width: 'min(12px, 3.5cqmin)',
-                            height: 'min(12px, 3.5cqmin)',
+                            width: 'min(14px, 4cqmin)',
+                            height: 'min(14px, 4cqmin)',
                           }}
                         />
                       }
                       label="Preview"
                       onClick={() => onPreview(quiz)}
-                      color="slate"
+                      variant="ghost"
                     />
                     <ActionButton
                       icon={
                         <Edit2
                           style={{
-                            width: 'min(12px, 3.5cqmin)',
-                            height: 'min(12px, 3.5cqmin)',
+                            width: 'min(14px, 4cqmin)',
+                            height: 'min(14px, 4cqmin)',
                           }}
                         />
                       }
                       label="Edit"
                       onClick={() => onEdit(quiz)}
-                      color="slate"
+                      variant="ghost"
                     />
                     <ActionButton
                       icon={
                         <BarChart3
                           style={{
-                            width: 'min(12px, 3.5cqmin)',
-                            height: 'min(12px, 3.5cqmin)',
+                            width: 'min(14px, 4cqmin)',
+                            height: 'min(14px, 4cqmin)',
                           }}
                         />
                       }
-                      label="Results"
+                      label="Stats"
                       onClick={() => onResults(quiz)}
-                      color="slate"
+                      variant="ghost"
                     />
                     <ActionButton
                       icon={
                         <Trash2
                           style={{
-                            width: 'min(12px, 3.5cqmin)',
-                            height: 'min(12px, 3.5cqmin)',
+                            width: 'min(14px, 4cqmin)',
+                            height: 'min(14px, 4cqmin)',
                           }}
                         />
                       }
-                      label="Delete"
+                      label=""
                       onClick={() => setConfirmDelete(quiz.id)}
-                      color="red"
+                      variant="danger"
                     />
                     <div className="ml-auto">
                       <button
                         onClick={() => onGoLive(quiz)}
                         disabled={hasActiveSession}
-                        title={
-                          hasActiveSession
-                            ? 'End the current live session first'
-                            : ''
-                        }
-                        className="flex items-center bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                        className="flex items-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter disabled:text-brand-gray-primary text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
                         style={{
                           gap: 'min(6px, 1.5cqmin)',
-                          padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-                          fontSize: 'min(11px, 3.5cqmin)',
+                          padding: 'min(8px, 2cqmin) min(14px, 3.5cqmin)',
+                          fontSize: 'min(13px, 4cqmin)',
                         }}
                       >
                         <Play
+                          className="group-hover/btn:scale-110 transition-transform fill-current"
                           style={{
-                            width: 'min(12px, 3.5cqmin)',
-                            height: 'min(12px, 3.5cqmin)',
+                            width: 'min(14px, 4cqmin)',
+                            height: 'min(14px, 4cqmin)',
                           }}
                         />
-                        Go Live
+                        GO LIVE
                       </button>
                     </div>
                   </div>
@@ -350,22 +371,23 @@ const ActionButton: React.FC<{
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
-  color: 'slate' | 'red';
-}> = ({ icon, label, onClick, color }) => (
+  variant: 'ghost' | 'danger';
+}> = ({ icon, label, onClick, variant }) => (
   <button
     onClick={onClick}
-    className={`flex items-center rounded-lg transition-colors ${
-      color === 'red'
-        ? 'bg-red-500/20 hover:bg-red-500/30 text-red-300'
-        : 'bg-white/8 hover:bg-white/15 text-slate-300'
+    className={`flex items-center rounded-lg font-bold transition-all active:scale-90 ${
+      variant === 'danger'
+        ? 'text-brand-red-primary hover:bg-brand-red-lighter/40'
+        : 'text-brand-blue-primary hover:bg-brand-blue-lighter/50'
     }`}
     style={{
       gap: 'min(4px, 1cqmin)',
-      padding: 'min(4px, 1cqmin) min(8px, 2cqmin)',
-      fontSize: 'min(11px, 3.5cqmin)',
+      padding: 'min(6px, 1.5cqmin)',
+      fontSize: 'min(12px, 3.5cqmin)',
     }}
+    title={label}
   >
     {icon}
-    {label}
+    {label && <span>{label}</span>}
   </button>
 );

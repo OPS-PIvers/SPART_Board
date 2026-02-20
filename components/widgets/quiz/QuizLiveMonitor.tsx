@@ -82,10 +82,10 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const joined = responses.filter((r) => r.status === 'joined').length;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full font-sans">
       {/* Header */}
       <div
-        className="border-b border-white/10"
+        className="border-b border-brand-red-primary/10 bg-brand-red-lighter/20"
         style={{ padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)' }}
       >
         <div className="flex items-center justify-between">
@@ -94,23 +94,34 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
             style={{ gap: 'min(8px, 2cqmin)' }}
           >
             <div
-              className="rounded-full bg-red-500 animate-pulse"
-              style={{ width: 'min(8px, 2cqmin)', height: 'min(8px, 2cqmin)' }}
+              className="rounded-full bg-brand-red-primary animate-pulse shadow-[0_0_8px_rgba(173,33,34,0.5)]"
+              style={{
+                width: 'min(10px, 2.5cqmin)',
+                height: 'min(10px, 2.5cqmin)',
+              }}
             />
-            <span
-              className="font-semibold text-white"
-              style={{ fontSize: 'min(13px, 4.5cqmin)' }}
-            >
-              Live: {session.quizTitle}
-            </span>
+            <div className="flex flex-col">
+              <span
+                className="font-black text-brand-red-primary leading-none uppercase tracking-tight"
+                style={{ fontSize: 'min(14px, 4.5cqmin)' }}
+              >
+                LIVE SESSION
+              </span>
+              <span
+                className="text-brand-blue-dark font-bold truncate"
+                style={{ fontSize: 'min(11px, 3.5cqmin)', maxWidth: '140px' }}
+              >
+                {session.quizTitle}
+              </span>
+            </div>
           </div>
           <button
             onClick={() => void handleEnd()}
             disabled={ending}
-            className="flex items-center bg-red-600/80 hover:bg-red-500 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+            className="flex items-center bg-brand-red-primary hover:bg-brand-red-dark disabled:opacity-50 text-white font-black rounded-xl transition-all shadow-md active:scale-95"
             style={{
               gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+              padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
               fontSize: 'min(11px, 3.5cqmin)',
             }}
           >
@@ -118,107 +129,109 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               <Loader2
                 className="animate-spin"
                 style={{
-                  width: 'min(12px, 3.5cqmin)',
-                  height: 'min(12px, 3.5cqmin)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
               />
             ) : (
               <Square
                 style={{
-                  width: 'min(12px, 3.5cqmin)',
-                  height: 'min(12px, 3.5cqmin)',
+                  width: 'min(14px, 3.5cqmin)',
+                  height: 'min(14px, 3.5cqmin)',
                 }}
               />
             )}
-            End Session
+            END
           </button>
         </div>
       </div>
 
       <div
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto custom-scrollbar"
         style={{ padding: 'min(16px, 4cqmin)' }}
       >
         <div className="flex flex-col" style={{ gap: 'min(16px, 4cqmin)' }}>
-          {/* Join code */}
+          {/* Join code section */}
           <div
-            className="bg-white/5 border border-white/10 rounded-xl"
-            style={{ padding: 'min(12px, 3cqmin)' }}
+            className="bg-white border-2 border-brand-blue-primary/10 rounded-2xl shadow-sm"
+            style={{ padding: 'min(16px, 4cqmin)' }}
           >
             <p
-              className="text-slate-400 font-medium"
+              className="text-brand-blue-primary/60 font-bold uppercase tracking-wider text-center"
               style={{
-                fontSize: 'min(10px, 3.5cqmin)',
+                fontSize: 'min(11px, 3cqmin)',
                 marginBottom: 'min(8px, 2cqmin)',
               }}
             >
-              Students join at:
+              Join Code
             </p>
             <div
-              className="flex items-center"
+              className="flex items-center justify-center"
               style={{
-                gap: 'min(8px, 2cqmin)',
-                marginBottom: 'min(8px, 2cqmin)',
+                marginBottom: 'min(16px, 4cqmin)',
               }}
             >
               <span
-                className="font-black tracking-widest text-white font-mono"
-                style={{ fontSize: 'min(24px, 8cqmin)' }}
+                className="font-black tracking-[0.2em] text-brand-blue-dark font-mono bg-brand-blue-lighter/40 px-6 py-2 rounded-2xl border border-brand-blue-primary/5"
+                style={{ fontSize: 'min(32px, 10cqmin)' }}
               >
                 {session.code}
               </span>
             </div>
-            <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
+            <div
+              className="grid grid-cols-2"
+              style={{ gap: 'min(10px, 2.5cqmin)' }}
+            >
               <button
                 onClick={handleCopy}
-                className="flex items-center bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors"
+                className="flex items-center justify-center bg-brand-blue-lighter hover:bg-brand-blue-primary/20 text-brand-blue-primary font-bold rounded-xl transition-all active:scale-95"
                 style={{
                   gap: 'min(6px, 1.5cqmin)',
-                  padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+                  padding: 'min(8px, 2cqmin)',
                   fontSize: 'min(11px, 3.5cqmin)',
                 }}
               >
                 {copied ? (
                   <CheckCircle2
-                    className="text-green-400"
+                    className="text-emerald-600"
                     style={{
-                      width: 'min(14px, 4cqmin)',
-                      height: 'min(14px, 4cqmin)',
+                      width: 'min(16px, 4cqmin)',
+                      height: 'min(16px, 4cqmin)',
                     }}
                   />
                 ) : (
                   <Copy
                     style={{
-                      width: 'min(14px, 4cqmin)',
-                      height: 'min(14px, 4cqmin)',
+                      width: 'min(16px, 4cqmin)',
+                      height: 'min(16px, 4cqmin)',
                     }}
                   />
                 )}
-                {copied ? 'Copied!' : 'Copy link'}
+                {copied ? 'COPIED' : 'COPY LINK'}
               </button>
               <a
                 href={joinUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors"
+                className="flex items-center justify-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white font-bold rounded-xl transition-all shadow-sm active:scale-95 text-center"
                 style={{
                   gap: 'min(6px, 1.5cqmin)',
-                  padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+                  padding: 'min(8px, 2cqmin)',
                   fontSize: 'min(11px, 3.5cqmin)',
                 }}
               >
                 <ExternalLink
                   style={{
-                    width: 'min(14px, 4cqmin)',
-                    height: 'min(14px, 4cqmin)',
+                    width: 'min(16px, 4cqmin)',
+                    height: 'min(16px, 4cqmin)',
                   }}
                 />
-                Open join page
+                OPEN PAGE
               </a>
             </div>
           </div>
 
-          {/* Student summary */}
+          {/* Student summary counters */}
           <div className="grid grid-cols-3" style={{ gap: 'min(8px, 2cqmin)' }}>
             <StatBox
               label="Joined"
@@ -234,7 +247,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               color="blue"
             />
             <StatBox
-              label="In Progress"
+              label="Active"
               value={inProgress}
               icon={
                 <Clock
@@ -261,46 +274,51 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
             />
           </div>
 
-          {/* Current question status */}
+          {/* Session Logic Views */}
           {session.status === 'waiting' && (
-            <div className="p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-center">
+            <div className="p-5 bg-white border-2 border-dashed border-brand-blue-primary/20 rounded-2xl text-center shadow-inner">
               <p
-                className="text-amber-300 font-medium"
-                style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                className="text-brand-blue-primary font-black uppercase tracking-wider"
+                style={{ fontSize: 'min(14px, 4.5cqmin)' }}
               >
-                Lobby open
+                Waiting for Students
               </p>
               <p
-                className="text-amber-400/70"
+                className="text-brand-gray-primary font-medium"
                 style={{
-                  fontSize: 'min(11px, 3.5cqmin)',
+                  fontSize: 'min(12px, 3.5cqmin)',
                   marginTop: 'min(4px, 1cqmin)',
                 }}
               >
-                Students can join. Press Start to show the first question.
+                Students appear below as they join. Press START to begin the
+                first question.
               </p>
             </div>
           )}
 
           {session.status === 'active' && currentQ && (
             <div
-              className="bg-white/5 border border-white/10 rounded-xl"
-              style={{ padding: 'min(12px, 3cqmin)' }}
+              className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm"
+              style={{ padding: 'min(16px, 4cqmin)' }}
             >
               <div
                 className="flex items-center justify-between"
-                style={{ marginBottom: 'min(8px, 2cqmin)' }}
+                style={{ marginBottom: 'min(10px, 2.5cqmin)' }}
               >
-                <p
-                  className="text-slate-400"
-                  style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+                <span
+                  className="bg-brand-blue-primary text-white font-bold rounded-lg"
+                  style={{
+                    fontSize: 'min(10px, 3cqmin)',
+                    padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
+                    textTransform: 'uppercase',
+                  }}
                 >
-                  Question {session.currentQuestionIndex + 1} of{' '}
+                  Question {session.currentQuestionIndex + 1} /{' '}
                   {session.totalQuestions}
-                </p>
+                </span>
                 <button
                   onClick={() => setShowStats(!showStats)}
-                  className="flex items-center text-violet-400 hover:text-violet-300 transition-colors"
+                  className="flex items-center text-brand-blue-primary font-bold hover:underline"
                   style={{
                     gap: 'min(4px, 1cqmin)',
                     fontSize: 'min(11px, 3.5cqmin)',
@@ -308,35 +326,33 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                 >
                   <BarChart3
                     style={{
-                      width: 'min(12px, 3.5cqmin)',
-                      height: 'min(12px, 3.5cqmin)',
+                      width: 'min(14px, 3.5cqmin)',
+                      height: 'min(14px, 3.5cqmin)',
                     }}
                   />
-                  {showStats ? 'Hide stats' : 'Live stats'}
+                  {showStats ? 'Hide Stats' : 'Show Stats'}
                 </button>
               </div>
               <p
-                className="text-white font-medium truncate"
-                style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                className="text-brand-blue-dark font-black leading-tight"
+                style={{ fontSize: 'min(15px, 5cqmin)' }}
               >
                 {currentQ.text}
               </p>
-              <div
-                className="flex items-center justify-between text-slate-400"
-                style={{
-                  marginTop: 'min(8px, 2cqmin)',
-                  fontSize: 'min(11px, 3.5cqmin)',
-                }}
-              >
-                <span>
-                  {answered} / {responses.length} answered
-                </span>
+
+              <div className="mt-4 space-y-2">
                 <div
-                  className="h-1.5 bg-white/10 rounded-full overflow-hidden"
-                  style={{ width: 'min(96px, 20cqmin)' }}
+                  className="flex items-center justify-between text-brand-gray-primary font-bold uppercase tracking-wider"
+                  style={{ fontSize: 'min(10px, 3cqmin)' }}
                 >
+                  <span>Completion Rate</span>
+                  <span>
+                    {answered} / {responses.length} Students
+                  </span>
+                </div>
+                <div className="h-3 bg-brand-blue-lighter rounded-full overflow-hidden shadow-inner border border-brand-blue-primary/5">
                   <div
-                    className="h-full bg-violet-500 rounded-full transition-all"
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                     style={{
                       width: `${responses.length > 0 ? (answered / responses.length) * 100 : 0}%`,
                     }}
@@ -344,57 +360,65 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
                 </div>
               </div>
 
-              {/* Live answer distribution */}
+              {/* Live answer distribution (MC only for now) */}
               {showStats && currentQ.type === 'MC' && (
-                <MCDistribution question={currentQ} responses={responses} />
+                <div className="mt-6 pt-6 border-t border-brand-blue-primary/5">
+                  <MCDistribution question={currentQ} responses={responses} />
+                </div>
               )}
             </div>
           )}
 
           {session.status === 'ended' && (
-            <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-center">
-              <CheckCircle2
-                className="text-emerald-400 mx-auto"
+            <div className="p-5 bg-emerald-50 text-center rounded-2xl border-2 border-emerald-100 shadow-sm">
+              <div
+                className="bg-emerald-500 text-white mx-auto rounded-full flex items-center justify-center shadow-lg"
                 style={{
-                  width: 'min(24px, 6cqmin)',
-                  height: 'min(24px, 6cqmin)',
-                  marginBottom: 'min(8px, 2cqmin)',
+                  width: 'min(32px, 8cqmin)',
+                  height: 'min(32px, 8cqmin)',
+                  marginBottom: 'min(12px, 3cqmin)',
                 }}
-              />
-              <p
-                className="text-emerald-300 font-medium"
-                style={{ fontSize: 'min(13px, 4.5cqmin)' }}
               >
-                Session ended
+                <CheckCircle2
+                  style={{
+                    width: 'min(20px, 5cqmin)',
+                    height: 'min(20px, 5cqmin)',
+                  }}
+                />
+              </div>
+              <p
+                className="text-emerald-800 font-black uppercase tracking-wider"
+                style={{ fontSize: 'min(16px, 5cqmin)' }}
+              >
+                Quiz Finished!
               </p>
               <p
-                className="text-emerald-400/70"
+                className="text-emerald-700/70 font-bold"
                 style={{
-                  fontSize: 'min(11px, 3.5cqmin)',
+                  fontSize: 'min(13px, 4cqmin)',
                   marginTop: 'min(4px, 1cqmin)',
                 }}
               >
-                {completed} of {responses.length} students completed the quiz
+                {completed} students crossed the finish line
               </p>
             </div>
           )}
 
-          {/* Student list */}
+          {/* Detailed Student Progress List */}
           {responses.length > 0 && (
-            <div>
-              <p
-                className="text-slate-400 font-medium"
-                style={{
-                  fontSize: 'min(11px, 3.5cqmin)',
-                  marginBottom: 'min(8px, 2cqmin)',
-                }}
-              >
-                Students
-              </p>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center justify-between border-b border-brand-blue-primary/10 pb-1">
+                <span className="text-brand-blue-primary/60 font-black uppercase tracking-widest text-[10px]">
+                  Roster Progress
+                </span>
+                <span className="text-brand-blue-primary/40 font-bold text-[10px]">
+                  {responses.length} ACTIVE
+                </span>
+              </div>
               <div
-                className="max-h-48 overflow-y-auto"
+                className="max-h-60 overflow-y-auto pr-1 custom-scrollbar"
                 style={{
-                  gap: 'min(6px, 1.5cqmin)',
+                  gap: 'min(8px, 2cqmin)',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -416,50 +440,223 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
         </div>
       </div>
 
-      {/* Advance button */}
+      {/* Primary Advance Control */}
       {(session.status === 'waiting' || session.status === 'active') && (
         <div
-          className="border-t border-white/10"
+          className="bg-white border-t border-brand-blue-primary/10"
           style={{ padding: 'min(16px, 4cqmin)' }}
         >
           <button
             onClick={() => void handleAdvance()}
             disabled={advancing}
-            className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold rounded-xl flex items-center justify-center transition-colors"
+            className="w-full bg-brand-blue-primary hover:bg-brand-blue-dark disabled:bg-brand-gray-lighter text-white font-black rounded-2xl flex items-center justify-center shadow-xl transition-all active:scale-95 group/adv"
             style={{
-              padding: 'min(12px, 3cqmin)',
-              gap: 'min(8px, 2cqmin)',
-              fontSize: 'min(13px, 4.5cqmin)',
+              padding: 'min(14px, 3.5cqmin)',
+              gap: 'min(10px, 2.5cqmin)',
+              fontSize: 'min(15px, 5cqmin)',
             }}
           >
             {advancing ? (
               <Loader2
                 className="animate-spin"
                 style={{
-                  width: 'min(16px, 4.5cqmin)',
-                  height: 'min(16px, 4.5cqmin)',
+                  width: 'min(20px, 5cqmin)',
+                  height: 'min(20px, 5cqmin)',
                 }}
               />
             ) : (
               <>
-                {session.status === 'waiting' && 'Start Quiz →'}
-                {session.status === 'active' &&
-                  (session.currentQuestionIndex + 1 >= session.totalQuestions
-                    ? 'Finish Quiz'
-                    : `Next Question (${session.currentQuestionIndex + 2}/${session.totalQuestions})`)}
-                {session.status === 'active' && (
-                  <ChevronRight
-                    style={{
-                      width: 'min(16px, 4.5cqmin)',
-                      height: 'min(16px, 4.5cqmin)',
-                    }}
-                  />
-                )}
+                {session.status === 'waiting'
+                  ? 'START QUIZ SESSION'
+                  : session.currentQuestionIndex + 1 >= session.totalQuestions
+                    ? 'COMPLETE & VIEW RESULTS'
+                    : 'NEXT QUESTION'}
+                <ChevronRight
+                  className="group-hover/adv:translate-x-1 transition-transform"
+                  style={{
+                    width: 'min(20px, 5cqmin)',
+                    height: 'min(20px, 5cqmin)',
+                  }}
+                />
               </>
             )}
           </button>
         </div>
       )}
+    </div>
+  );
+};
+
+const StatBox: React.FC<{
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  color: 'blue' | 'amber' | 'green';
+}> = ({ label, value, icon, color }) => {
+  const themes = {
+    blue: 'bg-brand-blue-lighter border-brand-blue-primary/10 text-brand-blue-primary',
+    amber: 'bg-amber-50 border-amber-200 text-amber-600',
+    green: 'bg-emerald-50 border-emerald-200 text-emerald-600',
+  };
+
+  return (
+    <div
+      className={`${themes[color]} rounded-2xl text-center border shadow-sm`}
+      style={{ padding: 'min(10px, 2.5cqmin)' }}
+    >
+      <div
+        className="opacity-60"
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: 'min(4px, 1cqmin)',
+        }}
+      >
+        {icon}
+      </div>
+      <p
+        className="font-black leading-none"
+        style={{ fontSize: 'min(20px, 6.5cqmin)' }}
+      >
+        {value}
+      </p>
+      <p
+        className="font-bold uppercase tracking-tighter opacity-70"
+        style={{
+          fontSize: 'min(10px, 3.5cqmin)',
+          marginTop: 'min(2px, 0.5cqmin)',
+        }}
+      >
+        {label}
+      </p>
+    </div>
+  );
+};
+
+const StudentRow: React.FC<{
+  response: QuizResponse;
+  totalQuestions: number;
+  questions: QuizQuestion[];
+}> = ({ response, totalQuestions, questions }) => {
+  const themes = {
+    completed: {
+      bg: 'bg-emerald-50 border-emerald-100',
+      dot: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]',
+      text: 'text-emerald-700 font-black',
+    },
+    'in-progress': {
+      bg: 'bg-amber-50/50 border-amber-100',
+      dot: 'bg-amber-500',
+      text: 'text-amber-700 font-bold',
+    },
+    joined: {
+      bg: 'bg-white border-brand-blue-primary/5',
+      dot: 'bg-brand-gray-light',
+      text: 'text-brand-gray-primary font-medium',
+    },
+  };
+
+  const currentTheme = themes[response.status];
+
+  const correctCount = response.answers.filter((a) => {
+    const q = questions.find((qn) => qn.id === a.questionId);
+    return q ? gradeAnswer(q, a.answer) : false;
+  }).length;
+
+  return (
+    <div
+      className={`flex items-center rounded-xl border transition-all ${currentTheme.bg}`}
+      style={{
+        gap: 'min(12px, 3cqmin)',
+        padding: 'min(10px, 2.5cqmin)',
+      }}
+    >
+      <div
+        className={`rounded-full shrink-0 ${currentTheme.dot}`}
+        style={{ width: 'min(8px, 2cqmin)', height: 'min(8px, 2cqmin)' }}
+      />
+      <span
+        className="flex-1 text-brand-blue-dark font-bold truncate"
+        style={{ fontSize: 'min(13px, 4cqmin)' }}
+      >
+        {response.studentName}
+      </span>
+      <span
+        className={`px-2 py-0.5 rounded-md bg-white/60 border border-white/80 ${currentTheme.text}`}
+        style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+      >
+        {response.status === 'completed'
+          ? `${Math.round((correctCount / Math.max(totalQuestions, 1)) * 100)}%`
+          : `${response.answers.length}/${totalQuestions}`}
+      </span>
+    </div>
+  );
+};
+
+const MCDistribution: React.FC<{
+  question: QuizQuestion;
+  responses: QuizResponse[];
+}> = ({ question, responses }) => {
+  const options = [
+    question.correctAnswer,
+    ...question.incorrectAnswers.filter(Boolean),
+  ];
+  const totalAnswered = responses.filter((r) =>
+    r.answers.some((a) => a.questionId === question.id)
+  ).length;
+
+  return (
+    <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
+      <p
+        className="font-bold text-brand-blue-primary/60 uppercase tracking-widest"
+        style={{ fontSize: 'min(9px, 2.5cqmin)' }}
+      >
+        Live Answer Distribution
+      </p>
+      {options.map((opt) => {
+        const count = responses.filter((r) =>
+          r.answers.some(
+            (a) => a.questionId === question.id && a.answer === opt
+          )
+        ).length;
+        const pct =
+          totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
+        const isCorrect = gradeAnswer(question, opt);
+
+        return (
+          <div key={opt}>
+            <div
+              className="flex items-center justify-between font-bold"
+              style={{
+                marginBottom: 'min(4px, 1cqmin)',
+                fontSize: 'min(11px, 3.5cqmin)',
+              }}
+            >
+              <span
+                className={
+                  isCorrect ? 'text-emerald-700' : 'text-brand-blue-dark'
+                }
+                style={{ maxWidth: '80%' }}
+              >
+                {opt} {isCorrect && '✓'}
+              </span>
+              <span
+                className={
+                  isCorrect ? 'text-emerald-600' : 'text-brand-gray-primary'
+                }
+              >
+                {count}
+              </span>
+            </div>
+            <div className="h-2 bg-brand-blue-lighter rounded-full overflow-hidden shadow-inner">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${isCorrect ? 'bg-emerald-500' : 'bg-brand-blue-primary/40'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

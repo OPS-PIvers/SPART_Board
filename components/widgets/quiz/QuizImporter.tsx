@@ -100,235 +100,284 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full font-sans">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+      <div
+        className="flex items-center gap-3 border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
+        style={{ padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)' }}
+      >
         <button
           onClick={onBack}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+          className="p-1.5 hover:bg-brand-blue-primary/10 rounded-lg transition-colors text-brand-blue-primary"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-2">
-          <FileUp className="w-4 h-4 text-violet-400" />
-          <span className="text-sm font-semibold text-white">
-            Import Quiz Questions
+          <div
+            className="bg-brand-blue-primary text-white flex items-center justify-center rounded-lg"
+            style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
+          >
+            <FileUp
+              style={{
+                width: 'min(14px, 3.5cqmin)',
+                height: 'min(14px, 3.5cqmin)',
+              }}
+            />
+          </div>
+          <span
+            className="font-bold text-brand-blue-dark"
+            style={{ fontSize: 'min(14px, 4.5cqmin)' }}
+          >
+            Import Quiz
           </span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Format guide */}
-        <button
-          onClick={() => setShowFormat(!showFormat)}
-          className="w-full flex items-center gap-2 px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 rounded-xl text-blue-300 text-xs transition-colors"
-        >
-          <Info className="w-3.5 h-3.5 shrink-0" />
-          <span className="font-medium">
-            View required format (CSV or Sheet)
-          </span>
-          <span className="ml-auto">{showFormat ? '▲' : '▼'}</span>
-        </button>
+      <div
+        className="flex-1 overflow-y-auto custom-scrollbar"
+        style={{ padding: 'min(16px, 4cqmin)' }}
+      >
+        <div className="space-y-4">
+          {/* Format guide */}
+          <button
+            onClick={() => setShowFormat(!showFormat)}
+            className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-brand-blue-primary/20 rounded-xl text-brand-blue-primary text-xs transition-all hover:bg-brand-blue-lighter/50 font-bold shadow-sm"
+          >
+            <Info className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-bold">Required Template Format</span>
+            <span className="ml-auto opacity-40">{showFormat ? '▲' : '▼'}</span>
+          </button>
 
-        {showFormat && (
-          <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 space-y-2 text-xs">
-            <p className="text-slate-300 font-semibold">
-              CSV/Sheet column layout (left to right):
-            </p>
-            <div className="space-y-1 text-slate-400 font-mono">
-              <p>
-                <span className="text-amber-400">A:</span> Time Limit (seconds;
-                blank = no limit)
+          {showFormat && (
+            <div className="bg-brand-blue-lighter/40 border border-brand-blue-primary/10 rounded-xl p-3 space-y-2 text-xs">
+              <p className="text-brand-blue-dark font-bold">
+                Column layout (Left to Right):
               </p>
-              <p>
-                <span className="text-amber-400">B:</span> Question Text
-              </p>
-              <p>
-                <span className="text-amber-400">C:</span> Type:{' '}
-                <span className="text-green-400">MC</span> /{' '}
-                <span className="text-green-400">FIB</span> /{' '}
-                <span className="text-green-400">Matching</span> /{' '}
-                <span className="text-green-400">Ordering</span>
-              </p>
-              <p>
-                <span className="text-amber-400">D:</span> Correct Answer
-              </p>
-              <p>
-                <span className="text-amber-400">E–H:</span> Incorrect 1–4 (MC
-                only)
+              <div className="space-y-1 text-brand-blue-primary font-mono bg-white/50 p-2 rounded-lg border border-brand-blue-primary/5">
+                <p>
+                  <span className="font-bold text-brand-red-primary">A:</span>{' '}
+                  Time Limit (seconds)
+                </p>
+                <p>
+                  <span className="font-bold text-brand-red-primary">B:</span>{' '}
+                  Question Text
+                </p>
+                <p>
+                  <span className="font-bold text-brand-red-primary">C:</span>{' '}
+                  Type (MC, FIB, Matching, Ordering)
+                </p>
+                <p>
+                  <span className="font-bold text-brand-red-primary">D:</span>{' '}
+                  Correct Answer
+                </p>
+                <p>
+                  <span className="font-bold text-brand-red-primary">E–H:</span>{' '}
+                  Incorrect 1–4 (MC only)
+                </p>
+              </div>
+              <p className="text-brand-gray-primary text-[10px] leading-relaxed italic">
+                <strong>Tip:</strong> CSV is private and doesn&apos;t require
+                public link sharing. Use it for sensitive assessments.
               </p>
             </div>
-            <div className="mt-2 pt-2 border-t border-slate-700 space-y-1 text-slate-400">
-              <p className="text-slate-300 font-semibold">
-                Special formats for D (Correct Answer):
-              </p>
-              <p>
-                <span className="text-purple-400">Matching:</span>{' '}
-                <code className="text-slate-300">term1:def1|term2:def2</code>
-              </p>
-              <p>
-                <span className="text-purple-400">Ordering:</span>{' '}
-                <code className="text-slate-300">step1|step2|step3</code>
-              </p>
-            </div>
-            <p className="text-slate-500 text-xs pt-1">
-              <strong>Tip:</strong> CSV is more secure as it doesn&apos;t
-              require making your sheet public. Export any Sheet or Excel file
-              as &ldquo;Comma Separated Values (.csv)&rdquo;.
-            </p>
-          </div>
-        )}
+          )}
 
-        {/* Input fields */}
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Quiz Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Chapter 5 Vocabulary Quiz"
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-
-          <div className="pt-2">
-            <label className="block text-xs font-medium text-slate-300 mb-2">
-              Option 1: Upload CSV File (Recommended)
-            </label>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept=".csv"
-              onChange={(e) => void handleFileUpload(e)}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading || !title.trim()}
-              className="w-full py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center gap-1 transition-all"
-            >
-              <FileUp className="w-5 h-5 text-violet-400" />
-              <span className="text-xs font-medium text-slate-300">
-                Click to select CSV file
-              </span>
-            </button>
-          </div>
-
-          <div className="relative py-2 flex items-center">
-            <div className="flex-grow border-t border-slate-700"></div>
-            <span className="flex-shrink mx-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              Or
-            </span>
-            <div className="flex-grow border-t border-slate-700"></div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Option 2: Google Sheet URL
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={sheetUrl}
-                onChange={(e) => setSheetUrl(e.target.value)}
-                placeholder="https://docs.google.com/spreadsheets/d/…"
-                className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-              <button
-                onClick={() => void handleParse()}
-                disabled={loading || !sheetUrl.trim() || !title.trim()}
-                className="px-4 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-xl text-white transition-colors"
+          {/* Input fields */}
+          <div className="space-y-4">
+            <div>
+              <label
+                className="block font-bold text-brand-blue-dark mb-1.5"
+                style={{ fontSize: 'min(12px, 3.5cqmin)' }}
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                1. Quiz Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Science Unit 4 Review"
+                className="w-full px-4 py-2 bg-white border-2 border-brand-blue-primary/10 rounded-xl text-brand-blue-dark font-medium placeholder-brand-gray-lighter focus:outline-none focus:border-brand-blue-primary transition-colors shadow-sm"
+                style={{ fontSize: 'min(13px, 4cqmin)' }}
+              />
+            </div>
+
+            <div className="bg-white border border-brand-blue-primary/10 rounded-2xl p-4 shadow-sm space-y-3">
+              <label
+                className="block font-bold text-brand-blue-dark"
+                style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+              >
+                2. Choose Import Method
+              </label>
+
+              <div className="grid grid-cols-1 gap-3">
+                {/* CSV Upload */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading || !title.trim()}
+                  className="w-full py-4 bg-brand-blue-lighter/30 hover:bg-brand-blue-lighter/60 disabled:opacity-40 border-2 border-dashed border-brand-blue-primary/30 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group active:scale-95"
+                >
+                  <FileUp className="w-6 h-6 text-brand-blue-primary group-hover:scale-110 transition-transform" />
+                  <span
+                    className="font-bold text-brand-blue-primary"
+                    style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+                  >
+                    Upload CSV File
+                  </span>
+                  <p
+                    className="text-brand-blue-primary/60"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
+                  >
+                    Private & Secure
+                  </p>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".csv"
+                  onChange={(e) => void handleFileUpload(e)}
+                  className="hidden"
+                />
+
+                <div className="relative py-1 flex items-center">
+                  <div className="flex-grow border-t border-brand-blue-primary/10"></div>
+                  <span className="flex-shrink mx-3 text-[10px] font-black text-brand-blue-primary/30 uppercase tracking-widest">
+                    OR
+                  </span>
+                  <div className="flex-grow border-t border-brand-blue-primary/10"></div>
+                </div>
+
+                {/* Google Sheet URL */}
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={sheetUrl}
+                    onChange={(e) => setSheetUrl(e.target.value)}
+                    placeholder="Google Sheet URL..."
+                    className="flex-1 px-4 py-2 bg-brand-gray-lightest/50 border border-brand-blue-primary/10 rounded-xl text-brand-blue-dark font-medium placeholder-brand-gray-lighter focus:outline-none focus:border-brand-blue-primary transition-colors"
+                    style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+                  />
+                  <button
+                    onClick={() => void handleParse()}
+                    disabled={loading || !sheetUrl.trim() || !title.trim()}
+                    className="px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter text-white font-bold rounded-xl transition-all shadow-sm active:scale-90"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div
+              className="flex items-start gap-2 p-3 bg-brand-red-lighter/40 border border-brand-red-primary/20 rounded-xl text-brand-red-dark font-medium"
+              style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Preview of parsed questions */}
+          {parsedQuiz && (
+            <div className="space-y-3 pt-2 border-t border-brand-blue-primary/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-emerald-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span
+                    className="font-bold"
+                    style={{ fontSize: 'min(13px, 4cqmin)' }}
+                  >
+                    {parsedQuiz.questions.length} questions ready
+                  </span>
+                </div>
+                <button
+                  onClick={() => setParsedQuiz(null)}
+                  className="p-1 hover:bg-brand-gray-lightest rounded-lg text-brand-gray-primary"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+                {parsedQuiz.questions.map((q, i) => (
+                  <QuestionPreviewRow key={q.id} index={i} question={q} />
+                ))}
+              </div>
+
+              <button
+                onClick={() => void handleSave()}
+                disabled={saving}
+                className="w-full py-3 bg-brand-blue-primary hover:bg-brand-blue-dark disabled:bg-brand-gray-lighter text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                style={{ fontSize: 'min(14px, 4.5cqmin)' }}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Saving…
+                  </>
                 ) : (
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    SAVE QUIZ TO LIBRARY
+                  </>
                 )}
               </button>
             </div>
-          </div>
+          )}
         </div>
-
-        {error && (
-          <div className="flex items-start gap-2 p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Preview of parsed questions */}
-        {parsedQuiz && (
-          <div className="space-y-3 pt-2 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-green-400">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm font-semibold">
-                  {parsedQuiz.questions.length} questions imported
-                </span>
-              </div>
-              <button
-                onClick={() => setParsedQuiz(null)}
-                className="p-1 hover:bg-white/10 rounded text-slate-400"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-              {parsedQuiz.questions.map((q, i) => (
-                <QuestionPreviewRow key={q.id} index={i} question={q} />
-              ))}
-            </div>
-
-            <button
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save to Drive'
-              )}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
 const BADGE_COLORS: Record<string, string> = {
-  MC: 'bg-blue-500/30 text-blue-300',
-  FIB: 'bg-amber-500/30 text-amber-300',
-  Matching: 'bg-purple-500/30 text-purple-300',
-  Ordering: 'bg-teal-500/30 text-teal-300',
+  MC: 'bg-blue-100 text-blue-700 border-blue-200',
+  FIB: 'bg-amber-100 text-amber-700 border-amber-200',
+  Matching: 'bg-purple-100 text-purple-700 border-purple-200',
+  Ordering: 'bg-teal-100 text-teal-700 border-teal-200',
 };
 
 const QuestionPreviewRow: React.FC<{
   index: number;
   question: QuizQuestion;
 }> = ({ index, question }) => (
-  <div className="flex items-start gap-2 p-2 bg-white/5 rounded-lg">
-    <span className="text-xs text-slate-500 mt-0.5 w-5 shrink-0">
+  <div className="flex items-start gap-3 p-3 bg-white border border-brand-blue-primary/5 rounded-xl shadow-sm">
+    <span
+      className="font-bold text-brand-blue-primary/40 shrink-0"
+      style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+    >
       {index + 1}.
     </span>
     <div className="flex-1 min-w-0">
-      <p className="text-xs text-slate-300 truncate">{question.text}</p>
-      <div className="flex items-center gap-2 mt-1">
+      <p
+        className="font-bold text-brand-blue-dark truncate"
+        style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+      >
+        {question.text}
+      </p>
+      <div className="flex items-center gap-2 mt-1.5">
         <span
-          className={`text-xs px-1.5 py-0.5 rounded font-medium ${BADGE_COLORS[question.type] ?? ''}`}
+          className={`font-black rounded-md border tracking-wider ${BADGE_COLORS[question.type] ?? ''}`}
+          style={{
+            fontSize: 'min(9px, 2.5cqmin)',
+            padding: 'min(1px, 0.2cqmin) min(5px, 1cqmin)',
+            textTransform: 'uppercase',
+          }}
         >
           {question.type}
         </span>
         {question.timeLimit > 0 && (
-          <span className="text-xs text-slate-500">{question.timeLimit}s</span>
+          <span
+            className="font-bold text-brand-gray-primary"
+            style={{ fontSize: 'min(10px, 3cqmin)' }}
+          >
+            ⏱ {question.timeLimit}s
+          </span>
         )}
       </div>
     </div>

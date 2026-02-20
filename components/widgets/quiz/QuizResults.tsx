@@ -15,6 +15,7 @@ import {
   Trophy,
   Loader2,
   ExternalLink,
+  Target,
 } from 'lucide-react';
 import { QuizResponse, QuizData, QuizQuestion } from '@/types';
 import { useAuth } from '@/context/useAuth';
@@ -23,8 +24,6 @@ import { gradeAnswer } from '@/hooks/useQuizSession';
 
 /**
  * Compute a student's percentage score by re-grading answers with gradeAnswer
- * so the result is always authoritative and cannot be forged by a student
- * writing a false isCorrect value.
  */
 function getResponseScore(r: QuizResponse, questions: QuizQuestion[]): number {
   if (questions.length === 0) return 0;
@@ -90,10 +89,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full font-sans">
       {/* Header */}
       <div
-        className="flex items-center border-b border-white/10"
+        className="flex items-center border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
         style={{
           gap: 'min(12px, 3cqmin)',
           padding: 'min(12px, 2.5cqmin) min(16px, 4cqmin)',
@@ -101,8 +100,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       >
         <button
           onClick={onBack}
-          className="hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white shrink-0"
-          style={{ padding: 'min(6px, 1.5cqmin)' }}
+          className="p-1.5 hover:bg-brand-blue-primary/10 rounded-lg transition-colors text-brand-blue-primary shrink-0"
         >
           <ArrowLeft
             style={{
@@ -113,27 +111,28 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         </button>
         <div className="flex-1 min-w-0">
           <p
-            className="font-semibold text-white truncate"
-            style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+            className="font-black text-brand-blue-dark truncate"
+            style={{ fontSize: 'min(14px, 4.5cqmin)' }}
           >
             Results: {quiz.title}
           </p>
           <p
-            className="text-slate-400"
+            className="text-brand-blue-primary/60 font-bold"
             style={{ fontSize: 'min(11px, 3.5cqmin)' }}
           >
-            {completed.length} of {responses.length} completed
+            {completed.length} of {responses.length} students finished
           </p>
         </div>
+
         {exportUrl ? (
           <a
             href={exportUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg transition-colors shrink-0"
+            className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
             style={{
               gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
               fontSize: 'min(11px, 3.5cqmin)',
             }}
           >
@@ -143,27 +142,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 height: 'min(14px, 4cqmin)',
               }}
             />
-            Open Sheet
+            OPEN SHEET
           </a>
         ) : (
           <button
             onClick={() => void handleExport()}
             disabled={exporting || responses.length === 0}
-            className="flex items-center bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shrink-0"
+            className="flex items-center bg-brand-blue-primary hover:bg-brand-blue-dark disabled:bg-brand-gray-lighter text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
             style={{
               gap: 'min(6px, 1.5cqmin)',
-              padding: 'min(6px, 1.5cqmin) min(10px, 2.5cqmin)',
+              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
               fontSize: 'min(11px, 3.5cqmin)',
             }}
           >
             {exporting ? (
-              <Loader2
-                className="animate-spin"
-                style={{
-                  width: 'min(14px, 4cqmin)',
-                  height: 'min(14px, 4cqmin)',
-                }}
-              />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Download
                 style={{
@@ -172,19 +165,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 }}
               />
             )}
-            Export
+            EXPORT
           </button>
         )}
       </div>
 
       {exportError && (
         <div
-          className="bg-red-500/20 border border-red-500/40 rounded-lg text-red-300"
-          style={{
-            margin: 'min(8px, 2cqmin) min(16px, 4cqmin) 0',
-            padding: 'min(8px, 2cqmin)',
-            fontSize: 'min(11px, 3.5cqmin)',
-          }}
+          className="mx-4 mt-3 p-3 bg-brand-red-lighter/40 border border-brand-red-primary/20 rounded-xl text-brand-red-dark font-bold text-center"
+          style={{ fontSize: 'min(11px, 3.5cqmin)' }}
         >
           {exportError}
         </div>
@@ -192,27 +181,28 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       {responses.length === 0 ? (
         <div
-          className="flex flex-col items-center justify-center h-full text-slate-400"
-          style={{ gap: 'min(12px, 3cqmin)' }}
+          className="flex flex-col items-center justify-center h-full text-brand-blue-primary/30"
+          style={{ gap: 'min(16px, 4cqmin)' }}
         >
-          <BarChart3
-            className="opacity-30"
-            style={{
-              width: 'min(40px, 10cqmin)',
-              height: 'min(40px, 10cqmin)',
-            }}
-          />
-          <p style={{ fontSize: 'min(13px, 4.5cqmin)' }}>
-            No responses yet for this session.
+          <div className="bg-brand-blue-lighter/50 p-6 rounded-full border-2 border-dashed border-brand-blue-primary/10">
+            <BarChart3
+              style={{
+                width: 'min(48px, 12cqmin)',
+                height: 'min(48px, 12cqmin)',
+              }}
+            />
+          </div>
+          <p className="font-bold" style={{ fontSize: 'min(14px, 4.5cqmin)' }}>
+            No data available yet.
           </p>
         </div>
       ) : (
         <>
-          {/* Tabs */}
+          {/* Tabs Navigation */}
           <div
-            className="flex"
+            className="flex bg-white/50 border-b border-brand-blue-primary/10"
             style={{
-              padding: 'min(12px, 3cqmin) min(16px, 4cqmin) 0',
+              padding: 'min(8px, 2cqmin) min(16px, 4cqmin) 0',
               gap: 'min(4px, 1cqmin)',
             }}
           >
@@ -220,14 +210,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`font-medium rounded-lg transition-colors capitalize ${
+                className={`font-black uppercase tracking-widest rounded-t-xl transition-all ${
                   activeTab === tab
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-white/8'
+                    ? 'bg-white text-brand-blue-primary border-x border-t border-brand-blue-primary/10'
+                    : 'text-brand-blue-primary/40 hover:text-brand-blue-primary hover:bg-brand-blue-lighter/30'
                 }`}
                 style={{
-                  padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
-                  fontSize: 'min(11px, 3.5cqmin)',
+                  padding: 'min(10px, 2.5cqmin) min(16px, 4cqmin)',
+                  fontSize: 'min(10px, 3cqmin)',
                 }}
               >
                 {tab}
@@ -236,7 +226,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           </div>
 
           <div
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto custom-scrollbar"
             style={{ padding: 'min(16px, 4cqmin)' }}
           >
             {activeTab === 'overview' && (
@@ -267,83 +257,87 @@ const OverviewTab: React.FC<{
   completed: QuizResponse[];
   avgScore: number | null;
   questions: QuizQuestion[];
-}> = ({ responses, completed, avgScore, questions }) => {
-  // Score distribution buckets: 0-59, 60-79, 80-89, 90-100
+}> = ({ responses: _responses, completed, avgScore, questions }) => {
   const buckets = [
-    { label: '90-100%', min: 90, max: 100, color: 'bg-emerald-500' },
-    { label: '80-89%', min: 80, max: 89, color: 'bg-green-500' },
-    { label: '60-79%', min: 60, max: 79, color: 'bg-amber-500' },
-    { label: '0-59%', min: 0, max: 59, color: 'bg-red-500' },
+    {
+      label: '90-100%',
+      min: 90,
+      max: 100,
+      color: 'bg-emerald-500 shadow-emerald-500/20',
+    },
+    {
+      label: '80-89%',
+      min: 80,
+      max: 89,
+      color: 'bg-blue-500 shadow-blue-500/20',
+    },
+    {
+      label: '60-79%',
+      min: 60,
+      max: 79,
+      color: 'bg-amber-500 shadow-amber-500/20',
+    },
+    {
+      label: '0-59%',
+      min: 0,
+      max: 59,
+      color: 'bg-brand-red-primary shadow-brand-red-primary/20',
+    },
   ];
 
   return (
-    <div className="flex flex-col" style={{ gap: 'min(16px, 4cqmin)' }}>
-      {/* Summary stats */}
-      <div className="grid grid-cols-2" style={{ gap: 'min(12px, 3cqmin)' }}>
-        <div
-          className="bg-white/5 rounded-xl text-center"
-          style={{ padding: 'min(12px, 3cqmin)' }}
-        >
+    <div className="flex flex-col" style={{ gap: 'min(20px, 5cqmin)' }}>
+      {/* Top Level Scoreboard */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white border-2 border-brand-blue-primary/10 rounded-2xl p-4 text-center shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
           <Trophy
-            className="text-amber-400 mx-auto"
-            style={{
-              width: 'min(20px, 5.5cqmin)',
-              height: 'min(20px, 5.5cqmin)',
-              marginBottom: 'min(4px, 1cqmin)',
-            }}
+            className="text-amber-400 mx-auto mb-1 group-hover:scale-110 transition-transform"
+            style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
           />
           <p
-            className="font-black text-white"
-            style={{ fontSize: 'min(24px, 8cqmin)' }}
+            className="font-black text-brand-blue-dark leading-none"
+            style={{ fontSize: 'min(28px, 9cqmin)' }}
           >
             {avgScore !== null ? `${avgScore}%` : '—'}
           </p>
           <p
-            className="text-slate-400"
-            style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+            className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1"
+            style={{ fontSize: 'min(10px, 3cqmin)' }}
           >
             Class Average
           </p>
         </div>
-        <div
-          className="bg-white/5 rounded-xl text-center"
-          style={{ padding: 'min(12px, 3cqmin)' }}
-        >
+        <div className="bg-white border-2 border-brand-blue-primary/10 rounded-2xl p-4 text-center shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-brand-blue-primary"></div>
           <Users
-            className="text-blue-400 mx-auto"
-            style={{
-              width: 'min(20px, 5.5cqmin)',
-              height: 'min(20px, 5.5cqmin)',
-              marginBottom: 'min(4px, 1cqmin)',
-            }}
+            className="text-brand-blue-primary mx-auto mb-1 group-hover:scale-110 transition-transform"
+            style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }}
           />
           <p
-            className="font-black text-white"
-            style={{ fontSize: 'min(24px, 8cqmin)' }}
+            className="font-black text-brand-blue-dark leading-none"
+            style={{ fontSize: 'min(28px, 9cqmin)' }}
           >
-            {completed.length}/{responses.length}
+            {completed.length}
           </p>
           <p
-            className="text-slate-400"
-            style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+            className="text-brand-blue-primary/60 font-black uppercase tracking-widest mt-1"
+            style={{ fontSize: 'min(10px, 3cqmin)' }}
           >
-            Completed
+            Finished
           </p>
         </div>
       </div>
 
-      {/* Score distribution */}
-      <div>
-        <p
-          className="text-slate-400 font-medium"
-          style={{
-            fontSize: 'min(11px, 3.5cqmin)',
-            marginBottom: 'min(8px, 2cqmin)',
-          }}
-        >
-          Score Distribution
-        </p>
-        <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
+      {/* Distribution Chart */}
+      <div className="bg-white border border-brand-blue-primary/10 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="w-4 h-4 text-brand-blue-primary" />
+          <span className="font-black text-brand-blue-dark uppercase tracking-widest text-[11px]">
+            Score Distribution
+          </span>
+        </div>
+        <div className="space-y-4">
           {buckets.map((b) => {
             const count = completed.filter((r) => {
               const s = getResponseScore(r, questions);
@@ -353,23 +347,21 @@ const OverviewTab: React.FC<{
               completed.length > 0
                 ? Math.round((count / completed.length) * 100)
                 : 0;
+
             return (
               <div key={b.label}>
                 <div
-                  className="flex items-center justify-between"
-                  style={{
-                    marginBottom: 'min(4px, 1cqmin)',
-                    fontSize: 'min(11px, 3.5cqmin)',
-                  }}
+                  className="flex items-center justify-between mb-1.5 font-bold"
+                  style={{ fontSize: 'min(11px, 3.5cqmin)' }}
                 >
-                  <span className="text-slate-300">{b.label}</span>
-                  <span className="text-slate-400">
-                    {count} students ({pct}%)
+                  <span className="text-brand-blue-dark">{b.label}</span>
+                  <span className="text-brand-blue-primary/60">
+                    {count} {count === 1 ? 'Student' : 'Students'} ({pct}%)
                   </span>
                 </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-3 bg-brand-blue-lighter rounded-full overflow-hidden shadow-inner">
                   <div
-                    className={`h-full ${b.color} rounded-full transition-all`}
+                    className={`h-full ${b.color} rounded-full transition-all duration-1000 shadow-lg`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -386,7 +378,7 @@ const QuestionsTab: React.FC<{
   questions: QuizData['questions'];
   responses: QuizResponse[];
 }> = ({ questions, responses }) => (
-  <div className="flex flex-col" style={{ gap: 'min(12px, 3cqmin)' }}>
+  <div className="space-y-3">
     {questions.map((q, i) => {
       const answered = responses.filter((r) =>
         r.answers.some((a) => a.questionId === q.id)
@@ -398,40 +390,38 @@ const QuestionsTab: React.FC<{
         answered.length > 0
           ? Math.round((correct.length / answered.length) * 100)
           : 0;
+
       return (
         <div
           key={q.id}
-          className="bg-white/5 rounded-xl"
-          style={{ padding: 'min(12px, 3cqmin)' }}
+          className="bg-white border border-brand-blue-primary/10 rounded-2xl p-4 shadow-sm hover:border-brand-blue-primary/20 transition-all"
         >
+          <div className="flex items-start justify-between mb-2">
+            <div
+              className="bg-brand-blue-lighter px-2 py-0.5 rounded text-brand-blue-primary font-black uppercase tracking-tighter"
+              style={{ fontSize: 'min(9px, 2.5cqmin)' }}
+            >
+              Question {i + 1}
+            </div>
+            <div
+              className="font-black text-brand-blue-dark"
+              style={{ fontSize: 'min(12px, 4cqmin)' }}
+            >
+              {pct}% Accuracy
+            </div>
+          </div>
+
           <p
-            className="text-slate-400"
-            style={{
-              fontSize: 'min(10px, 3.5cqmin)',
-              marginBottom: 'min(4px, 1cqmin)',
-            }}
-          >
-            Q{i + 1} · {q.type}
-          </p>
-          <p
-            className="text-white font-medium line-clamp-2"
-            style={{
-              fontSize: 'min(13px, 4.5cqmin)',
-              marginBottom: 'min(8px, 2cqmin)',
-            }}
+            className="font-bold text-brand-blue-dark leading-tight line-clamp-2"
+            style={{ fontSize: 'min(13px, 4.5cqmin)' }}
           >
             {q.text}
           </p>
-          <div
-            className="flex items-center"
-            style={{ gap: 'min(12px, 3cqmin)' }}
-          >
+
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-brand-blue-primary/5">
             <div
-              className="flex items-center text-emerald-400"
-              style={{
-                gap: 'min(4px, 1cqmin)',
-                fontSize: 'min(11px, 3.5cqmin)',
-              }}
+              className="flex items-center gap-1.5 text-emerald-600 font-bold"
+              style={{ fontSize: 'min(11px, 3.5cqmin)' }}
             >
               <CheckCircle2
                 style={{
@@ -439,14 +429,11 @@ const QuestionsTab: React.FC<{
                   height: 'min(14px, 4cqmin)',
                 }}
               />
-              {correct.length} correct
+              {correct.length} Correct
             </div>
             <div
-              className="flex items-center text-red-400"
-              style={{
-                gap: 'min(4px, 1cqmin)',
-                fontSize: 'min(11px, 3.5cqmin)',
-              }}
+              className="flex items-center gap-1.5 text-brand-red-primary font-bold"
+              style={{ fontSize: 'min(11px, 3.5cqmin)' }}
             >
               <XCircle
                 style={{
@@ -454,26 +441,18 @@ const QuestionsTab: React.FC<{
                   height: 'min(14px, 4cqmin)',
                 }}
               />
-              {answered.length - correct.length} wrong
-            </div>
-            <div
-              className="ml-auto font-bold text-white"
-              style={{ fontSize: 'min(11px, 3.5cqmin)' }}
-            >
-              {pct}%
+              {answered.length - correct.length} Missed
             </div>
           </div>
-          <div
-            className="h-1.5 bg-white/10 rounded-full overflow-hidden"
-            style={{ marginTop: 'min(8px, 2cqmin)' }}
-          >
+
+          <div className="h-2 bg-brand-blue-lighter rounded-full overflow-hidden mt-3">
             <div
-              className={`h-full rounded-full transition-all ${
+              className={`h-full rounded-full transition-all duration-700 ${
                 pct >= 80
                   ? 'bg-emerald-500'
                   : pct >= 60
                     ? 'bg-amber-500'
-                    : 'bg-red-500'
+                    : 'bg-brand-red-primary'
               }`}
               style={{ width: `${pct}%` }}
             />
@@ -488,7 +467,7 @@ const StudentsTab: React.FC<{
   responses: QuizResponse[];
   questions: QuizQuestion[];
 }> = ({ responses, questions }) => (
-  <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
+  <div className="space-y-2">
     {responses
       .slice()
       .sort((a, b) => {
@@ -499,53 +478,55 @@ const StudentsTab: React.FC<{
         return scoreB - scoreA;
       })
       .map((r) => {
+        const score = getResponseScore(r, questions);
         const correct = r.answers.filter((a) => {
           const q = questions.find((qn) => qn.id === a.questionId);
           return q ? gradeAnswer(q, a.answer) : false;
         }).length;
+
         return (
           <div
             key={r.studentUid}
-            className="flex items-center bg-white/5 rounded-xl"
-            style={{ gap: 'min(12px, 3cqmin)', padding: 'min(12px, 3cqmin)' }}
+            className="flex items-center bg-white border border-brand-blue-primary/10 rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
           >
             <div className="flex-1 min-w-0">
               <p
-                className="text-white font-medium truncate"
+                className="font-bold text-brand-blue-dark truncate"
                 style={{ fontSize: 'min(13px, 4.5cqmin)' }}
               >
                 {r.studentName}
               </p>
               <p
-                className="text-slate-400 truncate"
-                style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+                className="text-brand-blue-primary/40 truncate font-medium"
+                style={{ fontSize: 'min(10px, 3cqmin)' }}
               >
                 {r.studentEmail}
               </p>
             </div>
-            <div className="text-right shrink-0">
+
+            <div className="text-right shrink-0 ml-4 pl-4 border-l border-brand-blue-primary/5">
               {r.status === 'completed' ? (
                 <>
                   <p
-                    className="font-bold text-white"
-                    style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                    className={`font-black ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-brand-red-primary'}`}
+                    style={{ fontSize: 'min(15px, 5cqmin)' }}
                   >
-                    {getResponseScore(r, questions)}%
+                    {score}%
                   </p>
                   <p
-                    className="text-slate-400"
-                    style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+                    className="text-brand-blue-primary/60 font-bold"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
                   >
-                    {correct}/{questions.length}
+                    {correct}/{questions.length} Correct
                   </p>
                 </>
               ) : (
-                <p
-                  className="text-slate-500 italic capitalize"
-                  style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+                <div
+                  className="bg-brand-gray-lightest text-brand-gray-primary font-black uppercase rounded px-2 py-1 tracking-tighter"
+                  style={{ fontSize: 'min(9px, 2.5cqmin)' }}
                 >
                   {r.status}
-                </p>
+                </div>
               )}
             </div>
           </div>
