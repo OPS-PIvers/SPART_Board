@@ -65,6 +65,7 @@ describe('DraggableWindow (Tests folder)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders toolbar buttons in the correct order', () => {

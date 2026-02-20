@@ -143,15 +143,15 @@ export const DashboardView: React.FC = () => {
         return;
       }
 
-      // Delete: Handle clear board if shift is pressed
+      // Delete: Handle clear board if shift or alt is pressed, otherwise target focused/top widget
       if (e.key === 'Delete') {
-        if (e.shiftKey) {
-          e.preventDefault();
-          deleteAllWidgets();
-          return;
-        }
+        e.preventDefault();
 
-        if (activeDashboard && activeDashboard.widgets.length > 0) {
+        if (e.shiftKey || e.altKey) {
+          if (confirm('Are you sure you want to clear the entire board?')) {
+            deleteAllWidgets();
+          }
+        } else if (activeDashboard && activeDashboard.widgets.length > 0) {
           const sorted = [...activeDashboard.widgets].sort((a, b) => b.z - a.z);
           const topWidget = sorted[0];
 
@@ -161,12 +161,12 @@ export const DashboardView: React.FC = () => {
               )
             : topWidget.id;
 
-          if (!targetId) return;
-
-          const event = new CustomEvent('widget-keyboard-action', {
-            detail: { widgetId: targetId, key: 'Delete', shiftKey: e.shiftKey },
-          });
-          window.dispatchEvent(event);
+          if (targetId) {
+            const event = new CustomEvent('widget-keyboard-action', {
+              detail: { widgetId: targetId, key: 'Delete', shiftKey: false },
+            });
+            window.dispatchEvent(event);
+          }
         }
         return;
       }
