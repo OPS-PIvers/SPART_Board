@@ -640,6 +640,11 @@ export interface QuizResponse {
    */
   score: number | null;
   submittedAt: number | null;
+  /**
+   * Tracks how many times the student left the quiz tab or minimized the window.
+   * Used for maintaining quiz integrity.
+   */
+  tabSwitchWarnings?: number;
 }
 
 /** Widget configuration for the quiz widget (teacher side) */

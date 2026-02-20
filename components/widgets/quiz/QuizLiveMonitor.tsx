@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Zap,
   User,
+  AlertTriangle,
 } from 'lucide-react';
 import { QuizSession, QuizResponse, QuizQuestion, QuizData } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
@@ -617,6 +618,7 @@ const StudentRow: React.FC<{
   };
 
   const currentTheme = themes[response.status];
+  const warnings = response.tabSwitchWarnings ?? 0;
 
   const correctCount = response.answers.filter((a) => {
     const q = questions.find((qn) => qn.id === a.questionId);
@@ -636,10 +638,20 @@ const StudentRow: React.FC<{
         style={{ width: 'min(8px, 2cqmin)', height: 'min(8px, 2cqmin)' }}
       />
       <span
-        className="flex-1 text-brand-blue-dark font-bold truncate"
+        className="flex-1 flex items-center gap-2 text-brand-blue-dark font-bold truncate"
         style={{ fontSize: 'min(13px, 4cqmin)' }}
       >
         {response.studentName}
+
+        {warnings > 0 && (
+          <span
+            className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] uppercase font-black shrink-0 animate-in zoom-in duration-300"
+            title={`${warnings} Tab Switch Warning(s)`}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            {warnings}
+          </span>
+        )}
       </span>
       <span
         className={`px-2 py-0.5 rounded-md bg-white/60 border border-white/80 ${currentTheme.text}`}

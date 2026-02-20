@@ -349,6 +349,11 @@ export interface UseQuizSessionStudentResult {
   ) => Promise<string>;
   submitAnswer: (questionId: string, answer: string) => Promise<void>;
   completeQuiz: () => Promise<void>;
+  /**
+   * Increments the tab switch warning count for the student in Firestore.
+   * Returns the updated count.
+   */
+  reportTabSwitch: () => Promise<number>;
 }
 
 export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
@@ -519,6 +524,29 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     );
   }, []);
 
+  const reportTabSwitch = useCallback(async (): Promise<number> => {
+    const teacherUid = teacherUidRef.current;
+    const studentUid = studentUidRef.current;
+    if (!teacherUid || !studentUid) return 0;
+
+    const responseRef = doc(
+      db,
+      QUIZ_SESSIONS_COLLECTION,
+      teacherUid,
+      RESPONSES_COLLECTION,
+      studentUid
+    );
+
+    const currentWarnings = myResponseRef.current?.tabSwitchWarnings ?? 0;
+    const newWarnings = currentWarnings + 1;
+
+    await updateDoc(responseRef, {
+      tabSwitchWarnings: newWarnings,
+    });
+
+    return newWarnings;
+  }, []);
+
   return {
     session,
     myResponse,
@@ -528,5 +556,6 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     joinQuizSession,
     submitAnswer,
     completeQuiz,
+    reportTabSwitch,
   };
 };

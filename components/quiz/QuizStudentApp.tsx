@@ -319,6 +319,45 @@ const ActiveQuiz: React.FC<{
   onAnswer,
   onComplete,
 }) => {
+  const { reportTabSwitch } = useQuizSessionStudent();
+  const [showCheatWarning, setShowCheatWarning] = useState(false);
+  const [warningCount, setWarningCount] = useState(
+    myResponse?.tabSwitchWarnings ?? 0
+  );
+
+  // The Visibility Tracker
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      // Only track if the quiz is actually active and they haven't submitted the whole thing
+      if (
+        (document.visibilityState === 'hidden' || !document.hasFocus()) &&
+        myResponse?.status !== 'completed' &&
+        session.status === 'active'
+      ) {
+        const newTotal = await reportTabSwitch();
+        setWarningCount(newTotal);
+        setShowCheatWarning(true);
+
+        // Auto-submit if they breach the threshold (e.g., 3 strikes)
+        if (newTotal >= 3) {
+          alert(
+            'You have left the tab 3 times. Your quiz is being auto-submitted.'
+          );
+          await onComplete();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Also catch them clicking onto a different window/monitor entirely
+    window.addEventListener('blur', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleVisibilityChange);
+    };
+  }, [myResponse?.status, session.status, reportTabSwitch, onComplete]);
+
   // For student-paced mode, the student maintains their own local index
   const [localIndex, setLocalIndex] = useState(0);
 
@@ -417,7 +456,30 @@ const ActiveQuiz: React.FC<{
     currentQuestion.type === 'MC' ? (currentQuestion.choices ?? []) : [];
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-900 flex flex-col relative">
+      {/* 🔴 NEW: The Cheating Warning Modal */}
+      {showCheatWarning && (
+        <div className="absolute inset-0 z-50 bg-red-900/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+          <AlertCircle className="w-20 h-20 text-red-500 mb-6 animate-pulse" />
+          <h2 className="text-4xl font-black text-white mb-4">
+            TAB SWITCH DETECTED
+          </h2>
+          <p className="text-red-200 text-lg max-w-md mb-8">
+            You navigated away from the quiz. This incident has been logged.
+            <br />
+            <br />
+            <strong>Warning {warningCount} of 3.</strong> If you reach 3
+            warnings, your quiz will automatically submit.
+          </p>
+          <button
+            onClick={() => setShowCheatWarning(false)}
+            className="px-8 py-4 bg-white text-red-900 font-bold rounded-xl active:scale-95 transition-transform"
+          >
+            I Understand, Return to Quiz
+          </button>
+        </div>
+      )}
+
       {/* Progress bar */}
       <div className="h-1 bg-slate-800">
         <div
