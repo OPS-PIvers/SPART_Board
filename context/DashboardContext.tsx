@@ -344,6 +344,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           ) {
             return migratedDashboards.map((db) => {
               if (db.id === activeIdRef.current && currentActive) {
+                // If the snapshot is stale (older than our last save), ignore it completely
+                // and keep our local state to prevent overwriting with old data.
+                if (isStaleSnapshot) {
+                  return currentActive;
+                }
+
                 // SURGICAL MERGE: Start from server snapshot but only preserve
                 // locally-modified fields. Fields unchanged locally accept the
                 // server value, so remote edits (e.g. name change in another
