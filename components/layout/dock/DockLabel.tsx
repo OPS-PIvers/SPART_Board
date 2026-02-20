@@ -18,7 +18,7 @@ export const DockLabel = ({
 
   return (
     <span
-      className={`text-xxs font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 font-${globalStyle.fontFamily} ${className ?? ''}`}
+      className={`text-xxs font-black uppercase tracking-tighter whitespace-nowrap transition-colors duration-300 select-none font-${globalStyle.fontFamily} ${className ?? ''}`}
       style={{
         color: globalStyle.dockTextColor,
         textShadow: globalStyle.dockTextShadow
