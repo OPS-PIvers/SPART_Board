@@ -331,9 +331,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           const serverActive = migratedDashboards.find(
             (d) => d.id === activeIdRef.current
           );
+          // Use <= to handle cases where timestamps match exactly (fast echoes)
           const isStaleSnapshot =
             serverActive &&
-            (serverActive.updatedAt ?? 0) < lastSavedAtRef.current;
+            (serverActive.updatedAt ?? 0) <= lastSavedAtRef.current;
 
           if (
             hasPendingWrites ||
@@ -344,6 +345,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           ) {
             return migratedDashboards.map((db) => {
               if (db.id === activeIdRef.current && currentActive) {
+                // If we have pending writes, this snapshot is just a local echo of what we
+                // just did. Trust our current active state completely to avoid reverts.
+                if (hasPendingWrites) {
+                  return currentActive;
+                }
+
                 // If the snapshot is stale (older than our last save), ignore it completely
                 // and keep our local state to prevent overwriting with old data.
                 if (isStaleSnapshot) {
