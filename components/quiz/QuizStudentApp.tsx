@@ -7,7 +7,7 @@
  *  2. Student enters a quiz code (or picks it up from URL param)
  *  3. Student waits in lobby for teacher to start
  *  4. Questions are shown one by one as teacher advances
- *  5. Student submits answers; sees results at the end
+ *  5. Student submits answers; teacher sees results
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -28,8 +28,8 @@ import {
   User,
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/config/firebase';
-import { useQuizSessionStudent, gradeAnswer } from '@/hooks/useQuizSession';
-import { QuizSession, QuizQuestion } from '@/types';
+import { useQuizSessionStudent } from '@/hooks/useQuizSession';
+import { QuizSession, QuizPublicQuestion } from '@/types';
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
@@ -232,10 +232,10 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
 
   // Active quiz
   if (session.status === 'active') {
-    const sessionQuestions = session.questions ?? [];
+    const publicQuestions = session.publicQuestions ?? [];
     const currentQ =
       session.currentQuestionIndex >= 0
-        ? sessionQuestions[session.currentQuestionIndex]
+        ? publicQuestions[session.currentQuestionIndex]
         : undefined;
 
     const alreadyAnswered = currentQ
@@ -248,8 +248,8 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
         currentQuestion={currentQ}
         alreadyAnswered={alreadyAnswered}
         myResponse={myResponse}
-        onAnswer={async (questionId, answer, question) => {
-          await submitAnswer(questionId, answer, question);
+        onAnswer={async (questionId, answer) => {
+          await submitAnswer(questionId, answer);
         }}
         onComplete={async () => {
           await completeQuiz();
@@ -261,8 +261,8 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
   // Session ended
   return (
     <ResultsScreen
-      myResponse={myResponse}
-      questions={session.questions ?? []}
+      answeredCount={(myResponse?.answers ?? []).length}
+      totalQuestions={session.totalQuestions}
       studentName={user.displayName ?? user.email ?? ''}
       onSignOut={handleSignOut}
     />
@@ -306,14 +306,10 @@ const WaitingRoom: React.FC<{
 
 const ActiveQuiz: React.FC<{
   session: QuizSession;
-  currentQuestion: QuizQuestion | undefined;
+  currentQuestion: QuizPublicQuestion | undefined;
   alreadyAnswered: boolean;
   myResponse: ReturnType<typeof useQuizSessionStudent>['myResponse'];
-  onAnswer: (
-    qId: string,
-    answer: string,
-    question: QuizQuestion
-  ) => Promise<void>;
+  onAnswer: (qId: string, answer: string) => Promise<void>;
   onComplete: () => Promise<void>;
 }> = ({
   session,
@@ -347,11 +343,7 @@ const ActiveQuiz: React.FC<{
       // Auto-submit empty answer when time runs out
       if (currentQuestion && !submitted) {
         setTimeout(() => setSubmitted(true), 0);
-        void onAnswer(
-          currentQuestion.id,
-          selectedAnswer ?? fibAnswer ?? '',
-          currentQuestion
-        );
+        void onAnswer(currentQuestion.id, selectedAnswer ?? fibAnswer ?? '');
       }
       return;
     }
@@ -381,7 +373,7 @@ const ActiveQuiz: React.FC<{
     if (submitting || submitted) return;
     setSubmitting(true);
     setSelectedAnswer(answer);
-    await onAnswer(currentQuestion.id, answer, currentQuestion);
+    await onAnswer(currentQuestion.id, answer);
     setSubmitted(true);
     setSubmitting(false);
 
@@ -396,13 +388,10 @@ const ActiveQuiz: React.FC<{
 
   const progress =
     ((session.currentQuestionIndex + 1) / session.totalQuestions) * 100;
+
+  // Choices are pre-shuffled in publicQuestions by the teacher side
   const options =
-    currentQuestion.type === 'MC'
-      ? shuffleArray([
-          currentQuestion.correctAnswer,
-          ...currentQuestion.incorrectAnswers.filter(Boolean),
-        ])
-      : [];
+    currentQuestion.type === 'MC' ? (currentQuestion.choices ?? []) : [];
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
@@ -543,30 +532,24 @@ const ActiveQuiz: React.FC<{
 // ─── Structured question (Matching / Ordering) ───────────────────────────────
 
 const StructuredQuestionInput: React.FC<{
-  question: QuizQuestion;
+  question: QuizPublicQuestion;
   submitted: boolean;
   onSubmit: (answer: string) => void;
   submitting: boolean;
 }> = ({ question, submitted, onSubmit, submitting }) => {
   const isMatching = question.type === 'Matching';
 
-  // Parse the correct answer to get left items (we don't reveal right items)
+  // Items come from the pre-computed public question fields — no correctAnswer needed
   const leftItems = isMatching
-    ? question.correctAnswer.split('|').map((p) => p.split(':')[0] ?? '')
-    : question.correctAnswer.split('|');
+    ? (question.matchingLeft ?? [])
+    : (question.orderingItems ?? []);
 
-  const rightItemsShuffled = isMatching
-    ? shuffleArray(
-        question.correctAnswer.split('|').map((p) => p.split(':')[1] ?? '')
-      )
-    : [];
+  const rightItemsShuffled = isMatching ? (question.matchingRight ?? []) : [];
 
   const [matchings, setMatchings] = useState<Record<string, string>>(() =>
     Object.fromEntries(leftItems.map((l) => [l, '']))
   );
-  const [order, setOrder] = useState<string[]>(() =>
-    shuffleArray([...leftItems])
-  );
+  const [order, setOrder] = useState<string[]>(() => [...leftItems]);
 
   const canSubmit = isMatching
     ? Object.values(matchings).every(Boolean)
@@ -679,66 +662,35 @@ const StructuredQuestionInput: React.FC<{
 // ─── Results screen ───────────────────────────────────────────────────────────
 
 const ResultsScreen: React.FC<{
-  myResponse: ReturnType<typeof useQuizSessionStudent>['myResponse'];
-  questions: QuizQuestion[];
+  answeredCount: number;
+  totalQuestions: number;
   studentName: string;
   onSignOut: () => void;
-}> = ({ myResponse, questions, studentName, onSignOut }) => {
-  // Compute score from gradeAnswer so that the display is correct even
-  // though students no longer write isCorrect to Firestore.
-  const correct = (myResponse?.answers ?? []).filter((a) => {
-    const q = questions.find((qn) => qn.id === a.questionId);
-    return q ? gradeAnswer(q, a.answer) : false;
-  }).length;
-  const total = questions.length;
-  const score = total > 0 ? Math.round((correct / total) * 100) : null;
+}> = ({ answeredCount, totalQuestions, studentName, onSignOut }) => (
+  <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+    <Trophy className="w-16 h-16 text-amber-400 mb-6" />
+    <h1 className="text-3xl font-black text-white mb-2">Quiz Complete!</h1>
+    <p className="text-slate-400 text-sm mb-8">Great job, {studentName}!</p>
 
-  return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-      <Trophy className="w-16 h-16 text-amber-400 mb-6" />
-      <h1 className="text-3xl font-black text-white mb-2">Quiz Complete!</h1>
-      <p className="text-slate-400 text-sm mb-8">Great job, {studentName}!</p>
-
-      {score !== null && score !== undefined ? (
-        <div className="mb-8">
-          <p className="text-6xl font-black text-white mb-2">{score}%</p>
-          <p className="text-slate-400 text-sm">
-            {correct} correct out of {total} questions
-          </p>
-        </div>
-      ) : (
-        <p className="text-slate-400 mb-8">
-          Your answers have been submitted. Ask your teacher for results.
-        </p>
-      )}
-
-      <div
-        className={`px-6 py-3 rounded-2xl text-sm font-bold mb-8 ${
-          (score ?? 0) >= 80
-            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-            : (score ?? 0) >= 60
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-              : 'bg-red-500/20 text-red-300 border border-red-500/30'
-        }`}
-      >
-        {(score ?? 0) >= 90
-          ? '🌟 Excellent!'
-          : (score ?? 0) >= 80
-            ? '🎉 Great work!'
-            : (score ?? 0) >= 60
-              ? '👍 Good effort!'
-              : '📚 Keep practicing!'}
-      </div>
-
-      <button
-        onClick={onSignOut}
-        className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-      >
-        Sign out
-      </button>
+    <div className="mb-8 p-6 bg-slate-800 rounded-2xl">
+      <p className="text-5xl font-black text-white mb-2">{answeredCount}</p>
+      <p className="text-slate-400 text-sm">
+        of {totalQuestions} questions answered
+      </p>
     </div>
-  );
-};
+
+    <p className="text-slate-500 text-sm mb-8 max-w-xs">
+      Your answers have been submitted. Ask your teacher to see your results.
+    </p>
+
+    <button
+      onClick={onSignOut}
+      className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+    >
+      Sign out
+    </button>
+  </div>
+);
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -748,12 +700,3 @@ const FullPageLoader: React.FC<{ message: string }> = ({ message }) => (
     <p className="text-slate-400 text-sm">{message}</p>
   </div>
 );
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}

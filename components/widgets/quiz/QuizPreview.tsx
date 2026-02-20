@@ -11,9 +11,11 @@ import {
   Timer,
   CheckCircle2,
   XCircle,
+  BookOpen,
 } from 'lucide-react';
 import { QuizData, QuizQuestion } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 
 /** Unbiased Fisher-Yates in-place shuffle (returns new array) */
 function fisherYatesShuffle<T>(arr: T[]): T[] {
@@ -78,59 +80,108 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
 
   if (!question) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
-        <p className="text-sm">This quiz has no questions yet.</p>
-        <button
-          onClick={onBack}
-          className="text-xs text-violet-400 hover:underline"
-        >
-          ← Back
-        </button>
-      </div>
+      <ScaledEmptyState
+        icon={BookOpen}
+        title="No questions yet"
+        subtitle="Import a Google Sheet to add questions."
+        action={
+          <button
+            onClick={onBack}
+            className="text-violet-400 hover:underline"
+            style={{
+              fontSize: 'min(11px, 3.5cqmin)',
+              marginTop: 'min(8px, 2cqmin)',
+            }}
+          >
+            ← Back
+          </button>
+        }
+      />
     );
   }
 
   return (
     <div className="flex flex-col h-full bg-slate-900/50">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div
+        className="flex items-center justify-between border-b border-white/10"
+        style={{ padding: 'min(10px, 2.5cqmin) min(16px, 4cqmin)' }}
+      >
         <button
           onClick={onBack}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+          className="hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+          style={{ padding: 'min(6px, 1.5cqmin)' }}
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft
+            style={{
+              width: 'min(16px, 4.5cqmin)',
+              height: 'min(16px, 4.5cqmin)',
+            }}
+          />
         </button>
         <div className="text-center">
-          <p className="text-xs text-slate-400">Preview · {quiz.title}</p>
-          <p className="text-xs text-slate-500">
+          <p
+            className="text-slate-400"
+            style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+          >
+            Preview · {quiz.title}
+          </p>
+          <p
+            className="text-slate-500"
+            style={{ fontSize: 'min(10px, 3cqmin)' }}
+          >
             {currentIndex + 1} / {quiz.questions.length}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center" style={{ gap: 'min(8px, 2cqmin)' }}>
           {timeLeft !== null && !showAnswer && (
             <div
-              className={`flex items-center gap-1 text-xs font-mono ${timeLeft <= 5 ? 'text-red-400' : 'text-amber-400'}`}
+              className={`flex items-center font-mono ${timeLeft <= 5 ? 'text-red-400' : 'text-amber-400'}`}
+              style={{
+                gap: 'min(4px, 1cqmin)',
+                fontSize: 'min(11px, 3.5cqmin)',
+              }}
             >
-              <Timer className="w-3.5 h-3.5" />
+              <Timer
+                style={{
+                  width: 'min(14px, 4cqmin)',
+                  height: 'min(14px, 4cqmin)',
+                }}
+              />
               {timeLeft}s
             </div>
           )}
           <button
             onClick={reset}
-            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400"
+            className="hover:bg-white/10 rounded-lg transition-colors text-slate-400"
+            style={{ padding: 'min(6px, 1.5cqmin)' }}
             title="Reset question"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw
+              style={{
+                width: 'min(14px, 4cqmin)',
+                height: 'min(14px, 4cqmin)',
+              }}
+            />
           </button>
         </div>
       </div>
 
       {/* Question */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ padding: 'min(16px, 4cqmin)' }}
+      >
+        <div style={{ marginBottom: 'min(24px, 6cqmin)' }}>
+          <div
+            className="flex items-center"
+            style={{
+              gap: 'min(8px, 2cqmin)',
+              marginBottom: 'min(12px, 3cqmin)',
+            }}
+          >
             <span
-              className={`text-xs px-2 py-0.5 rounded font-medium ${
+              className={`rounded font-medium ${
                 question.type === 'MC'
                   ? 'bg-blue-500/20 text-blue-300'
                   : question.type === 'FIB'
@@ -139,6 +190,10 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
                       ? 'bg-purple-500/20 text-purple-300'
                       : 'bg-teal-500/20 text-teal-300'
               }`}
+              style={{
+                fontSize: 'min(11px, 3.5cqmin)',
+                padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
+              }}
             >
               {question.type === 'MC'
                 ? 'Multiple Choice'
@@ -149,13 +204,27 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
                     : 'Ordering'}
             </span>
             {question.timeLimit > 0 && (
-              <span className="text-xs text-slate-500 flex items-center gap-1">
-                <Timer className="w-3 h-3" />
+              <span
+                className="text-slate-500 flex items-center"
+                style={{
+                  fontSize: 'min(11px, 3.5cqmin)',
+                  gap: 'min(4px, 1cqmin)',
+                }}
+              >
+                <Timer
+                  style={{
+                    width: 'min(12px, 3.5cqmin)',
+                    height: 'min(12px, 3.5cqmin)',
+                  }}
+                />
                 {question.timeLimit}s
               </span>
             )}
           </div>
-          <p className="text-white text-base font-medium leading-snug">
+          <p
+            className="text-white font-medium leading-snug"
+            style={{ fontSize: 'min(16px, 6cqmin)' }}
+          >
             {question.text}
           </p>
         </div>
@@ -192,36 +261,70 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
 
         {/* Correct answer reveal */}
         {showAnswer && (
-          <div className="mt-4 p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-xl">
-            <p className="text-xs text-emerald-400 font-semibold mb-1">
+          <div
+            className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl"
+            style={{
+              marginTop: 'min(16px, 4cqmin)',
+              padding: 'min(12px, 3cqmin)',
+            }}
+          >
+            <p
+              className="text-emerald-400 font-semibold"
+              style={{
+                fontSize: 'min(11px, 3.5cqmin)',
+                marginBottom: 'min(4px, 1cqmin)',
+              }}
+            >
               Correct Answer:
             </p>
-            <p className="text-sm text-emerald-300">{question.correctAnswer}</p>
+            <p
+              className="text-emerald-300"
+              style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+            >
+              {question.correctAnswer}
+            </p>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
+      <div
+        className="flex items-center justify-between border-t border-white/10"
+        style={{ padding: 'min(10px, 2.5cqmin) min(16px, 4cqmin)' }}
+      >
         <button
           onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
           disabled={currentIndex === 0}
-          className="flex items-center gap-1.5 px-3 py-2 bg-white/8 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs rounded-xl transition-colors"
+          className="flex items-center bg-white/8 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+          style={{
+            gap: 'min(6px, 1.5cqmin)',
+            padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+            fontSize: 'min(11px, 3.5cqmin)',
+          }}
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft
+            style={{
+              width: 'min(14px, 4cqmin)',
+              height: 'min(14px, 4cqmin)',
+            }}
+          />
           Prev
         </button>
 
-        <div className="flex gap-1">
+        <div className="flex" style={{ gap: 'min(4px, 1cqmin)' }}>
           {quiz.questions.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrentIndex(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${
+              className={`rounded-full transition-colors ${
                 i === currentIndex
                   ? 'bg-violet-500'
                   : 'bg-white/20 hover:bg-white/40'
               }`}
+              style={{
+                width: 'min(8px, 2cqmin)',
+                height: 'min(8px, 2cqmin)',
+              }}
             />
           ))}
         </div>
@@ -231,10 +334,20 @@ export const QuizPreview: React.FC<QuizPreviewProps> = ({ quiz, onBack }) => {
             setCurrentIndex((i) => Math.min(quiz.questions.length - 1, i + 1))
           }
           disabled={currentIndex === quiz.questions.length - 1}
-          className="flex items-center gap-1.5 px-3 py-2 bg-white/8 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs rounded-xl transition-colors"
+          className="flex items-center bg-white/8 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+          style={{
+            gap: 'min(6px, 1.5cqmin)',
+            padding: 'min(6px, 1.5cqmin) min(12px, 3cqmin)',
+            fontSize: 'min(11px, 3.5cqmin)',
+          }}
         >
           Next
-          <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight
+            style={{
+              width: 'min(14px, 4cqmin)',
+              height: 'min(14px, 4cqmin)',
+            }}
+          />
         </button>
       </div>
     </div>
@@ -250,12 +363,12 @@ const MCAnswerArea: React.FC<{
   showAnswer: boolean;
   onSelect: (ans: string) => void;
 }> = ({ options, selectedAnswer, question, showAnswer, onSelect }) => (
-  <div className="space-y-2">
+  <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
     {options.map((opt) => {
       const isSelected = selectedAnswer === opt;
       const isCorrect = gradeAnswer(question, opt);
       let cls =
-        'w-full text-left px-4 py-3 rounded-xl border text-sm transition-all font-medium ';
+        'w-full text-left rounded-xl border transition-all font-medium ';
       if (!showAnswer) {
         cls +=
           'bg-white/8 border-white/10 text-white hover:bg-white/15 hover:border-white/20';
@@ -271,13 +384,32 @@ const MCAnswerArea: React.FC<{
           key={opt}
           onClick={() => !showAnswer && onSelect(opt)}
           className={cls}
+          style={{
+            padding: 'min(10px, 2.5cqmin) min(16px, 4cqmin)',
+            fontSize: 'min(13px, 4.5cqmin)',
+          }}
         >
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center"
+            style={{ gap: 'min(12px, 3cqmin)' }}
+          >
             {showAnswer && isCorrect && (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <CheckCircle2
+                className="shrink-0"
+                style={{
+                  width: 'min(16px, 4.5cqmin)',
+                  height: 'min(16px, 4.5cqmin)',
+                }}
+              />
             )}
             {showAnswer && isSelected && !isCorrect && (
-              <XCircle className="w-4 h-4 shrink-0" />
+              <XCircle
+                className="shrink-0"
+                style={{
+                  width: 'min(16px, 4.5cqmin)',
+                  height: 'min(16px, 4.5cqmin)',
+                }}
+              />
             )}
             <span>{opt}</span>
           </div>
@@ -292,17 +424,22 @@ const FIBAnswerArea: React.FC<{
   showAnswer: boolean;
   onReveal: () => void;
 }> = ({ showAnswer, onReveal }) => (
-  <div className="space-y-3">
+  <div className="flex flex-col" style={{ gap: 'min(12px, 3cqmin)' }}>
     <input
       type="text"
       disabled={showAnswer}
-      className="w-full px-4 py-3 bg-white/8 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
+      className="w-full bg-white/8 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
+      style={{
+        padding: 'min(10px, 2.5cqmin) min(16px, 4cqmin)',
+        fontSize: 'min(13px, 4.5cqmin)',
+      }}
       placeholder="Type your answer…"
     />
     {!showAnswer && (
       <button
         onClick={onReveal}
-        className="text-xs text-slate-400 hover:text-white underline transition-colors"
+        className="text-slate-400 hover:text-white underline transition-colors text-left"
+        style={{ fontSize: 'min(11px, 3.5cqmin)' }}
       >
         Reveal answer
       </button>
@@ -326,10 +463,20 @@ const StructuredAnswerArea: React.FC<{
           .map((item, i) => ({ left: String(i + 1), right: item }));
 
   return (
-    <div className="space-y-3">
-      <div className="bg-white/5 rounded-xl p-3 space-y-2">
+    <div className="flex flex-col" style={{ gap: 'min(12px, 3cqmin)' }}>
+      <div
+        className="bg-white/5 rounded-xl flex flex-col"
+        style={{ padding: 'min(12px, 3cqmin)', gap: 'min(8px, 2cqmin)' }}
+      >
         {pairs.map((pair, i) => (
-          <div key={i} className="flex items-center gap-3 text-sm">
+          <div
+            key={i}
+            className="flex items-center"
+            style={{
+              gap: 'min(12px, 3cqmin)',
+              fontSize: 'min(13px, 4.5cqmin)',
+            }}
+          >
             <span
               className={`text-slate-300 ${question.type === 'Ordering' ? 'font-mono text-violet-400' : ''}`}
             >
@@ -366,7 +513,8 @@ const StructuredAnswerArea: React.FC<{
       {!showAnswer && (
         <button
           onClick={onReveal}
-          className="text-xs text-slate-400 hover:text-white underline transition-colors"
+          className="text-slate-400 hover:text-white underline transition-colors text-left"
+          style={{ fontSize: 'min(11px, 3.5cqmin)' }}
         >
           Reveal answer
         </button>

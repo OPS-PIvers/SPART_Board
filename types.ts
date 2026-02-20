@@ -562,6 +562,26 @@ export interface QuizMetadata {
 
 export type QuizSessionStatus = 'waiting' | 'active' | 'ended';
 
+/**
+ * Student-safe question stored in the session document.
+ * Never contains correctAnswer so students cannot cheat by inspecting
+ * Firestore/network traffic. Answer choices are pre-shuffled server-side.
+ */
+export interface QuizPublicQuestion {
+  id: string;
+  type: QuizQuestion['type'];
+  text: string;
+  timeLimit: number;
+  /** MC only: all answer choices pre-shuffled (correct identity unknown) */
+  choices?: string[];
+  /** Matching only: left-side terms (prompt side) */
+  matchingLeft?: string[];
+  /** Matching only: right-side definitions, pre-shuffled */
+  matchingRight?: string[];
+  /** Ordering only: items to sequence, pre-shuffled */
+  orderingItems?: string[];
+}
+
 /** Live quiz session document in Firestore (/quiz_sessions/{teacherUid}) */
 export interface QuizSession {
   id: string; // teacher's UID
@@ -577,11 +597,11 @@ export interface QuizSession {
   code: string;
   totalQuestions: number;
   /**
-   * Full question data stored in the session so students can render questions
-   * without a separate Drive fetch, and so the teacher's view can re-grade
-   * answers independently of what the student wrote.
+   * Student-safe questions (no correctAnswer) so the session document can be
+   * read by students without leaking the answer key. Teachers grade using the
+   * full QuizData loaded from Drive, not from this field.
    */
-  questions: QuizQuestion[];
+  publicQuestions: QuizPublicQuestion[];
 }
 
 export interface QuizResponseAnswer {
@@ -608,7 +628,12 @@ export interface QuizResponse {
   joinedAt: number;
   status: QuizResponseStatus;
   answers: QuizResponseAnswer[];
-  /** Percentage score 0–100, computed from isCorrect answer fields on completion */
+  /**
+   * Percentage score 0–100 if computed and persisted, or null if not yet graded.
+   * Not currently written by either the student or the teacher app — scoring is
+   * computed on the fly in the results view using gradeAnswer() against the
+   * full quiz data loaded from Drive.
+   */
   score: number | null;
   submittedAt: number | null;
 }
