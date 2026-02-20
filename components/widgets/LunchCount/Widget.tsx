@@ -678,19 +678,22 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
             >
               <DroppableZone
                 id="unassigned"
-                className="flex-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner"
+                className={`${stats.remaining > 0 ? 'flex-1' : 'flex-none'} bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-y-auto custom-scrollbar shadow-inner`}
                 style={{
                   padding: 'min(12px, 2.5cqmin)',
                   minHeight: 'min(56px, 10cqmin)',
                 }}
                 activeClassName="bg-slate-100 border-brand-blue-primary ring-4 ring-brand-blue-lighter/20"
               >
-                <div className="flex flex-col items-center h-full">
+                <div
+                  className={`flex flex-col items-center ${stats.remaining > 0 ? 'h-full' : ''}`}
+                >
                   <div
                     className="flex items-center"
                     style={{
                       gap: 'min(6px, 1.5cqmin)',
-                      marginBottom: 'min(12px, 2.5cqmin)',
+                      marginBottom:
+                        stats.remaining > 0 ? 'min(12px, 2.5cqmin)' : '0',
                     }}
                   >
                     <Users
@@ -723,30 +726,6 @@ export const LunchCountWidget: React.FC<{ widget: WidgetData }> = ({
                           style={studentItemStyle}
                         />
                       ))}
-                    {stats.remaining === 0 && stats.total > 0 && (
-                      <div
-                        className="flex flex-col items-center justify-center opacity-30 grayscale animate-in zoom-in-95 duration-500"
-                        style={{
-                          paddingTop: 'min(32px, 10cqmin)',
-                          paddingBottom: 'min(32px, 10cqmin)',
-                        }}
-                      >
-                        <CheckCircle2
-                          style={{
-                            width: 'min(48px, 12cqmin)',
-                            height: 'min(48px, 12cqmin)',
-                            marginBottom: 'min(10px, 2.5cqmin)',
-                          }}
-                          className="text-brand-blue-primary"
-                        />
-                        <span
-                          style={{ fontSize: 'min(14px, 5cqmin)' }}
-                          className="font-black uppercase tracking-[0.2em]"
-                        >
-                          Roster Complete
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </DroppableZone>
