@@ -531,6 +531,7 @@ const ActiveQuiz: React.FC<{
         {(currentQuestion.type === 'Matching' ||
           currentQuestion.type === 'Ordering') && (
           <StructuredQuestionInput
+            key={currentQuestion.id}
             question={currentQuestion}
             submitted={submitted}
             onSubmit={(answer) => void handleSubmit(answer)}
@@ -576,29 +577,51 @@ const StructuredQuestionInput: React.FC<{
   const isMatching = question.type === 'Matching';
 
   // Items come from the pre-computed public question fields — no correctAnswer needed
-  const leftItems = isMatching
+  const leftItems: string[] = isMatching
     ? (question.matchingLeft ?? [])
     : (question.orderingItems ?? []);
 
-  const rightItemsShuffled = isMatching ? (question.matchingRight ?? []) : [];
+  const rightItemsShuffled: string[] = isMatching
+    ? (question.matchingRight ?? [])
+    : [];
 
   const [matchings, setMatchings] = useState<Record<string, string>>(() =>
-    Object.fromEntries(leftItems.map((l) => [l, '']))
+    Object.fromEntries(leftItems.map((l: string) => [l, '']))
   );
   const [order, setOrder] = useState<string[]>(() => [...leftItems]);
 
   const canSubmit = isMatching
-    ? Object.values(matchings).every(Boolean)
-    : order.length === leftItems.length;
+    ? Object.values(matchings).every((v: string) => !!v)
+    : order.length > 0 && order.length === leftItems.length;
 
   const handleSubmitStructured = () => {
     let answer: string;
     if (isMatching) {
-      answer = leftItems.map((l) => `${l}:${matchings[l]}`).join('|');
+      answer = leftItems
+        .map((l: string) => `${l}:${matchings[l] || ''}`)
+        .join('|');
     } else {
       answer = order.join('|');
     }
     onSubmit(answer);
+  };
+
+  // ─── Drag and Drop Handlers ────────────────────────────────────────────────
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newOrder = [...order];
+    const item = newOrder.splice(draggedIndex, 1)[0];
+    newOrder.splice(index, 0, item);
+    setOrder(newOrder);
+    setDraggedIndex(index);
   };
 
   if (submitted) return null;
@@ -607,7 +630,7 @@ const StructuredQuestionInput: React.FC<{
     <div className="space-y-4 flex-1">
       {isMatching ? (
         <div className="space-y-3">
-          {leftItems.map((left) => (
+          {leftItems.map((left: string) => (
             <div key={left} className="flex items-center gap-3">
               <span className="text-sm text-slate-300 w-1/2">{left}</span>
               <select
@@ -618,7 +641,7 @@ const StructuredQuestionInput: React.FC<{
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
               >
                 <option value="">Select…</option>
-                {rightItemsShuffled.map((r) => (
+                {rightItemsShuffled.map((r: string) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
@@ -632,15 +655,21 @@ const StructuredQuestionInput: React.FC<{
           <p className="text-xs text-slate-500">
             Drag or use arrows to set the correct order:
           </p>
-          {order.map((item, i) => (
+          {order.map((item: string, i: number) => (
             <div
               key={item}
-              className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3"
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDragEnd={() => setDraggedIndex(null)}
+              className={`flex items-center gap-2 bg-slate-800 border rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-colors ${draggedIndex === i ? 'border-violet-500 bg-violet-500/10' : 'border-slate-700'}`}
             >
               <span className="text-violet-400 font-bold text-sm w-5">
                 {i + 1}.
               </span>
-              <span className="flex-1 text-sm text-white">{item}</span>
+              <span className="flex-1 text-sm text-white select-none">
+                {item}
+              </span>
               <div className="flex gap-1">
                 <button
                   onClick={() => {
@@ -683,7 +712,7 @@ const StructuredQuestionInput: React.FC<{
       <button
         onClick={handleSubmitStructured}
         disabled={!canSubmit || submitting}
-        className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
+        className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors"
       >
         {submitting ? (
           <Loader2 className="w-5 h-5 animate-spin" />
