@@ -125,6 +125,10 @@ const mockDashboard: DashboardContextValue = {
   reorderTools: () => {
     // No-op
   },
+  libraryOrder: [],
+  reorderLibrary: () => {
+    // No-op
+  },
   dockItems: [],
   reorderDockItems: () => {
     // No-op
