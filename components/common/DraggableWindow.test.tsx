@@ -17,10 +17,10 @@ import {
   type MockInstance,
 } from 'vitest';
 import { DraggableWindow } from './DraggableWindow';
-import { WidgetData, GlobalStyle } from '../../types';
+import { WidgetData, GlobalStyle } from '@/types';
 
 // Mock dependencies
-vi.mock('../../hooks/useScreenshot', () => ({
+vi.mock('@/hooks/useScreenshot', () => ({
   useScreenshot: () => ({
     takeScreenshot: vi.fn(),
     isFlashing: false,
@@ -28,7 +28,7 @@ vi.mock('../../hooks/useScreenshot', () => ({
   }),
 }));
 
-vi.mock('../../hooks/useClickOutside', () => ({
+vi.mock('@/hooks/useClickOutside', () => ({
   useClickOutside: vi.fn(),
 }));
 
