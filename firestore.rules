@@ -167,14 +167,17 @@ service cloud.firestore {
         allow update: if request.auth != null && (
           // Teacher and admins can update any field
           request.auth.uid == teacherUid || isAdmin() ||
-          // Students can update their own response (to submit answers) but
-          // cannot change the score field.
-          // Note: students no longer write isCorrect — it is always recomputed
-          // by the teacher's view using gradeAnswer() against the session's
-          // stored questions, so a student writing a forged isCorrect value
-          // has no effect on displayed scores.
+          // Students may only update their own response to submit answers.
+          // Identity and join metadata are immutable; only answers, status,
+          // and submittedAt may change. score is never written by students.
           (request.auth.uid == studentUid &&
-           request.resource.data.score == resource.data.score)
+           request.resource.data.studentUid == resource.data.studentUid &&
+           request.resource.data.studentEmail == resource.data.studentEmail &&
+           request.resource.data.studentName == resource.data.studentName &&
+           request.resource.data.joinedAt == resource.data.joinedAt &&
+           request.resource.data.score == resource.data.score &&
+           request.resource.data.diff(resource.data)
+             .changedKeys().hasOnly(['answers', 'status', 'submittedAt']))
         );
         allow delete: if request.auth != null &&
           (request.auth.uid == teacherUid || isAdmin());

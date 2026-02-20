@@ -22,9 +22,9 @@ import {
   updateDoc,
   getDocs,
   getDoc,
-  deleteDoc,
   query,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
@@ -33,10 +33,53 @@ import {
   QuizResponse,
   QuizResponseAnswer,
   QuizQuestion,
+  QuizPublicQuestion,
 } from '../types';
 
 const QUIZ_SESSIONS_COLLECTION = 'quiz_sessions';
 const RESPONSES_COLLECTION = 'responses';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Unbiased Fisher-Yates in-place shuffle (returns new array) */
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+/**
+ * Convert a full QuizQuestion (with correctAnswer) to a student-safe
+ * QuizPublicQuestion (without correctAnswer). Answer choices are pre-shuffled
+ * so students can render the UI without ever seeing the answer key.
+ */
+function toPublicQuestion(q: QuizQuestion): QuizPublicQuestion {
+  const base: QuizPublicQuestion = {
+    id: q.id,
+    type: q.type,
+    text: q.text,
+    timeLimit: q.timeLimit,
+  };
+  if (q.type === 'MC') {
+    base.choices = fisherYatesShuffle([
+      q.correctAnswer,
+      ...q.incorrectAnswers.filter(Boolean),
+    ]);
+  } else if (q.type === 'Matching') {
+    const pairs = q.correctAnswer.split('|').map((p) => {
+      const [left, right] = p.split(':');
+      return { left: left ?? '', right: right ?? '' };
+    });
+    base.matchingLeft = pairs.map((p) => p.left);
+    base.matchingRight = fisherYatesShuffle(pairs.map((p) => p.right));
+  } else if (q.type === 'Ordering') {
+    base.orderingItems = fisherYatesShuffle(q.correctAnswer.split('|'));
+  }
+  return base;
+}
 
 // ─── Grading ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +180,7 @@ export const useQuizSessionTeacher = (
 
       // Delete any existing response documents from a previous session so
       // stale answers don't appear in the new session's live monitor / results.
+      // Use writeBatch (max 500 ops) to avoid hitting Firestore rate limits.
       const oldResponses = await getDocs(
         collection(
           db,
@@ -145,13 +189,45 @@ export const useQuizSessionTeacher = (
           RESPONSES_COLLECTION
         )
       );
-      await Promise.all(oldResponses.docs.map((d) => deleteDoc(d.ref)));
+      const BATCH_LIMIT = 500;
+      for (let i = 0; i < oldResponses.docs.length; i += BATCH_LIMIT) {
+        const batch = writeBatch(db);
+        oldResponses.docs.slice(i, i + BATCH_LIMIT).forEach((d) => {
+          batch.delete(d.ref);
+        });
+        await batch.commit();
+      }
 
-      const code = Math.random()
-        .toString(36)
-        .substring(2, 8)
-        .toUpperCase()
-        .padEnd(6, '0');
+      // Generate a unique 6-character join code. Retry up to 5 times in the
+      // unlikely event of a collision with an existing active session.
+      let code = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const candidate = Math.random()
+          .toString(36)
+          .substring(2, 8)
+          .toUpperCase()
+          .padEnd(6, '0');
+        const collision = await getDocs(
+          query(
+            collection(db, QUIZ_SESSIONS_COLLECTION),
+            where('code', '==', candidate),
+            where('status', '!=', 'ended')
+          )
+        );
+        if (collision.empty) {
+          code = candidate;
+          break;
+        }
+      }
+      if (!code) {
+        // Extremely unlikely — fall back to timestamp-derived suffix
+        code = Math.random()
+          .toString(36)
+          .substring(2, 8)
+          .toUpperCase()
+          .padEnd(6, '0');
+      }
+
       const newSession: QuizSession = {
         id: teacherUid,
         quizId: quiz.id,
@@ -163,9 +239,10 @@ export const useQuizSessionTeacher = (
         endedAt: null,
         code,
         totalQuestions: quiz.questions.length,
-        // Store full questions so students can render them without a Drive
-        // fetch, and so the teacher's view can re-grade answers server-side.
-        questions: quiz.questions,
+        // Strip correctAnswer from each question before writing to Firestore so
+        // students reading the session document cannot see the answer key.
+        // Teachers grade using the full QuizData they loaded from Drive.
+        publicQuestions: quiz.questions.map(toPublicQuestion),
       };
       await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
       return code;
@@ -224,11 +301,7 @@ export interface UseQuizSessionStudentResult {
     studentEmail: string,
     studentUid: string
   ) => Promise<string>;
-  submitAnswer: (
-    questionId: string,
-    answer: string,
-    question: QuizQuestion
-  ) => Promise<void>;
+  submitAnswer: (questionId: string, answer: string) => Promise<void>;
   completeQuiz: () => Promise<void>;
 }
 
@@ -347,15 +420,14 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   );
 
   const submitAnswer = useCallback(
-    async (questionId: string, answer: string, _question: QuizQuestion) => {
+    async (questionId: string, answer: string) => {
       const teacherUid = teacherUidRef.current;
       const studentUid = studentUidRef.current;
       if (!teacherUid || !studentUid) return;
 
       // isCorrect is intentionally not written by the student to prevent
-      // client-side forgery. It is computed by the teacher's view using
-      // gradeAnswer(question, answer) against the questions stored in the
-      // session document.
+      // client-side forgery. It is computed by the teacher's results view
+      // using gradeAnswer() against the full quiz data loaded from Drive.
       const newAnswer: QuizResponseAnswer = {
         questionId,
         answer,
@@ -387,7 +459,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
     const studentUid = studentUidRef.current;
     if (!teacherUid || !studentUid) return;
 
-    // Score is computed from isCorrect answer fields by the teacher/results view,
+    // Score is computed from gradeAnswer() by the teacher/results view,
     // not written by the student, to prevent client-side forgery of the score field.
     await updateDoc(
       doc(
