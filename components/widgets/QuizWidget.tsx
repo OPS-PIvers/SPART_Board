@@ -97,6 +97,12 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       const meta = quizzes.find((q) => q.id === liveSession.quizId);
       if (meta) {
         void loadQuiz(meta);
+      } else if (quizzesLoading === false) {
+        // If the session exists but the quiz is not in our library (deleted),
+        // we should auto-end the session to avoid being stuck.
+        console.warn('Active session found for deleted quiz. Auto-ending.');
+        void endQuizSession();
+        setView('manager');
       }
     }
   }, [liveSession, loadedQuizData, loadingQuizData, quizzes, loadQuiz]);
