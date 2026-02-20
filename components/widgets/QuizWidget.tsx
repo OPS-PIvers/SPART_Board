@@ -260,11 +260,11 @@ export const QuizWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         const data = await loadQuiz(meta);
         if (data) setView('preview');
       }}
-      onGoLive={async (meta) => {
+      onGoLive={async (meta, mode) => {
         const data = await loadQuiz(meta);
         if (!data) return;
         try {
-          const code = await startQuizSession(data);
+          const code = await startQuizSession(data, mode);
           updateWidget(widget.id, {
             config: {
               ...config,

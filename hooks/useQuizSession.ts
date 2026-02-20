@@ -30,6 +30,7 @@ import { db } from '../config/firebase';
 import {
   QuizSession,
   QuizSessionStatus,
+  QuizSessionMode,
   QuizResponse,
   QuizResponseAnswer,
   QuizQuestion,
@@ -115,11 +116,14 @@ export interface UseQuizSessionTeacherResult {
   session: QuizSession | null;
   responses: QuizResponse[];
   loading: boolean;
-  startQuizSession: (quiz: {
-    id: string;
-    title: string;
-    questions: QuizQuestion[];
-  }) => Promise<string>;
+  startQuizSession: (
+    quiz: {
+      id: string;
+      title: string;
+      questions: QuizQuestion[];
+    },
+    mode?: QuizSessionMode
+  ) => Promise<string>;
   advanceQuestion: () => Promise<void>;
   endQuizSession: () => Promise<void>;
 }
@@ -170,17 +174,90 @@ export const useQuizSessionTeacher = (
     );
   }, [teacherUid, session]);
 
+  const advanceQuestion = useCallback(async () => {
+    if (!teacherUid || !session) return;
+    const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
+    const nextIndex = session.currentQuestionIndex + 1;
+    if (nextIndex >= session.totalQuestions) {
+      await updateDoc(sessionRef, {
+        status: 'ended' as QuizSessionStatus,
+        currentQuestionIndex: session.totalQuestions,
+        endedAt: Date.now(),
+        autoProgressAt: null,
+      });
+      return;
+    }
+    await updateDoc(sessionRef, {
+      status: 'active' as QuizSessionStatus,
+      currentQuestionIndex: nextIndex,
+      autoProgressAt: null,
+      ...(session.startedAt === null ? { startedAt: Date.now() } : {}),
+    });
+  }, [teacherUid, session]);
+
+  const endQuizSession = useCallback(async () => {
+    if (!teacherUid) return;
+    await updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
+      status: 'ended' as QuizSessionStatus,
+      endedAt: Date.now(),
+      autoProgressAt: null,
+    });
+  }, [teacherUid]);
+
+  // ─── Auto-progress logic ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!teacherUid || !session || session.sessionMode !== 'auto') return;
+    if (session.status !== 'active') return;
+
+    const currentQId =
+      session.publicQuestions[session.currentQuestionIndex]?.id;
+    if (!currentQId) return;
+
+    // Check if everyone has answered (only if there are students)
+    const activeResponses = responses.filter((r) => r.status !== 'joined');
+    const everyoneAnswered =
+      activeResponses.length > 0 &&
+      activeResponses.every((r) =>
+        r.answers.some((a) => a.questionId === currentQId)
+      );
+
+    if (everyoneAnswered && !session.autoProgressAt) {
+      // All students answered: set a 5-second countdown to advance
+      const advanceAt = Date.now() + 5000;
+      updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
+        autoProgressAt: advanceAt,
+      }).catch((err) => console.error('[AutoProgress] update failed:', err));
+    }
+  }, [responses, session, teacherUid]);
+
+  // Handle the actual auto-advance when the timestamp is reached
+  useEffect(() => {
+    if (!teacherUid || !session?.autoProgressAt) return;
+
+    const timer = setInterval(() => {
+      if (Date.now() >= (session.autoProgressAt || 0)) {
+        clearInterval(timer);
+        advanceQuestion().catch((err) =>
+          console.error('[AutoProgress] advance failed:', err)
+        );
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [session?.autoProgressAt, teacherUid, advanceQuestion]);
+
   const startQuizSession = useCallback(
-    async (quiz: {
-      id: string;
-      title: string;
-      questions: QuizQuestion[];
-    }): Promise<string> => {
+    async (
+      quiz: {
+        id: string;
+        title: string;
+        questions: QuizQuestion[];
+      },
+      mode: QuizSessionMode = 'teacher'
+    ): Promise<string> => {
       if (!teacherUid) throw new Error('Not authenticated');
 
-      // Delete any existing response documents from a previous session so
-      // stale answers don't appear in the new session's live monitor / results.
-      // Use writeBatch (max 500 ops) to avoid hitting Firestore rate limits.
+      // Delete any existing response documents from a previous session
       const oldResponses = await getDocs(
         collection(
           db,
@@ -198,8 +275,7 @@ export const useQuizSessionTeacher = (
         await batch.commit();
       }
 
-      // Generate a unique 6-character join code. Retry up to 5 times in the
-      // unlikely event of a collision with an existing active session.
+      // Generate a unique 6-character join code
       let code = '';
       for (let attempt = 0; attempt < 5; attempt++) {
         const candidate = Math.random()
@@ -220,7 +296,6 @@ export const useQuizSessionTeacher = (
         }
       }
       if (!code) {
-        // Extremely unlikely — fall back to timestamp-derived suffix
         code = Math.random()
           .toString(36)
           .substring(2, 8)
@@ -234,14 +309,12 @@ export const useQuizSessionTeacher = (
         quizTitle: quiz.title,
         teacherUid,
         status: 'waiting' as QuizSessionStatus,
-        currentQuestionIndex: -1,
-        startedAt: null,
+        sessionMode: mode,
+        currentQuestionIndex: mode === 'student' ? 0 : -1,
+        startedAt: mode === 'student' ? Date.now() : null,
         endedAt: null,
         code,
         totalQuestions: quiz.questions.length,
-        // Strip correctAnswer from each question before writing to Firestore so
-        // students reading the session document cannot see the answer key.
-        // Teachers grade using the full QuizData they loaded from Drive.
         publicQuestions: quiz.questions.map(toPublicQuestion),
       };
       await setDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), newSession);
@@ -249,33 +322,6 @@ export const useQuizSessionTeacher = (
     },
     [teacherUid]
   );
-
-  const advanceQuestion = useCallback(async () => {
-    if (!teacherUid || !session) return;
-    const sessionRef = doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid);
-    const nextIndex = session.currentQuestionIndex + 1;
-    if (nextIndex >= session.totalQuestions) {
-      await updateDoc(sessionRef, {
-        status: 'ended' as QuizSessionStatus,
-        currentQuestionIndex: session.totalQuestions,
-        endedAt: Date.now(),
-      });
-      return;
-    }
-    await updateDoc(sessionRef, {
-      status: 'active' as QuizSessionStatus,
-      currentQuestionIndex: nextIndex,
-      ...(session.startedAt === null ? { startedAt: Date.now() } : {}),
-    });
-  }, [teacherUid, session]);
-
-  const endQuizSession = useCallback(async () => {
-    if (!teacherUid) return;
-    await updateDoc(doc(db, QUIZ_SESSIONS_COLLECTION, teacherUid), {
-      status: 'ended' as QuizSessionStatus,
-      endedAt: Date.now(),
-    });
-  }, [teacherUid]);
 
   return {
     session,

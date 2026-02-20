@@ -4,7 +4,7 @@
  * and real-time per-question answer distribution.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Copy,
   CheckCircle2,
@@ -15,6 +15,8 @@ import {
   BarChart3,
   Loader2,
   ExternalLink,
+  Zap,
+  User,
 } from 'lucide-react';
 import { QuizSession, QuizResponse, QuizQuestion, QuizData } from '@/types';
 import { gradeAnswer } from '@/hooks/useQuizSession';
@@ -38,6 +40,25 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const [showStats, setShowStats] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
+
+  // Sync auto-countdown with session timestamp
+  useEffect(() => {
+    if (!session.autoProgressAt) {
+      setAutoCountdown(null);
+      return;
+    }
+    const update = () => {
+      const remaining = Math.max(
+        0,
+        Math.round((session.autoProgressAt! - Date.now()) / 1000)
+      );
+      setAutoCountdown(remaining);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [session.autoProgressAt]);
 
   const joinUrl = `${window.location.origin}/quiz?code=${session.code}`;
 
@@ -81,6 +102,22 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
   const inProgress = responses.filter((r) => r.status === 'in-progress').length;
   const joined = responses.filter((r) => r.status === 'joined').length;
 
+  const modeIcon =
+    session.sessionMode === 'auto' ? (
+      <Zap className="w-3.5 h-3.5" />
+    ) : session.sessionMode === 'student' ? (
+      <Clock className="w-3.5 h-3.5" />
+    ) : (
+      <User className="w-3.5 h-3.5" />
+    );
+
+  const modeLabel =
+    session.sessionMode === 'auto'
+      ? 'Auto-progress'
+      : session.sessionMode === 'student'
+        ? 'Self-paced'
+        : 'Teacher-paced';
+
   return (
     <div className="flex flex-col h-full font-sans">
       {/* Header */}
@@ -101,12 +138,13 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               }}
             />
             <div className="flex flex-col">
-              <span
-                className="font-black text-brand-red-primary leading-none uppercase tracking-tight"
-                style={{ fontSize: 'min(14px, 4.5cqmin)' }}
+              <div
+                className="flex items-center gap-1.5 font-black text-brand-red-primary leading-none uppercase tracking-tight"
+                style={{ fontSize: 'min(12px, 4cqmin)' }}
               >
-                LIVE SESSION
-              </span>
+                {modeIcon}
+                <span>{modeLabel}</span>
+              </div>
               <span
                 className="text-brand-blue-dark font-bold truncate"
                 style={{ fontSize: 'min(11px, 3.5cqmin)', maxWidth: '140px' }}
@@ -298,24 +336,44 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
 
           {session.status === 'active' && currentQ && (
             <div
-              className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm"
+              className="bg-white border border-brand-blue-primary/10 rounded-2xl shadow-sm overflow-hidden relative"
               style={{ padding: 'min(16px, 4cqmin)' }}
             >
+              {autoCountdown !== null && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-brand-blue-lighter">
+                  <div
+                    className="h-full bg-brand-red-primary transition-all duration-1000 ease-linear"
+                    style={{ width: `${(autoCountdown / 5) * 100}%` }}
+                  />
+                </div>
+              )}
+
               <div
                 className="flex items-center justify-between"
                 style={{ marginBottom: 'min(10px, 2.5cqmin)' }}
               >
-                <span
-                  className="bg-brand-blue-primary text-white font-bold rounded-lg"
-                  style={{
-                    fontSize: 'min(10px, 3cqmin)',
-                    padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Question {session.currentQuestionIndex + 1} /{' '}
-                  {session.totalQuestions}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="bg-brand-blue-primary text-white font-bold rounded-lg"
+                    style={{
+                      fontSize: 'min(10px, 3cqmin)',
+                      padding: 'min(2px, 0.5cqmin) min(8px, 2cqmin)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Q {session.currentQuestionIndex + 1} /{' '}
+                    {session.totalQuestions}
+                  </span>
+                  {autoCountdown !== null && (
+                    <div
+                      className="flex items-center gap-1 text-brand-red-primary font-black animate-bounce"
+                      style={{ fontSize: 'min(10px, 3cqmin)' }}
+                    >
+                      <Zap className="w-3 h-3 fill-current" />
+                      ADVANCING IN {autoCountdown}s
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowStats(!showStats)}
                   className="flex items-center text-brand-blue-primary font-bold hover:underline"
@@ -441,7 +499,8 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
       </div>
 
       {/* Primary Advance Control */}
-      {(session.status === 'waiting' || session.status === 'active') && (
+      {(session.status === 'waiting' ||
+        (session.status === 'active' && session.sessionMode !== 'student')) && (
         <div
           className="bg-white border-t border-brand-blue-primary/10"
           style={{ padding: 'min(16px, 4cqmin)' }}

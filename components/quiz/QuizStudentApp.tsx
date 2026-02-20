@@ -313,12 +313,30 @@ const ActiveQuiz: React.FC<{
   onComplete: () => Promise<void>;
 }> = ({
   session,
-  currentQuestion,
-  alreadyAnswered,
+  currentQuestion: sessionQuestion,
+  alreadyAnswered: sessionAnswered,
   myResponse,
   onAnswer,
   onComplete,
 }) => {
+  // For student-paced mode, the student maintains their own local index
+  const [localIndex, setLocalIndex] = useState(0);
+
+  const isStudentPaced = session.sessionMode === 'student';
+  const currentIndex = isStudentPaced
+    ? localIndex
+    : session.currentQuestionIndex;
+
+  const currentQuestion = isStudentPaced
+    ? session.publicQuestions[localIndex]
+    : sessionQuestion;
+
+  const alreadyAnswered = isStudentPaced
+    ? (myResponse?.answers ?? []).some(
+        (a) => a.questionId === currentQuestion?.id
+      )
+    : sessionAnswered;
+
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -379,15 +397,20 @@ const ActiveQuiz: React.FC<{
 
     // Auto-complete if on last question
     if (
-      session.currentQuestionIndex >= session.totalQuestions - 1 &&
+      currentIndex >= session.totalQuestions - 1 &&
       myResponse?.status !== 'completed'
     ) {
       await onComplete();
     }
   };
 
-  const progress =
-    ((session.currentQuestionIndex + 1) / session.totalQuestions) * 100;
+  const handleNext = () => {
+    if (isStudentPaced && localIndex < session.totalQuestions - 1) {
+      setLocalIndex(localIndex + 1);
+    }
+  };
+
+  const progress = ((currentIndex + 1) / session.totalQuestions) * 100;
 
   // Choices are pre-shuffled in publicQuestions by the teacher side
   const options =
@@ -407,7 +430,7 @@ const ActiveQuiz: React.FC<{
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <span className="text-xs text-slate-500">
-            {session.currentQuestionIndex + 1} / {session.totalQuestions}
+            {currentIndex + 1} / {session.totalQuestions}
           </span>
           {timeLeft !== null && !submitted && (
             <div
@@ -517,11 +540,24 @@ const ActiveQuiz: React.FC<{
 
         {/* Submitted state */}
         {submitted && (
-          <div className="mt-6 p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            <p className="text-emerald-300 text-sm font-medium">
-              Answer submitted! Waiting for the next question…
-            </p>
+          <div className="mt-6 p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <p className="text-emerald-300 text-sm font-medium">
+                {isStudentPaced
+                  ? 'Answer saved!'
+                  : 'Answer submitted! Waiting for the next question…'}
+              </p>
+            </div>
+
+            {isStudentPaced && currentIndex < session.totalQuestions - 1 && (
+              <button
+                onClick={handleNext}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+              >
+                Next Question <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         )}
       </div>

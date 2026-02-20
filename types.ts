@@ -561,6 +561,7 @@ export interface QuizMetadata {
 }
 
 export type QuizSessionStatus = 'waiting' | 'active' | 'ended';
+export type QuizSessionMode = 'teacher' | 'auto' | 'student';
 
 /**
  * Student-safe question stored in the session document.
@@ -589,10 +590,13 @@ export interface QuizSession {
   quizTitle: string;
   teacherUid: string;
   status: QuizSessionStatus;
+  sessionMode: QuizSessionMode;
   /** -1 = lobby/waiting room, 0+ = currently displayed question index */
   currentQuestionIndex: number;
   startedAt: number | null;
   endedAt: number | null;
+  /** Timestamp when the session will automatically advance (auto-progress mode) */
+  autoProgressAt?: number | null;
   /** Short alphanumeric code students use to join */
   code: string;
   totalQuestions: number;

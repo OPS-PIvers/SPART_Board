@@ -15,8 +15,12 @@ import {
   BookOpen,
   Loader2,
   AlertCircle,
+  Clock,
+  User,
+  Zap,
+  X,
 } from 'lucide-react';
-import { QuizMetadata } from '@/types';
+import { QuizMetadata, QuizSessionMode } from '@/types';
 
 interface QuizManagerProps {
   quizzes: QuizMetadata[];
@@ -25,7 +29,7 @@ interface QuizManagerProps {
   onImport: () => void;
   onEdit: (quiz: QuizMetadata) => void;
   onPreview: (quiz: QuizMetadata) => void;
-  onGoLive: (quiz: QuizMetadata) => void;
+  onGoLive: (quiz: QuizMetadata, mode: QuizSessionMode) => void;
   onResults: (quiz: QuizMetadata) => void;
   onDelete: (quiz: QuizMetadata) => void;
   hasActiveSession: boolean;
@@ -44,6 +48,9 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   hasActiveSession,
 }) => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selectedForLive, setSelectedForLive] = useState<QuizMetadata | null>(
+    null
+  );
 
   if (loading) {
     return (
@@ -63,7 +70,70 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full font-sans">
+    <div className="flex flex-col h-full font-sans relative">
+      {/* Mode Selection Modal */}
+      {selectedForLive && (
+        <div className="absolute inset-0 z-50 bg-brand-blue-dark/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-brand-blue-primary p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <Play className="w-5 h-5 fill-current" />
+                <span className="font-black uppercase tracking-tight">
+                  Go Live
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedForLive(null)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="text-center">
+                <p className="font-bold text-brand-blue-dark text-base truncate px-2">
+                  {selectedForLive.title}
+                </p>
+                <p className="text-brand-blue-primary/60 text-[10px] font-black uppercase tracking-widest mt-1">
+                  Choose Session Mode
+                </p>
+              </div>
+
+              <div className="grid gap-3">
+                <ModeButton
+                  icon={<User className="w-5 h-5" />}
+                  title="Teacher-paced"
+                  desc="You control when to move to the next question."
+                  onClick={() => {
+                    onGoLive(selectedForLive, 'teacher');
+                    setSelectedForLive(null);
+                  }}
+                />
+                <ModeButton
+                  icon={<Zap className="w-5 h-5" />}
+                  title="Auto-progress"
+                  desc="Moves automatically once everyone has answered."
+                  onClick={() => {
+                    onGoLive(selectedForLive, 'auto');
+                    setSelectedForLive(null);
+                  }}
+                />
+                <ModeButton
+                  icon={<Clock className="w-5 h-5" />}
+                  title="Self-paced"
+                  desc="Students move through questions at their own speed."
+                  onClick={() => {
+                    onGoLive(selectedForLive, 'student');
+                    setSelectedForLive(null);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div
         className="flex items-center justify-between border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
@@ -337,7 +407,7 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
                     />
                     <div className="ml-auto">
                       <button
-                        onClick={() => onGoLive(quiz)}
+                        onClick={() => setSelectedForLive(quiz)}
                         disabled={hasActiveSession}
                         className="flex items-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-brand-gray-lighter disabled:text-brand-gray-primary text-white font-black rounded-xl shadow-md transition-all active:scale-95 group/btn"
                         style={{
@@ -366,6 +436,30 @@ export const QuizManager: React.FC<QuizManagerProps> = ({
     </div>
   );
 };
+
+const ModeButton: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  onClick: () => void;
+}> = ({ icon, title, desc, onClick }) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left p-3 rounded-2xl border-2 border-brand-blue-primary/10 hover:border-brand-blue-primary hover:bg-brand-blue-lighter/30 transition-all flex items-start gap-3 group"
+  >
+    <div className="bg-brand-blue-lighter text-brand-blue-primary p-2 rounded-xl group-hover:bg-brand-blue-primary group-hover:text-white transition-colors">
+      {icon}
+    </div>
+    <div>
+      <p className="font-black text-brand-blue-dark text-sm leading-tight">
+        {title}
+      </p>
+      <p className="text-brand-gray-primary text-[11px] font-medium leading-tight mt-0.5">
+        {desc}
+      </p>
+    </div>
+  </button>
+);
 
 const ActionButton: React.FC<{
   icon: React.ReactNode;
