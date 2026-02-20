@@ -16,6 +16,7 @@ import {
   Loader2,
   ExternalLink,
   Target,
+  AlertTriangle,
 } from 'lucide-react';
 import { QuizResponse, QuizData, QuizQuestion } from '@/types';
 import { useAuth } from '@/context/useAuth';
@@ -487,6 +488,7 @@ const StudentsTab: React.FC<{
           const q = questions.find((qn) => qn.id === a.questionId);
           return q ? gradeAnswer(q, a.answer) : false;
         }).length;
+        const warnings = r.tabSwitchWarnings ?? 0;
 
         return (
           <div
@@ -494,12 +496,23 @@ const StudentsTab: React.FC<{
             className="flex items-center bg-white border border-brand-blue-primary/10 rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
           >
             <div className="flex-1 min-w-0">
-              <p
-                className="font-bold text-brand-blue-dark truncate"
-                style={{ fontSize: 'min(13px, 4.5cqmin)' }}
-              >
-                {r.studentName}
-              </p>
+              <div className="flex items-center gap-2">
+                <p
+                  className="font-bold text-brand-blue-dark truncate"
+                  style={{ fontSize: 'min(13px, 4.5cqmin)' }}
+                >
+                  {r.studentName}
+                </p>
+                {warnings > 0 && (
+                  <span
+                    className="flex items-center gap-1 bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[9px] uppercase font-black shrink-0"
+                    title={`${warnings} Tab Switch Warning(s)`}
+                  >
+                    <AlertTriangle style={{ width: 10, height: 10 }} />
+                    {warnings}
+                  </span>
+                )}
+              </div>
               <p
                 className="text-brand-blue-primary/40 truncate font-medium"
                 style={{ fontSize: 'min(10px, 3cqmin)' }}

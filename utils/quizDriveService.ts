@@ -441,6 +441,7 @@ export class QuizDriveService {
       'Email',
       'Status',
       'Score (%)',
+      'Warnings',
       'Submitted At',
       ...questions.map((q, i) => `Q${i + 1}: ${q.text.substring(0, 40)}`),
     ];
@@ -450,6 +451,7 @@ export class QuizDriveService {
       const submitted = r.submittedAt
         ? new Date(r.submittedAt).toLocaleString()
         : '';
+      const warnings = r.tabSwitchWarnings?.toString() ?? '0';
       const answerCols = questions.map((q) => {
         const ans = r.answers.find((a) => a.questionId === q.id);
         if (!ans) return '';
@@ -471,6 +473,7 @@ export class QuizDriveService {
         r.studentEmail,
         r.status,
         scoreDisplay,
+        warnings,
         submitted,
         ...answerCols,
       ];
