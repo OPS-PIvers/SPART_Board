@@ -412,7 +412,13 @@ const ActiveQuiz: React.FC<{
       window.removeEventListener('blur', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [session.status, reportTabSwitch, onComplete, showCheatWarning]);
+  }, [
+    session.status,
+    reportTabSwitch,
+    onComplete,
+    showCheatWarning,
+    myResponse?.status,
+  ]);
 
   // For student-paced mode, the student maintains their own local index
   const [localIndex, setLocalIndex] = useState(0);
