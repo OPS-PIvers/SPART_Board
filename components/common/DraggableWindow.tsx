@@ -97,6 +97,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     bringToFront,
     addToast,
     resetWidgetSize,
+    deleteAllWidgets,
   } = useDashboard();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -220,6 +221,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (e.key === 'Escape' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
       // NEW BEHAVIOR: Esc minimizes the widget (unless in sub-state like confirm or settings)
       e.preventDefault();
+      e.stopPropagation();
       if (showConfirm) {
         setShowConfirm(false);
       } else if (widget.flipped) {
@@ -235,11 +237,22 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (e.key === 'Delete' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
       // NEW BEHAVIOR: Delete removes the widget
       e.preventDefault();
+      e.stopPropagation();
       if (skipCloseConfirmation) {
         removeWidget(widget.id);
       } else {
         setShowConfirm(true);
         setShowTools(false);
+      }
+      return;
+    }
+
+    // Alt + Delete: Clear all widgets
+    if (e.key === 'Delete' && e.altKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (confirm('Are you sure you want to clear the entire board?')) {
+        deleteAllWidgets();
       }
       return;
     }
