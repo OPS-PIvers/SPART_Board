@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -22,6 +22,7 @@ import {
   Rows3,
   Grip,
   LayoutTemplate,
+  MousePointer2,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FloatingPanel } from '../common/FloatingPanel';
@@ -99,6 +100,17 @@ const TEMPLATES: {
   },
 ];
 
+// Drag state tracks current positions for all items being dragged simultaneously
+type DragPositions = Map<string, { x: number; y: number }>;
+
+// Rubber-band selection rectangle in canvas-space coordinates
+interface RubberBand {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -119,20 +131,28 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   } = config;
 
   const [mode, setMode] = useState<'setup' | 'assign' | 'interact'>('interact');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Multi-select: a Set of selected furniture IDs
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Convenience: the single selected id when exactly one item is selected
+  const selectedId = selectedIds.size === 1 ? [...selectedIds][0] : null;
+
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [bulkCount, setBulkCount] = useState<number>(1);
-  const [dragState, setDragState] = useState<{
-    id: string;
-    x: number;
-    y: number;
-  } | null>(null);
+
+  // Drag: maps each dragged item id → its current position during the drag
+  const [dragState, setDragState] = useState<DragPositions | null>(null);
+
   const [resizeState, setResizeState] = useState<{
     id: string;
     width: number;
     height: number;
   } | null>(null);
+
   const [randomHighlight, setRandomHighlight] = useState<string | null>(null);
+
+  // Rubber-band selection state (visual rect while dragging on empty canvas)
+  const [rubberBand, setRubberBand] = useState<RubberBand | null>(null);
+
   // Local state for the columns-count input so users can clear/type freely
   // without the field snapping back to the previous valid value on each keystroke.
   const [localTemplateColumns, setLocalTemplateColumns] = useState(
@@ -144,6 +164,14 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     null
   );
 
+  // Tracks whether the last pointerDown on a furniture item was a Ctrl/Meta
+  // click so we can suppress the subsequent onClick firing a second toggle.
+  const suppressNextClickRef = useRef(false);
+
+  // Tracks whether the canvas onPointerDown ended with a rubber-band selection,
+  // so that the subsequent onClick on the canvas doesn't clear the new selection.
+  const suppressNextCanvasClickRef = useRef(false);
+
   useEffect(() => {
     return () => {
       if (animationIntervalRef.current) {
@@ -153,7 +181,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   }, []);
 
   // Keep local input in sync when templateColumns changes from outside
-  // (e.g. a different client updates the config via Firestore).
   useEffect(() => {
     setLocalTemplateColumns(String(templateColumns));
   }, [templateColumns]);
@@ -185,15 +212,26 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   // --- SCALE HELPER ---
-  // Returns the ratio of screen pixels to canvas coordinate units.
-  // The canvas is inside a CSS-transformed ScalableWidget, so 1 canvas unit
-  // may not equal 1 screen pixel. Dividing pointer deltas by this factor keeps
-  // drag movement 1-to-1 with the cursor.
   const getCanvasScale = (): number => {
     const el = canvasRef.current;
     if (!el || el.offsetWidth === 0) return 1;
     return el.getBoundingClientRect().width / el.offsetWidth;
   };
+
+  // Convert a client-space pointer event coordinate to canvas-space
+  const getCanvasCoords = useCallback(
+    (clientX: number, clientY: number): { x: number; y: number } => {
+      const el = canvasRef.current;
+      if (!el) return { x: clientX, y: clientY };
+      const rect = el.getBoundingClientRect();
+      const scale = el.offsetWidth > 0 ? rect.width / el.offsetWidth : 1;
+      return {
+        x: (clientX - rect.left) / scale,
+        y: (clientY - rect.top) / scale,
+      };
+    },
+    []
+  );
 
   // --- FURNITURE ACTIONS ---
 
@@ -201,29 +239,20 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const def = FURNITURE_TYPES.find((t) => t.type === type);
     if (!def) return;
 
-    const newItems: FurnitureItem[] = [];
-    const count = Math.max(1, Math.min(50, bulkCount));
-
-    for (let i = 0; i < count; i++) {
-      const offset = i * 10;
-      newItems.push({
-        id: crypto.randomUUID(),
-        type,
-        x: widget.w / 2 - def.w / 2 + offset,
-        y: widget.h / 2 - def.h / 2 + offset,
-        width: def.w,
-        height: def.h,
-        rotation: 0,
-      });
-    }
+    const newItem: FurnitureItem = {
+      id: crypto.randomUUID(),
+      type,
+      x: widget.w / 2 - def.w / 2,
+      y: widget.h / 2 - def.h / 2,
+      width: def.w,
+      height: def.h,
+      rotation: 0,
+    };
 
     updateWidget(widget.id, {
-      config: { ...config, furniture: [...furniture, ...newItems] },
+      config: { ...config, furniture: [...furniture, newItem] },
     });
-
-    if (newItems.length === 1) {
-      setSelectedId(newItems[0].id);
-    }
+    setSelectedIds(new Set([newItem.id]));
   };
 
   const clearAllFurniture = () => {
@@ -235,7 +264,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       updateWidget(widget.id, {
         config: { ...config, furniture: [], assignments: {} },
       });
-      setSelectedId(null);
+      setSelectedIds(new Set());
     }
   };
 
@@ -260,7 +289,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: { ...config, furniture: [...furniture, newItem] },
     });
-    setSelectedId(newItem.id);
+    setSelectedIds(new Set([newItem.id]));
   };
 
   const removeFurniture = (id: string) => {
@@ -272,7 +301,30 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: { ...config, furniture: next, assignments: nextAssignments },
     });
-    setSelectedId(null);
+    setSelectedIds(new Set());
+  };
+
+  // --- GROUP OPERATIONS (multi-select) ---
+
+  const rotateSelected = (delta: number) => {
+    const next = furniture.map((f) =>
+      selectedIds.has(f.id)
+        ? { ...f, rotation: (f.rotation + delta + 360) % 360 }
+        : f
+    );
+    updateWidget(widget.id, { config: { ...config, furniture: next } });
+  };
+
+  const deleteSelected = () => {
+    const next = furniture.filter((f) => !selectedIds.has(f.id));
+    const nextAssignments = { ...assignments };
+    Object.entries(assignments).forEach(([student, furnId]) => {
+      if (selectedIds.has(furnId)) delete nextAssignments[student];
+    });
+    updateWidget(widget.id, {
+      config: { ...config, furniture: next, assignments: nextAssignments },
+    });
+    setSelectedIds(new Set());
   };
 
   // --- TEMPLATE ACTIONS ---
@@ -280,8 +332,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   const applyTemplate = () => {
     const numStudents = students.length;
 
-    // Horseshoe always places a fixed 32-desk layout regardless of roster size.
-    // All other templates require students to know how many desks to generate.
     if (numStudents === 0 && template !== 'horseshoe') {
       addToast(
         'No students found. Set a class or custom roster first.',
@@ -295,8 +345,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       ? canvasEl.offsetWidth
       : widget.w - SETUP_SIDEBAR_W;
     const rawCanvasH = canvasEl ? canvasEl.offsetHeight : widget.h - TOOLBAR_H;
-    // Clamp to a minimum safe size so generators never receive zero or
-    // negative dimensions, which would cause division-by-zero in spacing math.
     const canvasW = Math.max(MIN_CANVAS_DIM, rawCanvasW);
     const canvasH = Math.max(MIN_CANVAS_DIM, rawCanvasH);
 
@@ -330,7 +378,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, {
       config: { ...config, furniture: newFurniture, assignments: {} },
     });
-    setSelectedId(null);
+    setSelectedIds(new Set());
     addToast(
       `Applied ${template} layout with ${newFurniture.length} desks.`,
       'success'
@@ -343,8 +391,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const handleFurnitureClick = (furnitureId: string) => {
+    // Ctrl/Meta click was already handled in handlePointerDown — suppress here
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      return;
+    }
+
     if (mode === 'setup') {
-      setSelectedId(furnitureId);
+      // Regular click in setup mode: select only this item
+      setSelectedIds(new Set([furnitureId]));
       return;
     }
     if (mode === 'assign' && selectedStudent) {
@@ -359,49 +414,150 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  // --- DRAG LOGIC (Furniture) ---
+  // --- DRAG LOGIC (single + multi-item) ---
 
   const handlePointerDown = (e: React.PointerEvent, id: string) => {
     if (mode !== 'setup') return;
     e.stopPropagation();
     e.preventDefault();
-    const item = furniture.find((f) => f.id === id);
-    if (!item) return;
 
-    setSelectedId(id);
+    // Ctrl / Meta + click → toggle item in/out of selection, no drag
+    if (e.ctrlKey || e.metaKey) {
+      suppressNextClickRef.current = true;
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      return;
+    }
+
+    // Determine the set of items to drag:
+    // - if the clicked item is already selected, drag all selected items
+    // - otherwise, select only the clicked item and drag it
+    const idsForDrag: Set<string> = selectedIds.has(id)
+      ? new Set(selectedIds)
+      : new Set([id]);
+
+    if (!selectedIds.has(id)) {
+      setSelectedIds(new Set([id]));
+    }
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const origX = item.x;
-    const origY = item.y;
-    const currentPos = { x: origX, y: origY };
-
-    // Capture scale at drag start so it stays consistent during the drag
     const canvasScale = getCanvasScale();
 
-    setDragState({ id, x: origX, y: origY });
+    // Capture the initial positions of every item in the drag set
+    const origPositions = new Map<string, { x: number; y: number }>();
+    for (const selId of idsForDrag) {
+      const item = furniture.find((f) => f.id === selId);
+      if (item) origPositions.set(selId, { x: item.x, y: item.y });
+    }
+
+    // Mutable copy updated on every pointermove (used in the pointerup closure)
+    const currentPositions = new Map(origPositions);
+    setDragState(new Map(origPositions));
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const dx = (moveEvent.clientX - startX) / canvasScale;
       const dy = (moveEvent.clientY - startY) / canvasScale;
 
-      const newX = Math.round((origX + dx) / gridSize) * gridSize;
-      const newY = Math.round((origY + dy) / gridSize) * gridSize;
-
-      currentPos.x = newX;
-      currentPos.y = newY;
-      setDragState({ id, x: newX, y: newY });
+      for (const [selId, orig] of origPositions) {
+        currentPositions.set(selId, {
+          x: Math.round((orig.x + dx) / gridSize) * gridSize,
+          y: Math.round((orig.y + dy) / gridSize) * gridSize,
+        });
+      }
+      setDragState(new Map(currentPositions));
     };
 
     const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-      updateFurniture(id, { x: currentPos.x, y: currentPos.y });
+
+      // Commit all moved positions in a single update
+      const next = furniture.map((f) => {
+        const pos = currentPositions.get(f.id);
+        return pos ? { ...f, ...pos } : f;
+      });
+      updateWidget(widget.id, { config: { ...config, furniture: next } });
       setDragState(null);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+  };
+
+  // --- RUBBER-BAND (canvas background drag to select) ---
+
+  const handleCanvasPointerDown = (e: React.PointerEvent) => {
+    if (mode !== 'setup') return;
+
+    // Capture from the synthetic event before it gets recycled
+    const isCtrl = e.ctrlKey || e.metaKey;
+    if (e.button !== 0) return;
+
+    const start = getCanvasCoords(e.clientX, e.clientY);
+    let cur = { ...start };
+    let hasMoved = false;
+
+    const handleMove = (mv: PointerEvent) => {
+      cur = getCanvasCoords(mv.clientX, mv.clientY);
+      const dx = Math.abs(cur.x - start.x);
+      const dy = Math.abs(cur.y - start.y);
+      if (dx > 4 || dy > 4) {
+        hasMoved = true;
+        setRubberBand({ x1: start.x, y1: start.y, x2: cur.x, y2: cur.y });
+      }
+    };
+
+    const handleUp = () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      setRubberBand(null);
+
+      if (!hasMoved) return;
+
+      // Rubber-band ended — suppress the upcoming onClick so it doesn't clear selection
+      suppressNextCanvasClickRef.current = true;
+
+      // Normalise rect
+      const rx1 = Math.min(start.x, cur.x);
+      const ry1 = Math.min(start.y, cur.y);
+      const rx2 = Math.max(start.x, cur.x);
+      const ry2 = Math.max(start.y, cur.y);
+
+      // Select all furniture whose centre falls inside the rubber-band rect
+      const hit = new Set<string>();
+      for (const item of furniture) {
+        const cx = item.x + item.width / 2;
+        const cy = item.y + item.height / 2;
+        if (cx >= rx1 && cx <= rx2 && cy >= ry1 && cy <= ry2) {
+          hit.add(item.id);
+        }
+      }
+
+      if (isCtrl) {
+        setSelectedIds((prev) => new Set([...prev, ...hit]));
+      } else {
+        setSelectedIds(hit);
+      }
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // If a rubber-band selection just finished, don't clear it
+    if (suppressNextCanvasClickRef.current) {
+      suppressNextCanvasClickRef.current = false;
+      return;
+    }
+    if (!e.ctrlKey && !e.metaKey) {
+      setSelectedIds(new Set());
+    }
   };
 
   const handleResizeStart = (e: React.PointerEvent, id: string) => {
@@ -569,7 +725,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   // --- RENDERING ---
 
   const getFurnitureStyle = (item: FurnitureItem) => {
-    const isSelected = selectedId === item.id && mode === 'setup';
+    const isSelected = selectedIds.has(item.id) && mode === 'setup';
     const isHighlighted = randomHighlight === item.id;
 
     let bg = 'bg-white';
@@ -610,6 +766,17 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const studentCount = students.length;
+  const multiSelected = selectedIds.size > 1;
+
+  // Rubber-band visual rect in canvas-space
+  const rbStyle = rubberBand
+    ? {
+        left: Math.min(rubberBand.x1, rubberBand.x2),
+        top: Math.min(rubberBand.y1, rubberBand.y2),
+        width: Math.abs(rubberBand.x2 - rubberBand.x1),
+        height: Math.abs(rubberBand.y2 - rubberBand.y1),
+      }
+    : null;
 
   return (
     <div className="h-full flex flex-col">
@@ -648,6 +815,39 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             Pick Random
           </Button>
         )}
+
+        {/* Multi-select group action bar */}
+        {mode === 'setup' && multiSelected && (
+          <div className="ml-auto flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1">
+            <MousePointer2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="text-xxs font-black text-indigo-600 uppercase tracking-wide">
+              {selectedIds.size} selected
+            </span>
+            <div className="w-px h-4 bg-indigo-200 mx-0.5" />
+            <button
+              onClick={() => rotateSelected(-45)}
+              className="p-1 hover:bg-indigo-100 rounded text-indigo-600 transition-colors"
+              title="Rotate all left 45°"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => rotateSelected(45)}
+              className="p-1 hover:bg-indigo-100 rounded text-indigo-600 transition-colors"
+              title="Rotate all right 45°"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-4 bg-indigo-200 mx-0.5" />
+            <button
+              onClick={deleteSelected}
+              className="p-1 hover:bg-red-50 rounded text-red-500 transition-colors"
+              title="Delete all selected"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex overflow-hidden">
@@ -683,7 +883,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                     ))}
                   </div>
 
-                  {/* Columns count input (teachers call this "rows") */}
+                  {/* Columns count input */}
                   {template === 'rows' && (
                     <div className="mt-2">
                       <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-1">
@@ -744,22 +944,21 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   </button>
                 </div>
 
+                {/* Multi-select hint */}
+                <div className="px-3 py-2 border-b border-slate-200 bg-indigo-50/50">
+                  <p className="text-xxs text-indigo-500 font-bold leading-tight">
+                    <span className="font-black">Ctrl+Click</span> to add/remove
+                    from selection.{' '}
+                    <span className="font-black">Drag empty space</span> to
+                    rubber-band select.
+                  </p>
+                </div>
+
                 {/* Manual Add */}
                 <div className="p-3 border-b border-slate-200">
                   <label className="text-xxs font-black text-slate-500 uppercase tracking-widest block mb-2">
                     Add Manually
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={bulkCount}
-                    onChange={(e) =>
-                      setBulkCount(Number.parseInt(e.target.value, 10) || 1)
-                    }
-                    placeholder="Qty"
-                    className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black mb-2"
-                  />
                   <div className="grid grid-cols-2 gap-2">
                     {FURNITURE_TYPES.map((t) => (
                       <button
@@ -834,19 +1033,30 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
         <div
           ref={canvasRef}
           className="flex-1 relative bg-white overflow-hidden"
-          onClick={() => setSelectedId(null)}
+          onPointerDown={handleCanvasPointerDown}
+          onClick={handleCanvasClick}
           style={{
             backgroundImage:
               mode === 'setup'
                 ? 'radial-gradient(rgba(203, 213, 225, 0.4) 1px, transparent 1px)'
                 : 'none',
             backgroundSize: `${gridSize}px ${gridSize}px`,
+            cursor: mode === 'setup' ? 'crosshair' : 'default',
           }}
         >
+          {/* Rubber-band selection rectangle */}
+          {rbStyle && (
+            <div
+              className="absolute pointer-events-none z-20 border-2 border-indigo-500 bg-indigo-500/10 rounded"
+              style={rbStyle}
+            />
+          )}
+
           {furniture.map((item) => {
             const assigned = getAssignedStudents(item.id);
-            const displayX = dragState?.id === item.id ? dragState.x : item.x;
-            const displayY = dragState?.id === item.id ? dragState.y : item.y;
+            const dragPos = dragState?.get(item.id);
+            const displayX = dragPos !== undefined ? dragPos.x : item.x;
+            const displayY = dragPos !== undefined ? dragPos.y : item.y;
             const displayW =
               resizeState?.id === item.id ? resizeState.width : item.width;
             const displayH =
@@ -874,7 +1084,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                 }}
                 className={`${getFurnitureStyle(item)} ${mode === 'setup' ? 'cursor-move' : ''}`}
               >
-                {/* Resize Handle */}
+                {/* Resize Handle — only for the single selected item */}
                 {mode === 'setup' && selectedId === item.id && (
                   <div
                     onPointerDown={(e) => handleResizeStart(e, item.id)}
@@ -884,7 +1094,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   </div>
                 )}
 
-                {/* Floating Menu */}
+                {/* Floating Menu — single item selected, not dragging/resizing */}
                 {mode === 'setup' &&
                   selectedId === item.id &&
                   !dragState &&

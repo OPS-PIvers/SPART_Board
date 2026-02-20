@@ -237,11 +237,11 @@ describe('generateColumnsLayout', () => {
 });
 
 describe('generateHorseshoeLayout', () => {
-  // The horseshoe always generates a fixed 32-desk layout regardless of roster size:
-  // outer U = 6 left + 8 bottom + 6 right, inner U = 4 left + 4 bottom + 4 right.
-  const FIXED_DESK_COUNT = 32;
+  // The horseshoe generates a fixed 23-desk layout regardless of roster size:
+  // outer U = 4 left + 6 bottom + 4 right (14), inner U = 3 left + 3 bottom + 3 right (9).
+  const FIXED_DESK_COUNT = 23;
 
-  it('always returns 32 desks regardless of student count', () => {
+  it('always returns 23 desks regardless of student count', () => {
     expect(generateHorseshoeLayout(0, CANVAS_W, CANVAS_H, GRID)).toHaveLength(
       FIXED_DESK_COUNT
     );
