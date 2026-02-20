@@ -18,6 +18,7 @@ import {
 import { db } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
 import { useGoogleDrive } from './useGoogleDrive';
+import { useQuizSessionTeacher } from './useQuizSession';
 import { QuizData, QuizMetadata } from '../types';
 import { QuizDriveService } from '../utils/quizDriveService';
 
@@ -47,6 +48,7 @@ export interface UseQuizResult {
 export const useQuiz = (userId: string | undefined): UseQuizResult => {
   const { googleAccessToken } = useAuth();
   const { isConnected } = useGoogleDrive();
+  const { session, endQuizSession } = useQuizSessionTeacher(userId);
   const [quizzes, setQuizzes] = useState<QuizMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +142,11 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       if (!userId) throw new Error('Not authenticated');
       const drive = getDriveService();
 
+      // If this quiz is currently active, end the session first
+      if (session && session.quizId === quizId) {
+        await endQuizSession();
+      }
+
       // Delete from Drive (ignore 404 — file may already be gone)
       await drive.deleteQuizFile(driveFileId).catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
@@ -149,7 +156,7 @@ export const useQuiz = (userId: string | undefined): UseQuizResult => {
       // Delete metadata from Firestore
       await deleteDoc(doc(db, 'users', userId, QUIZZES_COLLECTION, quizId));
     },
-    [userId, getDriveService]
+    [userId, getDriveService, session, endQuizSession]
   );
 
   const importFromSheet = useCallback(
