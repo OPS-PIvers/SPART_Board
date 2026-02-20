@@ -17,10 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FloatingPanel } from '../common/FloatingPanel';
-import {
-  FURNITURE_TYPES,
-  TEMPLATES,
-} from './seatingChartConstants';
+import { FURNITURE_TYPES, TEMPLATES } from './seatingChartConstants';
 import { useSeatingChartLogic } from './useSeatingChartLogic';
 
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
@@ -39,7 +36,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     unassignedStudents,
     students,
     furniture,
-    assignments,
+    // assignments, // Removed unused variable
     canvasRef,
     isRandomPicking,
 
@@ -71,11 +68,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     getAssignedStudents,
   } = useSeatingChartLogic(widget);
 
-  const {
-    gridSize = 20,
-    template = 'freeform',
-    templateColumns = 6,
-  } = config;
+  const { gridSize = 20, template = 'freeform', templateColumns = 6 } = config;
 
   const studentCount = students.length;
 
