@@ -876,7 +876,8 @@ export type GlobalFeature =
   | 'dashboard-import'
   | 'magic-layout'
   | 'smart-paste'
-  | 'smart-poll';
+  | 'smart-poll'
+  | 'screen-recording';
 
 export interface GlobalFeaturePermission {
   featureId: GlobalFeature;
