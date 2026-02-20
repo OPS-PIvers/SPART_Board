@@ -309,7 +309,7 @@ export const Sidebar: React.FC = () => {
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-lighter"
+          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-dark/20"
           title="Open Menu"
         >
           <Menu className="w-5 h-5" />
