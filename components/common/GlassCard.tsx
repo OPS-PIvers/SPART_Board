@@ -24,6 +24,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       globalStyle: propGlobalStyle,
       disableBlur = false,
       selected = false,
+      allowInvisible: _allowInvisible,
       style,
       ...props
     },
