@@ -25,6 +25,7 @@ import {
   query,
   where,
   writeBatch,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
@@ -570,14 +571,12 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
       studentUid
     );
 
-    const currentWarnings = myResponseRef.current?.tabSwitchWarnings ?? 0;
-    const newWarnings = currentWarnings + 1;
-
     await updateDoc(responseRef, {
-      tabSwitchWarnings: newWarnings,
+      tabSwitchWarnings: increment(1),
     });
 
-    return newWarnings;
+    const currentWarnings = myResponseRef.current?.tabSwitchWarnings ?? 0;
+    return currentWarnings + 1;
   }, []);
 
   return {

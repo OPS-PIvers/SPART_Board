@@ -10,7 +10,7 @@
  *  5. Student submits answers; teacher sees results
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ClipboardList,
   LogIn,
@@ -140,6 +140,17 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     [user, joinQuizSession]
   );
 
+  const handleAnswer = useCallback(
+    async (questionId: string, answer: string) => {
+      await submitAnswer(questionId, answer);
+    },
+    [submitAnswer]
+  );
+
+  const handleComplete = useCallback(async () => {
+    await completeQuiz();
+  }, [completeQuiz]);
+
   // Auto-join if code is in URL. handleJoin is async — setState runs after
   // await (not synchronously), so set-state-in-effect is a false positive here.
   useEffect(() => {
@@ -249,12 +260,8 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
         currentQuestion={currentQ}
         alreadyAnswered={alreadyAnswered}
         myResponse={myResponse}
-        onAnswer={async (questionId, answer) => {
-          await submitAnswer(questionId, answer);
-        }}
-        onComplete={async () => {
-          await completeQuiz();
-        }}
+        onAnswer={handleAnswer}
+        onComplete={handleComplete}
         reportTabSwitch={reportTabSwitch}
       />
     );
@@ -328,15 +335,32 @@ const ActiveQuiz: React.FC<{
     myResponse?.tabSwitchWarnings ?? 0
   );
 
+  // Sync with Firestore updates
+  useEffect(() => {
+    if (myResponse?.tabSwitchWarnings !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWarningCount(myResponse.tabSwitchWarnings);
+    }
+  }, [myResponse?.tabSwitchWarnings]);
+
+  const isWarningShowingRef = useRef<boolean>(false);
+  const lastReportTimeRef = useRef<number>(0);
+
   // The Visibility Tracker
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      // Only track if the quiz is actually active and they haven't submitted the whole thing
+      const now = Date.now();
+      // Debounce to prevent dual blur/visibility events
+      if (now - lastReportTimeRef.current < 1000) return;
+
       if (
         (document.visibilityState === 'hidden' || !document.hasFocus()) &&
-        myResponse?.status !== 'completed' &&
-        session.status === 'active'
+        session.status === 'active' &&
+        !isWarningShowingRef.current
       ) {
+        lastReportTimeRef.current = now;
+        isWarningShowingRef.current = true;
+
         const newTotal = await reportTabSwitch();
         setWarningCount(newTotal);
         setShowCheatWarning(true);
@@ -352,14 +376,13 @@ const ActiveQuiz: React.FC<{
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    // Also catch them clicking onto a different window/monitor entirely
     window.addEventListener('blur', handleVisibilityChange);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleVisibilityChange);
     };
-  }, [myResponse?.status, session.status, reportTabSwitch, onComplete]);
+  }, [session.status, reportTabSwitch, onComplete]);
 
   // For student-paced mode, the student maintains their own local index
   const [localIndex, setLocalIndex] = useState(0);
@@ -475,7 +498,10 @@ const ActiveQuiz: React.FC<{
             warnings, your quiz will automatically submit.
           </p>
           <button
-            onClick={() => setShowCheatWarning(false)}
+            onClick={() => {
+              setShowCheatWarning(false);
+              isWarningShowingRef.current = false;
+            }}
             className="px-8 py-4 bg-white text-red-900 font-bold rounded-xl active:scale-95 transition-transform"
           >
             I Understand, Return to Quiz
