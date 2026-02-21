@@ -15,7 +15,16 @@ export interface GeneratedWidget {
   config: WidgetConfig;
 }
 
+export interface GeneratedQuestion {
+  text: string;
+  type?: string;
+  correctAnswer?: string;
+  incorrectAnswers?: string[];
+  timeLimit?: number;
+}
+
 interface AIResponseData {
+  questions?: GeneratedQuestion[];
   html?: string;
   title?: string;
   question?: string;
@@ -23,6 +32,14 @@ interface AIResponseData {
   widgets?: GeneratedWidget[];
   text?: string;
 }
+
+export type AIGenerationType =
+  | 'mini-app'
+  | 'poll'
+  | 'dashboard-layout'
+  | 'instructional-routine'
+  | 'ocr'
+  | 'quiz';
 
 /**
  * Extracts text from an image using Gemini AI via a Firebase Function proxy.
@@ -36,12 +53,7 @@ export async function extractTextWithGemini(
   try {
     const generateWithAI = httpsCallable<
       {
-        type:
-          | 'mini-app'
-          | 'poll'
-          | 'dashboard-layout'
-          | 'instructional-routine'
-          | 'ocr';
+        type: AIGenerationType;
         prompt?: string;
         image?: string;
       },
@@ -74,7 +86,7 @@ export async function generateMiniAppCode(
 ): Promise<GeneratedMiniApp> {
   try {
     const generateWithAI = httpsCallable<
-      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
+      { type: AIGenerationType; prompt: string },
       AIResponseData
     >(functions, 'generateWithAI');
 
@@ -118,7 +130,7 @@ export interface GeneratedPoll {
 export async function generatePoll(topic: string): Promise<GeneratedPoll> {
   try {
     const generateWithAI = httpsCallable<
-      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
+      { type: AIGenerationType; prompt: string },
       AIResponseData
     >(functions, 'generateWithAI');
 
@@ -159,7 +171,7 @@ export async function generateDashboardLayout(
 ): Promise<GeneratedWidget[]> {
   try {
     const generateWithAI = httpsCallable<
-      { type: 'mini-app' | 'poll' | 'dashboard-layout'; prompt: string },
+      { type: AIGenerationType; prompt: string },
       AIResponseData
     >(functions, 'generateWithAI');
 
@@ -195,6 +207,59 @@ export async function generateDashboardLayout(
 
     let errorMessage =
       'Failed to generate layout. Please try again with a different description.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+export interface GeneratedQuiz {
+  title: string;
+  questions: GeneratedQuestion[];
+}
+
+/**
+ * Generates a quiz based on a topic using a Firebase Function proxy.
+ *
+ * @param prompt - The topic or content for the quiz.
+ * @returns A promise resolving to the generated quiz title and questions.
+ * @throws Error if generation fails.
+ */
+export async function generateQuiz(prompt: string): Promise<GeneratedQuiz> {
+  try {
+    const generateWithAI = httpsCallable<
+      {
+        type: AIGenerationType;
+        prompt: string;
+      },
+      AIResponseData
+    >(functions, 'generateWithAI');
+
+    const result = await generateWithAI({ type: 'quiz', prompt });
+    const data = result.data;
+
+    if (
+      !data.title ||
+      !Array.isArray(data.questions) ||
+      data.questions.length === 0
+    ) {
+      throw new Error(
+        'Invalid response format from AI: quiz must have at least one question'
+      );
+    }
+
+    return {
+      title: data.title,
+      questions: data.questions,
+    };
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage =
+      'Failed to generate quiz. Please try again with a different prompt.';
 
     if (error instanceof Error) {
       errorMessage += ` Underlying error: ${error.message}`;
