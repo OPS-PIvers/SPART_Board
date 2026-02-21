@@ -1,204 +1,124 @@
 # AGENTS.md
 
-This document provides comprehensive instructions and context for AI assistants working on the SPART Board repository. It consolidates information from `CLAUDE.md`, `DEV_WORKFLOW.md`, and `LINTING_SETUP.md`.
-
-**Scope:** These instructions apply to the entire directory tree.
-
----
+> **Attention Agents:** This file contains critical information about the project structure, development workflows, and coding standards. Please read it carefully before starting any task.
 
 ## 1. Project Overview
 
-**SPART Board** is an interactive classroom management dashboard built with **React 19**, **TypeScript**, and **Vite**. It features a plugin-based widget system (timers, noise meters, drawing boards, etc.) and uses **Firebase** for backend services.
+**SPART Board** is a React-based dashboard application for classrooms, built with:
+-   **Frontend:** React 19, TypeScript 5.x, Vite
+-   **Styling:** Tailwind CSS
+-   **State Management:** React Context (`DashboardContext`, `AuthContext`) + Firestore (real-time)
+-   **Backend:** Firebase Functions (Node.js)
+-   **Testing:** Vitest (Unit), Playwright (E2E)
+-   **Linting:** ESLint (Flat Config), Prettier
 
-### Key Features
-
-- **Dynamic Widget System:** A flexible, plugin-based architecture for classroom tools.
-- **Real-time Sync:** Powered by Firestore for instant updates across devices.
-- **Google Drive Sync:** Mandatory background sync to Google Drive for non-admin users, ensuring data portability and backup.
-- **Roster System:** Integrated student rosters (`useRosters`) for widgets like Lunch Count, Random Picker, and Seating Charts.
-- **Nexus Architecture:** Inter-widget communication allowing tools to work together (e.g., Timer starting when a Random Picker selects a student).
-- **Live Sessions:** Teachers can broadcast their dashboard state to students in real-time.
-
-### Tech Stack
-
-- **Frontend:** React 19, TypeScript, Vite
-- **Styling:** Tailwind CSS (Custom Brand Theme: Lexend, Patrick Hand fonts, Blue/Red/Gray brand colors)
-- **Backend:** Firebase (Auth, Firestore, Storage)
-- **Package Manager:** pnpm
-- **State Management:** React Context (`DashboardContext`)
-- **AI Integration:** Google Gemini API
-- **Testing:** Vitest (Unit), Playwright (E2E)
-
----
-
-## 2. Code Quality & Standards (CRITICAL)
-
-This project enforces a **STRICT ZERO-TOLERANCE POLICY** for code quality.
-
-### 🚫 Strict Rules
-
-1.  **Zero Warnings, Zero Errors:**
-    - You **MUST** ensure that `pnpm run validate` (which runs linting, type-checking, format checking, and unit tests) passes with **0 warnings and 0 errors**.
-    - Do **NOT** commit code that generates warnings, even if the build technically passes.
-2.  **No Suppressions:**
-    - The use of suppression comments (e.g., `eslint-disable`, `// @ts-ignore`, `// @ts-nocheck`) is **FORBIDDEN** unless absolutely unavoidable and technically justified (e.g., library bug).
-    - If you encounter a linting error, **FIX THE ROOT CAUSE**. Do not suppress it.
-3.  **Strict Type Safety:**
-    - **No `any`**: Explicitly define interfaces for all props, state, and widget configurations.
-    - **No Implicit Types**: Enable `strict: true` behavior in your mental model.
-4.  **Edit Source, Not Artifacts:**
-    - Never edit files in `dist/` or other build directories.
-5.  **Modular Structure:**
-    - For complex widgets, use a dedicated subdirectory (e.g., `components/widgets/lunch/`) with a barrel file (`index.ts`) and co-located tests.
-
-### Verification Command
-
-Before marking any task as complete, you must run:
-
-```bash
-pnpm run validate
-```
-
-If this command reports _any_ issues, you must fix them.
+### Key Directories
+-   `components/`: UI components.
+    -   `admin/`: Administrative tools (e.g., `AdminSettings.tsx`).
+    -   `common/`: Shared, reusable components (e.g., `Button`, `Modal`).
+    -   `layout/`: Layout components (e.g., `Sidebar`, `Dock`).
+    -   `widgets/`: Individual widget implementations (e.g., `ClockWidget`, `SeatingChartWidget`).
+-   `config/`: Configuration files (e.g., `widgetDefaults.ts`, `tools.ts`).
+-   `context/`: React Context definitions and hooks.
+-   `hooks/`: Custom React hooks.
+-   `functions/`: Firebase Cloud Functions.
+-   `tests/`: Test files (E2E and unit tests for utilities). Note: Component tests are often co-located.
 
 ---
 
-## 3. Architecture & Patterns
+## 2. State Management
 
-### Directory Structure
-
-- `components/widgets/`: Individual widget components. Modular widgets use sub-folders.
-- `context/`: Global state providers (`DashboardContext.tsx`, `AuthContext.tsx`).
-- `types.ts`: Central type definitions.
-- `components/common/`: Shared UI components (e.g., `DraggableWindow`, `Button`).
-- `components/admin/`: Administrative tools (`AdminSettings.tsx`, `FeaturePermissionsManager.tsx`).
-- `config/`: Configuration files (`tools.ts`, `widgetGradeLevels.ts`, `widgetDefaults.ts`).
-- `tests/e2e/`: Playwright end-to-end tests.
-
-### State Management & Persistence
-
-- **Centralized Store:** `DashboardContext` manages dashboard state, widget data, `dockItems` (including folders), and rosters.
-- **Hook:** Use `useDashboard()` to access state and actions.
-- **Cloud Persistence:** Dashboards are persisted to Firestore (real-time).
-- **Google Drive Sync:** Automatic, debounced sync to Google Drive for non-admins (`useGoogleDrive`).
-- **Local Persistence:** Tool visibility and dock organization (`dockItems`) are persisted to `localStorage`.
-
-### Widget System
-
-- **Registry:** Widgets are registered in `components/widgets/WidgetRegistry.ts`. This centralizes component mapping, lazy loading, and scaling configuration.
-- **Defaults:** Initial dimensions and config values live in `config/widgetDefaults.ts`.
-- **Wrapper:** All widgets are wrapped in `DraggableWindow.tsx` for drag, resize, and flip functionality.
-- **Scaling:** The app uses a hybrid scaling approach. Traditional JS-based scaling via `ScalableWidget` is used by default, but newer widgets leverage **CSS Container Queries** (enabled by setting `skipScaling: true` in `WIDGET_SCALING_CONFIG`).
-
-### Nexus Architecture (Inter-Widget Communication)
-
-Widgets can interact via two patterns:
-
-- **Pull:** A widget reads data from another widget (e.g., `RecessGearWidget` reading from `WeatherWidget`).
-- **Push:** A widget triggers an action in another widget (e.g., `RandomWidget` starting a `TimeToolWidget`).
-- **Documentation:** All active connections must be documented in `.Jules/nexus.md`.
-
-### Grade Levels
-
-- Widgets are assigned grade levels in `config/widgetGradeLevels.ts`.
-- **ALL_GRADE_LEVELS:** Use this constant for widgets appropriate for all ages (replaces the legacy 'universal' string).
-- Filtering is managed in the sidebar based on these assignments.
+-   **`DashboardContext`**: The central store for dashboard state, widgets, dock items, and rosters.
+    -   **Hook:** `useDashboard()` provides access to state and actions (e.g., `addWidget`, `updateWidget`).
+-   **`AuthContext`**: Manages user authentication and role-based access (Admin vs. User).
+-   **Persistence**:
+    -   **Firestore**: Real-time sync for dashboards.
+    -   **Google Drive**: Automatic background sync for non-admins via `useGoogleDrive`.
+    -   **LocalStorage**: Persists tool visibility and dock organization.
 
 ---
 
-## 4. Widget Development Guide (Type-Safe Workflow)
+## 3. Widget System
 
-To add a new widget, follow these steps:
+Widgets are the core building blocks of the dashboard. They are modular, draggable, and resizable.
 
-1.  **Define Types (`types.ts`) & Configuration (`config/tools.ts`):**
-    - Add the new type string to the `WidgetType` union in `types.ts`.
-    - Create a specific configuration interface and add it to the `WidgetConfig` union.
-    - Update `ConfigForWidget` helper type.
-    - Add metadata to the `TOOLS` array in `config/tools.ts`.
+### Architecture
+-   **Registry**: `components/widgets/WidgetRegistry.ts` maps widget types to their components and settings panels. It handles lazy loading.
+-   **Defaults**: Initial dimensions and configuration are defined in `config/widgetDefaults.ts`.
+-   **Grade Levels**: `config/widgetGradeLevels.ts` controls which widgets are available for different grade bands.
 
-2.  **Create Component (`components/widgets/<Name>Widget.tsx`):**
-    - Implement the view and settings view.
-    - Cast `widget.config` to your specific interface immediately.
-    - Use `WidgetLayout` component for standard header/content/footer structure.
-    - **All front-face content sizing must use container query units** (see Content Scaling below).
+### Scaling Strategies
+The app uses a hybrid scaling approach:
+1.  **CSS Container Queries (Preferred):** Newer widgets (e.g., `TimeTool`, `Clock`) set `skipScaling: true` in `WidgetRegistry.ts`.
+    -   **Rule:** Use container query units (`cqw`, `cqh`, `cqmin`) for all internal sizing (font, padding, icons) to ensure responsiveness.
+    -   **Example:** `fontSize: 'min(14px, 3.5cqmin)'`
+2.  **JS-Based Scaling (Legacy):** Older widgets use `ScalableWidget` which applies a CSS `transform: scale(...)`.
 
-3.  **Register in Registry (`components/widgets/WidgetRegistry.ts`):**
-    - Add entries to `WIDGET_COMPONENTS` and `WIDGET_SETTINGS_COMPONENTS` (use lazy loading).
-    - Configure scaling in `WIDGET_SCALING_CONFIG`. Use `skipScaling: true` if using CSS Container Queries.
+### Nexus (Inter-Widget Communication)
+Widgets can communicate via the "Nexus" system.
+-   **Documentation:** All active connections must be documented in `.Jules/nexus.md`.
+-   **Pattern:** Widgets can "push" actions (e.g., Randomizer triggering a Timer) or "pull" data (e.g., Weather widget reading location).
 
-4.  **Configure Defaults (`config/widgetDefaults.ts`):**
-    - Add default dimensions (`w`, `h`) and initial `config` values to `WIDGET_DEFAULTS`.
+---
 
-5.  **Assign Grade Levels (`config/widgetGradeLevels.ts`):**
-    - Add the widget's intended grade levels to `WIDGET_GRADE_LEVELS`.
+## 4. UI & Components
 
-### Widget Content Scaling (CRITICAL)
+Use these standardized components to maintain consistency:
 
-Widgets with `skipScaling: true` use CSS Container Queries for responsive sizing. All text, icons, spacing, and sizing in widget **front-face content** must use container query units via inline `style={{}}` props:
+-   **`Button`**: The primary button component. Supports `variant` (primary, secondary, ghost, danger, hero) and `size`.
+-   **`SettingsLabel`**: Standard label for settings panels. (`text-xxs font-black uppercase tracking-widest`).
+-   **`Modal`**: Standard dialog component. Handles overlays, closing on Escape, and focus management.
+-   **`Toggle`**: Switch component for boolean settings.
+-   **`MagicInput`**: specialized input for AI generation tasks.
 
-```tsx
-// CORRECT - scales with widget size
-<span style={{ fontSize: 'min(14px, 3.5cqmin)' }}>Label</span>
-<Icon style={{ width: 'min(24px, 6cqmin)', height: 'min(24px, 6cqmin)' }} />
-<div style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}>
-
-// WRONG - fixed sizes, won't scale when widget is resized
-<span className="text-sm">Label</span>
-<Icon className="w-12 h-12" />
-<Icon size={24} />
-```
-
-**Key rules:**
-
-- **Never** use hardcoded Tailwind text/icon size classes in widget content — they don't scale with widget resize.
-- **Settings panels (back-face):** Normal Tailwind classes are fine, no scaling needed.
-- **Empty/error states:** Use the shared `ScaledEmptyState` component (`components/common/ScaledEmptyState.tsx`).
-- **Container query units:** `cqw` = 1% container width, `cqh` = 1% container height, `cqmin` = 1% of the smaller dimension.
-- **`renderCatalystIcon()`** accepts CSS string sizes (e.g. `'min(32px, 8cqmin)'`) for scaled rendering.
-- **Reference implementations:** `ClockWidget.tsx`, `WeatherWidget.tsx`, `PollWidget.tsx`.
+**Styling:** Use Tailwind CSS utility classes. Avoid custom CSS files unless absolutely necessary.
 
 ---
 
 ## 5. Development Workflow
 
-### Environment
+### Scripts (pnpm)
+-   **`pnpm run dev`**: Start the development server.
+-   **`pnpm run validate`**: **Run this before pushing.** Executes `type-check`, `lint`, `format:check`, and `test`.
+-   **`pnpm run lint:fix`**: Automatically fix linting errors.
+-   **`pnpm run test`**: Run unit tests (Vitest).
+-   **`pnpm run test:e2e`**: Run end-to-end tests (Playwright).
 
-For full functionality including Firebase services and AI features, create a `.env.local` file in the root directory:
+### Authentication
+-   **Local Dev**: Set `VITE_AUTH_BYPASS=true` in `.env.local` to skip login and use a mock admin account.
 
-```env
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-VITE_GEMINI_API_KEY=...
-VITE_OPENWEATHER_API_KEY=...
-```
-
-### Auth Bypass Mode
-
-For local development without needing real Firebase credentials for every session, set `VITE_AUTH_BYPASS=true` in your `.env.local`. This provides a mock admin user and skips the login screen.
-
-### Branching & Deployments
-
-- **Feature Branches:** Work on `dev-<name>` branches.
-- **Previews:** Pushing to a `dev-*` branch triggers a Firebase Preview deployment.
-- **Production:** Merging to `main` deploys to the live site.
+### CI/CD
+-   **Validation**: The `pr-validation.yml` workflow runs on every PR. It executes `lint`, `format:check`, `type-check:all`, unit tests, and E2E tests.
+-   **Deployment**: `firebase-deploy.yml` handles production deployments.
 
 ---
 
-## 6. Common Pitfalls
+## 6. Testing Guidelines
 
-- **Z-Index:** Do not manually manage z-indexes. Use `bringToFront(id)` from the context.
-- **Event Propagation:** For interactive elements inside a `DraggableWindow` (like sliders or nested draggables), use `e.stopPropagation()` to prevent the window from capturing drag/click events.
-- **CSS Scaling:** When using CSS Container Queries for font scaling, use a formula like `min(20cqw, 60cqh)` to fill space effectively while respecting height constraints.
-- **Floating Promises:** Always handle promises (e.g., `void myAsyncFunc()` or `await ...`).
+### Unit Tests (Vitest)
+-   **Co-location**: Place test files next to the source file (e.g., `Widget.test.tsx` next to `Widget.tsx`).
+-   **Best Practices**:
+    -   Use `@testing-library/react` and `@testing-library/user-event`.
+    -   Avoid `container.querySelector`. Use accessible queries (`getByRole`, `getByText`, `getByLabelText`).
+    -   **Mocking**: Explicitly mock `useDashboard` and other hooks when testing widgets in isolation.
+
+### E2E Tests (Playwright)
+-   **Location**: `tests/e2e/`.
+-   **Interaction**: Use `user-event` patterns. For drag-and-drop (dnd-kit), you may need `.click({ force: true })` or specific drag steps.
+-   **Selectors**: Use stable selectors like `data-testid` or accessible roles.
 
 ---
 
-## 7. Admin & Security
+## 7. Common Pitfalls & Standards
 
-- **Admin Access:** Controlled via Firestore `admins` collection and `isAdmin` flag in `AuthContext`.
-- **Feature Permissions:** Managed via `feature_permissions` and `global_permissions` collections in Firestore.
-- **Setup:** Admin users must be explicitly added via the `scripts/setup-admins.js` script.
+1.  **Strict Linting**: The project treats warnings as errors (`max-warnings 0`).
+    -   **No Explicit Any**: Do not use `any`. Define proper interfaces.
+    -   **Strict Null Checks**: Handle `null` and `undefined` explicitly. Optional chaining (`?.`) is your friend, but be aware of strict checks in CI.
+2.  **Z-Index**: Do not manually manage z-indexes. Use the `bringToFront` action from `DashboardContext`.
+3.  **Floating Promises**: Always handle promises. Use `void` if you intentionally want to ignore the result (e.g., `void myFunction()`), or `await` it.
+4.  **Accessibility**:
+    -   Hidden inputs (like file uploads) must have `aria-label`.
+    -   Icon-only buttons must have `aria-label`.
+5.  **React Hooks**:
+    -   `useEffect` must return `undefined` or a cleanup function. Do not return `null` or `false`.
+    -   Dependency arrays must be exhaustive (enforced by linter).
