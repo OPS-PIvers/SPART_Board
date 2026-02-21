@@ -102,15 +102,22 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
       const result = await generateQuiz(geminiPrompt);
       setTitle(result.title);
       // Assign IDs to questions as they might be missing from AI response
-      const questionsWithIds = result.questions.map((q: GeneratedQuestion) => ({
-        id: crypto.randomUUID(),
-        text: q.text,
-        // Ensure defaults if missing
-        timeLimit: q.timeLimit ?? 30,
-        type: (q.type as QuizQuestion['type']) ?? 'MC',
-        correctAnswer: q.correctAnswer ?? '',
-        incorrectAnswers: q.incorrectAnswers ?? [],
-      })) as QuizQuestion[];
+      const questionsWithIds = result.questions.map((q: GeneratedQuestion) => {
+        // Validate question type
+        const validTypes = ['MC', 'FIB', 'Matching', 'Ordering'];
+        const type = validTypes.includes(q.type ?? '')
+          ? ((q.type as QuizQuestion['type']) ?? 'MC')
+          : 'MC';
+
+        return {
+          id: crypto.randomUUID(),
+          text: q.text,
+          timeLimit: q.timeLimit ?? 30,
+          type,
+          correctAnswer: q.correctAnswer ?? '',
+          incorrectAnswers: q.incorrectAnswers ?? [],
+        } as QuizQuestion;
+      });
 
       setParsedQuiz({
         id: crypto.randomUUID(),
@@ -230,6 +237,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full text-center py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-bold text-xs hover:opacity-90 transition-opacity mt-2"
+                aria-label="Open Gemini CSV Helper (opens in new window)"
               >
                 Open Gemini CSV Helper
               </a>
@@ -271,16 +279,10 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
                   className="w-full py-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 border-2 border-dashed border-indigo-500/30 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group active:scale-95"
                 >
                   <Sparkles className="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
-                  <span
-                    className="font-bold text-indigo-600"
-                    style={{ fontSize: 'min(12px, 3.5cqmin)' }}
-                  >
+                  <span className="font-bold text-indigo-600 text-xs">
                     Generate with AI
                   </span>
-                  <p
-                    className="text-indigo-400"
-                    style={{ fontSize: 'min(10px, 3cqmin)' }}
-                  >
+                  <p className="text-indigo-400 text-[10px]">
                     Magic Quiz Creator
                   </p>
                 </button>
@@ -423,7 +425,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
             if (e.code === 'Escape') setShowGeminiPrompt(false);
           }}
         >
-          <div className="w-full max-sm space-y-4">
+          <div className="w-full max-w-sm space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-black text-indigo-600 flex items-center gap-2 uppercase tracking-tight">
                 <Sparkles className="w-5 h-5" /> Magic Quiz Generator
