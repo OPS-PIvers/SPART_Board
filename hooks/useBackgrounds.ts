@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, isAuthBypass } from '../config/firebase';
 import { useAuth } from '../context/useAuth';
 import { BackgroundPreset } from '../types';
 import { BACKGROUND_COLORS, BACKGROUND_GRADIENTS } from '../config/backgrounds';
@@ -10,7 +10,7 @@ export const useBackgrounds = () => {
   const [managedBackgrounds, setManagedBackgrounds] = useState<
     BackgroundPreset[]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isAuthBypass);
 
   // Refs to prevent race conditions when both queries update simultaneously
   // (Used when not admin)
@@ -18,6 +18,10 @@ export const useBackgrounds = () => {
   const betaBgsRef = useRef<BackgroundPreset[]>([]);
 
   useEffect(() => {
+    if (isAuthBypass) {
+      return;
+    }
+
     if (!user) {
       // Use timeout to defer state updates and avoid synchronous setState in effect
       const timer = setTimeout(() => {

@@ -27,7 +27,7 @@ import {
   writeBatch,
   increment,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, isAuthBypass } from '../config/firebase';
 import {
   QuizSession,
   QuizSessionStatus,
@@ -134,9 +134,13 @@ export const useQuizSessionTeacher = (
 ): UseQuizSessionTeacherResult => {
   const [session, setSession] = useState<QuizSession | null>(null);
   const [responses, setResponses] = useState<QuizResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isAuthBypass);
 
   useEffect(() => {
+    if (isAuthBypass) {
+      return;
+    }
+
     if (!teacherUid) {
       setTimeout(() => setLoading(false), 0);
       return;
