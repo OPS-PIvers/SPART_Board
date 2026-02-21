@@ -65,6 +65,17 @@ vi.mock('firebase/functions', () => {
               data: { widgets: [{ type: 'invalid-type', config: {} }] },
             };
           }
+          if (data.prompt === 'MIXED_VALID_INVALID_WIDGETS') {
+            return {
+              data: {
+                widgets: [
+                  { type: 'clock', config: {} },
+                  { type: 'invalid-type', config: {} },
+                  { type: 'time-tool', config: { duration: 600 } },
+                ],
+              },
+            };
+          }
           return {
             data: {
               widgets: [
@@ -98,8 +109,8 @@ vi.mock('@/config/firebase', () => ({
 // Mock TOOLS to avoid dependency issues and have predictable valid types
 vi.mock('@/config/tools', () => ({
   TOOLS: [
-    { type: 'clock', label: 'Clock' },
-    { type: 'time-tool', label: 'Timer' },
+    { type: 'clock', label: 'Clock', icon: 'clock', color: 'blue' },
+    { type: 'time-tool', label: 'Timer', icon: 'timer', color: 'green' },
   ],
 }));
 
@@ -113,12 +124,9 @@ describe('generateMiniAppCode', () => {
   });
 
   it('throws formatted error on failure', async () => {
-    try {
-      await generateMiniAppCode('FAIL');
-    } catch (e: any) {
-      expect(e.message).toContain('Failed to generate app');
-      expect(e.message).toContain('Simulated API Failure');
-    }
+    await expect(generateMiniAppCode('FAIL')).rejects.toThrow(
+      'Failed to generate app. Please try again with a different prompt. Underlying error: Simulated API Failure'
+    );
   });
 
   it('handles non-Error objects thrown', async () => {
@@ -144,12 +152,9 @@ describe('generatePoll', () => {
   });
 
   it('throws formatted error on failure', async () => {
-    try {
-      await generatePoll('FAIL');
-    } catch (e: any) {
-      expect(e.message).toContain('Failed to generate poll');
-      expect(e.message).toContain('Simulated API Failure');
-    }
+    await expect(generatePoll('FAIL')).rejects.toThrow(
+      'Failed to generate poll. Please try again with a different topic. Underlying error: Simulated API Failure'
+    );
   });
 
   it('throws error on invalid response format', async () => {
@@ -208,5 +213,12 @@ describe('generateDashboardLayout', () => {
     await expect(
       generateDashboardLayout('INVALID_WIDGET_TYPE')
     ).rejects.toThrow('Failed to generate layout');
+  });
+
+  it('filters out invalid widget types and keeps valid ones', async () => {
+    const result = await generateDashboardLayout('MIXED_VALID_INVALID_WIDGETS');
+    expect(result).toHaveLength(2);
+    expect(result[0].type).toBe('clock');
+    expect(result[1].type).toBe('time-tool');
   });
 });
