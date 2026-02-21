@@ -194,6 +194,7 @@ export interface RandomConfig {
   remainingStudents?: string[];
   rosterMode?: 'class' | 'custom';
   autoStartTimer?: boolean;
+  logToNotes?: boolean;
   visualStyle?: 'flash' | 'slots' | 'wheel';
 }
 
