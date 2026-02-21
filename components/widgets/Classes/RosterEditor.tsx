@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Student, ClassRoster } from '@/types';
 import { Save } from 'lucide-react';
-import { SettingsLabel } from '../../common/SettingsLabel';
-import { WidgetLayout } from '../WidgetLayout';
+import { SettingsLabel } from '@/components/common/SettingsLabel';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { splitNames, mergeNames, generateStudentsList } from './rosterUtils';
 
 interface EditorProps {

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { WidgetData, Student, ClassLinkClass, ClassLinkStudent } from '@/types';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import { Plus, Trash2, Star, Edit2, RefreshCw } from 'lucide-react';
-import { classLinkService } from '../../../utils/classlinkService';
-import { WidgetLayout } from '../WidgetLayout';
+import { classLinkService } from '@/utils/classlinkService';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { RosterEditor } from './RosterEditor';
 
 interface Props {
