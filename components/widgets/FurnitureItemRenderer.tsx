@@ -60,30 +60,31 @@ export const FurnitureItemRenderer = memo(
     const displayW = resizeSize ? resizeSize.width : item.width;
     const displayH = resizeSize ? resizeSize.height : item.height;
 
-    const getFurnitureStyle = () => {
-      let bg = 'bg-white';
-      let border = 'border-slate-300';
+    const furnitureClassName = useMemo(() => {
+      let bg: string;
+      let border: string;
 
-      if (item.type === 'desk') {
-        bg = 'bg-white';
-        border = 'border-slate-300';
+      switch (item.type) {
+        case 'table-rect':
+        case 'table-round':
+          bg = 'bg-amber-100';
+          border = 'border-amber-300';
+          break;
+        case 'rug':
+          bg = 'bg-indigo-100';
+          border = 'border-indigo-300';
+          break;
+        case 'teacher-desk':
+          bg = 'bg-slate-200';
+          border = 'border-slate-400';
+          break;
+        case 'desk':
+        default:
+          bg = 'bg-white';
+          border = 'border-slate-300';
+          break;
       }
-      if (item.type === 'table-rect') {
-        bg = 'bg-amber-100';
-        border = 'border-amber-300';
-      }
-      if (item.type === 'table-round') {
-        bg = 'bg-amber-100';
-        border = 'border-amber-300';
-      }
-      if (item.type === 'rug') {
-        bg = 'bg-indigo-100';
-        border = 'border-indigo-300';
-      }
-      if (item.type === 'teacher-desk') {
-        bg = 'bg-slate-200';
-        border = 'border-slate-400';
-      }
+
       if (isHighlighted) {
         bg = 'bg-yellow-300';
         border = 'border-yellow-500';
@@ -94,7 +95,7 @@ export const FurnitureItemRenderer = memo(
       } ${
         item.type === 'table-round' ? 'rounded-full' : 'rounded-lg'
       } shadow-sm`;
-    };
+    }, [item.type, isHighlighted, isSelected]);
 
     return (
       <div
@@ -115,7 +116,7 @@ export const FurnitureItemRenderer = memo(
           height: displayH,
           transform: `rotate(${item.rotation}deg)`,
         }}
-        className={`${getFurnitureStyle()} ${
+        className={`${furnitureClassName} ${
           mode === 'setup' ? 'cursor-move' : ''
         }`}
       >

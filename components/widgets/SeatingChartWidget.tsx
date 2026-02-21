@@ -633,20 +633,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       const handlePointerUp = () => {
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
-        // Manually update widget here instead of calling updateFurniture which is not available in closure
-        // But we have updateWidget available
-        // Wait, updateFurniture helper was removed or replaced.
-        // We should replicate update logic here.
-        // Or better, we can invoke updateWidget directly.
-
-        // Re-read furniture from state might be stale if closure is stale?
-        // But furniture is in dependency array.
-
-        // NOTE: We need to access the LATEST furniture state.
-        // But handleResizeStart is recreated when furniture changes. So it's fine.
-
-        // Wait, 'furniture' in handleResizeStart closure is the one from when drag started.
-        // That is fine because furniture doesn't change during resize (only at end).
 
         const next = furniture.map((f) =>
           f.id === id
