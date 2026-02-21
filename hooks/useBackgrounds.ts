@@ -10,7 +10,7 @@ export const useBackgrounds = () => {
   const [managedBackgrounds, setManagedBackgrounds] = useState<
     BackgroundPreset[]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isAuthBypass);
 
   // Refs to prevent race conditions when both queries update simultaneously
   // (Used when not admin)
@@ -19,7 +19,6 @@ export const useBackgrounds = () => {
 
   useEffect(() => {
     if (isAuthBypass) {
-      setLoading(false);
       return;
     }
 

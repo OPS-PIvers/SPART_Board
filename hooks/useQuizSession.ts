@@ -134,11 +134,10 @@ export const useQuizSessionTeacher = (
 ): UseQuizSessionTeacherResult => {
   const [session, setSession] = useState<QuizSession | null>(null);
   const [responses, setResponses] = useState<QuizResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isAuthBypass);
 
   useEffect(() => {
     if (isAuthBypass) {
-      setLoading(false);
       return;
     }
 

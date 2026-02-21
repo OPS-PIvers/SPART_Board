@@ -97,7 +97,7 @@ export const useLiveSession = (
   const [session, setSession] = useState<LiveSession | null>(null);
   const [students, setStudents] = useState<LiveStudent[]>([]);
   const [loading, setLoading] = useState(
-    role === 'teacher' || (role === 'student' && !!joinCode)
+    !isAuthBypass && (role === 'teacher' || (role === 'student' && !!joinCode))
   );
   const [studentId, setStudentId] = useState<string | null>(null);
   const [individualFrozen, setIndividualFrozen] = useState(false);
@@ -105,7 +105,6 @@ export const useLiveSession = (
   // SESSION SUBSCRIPTION: Subscribe to session document (Teachers use userId, Students use joinCode)
   useEffect(() => {
     if (isAuthBypass) {
-      setLoading(false);
       return;
     }
 
