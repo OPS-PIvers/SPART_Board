@@ -77,7 +77,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   schedule: lazyNamed(() => import('./Schedule'), 'ScheduleWidget'),
   calendar: lazyNamed(() => import('./CalendarWidget'), 'CalendarWidget'),
   lunchCount: lazyNamed(() => import('./LunchCount'), 'LunchCountWidget'),
-  classes: lazy(() => import('./ClassesWidget')), // Default export
+  classes: lazy(() => import('./Classes/ClassesWidget')), // Default export
   instructionalRoutines: lazyNamed(
     () => import('./InstructionalRoutines/Widget'),
     'InstructionalRoutinesWidget'
