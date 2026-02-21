@@ -277,11 +277,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       return () => clearTimeout(timer);
     }
 
-    const timer = setTimeout(() => setLoading(true), 0);
+    let ignoreTimeout = false;
+    const timer = setTimeout(() => {
+      if (!ignoreTimeout) setLoading(true);
+    }, 0);
 
     // Real-time subscription to Firestore
     const unsubscribe = subscribeToDashboards(
       (updatedDashboards, hasPendingWrites) => {
+        // Prevent pending loading timeout from firing if we got data synchronously or fast
+        ignoreTimeout = true;
         // Sort dashboards: default first, then by order, then by createdAt
         const sortedDashboards = [...updatedDashboards].sort((a, b) => {
           if (a.isDefault && !b.isDefault) return -1;
