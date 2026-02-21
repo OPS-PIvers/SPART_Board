@@ -55,7 +55,9 @@ describe('QuizImporter', () => {
     fireEvent.click(closeButton);
 
     // Check if overlay is closed
-    expect(screen.queryByText("Describe the quiz you want to create.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Describe the quiz you want to create.')
+    ).not.toBeInTheDocument();
   });
 
   it('handles successful quiz generation', async () => {

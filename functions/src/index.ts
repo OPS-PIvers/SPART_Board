@@ -35,10 +35,8 @@ interface ClassLinkStudent {
 interface AIData {
   type:
     | 'mini-app'
-
     | 'poll'
     | 'dashboard-layout'
-
     | 'instructional-routine'
     | 'ocr';
   prompt?: string;
