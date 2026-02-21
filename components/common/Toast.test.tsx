@@ -21,6 +21,12 @@ describe('Toast Component', () => {
     expect(toast).toHaveClass('bg-brand-red-primary');
   });
 
+  it('renders warning style', () => {
+    render(<Toast message="Warning" type="warning" />);
+    const toast = screen.getByRole('alert');
+    expect(toast).toHaveClass('bg-yellow-500');
+  });
+
   it('renders with standardized positioning classes', () => {
     render(<Toast message="Position Check" />);
     const toast = screen.getByRole('status');
