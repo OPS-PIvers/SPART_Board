@@ -163,6 +163,7 @@ The project uses `@/` as an alias for the **root directory** (not `src/`):
 
 - Configured in both `vite.config.ts` and `tsconfig.json`
 - **Always use `@/` for imports** — do not use relative `../../` paths:
+
   ```typescript
   // ✅ CORRECT
   import { useDashboard } from '@/context/useDashboard';
@@ -213,10 +214,10 @@ Widgets use **`WidgetLayout`** (`components/widgets/WidgetLayout.tsx`) for stand
 
 ```tsx
 <WidgetLayout
-  header={<HeaderContent />}   // optional — fixed height
-  content={<MainContent />}    // fills remaining space
-  footer={<FooterContent />}   // optional — fixed height
-  padding="p-0"                // 'p-0' disables padding wrapper
+  header={<HeaderContent />} // optional — fixed height
+  content={<MainContent />} // fills remaining space
+  footer={<FooterContent />} // optional — fixed height
+  padding="p-0" // 'p-0' disables padding wrapper
 />
 ```
 
