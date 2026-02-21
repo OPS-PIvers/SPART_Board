@@ -681,7 +681,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         {
           prompt: prompt,
           sourceContext: {
-            source: `sources/github/${repoName}`,
+            source: `sources/github.com/${repoName}`,
             githubRepoContext: {
               startingBranch: 'main',
             },
@@ -706,6 +706,11 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         consoleUrl: `https://jules.google.com/session/${sessionId}`,
       };
     } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.warn(
+          'Jules API 404: The source entity was not found. Please ensure the repository is connected to the Jules project.'
+        );
+      }
       let errorMessage = 'An unknown error occurred';
       if (axios.isAxiosError(error)) {
         console.error('Jules API Error Response Data:', error.response?.data);
