@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import ClassesWidget from '../../../components/widgets/ClassesWidget';
+import ClassesWidget from './ClassesWidget';
 import { useDashboard } from '../../../context/useDashboard';
 
 vi.mock('../../../context/useDashboard');
