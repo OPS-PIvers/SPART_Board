@@ -11,7 +11,6 @@ import {
   Users,
   Globe,
   Save,
-  AlertCircle,
   Plus,
   Trash2,
   Zap,
@@ -23,6 +22,7 @@ import {
   BarChart,
 } from 'lucide-react';
 import { Toggle } from '../common/Toggle';
+import { Toast } from '../common/Toast';
 
 const GLOBAL_FEATURES: {
   id: GlobalFeature;
@@ -222,16 +222,11 @@ export const GlobalPermissionsManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {message && (
-        <div
-          className={`fixed top-6 right-6 z-toast px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top ${
-            message.type === 'success'
-              ? 'bg-green-500 text-white'
-              : 'bg-red-500 text-white'
-          }`}
-        >
-          <AlertCircle className="w-5 h-5" />
-          {message.text}
-        </div>
+        <Toast
+          message={message.text}
+          type={message.type}
+          onClose={() => setMessage(null)}
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
