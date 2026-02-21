@@ -15,7 +15,16 @@ export interface GeneratedWidget {
   config: WidgetConfig;
 }
 
+export interface GeneratedQuestion {
+  text: string;
+  type?: string;
+  correctAnswer?: string;
+  incorrectAnswers?: string[];
+  timeLimit?: number;
+}
+
 interface AIResponseData {
+  questions?: GeneratedQuestion[];
   html?: string;
   title?: string;
   question?: string;
@@ -195,6 +204,53 @@ export async function generateDashboardLayout(
 
     let errorMessage =
       'Failed to generate layout. Please try again with a different description.';
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+export interface GeneratedQuiz {
+  title: string;
+  questions: GeneratedQuestion[];
+}
+
+/**
+ * Generates a quiz based on a topic using a Firebase Function proxy.
+ *
+ * @param prompt - The topic or content for the quiz.
+ * @returns A promise resolving to the generated quiz title and questions.
+ * @throws Error if generation fails.
+ */
+export async function generateQuiz(prompt: string): Promise<GeneratedQuiz> {
+  try {
+    const generateWithAI = httpsCallable<
+      {
+        type: 'mini-app' | 'poll' | 'dashboard-layout' | 'quiz';
+        prompt: string;
+      },
+      AIResponseData
+    >(functions, 'generateWithAI');
+
+    const result = await generateWithAI({ type: 'quiz', prompt });
+    const data = result.data;
+
+    if (!data.title || !Array.isArray(data.questions)) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    return {
+      title: data.title,
+      questions: data.questions,
+    };
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage =
+      'Failed to generate quiz. Please try again with a different prompt.';
 
     if (error instanceof Error) {
       errorMessage += ` Underlying error: ${error.message}`;
