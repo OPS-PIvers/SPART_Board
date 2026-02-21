@@ -780,6 +780,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // --- RENDERING ---
 
+  // Helper to get assigned students for an item (memoized here for use in map loop)
+  const getAssignedStudents = useCallback(
+    (furnitureId: string) => {
+      return Object.entries(assignments)
+        .filter(([, fId]) => fId === furnitureId)
+        .map(([name]) => name);
+    },
+    [assignments]
+  );
+
   const studentCount = students.length;
   const multiSelected = selectedIds.size > 1;
 
@@ -1072,18 +1082,23 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             const dragPos = dragState?.get(item.id);
             const resizeSize =
               resizeState?.id === item.id ? resizeState : undefined;
+            const assignedStudents = getAssignedStudents(item.id);
+            const isSelected = selectedIds.has(item.id) && mode === 'setup';
+            const isSingleSelected = isSelected && selectedIds.size === 1;
 
-            // Optimization: Memoized renderer prevents re-renders of non-dragged items during drag operations (O(N) -> O(1))
+            // Optimization: Memoized FurnitureItemRenderer prevents unnecessary re-renders of unchanged items
+            // when only one item's position/size/state changes (e.g., during drag/resize operations).
             return (
               <FurnitureItemRenderer
                 key={item.id}
                 item={item}
                 mode={mode}
-                isSelected={selectedIds.has(item.id) && mode === 'setup'}
+                isSelected={isSelected}
+                isSingleSelected={isSingleSelected}
                 isHighlighted={randomHighlight === item.id}
                 dragPos={dragPos}
                 resizeSize={resizeSize}
-                assignments={assignments}
+                assignedStudents={assignedStudents}
                 onPointerDown={handlePointerDown}
                 onClick={handleFurnitureClick}
                 onStudentDrop={handleStudentDrop}

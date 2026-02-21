@@ -17,10 +17,11 @@ interface FurnitureItemRendererProps {
   item: FurnitureItem;
   mode: 'setup' | 'assign' | 'interact';
   isSelected: boolean;
+  isSingleSelected: boolean;
   isHighlighted: boolean;
   dragPos?: { x: number; y: number };
   resizeSize?: { width: number; height: number };
-  assignments: Record<string, string>;
+  assignedStudents: string[];
   onPointerDown: (e: React.PointerEvent, id: string) => void;
   onClick: (id: string) => void;
   onStudentDrop: (e: React.DragEvent, id: string) => void;
@@ -36,10 +37,11 @@ export const FurnitureItemRenderer = memo(
     item,
     mode,
     isSelected,
+    isSingleSelected,
     isHighlighted,
     dragPos,
     resizeSize,
-    assignments,
+    assignedStudents,
     onPointerDown,
     onClick,
     onStudentDrop,
@@ -49,12 +51,6 @@ export const FurnitureItemRenderer = memo(
     onRemove,
     onRemoveAssignment,
   }: FurnitureItemRendererProps) => {
-    const assigned = useMemo(() => {
-      return Object.entries(assignments)
-        .filter(([, fId]) => fId === item.id)
-        .map(([name]) => name);
-    }, [assignments, item.id]);
-
     const displayX = dragPos !== undefined ? dragPos.x : item.x;
     const displayY = dragPos !== undefined ? dragPos.y : item.y;
     const displayW = resizeSize ? resizeSize.width : item.width;
@@ -121,7 +117,7 @@ export const FurnitureItemRenderer = memo(
         }`}
       >
         {/* Resize Handle — only for the single selected item */}
-        {mode === 'setup' && isSelected && (
+        {mode === 'setup' && isSingleSelected && (
           <div
             onPointerDown={(e) => onResizeStart(e, item.id)}
             className="absolute -bottom-2 -right-2 w-6 h-6 flex items-center justify-center cursor-nwse-resize z-50 bg-white shadow rounded-full border border-slate-200 hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors"
@@ -131,7 +127,7 @@ export const FurnitureItemRenderer = memo(
         )}
 
         {/* Floating Menu — single item selected, not dragging/resizing */}
-        {mode === 'setup' && isSelected && !dragPos && !resizeSize && (
+        {mode === 'setup' && isSingleSelected && !dragPos && !resizeSize && (
           <FloatingPanel
             onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             shape="pill"
@@ -184,7 +180,7 @@ export const FurnitureItemRenderer = memo(
 
         {/* Content */}
         <div className="flex flex-col items-center justify-center p-1 w-full h-full overflow-hidden pointer-events-none">
-          {assigned.length === 0 && (
+          {assignedStudents.length === 0 && (
             <div className="opacity-20">
               {item.type === 'desk' && <Monitor className="w-5 h-5" />}
               {item.type === 'teacher-desk' && <User className="w-5 h-5" />}
@@ -194,13 +190,15 @@ export const FurnitureItemRenderer = memo(
               {item.type === 'rug' && <Armchair className="w-6 h-6" />}
             </div>
           )}
-          {assigned.length > 0 && (
+          {assignedStudents.length > 0 && (
             <div className="flex flex-col items-center justify-center gap-1 w-full h-full overflow-hidden">
-              {assigned.map((name) => (
+              {assignedStudents.map((name) => (
                 <div
                   key={name}
                   className={`bg-white px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${
-                    assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-xxs'
+                    assignedStudents.length === 1
+                      ? 'h-full text-xs'
+                      : 'py-1 text-xxs'
                   }`}
                 >
                   <span className="truncate">{name}</span>
