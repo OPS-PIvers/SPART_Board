@@ -22,10 +22,15 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `WeatherWidget.tsx` monitors the `condition` state and calls `setBackground` on the dashboard context when `syncBackground` is enabled.
 **Configuration:** Enabled via the "Sync Background" toggle in Weather Settings.
 
+### Timer -> Sound Widget (Auto-Quiet)
+
+**Description:** Automatically enforces "Quiet Mode" (High Sensitivity) on the Noise Meter when a Timer is running.
+**Implementation:** `SoundWidget.tsx` monitors active `time-tool` widgets. If a timer is running, it locks the sensitivity to 4.0 (High).
+**Configuration:** Enabled via the "Auto-Quiet (Timer)" toggle in Sound Settings.
+
 ## Planned Connections
 
 - **Poll -> Scoreboard:** Update team scores based on poll results.
-- **Timer -> Noise Meter:** Adjust sensitivity based on timer activity (e.g., lower during "quiet time" timers).
 - **Instructional Routines -> All:** Bulk-launch tools required for a specific protocol.
 - **Noise Meter -> Traffic Light:** Automatically switch Traffic Light to Red when noise level exceeds a threshold.
 - **Clock -> Schedule:** Automatically mark schedule items as done based on the current time.

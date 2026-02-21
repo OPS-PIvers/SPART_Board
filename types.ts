@@ -207,6 +207,7 @@ export interface SoundConfig {
   autoTrafficLight?: boolean;
   trafficLightThreshold?: number;
   syncExpectations?: boolean;
+  syncTimer?: boolean;
 }
 
 export interface DrawingConfig {
