@@ -253,11 +253,13 @@ export const FeaturePermissionsManager: React.FC = () => {
       </div>
 
       {/* Widget Permission Cards */}
-      <div className={`${
-        viewMode === 'grid'
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-          : 'flex flex-col gap-2'
-      }`}>
+      <div
+        className={`${
+          viewMode === 'grid'
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+            : 'flex flex-col gap-2'
+        }`}
+      >
         {TOOLS.map((tool) => {
           const permission = getPermission(tool.type);
           const hasCustomPermission = permissions.has(tool.type);
@@ -278,7 +280,9 @@ export const FeaturePermissionsManager: React.FC = () => {
               onUpdate={(updates) => updatePermission(tool.type, updates)}
               onSave={() => savePermission(tool.type)}
               onDelete={() => deletePermission(tool.type)}
-              onToggleEditing={() => setEditingConfig(isEditing ? null : tool.type)}
+              onToggleEditing={() =>
+                setEditingConfig(isEditing ? null : tool.type)
+              }
               onOpenLibrary={() => setIsRoutinesLibraryOpen(true)}
               isLibraryOpen={isRoutinesLibraryOpen}
               showMessage={showMessage}

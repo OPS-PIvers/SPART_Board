@@ -7,7 +7,6 @@ import {
   InternalToolType,
   LunchCountGlobalConfig,
   WeatherGlobalConfig,
-  WebcamGlobalConfig,
   WeatherTemperatureRange,
   CatalystGlobalConfig,
 } from '../../types';
@@ -225,8 +224,7 @@ export const FeaturePermissionItem: React.FC<FeaturePermissionItemProps> = ({
       {tool.type === 'lunchCount' && (
         <div className="space-y-3">
           {(() => {
-            const config = (permission.config ??
-              {}) as LunchCountGlobalConfig;
+            const config = (permission.config ?? {}) as LunchCountGlobalConfig;
             const isSchumannIdMalformed =
               config.schumannSheetId && config.schumannSheetId.includes('/');
             const isIntermediateIdMalformed =
@@ -836,7 +834,8 @@ export const FeaturePermissionItem: React.FC<FeaturePermissionItemProps> = ({
                 }
               }}
               className={`p-2 rounded-lg transition-colors ${
-                (tool.type === 'instructionalRoutines' && isLibraryOpen) || isEditing
+                (tool.type === 'instructionalRoutines' && isLibraryOpen) ||
+                isEditing
                   ? 'bg-brand-blue-primary text-white'
                   : 'text-slate-400 hover:bg-slate-100'
               }`}
@@ -850,12 +849,12 @@ export const FeaturePermissionItem: React.FC<FeaturePermissionItemProps> = ({
               disabled={isSaving || !hasUnsavedChanges}
               className={`p-2 rounded-lg transition-colors ${
                 hasUnsavedChanges
-                    ? 'text-orange-600 hover:bg-orange-50'
-                    : 'text-slate-300 cursor-default'
+                  ? 'text-orange-600 hover:bg-orange-50'
+                  : 'text-slate-300 cursor-default'
               }`}
               title="Save Changes"
             >
-               <Save className="w-4 h-4" />
+              <Save className="w-4 h-4" />
             </button>
 
             {hasCustomPermission && (
@@ -873,61 +872,59 @@ export const FeaturePermissionItem: React.FC<FeaturePermissionItemProps> = ({
 
         {/* Expandable Configuration Area */}
         {(isEditing || permission.accessLevel === 'beta') && (
-            <div className="px-3 pb-3 bg-slate-50 border-t border-slate-100 pt-3">
-                {isEditing && renderConfigPanel()}
+          <div className="px-3 pb-3 bg-slate-50 border-t border-slate-100 pt-3">
+            {isEditing && renderConfigPanel()}
 
-                 {/* Beta Users (only show if access level is beta) - Reusing logic but simpler layout */}
-                {permission.accessLevel === 'beta' && (
-                    <div className="mt-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
-                            Beta Users
-                        </label>
-                        <div className="flex flex-wrap gap-2 items-center">
-                            {permission.betaUsers.map((email) => (
-                                <div
-                                    key={email}
-                                    className="flex items-center gap-1 pl-2 pr-1 py-1 bg-blue-100 text-blue-800 rounded-md text-xs"
-                                >
-                                    <span>{email}</span>
-                                    <button
-                                        onClick={() => removeBetaUser(email)}
-                                        className="hover:bg-blue-200 rounded p-0.5 transition-colors"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-
-                            <div className="flex gap-1 items-center">
-                                <input
-                                    type="email"
-                                    placeholder="Add beta user..."
-                                    className="px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand-blue-primary w-48"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            addBetaUser(
-                                                (e.target as HTMLInputElement).value
-                                            );
-                                            (e.target as HTMLInputElement).value = '';
-                                        }
-                                    }}
-                                />
-                                <button
-                                    onClick={(e) => {
-                                        const input = e.currentTarget
-                                            .previousElementSibling as HTMLInputElement;
-                                        addBetaUser(input.value);
-                                        input.value = '';
-                                    }}
-                                    className="p-1 bg-brand-blue-primary text-white rounded hover:bg-brand-blue-dark transition-colors"
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        </div>
+            {/* Beta Users (only show if access level is beta) - Reusing logic but simpler layout */}
+            {permission.accessLevel === 'beta' && (
+              <div className="mt-2">
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
+                  Beta Users
+                </label>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {permission.betaUsers.map((email) => (
+                    <div
+                      key={email}
+                      className="flex items-center gap-1 pl-2 pr-1 py-1 bg-blue-100 text-blue-800 rounded-md text-xs"
+                    >
+                      <span>{email}</span>
+                      <button
+                        onClick={() => removeBetaUser(email)}
+                        className="hover:bg-blue-200 rounded p-0.5 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
-                )}
-            </div>
+                  ))}
+
+                  <div className="flex gap-1 items-center">
+                    <input
+                      type="email"
+                      placeholder="Add beta user..."
+                      className="px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand-blue-primary w-48"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          addBetaUser((e.target as HTMLInputElement).value);
+                          (e.target as HTMLInputElement).value = '';
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={(e) => {
+                        const input = e.currentTarget
+                          .previousElementSibling as HTMLInputElement;
+                        addBetaUser(input.value);
+                        input.value = '';
+                      }}
+                      className="p-1 bg-brand-blue-primary text-white rounded hover:bg-brand-blue-dark transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     );
@@ -969,7 +966,8 @@ export const FeaturePermissionItem: React.FC<FeaturePermissionItemProps> = ({
               }
             }}
             className={`p-2 rounded-lg transition-colors ${
-              (tool.type === 'instructionalRoutines' && isLibraryOpen) || isEditing
+              (tool.type === 'instructionalRoutines' && isLibraryOpen) ||
+              isEditing
                 ? 'bg-brand-blue-primary text-white'
                 : 'text-slate-400 hover:bg-slate-100'
             }`}
