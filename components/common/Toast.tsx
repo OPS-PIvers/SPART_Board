@@ -44,7 +44,7 @@ export const Toast: React.FC<ToastProps> = ({
       case 'success':
         return 'bg-green-500 text-white';
       case 'error':
-        return 'bg-red-500 text-white';
+        return 'bg-brand-red-primary text-white';
       case 'warning':
         return 'bg-yellow-500 text-white';
       case 'loading':

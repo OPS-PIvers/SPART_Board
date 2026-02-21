@@ -47,7 +47,7 @@ import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
 import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
 import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 import { Toggle } from '../common/Toggle';
-import { Toast } from '../common/Toast';
+import { Toast } from '@/components/common/Toast';
 
 // Helper type guard
 const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {

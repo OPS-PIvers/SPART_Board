@@ -22,7 +22,7 @@ import {
   BarChart,
 } from 'lucide-react';
 import { Toggle } from '../common/Toggle';
-import { Toast } from '../common/Toast';
+import { Toast } from '@/components/common/Toast';
 
 const GLOBAL_FEATURES: {
   id: GlobalFeature;

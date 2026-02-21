@@ -26,7 +26,7 @@ import {
   trimImageWhitespace,
 } from '../../../utils/imageProcessing';
 import { PromptDialog } from './PromptDialog';
-import { Toast } from '../../common/Toast';
+import { Toast } from '@/components/common/Toast';
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 

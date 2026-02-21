@@ -18,7 +18,7 @@ describe('Toast Component', () => {
   it('renders error style', () => {
     render(<Toast message="Error" type="error" />);
     const toast = screen.getByRole('alert');
-    expect(toast).toHaveClass('bg-red-500');
+    expect(toast).toHaveClass('bg-brand-red-primary');
   });
 
   it('renders with standardized positioning classes', () => {
