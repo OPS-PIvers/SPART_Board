@@ -3,7 +3,7 @@
  * Shows field format instructions and previews the parsed questions before saving.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FileSpreadsheet,
   FileUp,
@@ -43,7 +43,14 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
   const [geminiPrompt, setGeminiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showGeminiPrompt && overlayRef.current) {
+      overlayRef.current.focus();
+    }
+  }, [showGeminiPrompt]);
 
   const handleParse = async () => {
     if (!sheetUrl.trim()) {
@@ -420,7 +427,9 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
       {/* Gemini Prompt Overlay */}
       {showGeminiPrompt && (
         <div
-          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
+          ref={overlayRef}
+          tabIndex={-1}
+          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200 outline-none"
           onKeyDown={(e) => {
             if (e.code === 'Escape') setShowGeminiPrompt(false);
           }}
