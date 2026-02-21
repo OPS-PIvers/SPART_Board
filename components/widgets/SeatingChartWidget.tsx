@@ -19,10 +19,8 @@ import {
   RotateCcw,
   Trash2,
   Monitor,
-  Maximize2,
   Dice5,
   User,
-  Copy,
   UserPlus,
   RefreshCw,
   Rows3,
@@ -31,12 +29,12 @@ import {
   MousePointer2,
 } from 'lucide-react';
 import { Button } from '../common/Button';
-import { FloatingPanel } from '../common/FloatingPanel';
 import {
   generateColumnsLayout,
   generateHorseshoeLayout,
   generatePodsLayout,
 } from './seatingChartLayouts';
+import { FurnitureItemRenderer } from './FurnitureItemRenderer';
 
 // Furniture definitions for palette
 const FURNITURE_TYPES: {
@@ -140,8 +138,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Multi-select: a Set of selected furniture IDs
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  // Convenience: the single selected id when exactly one item is selected
-  const selectedId = selectedIds.size === 1 ? [...selectedIds][0] : null;
 
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
@@ -218,11 +214,11 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   // --- SCALE HELPER ---
-  const getCanvasScale = (): number => {
+  const getCanvasScale = useCallback((): number => {
     const el = canvasRef.current;
     if (!el || el.offsetWidth === 0) return 1;
     return el.getBoundingClientRect().width / el.offsetWidth;
-  };
+  }, []);
 
   // Convert a client-space pointer event coordinate to canvas-space
   const getCanvasCoords = useCallback(
@@ -274,41 +270,52 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const updateFurniture = (id: string, updates: Partial<FurnitureItem>) => {
-    const next = furniture.map((f) => (f.id === id ? { ...f, ...updates } : f));
-    updateWidget(widget.id, {
-      config: { ...config, furniture: next },
-    });
-  };
+  const handleRotate = useCallback(
+    (id: string, delta: number) => {
+      const next = furniture.map((f) =>
+        f.id === id ? { ...f, rotation: (f.rotation + delta + 360) % 360 } : f
+      );
+      updateWidget(widget.id, {
+        config: { ...config, furniture: next },
+      });
+    },
+    [furniture, widget.id, config, updateWidget]
+  );
 
-  const duplicateFurniture = (id: string) => {
-    const item = furniture.find((f) => f.id === id);
-    if (!item) return;
+  const duplicateFurniture = useCallback(
+    (id: string) => {
+      const item = furniture.find((f) => f.id === id);
+      if (!item) return;
 
-    const newItem: FurnitureItem = {
-      ...item,
-      id: crypto.randomUUID(),
-      x: Math.round((item.x + 20) / gridSize) * gridSize,
-      y: Math.round((item.y + 20) / gridSize) * gridSize,
-    };
+      const newItem: FurnitureItem = {
+        ...item,
+        id: crypto.randomUUID(),
+        x: Math.round((item.x + 20) / gridSize) * gridSize,
+        y: Math.round((item.y + 20) / gridSize) * gridSize,
+      };
 
-    updateWidget(widget.id, {
-      config: { ...config, furniture: [...furniture, newItem] },
-    });
-    setSelectedIds(new Set([newItem.id]));
-  };
+      updateWidget(widget.id, {
+        config: { ...config, furniture: [...furniture, newItem] },
+      });
+      setSelectedIds(new Set([newItem.id]));
+    },
+    [furniture, gridSize, widget.id, config, updateWidget]
+  );
 
-  const removeFurniture = (id: string) => {
-    const next = furniture.filter((f) => f.id !== id);
-    const nextAssignments = { ...assignments };
-    Object.entries(assignments).forEach(([student, furnId]) => {
-      if (furnId === id) delete nextAssignments[student];
-    });
-    updateWidget(widget.id, {
-      config: { ...config, furniture: next, assignments: nextAssignments },
-    });
-    setSelectedIds(new Set());
-  };
+  const removeFurniture = useCallback(
+    (id: string) => {
+      const next = furniture.filter((f) => f.id !== id);
+      const nextAssignments = { ...assignments };
+      Object.entries(assignments).forEach(([student, furnId]) => {
+        if (furnId === id) delete nextAssignments[student];
+      });
+      updateWidget(widget.id, {
+        config: { ...config, furniture: next, assignments: nextAssignments },
+      });
+      setSelectedIds(new Set());
+    },
+    [furniture, assignments, widget.id, config, updateWidget]
+  );
 
   // --- GROUP OPERATIONS (multi-select) ---
 
@@ -396,105 +403,128 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     setSelectedStudent(selectedStudent === studentName ? null : studentName);
   };
 
-  const handleFurnitureClick = (furnitureId: string) => {
-    // Ctrl/Meta click was already handled in handlePointerDown — suppress here
-    if (suppressNextClickRef.current) {
-      suppressNextClickRef.current = false;
-      return;
-    }
+  const handleFurnitureClick = useCallback(
+    (furnitureId: string) => {
+      // Ctrl/Meta click was already handled in handlePointerDown — suppress here
+      if (suppressNextClickRef.current) {
+        suppressNextClickRef.current = false;
+        return;
+      }
 
-    if (mode === 'setup') {
-      // Regular click in setup mode: select only this item
-      setSelectedIds(new Set([furnitureId]));
-      return;
-    }
-    if (mode === 'assign' && selectedStudent) {
-      updateWidget(widget.id, {
-        config: {
-          ...config,
-          assignments: { ...assignments, [selectedStudent]: furnitureId },
-        },
-      });
-      setSelectedStudent(null);
-      addToast(`Assigned ${selectedStudent}`, 'success');
-    }
-  };
+      if (mode === 'setup') {
+        // Regular click in setup mode: select only this item
+        setSelectedIds(new Set([furnitureId]));
+        return;
+      }
+      if (mode === 'assign' && selectedStudent) {
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            assignments: { ...assignments, [selectedStudent]: furnitureId },
+          },
+        });
+        setSelectedStudent(null);
+        addToast(`Assigned ${selectedStudent}`, 'success');
+      }
+    },
+    [
+      mode,
+      selectedStudent,
+      widget.id,
+      config,
+      assignments,
+      updateWidget,
+      addToast,
+    ]
+  );
 
   // --- DRAG LOGIC (single + multi-item) ---
 
-  const handlePointerDown = (e: React.PointerEvent, id: string) => {
-    if (mode !== 'setup') return;
-    e.stopPropagation();
-    e.preventDefault();
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent, id: string) => {
+      if (mode !== 'setup') return;
+      e.stopPropagation();
+      e.preventDefault();
 
-    // Ctrl / Meta + click → toggle item in/out of selection, no drag
-    if (e.ctrlKey || e.metaKey) {
-      suppressNextClickRef.current = true;
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      });
-      return;
-    }
-
-    // Determine the set of items to drag:
-    // - if the clicked item is already selected, drag all selected items
-    // - otherwise, select only the clicked item and drag it
-    const idsForDrag: Set<string> = selectedIds.has(id)
-      ? new Set(selectedIds)
-      : new Set([id]);
-
-    if (!selectedIds.has(id)) {
-      setSelectedIds(new Set([id]));
-    }
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const canvasScale = getCanvasScale();
-
-    // Capture the initial positions of every item in the drag set (single O(N) pass)
-    const origPositions = new Map<string, { x: number; y: number }>();
-    furniture.forEach((item) => {
-      if (idsForDrag.has(item.id)) {
-        origPositions.set(item.id, { x: item.x, y: item.y });
-      }
-    });
-
-    // Mutable copy updated on every pointermove (used in the pointerup closure)
-    const currentPositions = new Map(origPositions);
-    setDragState(new Map(origPositions));
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = (moveEvent.clientX - startX) / canvasScale;
-      const dy = (moveEvent.clientY - startY) / canvasScale;
-
-      for (const [selId, orig] of origPositions) {
-        currentPositions.set(selId, {
-          x: Math.round((orig.x + dx) / gridSize) * gridSize,
-          y: Math.round((orig.y + dy) / gridSize) * gridSize,
+      // Ctrl / Meta + click → toggle item in/out of selection, no drag
+      if (e.ctrlKey || e.metaKey) {
+        suppressNextClickRef.current = true;
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
         });
+        return;
       }
-      setDragState(new Map(currentPositions));
-    };
 
-    const handlePointerUp = () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      // Determine the set of items to drag:
+      // - if the clicked item is already selected, drag all selected items
+      // - otherwise, select only the clicked item and drag it
+      const idsForDrag: Set<string> = selectedIds.has(id)
+        ? new Set(selectedIds)
+        : new Set([id]);
 
-      // Commit all moved positions in a single update
-      const next = furniture.map((f) => {
-        const pos = currentPositions.get(f.id);
-        return pos ? { ...f, ...pos } : f;
+      if (!selectedIds.has(id)) {
+        setSelectedIds(new Set([id]));
+      }
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const canvasScale = getCanvasScale();
+
+      // Capture the initial positions of every item in the drag set (single O(N) pass)
+      const origPositions = new Map<string, { x: number; y: number }>();
+      furniture.forEach((item) => {
+        if (idsForDrag.has(item.id)) {
+          origPositions.set(item.id, { x: item.x, y: item.y });
+        }
       });
-      updateWidget(widget.id, { config: { ...config, furniture: next } });
-      setDragState(null);
-    };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-  };
+      // Mutable copy updated on every pointermove (used in the pointerup closure)
+      const currentPositions = new Map(origPositions);
+      setDragState(new Map(origPositions));
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const dx = (moveEvent.clientX - startX) / canvasScale;
+        const dy = (moveEvent.clientY - startY) / canvasScale;
+
+        for (const [selId, orig] of origPositions) {
+          currentPositions.set(selId, {
+            x: Math.round((orig.x + dx) / gridSize) * gridSize,
+            y: Math.round((orig.y + dy) / gridSize) * gridSize,
+          });
+        }
+        setDragState(new Map(currentPositions));
+      };
+
+      const handlePointerUp = () => {
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+
+        // Commit all moved positions in a single update
+        const next = furniture.map((f) => {
+          const pos = currentPositions.get(f.id);
+          return pos ? { ...f, ...pos } : f;
+        });
+        updateWidget(widget.id, { config: { ...config, furniture: next } });
+        setDragState(null);
+      };
+
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    },
+    [
+      mode,
+      selectedIds,
+      furniture,
+      getCanvasScale,
+      gridSize,
+      widget.id,
+      config,
+      updateWidget,
+    ]
+  );
 
   // --- RUBBER-BAND (canvas background drag to select) ---
 
@@ -568,73 +598,105 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     }
   };
 
-  const handleResizeStart = (e: React.PointerEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const item = furniture.find((f) => f.id === id);
-    if (!item) return;
+  const handleResizeStart = useCallback(
+    (e: React.PointerEvent, id: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const item = furniture.find((f) => f.id === id);
+      if (!item) return;
 
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startW = item.width;
-    const startH = item.height;
-    const currentSize = { w: startW, h: startH };
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = item.width;
+      const startH = item.height;
+      const currentSize = { w: startW, h: startH };
 
-    const canvasScale = getCanvasScale();
+      const canvasScale = getCanvasScale();
 
-    setResizeState({ id, width: startW, height: startH });
+      setResizeState({ id, width: startW, height: startH });
 
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = (moveEvent.clientX - startX) / canvasScale;
-      const dy = (moveEvent.clientY - startY) / canvasScale;
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const dx = (moveEvent.clientX - startX) / canvasScale;
+        const dy = (moveEvent.clientY - startY) / canvasScale;
 
-      let newW = Math.round((startW + dx) / gridSize) * gridSize;
-      let newH = Math.round((startH + dy) / gridSize) * gridSize;
+        let newW = Math.round((startW + dx) / gridSize) * gridSize;
+        let newH = Math.round((startH + dy) / gridSize) * gridSize;
 
-      if (newW < gridSize) newW = gridSize;
-      if (newH < gridSize) newH = gridSize;
+        if (newW < gridSize) newW = gridSize;
+        if (newH < gridSize) newH = gridSize;
 
-      currentSize.w = newW;
-      currentSize.h = newH;
-      setResizeState({ id, width: newW, height: newH });
-    };
+        currentSize.w = newW;
+        currentSize.h = newH;
+        setResizeState({ id, width: newW, height: newH });
+      };
 
-    const handlePointerUp = () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      updateFurniture(id, { width: currentSize.w, height: currentSize.h });
-      setResizeState(null);
-    };
+      const handlePointerUp = () => {
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+        // Manually update widget here instead of calling updateFurniture which is not available in closure
+        // But we have updateWidget available
+        // Wait, updateFurniture helper was removed or replaced.
+        // We should replicate update logic here.
+        // Or better, we can invoke updateWidget directly.
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-  };
+        // Re-read furniture from state might be stale if closure is stale?
+        // But furniture is in dependency array.
+
+        // NOTE: We need to access the LATEST furniture state.
+        // But handleResizeStart is recreated when furniture changes. So it's fine.
+
+        // Wait, 'furniture' in handleResizeStart closure is the one from when drag started.
+        // That is fine because furniture doesn't change during resize (only at end).
+
+        const next = furniture.map((f) =>
+          f.id === id
+            ? { ...f, width: currentSize.w, height: currentSize.h }
+            : f
+        );
+        updateWidget(widget.id, {
+          config: { ...config, furniture: next },
+        });
+
+        setResizeState(null);
+      };
+
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    },
+    [furniture, getCanvasScale, gridSize, widget.id, config, updateWidget]
+  );
 
   // --- ASSIGN LOGIC (Students) ---
 
-  const handleStudentDrop = (e: React.DragEvent, furnitureId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (mode !== 'assign') return;
+  const handleStudentDrop = useCallback(
+    (e: React.DragEvent, furnitureId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (mode !== 'assign') return;
 
-    const studentName = e.dataTransfer.getData('studentName');
-    if (!studentName) return;
+      const studentName = e.dataTransfer.getData('studentName');
+      if (!studentName) return;
 
-    if (assignments[studentName] === furnitureId) return;
+      if (assignments[studentName] === furnitureId) return;
 
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        assignments: { ...assignments, [studentName]: furnitureId },
-      },
-    });
-  };
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          assignments: { ...assignments, [studentName]: furnitureId },
+        },
+      });
+    },
+    [mode, assignments, widget.id, config, updateWidget]
+  );
 
-  const handleRemoveAssignment = (studentName: string) => {
-    const next = { ...assignments };
-    delete next[studentName];
-    updateWidget(widget.id, { config: { ...config, assignments: next } });
-  };
+  const handleRemoveAssignment = useCallback(
+    (studentName: string) => {
+      const next = { ...assignments };
+      delete next[studentName];
+      updateWidget(widget.id, { config: { ...config, assignments: next } });
+    },
+    [assignments, widget.id, config, updateWidget]
+  );
 
   const addAllRandomly = () => {
     const targetFurniture = furniture.filter(
@@ -731,47 +793,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   // --- RENDERING ---
-
-  const getFurnitureStyle = (item: FurnitureItem) => {
-    const isSelected = selectedIds.has(item.id) && mode === 'setup';
-    const isHighlighted = randomHighlight === item.id;
-
-    let bg = 'bg-white';
-    let border = 'border-slate-300';
-
-    if (item.type === 'desk') {
-      bg = 'bg-white';
-      border = 'border-slate-300';
-    }
-    if (item.type === 'table-rect') {
-      bg = 'bg-amber-100';
-      border = 'border-amber-300';
-    }
-    if (item.type === 'table-round') {
-      bg = 'bg-amber-100';
-      border = 'border-amber-300';
-    }
-    if (item.type === 'rug') {
-      bg = 'bg-indigo-100';
-      border = 'border-indigo-300';
-    }
-    if (item.type === 'teacher-desk') {
-      bg = 'bg-slate-200';
-      border = 'border-slate-400';
-    }
-    if (isHighlighted) {
-      bg = 'bg-yellow-300';
-      border = 'border-yellow-500';
-    }
-
-    return `absolute border-2 flex items-center justify-center transition-all ${bg} ${border} ${isSelected ? 'ring-2 ring-blue-500 z-10' : ''} ${item.type === 'table-round' ? 'rounded-full' : 'rounded-lg'} shadow-sm`;
-  };
-
-  const getAssignedStudents = (furnitureId: string) => {
-    return Object.entries(assignments)
-      .filter(([, fId]) => fId === furnitureId)
-      .map(([name]) => name);
-  };
 
   const studentCount = students.length;
   const multiSelected = selectedIds.size > 1;
@@ -1062,145 +1083,30 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
           )}
 
           {furniture.map((item) => {
-            const assigned = getAssignedStudents(item.id);
             const dragPos = dragState?.get(item.id);
-            const displayX = dragPos !== undefined ? dragPos.x : item.x;
-            const displayY = dragPos !== undefined ? dragPos.y : item.y;
-            const displayW =
-              resizeState?.id === item.id ? resizeState.width : item.width;
-            const displayH =
-              resizeState?.id === item.id ? resizeState.height : item.height;
+            const resizeSize =
+              resizeState?.id === item.id ? resizeState : undefined;
 
+            // Optimization: Memoized renderer prevents re-renders of non-dragged items during drag operations (O(N) -> O(1))
             return (
-              <div
+              <FurnitureItemRenderer
                 key={item.id}
-                onPointerDown={(e) => handlePointerDown(e, item.id)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleFurnitureClick(item.id);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                }}
-                onDrop={(e) => handleStudentDrop(e, item.id)}
-                style={{
-                  left: displayX,
-                  top: displayY,
-                  width: displayW,
-                  height: displayH,
-                  transform: `rotate(${item.rotation}deg)`,
-                }}
-                className={`${getFurnitureStyle(item)} ${mode === 'setup' ? 'cursor-move' : ''}`}
-              >
-                {/* Resize Handle — only for the single selected item */}
-                {mode === 'setup' && selectedId === item.id && (
-                  <div
-                    onPointerDown={(e) => handleResizeStart(e, item.id)}
-                    className="absolute -bottom-2 -right-2 w-6 h-6 flex items-center justify-center cursor-nwse-resize z-50 bg-white shadow rounded-full border border-slate-200 hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors"
-                  >
-                    <Maximize2 className="w-3 h-3 rotate-90" />
-                  </div>
-                )}
-
-                {/* Floating Menu — single item selected, not dragging/resizing */}
-                {mode === 'setup' &&
-                  selectedId === item.id &&
-                  !dragState &&
-                  !resizeState && (
-                    <FloatingPanel
-                      onPointerDown={(e) => e.stopPropagation()}
-                      shape="pill"
-                      padding="sm"
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1"
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateFurniture(item.id, {
-                            rotation: (item.rotation - 45 + 360) % 360,
-                          });
-                        }}
-                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
-                        title="Rotate Left"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateFurniture(item.id, {
-                            rotation: (item.rotation + 45) % 360,
-                          });
-                        }}
-                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
-                        title="Rotate Right"
-                      >
-                        <RotateCw className="w-4 h-4" />
-                      </button>
-                      <div className="w-px h-4 bg-slate-200 mx-0.5" />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          duplicateFurniture(item.id);
-                        }}
-                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
-                        title="Duplicate"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFurniture(item.id);
-                        }}
-                        className="p-1.5 hover:bg-red-50 rounded-full text-red-500 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </FloatingPanel>
-                  )}
-
-                {/* Content */}
-                <div className="flex flex-col items-center justify-center p-1 w-full h-full overflow-hidden pointer-events-none">
-                  {assigned.length === 0 && (
-                    <div className="opacity-20">
-                      {item.type === 'desk' && <Monitor className="w-5 h-5" />}
-                      {item.type === 'teacher-desk' && (
-                        <User className="w-5 h-5" />
-                      )}
-                      {item.type.includes('table') && (
-                        <LayoutGrid className="w-6 h-6" />
-                      )}
-                      {item.type === 'rug' && <Armchair className="w-6 h-6" />}
-                    </div>
-                  )}
-                  {assigned.length > 0 && (
-                    <div className="flex flex-col items-center justify-center gap-1 w-full h-full overflow-hidden">
-                      {assigned.map((name) => (
-                        <div
-                          key={name}
-                          className={`bg-white px-1.5 rounded font-bold shadow-sm border border-slate-100 truncate w-full text-center pointer-events-auto flex items-center justify-center ${assigned.length === 1 ? 'h-full text-xs' : 'py-1 text-xxs'}`}
-                        >
-                          <span className="truncate">{name}</span>
-                          {mode === 'assign' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveAssignment(name);
-                              }}
-                              className="ml-1 text-red-400 hover:text-red-600"
-                            >
-                              &times;
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                item={item}
+                mode={mode}
+                isSelected={selectedIds.has(item.id) && mode === 'setup'}
+                isHighlighted={randomHighlight === item.id}
+                dragPos={dragPos}
+                resizeSize={resizeSize}
+                assignments={assignments}
+                onPointerDown={handlePointerDown}
+                onClick={handleFurnitureClick}
+                onStudentDrop={handleStudentDrop}
+                onResizeStart={handleResizeStart}
+                onRotate={handleRotate}
+                onDuplicate={duplicateFurniture}
+                onRemove={removeFurniture}
+                onRemoveAssignment={handleRemoveAssignment}
+              />
             );
           })}
 
