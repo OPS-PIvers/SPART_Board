@@ -15,6 +15,7 @@ import {
   Volume2,
   VolumeX,
   Clock,
+  FileText,
 } from 'lucide-react';
 
 export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
@@ -144,43 +145,80 @@ export const RandomSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Automation - Nexus Connection */}
       {mode === 'single' && (
-        <div className="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-3">
-            <div
-              className={`p-2 rounded-lg ${autoStartTimer ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-400'}`}
-            >
-              <Clock className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xxs uppercase tracking-widest text-indigo-900 font-bold">
-                Auto-Start Timer
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-lg ${autoStartTimer ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-400'}`}
+              >
+                <Clock className="w-4 h-4" />
               </div>
-              <div className="text-xxxs text-indigo-600 uppercase">
-                Start timer when winner is picked
+              <div>
+                <div className="text-xxs uppercase tracking-widest text-indigo-900 font-bold">
+                  Auto-Start Timer
+                </div>
+                <div className="text-xxxs text-indigo-600 uppercase">
+                  Start timer when winner is picked
+                </div>
               </div>
             </div>
+            <Toggle
+              checked={autoStartTimer ?? false}
+              onChange={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, autoStartTimer: !autoStartTimer },
+                })
+              }
+              size="md"
+              disabled={
+                !activeDashboard?.widgets.some((w) => w.type === 'time-tool')
+              }
+            />
           </div>
-          <Toggle
-            checked={autoStartTimer ?? false}
-            onChange={() =>
-              updateWidget(widget.id, {
-                config: { ...config, autoStartTimer: !autoStartTimer },
-              })
-            }
-            size="md"
-            disabled={
-              !activeDashboard?.widgets.some((w) => w.type === 'time-tool')
-            }
-          />
+          {!activeDashboard?.widgets.some((w) => w.type === 'time-tool') &&
+            autoStartTimer && (
+              <div className="text-xxxs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                ⚠️ Timer widget required for automation.
+              </div>
+            )}
+
+          <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-100 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-lg ${config.logToNotes ? 'bg-yellow-200 text-yellow-800' : 'bg-yellow-100 text-yellow-400'}`}
+              >
+                <FileText className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xxs uppercase tracking-widest text-yellow-900 font-bold">
+                  Log History to Notes
+                </div>
+                <div className="text-xxxs text-yellow-700 uppercase">
+                  Append winner to Text Widget
+                </div>
+              </div>
+            </div>
+            <Toggle
+              checked={config.logToNotes ?? false}
+              onChange={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, logToNotes: !config.logToNotes },
+                })
+              }
+              size="md"
+              disabled={
+                !activeDashboard?.widgets.some((w) => w.type === 'text')
+              }
+            />
+          </div>
+          {!activeDashboard?.widgets.some((w) => w.type === 'text') &&
+            config.logToNotes && (
+              <div className="text-xxxs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                ⚠️ Text widget required for logging.
+              </div>
+            )}
         </div>
       )}
-      {!activeDashboard?.widgets.some((w) => w.type === 'time-tool') &&
-        mode === 'single' &&
-        autoStartTimer && (
-          <div className="text-xxxs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
-            ⚠️ Timer widget required for automation.
-          </div>
-        )}
 
       <div>
         <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-3 block">

@@ -7,6 +7,7 @@ import {
   TimeToolConfig,
   RandomGroup,
   SharedGroup,
+  TextConfig,
 } from '../../../types';
 import { Button } from '../../common/Button';
 import { Users, RefreshCw, Layers, Target, RotateCcw } from 'lucide-react';
@@ -239,6 +240,42 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 } as WidgetConfig,
               });
             }
+          }
+        }
+
+        // Nexus: Log to Notes Logic
+        if (
+          config.logToNotes &&
+          activeDashboard &&
+          mode === 'single' &&
+          typeof syncResult === 'string'
+        ) {
+          const textWidget = activeDashboard.widgets.find(
+            (w) => w.type === 'text'
+          );
+
+          if (textWidget) {
+            const textConfig = textWidget.config as TextConfig;
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+
+            // If content is empty or placeholder, start fresh.
+            let newContent = textConfig.content || '';
+            if (newContent === 'Click to edit...') newContent = '';
+
+            const entry = `<div><span style="opacity: 0.5; font-size: 0.8em; font-family: monospace;">[${timeString}]</span> <b>${syncResult}</b></div>`;
+
+            newContent += entry;
+
+            updateWidget(textWidget.id, {
+              config: {
+                ...textConfig,
+                content: newContent,
+              } as unknown as WidgetConfig,
+            });
           }
         }
       } catch (err) {
