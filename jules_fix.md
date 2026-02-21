@@ -18,22 +18,22 @@ Instead of using the environment variable API key, ask Firebase's default servic
 TypeScript
 // Generate OAuth 2.0 Access Token
 const auth = new GoogleAuth({
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 });
 const client = await auth.getClient();
 const accessToken = await client.getAccessToken();
 
 if (!accessToken.token) {
-  throw new functionsV2.https.HttpsError('internal', 'Failed to generate OAuth token.');
+throw new functionsV2.https.HttpsError('internal', 'Failed to generate OAuth token.');
 }
 Step 4: Update the Axios Headers
 Change your Axios POST request headers to use the standard Authorization header instead of X-Goog-Api-Key:
 
 TypeScript
 {
-  headers: {
-    'Authorization': `Bearer ${accessToken.token}`,
-    'Content-Type': 'application/json',
-  }
+headers: {
+'Authorization': `Bearer ${accessToken.token}`,
+'Content-Type': 'application/json',
+}
 }
 Once deployed, your Firebase function will identify itself securely to the Jules API using standard Google Cloud IAM protocols, bypassing the "invalid authentication credentials" block entirely.
