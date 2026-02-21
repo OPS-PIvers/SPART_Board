@@ -11,7 +11,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import { db, auth } from '../config/firebase';
+import { db, auth, isAuthBypass } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 
 // Constants for Firestore Paths
@@ -104,6 +104,11 @@ export const useLiveSession = (
 
   // SESSION SUBSCRIPTION: Subscribe to session document (Teachers use userId, Students use joinCode)
   useEffect(() => {
+    if (isAuthBypass) {
+      setLoading(false);
+      return;
+    }
+
     const targetId = role === 'teacher' ? userId : joinCode;
     if (!targetId) {
       if (role === 'student' && !joinCode) {
