@@ -35,6 +35,7 @@ interface ClassLinkStudent {
 interface AIData {
   type:
     | 'mini-app'
+    | 'quiz'
     | 'poll'
     | 'dashboard-layout'
     | 'instructional-routine'

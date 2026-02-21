@@ -13,8 +13,10 @@ import {
   Loader2,
   Info,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { QuizData, QuizQuestion } from '@/types';
+import { generateQuiz, GeneratedQuestion } from '@/utils/ai';
 
 interface QuizImporterProps {
   onBack: () => void;
@@ -36,6 +38,11 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFormat, setShowFormat] = useState(false);
+
+  const [showGeminiPrompt, setShowGeminiPrompt] = useState(false);
+  const [geminiPrompt, setGeminiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleParse = async () => {
@@ -86,6 +93,41 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
     }
   };
 
+  const handleGeminiGenerate = async () => {
+    if (!geminiPrompt.trim()) return;
+    setIsGenerating(true);
+    setError(null);
+    setParsedQuiz(null);
+    try {
+      const result = await generateQuiz(geminiPrompt);
+      setTitle(result.title);
+      // Assign IDs to questions as they might be missing from AI response
+      const questionsWithIds = result.questions.map((q: GeneratedQuestion) => ({
+        id: crypto.randomUUID(),
+        text: q.text,
+        // Ensure defaults if missing
+        timeLimit: q.timeLimit ?? 30,
+        type: (q.type as QuizQuestion['type']) ?? 'MC',
+        correctAnswer: q.correctAnswer ?? '',
+        incorrectAnswers: q.incorrectAnswers ?? [],
+      })) as QuizQuestion[];
+
+      setParsedQuiz({
+        id: crypto.randomUUID(),
+        title: result.title,
+        questions: questionsWithIds,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      setShowGeminiPrompt(false);
+      setGeminiPrompt('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate quiz');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!parsedQuiz) return;
     setSaving(true);
@@ -100,7 +142,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full font-sans">
+    <div className="flex flex-col h-full font-sans relative">
       {/* Header */}
       <div
         className="flex items-center gap-3 border-b border-brand-blue-primary/10 bg-brand-blue-lighter/30"
@@ -179,6 +221,14 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
                 <strong>Tip:</strong> CSV is private and doesn&apos;t require
                 public link sharing. Use it for sensitive assessments.
               </p>
+              <a
+                href="https://gemini.google.com/gem/1fhsIc6WX8_mSDldDOTuH4HNOjmjECGZW?usp=sharing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-bold text-xs hover:opacity-90 transition-opacity mt-2"
+              >
+                Open Gemini CSV Helper
+              </a>
             </div>
           )}
 
@@ -210,6 +260,35 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
               </label>
 
               <div className="grid grid-cols-1 gap-3">
+                {/* Gemini Generator Button */}
+                <button
+                  onClick={() => setShowGeminiPrompt(true)}
+                  disabled={loading}
+                  className="w-full py-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 border-2 border-dashed border-indigo-500/30 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group active:scale-95"
+                >
+                  <Sparkles className="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
+                  <span
+                    className="font-bold text-indigo-600"
+                    style={{ fontSize: 'min(12px, 3.5cqmin)' }}
+                  >
+                    Generate with AI
+                  </span>
+                  <p
+                    className="text-indigo-400"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
+                  >
+                    Magic Quiz Creator
+                  </p>
+                </button>
+
+                <div className="relative py-1 flex items-center">
+                  <div className="flex-grow border-t border-brand-blue-primary/10"></div>
+                  <span className="flex-shrink mx-3 text-[10px] font-black text-brand-blue-primary/30 uppercase tracking-widest">
+                    OR
+                  </span>
+                  <div className="flex-grow border-t border-brand-blue-primary/10"></div>
+                </div>
+
                 {/* CSV Upload */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -331,6 +410,57 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
           )}
         </div>
       </div>
+
+      {/* Gemini Prompt Overlay */}
+      {showGeminiPrompt && (
+        <div
+          className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setShowGeminiPrompt(false);
+          }}
+        >
+          <div className="w-full max-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-black text-indigo-600 flex items-center gap-2 uppercase tracking-tight">
+                <Sparkles className="w-5 h-5" /> Magic Quiz Generator
+              </h4>
+              <button
+                onClick={() => setShowGeminiPrompt(false)}
+                className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600"
+                aria-label="Close Magic Generator"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest opacity-60">
+              Describe the quiz you want to create.
+            </p>
+            <textarea
+              value={geminiPrompt}
+              onChange={(e) => setGeminiPrompt(e.target.value)}
+              placeholder="e.g. A 5-question quiz about the solar system for 3rd graders."
+              className="w-full h-32 p-4 bg-white border-2 border-indigo-100 rounded-2xl text-sm text-indigo-900 placeholder-indigo-300 focus:outline-none focus:border-indigo-500 resize-none shadow-inner"
+              autoFocus
+              aria-label="Describe your quiz"
+            />
+            <button
+              onClick={handleGeminiGenerate}
+              disabled={isGenerating || !geminiPrompt.trim()}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" /> Generate Quiz
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
