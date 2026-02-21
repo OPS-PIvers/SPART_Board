@@ -48,14 +48,18 @@ describe('QuizImporter', () => {
     fireEvent.click(generateButton);
 
     // Check if overlay is open
-    expect(screen.getByText(/Magic Quiz Creator/i)).toBeInTheDocument();
+    expect(
+      screen.getByText('Describe the quiz you want to create.')
+    ).toBeInTheDocument();
 
     // Click Close button (X icon)
     const closeButton = screen.getByLabelText('Close Magic Generator');
     fireEvent.click(closeButton);
 
     // Check if overlay is closed
-    expect(screen.queryByText(/Magic Quiz Creator/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Describe the quiz you want to create.')
+    ).not.toBeInTheDocument();
   });
 
   it('closes the AI generation overlay when Escape key is pressed', async () => {
@@ -72,38 +76,38 @@ describe('QuizImporter', () => {
     fireEvent.click(screen.getByText('Generate with AI'));
 
     // Verify overlay is open
-    expect(screen.getByText(/Magic Quiz Creator/i)).toBeInTheDocument();
+    expect(
+      screen.getByText('Describe the quiz you want to create.')
+    ).toBeInTheDocument();
 
-    // The overlay should be focused due to our fix
-    // We can simulate the keydown on the active element or the overlay itself
-    // Since we focus the overlayRef, we can fire on that element if we could find it,
-    // or just fire on the document activeElement
+    // The overlay should be focused due to our fix in the component.
+    // However, in JSDOM, we might need to manually ensure the focus or fire on the window.
+    // The component attaches onKeyDown to the DIV.
 
-    // Simulate Escape key press on the focused element
-    // Note: In JSDOM, focus management might need help, so we target the focused element
-    // or fire globally if the event listener was global (it's not, it's on the div).
-    // The test environment might not automatically focus, but our useEffect does.
-    // We'll trust the component logic sets focus and fire event on the overlay div.
-
-    // Find the overlay div - likely by a contained text or role if we added one.
-    // Since we didn't add role="dialog", we can find by text and traverse up or add a test id.
-    // However, the event handler is on the backdrop div.
-    // Let's assume the user interaction flow:
-
-    // We need to trigger the keydown event on the element that has the listener.
-    // In our implementation, the listener is on the container div.
-    // We can find it by the text inside it.
-    const overlayContainer = screen
-      .getByText(/Magic Quiz Creator/i)
-      .closest('div')?.parentElement;
+    // Find the overlay container (the div with the event handler)
+    // We can find it by finding the close button and going up to the overlay container
+    const closeButton = screen.getByLabelText('Close Magic Generator');
+    // The structure is: div (overlay) -> div (content) -> div (header) -> button (close)
+    const overlayContent = closeButton.closest('div')?.parentElement;
+    const overlayContainer = overlayContent?.parentElement;
 
     if (overlayContainer) {
+      // Ensure it's focused as per the component logic
+      overlayContainer.focus();
       fireEvent.keyDown(overlayContainer, { key: 'Escape', code: 'Escape' });
+    } else {
+      // Fallback: Fire on active element
+      fireEvent.keyDown(document.activeElement ?? document.body, {
+        key: 'Escape',
+        code: 'Escape',
+      });
     }
 
     // Verify overlay is closed
     await waitFor(() => {
-      expect(screen.queryByText(/Magic Quiz Creator/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Describe the quiz you want to create.')
+      ).not.toBeInTheDocument();
     });
   });
 
