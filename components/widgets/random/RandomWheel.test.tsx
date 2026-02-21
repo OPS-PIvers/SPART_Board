@@ -7,7 +7,7 @@ vi.mock('../../../context/useDashboard', () => ({
   useDashboard: () => ({
     activeDashboard: {
       globalStyle: {
-        fontFamily: 'inter',
+        fontFamily: 'sans',
       },
     },
   }),
