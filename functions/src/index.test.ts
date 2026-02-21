@@ -48,6 +48,17 @@ vi.mock('firebase-functions/v1', () => ({
 // Mock axios
 vi.mock('axios');
 
+// Mock google-auth-library
+vi.mock('google-auth-library', () => ({
+  GoogleAuth: class {
+    getClient() {
+      return Promise.resolve({
+        getAccessToken: () => Promise.resolve({ token: 'mock-access-token' }),
+      });
+    }
+  },
+}));
+
 // Import the function under test
 import {
   triggerJulesWidgetGeneration,
@@ -91,12 +102,12 @@ describe('triggerJulesWidgetGeneration', () => {
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
         sourceContext: expect.objectContaining({
-          source: 'sources/github/OPS-PIvers/SPART_Board',
+          source: 'sources/github.com/OPS-PIvers/SPART_Board',
         }),
       }),
       expect.objectContaining({
         headers: expect.objectContaining({
-          'X-Goog-Api-Key': 'test-api-key',
+          Authorization: 'Bearer mock-access-token',
         }),
       })
     );
