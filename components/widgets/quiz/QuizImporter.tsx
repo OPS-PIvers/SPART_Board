@@ -122,7 +122,11 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
       setShowGeminiPrompt(false);
       setGeminiPrompt('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate quiz');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate quiz. Please try again.'
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -416,7 +420,7 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
         <div
           className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200"
           onKeyDown={(e) => {
-            if (e.key === 'Escape') setShowGeminiPrompt(false);
+            if (e.code === 'Escape') setShowGeminiPrompt(false);
           }}
         >
           <div className="w-full max-sm space-y-4">
