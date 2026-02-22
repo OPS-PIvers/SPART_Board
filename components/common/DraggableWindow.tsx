@@ -923,7 +923,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     <IconButton
                       onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
                       icon={<ChevronRight className="w-3.5 h-3.5" />}
-                      label="Expand Toolbar"
+                      label={
+                        isToolbarExpanded
+                          ? 'Collapse Toolbar'
+                          : 'Expand Toolbar'
+                      }
                       size="sm"
                       variant="glass"
                       className={isToolbarExpanded ? 'rotate-180' : ''}

@@ -172,6 +172,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             onClick={onClose}
             icon={<X className="w-4 h-4" />}
             label="Close settings"
+            title="Close settings (Esc)"
             variant="ghost"
             size="sm"
             shape="square"

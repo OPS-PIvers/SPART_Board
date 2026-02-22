@@ -55,7 +55,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 
     const activeStyles: Record<IconButtonVariant, string> = {
       primary:
-        'ring-2 ring-white ring-offset-2 ring-offset-brand-blue-primary bg-brand-blue-dark',
+        'ring-2 ring-white ring-offset-2 ring-offset-brand-blue-primary bg-brand-blue-dark text-white shadow-sm',
       secondary: 'bg-slate-200 text-slate-800',
       ghost: 'bg-slate-100 text-slate-800',
       'brand-ghost': 'bg-brand-blue-primary text-white shadow-md',
