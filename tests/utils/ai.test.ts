@@ -4,7 +4,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import { describe, it, expect, vi } from 'vitest';
-import { generateMiniAppCode, generatePoll } from '../../utils/ai';
+import {
+  generateMiniAppCode,
+  generatePoll,
+  generateDashboardLayout,
+  generateQuiz,
+  extractTextWithGemini,
+} from '../../utils/ai';
 
 // Mock Firebase Functions
 vi.mock('firebase/functions', () => {
@@ -12,17 +18,85 @@ vi.mock('firebase/functions', () => {
     getFunctions: vi.fn(),
     httpsCallable: vi.fn().mockImplementation((_functions, _name) => {
       return async (data: any) => {
-        if (data.prompt && data.prompt.includes('FAIL')) {
+        if (
+          (data.prompt && data.prompt.includes('FAIL')) ||
+          (data.image && data.image.includes('FAIL'))
+        ) {
           throw new Error('Simulated API Failure');
         }
 
         if (data.type === 'poll') {
+          if (data.prompt.includes('invalid-response')) {
+            return { data: {} };
+          }
           return {
             data: {
               question: 'Mock Poll Question?',
               options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
             },
           };
+        }
+
+        if (data.type === 'dashboard-layout') {
+          if (data.prompt.includes('invalid-response')) {
+            return { data: {} };
+          }
+          if (data.prompt.includes('invalid-types')) {
+            return {
+              data: {
+                widgets: [{ type: 'invalid-type', config: {} }],
+              },
+            };
+          }
+          if (data.prompt.includes('no-widgets')) {
+            return {
+              data: {
+                widgets: [],
+              },
+            };
+          }
+          return {
+            data: {
+              widgets: [
+                { type: 'clock', config: { format: '12h' } },
+                { type: 'poll', config: { question: 'Test?' } },
+              ],
+            },
+          };
+        }
+
+        if (data.type === 'quiz') {
+          if (data.prompt.includes('invalid-response')) {
+            return { data: {} };
+          }
+          return {
+            data: {
+              title: 'Mock Quiz',
+              questions: [
+                {
+                  text: 'Question 1',
+                  type: 'multiple-choice',
+                  correctAnswer: 'A',
+                  incorrectAnswers: ['B', 'C'],
+                },
+              ],
+            },
+          };
+        }
+
+        if (data.type === 'ocr') {
+          if (data.image && data.image.includes('invalid-response')) {
+            return { data: {} };
+          }
+          return {
+            data: {
+              text: 'Extracted Text',
+            },
+          };
+        }
+
+        if (data.prompt && data.prompt.includes('invalid-response')) {
+          return { data: {} };
         }
 
         return {
@@ -41,6 +115,14 @@ vi.mock('@/config/firebase', () => ({
   functions: {},
 }));
 
+// Mock the tools config
+vi.mock('@/config/tools', () => ({
+  TOOLS: [
+    { type: 'clock', icon: 'mock', label: 'Clock', color: 'bg-blue-500' },
+    { type: 'poll', icon: 'mock', label: 'Poll', color: 'bg-orange-500' },
+  ],
+}));
+
 describe('generateMiniAppCode', () => {
   it('generates app code successfully', async () => {
     const result = await generateMiniAppCode('Make a calculator');
@@ -51,12 +133,15 @@ describe('generateMiniAppCode', () => {
   });
 
   it('throws formatted error on failure', async () => {
-    try {
-      await generateMiniAppCode('FAIL');
-    } catch (e: any) {
-      expect(e.message).toContain('Failed to generate app');
-      expect(e.message).toContain('Simulated API Failure');
-    }
+    await expect(generateMiniAppCode('FAIL')).rejects.toThrow(
+      /Failed to generate app.*Simulated API Failure/
+    );
+  });
+
+  it('throws error on invalid response format', async () => {
+    await expect(generateMiniAppCode('invalid-response')).rejects.toThrow(
+      'Invalid response format from AI'
+    );
   });
 });
 
@@ -70,11 +155,89 @@ describe('generatePoll', () => {
   });
 
   it('throws formatted error on failure', async () => {
-    try {
-      await generatePoll('FAIL');
-    } catch (e: any) {
-      expect(e.message).toContain('Failed to generate poll');
-      expect(e.message).toContain('Simulated API Failure');
-    }
+    await expect(generatePoll('FAIL')).rejects.toThrow(
+      /Failed to generate poll.*Simulated API Failure/
+    );
+  });
+
+  it('throws error on invalid response format', async () => {
+    await expect(generatePoll('invalid-response')).rejects.toThrow(
+      'Invalid response format from AI'
+    );
+  });
+});
+
+describe('generateDashboardLayout', () => {
+  it('generates layout successfully with valid widgets', async () => {
+    const result = await generateDashboardLayout('Math lesson');
+    expect(result).toHaveLength(2);
+    expect(result[0].type).toBe('clock');
+    expect(result[1].type).toBe('poll');
+  });
+
+  it('filters out invalid widget types', async () => {
+    // We can simulate this by mocking the response to include invalid types
+    // But since the mock is hardcoded above, I added a case for 'invalid-types'
+    await expect(generateDashboardLayout('invalid-types')).rejects.toThrow(
+      'AI generated invalid widget types.'
+    );
+  });
+
+  it('throws error when no widgets generated', async () => {
+    await expect(generateDashboardLayout('no-widgets')).rejects.toThrow(
+      "AI couldn't generate any widgets"
+    );
+  });
+
+  it('throws formatted error on failure', async () => {
+    await expect(generateDashboardLayout('FAIL')).rejects.toThrow(
+      /Failed to generate layout.*Simulated API Failure/
+    );
+  });
+
+  it('throws error on invalid response format', async () => {
+    await expect(generateDashboardLayout('invalid-response')).rejects.toThrow(
+      'Invalid response format from AI'
+    );
+  });
+});
+
+describe('generateQuiz', () => {
+  it('generates quiz successfully', async () => {
+    const result = await generateQuiz('Science');
+    expect(result.title).toBe('Mock Quiz');
+    expect(result.questions).toHaveLength(1);
+    expect(result.questions[0].text).toBe('Question 1');
+  });
+
+  it('throws formatted error on failure', async () => {
+    await expect(generateQuiz('FAIL')).rejects.toThrow(
+      /Failed to generate quiz.*Simulated API Failure/
+    );
+  });
+
+  it('throws error on invalid response format', async () => {
+    await expect(generateQuiz('invalid-response')).rejects.toThrow(
+      'Invalid response format from AI'
+    );
+  });
+});
+
+describe('extractTextWithGemini', () => {
+  it('extracts text successfully', async () => {
+    const result = await extractTextWithGemini('base64image');
+    expect(result).toBe('Extracted Text');
+  });
+
+  it('throws formatted error on failure', async () => {
+    await expect(extractTextWithGemini('FAIL')).rejects.toThrow(
+      /Failed to extract text.*Simulated API Failure/
+    );
+  });
+
+  it('throws error on invalid response format', async () => {
+    await expect(extractTextWithGemini('invalid-response')).rejects.toThrow(
+      'Invalid response format from AI'
+    );
   });
 });
