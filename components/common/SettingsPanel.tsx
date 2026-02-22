@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { IconButton } from './IconButton';
+import { IconButton } from '@/components/common/IconButton';
 import { WidgetData, GlobalStyle } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
 import { useWindowSize } from '../../hooks/useWindowSize';

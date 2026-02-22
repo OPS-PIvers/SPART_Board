@@ -22,7 +22,7 @@ import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
-import { IconButton } from './IconButton';
+import { IconButton } from '@/components/common/IconButton';
 import { WIDGET_PALETTE } from '../../config/colors';
 import { Z_INDEX } from '../../config/zIndex';
 

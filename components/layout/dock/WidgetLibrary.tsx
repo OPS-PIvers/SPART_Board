@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GlassCard } from '../../common/GlassCard';
-import { IconButton } from '../../common/IconButton';
+import { IconButton } from '@/components/common/IconButton';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
 import { useClickOutside } from '../../../hooks/useClickOutside';

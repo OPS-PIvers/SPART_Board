@@ -54,7 +54,7 @@ import { getWidgetGradeLevels } from '../../../config/widgetGradeLevels';
 import { AdminSettings } from '../../admin/AdminSettings';
 import { GlassCard } from '../../common/GlassCard';
 import { Toggle } from '../../common/Toggle';
-import { IconButton } from '../../common/IconButton';
+import { IconButton } from '@/components/common/IconButton';
 import { SortableDashboardItem } from './SortableDashboardItem';
 import { StylePanel } from './StylePanel';
 
