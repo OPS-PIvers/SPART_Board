@@ -6,8 +6,8 @@ import {
   WidgetConfig,
   TrafficConfig,
 } from '@/types';
-import { useDashboard } from '../../../context/useDashboard';
-import { playTimerAlert, resumeAudio } from '../../../utils/timeToolAudio';
+import { useDashboard } from '@/context/useDashboard';
+import { playTimerAlert, resumeAudio } from '@/utils/timeToolAudio';
 
 export const useTimeTool = (widget: WidgetData) => {
   const { updateWidget, activeDashboard } = useDashboard();
