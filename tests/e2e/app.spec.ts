@@ -25,13 +25,16 @@ test.describe(APP_NAME, () => {
     });
     await page.getByTitle('Open Menu').click();
 
-    // Verify sidebar header
-    await page.waitForSelector(`text=${APP_NAME.toUpperCase()}`, {
+    // Verify sidebar opened by checking for the header
+    await page.waitForSelector('text=Classroom Manager', {
       state: 'visible',
       timeout: 60000,
     });
 
-    // Verify Widgets tab is active (by checking for "Available Widgets" text)
+    // Navigate to Widgets section
+    await page.getByRole('button', { name: /^Widgets/ }).first().click();
+
+    // Verify Widgets section loaded (by checking for "Available Widgets" text)
     await page.waitForSelector('text=Available Widgets', {
       state: 'visible',
       timeout: 60000,

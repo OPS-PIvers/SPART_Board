@@ -13,6 +13,7 @@ import {
   Cast,
   FolderPlus,
   Square,
+  ChevronDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -887,6 +888,23 @@ export const Dock: React.FC = () => {
                 No apps selected in settings
               </div>
             )}
+
+            {/* Separator and Minimize Button */}
+            <div className="w-px h-8 bg-slate-200 mx-1 md:mx-2 flex-shrink-0" />
+
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+              title="Minimize Toolbar"
+            >
+              <DockIcon
+                color="bg-slate-100 shadow-sm"
+                className="flex items-center justify-center text-slate-500 group-hover:scale-110 group-hover:bg-slate-200 transition-all"
+              >
+                <ChevronDown className="w-5 h-5 md:w-6 md:h-6" />
+              </DockIcon>
+              <DockLabel className="text-slate-500">Hide</DockLabel>
+            </button>
           </GlassCard>
 
           {showMagicLayout && (
