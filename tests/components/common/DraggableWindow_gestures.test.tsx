@@ -79,7 +79,10 @@ describe('DraggableWindow Gestures', () => {
           title="Test Widget"
           globalStyle={mockGlobalStyle}
         >
-          <div className="overflow-y-auto h-full" data-testid="scrollable-content">
+          <div
+            className="overflow-y-auto h-full"
+            data-testid="scrollable-content"
+          >
             Scrollable Content
           </div>
         </DraggableWindow>
@@ -111,9 +114,7 @@ describe('DraggableWindow Gestures', () => {
           title="Test Widget"
           globalStyle={mockGlobalStyle}
         >
-          <div data-testid="non-scrollable-content">
-            Non Scrollable Content
-          </div>
+          <div data-testid="non-scrollable-content">Non Scrollable Content</div>
         </DraggableWindow>
       </DashboardContext.Provider>
     );
@@ -153,10 +154,7 @@ describe('DraggableWindow Gestures', () => {
 
     // Simulate 2-finger touch start
     fireEvent.touchStart(widget, {
-      touches: [
-        { clientY: 100 },
-        { clientY: 110 }
-      ],
+      touches: [{ clientY: 100 }, { clientY: 110 }],
     });
 
     // Simulate touch end with movement down > 60px
@@ -164,10 +162,8 @@ describe('DraggableWindow Gestures', () => {
     // Logic: deltaY = e.changedTouches[0].clientY - gestureStartRef.current.y
     // Start Y was 100 (first touch). We need new Y to be > 160.
     fireEvent.touchEnd(widget, {
-      changedTouches: [
-        { clientY: 170 }
-      ],
-      touches: [] // All touches ended
+      changedTouches: [{ clientY: 170 }],
+      touches: [], // All touches ended
     });
 
     expect(mockContext.updateWidget).toHaveBeenCalledWith(mockWidget.id, {

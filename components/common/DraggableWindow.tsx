@@ -614,7 +614,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     !POSITION_AWARE_WIDGETS.includes(widget.type) &&
     dragState.current;
 
-
   const handleTouchStart = (e: React.TouchEvent) => {
     gestureStartRef.current = {
       y: e.touches[0].clientY,
