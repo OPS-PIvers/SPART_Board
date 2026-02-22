@@ -106,7 +106,7 @@ function tryParseImageWidget(url: string): PasteResult | null {
     return {
       action: 'create-widget',
       type: 'sticker',
-      config: { url: url, rotation: 0 } as WidgetConfig,
+      config: { url, rotation: 0 } as WidgetConfig,
     };
   }
   return null;
@@ -134,7 +134,7 @@ function createQrWidget(url: string): PasteResult {
   return {
     action: 'create-widget',
     type: 'qr',
-    config: { url: url } as WidgetConfig,
+    config: { url } as WidgetConfig,
   };
 }
 
