@@ -187,6 +187,19 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
     [widget, isStudentView]
   );
 
+  const renderScalableContent = useCallback(
+    ({
+      internalW,
+      internalH,
+      scale,
+    }: {
+      internalW: number;
+      internalH: number;
+      scale: number;
+    }) => getWidgetContentInternal(internalW, internalH, scale),
+    [getWidgetContentInternal]
+  );
+
   if (widget.type === 'sticker') {
     return <StickerItemWidget widget={widget} />;
   }
@@ -213,9 +226,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       headerHeight={HEADER_HEIGHT}
       padding={scalingConfig.padding ?? PADDING}
     >
-      {({ internalW, internalH, scale }) =>
-        getWidgetContentInternal(internalW, internalH, scale)
-      }
+      {renderScalableContent}
     </ScalableWidget>
   );
 
