@@ -437,6 +437,7 @@ describe('DraggableWindow', () => {
     fireEvent.touchEnd(windowEl, {
       changedTouches: [
         { clientY: 200 }, // Moved down 100px
+        { clientY: 200 }, // Second finger also moved down
       ],
       touches: [{ clientY: 200 }, { clientY: 200 }],
     });
