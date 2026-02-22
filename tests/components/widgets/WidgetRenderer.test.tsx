@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { WidgetRenderer } from '../../../components/widgets/WidgetRenderer';
-import { WidgetData } from '../../../types';
+import { WidgetData, GlobalStyle } from '../../../types';
 import { useAuth } from '../../../context/useAuth';
 import { useDashboard } from '../../../context/useDashboard';
 import { useWindowSize } from '../../../hooks/useWindowSize';
@@ -19,21 +19,35 @@ vi.mock('../../../components/widgets/stickers/StickerItemWidget', () => ({
 
 vi.mock('../../../components/common/DraggableWindow', () => ({
   DraggableWindow: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="draggable-window">
-      {children}
-    </div>
+    <div data-testid="draggable-window">{children}</div>
   ),
 }));
 
 // Capture ScalableWidget props to verify optimization
 // IMPORTANT: We mock the component but NOT memoize it here, so we can detect if it re-renders
 const mockScalableWidget = vi.fn();
+
+interface ScalableWidgetProps {
+  children:
+    | React.ReactNode
+    | ((props: {
+        internalW: number;
+        internalH: number;
+        scale: number;
+      }) => React.ReactNode);
+  [key: string]: unknown;
+}
+
 vi.mock('../../../components/common/ScalableWidget', () => ({
-  ScalableWidget: (props: any) => {
+  ScalableWidget: (props: ScalableWidgetProps) => {
     mockScalableWidget(props);
     // Execute children render prop to ensure it works
     if (typeof props.children === 'function') {
-      return <div>{props.children({ internalW: 100, internalH: 100, scale: 1 })}</div>;
+      return (
+        <div>
+          {props.children({ internalW: 100, internalH: 100, scale: 1 })}
+        </div>
+      );
     }
     return <div>{props.children}</div>;
   },
@@ -48,7 +62,9 @@ vi.mock('../../../components/widgets/WidgetRegistry', () => ({
 }));
 
 vi.mock('../../../components/widgets/WidgetLayoutWrapper', () => ({
-  WidgetLayoutWrapper: () => <div data-testid="widget-content">Widget Content</div>,
+  WidgetLayoutWrapper: () => (
+    <div data-testid="widget-content">Widget Content</div>
+  ),
 }));
 
 describe('WidgetRenderer', () => {
@@ -83,14 +99,24 @@ describe('WidgetRenderer', () => {
     duplicateWidget: vi.fn(),
     bringToFront: vi.fn(),
     addToast: vi.fn(),
-    globalStyle: { windowTransparency: 1, fontFamily: 'sans', windowBorderRadius: 'md' } as any,
+    globalStyle: {
+      windowTransparency: 1,
+      fontFamily: 'sans',
+      windowBorderRadius: 'md',
+    } as unknown as GlobalStyle,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useAuth as any).mockReturnValue({ user: { uid: 'u1' }, canAccessFeature: vi.fn() });
-    (useDashboard as any).mockReturnValue({});
-    (useWindowSize as any).mockReturnValue({ width: 1024, height: 768 });
+    (useAuth as unknown as Mock).mockReturnValue({
+      user: { uid: 'u1' },
+      canAccessFeature: vi.fn(),
+    });
+    (useDashboard as unknown as Mock).mockReturnValue({});
+    (useWindowSize as unknown as Mock).mockReturnValue({
+      width: 1024,
+      height: 768,
+    });
   });
 
   it('renders content correctly', () => {
@@ -103,6 +129,7 @@ describe('WidgetRenderer', () => {
     const { rerender } = render(<WidgetRenderer {...mockProps} />);
 
     expect(mockScalableWidget).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const firstRenderProps = mockScalableWidget.mock.calls[0][0];
 
     // Rerender with CHANGED prop that forces WidgetRenderer to update
@@ -110,9 +137,11 @@ describe('WidgetRenderer', () => {
     rerender(<WidgetRenderer {...mockProps} isLive={true} />);
 
     expect(mockScalableWidget).toHaveBeenCalledTimes(2);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const secondRenderProps = mockScalableWidget.mock.calls[1][0];
 
     // The children prop (render callback) should be referentially equal
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(firstRenderProps.children).toBe(secondRenderProps.children);
   });
 });
