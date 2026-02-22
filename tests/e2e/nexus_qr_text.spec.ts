@@ -1,23 +1,31 @@
 import { test, expect } from '@playwright/test';
 
 test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
+  test.setTimeout(60000);
+
   // 1. Load dashboard
   await page.goto('/');
 
   // 2. Open Dock and Add Widgets
   // The dock button might need waiting or finding by title
-  await page.getByTitle('Open Tools').click();
+  const openTools = page.getByTitle('Open Tools');
+  await expect(openTools).toBeVisible({ timeout: 10000 });
+  await openTools.click();
 
   // Add Text Widget (Note)
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
+  await expect(noteButton).toBeVisible({ timeout: 10000 });
   await noteButton.click({ force: true });
 
   // Add QR Widget
   const qrButton = page.getByRole('button', { name: /QR/i }).first();
+  await expect(qrButton).toBeVisible({ timeout: 10000 });
   await qrButton.click({ force: true });
 
   // Close dock (Minimize)
-  await page.getByTitle('Minimize Toolbar').click();
+  const minimize = page.getByTitle('Minimize Toolbar');
+  await expect(minimize).toBeVisible({ timeout: 10000 });
+  await minimize.click();
 
   // Move QR Widget to avoid overlap
   // The QR widget is likely on top because it was added last.

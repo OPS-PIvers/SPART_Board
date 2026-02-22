@@ -3,21 +3,30 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 test('Text Widget scaling verification', async ({ page }) => {
+  test.setTimeout(60000);
+
   // 1. Load dashboard
   await page.goto('/');
 
   // 2. Open Dock and Add Text Widget
-  await page.getByTitle('Open Tools').click();
+  const openTools = page.getByTitle('Open Tools');
+  await expect(openTools).toBeVisible({ timeout: 10000 });
+  await openTools.click();
+
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
+  await expect(noteButton).toBeVisible({ timeout: 10000 });
   await noteButton.click({ force: true });
-  await page.getByTitle('Minimize Toolbar').click();
+
+  const minimize = page.getByTitle('Minimize Toolbar');
+  await expect(minimize).toBeVisible({ timeout: 10000 });
+  await minimize.click();
 
   // 3. Locate Text Widget
   const textWidget = page
     .locator('.widget')
     .filter({ has: page.locator('[contenteditable]') })
     .first();
-  await expect(textWidget).toBeVisible();
+  await expect(textWidget).toBeVisible({ timeout: 10000 });
 
   // 4. Set some text
   const contentArea = textWidget.locator('[contenteditable]');

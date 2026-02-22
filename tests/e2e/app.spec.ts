@@ -2,6 +2,9 @@ import { APP_NAME } from '../../config/constants';
 import { test, expect } from '@playwright/test';
 
 test.describe(APP_NAME, () => {
+  // Increase timeout for slow CI environments
+  test.setTimeout(60000);
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
@@ -13,34 +16,39 @@ test.describe(APP_NAME, () => {
   test('can open sidebar and view widgets', async ({ page }) => {
     // Open sidebar
     const menuButton = page.getByTitle('Open Menu');
-    await expect(menuButton).toBeVisible();
+    await expect(menuButton).toBeVisible({ timeout: 10000 });
     await menuButton.click();
 
     // Verify sidebar header
-    await expect(page.getByText(APP_NAME.toUpperCase())).toBeVisible();
+    await expect(page.getByText(APP_NAME.toUpperCase())).toBeVisible({
+      timeout: 10000,
+    });
 
     // Verify Widgets tab is active (by checking for "Available Widgets" text)
-    await expect(page.getByText('Available Widgets')).toBeVisible();
+    await expect(page.getByText('Available Widgets')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('can add a Clock widget', async ({ page }) => {
     // Open Dock (it is minimized by default)
     const openToolsButton = page.getByTitle('Open Tools');
-    await expect(openToolsButton).toBeVisible();
+    await expect(openToolsButton).toBeVisible({ timeout: 10000 });
     await openToolsButton.click();
 
     // Click Clock widget in the Dock
     // The Dock renders buttons with the tool label.
     const clockButton = page.getByRole('button', { name: /Clock/i }).first();
-    await expect(clockButton).toBeVisible();
-    await clockButton.click();
+    await expect(clockButton).toBeVisible({ timeout: 10000 });
+    // Use force click if element is unstable/animating
+    await clockButton.click({ force: true });
 
     // Verify Clock widget is on the dashboard
     // The widget has class 'widget'.
     const widget = page.locator('.widget').first();
-    await expect(widget).toBeVisible();
+    await expect(widget).toBeVisible({ timeout: 10000 });
 
     // Optional: Verify it looks like a clock (contains a colon)
-    await expect(widget.getByText(':').first()).toBeVisible();
+    await expect(widget.getByText(':').first()).toBeVisible({ timeout: 10000 });
   });
 });

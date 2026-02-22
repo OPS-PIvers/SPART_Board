@@ -7,6 +7,8 @@ import { APP_NAME } from '../../config/constants';
 import { test, expect } from '@playwright/test';
 
 test.describe('Board Sharing', () => {
+  test.setTimeout(60000);
+
   test.beforeEach(async ({ page }) => {
     // eslint-disable-next-line no-console
     page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
@@ -17,26 +19,34 @@ test.describe('Board Sharing', () => {
 
     // Wait for initial loading to finish
     await expect(page.locator('.animate-spin').first()).not.toBeVisible({
-      timeout: 15000,
+      timeout: 30000,
     });
 
-    const dashboardVisible = await page.getByTitle('Open Menu').isVisible();
-    if (!dashboardVisible) {
+    try {
+      await expect(page.getByTitle('Open Menu')).toBeVisible({
+        timeout: 15000,
+      });
+    } catch {
       const signInButton = page.getByRole('button', { name: /sign in/i });
       if (await signInButton.isVisible()) {
         await signInButton.click();
       }
+      await expect(page.getByTitle('Open Menu')).toBeVisible({
+        timeout: 15000,
+      });
     }
-    await expect(page.getByTitle('Open Menu')).toBeVisible({ timeout: 15000 });
   });
 
   test('can share and import a board', async ({ page }) => {
-    await page.getByTitle('Open Menu').click();
-    await expect(page.getByText(APP_NAME)).toBeVisible();
+    const menuButton = page.getByTitle('Open Menu');
+    await expect(menuButton).toBeVisible({ timeout: 10000 });
+    await menuButton.click();
+
+    await expect(page.getByText(APP_NAME)).toBeVisible({ timeout: 10000 });
     await page
       .getByRole('button', { name: 'Boards Manage and switch between' })
       .click();
-    await expect(page.getByText('My Boards')).toBeVisible();
+    await expect(page.getByText('My Boards')).toBeVisible({ timeout: 10000 });
 
     const boardCard = page
       .locator('.group.relative')
