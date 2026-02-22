@@ -131,6 +131,9 @@ describe('DraggableWindow Gestures', () => {
 
     // Check if dragging class IS added to body
     expect(document.body.classList.contains('is-dragging-widget')).toBe(true);
+
+    // Cleanup: simulate pointer up to remove global listeners
+    fireEvent.pointerUp(window, { pointerId: 1 });
   });
 
   it('minimizes widget on two-finger swipe down using average Y', () => {
@@ -200,6 +203,44 @@ describe('DraggableWindow Gestures', () => {
     // Move to 180 (Delta = 30)
     fireEvent.touchEnd(widget, {
       changedTouches: [{ clientY: 180 }],
+      touches: [],
+    });
+
+    expect(mockContext.updateWidget).not.toHaveBeenCalled();
+  });
+
+  it('clears gesture state on 3+ touches', () => {
+    render(
+      <DashboardContext.Provider
+        value={mockContext as unknown as DashboardContextValue}
+      >
+        <DraggableWindow
+          widget={mockWidget}
+          settings={<div>Settings</div>}
+          title="Test Widget"
+          globalStyle={mockGlobalStyle}
+        >
+          <div>Content</div>
+        </DraggableWindow>
+      </DashboardContext.Provider>
+    );
+
+    const widget = screen.getByText('Content').closest('.widget');
+    if (!widget) throw new Error('Widget not found');
+
+    // 1. Start with 2 fingers (valid gesture state)
+    fireEvent.touchStart(widget, {
+      touches: [{ clientY: 100 }, { clientY: 100 }],
+    });
+
+    // 2. Add a 3rd finger (invalid gesture state)
+    fireEvent.touchStart(widget, {
+      touches: [{ clientY: 100 }, { clientY: 100 }, { clientY: 100 }],
+    });
+
+    // 3. End touch with valid movement (should NOT trigger because state was cleared)
+    fireEvent.touchEnd(widget, {
+      changedTouches: [{ clientY: 200 }],
       touches: [],
     });
 

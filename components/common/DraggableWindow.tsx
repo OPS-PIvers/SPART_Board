@@ -626,6 +626,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         y: e.touches[0].clientY,
         touches: 1,
       };
+    } else {
+      // Clear any previous gesture state for unsupported touch counts (e.g., 0 or 3+)
+      gestureStartRef.current = null;
     }
   };
 
@@ -634,7 +637,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
     // If it started as a 2-finger touch
     if (gestureStartRef.current.touches === 2 && e.changedTouches.length > 0) {
-      const deltaY = e.changedTouches[0].clientY - gestureStartRef.current.y;
+      // Calculate average Y of all changed touches (fingers lifting)
+      let sumY = 0;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        sumY += e.changedTouches[i].clientY;
+      }
+      const avgY = sumY / e.changedTouches.length;
+
+      const deltaY = avgY - gestureStartRef.current.y;
 
       // If swiped down more than 60px
       if (deltaY > 60) {
