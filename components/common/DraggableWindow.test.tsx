@@ -471,4 +471,16 @@ describe('DraggableWindow', () => {
       })
     );
   });
+
+  it('does not toggle maximize when double clicking interactive elements', () => {
+    renderComponent(
+      {},
+      <button data-testid="interactive-btn">Click Me</button>
+    );
+
+    const btn = screen.getByTestId('interactive-btn');
+    fireEvent.doubleClick(btn, { bubbles: true });
+
+    expect(mockUpdateWidget).not.toHaveBeenCalled();
+  });
 });

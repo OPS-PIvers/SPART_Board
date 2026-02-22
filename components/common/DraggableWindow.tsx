@@ -664,7 +664,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         data-testid="drag-surface"
         className="h-full w-full flex flex-col rounded-[inherit] overflow-hidden"
         onPointerDown={handleDragStart}
-        onDoubleClick={handleMaximizeToggle}
+        onDoubleClick={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest(DRAG_BLOCKING_SELECTOR)) return;
+            handleMaximizeToggle();
+          }}
         style={{ touchAction: 'none' }}
       >
         {showConfirm && (
