@@ -38,7 +38,7 @@ const POSITION_AWARE_WIDGETS: WidgetType[] = [
 const INTERACTIVE_ELEMENTS_SELECTOR =
   'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .cursor-pointer, [contenteditable="true"]';
 
-const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"]`;
+const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"], .overflow-y-auto, .overflow-auto, .overflow-x-auto, [data-scrollable="true"]`;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -142,6 +142,9 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const windowRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
+
+  // Gesture tracking for multi-touch actions
+  const gestureStartRef = useRef<{ y: number; touches: number } | null>(null);
 
   useClickOutside(menuRef, () => setShowTools(false), [windowRef]);
 
@@ -606,6 +609,39 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     updateWidget,
   ]);
 
+  // --- MULTI-TOUCH GESTURE HANDLERS ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    gestureStartRef.current = {
+      y: e.touches[0].clientY,
+      touches: e.touches.length,
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!gestureStartRef.current || e.changedTouches.length === 0) return;
+
+    const { y, touches } = gestureStartRef.current;
+    const deltaY = e.changedTouches[0].clientY - y;
+
+    if (touches === 2 && deltaY > 60) {
+      // 2-Finger Swipe Down: Minimize
+      updateWidget(widget.id, { minimized: true, flipped: false });
+      setShowTools(false);
+    } else if (touches === 3) {
+      if (deltaY > 60 && canScreenshot && !isCapturing) {
+        // 3-Finger Swipe Down: Screenshot
+        void takeScreenshot();
+        setShowTools(false);
+      } else if (deltaY < -60) {
+        // 3-Finger Swipe Up: Annotate
+        setIsAnnotating((prev) => !prev);
+        setShowTools(false);
+      }
+    }
+    gestureStartRef.current = null;
+  };
+  // ------------------------------------
+
   // Fallback to widget state if not dragging/resizing or if position-aware
   const shouldUseDragState =
     (isDragging || isResizing) &&
@@ -621,6 +657,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       onPointerDown={handlePointerDown}
       onClick={handleWidgetClick}
       onKeyDown={handleKeyDown}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       transparency={transparency}
       allowInvisible={true}
       selected={isSelected}

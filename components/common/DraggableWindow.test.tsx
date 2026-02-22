@@ -42,6 +42,8 @@ interface GlassCardProps {
   onPointerDown?: (e: React.PointerEvent) => void;
   onClick?: (e: React.MouseEvent) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  onTouchStart?: (e: React.TouchEvent) => void;
+  onTouchEnd?: (e: React.TouchEvent) => void;
   style?: React.CSSProperties;
 }
 
@@ -64,6 +66,8 @@ vi.mock('./GlassCard', () => {
         onPointerDown,
         onClick,
         onKeyDown,
+        onTouchStart,
+        onTouchEnd,
         style,
         tabIndex,
       },
@@ -77,6 +81,8 @@ vi.mock('./GlassCard', () => {
         onPointerDown={onPointerDown}
         onClick={onClick}
         onKeyDown={onKeyDown}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
         style={style}
       >
         {children}
@@ -411,6 +417,29 @@ describe('DraggableWindow', () => {
 
     const minimizeBtn = screen.getByTitle('Minimize');
     fireEvent.click(minimizeBtn);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ minimized: true, flipped: false })
+    );
+  });
+
+  it('minimizes on 2-finger swipe down', () => {
+    renderComponent();
+    const windowEl = screen.getByTestId('draggable-window');
+
+    // Simulate Touch Start (2 fingers)
+    fireEvent.touchStart(windowEl, {
+      touches: [{ clientY: 100 }, { clientY: 100 }],
+    });
+
+    // Simulate Touch End (2 fingers moved down by > 60px)
+    fireEvent.touchEnd(windowEl, {
+      changedTouches: [
+        { clientY: 200 }, // Moved down 100px
+      ],
+      touches: [{ clientY: 200 }, { clientY: 200 }],
+    });
 
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'test-widget',
