@@ -38,7 +38,7 @@ const POSITION_AWARE_WIDGETS: WidgetType[] = [
 const INTERACTIVE_ELEMENTS_SELECTOR =
   'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .cursor-pointer, [contenteditable="true"]';
 
-const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"]`;
+const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"], .overflow-y-auto, .overflow-auto, .overflow-x-auto, [data-scrollable="true"]`;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -140,6 +140,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   );
 
   const windowRef = useRef<HTMLDivElement>(null);
+  // Gesture tracking for 2-finger minimize
+  const gestureStartRef = useRef<{ y: number; touches: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const dragDistanceRef = useRef(0);
 
@@ -612,8 +614,34 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     !POSITION_AWARE_WIDGETS.includes(widget.type) &&
     dragState.current;
 
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    gestureStartRef.current = {
+      y: e.touches[0].clientY,
+      touches: e.touches.length,
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!gestureStartRef.current) return;
+
+    // If it started as a 2-finger touch
+    if (gestureStartRef.current.touches === 2 && e.changedTouches.length > 0) {
+      const deltaY = e.changedTouches[0].clientY - gestureStartRef.current.y;
+
+      // If swiped down more than 60px
+      if (deltaY > 60) {
+        updateWidget(widget.id, { minimized: true, flipped: false });
+        setShowTools(false);
+      }
+    }
+    gestureStartRef.current = null;
+  };
+
   const content = (
     <GlassCard
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       globalStyle={globalStyle}
       ref={windowRef}
       tabIndex={0}
