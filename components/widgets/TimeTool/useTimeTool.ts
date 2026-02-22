@@ -4,6 +4,7 @@ import {
   WidgetData,
   ExpectationsConfig,
   WidgetConfig,
+  TrafficConfig,
 } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
 import { playTimerAlert, resumeAudio } from '../../../utils/timeToolAudio';
@@ -129,6 +130,21 @@ export const useTimeTool = (widget: WidgetData) => {
               });
             }
           }
+
+          // Auto-switch traffic light color
+          if (config.timerEndTrafficColor != null && activeDashboard) {
+            const trafficWidget = activeDashboard.widgets.find(
+              (w) => w.type === 'traffic'
+            );
+            if (trafficWidget) {
+              updateWidget(trafficWidget.id, {
+                config: {
+                  ...(trafficWidget.config as TrafficConfig),
+                  active: config.timerEndTrafficColor,
+                } as WidgetConfig,
+              });
+            }
+          }
           return;
         }
       } else {
@@ -148,6 +164,7 @@ export const useTimeTool = (widget: WidgetData) => {
     config.mode,
     config.selectedSound,
     config.timerEndVoiceLevel,
+    config.timerEndTrafficColor,
     activeDashboard,
     updateWidget,
     handleStop,

@@ -556,6 +556,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as TimeToolConfig;
   const {
     timerEndVoiceLevel,
+    timerEndTrafficColor,
     fontFamily = 'global',
     clockStyle = 'modern',
     themeColor = STANDARD_COLORS.slate,
@@ -563,6 +564,10 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
   const hasExpectations = activeDashboard?.widgets.some(
     (w) => w.type === 'expectations'
+  );
+
+  const hasTrafficLight = activeDashboard?.widgets.some(
+    (w) => w.type === 'traffic'
   );
 
   const fonts = [
@@ -809,6 +814,82 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
             </div>
           </div>
         )}
+
+        <div className="pt-2 border-t border-slate-100 mt-4">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight mb-2">
+            Set Traffic Light when finished:
+          </p>
+          {!hasTrafficLight ? (
+            <div className="text-xs text-brand-blue-primary bg-brand-blue-lighter/20 p-3 rounded-xl border border-brand-blue-lighter/30 flex items-start gap-2">
+              <span className="text-lg mt-px">&#128161;</span>
+              <p className="font-medium leading-snug">
+                Add a Traffic Light widget to enable auto-stop!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndTrafficColor: null },
+                  })
+                }
+                className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                  timerEndTrafficColor == null
+                    ? 'bg-slate-800 border-slate-800 text-white'
+                    : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                Off
+              </button>
+              {/* Red */}
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndTrafficColor: 'red' },
+                  })
+                }
+                className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                  timerEndTrafficColor === 'red'
+                    ? 'bg-red-500 border-red-500 text-white'
+                    : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                Stop
+              </button>
+              {/* Yellow */}
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndTrafficColor: 'yellow' },
+                  })
+                }
+                className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                  timerEndTrafficColor === 'yellow'
+                    ? 'bg-yellow-400 border-yellow-400 text-black'
+                    : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                Slow
+              </button>
+              {/* Green */}
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndTrafficColor: 'green' },
+                  })
+                }
+                className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                  timerEndTrafficColor === 'green'
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                Go
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
