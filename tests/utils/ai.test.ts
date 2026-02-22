@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -18,8 +17,7 @@ vi.mock('firebase/functions', () => {
     httpsCallable: vi.fn().mockImplementation((_functions, _name) => {
       return async (data: any) => {
         if (data.prompt === 'FAIL_NON_ERROR') {
-          // eslint-disable-next-line @typescript-eslint/only-throw-error
-          throw 'Simulated String Error';
+          return Promise.reject('Simulated String Error' as unknown as Error);
         }
 
         if (data.prompt && data.prompt.includes('FAIL')) {
