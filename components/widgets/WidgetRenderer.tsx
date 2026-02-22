@@ -184,7 +184,27 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         />
       );
     },
-    [widget, isStudentView]
+    // We intentionally decompose the widget dependency here.
+    // If we depend on the full `widget` object, this callback will be recreated on every
+    // drag frame (since x/y change), forcing ScalableWidget to re-render constantly.
+    // InnerWidgetRenderer is already memoized to ignore x/y for most widgets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      widget.id,
+      widget.type,
+      widget.config,
+      widget.flipped,
+      widget.minimized,
+      widget.maximized,
+      widget.customTitle,
+      widget.isLive,
+      widget.transparency,
+      widget.annotation,
+      // For position-aware widgets, we technically *should* re-render if x/y change,
+      // but InnerWidgetRenderer handles that check internally efficiently.
+      // However, for this callback stability, we ignore x/y to prevent ScalableWidget churn.
+      isStudentView,
+    ]
   );
 
   const renderScalableContent = useCallback(

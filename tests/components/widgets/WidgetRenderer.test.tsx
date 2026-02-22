@@ -1,23 +1,23 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { WidgetRenderer } from '../../../components/widgets/WidgetRenderer';
-import { WidgetData, GlobalStyle } from '../../../types';
-import { useAuth } from '../../../context/useAuth';
-import { useDashboard } from '../../../context/useDashboard';
-import { useWindowSize } from '../../../hooks/useWindowSize';
+import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
+import { WidgetData, GlobalStyle } from '@/types';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
+import { useWindowSize } from '@/hooks/useWindowSize';
 
 // Mock dependencies
-vi.mock('../../../context/useAuth');
-vi.mock('../../../context/useDashboard');
-vi.mock('../../../hooks/useWindowSize');
+vi.mock('@/context/useAuth');
+vi.mock('@/context/useDashboard');
+vi.mock('@/hooks/useWindowSize');
 
 // Mock child components
-vi.mock('../../../components/widgets/stickers/StickerItemWidget', () => ({
+vi.mock('@/components/widgets/stickers/StickerItemWidget', () => ({
   StickerItemWidget: () => <div data-testid="sticker-widget">Sticker</div>,
 }));
 
-vi.mock('../../../components/common/DraggableWindow', () => ({
+vi.mock('@/components/common/DraggableWindow', () => ({
   DraggableWindow: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="draggable-window">{children}</div>
   ),
@@ -38,7 +38,7 @@ interface ScalableWidgetProps {
   [key: string]: unknown;
 }
 
-vi.mock('../../../components/common/ScalableWidget', () => ({
+vi.mock('@/components/common/ScalableWidget', () => ({
   ScalableWidget: (props: ScalableWidgetProps) => {
     mockScalableWidget(props);
     // Execute children render prop to ensure it works
@@ -54,7 +54,7 @@ vi.mock('../../../components/common/ScalableWidget', () => ({
 }));
 
 // We use 'text' as a valid WidgetType to pass type checking
-vi.mock('../../../components/widgets/WidgetRegistry', () => ({
+vi.mock('@/components/widgets/WidgetRegistry', () => ({
   WIDGET_SETTINGS_COMPONENTS: {},
   WIDGET_SCALING_CONFIG: {
     text: { baseWidth: 200, baseHeight: 200, canSpread: true },
@@ -62,7 +62,7 @@ vi.mock('../../../components/widgets/WidgetRegistry', () => ({
   DEFAULT_SCALING_CONFIG: { baseWidth: 200, baseHeight: 200 },
 }));
 
-vi.mock('../../../components/widgets/WidgetLayoutWrapper', () => ({
+vi.mock('@/components/widgets/WidgetLayoutWrapper', () => ({
   WidgetLayoutWrapper: () => (
     <div data-testid="widget-content">Widget Content</div>
   ),
