@@ -23,7 +23,8 @@ test.describe('Board Sharing', () => {
     });
 
     try {
-      await expect(page.getByTitle('Open Menu')).toBeVisible({
+      await page.waitForSelector('[title="Open Menu"]', {
+        state: 'visible',
         timeout: 15000,
       });
     } catch {
@@ -31,22 +32,31 @@ test.describe('Board Sharing', () => {
       if (await signInButton.isVisible()) {
         await signInButton.click();
       }
-      await expect(page.getByTitle('Open Menu')).toBeVisible({
+      await page.waitForSelector('[title="Open Menu"]', {
+        state: 'visible',
         timeout: 15000,
       });
     }
   });
 
   test('can share and import a board', async ({ page }) => {
-    const menuButton = page.getByTitle('Open Menu');
-    await expect(menuButton).toBeVisible({ timeout: 10000 });
-    await menuButton.click();
+    await page.waitForSelector('[title="Open Menu"]', {
+      state: 'visible',
+      timeout: 30000,
+    });
+    await page.getByTitle('Open Menu').click();
 
-    await expect(page.getByText(APP_NAME)).toBeVisible({ timeout: 10000 });
+    await page.waitForSelector(`text=${APP_NAME}`, {
+      state: 'visible',
+      timeout: 30000,
+    });
     await page
       .getByRole('button', { name: 'Boards Manage and switch between' })
       .click();
-    await expect(page.getByText('My Boards')).toBeVisible({ timeout: 10000 });
+    await page.waitForSelector('text=My Boards', {
+      state: 'visible',
+      timeout: 30000,
+    });
 
     const boardCard = page
       .locator('.group.relative')

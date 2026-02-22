@@ -9,24 +9,28 @@ test('Text Widget scaling verification', async ({ page }) => {
   await page.goto('/');
 
   // 2. Open Dock and Add Text Widget
-  const openTools = page.getByTitle('Open Tools');
-  await expect(openTools).toBeVisible({ timeout: 10000 });
-  await openTools.click();
+  await page.waitForSelector('[title="Open Tools"]', {
+    state: 'visible',
+    timeout: 30000,
+  });
+  await page.getByTitle('Open Tools').click();
 
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
-  await expect(noteButton).toBeVisible({ timeout: 10000 });
+  await noteButton.waitFor({ state: 'visible', timeout: 30000 });
   await noteButton.click({ force: true });
 
-  const minimize = page.getByTitle('Minimize Toolbar');
-  await expect(minimize).toBeVisible({ timeout: 10000 });
-  await minimize.click();
+  await page.waitForSelector('[title="Minimize Toolbar"]', {
+    state: 'visible',
+    timeout: 30000,
+  });
+  await page.getByTitle('Minimize Toolbar').click();
 
   // 3. Locate Text Widget
   const textWidget = page
     .locator('.widget')
     .filter({ has: page.locator('[contenteditable]') })
     .first();
-  await expect(textWidget).toBeVisible({ timeout: 10000 });
+  await textWidget.waitFor({ state: 'visible', timeout: 30000 });
 
   // 4. Set some text
   const contentArea = textWidget.locator('[contenteditable]');

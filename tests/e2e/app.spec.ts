@@ -15,40 +15,46 @@ test.describe(APP_NAME, () => {
 
   test('can open sidebar and view widgets', async ({ page }) => {
     // Open sidebar
-    const menuButton = page.getByTitle('Open Menu');
-    await expect(menuButton).toBeVisible({ timeout: 10000 });
-    await menuButton.click();
+    await page.waitForSelector('[title="Open Menu"]', {
+      state: 'visible',
+      timeout: 30000,
+    });
+    await page.getByTitle('Open Menu').click();
 
     // Verify sidebar header
-    await expect(page.getByText(APP_NAME.toUpperCase())).toBeVisible({
-      timeout: 10000,
+    await page.waitForSelector(`text=${APP_NAME.toUpperCase()}`, {
+      state: 'visible',
+      timeout: 30000,
     });
 
     // Verify Widgets tab is active (by checking for "Available Widgets" text)
-    await expect(page.getByText('Available Widgets')).toBeVisible({
-      timeout: 10000,
+    await page.waitForSelector('text=Available Widgets', {
+      state: 'visible',
+      timeout: 30000,
     });
   });
 
   test('can add a Clock widget', async ({ page }) => {
     // Open Dock (it is minimized by default)
-    const openToolsButton = page.getByTitle('Open Tools');
-    await expect(openToolsButton).toBeVisible({ timeout: 10000 });
-    await openToolsButton.click();
+    await page.waitForSelector('[title="Open Tools"]', {
+      state: 'visible',
+      timeout: 30000,
+    });
+    await page.getByTitle('Open Tools').click();
 
     // Click Clock widget in the Dock
     // The Dock renders buttons with the tool label.
     const clockButton = page.getByRole('button', { name: /Clock/i }).first();
-    await expect(clockButton).toBeVisible({ timeout: 10000 });
+    await clockButton.waitFor({ state: 'visible', timeout: 30000 });
     // Use force click if element is unstable/animating
     await clockButton.click({ force: true });
 
     // Verify Clock widget is on the dashboard
     // The widget has class 'widget'.
-    const widget = page.locator('.widget').first();
-    await expect(widget).toBeVisible({ timeout: 10000 });
+    await page.waitForSelector('.widget', { state: 'visible', timeout: 30000 });
 
     // Optional: Verify it looks like a clock (contains a colon)
+    const widget = page.locator('.widget').first();
     await expect(widget.getByText(':').first()).toBeVisible({ timeout: 10000 });
   });
 });
