@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { IconButton } from './IconButton';
 import { WidgetData, GlobalStyle } from '../../types';
 import { Z_INDEX } from '../../config/zIndex';
 import { useWindowSize } from '../../hooks/useWindowSize';
@@ -167,15 +168,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               Settings
             </span>
           </div>
-          <button
-            type="button"
+          <IconButton
             onClick={onClose}
-            className="p-1.5 hover:bg-slate-200/80 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-            title="Close settings (Esc)"
-            aria-label="Close settings"
-          >
-            <X className="w-4 h-4" />
-          </button>
+            icon={<X className="w-4 h-4" />}
+            label="Close settings"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="shrink-0"
+          />
         </div>
 
         {/* Scrollable content */}

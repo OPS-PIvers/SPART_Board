@@ -22,6 +22,7 @@ import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { AnnotationCanvas } from './AnnotationCanvas';
+import { IconButton } from './IconButton';
 import { WIDGET_PALETTE } from '../../config/colors';
 import { Z_INDEX } from '../../config/zIndex';
 
@@ -747,17 +748,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   ))}
                 </div>
                 <div className="w-px h-4 bg-slate-300 mx-1" />
-                <button
+                <IconButton
                   onClick={(e) => {
                     e.stopPropagation();
                     setAnnotationColor('eraser');
                   }}
-                  className={`p-1.5 rounded-full transition-colors ${annotationColor === 'eraser' ? 'bg-slate-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
-                  title="Eraser"
-                >
-                  <Eraser className="w-3.5 h-3.5" />
-                </button>
-                <button
+                  icon={<Eraser className="w-3.5 h-3.5" />}
+                  label="Eraser"
+                  size="sm"
+                  variant="ghost"
+                  active={annotationColor === 'eraser'}
+                />
+                <IconButton
                   onClick={(e) => {
                     e.stopPropagation();
                     const paths = widget.annotation?.paths ?? [];
@@ -771,12 +773,12 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       });
                     }
                   }}
-                  className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
-                  title="Undo"
-                >
-                  <Undo2 className="w-3.5 h-3.5" />
-                </button>
-                <button
+                  icon={<Undo2 className="w-3.5 h-3.5" />}
+                  label="Undo"
+                  size="sm"
+                  variant="ghost"
+                />
+                <IconButton
                   onClick={(e) => {
                     e.stopPropagation();
                     updateWidget(widget.id, {
@@ -788,11 +790,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       },
                     });
                   }}
-                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                  title="Clear All"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  icon={<Trash2 className="w-3.5 h-3.5" />}
+                  label="Clear All"
+                  size="sm"
+                  variant="danger"
+                />
                 <div className="w-px h-4 bg-slate-300 mx-1" />
                 <button
                   onClick={(e) => {
@@ -885,23 +887,25 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     <Pencil className="w-2.5 h-2.5 text-slate-400 opacity-0 group-hover/title:opacity-100 transition-opacity" />
                   </div>
                   <div className="flex items-center -mr-1">
-                    <button
+                    <IconButton
                       onClick={() => {
                         updateWidget(widget.id, {
                           flipped: !widget.flipped,
                         });
                         setShowTools(false);
                       }}
-                      className={`p-1 hover:bg-slate-800/10 rounded-full transition-all ${
+                      icon={<Settings className="w-3.5 h-3.5" />}
+                      label={widget.flipped ? 'Close Settings' : 'Settings'}
+                      size="sm"
+                      variant="glass"
+                      active={widget.flipped}
+                      className={
                         widget.flipped
-                          ? 'text-indigo-600 bg-indigo-100/60'
-                          : 'text-slate-600'
-                      }`}
-                      title={widget.flipped ? 'Close Settings' : 'Settings'}
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                          ? '!bg-indigo-100/60 !text-indigo-600'
+                          : ''
+                      }
+                    />
+                    <IconButton
                       onClick={() => {
                         if (skipCloseConfirmation) {
                           removeWidget(widget.id);
@@ -910,19 +914,20 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           setShowTools(false);
                         }
                       }}
-                      className="p-1 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
-                      title="Close"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                      icon={<X className="w-3.5 h-3.5" />}
+                      label="Close"
+                      size="sm"
+                      variant="danger"
+                      className="hover:!bg-red-500/20"
+                    />
+                    <IconButton
                       onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
-                      className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all ${
-                        isToolbarExpanded ? 'rotate-180' : ''
-                      }`}
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                      icon={<ChevronRight className="w-3.5 h-3.5" />}
+                      label="Expand Toolbar"
+                      size="sm"
+                      variant="glass"
+                      className={isToolbarExpanded ? 'rotate-180' : ''}
+                    />
                   </div>
                 </div>
               )}
@@ -944,55 +949,61 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   </div>
                 )}
                 {canScreenshot && (
-                  <button
+                  <IconButton
                     onClick={() => void takeScreenshot()}
                     disabled={isCapturing}
-                    className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
-                    title="Take Screenshot"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                  </button>
+                    icon={<Camera className="w-3.5 h-3.5" />}
+                    label="Take Screenshot"
+                    size="sm"
+                    variant="glass"
+                  />
                 )}
-                <button
+                <IconButton
                   onClick={() => {
                     setIsAnnotating(!isAnnotating);
                     setShowTools(false);
                   }}
-                  className={`p-1.5 hover:bg-slate-800/10 rounded-full transition-all ${isAnnotating ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
-                  title="Annotate"
-                >
-                  <Highlighter className="w-3.5 h-3.5" />
-                </button>
-                <button
+                  icon={<Highlighter className="w-3.5 h-3.5" />}
+                  label="Annotate"
+                  size="sm"
+                  variant="glass"
+                  active={isAnnotating}
+                  className={
+                    isAnnotating ? '!bg-indigo-50 !text-indigo-600' : ''
+                  }
+                />
+                <IconButton
                   onClick={() => duplicateWidget(widget.id)}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                  title="Duplicate"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-                <button
+                  icon={<Copy className="w-3.5 h-3.5" />}
+                  label="Duplicate"
+                  size="sm"
+                  variant="glass"
+                />
+                <IconButton
                   onClick={handleMaximizeToggle}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                  title={isMaximized ? 'Restore' : 'Maximize'}
-                >
-                  {isMaximized ? (
-                    <Minimize2 className="w-3.5 h-3.5" />
-                  ) : (
-                    <Maximize className="w-3.5 h-3.5" />
-                  )}
-                </button>
-                <button
+                  icon={
+                    isMaximized ? (
+                      <Minimize2 className="w-3.5 h-3.5" />
+                    ) : (
+                      <Maximize className="w-3.5 h-3.5" />
+                    )
+                  }
+                  label={isMaximized ? 'Restore' : 'Maximize'}
+                  size="sm"
+                  variant="glass"
+                />
+                <IconButton
                   onClick={() =>
                     updateWidget(widget.id, {
                       minimized: true,
                       flipped: false,
                     })
                   }
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
-                  title="Minimize"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
+                  icon={<Minus className="w-3.5 h-3.5" />}
+                  label="Minimize"
+                  size="sm"
+                  variant="glass"
+                />
               </div>
             </div>
           </div>,
