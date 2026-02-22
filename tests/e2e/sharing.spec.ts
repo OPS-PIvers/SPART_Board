@@ -1,4 +1,3 @@
-import { APP_NAME } from '../../config/constants';
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -46,13 +45,11 @@ test.describe('Board Sharing', () => {
     });
     await page.getByTitle('Open Menu').click();
 
-    await page.waitForSelector(`text=${APP_NAME}`, {
+    await page.waitForSelector('text=Classroom Manager', {
       state: 'visible',
       timeout: 60000,
     });
-    await page
-      .getByRole('button', { name: 'Boards Manage and switch between' })
-      .click();
+    await page.getByRole('button', { name: /^Boards/ }).first().click();
     await page.waitForSelector('text=My Boards', {
       state: 'visible',
       timeout: 60000,
@@ -107,9 +104,7 @@ test.describe('Board Sharing', () => {
     await expect(page.getByText('Import Board')).not.toBeVisible();
 
     await page.getByTitle('Open Menu').click();
-    await page
-      .getByRole('button', { name: 'Boards Manage and switch between' })
-      .click();
+    await page.getByRole('button', { name: /^Boards/ }).first().click();
 
     // Use a more generic locator for the imported board if specific text fails
     await expect(
