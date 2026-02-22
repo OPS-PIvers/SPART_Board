@@ -615,10 +615,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     dragState.current;
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    gestureStartRef.current = {
-      y: e.touches[0].clientY,
-      touches: e.touches.length,
-    };
+    if (e.touches.length === 2) {
+      // Use average Y for 2-finger gestures to avoid sequential touch bugs
+      gestureStartRef.current = {
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        touches: 2,
+      };
+    } else if (e.touches.length === 1) {
+      gestureStartRef.current = {
+        y: e.touches[0].clientY,
+        touches: 1,
+      };
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {

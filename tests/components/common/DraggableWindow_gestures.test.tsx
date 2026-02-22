@@ -133,7 +133,7 @@ describe('DraggableWindow Gestures', () => {
     expect(document.body.classList.contains('is-dragging-widget')).toBe(true);
   });
 
-  it('minimizes widget on two-finger swipe down', () => {
+  it('minimizes widget on two-finger swipe down using average Y', () => {
     render(
       <DashboardContext.Provider
         value={mockContext as unknown as DashboardContextValue}
@@ -153,16 +153,17 @@ describe('DraggableWindow Gestures', () => {
     if (!widget) throw new Error('Widget not found');
 
     // Simulate 2-finger touch start
+    // Using widely spaced touches to verify average calculation
+    // Touch 1: 100, Touch 2: 200. Average Start Y = 150.
     fireEvent.touchStart(widget, {
-      touches: [{ clientY: 100 }, { clientY: 110 }],
+      touches: [{ clientY: 100 }, { clientY: 200 }],
     });
 
-    // Simulate touch end with movement down > 60px
-    // Note: changedTouches should contain the touch that ended/moved.
-    // Logic: deltaY = e.changedTouches[0].clientY - gestureStartRef.current.y
-    // Start Y was 100 (first touch). We need new Y to be > 160.
+    // Simulate touch end with movement down > 60px relative to average (150)
+    // Target Delta > 60 => Target Y > 210.
+    // Let's say one finger moved to 220.
     fireEvent.touchEnd(widget, {
-      changedTouches: [{ clientY: 170 }],
+      changedTouches: [{ clientY: 220 }],
       touches: [], // All touches ended
     });
 
@@ -170,5 +171,38 @@ describe('DraggableWindow Gestures', () => {
       minimized: true,
       flipped: false,
     });
+  });
+
+  it('does not minimize if delta is insufficient', () => {
+    render(
+      <DashboardContext.Provider
+        value={mockContext as unknown as DashboardContextValue}
+      >
+        <DraggableWindow
+          widget={mockWidget}
+          settings={<div>Settings</div>}
+          title="Test Widget"
+          globalStyle={mockGlobalStyle}
+        >
+          <div>Content</div>
+        </DraggableWindow>
+      </DashboardContext.Provider>
+    );
+
+    const widget = screen.getByText('Content').closest('.widget');
+    if (!widget) throw new Error('Widget not found');
+
+    // Average Start Y = 150
+    fireEvent.touchStart(widget, {
+      touches: [{ clientY: 100 }, { clientY: 200 }],
+    });
+
+    // Move to 180 (Delta = 30)
+    fireEvent.touchEnd(widget, {
+      changedTouches: [{ clientY: 180 }],
+      touches: [],
+    });
+
+    expect(mockContext.updateWidget).not.toHaveBeenCalled();
   });
 });
