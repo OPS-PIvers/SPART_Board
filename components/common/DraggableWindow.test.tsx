@@ -435,7 +435,9 @@ describe('DraggableWindow', () => {
 
     const windowEl = screen.getByTestId('draggable-window');
 
-    const topHandle = document.querySelector('.cursor-n-resize') as unknown as HTMLElementWithCapture;
+    const topHandle = document.querySelector(
+      '.cursor-n-resize'
+    ) as unknown as HTMLElementWithCapture;
     if (!topHandle) throw new Error('Top handle not found');
 
     topHandle.setPointerCapture = vi.fn();
