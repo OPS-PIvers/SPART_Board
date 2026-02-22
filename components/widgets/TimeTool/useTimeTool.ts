@@ -5,7 +5,7 @@ import {
   ExpectationsConfig,
   WidgetConfig,
   TrafficConfig,
-} from '../../../types';
+} from '@/types';
 import { useDashboard } from '../../../context/useDashboard';
 import { playTimerAlert, resumeAudio } from '../../../utils/timeToolAudio';
 

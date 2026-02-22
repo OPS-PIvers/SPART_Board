@@ -817,13 +817,13 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
         <div className="pt-2 border-t border-slate-100 mt-4">
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight mb-2">
-            Set Traffic Light when finished:
+            Auto-set Traffic Light:
           </p>
           {!hasTrafficLight ? (
             <div className="text-xs text-brand-blue-primary bg-brand-blue-lighter/20 p-3 rounded-xl border border-brand-blue-lighter/30 flex items-start gap-2">
               <span className="text-lg mt-px">&#128161;</span>
               <p className="font-medium leading-snug">
-                Add a Traffic Light widget to enable auto-stop!
+                Add a Traffic Light widget to enable automatic color changes!
               </p>
             </div>
           ) : (
@@ -836,7 +836,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                 }
                 className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
                   timerEndTrafficColor == null
-                    ? 'bg-slate-800 border-slate-800 text-white'
+                    ? 'bg-brand-gray-darkest border-brand-gray-darkest text-white'
                     : 'bg-white border-slate-200 text-slate-600'
                 }`}
               >
@@ -866,7 +866,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                 }
                 className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
                   timerEndTrafficColor === 'yellow'
-                    ? 'bg-yellow-400 border-yellow-400 text-black'
+                    ? 'bg-yellow-300 border-yellow-300 text-yellow-900'
                     : 'bg-white border-slate-200 text-slate-600'
                 }`}
               >
