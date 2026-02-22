@@ -130,19 +130,18 @@ describe('WidgetRenderer', () => {
     const { rerender } = render(<WidgetRenderer {...mockProps} />);
 
     expect(mockScalableWidget).toHaveBeenCalledTimes(1);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const firstRenderProps = mockScalableWidget.mock.calls[0][0];
+    const firstRenderProps = mockScalableWidget.mock
+      .calls[0][0] as ScalableWidgetProps;
 
     // Rerender with CHANGED prop that forces WidgetRenderer to update
     // but should NOT change the ScalableWidget children callback
     rerender(<WidgetRenderer {...mockProps} isLive={true} />);
 
     expect(mockScalableWidget).toHaveBeenCalledTimes(2);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const secondRenderProps = mockScalableWidget.mock.calls[1][0];
+    const secondRenderProps = mockScalableWidget.mock
+      .calls[1][0] as ScalableWidgetProps;
 
     // The children prop (render callback) should be referentially equal
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(firstRenderProps.children).toBe(secondRenderProps.children);
   });
 });

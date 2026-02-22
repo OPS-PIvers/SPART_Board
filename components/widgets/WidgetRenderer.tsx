@@ -24,6 +24,13 @@ import {
   DEFAULT_SCALING_CONFIG,
 } from './WidgetRegistry';
 
+// Widgets that require real-time position updates for inter-widget functionality
+const POSITION_AWARE_WIDGETS: WidgetType[] = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
+
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
 const LoadingFallback = () => (
@@ -172,6 +179,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const HEADER_HEIGHT = UI_CONSTANTS.WIDGET_HEADER_HEIGHT;
   const PADDING = UI_CONSTANTS.WIDGET_PADDING;
 
+  // Calculate a key that changes only when relevant position changes for position-aware widgets.
+  // For standard widgets, this key is empty and doesn't trigger updates on drag.
+  const positionKey = POSITION_AWARE_WIDGETS.includes(widget.type)
+    ? `${widget.x},${widget.y}`
+    : '';
+
   const getWidgetContentInternal = useCallback(
     (w: number, h: number, scale?: number) => {
       return (
@@ -200,9 +213,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       widget.isLive,
       widget.transparency,
       widget.annotation,
-      // For position-aware widgets, we technically *should* re-render if x/y change,
-      // but InnerWidgetRenderer handles that check internally efficiently.
-      // However, for this callback stability, we ignore x/y to prevent ScalableWidget churn.
+      positionKey,
       isStudentView,
     ]
   );
