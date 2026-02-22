@@ -71,11 +71,11 @@ describe('useTimeTool Connection (Nexus)', () => {
     } as WidgetData;
   };
 
-  it('updates traffic light to RED when timer ends', async () => {
+  it('updates traffic light to RED when timer ends', () => {
     const widget = createWidget({
       isRunning: true,
       startTime: Date.now(),
-      timerEndTrafficColor: 'red'
+      timerEndTrafficColor: 'red',
     });
 
     renderHook(() => useTimeTool(widget));
@@ -86,7 +86,9 @@ describe('useTimeTool Connection (Nexus)', () => {
 
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'traffic-1',
+
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           active: 'red',
         }),
@@ -94,11 +96,11 @@ describe('useTimeTool Connection (Nexus)', () => {
     );
   });
 
-  it('updates traffic light to YELLOW when timer ends', async () => {
+  it('updates traffic light to YELLOW when timer ends', () => {
     const widget = createWidget({
       isRunning: true,
       startTime: Date.now(),
-      timerEndTrafficColor: 'yellow'
+      timerEndTrafficColor: 'yellow',
     });
 
     renderHook(() => useTimeTool(widget));
@@ -109,7 +111,9 @@ describe('useTimeTool Connection (Nexus)', () => {
 
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       'traffic-1',
+
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           active: 'yellow',
         }),
@@ -117,11 +121,11 @@ describe('useTimeTool Connection (Nexus)', () => {
     );
   });
 
-  it('does NOT update traffic light if timerEndTrafficColor is NULL', async () => {
+  it('does NOT update traffic light if timerEndTrafficColor is NULL', () => {
     const widget = createWidget({
       isRunning: true,
       startTime: Date.now(),
-      timerEndTrafficColor: null
+      timerEndTrafficColor: null,
     });
 
     renderHook(() => useTimeTool(widget));
@@ -137,7 +141,7 @@ describe('useTimeTool Connection (Nexus)', () => {
     );
   });
 
-  it('handles missing traffic light widget gracefully', async () => {
+  it('handles missing traffic light widget gracefully', () => {
     // Override context to have NO widgets
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       ...mockDashboardContext,
@@ -150,7 +154,7 @@ describe('useTimeTool Connection (Nexus)', () => {
     const widget = createWidget({
       isRunning: true,
       startTime: Date.now(),
-      timerEndTrafficColor: 'red'
+      timerEndTrafficColor: 'red',
     });
 
     renderHook(() => useTimeTool(widget));
