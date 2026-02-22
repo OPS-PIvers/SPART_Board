@@ -417,4 +417,56 @@ describe('DraggableWindow', () => {
       expect.objectContaining({ minimized: true, flipped: false })
     );
   });
+
+  it('toggles maximize on double click', () => {
+    renderComponent();
+
+    const dragSurface = screen.getByTestId('drag-surface');
+    fireEvent.doubleClick(dragSurface);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({ maximized: true })
+    );
+  });
+
+  it('resizes from top edge', () => {
+    renderComponent();
+
+    const windowEl = screen.getByTestId('draggable-window');
+
+    const topHandle = document.querySelector('.cursor-n-resize') as unknown as HTMLElementWithCapture;
+    if (!topHandle) throw new Error('Top handle not found');
+
+    topHandle.setPointerCapture = vi.fn();
+    topHandle.hasPointerCapture = vi.fn().mockReturnValue(true);
+    topHandle.releasePointerCapture = vi.fn();
+
+    fireEvent.pointerDown(topHandle, {
+      clientX: 150,
+      clientY: 100,
+      pointerId: 1,
+    });
+
+    // Drag up by 10px
+    fireEvent.pointerMove(window, {
+      clientX: 150,
+      clientY: 90,
+      pointerId: 1,
+    });
+
+    // Check direct DOM manipulation
+    expect(windowEl.style.height).toBe('210px');
+    expect(windowEl.style.top).toBe('90px');
+
+    fireEvent.pointerUp(window, { pointerId: 1 });
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'test-widget',
+      expect.objectContaining({
+        h: 210,
+        y: 90,
+      })
+    );
+  });
 });

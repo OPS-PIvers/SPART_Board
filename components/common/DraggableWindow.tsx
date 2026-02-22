@@ -664,6 +664,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
         data-testid="drag-surface"
         className="h-full w-full flex flex-col rounded-[inherit] overflow-hidden"
         onPointerDown={handleDragStart}
+        onDoubleClick={handleMaximizeToggle}
         style={{ touchAction: 'none' }}
       >
         {showConfirm && (
@@ -808,28 +809,47 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
           )}
         </div>
 
-        {/* Resize Handles (Corners Only) */}
+        {/* Expanded Corners - Hit box extends 16px (-4) outside the widget */}
         <div
           onPointerDown={(e) => handleResizeStart(e, 'nw')}
-          className="resize-handle absolute top-0 left-0 w-6 h-6 cursor-nw-resize z-widget-resize touch-none"
+          className="resize-handle absolute -top-4 -left-4 w-12 h-12 cursor-nw-resize z-widget-resize touch-none"
         />
         <div
           onPointerDown={(e) => handleResizeStart(e, 'ne')}
-          className="resize-handle absolute top-0 right-0 w-6 h-6 cursor-ne-resize z-widget-resize touch-none"
+          className="resize-handle absolute -top-4 -right-4 w-12 h-12 cursor-ne-resize z-widget-resize touch-none"
         />
         <div
           onPointerDown={(e) => handleResizeStart(e, 'sw')}
-          className="resize-handle absolute bottom-0 left-0 w-6 h-6 cursor-sw-resize z-widget-resize touch-none"
+          className="resize-handle absolute -bottom-4 -left-4 w-12 h-12 cursor-sw-resize z-widget-resize touch-none"
         />
         <div
           onPointerDown={(e) => handleResizeStart(e, 'se')}
-          className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 z-widget-resize touch-none"
+          className="resize-handle absolute -bottom-4 -right-4 w-12 h-12 cursor-se-resize flex items-center justify-center z-widget-resize touch-none"
         >
+          {/* Position visual icon back in the actual corner */}
           <ResizeHandleIcon
-            className="text-slate-400"
+            className="absolute bottom-5 right-5 text-slate-400"
             style={{ opacity: isSelected ? 1 : transparency }}
           />
         </div>
+
+        {/* New Edge Resizers - Allows grabbing the entire side of a widget */}
+        <div
+          onPointerDown={(e) => handleResizeStart(e, 'e')}
+          className="resize-handle absolute top-8 bottom-8 -right-4 w-8 cursor-e-resize z-widget-resize touch-none"
+        />
+        <div
+          onPointerDown={(e) => handleResizeStart(e, 'w')}
+          className="resize-handle absolute top-8 bottom-8 -left-4 w-8 cursor-w-resize z-widget-resize touch-none"
+        />
+        <div
+          onPointerDown={(e) => handleResizeStart(e, 's')}
+          className="resize-handle absolute -bottom-4 left-8 right-8 h-8 cursor-s-resize z-widget-resize touch-none"
+        />
+        <div
+          onPointerDown={(e) => handleResizeStart(e, 'n')}
+          className="resize-handle absolute -top-4 left-8 right-8 h-8 cursor-n-resize z-widget-resize touch-none"
+        />
       </div>
     </GlassCard>
   );
@@ -892,14 +912,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         });
                         setShowTools(false);
                       }}
-                      className={`p-1 hover:bg-slate-800/10 rounded-full transition-all ${
+                      className={`p-4 -m-3 hover:bg-slate-800/10 rounded-full transition-all active:scale-95 ${
                         widget.flipped
                           ? 'text-indigo-600 bg-indigo-100/60'
                           : 'text-slate-600'
                       }`}
                       title={widget.flipped ? 'Close Settings' : 'Settings'}
                     >
-                      <Settings className="w-3.5 h-3.5" />
+                      <Settings className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => {
@@ -910,18 +930,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                           setShowTools(false);
                         }
                       }}
-                      className="p-1 hover:bg-red-500/20 text-red-600 rounded-full transition-all"
+                      className="p-4 -m-3 hover:bg-red-500/20 text-red-600 rounded-full transition-all active:scale-95"
                       title="Close"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
-                      className={`p-1 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all ${
+                      className={`p-4 -m-3 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all active:scale-95 ${
                         isToolbarExpanded ? 'rotate-180' : ''
                       }`}
                     >
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -947,10 +967,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   <button
                     onClick={() => void takeScreenshot()}
                     disabled={isCapturing}
-                    className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all disabled:opacity-50"
+                    className="p-4 -m-3 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all active:scale-95 disabled:opacity-50"
                     title="Take Screenshot"
                   >
-                    <Camera className="w-3.5 h-3.5" />
+                    <Camera className="w-4 h-4" />
                   </button>
                 )}
                 <button
@@ -958,27 +978,27 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     setIsAnnotating(!isAnnotating);
                     setShowTools(false);
                   }}
-                  className={`p-1.5 hover:bg-slate-800/10 rounded-full transition-all ${isAnnotating ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                  className={`p-4 -m-3 hover:bg-slate-800/10 rounded-full transition-all active:scale-95 ${isAnnotating ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
                   title="Annotate"
                 >
-                  <Highlighter className="w-3.5 h-3.5" />
+                  <Highlighter className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => duplicateWidget(widget.id)}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  className="p-4 -m-3 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all active:scale-95"
                   title="Duplicate"
                 >
-                  <Copy className="w-3.5 h-3.5" />
+                  <Copy className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleMaximizeToggle}
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  className="p-4 -m-3 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all active:scale-95"
                   title={isMaximized ? 'Restore' : 'Maximize'}
                 >
                   {isMaximized ? (
-                    <Minimize2 className="w-3.5 h-3.5" />
+                    <Minimize2 className="w-4 h-4" />
                   ) : (
-                    <Maximize className="w-3.5 h-3.5" />
+                    <Maximize className="w-4 h-4" />
                   )}
                 </button>
                 <button
@@ -988,10 +1008,10 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       flipped: false,
                     })
                   }
-                  className="p-1.5 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all"
+                  className="p-4 -m-3 hover:bg-slate-800/10 rounded-full text-slate-600 transition-all active:scale-95"
                   title="Minimize"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
               </div>
             </div>
