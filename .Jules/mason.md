@@ -5,3 +5,5 @@
 ## 2026-01-26 - [Broken Production Deploy] **Bottleneck:** Production deployment workflow was only deploying Hosting and missing Functions build/deploy, leading to config drift and potential runtime errors. **Fix:** Updated `firebase-deploy.yml` to install function deps, build functions, and deploy all targets using `firebase-tools` with a service account.
 
 ## 2026-01-30 - [Build Scripts & Chunk Optimization] **Bottleneck:** Missing convenience scripts for full-stack build caused friction; large chunk warnings in build output. **Fix:** Added `install:all`, `build:all` scripts and optimized `vite.config.ts` manual chunks.
+
+## 2026-02-05 - [Deployment Workflow Optimization] **Bottleneck:** `firebase-deploy.yml` had redundant manual steps and missed type checking for functions, leading to potential deployment of broken code and maintenance overhead. **Fix:** Consolidated steps using `install:ci` and `build:all` scripts, and added `type-check:all` to ensure full stack type safety before deployment.
