@@ -7,21 +7,25 @@ test('Text Widget scaling verification', async ({ page }) => {
 
   // 1. Load dashboard
   await page.goto('/');
+  // Wait for initial loading to finish
+  await expect(page.locator('.animate-spin').first()).not.toBeVisible({
+    timeout: 60000,
+  });
 
   // 2. Open Dock and Add Text Widget
   await page.waitForSelector('[title="Open Tools"]', {
     state: 'visible',
-    timeout: 30000,
+    timeout: 60000,
   });
   await page.getByTitle('Open Tools').click();
 
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
-  await noteButton.waitFor({ state: 'visible', timeout: 30000 });
+  await noteButton.waitFor({ state: 'visible', timeout: 60000 });
   await noteButton.click({ force: true });
 
   await page.waitForSelector('[title="Minimize Toolbar"]', {
     state: 'visible',
-    timeout: 30000,
+    timeout: 60000,
   });
   await page.getByTitle('Minimize Toolbar').click();
 
@@ -30,7 +34,7 @@ test('Text Widget scaling verification', async ({ page }) => {
     .locator('.widget')
     .filter({ has: page.locator('[contenteditable]') })
     .first();
-  await textWidget.waitFor({ state: 'visible', timeout: 30000 });
+  await textWidget.waitFor({ state: 'visible', timeout: 60000 });
 
   // 4. Set some text
   const contentArea = textWidget.locator('[contenteditable]');

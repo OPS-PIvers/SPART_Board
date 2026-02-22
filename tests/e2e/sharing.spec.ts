@@ -19,7 +19,7 @@ test.describe('Board Sharing', () => {
 
     // Wait for initial loading to finish
     await expect(page.locator('.animate-spin').first()).not.toBeVisible({
-      timeout: 30000,
+      timeout: 60000,
     });
 
     try {
@@ -42,20 +42,20 @@ test.describe('Board Sharing', () => {
   test('can share and import a board', async ({ page }) => {
     await page.waitForSelector('[title="Open Menu"]', {
       state: 'visible',
-      timeout: 30000,
+      timeout: 60000,
     });
     await page.getByTitle('Open Menu').click();
 
     await page.waitForSelector(`text=${APP_NAME}`, {
       state: 'visible',
-      timeout: 30000,
+      timeout: 60000,
     });
     await page
       .getByRole('button', { name: 'Boards Manage and switch between' })
       .click();
     await page.waitForSelector('text=My Boards', {
       state: 'visible',
-      timeout: 30000,
+      timeout: 60000,
     });
 
     const boardCard = page

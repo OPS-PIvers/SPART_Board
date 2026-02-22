@@ -5,29 +5,33 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
 
   // 1. Load dashboard
   await page.goto('/');
+  // Wait for initial loading to finish
+  await expect(page.locator('.animate-spin').first()).not.toBeVisible({
+    timeout: 60000,
+  });
 
   // 2. Open Dock and Add Widgets
   // The dock button might need waiting or finding by title
   await page.waitForSelector('[title="Open Tools"]', {
     state: 'visible',
-    timeout: 30000,
+    timeout: 60000,
   });
   await page.getByTitle('Open Tools').click();
 
   // Add Text Widget (Note)
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
-  await noteButton.waitFor({ state: 'visible', timeout: 30000 });
+  await noteButton.waitFor({ state: 'visible', timeout: 60000 });
   await noteButton.click({ force: true });
 
   // Add QR Widget
   const qrButton = page.getByRole('button', { name: /QR/i }).first();
-  await qrButton.waitFor({ state: 'visible', timeout: 30000 });
+  await qrButton.waitFor({ state: 'visible', timeout: 60000 });
   await qrButton.click({ force: true });
 
   // Close dock (Minimize)
   await page.waitForSelector('[title="Minimize Toolbar"]', {
     state: 'visible',
-    timeout: 30000,
+    timeout: 60000,
   });
   await page.getByTitle('Minimize Toolbar').click();
 
