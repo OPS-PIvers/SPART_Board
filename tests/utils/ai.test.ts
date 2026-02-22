@@ -10,7 +10,7 @@ import {
   generateDashboardLayout,
   generateQuiz,
   extractTextWithGemini,
-} from '../../utils/ai';
+} from '@/utils/ai';
 
 // Mock Firebase Functions
 vi.mock('firebase/functions', () => {
@@ -185,7 +185,7 @@ describe('generateDashboardLayout', () => {
 
   it('throws error when no widgets generated', async () => {
     await expect(generateDashboardLayout('no-widgets')).rejects.toThrow(
-      "AI couldn't generate any widgets"
+      "AI couldn't generate any widgets for this description. Please try a more specific lesson plan."
     );
   });
 
