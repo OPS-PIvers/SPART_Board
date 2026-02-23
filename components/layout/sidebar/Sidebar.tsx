@@ -56,6 +56,7 @@ import { BUILDINGS } from '../../../config/buildings';
 import { AdminSettings } from '../../admin/AdminSettings';
 import { GlassCard } from '../../common/GlassCard';
 import { Toggle } from '../../common/Toggle';
+import { IconButton } from '@/components/common/IconButton';
 import { SortableDashboardItem } from './SortableDashboardItem';
 import { StylePanel } from './StylePanel';
 
@@ -311,39 +312,42 @@ export const Sidebar: React.FC = () => {
         data-screenshot="exclude"
         className="fixed top-6 left-6 z-dock flex items-center gap-2 p-2 rounded-full transition-all"
       >
-        <button
+        <IconButton
           onClick={() => setIsOpen(true)}
-          className="p-2 bg-brand-blue-primary text-white rounded-full transition-colors shadow-md shadow-brand-blue-dark/20"
-          title="Open Menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+          icon={<Menu className="w-5 h-5" />}
+          label="Open Menu"
+          variant="primary"
+          size="md"
+          className="shadow-brand-blue-dark/20"
+        />
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
         {isAdmin && (
-          <button
+          <IconButton
             onClick={() => setShowAdminSettings(true)}
-            className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
-            title="Admin Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+            icon={<Settings className="w-5 h-5" />}
+            label="Admin Settings"
+            variant="brand-ghost"
+            size="md"
+          />
         )}
 
-        <button
+        <IconButton
           onClick={toggleFullscreen}
-          className="p-2 text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-primary hover:text-white rounded-full transition-all shadow-sm"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-        >
-          {isFullscreen ? (
-            <Minimize className="w-5 h-5" />
-          ) : (
-            <Maximize className="w-5 h-5" />
-          )}
-        </button>
+          icon={
+            isFullscreen ? (
+              <Minimize className="w-5 h-5" />
+            ) : (
+              <Maximize className="w-5 h-5" />
+            )
+          }
+          label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          variant="brand-ghost"
+          size="md"
+        />
 
-        <button
+        <IconButton
           onClick={() => {
             if (
               window.confirm(
@@ -353,27 +357,22 @@ export const Sidebar: React.FC = () => {
               clearAllWidgets();
             }
           }}
-          className="p-2 text-brand-red-primary bg-brand-red-lighter/50 hover:bg-brand-red-primary hover:text-white rounded-full transition-all shadow-sm"
-          title="Clear All Windows"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+          icon={<Trash2 className="w-5 h-5" />}
+          label="Clear All Windows"
+          variant="brand-danger-ghost"
+          size="md"
+        />
 
-        <button
+        <IconButton
           onClick={() => setIsBoardSwitcherExpanded(!isBoardSwitcherExpanded)}
-          className={`p-2 rounded-full transition-all duration-300 ${
-            isBoardSwitcherExpanded
-              ? 'bg-brand-blue-primary text-white shadow-md'
-              : 'text-brand-blue-primary bg-brand-blue-lighter/50 hover:bg-brand-blue-lighter'
+          icon={<ChevronRight className="w-5 h-5" />}
+          label={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
+          variant={isBoardSwitcherExpanded ? 'primary' : 'brand-ghost'}
+          size="md"
+          className={`transition-all duration-300 [&>svg]:transition-transform [&>svg]:duration-500 ${
+            isBoardSwitcherExpanded ? '[&>svg]:rotate-180' : '[&>svg]:rotate-0'
           }`}
-          title={isBoardSwitcherExpanded ? 'Hide Boards' : 'Switch Boards'}
-        >
-          <ChevronRight
-            className={`w-5 h-5 transition-transform duration-500 ${
-              isBoardSwitcherExpanded ? 'rotate-180' : 'rotate-0'
-            }`}
-          />
-        </button>
+        />
 
         {/* Board Switcher Sliding Toggle Bar */}
         <div
@@ -556,13 +555,15 @@ export const Sidebar: React.FC = () => {
             <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200 shrink-0 bg-white z-10">
               <div className="flex items-center gap-2">
                 {activeSection !== 'main' ? (
-                  <button
+                  <IconButton
                     onClick={() => setActiveSection('main')}
-                    className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-500"
-                    title="Back"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
+                    icon={<ArrowLeft className="w-4 h-4" />}
+                    label="Back"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    className="-ml-1.5"
+                  />
                 ) : (
                   <div className="w-6 h-6 bg-brand-blue-primary rounded flex items-center justify-center">
                     <LayoutGrid className="w-4 h-4 text-white" />
@@ -607,15 +608,16 @@ export const Sidebar: React.FC = () => {
                   )}
                 </div>
               </div>
-              <button
+              <IconButton
                 onClick={() => {
                   setIsOpen(false);
                   setActiveSection('main');
                 }}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                icon={<X className="w-5 h-5" />}
+                label="Close Menu"
+                variant="ghost"
+                size="md"
+              />
             </div>
 
             {/* Content Area */}
@@ -1296,13 +1298,13 @@ export const Sidebar: React.FC = () => {
                   </div>
                 </div>
 
-                <button
+                <IconButton
                   onClick={() => void signOut()}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
+                  icon={<LogOut className="w-4 h-4" />}
+                  label="Sign Out"
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
               <div className="px-4 pb-3 flex justify-between items-center">
                 <span className="text-xxs font-bold text-slate-400 uppercase tracking-[0.2em]">

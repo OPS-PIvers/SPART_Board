@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GlassCard } from '../../common/GlassCard';
+import { IconButton } from '@/components/common/IconButton';
 import { TOOLS } from '../../../config/tools';
 import { WidgetType, GlobalStyle, InternalToolType } from '../../../types';
 import { useClickOutside } from '../../../hooks/useClickOutside';
@@ -148,12 +149,13 @@ export const WidgetLibrary: React.FC<WidgetLibraryProps> = ({
             Widget Library
           </h3>
         </div>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-2 hover:bg-slate-200/50 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5 text-slate-500" />
-        </button>
+          icon={<X className="w-5 h-5" />}
+          label="Close Library"
+          variant="ghost"
+          size="md"
+        />
       </div>
       <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         {availableTools.length > 0 ? (
