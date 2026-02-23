@@ -32,7 +32,10 @@ test.describe(APP_NAME, () => {
     });
 
     // Navigate to Widgets section
-    await page.getByRole('button', { name: /^Widgets/ }).first().click();
+    await page
+      .getByRole('button', { name: /^Widgets/ })
+      .first()
+      .click();
 
     // Verify Widgets section loaded (by checking for "Available Widgets" text)
     await page.waitForSelector('text=Available Widgets', {
