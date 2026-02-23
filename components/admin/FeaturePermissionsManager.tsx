@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  collection,
-  doc,
-  setDoc,
-  getDocs,
-  deleteDoc,
-} from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
 import { db, isAuthBypass } from '../../config/firebase';
 import {
   FeaturePermission,
@@ -171,47 +165,6 @@ export const FeaturePermissionsManager: React.FC = () => {
     }
   };
 
-  const deletePermission = async (
-    widgetType: WidgetType | InternalToolType
-  ) => {
-    if (
-      !confirm(
-        `Remove permission rules for ${widgetType}? It will revert to default (public access).`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setSaving(new Set(saving).add(widgetType));
-      await deleteDoc(doc(db, 'feature_permissions', widgetType));
-
-      setPermissions((prev) => {
-        const next = new Map(prev);
-        next.delete(widgetType);
-        return next;
-      });
-
-      // Clear unsaved changes flag for this widget
-      setUnsavedChanges((prev) => {
-        const next = new Set(prev);
-        next.delete(widgetType);
-        return next;
-      });
-
-      showMessage('success', `Removed ${widgetType} permissions`);
-    } catch (error) {
-      console.error('Error deleting permission:', error);
-      showMessage('error', `Failed to remove ${widgetType} permissions`);
-    } finally {
-      setSaving((prev) => {
-        const next = new Set(prev);
-        next.delete(widgetType);
-        return next;
-      });
-    }
-  };
-
   const toggleGradeLevel = (
     widgetType: WidgetType | InternalToolType,
     level: GradeLevel
@@ -329,7 +282,6 @@ export const FeaturePermissionsManager: React.FC = () => {
       >
         {TOOLS.map((tool) => {
           const permission = getPermission(tool.type);
-          const hasCustomPermission = permissions.has(tool.type);
           const isSaving = saving.has(tool.type);
 
           const currentLevels =
@@ -463,16 +415,6 @@ export const FeaturePermissionsManager: React.FC = () => {
                     >
                       <Settings className="w-4 h-4" />
                     </button>
-                    {hasCustomPermission && (
-                      <button
-                        onClick={() => deletePermission(tool.type)}
-                        disabled={isSaving}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Remove custom permissions"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
                     <button
                       onClick={() => savePermission(tool.type)}
                       disabled={isSaving}
@@ -573,16 +515,6 @@ export const FeaturePermissionsManager: React.FC = () => {
                   >
                     <Settings className="w-4 h-4" />
                   </button>
-                  {hasCustomPermission && (
-                    <button
-                      onClick={() => deletePermission(tool.type)}
-                      disabled={isSaving}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                      title="Remove custom permissions"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
               </div>
 
