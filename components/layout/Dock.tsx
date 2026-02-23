@@ -78,8 +78,40 @@ export const Dock: React.FC = () => {
     reorderFolderItems,
     addToast,
   } = useDashboard();
-  const { canAccessWidget, canAccessFeature, user } = useAuth();
+  const {
+    canAccessWidget,
+    canAccessFeature,
+    user,
+    userGradeLevels,
+    selectedBuildings,
+  } = useAuth();
   const { driveService } = useGoogleDrive();
+
+  const getBuildingAwareOverrides = useCallback(
+    (type: WidgetType): Partial<WidgetData> | undefined => {
+      if (type === 'expectations') {
+        const isElementaryOnly =
+          userGradeLevels.length > 0 &&
+          userGradeLevels.every((gl) => gl === 'k-2' || gl === '3-5');
+        if (isElementaryOnly) {
+          return { config: { layout: 'elementary' } } as Partial<WidgetData>;
+        }
+      }
+      if (type === 'lunchCount') {
+        const schoolBuilding = selectedBuildings.find(
+          (b) =>
+            b === 'schumann-elementary' || b === 'orono-intermediate-school'
+        );
+        if (schoolBuilding) {
+          return {
+            config: { schoolSite: schoolBuilding },
+          } as Partial<WidgetData>;
+        }
+      }
+      return undefined;
+    },
+    [userGradeLevels, selectedBuildings]
+  );
 
   const handleRecordingComplete = useCallback(
     async (blob: Blob) => {
@@ -693,7 +725,14 @@ export const Dock: React.FC = () => {
                             key={tool.type}
                             tool={tool}
                             minimizedWidgets={minimizedWidgets}
-                            onAdd={() => addWidget(tool.type as WidgetType)}
+                            onAdd={() =>
+                              addWidget(
+                                tool.type as WidgetType,
+                                getBuildingAwareOverrides(
+                                  tool.type as WidgetType
+                                )
+                              )
+                            }
                             onRestore={(id) =>
                               updateWidget(id, { minimized: false })
                             }
@@ -721,7 +760,10 @@ export const Dock: React.FC = () => {
                               } else if (type === 'magic') {
                                 setShowMagicLayout(true);
                               } else {
-                                addWidget(type as WidgetType);
+                                addWidget(
+                                  type as WidgetType,
+                                  getBuildingAwareOverrides(type as WidgetType)
+                                );
                               }
                             }}
                             onRename={setRenamingFolderId}
@@ -918,7 +960,10 @@ export const Dock: React.FC = () => {
                   } else if (type === 'magic') {
                     setShowMagicLayout(true);
                   } else {
-                    addWidget(type as WidgetType);
+                    addWidget(
+                      type as WidgetType,
+                      getBuildingAwareOverrides(type as WidgetType)
+                    );
                   }
                 }}
               />
@@ -953,7 +998,10 @@ export const Dock: React.FC = () => {
                   } else if (type === 'magic') {
                     setShowMagicLayout(true);
                   } else {
-                    addWidget(type as WidgetType);
+                    addWidget(
+                      type as WidgetType,
+                      getBuildingAwareOverrides(type as WidgetType)
+                    );
                   }
                 }}
               />
