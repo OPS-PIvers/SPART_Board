@@ -11,6 +11,7 @@ import {
   WidgetConfig,
   GlobalStyle,
   Student,
+  AddWidgetOverrides,
 } from '../types';
 
 export interface DashboardContextValue {
@@ -33,7 +34,7 @@ export interface DashboardContextValue {
   loadDashboard: (id: string) => void;
   reorderDashboards: (ids: string[]) => void;
   setDefaultDashboard: (id: string) => void;
-  addWidget: (type: WidgetType, overrides?: Partial<WidgetData>) => void;
+  addWidget: (type: WidgetType, overrides?: AddWidgetOverrides) => void;
   addWidgets: (
     widgetsToAdd: { type: WidgetType; config?: WidgetConfig }[]
   ) => void;

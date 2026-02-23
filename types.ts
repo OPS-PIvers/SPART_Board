@@ -811,6 +811,18 @@ export interface WidgetData {
   config: WidgetConfig;
 }
 
+/**
+ * Looser overrides type for addWidget: allows partial config objects so callers
+ * don't need `as Partial<WidgetData>` assertions when supplying only a subset
+ * of a widget's config fields (e.g. { config: { layout: 'elementary' } }).
+ * Uses a distributive Partial so each config union member is made optional
+ * independently, preserving per-widget type information.
+ */
+type DistributedPartial<T> = T extends unknown ? Partial<T> : never;
+export type AddWidgetOverrides = Omit<Partial<WidgetData>, 'config'> & {
+  config?: DistributedPartial<WidgetConfig>;
+};
+
 export interface DockFolder {
   id: string;
   name: string;

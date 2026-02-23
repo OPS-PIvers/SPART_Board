@@ -37,7 +37,8 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { WidgetType, WidgetData, DockFolder, MiniAppItem } from '../../types';
 import { TOOLS } from '../../config/tools';
-import { LUNCH_COUNT_BUILDING_IDS } from '../../config/buildings';
+import { isLunchCountBuilding } from '../../config/buildings';
+import { AddWidgetOverrides } from '../../types';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
@@ -89,23 +90,19 @@ export const Dock: React.FC = () => {
   const { driveService } = useGoogleDrive();
 
   const getBuildingAwareOverrides = useCallback(
-    (type: WidgetType): Partial<WidgetData> | undefined => {
+    (type: WidgetType): AddWidgetOverrides | undefined => {
       if (type === 'expectations') {
         const isElementaryOnly =
           userGradeLevels.length > 0 &&
           userGradeLevels.every((gl) => gl === 'k-2' || gl === '3-5');
         if (isElementaryOnly) {
-          return { config: { layout: 'elementary' } } as Partial<WidgetData>;
+          return { config: { layout: 'elementary' } };
         }
       }
       if (type === 'lunchCount') {
-        const schoolBuilding = selectedBuildings.find((b) =>
-          LUNCH_COUNT_BUILDING_IDS.has(b)
-        );
+        const schoolBuilding = selectedBuildings.find(isLunchCountBuilding);
         if (schoolBuilding) {
-          return {
-            config: { schoolSite: schoolBuilding },
-          } as Partial<WidgetData>;
+          return { config: { schoolSite: schoolBuilding } };
         }
       }
       return undefined;
