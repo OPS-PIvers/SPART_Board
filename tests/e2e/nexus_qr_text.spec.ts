@@ -84,15 +84,12 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
 
   // 5. Enable Sync
   // The settings panel is open.
-  // Find the checkbox for sync.
-  const syncToggle = page.locator('input[type="checkbox"]').first();
-  // Or better, find by text nearby
+  // The Toggle component renders a button with role="switch", not an input[type="checkbox"]
   await expect(page.getByText('Sync with Text Widget')).toBeVisible();
+  const syncToggle = page.getByRole('switch').first();
 
-  // Click the checkbox (toggle)
-  // Input is hidden (sr-only), so we force the check
-  // Retry if check doesn't take immediately (state update race)
-  await syncToggle.click({ force: true });
+  // Click the toggle to enable sync
+  await syncToggle.click();
   await expect(syncToggle).toBeChecked();
 
   // 6. Verify Sync

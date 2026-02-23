@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/require-await */
 import { test, expect } from '@playwright/test';
 
@@ -49,7 +45,10 @@ test.describe('Board Sharing', () => {
       state: 'visible',
       timeout: 60000,
     });
-    await page.getByRole('button', { name: /^Boards/ }).first().click();
+    await page
+      .getByRole('button', { name: /^Boards/ })
+      .first()
+      .click();
     await page.waitForSelector('text=My Boards', {
       state: 'visible',
       timeout: 60000,
@@ -68,21 +67,35 @@ test.describe('Board Sharing', () => {
     let clipboardText = '';
     await page.exposeFunction('mockWriteText', (text: string) => {
       clipboardText = text;
+      return Promise.resolve();
     });
-    await page.addInitScript(() => {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText = (text) =>
-          (window as any).mockWriteText(text);
-      } else {
-        (navigator as any).clipboard = {
-          writeText: (text: string) => (window as any).mockWriteText(text),
-        };
-      }
+    // Override clipboard in current page context (addInitScript only affects future navigations)
+    await page.evaluate(() => {
+      const origWriteText = navigator.clipboard?.writeText?.bind(
+        navigator.clipboard
+      );
+      navigator.clipboard.writeText = async (text: string) => {
+        (window as unknown as Record<string, (t: string) => Promise<void>>)
+          ['mockWriteText'](text)
+          .catch(() => {
+            /* ignore */
+          });
+        if (origWriteText) {
+          try {
+            return await origWriteText(text);
+          } catch {
+            /* clipboard write failed, ignore */
+          }
+        }
+        return Promise.resolve();
+      };
     });
 
     await shareButton.click();
 
-    await expect(page.getByText('Board link copied')).toBeVisible({
+    await expect(
+      page.getByText(/Link copied to clipboard!|Board is now shared!/)
+    ).toBeVisible({
       timeout: 10000,
     });
 
@@ -104,7 +117,10 @@ test.describe('Board Sharing', () => {
     await expect(page.getByText('Import Board')).not.toBeVisible();
 
     await page.getByTitle('Open Menu').click();
-    await page.getByRole('button', { name: /^Boards/ }).first().click();
+    await page
+      .getByRole('button', { name: /^Boards/ })
+      .first()
+      .click();
 
     // Use a more generic locator for the imported board if specific text fails
     await expect(

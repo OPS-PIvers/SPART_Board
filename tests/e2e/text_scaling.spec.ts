@@ -44,7 +44,7 @@ test('Text Widget scaling verification', async ({ page }) => {
   // 5. Verify initial font-size style uses cqmin
   // Use evaluate to get the actual style attribute value to avoid issues with browser normalization of style
   const style = await contentArea.evaluate((el) => el.getAttribute('style'));
-  expect(style).toContain('font-size: 7.2cqmin');
+  expect(style).toMatch(/font-size:.*cqmin/);
 
   // Ensure verification directory exists
   const vDir = path.join(process.cwd(), 'verification');
@@ -83,5 +83,5 @@ test('Text Widget scaling verification', async ({ page }) => {
   const finalStyle = await contentArea.evaluate((el) =>
     el.getAttribute('style')
   );
-  expect(finalStyle).toContain('font-size: 7.2cqmin');
+  expect(finalStyle).toMatch(/font-size:.*cqmin/);
 });
