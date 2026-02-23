@@ -24,9 +24,13 @@ import {
 } from '../../context/DashboardContextValue';
 
 // Mock dependencies
+const { mockTakeScreenshot } = vi.hoisted(() => ({
+  mockTakeScreenshot: vi.fn(),
+}));
+
 vi.mock('../../hooks/useScreenshot', () => ({
   useScreenshot: () => ({
-    takeScreenshot: vi.fn(),
+    takeScreenshot: mockTakeScreenshot,
     isFlashing: false,
     isCapturing: false,
   }),
@@ -44,6 +48,7 @@ interface GlassCardProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
   onTouchStart?: (e: React.TouchEvent) => void;
   onTouchEnd?: (e: React.TouchEvent) => void;
+  onTouchMove?: (e: React.TouchEvent) => void;
   style?: React.CSSProperties;
 }
 
@@ -68,6 +73,7 @@ vi.mock('./GlassCard', () => {
         onKeyDown,
         onTouchStart,
         onTouchEnd,
+        onTouchMove,
         style,
         tabIndex,
       },
@@ -83,6 +89,7 @@ vi.mock('./GlassCard', () => {
         onKeyDown={onKeyDown}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
+        onTouchMove={onTouchMove}
         style={style}
       >
         {children}
@@ -424,27 +431,159 @@ describe('DraggableWindow', () => {
     );
   });
 
-  it('minimizes on 2-finger swipe down', () => {
-    renderComponent();
-    const windowEl = screen.getByTestId('draggable-window');
-
-    // Simulate Touch Start (2 fingers)
-    fireEvent.touchStart(windowEl, {
-      touches: [{ clientY: 100 }, { clientY: 100 }],
+  describe('Touch Gestures', () => {
+    beforeEach(() => {
+      // Mock getComputedStyle for scroll protection checks
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+        overflowY: 'visible',
+        overflow: 'visible',
+      } as CSSStyleDeclaration);
     });
 
-    // Simulate Touch End (2 fingers moved down by > 60px)
-    fireEvent.touchEnd(windowEl, {
-      changedTouches: [
-        { clientY: 200 }, // Moved down 100px
-        { clientY: 200 }, // Second finger also moved down
-      ],
-      touches: [{ clientY: 200 }, { clientY: 200 }],
+    it('minimizes on 2-finger swipe down (> 100px)', () => {
+      renderComponent();
+      const windowEl = screen.getByTestId('draggable-window');
+
+      // Start (2 fingers)
+      fireEvent.touchStart(windowEl, {
+        touches: [{ clientY: 100 }, { clientY: 100 }],
+      });
+
+      // Move (2 fingers, down 150px)
+      fireEvent.touchMove(windowEl, {
+        touches: [{ clientY: 250 }, { clientY: 250 }],
+      });
+
+      // End
+      fireEvent.touchEnd(windowEl, {
+        changedTouches: [{ clientY: 250 }, { clientY: 250 }],
+        touches: [],
+      });
+
+      expect(mockUpdateWidget).toHaveBeenCalledWith(
+        'test-widget',
+        expect.objectContaining({ minimized: true, flipped: false })
+      );
     });
 
-    expect(mockUpdateWidget).toHaveBeenCalledWith(
-      'test-widget',
-      expect.objectContaining({ minimized: true, flipped: false })
-    );
+    it('takes screenshot on 3-finger swipe down (> 100px)', () => {
+      renderComponent();
+      const windowEl = screen.getByTestId('draggable-window');
+
+      fireEvent.touchStart(windowEl, {
+        touches: [{ clientY: 100 }, { clientY: 100 }, { clientY: 100 }],
+      });
+
+      fireEvent.touchMove(windowEl, {
+        touches: [{ clientY: 250 }, { clientY: 250 }, { clientY: 250 }],
+      });
+
+      fireEvent.touchEnd(windowEl, {
+        changedTouches: [{ clientY: 250 }, { clientY: 250 }, { clientY: 250 }],
+        touches: [],
+      });
+
+      expect(mockTakeScreenshot).toHaveBeenCalled();
+    });
+
+    it('toggles annotation on 3-finger swipe up (> 100px)', () => {
+      renderComponent();
+      const windowEl = screen.getByTestId('draggable-window');
+
+      expect(screen.queryByTestId('annotation-canvas')).not.toBeInTheDocument();
+
+      fireEvent.touchStart(windowEl, {
+        touches: [{ clientY: 300 }, { clientY: 300 }, { clientY: 300 }],
+      });
+
+      // Move Up (300 -> 100 = -200px delta)
+      fireEvent.touchMove(windowEl, {
+        touches: [{ clientY: 100 }, { clientY: 100 }, { clientY: 100 }],
+      });
+
+      fireEvent.touchEnd(windowEl, {
+        changedTouches: [{ clientY: 100 }, { clientY: 100 }, { clientY: 100 }],
+        touches: [],
+      });
+
+      expect(screen.getByTestId('annotation-canvas')).toBeInTheDocument();
+    });
+
+    it('does not trigger on 1-finger swipe', () => {
+      renderComponent();
+      const windowEl = screen.getByTestId('draggable-window');
+
+      fireEvent.touchStart(windowEl, {
+        touches: [{ clientY: 100 }],
+      });
+
+      fireEvent.touchMove(windowEl, {
+        touches: [{ clientY: 250 }],
+      });
+
+      fireEvent.touchEnd(windowEl, {
+        changedTouches: [{ clientY: 250 }],
+        touches: [],
+      });
+
+      expect(mockUpdateWidget).not.toHaveBeenCalled();
+      expect(mockTakeScreenshot).not.toHaveBeenCalled();
+      expect(screen.queryByTestId('annotation-canvas')).not.toBeInTheDocument();
+    });
+
+    it('does not trigger on small swipe (< 100px)', () => {
+      renderComponent();
+      const windowEl = screen.getByTestId('draggable-window');
+
+      fireEvent.touchStart(windowEl, {
+        touches: [{ clientY: 100 }, { clientY: 100 }],
+      });
+
+      // Move 80px
+      fireEvent.touchMove(windowEl, {
+        touches: [{ clientY: 180 }, { clientY: 180 }],
+      });
+
+      fireEvent.touchEnd(windowEl, {
+        changedTouches: [{ clientY: 180 }, { clientY: 180 }],
+        touches: [],
+      });
+
+      expect(mockUpdateWidget).not.toHaveBeenCalled();
+    });
+
+    it('blocks gesture on scrollable elements', () => {
+      renderComponent();
+      const windowEl = screen.getByTestId('draggable-window');
+
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+        overflowY: 'auto',
+        overflow: 'visible',
+      } as CSSStyleDeclaration);
+
+      Object.defineProperty(windowEl, 'scrollHeight', {
+        value: 500,
+        configurable: true,
+      });
+      Object.defineProperty(windowEl, 'clientHeight', {
+        value: 200,
+        configurable: true,
+      });
+
+      fireEvent.touchStart(windowEl, {
+        touches: [{ clientY: 100 }, { clientY: 100 }],
+      });
+
+      fireEvent.touchMove(windowEl, {
+        touches: [{ clientY: 250 }, { clientY: 250 }],
+      });
+
+      fireEvent.touchEnd(windowEl, {
+        changedTouches: [{ clientY: 250 }, { clientY: 250 }],
+        touches: [],
+      });
+
+      expect(mockUpdateWidget).not.toHaveBeenCalled();
+    });
   });
 });

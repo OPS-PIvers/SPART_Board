@@ -38,7 +38,12 @@ const POSITION_AWARE_WIDGETS: WidgetType[] = [
 const INTERACTIVE_ELEMENTS_SELECTOR =
   'button, input, textarea, select, canvas, iframe, label, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], .cursor-pointer, [contenteditable="true"]';
 
-const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"], .overflow-y-auto, .overflow-auto, .overflow-x-auto, [data-scrollable="true"]`;
+const SCROLLABLE_ELEMENTS_SELECTOR =
+  '.overflow-y-auto, .overflow-auto, .overflow-x-auto, [data-scrollable="true"], [style*="overflow:auto"], [style*="overflow: auto"], [style*="overflow-y:auto"], [style*="overflow-y: auto"], [style*="overflow-x:auto"], [style*="overflow-x: auto"]';
+
+const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"], ${SCROLLABLE_ELEMENTS_SELECTOR}`;
+
+const MIN_GESTURE_SWIPE_DISTANCE = 100;
 
 interface DraggableWindowProps {
   widget: WidgetData;
@@ -144,7 +149,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const dragDistanceRef = useRef(0);
 
   // Gesture tracking for multi-touch actions
-  const gestureStartRef = useRef<{ y: number; touches: number } | null>(null);
+  const gestureStartRef = useRef<{
+    startY: number;
+    currentY: number;
+    touches: number;
+  } | null>(null);
 
   useClickOutside(menuRef, () => setShowTools(false), [windowRef]);
 
@@ -611,34 +620,94 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
 
   // --- MULTI-TOUCH GESTURE HANDLERS ---
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Scroll protection: Don't start gesture if touching scrollable/interactive element
+    if ((e.target as HTMLElement).closest(DRAG_BLOCKING_SELECTOR)) {
+      return;
+    }
+
+    // Check computed style for scrollable elements (fallback for non-inline styles)
+    const target = e.target as HTMLElement;
+    const computedStyle = window.getComputedStyle(target);
+    const isScrollable =
+      ['auto', 'scroll'].includes(computedStyle.overflowY) ||
+      ['auto', 'scroll'].includes(computedStyle.overflow);
+
+    if (isScrollable && target.scrollHeight > target.clientHeight) {
+      return;
+    }
+
+    if (e.touches.length < 2) return;
+
+    // Prevent default to avoid conflicts with pointer events (drag) and native scroll/zoom
+    // This ensures we have exclusive control for the gesture
+    e.preventDefault();
+
+    // Calculate average Y position of all touches
+    let totalY = 0;
+    for (let i = 0; i < e.touches.length; i++) {
+      totalY += e.touches[i].clientY;
+    }
+    const avgY = totalY / e.touches.length;
+
     gestureStartRef.current = {
-      y: e.touches[0].clientY,
+      startY: avgY,
+      currentY: avgY,
       touches: e.touches.length,
     };
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!gestureStartRef.current || e.changedTouches.length === 0) return;
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!gestureStartRef.current) return;
 
-    const { y, touches } = gestureStartRef.current;
-    const deltaY = e.changedTouches[0].clientY - y;
+    // Validate touch count consistency
+    if (e.touches.length !== gestureStartRef.current.touches) {
+      gestureStartRef.current = null;
+      return;
+    }
 
-    if (touches === 2 && deltaY > 60) {
+    // Prevent default to maintain exclusive control
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    // Update current Y (average of all touches)
+    let totalY = 0;
+    for (let i = 0; i < e.touches.length; i++) {
+      totalY += e.touches[i].clientY;
+    }
+    const avgY = totalY / e.touches.length;
+
+    gestureStartRef.current.currentY = avgY;
+  };
+
+  const handleTouchEnd = (_e: React.TouchEvent) => {
+    if (!gestureStartRef.current) return;
+
+    // Use stored currentY which was updated in touchMove
+    const { startY, currentY, touches } = gestureStartRef.current;
+
+    // Reset immediately to avoid double triggers
+    gestureStartRef.current = null;
+
+    const deltaY = currentY - startY;
+
+    if (Math.abs(deltaY) < MIN_GESTURE_SWIPE_DISTANCE) return;
+
+    if (touches === 2 && deltaY > 0) {
       // 2-Finger Swipe Down: Minimize
       updateWidget(widget.id, { minimized: true, flipped: false });
       setShowTools(false);
     } else if (touches === 3) {
-      if (deltaY > 60 && canScreenshot && !isCapturing) {
+      if (deltaY > 0 && canScreenshot && !isCapturing) {
         // 3-Finger Swipe Down: Screenshot
         void takeScreenshot();
         setShowTools(false);
-      } else if (deltaY < -60) {
+      } else if (deltaY < 0) {
         // 3-Finger Swipe Up: Annotate
         setIsAnnotating((prev) => !prev);
         setShowTools(false);
       }
     }
-    gestureStartRef.current = null;
   };
   // ------------------------------------
 
@@ -658,6 +727,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       onClick={handleWidgetClick}
       onKeyDown={handleKeyDown}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       transparency={transparency}
       allowInvisible={true}
