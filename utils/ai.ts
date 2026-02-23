@@ -42,6 +42,34 @@ export type AIGenerationType =
   | 'quiz';
 
 /**
+ * Generic helper to call the AI function and handle errors
+ */
+async function callAI(
+  payload: { type: AIGenerationType; prompt?: string; image?: string },
+  baseErrorMessage: string
+): Promise<AIResponseData> {
+  try {
+    const generateWithAI = httpsCallable<
+      { type: AIGenerationType; prompt?: string; image?: string },
+      AIResponseData
+    >(functions, 'generateWithAI');
+
+    const result = await generateWithAI(payload);
+    return result.data;
+  } catch (error) {
+    console.error('AI Generation Error:', error);
+
+    let errorMessage = baseErrorMessage;
+
+    if (error instanceof Error) {
+      errorMessage += ` Underlying error: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
+  }
+}
+
+/**
  * Extracts text from an image using Gemini AI via a Firebase Function proxy.
  *
  * @param base64Image - The base64 encoded image data.
@@ -50,28 +78,16 @@ export type AIGenerationType =
 export async function extractTextWithGemini(
   base64Image: string
 ): Promise<string> {
-  try {
-    const generateWithAI = httpsCallable<
-      {
-        type: AIGenerationType;
-        prompt?: string;
-        image?: string;
-      },
-      AIResponseData
-    >(functions, 'generateWithAI');
+  const data = await callAI(
+    { type: 'ocr', image: base64Image },
+    'Failed to extract text using Gemini.'
+  );
 
-    const result = await generateWithAI({ type: 'ocr', image: base64Image });
-    const data = result.data;
-
-    if (typeof data.text !== 'string') {
-      throw new Error('Invalid response format from AI');
-    }
-
-    return data.text;
-  } catch (error) {
-    console.error('Gemini OCR Error:', error);
-    throw new Error('Failed to extract text using Gemini.');
+  if (typeof data.text !== 'string') {
+    throw new Error('Invalid response format from AI');
   }
+
+  return data.text;
 }
 
 /**
@@ -84,35 +100,19 @@ export async function extractTextWithGemini(
 export async function generateMiniAppCode(
   prompt: string
 ): Promise<GeneratedMiniApp> {
-  try {
-    const generateWithAI = httpsCallable<
-      { type: AIGenerationType; prompt: string },
-      AIResponseData
-    >(functions, 'generateWithAI');
+  const data = await callAI(
+    { type: 'mini-app', prompt },
+    'Failed to generate app. Please try again with a different prompt.'
+  );
 
-    const result = await generateWithAI({ type: 'mini-app', prompt });
-    const data = result.data;
-
-    if (!data.html || !data.title) {
-      throw new Error('Invalid response format from AI');
-    }
-
-    return {
-      title: data.title,
-      html: data.html,
-    };
-  } catch (error) {
-    console.error('AI Generation Error:', error);
-
-    let errorMessage =
-      'Failed to generate app. Please try again with a different prompt.';
-
-    if (error instanceof Error) {
-      errorMessage += ` Underlying error: ${error.message}`;
-    }
-
-    throw new Error(errorMessage);
+  if (!data.html || !data.title) {
+    throw new Error('Invalid response format from AI');
   }
+
+  return {
+    title: data.title,
+    html: data.html,
+  };
 }
 
 export interface GeneratedPoll {
@@ -128,35 +128,19 @@ export interface GeneratedPoll {
  * @throws Error if generation fails.
  */
 export async function generatePoll(topic: string): Promise<GeneratedPoll> {
-  try {
-    const generateWithAI = httpsCallable<
-      { type: AIGenerationType; prompt: string },
-      AIResponseData
-    >(functions, 'generateWithAI');
+  const data = await callAI(
+    { type: 'poll', prompt: topic },
+    'Failed to generate poll. Please try again with a different topic.'
+  );
 
-    const result = await generateWithAI({ type: 'poll', prompt: topic });
-    const data = result.data;
-
-    if (!data.question || !Array.isArray(data.options)) {
-      throw new Error('Invalid response format from AI');
-    }
-
-    return {
-      question: data.question,
-      options: data.options.map((o) => String(o)),
-    };
-  } catch (error) {
-    console.error('AI Generation Error:', error);
-
-    let errorMessage =
-      'Failed to generate poll. Please try again with a different topic.';
-
-    if (error instanceof Error) {
-      errorMessage += ` Underlying error: ${error.message}`;
-    }
-
-    throw new Error(errorMessage);
+  if (!data.question || !Array.isArray(data.options)) {
+    throw new Error('Invalid response format from AI');
   }
+
+  return {
+    question: data.question,
+    options: data.options.map((o) => String(o)),
+  };
 }
 
 /**
@@ -169,51 +153,30 @@ export async function generatePoll(topic: string): Promise<GeneratedPoll> {
 export async function generateDashboardLayout(
   description: string
 ): Promise<GeneratedWidget[]> {
-  try {
-    const generateWithAI = httpsCallable<
-      { type: AIGenerationType; prompt: string },
-      AIResponseData
-    >(functions, 'generateWithAI');
+  const data = await callAI(
+    { type: 'dashboard-layout', prompt: description },
+    'Failed to generate layout. Please try again with a different description.'
+  );
 
-    const result = await generateWithAI({
-      type: 'dashboard-layout',
-      prompt: description,
-    });
-    const data = result.data;
-
-    if (!data.widgets || !Array.isArray(data.widgets)) {
-      throw new Error('Invalid response format from AI');
-    }
-
-    if (data.widgets.length === 0) {
-      throw new Error(
-        "AI couldn't generate any widgets for this description. Please try a more specific lesson plan."
-      );
-    }
-
-    // Validate widget types
-    const validTypes = TOOLS.map((t) => t.type);
-    const validWidgets = data.widgets.filter((w) =>
-      validTypes.includes(w.type)
-    );
-
-    if (validWidgets.length === 0) {
-      throw new Error('AI generated invalid widget types.');
-    }
-
-    return validWidgets;
-  } catch (error) {
-    console.error('AI Generation Error:', error);
-
-    let errorMessage =
-      'Failed to generate layout. Please try again with a different description.';
-
-    if (error instanceof Error) {
-      errorMessage += ` Underlying error: ${error.message}`;
-    }
-
-    throw new Error(errorMessage);
+  if (!data.widgets || !Array.isArray(data.widgets)) {
+    throw new Error('Invalid response format from AI');
   }
+
+  if (data.widgets.length === 0) {
+    throw new Error(
+      "AI couldn't generate any widgets for this description. Please try a more specific lesson plan."
+    );
+  }
+
+  // Validate widget types
+  const validTypes = TOOLS.map((t) => t.type);
+  const validWidgets = data.widgets.filter((w) => validTypes.includes(w.type));
+
+  if (validWidgets.length === 0) {
+    throw new Error('AI generated invalid widget types.');
+  }
+
+  return validWidgets;
 }
 
 export interface GeneratedQuiz {
@@ -229,42 +192,23 @@ export interface GeneratedQuiz {
  * @throws Error if generation fails.
  */
 export async function generateQuiz(prompt: string): Promise<GeneratedQuiz> {
-  try {
-    const generateWithAI = httpsCallable<
-      {
-        type: AIGenerationType;
-        prompt: string;
-      },
-      AIResponseData
-    >(functions, 'generateWithAI');
+  const data = await callAI(
+    { type: 'quiz', prompt },
+    'Failed to generate quiz. Please try again with a different prompt.'
+  );
 
-    const result = await generateWithAI({ type: 'quiz', prompt });
-    const data = result.data;
-
-    if (
-      !data.title ||
-      !Array.isArray(data.questions) ||
-      data.questions.length === 0
-    ) {
-      throw new Error(
-        'Invalid response format from AI: quiz must have at least one question'
-      );
-    }
-
-    return {
-      title: data.title,
-      questions: data.questions,
-    };
-  } catch (error) {
-    console.error('AI Generation Error:', error);
-
-    let errorMessage =
-      'Failed to generate quiz. Please try again with a different prompt.';
-
-    if (error instanceof Error) {
-      errorMessage += ` Underlying error: ${error.message}`;
-    }
-
-    throw new Error(errorMessage);
+  if (
+    !data.title ||
+    !Array.isArray(data.questions) ||
+    data.questions.length === 0
+  ) {
+    throw new Error(
+      'Invalid response format from AI: quiz must have at least one question'
+    );
   }
+
+  return {
+    title: data.title,
+    questions: data.questions,
+  };
 }
