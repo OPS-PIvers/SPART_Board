@@ -26,6 +26,7 @@ import {
   CloudCheck,
   Save,
   AlertCircle,
+  Building2,
 } from 'lucide-react';
 import { GoogleDriveIcon } from '../../common/GoogleDriveIcon';
 import { useGoogleDrive } from '../../../hooks/useGoogleDrive';
@@ -51,6 +52,7 @@ import { useBackgrounds } from '../../../hooks/useBackgrounds';
 import { Dashboard } from '../../../types';
 import { TOOLS } from '../../../config/tools';
 import { getWidgetGradeLevels } from '../../../config/widgetGradeLevels';
+import { BUILDINGS } from '../../../config/buildings';
 import { AdminSettings } from '../../admin/AdminSettings';
 import { GlassCard } from '../../common/GlassCard';
 import { Toggle } from '../../common/Toggle';
@@ -91,6 +93,8 @@ export const Sidebar: React.FC = () => {
     isAdmin,
     featurePermissions,
     canAccessFeature,
+    selectedBuildings,
+    setSelectedBuildings,
   } = useAuth();
   const { uploadBackgroundImage } = useStorage();
   const {
@@ -1045,6 +1049,66 @@ export const Sidebar: React.FC = () => {
                         {isDriveConnected ? 'Disconnect' : 'Connect'}
                       </button>
                     </div>
+                  </div>
+
+                  {/* My Building(s) */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <Building2 className="w-4 h-4 text-slate-400" />
+                      <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
+                        My Building(s)
+                      </label>
+                    </div>
+                    <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
+                      Select the building(s) you work in. Widgets like
+                      Instructional Routines will automatically show content for
+                      your grade level. Select multiple if you work across
+                      buildings.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {BUILDINGS.map((building) => {
+                        const isSelected = selectedBuildings.includes(
+                          building.id
+                        );
+                        return (
+                          <button
+                            key={building.id}
+                            onClick={() => {
+                              const next = isSelected
+                                ? selectedBuildings.filter(
+                                    (id) => id !== building.id
+                                  )
+                                : [...selectedBuildings, building.id];
+                              void setSelectedBuildings(next);
+                            }}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl border-2 transition-all text-left ${
+                              isSelected
+                                ? 'bg-brand-blue-primary border-brand-blue-primary text-white'
+                                : 'bg-white border-slate-200 text-slate-600 hover:border-brand-blue-lighter hover:text-brand-blue-primary'
+                            }`}
+                          >
+                            <span className="text-xxs font-bold uppercase tracking-tight">
+                              {building.name}
+                            </span>
+                            <span
+                              className={`text-xxxs font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                                isSelected
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-slate-100 text-slate-400'
+                              }`}
+                            >
+                              {building.gradeLabel}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedBuildings.length === 0 && (
+                      <p className="text-xxs text-slate-400 mt-3 px-1 italic">
+                        No building selected — widgets will show all available
+                        content.
+                      </p>
+                    )}
                   </div>
 
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">

@@ -25,6 +25,11 @@ const mockAuth: AuthContextType = {
   signOut: async () => {
     // No-op
   },
+  selectedBuildings: [],
+  userGradeLevels: [],
+  setSelectedBuildings: async () => {
+    // No-op in student view
+  },
 };
 
 // --- MOCK DASHBOARD ---
