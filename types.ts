@@ -369,6 +369,7 @@ export interface TimeToolConfig {
   startTime?: number | null; // timestamp when last started (Date.now())
   selectedSound: 'Chime' | 'Blip' | 'Gong' | 'Alert';
   timerEndVoiceLevel?: number | null; // 0-4 voice level to set when timer ends
+  timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
   themeColor?: string;
   glow?: boolean;
   fontFamily?: string;
