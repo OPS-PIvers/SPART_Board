@@ -14,6 +14,8 @@ export interface Building {
   gradeLevels: GradeLevel[];
   /** Short human-readable label for the grade range, e.g. "K-2" */
   gradeLabel: string;
+  /** Whether this building uses the LunchCount widget */
+  supportsLunchCount?: boolean;
 }
 
 export const BUILDINGS: Building[] = [
@@ -22,12 +24,14 @@ export const BUILDINGS: Building[] = [
     name: 'Schumann Elementary',
     gradeLevels: ['k-2'],
     gradeLabel: 'K-2',
+    supportsLunchCount: true,
   },
   {
     id: 'orono-intermediate-school',
     name: 'Orono Intermediate',
     gradeLevels: ['3-5'],
     gradeLabel: '3-5',
+    supportsLunchCount: true,
   },
   {
     id: 'orono-middle-school',
@@ -42,6 +46,14 @@ export const BUILDINGS: Building[] = [
     gradeLabel: '9-12',
   },
 ];
+
+/**
+ * IDs of buildings that support the LunchCount widget.
+ * Derived from BUILDINGS to keep a single source of truth.
+ */
+export const LUNCH_COUNT_BUILDING_IDS: ReadonlySet<string> = new Set(
+  BUILDINGS.filter((b) => b.supportsLunchCount).map((b) => b.id)
+);
 
 /**
  * Returns the union of grade levels for the given building IDs.
