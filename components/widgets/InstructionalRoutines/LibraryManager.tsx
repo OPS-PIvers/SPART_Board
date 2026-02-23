@@ -26,6 +26,7 @@ import {
   trimImageWhitespace,
 } from '../../../utils/imageProcessing';
 import { PromptDialog } from './PromptDialog';
+import { Toast } from '../../common/Toast';
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -549,17 +550,16 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
 
       {/* Processing Message */}
       {processingMessage && (
-        <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-4 z-50">
-          <Loader2 size={16} className="animate-spin" />
-          <span className="text-sm font-medium">{processingMessage}</span>
-        </div>
+        <Toast message={processingMessage} type="loading" />
       )}
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-4 z-50">
-          <span className="text-sm font-medium">{errorMessage}</span>
-        </div>
+        <Toast
+          message={errorMessage}
+          type="error"
+          onClose={() => setErrorMessage(null)}
+        />
       )}
 
       {/* Magic Design Prompt Dialog */}
