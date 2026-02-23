@@ -37,6 +37,7 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { WidgetType, WidgetData, DockFolder, MiniAppItem } from '../../types';
 import { TOOLS } from '../../config/tools';
+import { LUNCH_COUNT_BUILDING_IDS } from '../../config/buildings';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
 import { GlassCard } from '../common/GlassCard';
@@ -98,9 +99,8 @@ export const Dock: React.FC = () => {
         }
       }
       if (type === 'lunchCount') {
-        const schoolBuilding = selectedBuildings.find(
-          (b) =>
-            b === 'schumann-elementary' || b === 'orono-intermediate-school'
+        const schoolBuilding = selectedBuildings.find((b) =>
+          LUNCH_COUNT_BUILDING_IDS.has(b)
         );
         if (schoolBuilding) {
           return {
