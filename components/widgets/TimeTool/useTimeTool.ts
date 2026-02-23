@@ -164,6 +164,7 @@ export const useTimeTool = (widget: WidgetData) => {
     config.mode,
     config.selectedSound,
     config.timerEndVoiceLevel,
+    config.timerEndTrafficLight,
     activeDashboard,
     updateWidget,
     handleStop,
