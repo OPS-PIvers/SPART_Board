@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2025-06-05 - Refactor ClassesWidget
+
+**Weed:** `ClassesWidget.tsx` contained multiple components (`ClassesWidget`, `RosterEditor`) and complex string manipulation logic for parsing names.
+**Root Cause:** "Complexity Trap"; UI and business logic were mixed, making it hard to test the parsing logic.
+**Plan:** Extracted `RosterEditor` to its own component, moved parsing logic to `rosterUtils.ts` with unit tests, and reorganized file structure into `components/widgets/Classes/`.
