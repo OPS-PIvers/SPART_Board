@@ -141,6 +141,47 @@ describe('TimeToolWidget', () => {
     );
   });
 
+  it('updates traffic light when timer ends', () => {
+    // Mock dashboard with a traffic light
+    const trafficWidget = {
+      id: 'traffic-1',
+      type: 'traffic',
+      config: { active: 'none' },
+    };
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      activeDashboard: {
+        widgets: [trafficWidget],
+        globalStyle: DEFAULT_GLOBAL_STYLE,
+      },
+      updateWidget: mockUpdateWidget,
+    });
+
+    // Create a running timer that is about to end
+    const widget = createWidget({
+      mode: 'timer',
+      isRunning: true,
+      elapsedTime: 1, // 1 second remaining
+      duration: 60,
+      startTime: Date.now(),
+      timerEndTrafficLight: 'red',
+    });
+
+    renderWidget(widget);
+
+    // Fast-forward time past 1 second
+    vi.advanceTimersByTime(1100);
+
+    // Should call updateWidget for the traffic light
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'traffic-1',
+      expect.objectContaining({
+        config: expect.objectContaining({
+          active: 'red',
+        }),
+      })
+    );
+  });
+
   it('caps seconds at 59', () => {
     const widget = createWidget({ elapsedTime: 300 });
     renderWidget(widget);

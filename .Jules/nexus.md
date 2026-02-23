@@ -22,8 +22,16 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `WeatherWidget.tsx` monitors the `condition` state and calls `setBackground` on the dashboard context when `syncBackground` is enabled.
 **Configuration:** Enabled via the "Sync Background" toggle in Weather Settings.
 
+### TimeTool -> Traffic Light
+
+**Description:** Automatically changes the traffic light color when the timer ends.
+**Implementation:** `useTimeTool.ts` checks for `timerEndTrafficLight` config and triggers `updateWidget` on any active `traffic-light` widget.
+**Configuration:** Enabled via the "Timer End Action" section in TimeTool Settings.
+
 ## Planned Connections
 
 ## WILL NOT IMPLEMENT
 
 - **Poll -> Scoreboard:** this is not a connection that adds meaningful value.
+
+## 2024-05-23 - [Traffic Light Integration] **Source:** TimeTool (Timer Ends) **Destination:** Traffic Light (Color Change) **Value:** Automates classroom management by visually signaling when time is up.

@@ -565,6 +565,10 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
     (w) => w.type === 'expectations'
   );
 
+  const hasTrafficLight = activeDashboard?.widgets.some(
+    (w) => w.type === 'traffic'
+  );
+
   const fonts = [
     { id: 'global', label: 'Inherit', icon: 'G' },
     { id: 'font-mono', label: 'Digital', icon: '01' },
@@ -761,8 +765,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
       <div>
         <SettingsLabel icon={Bell}>Timer End Action</SettingsLabel>
 
+        {/* Expectations Integration */}
         {!hasExpectations ? (
-          <div className="text-xs text-brand-red-primary bg-brand-red-lighter/20 p-4 rounded-2xl border border-brand-red-lighter/30 flex items-start gap-3">
+          <div className="text-xs text-brand-red-primary bg-brand-red-lighter/20 p-4 rounded-2xl border border-brand-red-lighter/30 flex items-start gap-3 mb-4">
             <span className="text-xl mt-0.5">&#128161;</span>
             <p className="font-bold leading-snug">
               Add an &quot;Expectations&quot; widget to enable automatic voice
@@ -770,7 +775,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 mb-6">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
               Switch to Voice Level when finished:
             </p>
@@ -804,6 +809,56 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                   }`}
                 >
                   Lvl {level}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Traffic Light Integration */}
+        {!hasTrafficLight ? (
+          <div className="text-xs text-amber-600 bg-amber-50 p-4 rounded-2xl border border-amber-200 flex items-start gap-3">
+            <span className="text-xl mt-0.5">&#128161;</span>
+            <p className="font-bold leading-snug">
+              Add a &quot;Traffic Light&quot; widget to enable automatic light
+              changes when the timer hits zero!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
+              Switch Traffic Light when finished:
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, timerEndTrafficLight: null },
+                  })
+                }
+                className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 ${
+                  config.timerEndTrafficLight == null
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                Off
+              </button>
+              {(['red', 'yellow', 'green'] as const).map((color) => (
+                <button
+                  key={color}
+                  onClick={() =>
+                    updateWidget(widget.id, {
+                      config: { ...config, timerEndTrafficLight: color },
+                    })
+                  }
+                  className={`p-2 rounded-lg text-xxs font-black uppercase transition-all border-2 capitalize ${
+                    config.timerEndTrafficLight === color
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                >
+                  {color}
                 </button>
               ))}
             </div>

@@ -3,6 +3,7 @@ import {
   TimeToolConfig,
   WidgetData,
   ExpectationsConfig,
+  TrafficConfig,
   WidgetConfig,
 } from '../../../types';
 import { useDashboard } from '../../../context/useDashboard';
@@ -125,6 +126,21 @@ export const useTimeTool = (widget: WidgetData) => {
                 config: {
                   ...(expWidget.config as ExpectationsConfig),
                   voiceLevel: config.timerEndVoiceLevel,
+                } as WidgetConfig,
+              });
+            }
+          }
+
+          // Auto-switch traffic light
+          if (config.timerEndTrafficLight && activeDashboard) {
+            const trafficWidget = activeDashboard.widgets.find(
+              (w) => w.type === 'traffic'
+            );
+            if (trafficWidget) {
+              updateWidget(trafficWidget.id, {
+                config: {
+                  ...(trafficWidget.config as TrafficConfig),
+                  active: config.timerEndTrafficLight,
                 } as WidgetConfig,
               });
             }
