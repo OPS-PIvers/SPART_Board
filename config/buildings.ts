@@ -1,4 +1,4 @@
-import { GradeLevel } from '../types';
+import { GradeLevel, LunchCountConfig } from '../types';
 
 /**
  * Represents a school building with its associated grade levels.
@@ -54,6 +54,17 @@ export const BUILDINGS: Building[] = [
 export const LUNCH_COUNT_BUILDING_IDS: ReadonlySet<string> = new Set(
   BUILDINGS.filter((b) => b.supportsLunchCount).map((b) => b.id)
 );
+
+/**
+ * Narrows a building ID string to the LunchCountConfig['schoolSite'] literal
+ * union, allowing type-safe use of the value as a config field without
+ * requiring `as` assertions at call sites.
+ */
+export function isLunchCountBuilding(
+  id: string
+): id is LunchCountConfig['schoolSite'] {
+  return LUNCH_COUNT_BUILDING_IDS.has(id);
+}
 
 /**
  * Returns the union of grade levels for the given building IDs.

@@ -17,6 +17,7 @@ import {
   DockFolder,
   GlobalStyle,
   DEFAULT_GLOBAL_STYLE,
+  AddWidgetOverrides,
 } from '../types';
 import { useAuth } from './useAuth';
 import { useFirestore } from '../hooks/useFirestore';
@@ -1268,7 +1269,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
   const addWidget = useCallback(
-    (type: WidgetType, overrides?: Partial<WidgetData>) => {
+    (type: WidgetType, overrides?: AddWidgetOverrides) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
 
@@ -1289,10 +1290,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             z: maxZ + 1,
             ...defaults,
             ...overrides,
+            // Defaults supply the full required config; overrides patch a subset.
+            // The spread result is a valid WidgetConfig at runtime.
             config: {
               ...(defaults.config ?? {}),
               ...(overrides?.config ?? {}),
-            },
+            } as WidgetConfig,
           };
           return { ...d, widgets: [...d.widgets, newWidget] };
         })

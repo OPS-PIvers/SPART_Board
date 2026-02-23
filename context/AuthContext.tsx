@@ -236,6 +236,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (isAuthBypass) return;
 
+    let isCancelled = false;
+
     const loadProfile = async () => {
       if (!user) {
         setSelectedBuildingsState([]);
@@ -245,18 +247,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const profileDoc = await getDoc(
           doc(db, 'users', user.uid, 'userProfile', 'profile')
         );
+        if (isCancelled) return;
         if (profileDoc.exists()) {
-          const data = profileDoc.data();
-          if (Array.isArray(data.selectedBuildings)) {
-            setSelectedBuildingsState(data.selectedBuildings as string[]);
+          const rawData: unknown = profileDoc.data();
+          if (
+            typeof rawData === 'object' &&
+            rawData !== null &&
+            'selectedBuildings' in rawData
+          ) {
+            const { selectedBuildings } = rawData as {
+              selectedBuildings: unknown;
+            };
+            if (
+              Array.isArray(selectedBuildings) &&
+              selectedBuildings.every((id) => typeof id === 'string')
+            ) {
+              setSelectedBuildingsState(selectedBuildings);
+            }
           }
         }
       } catch (error) {
-        console.error('Error loading user profile:', error);
+        if (!isCancelled) {
+          console.error('Error loading user profile:', error);
+        }
       }
     };
 
     void loadProfile();
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
   const setSelectedBuildings = useCallback(
