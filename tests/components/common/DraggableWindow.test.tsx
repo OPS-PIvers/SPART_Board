@@ -2,10 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DraggableWindow } from '../../../components/common/DraggableWindow';
 import { WidgetData, GlobalStyle } from '../../../types';
-import {
-  DashboardContext,
-  DashboardContextValue,
-} from '../../../context/DashboardContextValue';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
@@ -54,13 +50,14 @@ describe('DraggableWindow (Tests folder)', () => {
     dockTextShadow: false,
   } as GlobalStyle;
 
-  const mockContext = {
+  const mockActions = {
     updateWidget: vi.fn(),
     removeWidget: vi.fn(),
     duplicateWidget: vi.fn(),
     bringToFront: vi.fn(),
     addToast: vi.fn(),
     resetWidgetSize: vi.fn(),
+    deleteAllWidgets: vi.fn(),
   };
 
   beforeEach(() => {
@@ -70,18 +67,15 @@ describe('DraggableWindow (Tests folder)', () => {
 
   it('renders toolbar buttons in the correct order', () => {
     render(
-      <DashboardContext.Provider
-        value={mockContext as unknown as DashboardContextValue}
+      <DraggableWindow
+        widget={mockWidget}
+        settings={<div>Settings</div>}
+        title="Test Widget"
+        globalStyle={mockGlobalStyle}
+        {...mockActions}
       >
-        <DraggableWindow
-          widget={mockWidget}
-          settings={<div>Settings</div>}
-          title="Test Widget"
-          globalStyle={mockGlobalStyle}
-        >
-          <div>Content</div>
-        </DraggableWindow>
-      </DashboardContext.Provider>
+        <div>Content</div>
+      </DraggableWindow>
     );
 
     // Simulate click to open toolbar
@@ -122,20 +116,17 @@ describe('DraggableWindow (Tests folder)', () => {
     const maximizedWidget = { ...mockWidget, maximized: true };
 
     render(
-      <DashboardContext.Provider
-        value={mockContext as unknown as DashboardContextValue}
-      >
-        <div id="dashboard-root">
-          <DraggableWindow
-            widget={maximizedWidget}
-            settings={<div>Settings</div>}
-            title="Maximized Widget"
-            globalStyle={mockGlobalStyle}
-          >
-            <div data-testid="maximized-content">Maximized Content</div>
-          </DraggableWindow>
-        </div>
-      </DashboardContext.Provider>
+      <div id="dashboard-root">
+        <DraggableWindow
+          widget={maximizedWidget}
+          settings={<div>Settings</div>}
+          title="Maximized Widget"
+          globalStyle={mockGlobalStyle}
+          {...mockActions}
+        >
+          <div data-testid="maximized-content">Maximized Content</div>
+        </DraggableWindow>
+      </div>
     );
 
     // When maximized, it should NOT be inside #dashboard-root if it's portalled to body

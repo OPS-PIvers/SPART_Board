@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { WidgetData, WidgetType, GlobalStyle, Path } from '../../types';
 import { useScreenshot } from '../../hooks/useScreenshot';
-import { useDashboard } from '../../context/useDashboard';
 import { GlassCard } from './GlassCard';
 import { SettingsPanel } from './SettingsPanel';
 import { useClickOutside } from '../../hooks/useClickOutside';
@@ -49,6 +48,13 @@ interface DraggableWindowProps {
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
   globalStyle: GlobalStyle;
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+  removeWidget: (id: string) => void;
+  duplicateWidget: (id: string) => void;
+  bringToFront: (id: string) => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+  resetWidgetSize: (id: string) => void;
+  deleteAllWidgets: () => void;
 }
 
 const ResizeHandleIcon = ({
@@ -89,17 +95,14 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   skipCloseConfirmation = false,
   headerActions,
   globalStyle,
+  updateWidget,
+  removeWidget,
+  duplicateWidget,
+  bringToFront,
+  addToast,
+  resetWidgetSize,
+  deleteAllWidgets,
 }) => {
-  const {
-    updateWidget,
-    removeWidget,
-    duplicateWidget,
-    bringToFront,
-    addToast,
-    resetWidgetSize,
-    deleteAllWidgets,
-  } = useDashboard();
-
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

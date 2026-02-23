@@ -59,6 +59,7 @@ export const DashboardView: React.FC = () => {
     loadDashboard,
     minimizeAllWidgets,
     deleteAllWidgets,
+    resetWidgetSize,
   } = useDashboard();
   const { uploadAndRegisterPdf } = useStorage();
 
@@ -551,6 +552,8 @@ export const DashboardView: React.FC = () => {
               duplicateWidget={duplicateWidget}
               bringToFront={bringToFront}
               addToast={addToast}
+              resetWidgetSize={resetWidgetSize}
+              deleteAllWidgets={deleteAllWidgets}
               globalStyle={globalStyle}
               dashboardBackground={activeDashboard.background}
               dashboardSettings={activeDashboard.settings}
