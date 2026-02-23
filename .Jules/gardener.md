@@ -41,3 +41,9 @@
 **Weed:** `ScoreboardWidget.tsx` contained multiple components (`ScoreboardWidget`, `ScoreboardSettings`, `TeamNameInput`) and misplaced imports.
 **Root Cause:** Component grew over time, likely started small but expanded with settings logic.
 **Plan:** Extracted `ScoreboardSettings` and `TeamNameInput` to `components/widgets/ScoreboardSettings.tsx` to separate concerns and fix import structure.
+
+## 2025-10-26 - Refactor FeaturePermissionsManager
+
+**Weed:** `FeaturePermissionsManager.tsx` was ~1400 lines, containing configuration UIs for multiple tools (Lunch Count, Weather, Webcam) and the Instructional Routines Library manager.
+**Root Cause:** "God Component" pattern; tool-specific configuration logic was added inline within the main render loop.
+**Plan:** Decomposed into `components/admin/permissions/` with `LunchCountConfig.tsx`, `WeatherConfig.tsx`, `WebcamConfig.tsx`, and `InstructionalRoutinesManager.tsx`.

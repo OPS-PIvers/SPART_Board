@@ -17,9 +17,7 @@ import {
   LunchCountGlobalConfig,
   WeatherGlobalConfig,
   WebcamGlobalConfig,
-  WeatherTemperatureRange,
 } from '../../types';
-import { useStorage } from '../../hooks/useStorage';
 import { TOOLS } from '../../config/tools';
 import {
   getWidgetGradeLevels,
@@ -34,20 +32,13 @@ import {
   Save,
   AlertCircle,
   Settings,
-  Upload,
-  Loader2,
-  Image as ImageIcon,
-  X,
-  Edit,
-  Sparkles,
 } from 'lucide-react';
-import { useInstructionalRoutines } from '../../hooks/useInstructionalRoutines';
-import { LibraryManager } from '../widgets/InstructionalRoutines/LibraryManager';
-import { InstructionalRoutine } from '../../config/instructionalRoutines';
-import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
-import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
 import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 import { Toggle } from '../common/Toggle';
+import { LunchCountConfig } from './permissions/LunchCountConfig';
+import { WeatherConfig } from './permissions/WeatherConfig';
+import { WebcamConfig } from './permissions/WebcamConfig';
+import { InstructionalRoutinesManager } from './permissions/InstructionalRoutinesManager';
 
 // Helper type guard
 const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {
@@ -55,13 +46,6 @@ const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {
 };
 
 export const FeaturePermissionsManager: React.FC = () => {
-  const { routines, deleteRoutine, saveRoutine } = useInstructionalRoutines();
-  const [editingRoutine, setEditingRoutine] =
-    useState<InstructionalRoutine | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    routineId: string;
-    routineName: string;
-  } | null>(null);
   const [permissions, setPermissions] = useState<
     Map<WidgetType | InternalToolType, FeaturePermission>
   >(new Map());
@@ -80,8 +64,6 @@ export const FeaturePermissionsManager: React.FC = () => {
     WidgetType | InternalToolType | null
   >(null);
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
-  const [uploadingRangeId, setUploadingRangeId] = useState<string | null>(null);
-  const { uploadWeatherImage } = useStorage();
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -253,82 +235,6 @@ export const FeaturePermissionsManager: React.FC = () => {
     });
   };
 
-  const addWeatherRange = (widgetType: WidgetType | InternalToolType) => {
-    const permission = getPermission(widgetType);
-    const config = (permission.config ?? {
-      fetchingStrategy: 'client',
-      updateFrequencyMinutes: 15,
-      temperatureRanges: [],
-    }) as unknown as WeatherGlobalConfig;
-
-    const newRange: WeatherTemperatureRange = {
-      id: crypto.randomUUID(),
-      min: 0,
-      max: 100,
-      message: 'New Range',
-    };
-
-    updatePermission(widgetType, {
-      config: {
-        ...config,
-        temperatureRanges: [...(config.temperatureRanges ?? []), newRange],
-      },
-    });
-  };
-
-  const updateWeatherRange = (
-    widgetType: WidgetType | InternalToolType,
-    rangeId: string,
-    updates: Partial<WeatherTemperatureRange>
-  ) => {
-    const permission = getPermission(widgetType);
-    const config = (permission.config ?? {}) as unknown as WeatherGlobalConfig;
-    const ranges = config.temperatureRanges ?? [];
-
-    const newRanges = ranges.map((r) =>
-      r.id === rangeId ? { ...r, ...updates } : r
-    );
-
-    updatePermission(widgetType, {
-      config: { ...config, temperatureRanges: newRanges },
-    });
-  };
-
-  const removeWeatherRange = (
-    widgetType: WidgetType | InternalToolType,
-    rangeId: string
-  ) => {
-    const permission = getPermission(widgetType);
-    const config = (permission.config ?? {}) as unknown as WeatherGlobalConfig;
-    const ranges = config.temperatureRanges ?? [];
-
-    updatePermission(widgetType, {
-      config: {
-        ...config,
-        temperatureRanges: ranges.filter((r) => r.id !== rangeId),
-      },
-    });
-  };
-
-  const handleWeatherImageUpload = async (
-    widgetType: WidgetType | InternalToolType,
-    rangeId: string,
-    file: File
-  ) => {
-    if (!file) return;
-    setUploadingRangeId(rangeId);
-    try {
-      const url = await uploadWeatherImage(rangeId, file);
-      updateWeatherRange(widgetType, rangeId, { imageUrl: url });
-      showMessage('success', 'Image uploaded');
-    } catch (e) {
-      console.error(e);
-      showMessage('error', 'Upload failed');
-    } finally {
-      setUploadingRangeId(null);
-    }
-  };
-
   const toggleGradeLevel = (
     widgetType: WidgetType | InternalToolType,
     level: GradeLevel
@@ -494,591 +400,57 @@ export const FeaturePermissionsManager: React.FC = () => {
                   </h4>
 
                   {tool.type === 'lunchCount' && (
-                    <div className="space-y-3">
-                      {(() => {
-                        const config = (permission.config ??
-                          {}) as LunchCountGlobalConfig;
-                        const isSchumannIdMalformed =
-                          config.schumannSheetId &&
-                          config.schumannSheetId.includes('/');
-                        const isIntermediateIdMalformed =
-                          config.intermediateSheetId &&
-                          config.intermediateSheetId.includes('/');
-                        const isUrlMalformed =
-                          config.submissionUrl &&
-                          !config.submissionUrl.startsWith('https://');
-
-                        return (
-                          <>
-                            <p className="text-xxs text-slate-400 leading-tight">
-                              Found in the URL: docs.google.com/spreadsheets/d/
-                              <b>[ID]</b>/edit
-                            </p>
-                            <div>
-                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                Schumann Elementary — Sheet ID
-                              </label>
-                              <input
-                                type="text"
-                                value={config.schumannSheetId ?? ''}
-                                onChange={(e) =>
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...config,
-                                      schumannSheetId: e.target.value.trim(),
-                                    },
-                                  })
-                                }
-                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
-                                  isSchumannIdMalformed
-                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                                    : 'border-slate-300 focus:ring-brand-blue-primary'
-                                }`}
-                                placeholder="Schumann spreadsheet ID"
-                              />
-                              {isSchumannIdMalformed && (
-                                <p className="text-xxs text-red-600 font-bold mt-1">
-                                  Warning: Enter only the ID, not the full URL.
-                                </p>
-                              )}
-                            </div>
-                            <div>
-                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                Intermediate School — Sheet ID
-                              </label>
-                              <input
-                                type="text"
-                                value={config.intermediateSheetId ?? ''}
-                                onChange={(e) =>
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...config,
-                                      intermediateSheetId:
-                                        e.target.value.trim(),
-                                    },
-                                  })
-                                }
-                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
-                                  isIntermediateIdMalformed
-                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                                    : 'border-slate-300 focus:ring-brand-blue-primary'
-                                }`}
-                                placeholder="Intermediate spreadsheet ID"
-                              />
-                              {isIntermediateIdMalformed && (
-                                <p className="text-xxs text-red-600 font-bold mt-1">
-                                  Warning: Enter only the ID, not the full URL.
-                                </p>
-                              )}
-                            </div>
-                            <div>
-                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                Submission URL (Apps Script)
-                              </label>
-                              <input
-                                type="text"
-                                value={config.submissionUrl ?? ''}
-                                onChange={(e) =>
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...config,
-                                      submissionUrl: e.target.value.trim(),
-                                    },
-                                  })
-                                }
-                                className={`w-full px-2 py-1.5 text-xs font-mono border rounded focus:ring-1 outline-none ${
-                                  isUrlMalformed
-                                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
-                                    : 'border-slate-300 focus:ring-brand-blue-primary'
-                                }`}
-                                placeholder="https://script.google.com/macros/s/.../exec"
-                              />
-                              {isUrlMalformed && (
-                                <p className="text-xxs text-red-600 font-bold mt-1">
-                                  Warning: URL must start with https://
-                                </p>
-                              )}
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
+                    <LunchCountConfig
+                      config={
+                        (permission.config ?? {}) as LunchCountGlobalConfig
+                      }
+                      onChange={(newConfig) =>
+                        updatePermission(tool.type, {
+                          config: newConfig as unknown as Record<
+                            string,
+                            unknown
+                          >,
+                        })
+                      }
+                    />
                   )}
 
                   {tool.type === 'weather' && (
-                    <div className="space-y-4">
-                      {(() => {
-                        const config = (permission.config ?? {
+                    <WeatherConfig
+                      config={
+                        (permission.config ?? {
                           fetchingStrategy: 'client',
                           updateFrequencyMinutes: 15,
                           temperatureRanges: [],
-                        }) as unknown as WeatherGlobalConfig;
-
-                        return (
-                          <>
-                            <div>
-                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                Fetching Strategy
-                              </label>
-                              <div className="flex bg-white rounded-lg border border-slate-200 p-1">
-                                <button
-                                  onClick={() =>
-                                    updatePermission(tool.type, {
-                                      config: {
-                                        ...config,
-                                        fetchingStrategy: 'client',
-                                      },
-                                    })
-                                  }
-                                  className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                                    config.fetchingStrategy === 'client' ||
-                                    !config.fetchingStrategy
-                                      ? 'bg-brand-blue-primary text-white shadow-sm'
-                                      : 'text-slate-500 hover:bg-slate-50'
-                                  }`}
-                                >
-                                  Client (Direct)
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    updatePermission(tool.type, {
-                                      config: {
-                                        ...config,
-                                        fetchingStrategy: 'admin_proxy',
-                                      },
-                                    })
-                                  }
-                                  className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                                    config.fetchingStrategy === 'admin_proxy'
-                                      ? 'bg-brand-blue-primary text-white shadow-sm'
-                                      : 'text-slate-500 hover:bg-slate-50'
-                                  }`}
-                                >
-                                  Admin Proxy
-                                </button>
-                              </div>
-                              <p className="text-xxs text-slate-400 mt-1">
-                                <strong>Client:</strong> Each user fetches data
-                                directly (higher API usage).
-                                <br />
-                                <strong>Admin Proxy:</strong> Admin fetches
-                                data, users sync from database (saves API
-                                calls).
-                              </p>
-                            </div>
-
-                            {config.fetchingStrategy === 'admin_proxy' && (
-                              <div className="space-y-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                  <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                    Data Source
-                                  </label>
-                                  <div className="flex bg-white rounded-lg border border-slate-200 p-1">
-                                    <button
-                                      onClick={() =>
-                                        updatePermission(tool.type, {
-                                          config: {
-                                            ...config,
-                                            source: 'openweather',
-                                          },
-                                        })
-                                      }
-                                      className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                                        config.source === 'openweather' ||
-                                        !config.source
-                                          ? 'bg-brand-blue-primary text-white shadow-sm'
-                                          : 'text-slate-500 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      OpenWeather
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        updatePermission(tool.type, {
-                                          config: {
-                                            ...config,
-                                            source: 'earth_networks',
-                                          },
-                                        })
-                                      }
-                                      className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                                        config.source === 'earth_networks'
-                                          ? 'bg-brand-blue-primary text-white shadow-sm'
-                                          : 'text-slate-500 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      Earth Networks
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {(config.source === 'openweather' ||
-                                  !config.source) && (
-                                  <div>
-                                    <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                      City (Optional)
-                                    </label>
-                                    <input
-                                      type="text"
-                                      placeholder="Default: Local Station"
-                                      value={config.city ?? ''}
-                                      onChange={(e) =>
-                                        updatePermission(tool.type, {
-                                          config: {
-                                            ...config,
-                                            city: e.target.value,
-                                          },
-                                        })
-                                      }
-                                      className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            <div>
-                              <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                                Update Frequency (Minutes)
-                              </label>
-                              <input
-                                type="number"
-                                min="5"
-                                max="1440"
-                                value={config.updateFrequencyMinutes ?? 15}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value);
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...config,
-                                      updateFrequencyMinutes: isNaN(val)
-                                        ? 15
-                                        : val,
-                                    },
-                                  });
-                                }}
-                                className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue-primary outline-none"
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
-                              <span className="text-xxs font-bold text-slate-500 uppercase">
-                                Show &quot;Feels Like&quot; Temperature
-                              </span>
-                              <Toggle
-                                checked={config.showFeelsLike ?? false}
-                                onChange={(checked) =>
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...config,
-                                      showFeelsLike: checked,
-                                    },
-                                  })
-                                }
-                                size="xs"
-                                showLabels={false}
-                              />
-                            </div>
-
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="text-xxs font-bold text-slate-500 uppercase block">
-                                  Temperature Ranges
-                                </label>
-                                <button
-                                  onClick={() => addWeatherRange(tool.type)}
-                                  className="text-xxs font-bold text-brand-blue-primary hover:text-brand-blue-dark flex items-center gap-1"
-                                >
-                                  <Plus className="w-3 h-3" /> Add Range
-                                </button>
-                              </div>
-
-                              <div className="space-y-2">
-                                {(config.temperatureRanges || []).map(
-                                  (range) => (
-                                    <div
-                                      key={range.id}
-                                      className="bg-white border border-slate-200 rounded-lg p-2 space-y-2"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <select
-                                          value={range.type ?? 'range'}
-                                          onChange={(e) =>
-                                            updateWeatherRange(
-                                              tool.type,
-                                              range.id,
-                                              {
-                                                type: e.target
-                                                  .value as WeatherTemperatureRange['type'],
-                                              }
-                                            )
-                                          }
-                                          className="text-xxs font-bold border border-slate-200 rounded px-1 py-1"
-                                        >
-                                          <option value="range">Range</option>
-                                          <option value="above">Above</option>
-                                          <option value="below">Below</option>
-                                        </select>
-
-                                        {(range.type === 'range' ||
-                                          !range.type) && (
-                                          <>
-                                            <input
-                                              type="number"
-                                              placeholder="Min"
-                                              value={range.min}
-                                              onChange={(e) => {
-                                                const val = parseFloat(
-                                                  e.target.value
-                                                );
-                                                updateWeatherRange(
-                                                  tool.type,
-                                                  range.id,
-                                                  {
-                                                    min: isNaN(val) ? 0 : val,
-                                                  }
-                                                );
-                                              }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
-                                              title="Min Temp"
-                                            />
-                                            <span className="text-slate-400 text-xs">
-                                              -
-                                            </span>
-                                            <input
-                                              type="number"
-                                              placeholder="Max"
-                                              value={range.max}
-                                              onChange={(e) => {
-                                                const val = parseFloat(
-                                                  e.target.value
-                                                );
-                                                updateWeatherRange(
-                                                  tool.type,
-                                                  range.id,
-                                                  {
-                                                    max: isNaN(val) ? 0 : val,
-                                                  }
-                                                );
-                                              }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
-                                              title="Max Temp"
-                                            />
-                                          </>
-                                        )}
-
-                                        {range.type === 'above' && (
-                                          <div className="flex items-center gap-2 flex-1">
-                                            <span className="text-xxs font-bold text-slate-400 uppercase">
-                                              Above
-                                            </span>
-                                            <input
-                                              type="number"
-                                              placeholder="Temp"
-                                              value={range.min}
-                                              onChange={(e) => {
-                                                const val = parseFloat(
-                                                  e.target.value
-                                                );
-                                                updateWeatherRange(
-                                                  tool.type,
-                                                  range.id,
-                                                  {
-                                                    min: isNaN(val) ? 0 : val,
-                                                  }
-                                                );
-                                              }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
-                                            />
-                                          </div>
-                                        )}
-
-                                        {range.type === 'below' && (
-                                          <div className="flex items-center gap-2 flex-1">
-                                            <span className="text-xxs font-bold text-slate-400 uppercase">
-                                              Below
-                                            </span>
-                                            <input
-                                              type="number"
-                                              placeholder="Temp"
-                                              value={range.max}
-                                              onChange={(e) => {
-                                                const val = parseFloat(
-                                                  e.target.value
-                                                );
-                                                updateWeatherRange(
-                                                  tool.type,
-                                                  range.id,
-                                                  {
-                                                    max: isNaN(val) ? 0 : val,
-                                                  }
-                                                );
-                                              }}
-                                              className="w-14 px-1.5 py-1 text-xs border border-slate-200 rounded text-center"
-                                            />
-                                          </div>
-                                        )}
-
-                                        <div className="flex-1" />
-                                        <button
-                                          onClick={() =>
-                                            removeWeatherRange(
-                                              tool.type,
-                                              range.id
-                                            )
-                                          }
-                                          className="text-red-500 hover:text-red-700 p-1"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-
-                                      <input
-                                        type="text"
-                                        placeholder="Display Message..."
-                                        value={range.message}
-                                        onChange={(e) =>
-                                          updateWeatherRange(
-                                            tool.type,
-                                            range.id,
-                                            {
-                                              message: e.target.value,
-                                            }
-                                          )
-                                        }
-                                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:border-brand-blue-primary outline-none"
-                                      />
-
-                                      <div className="flex items-center gap-2">
-                                        {range.imageUrl ? (
-                                          <div className="relative w-10 h-10 rounded bg-slate-100 overflow-hidden shrink-0 group">
-                                            <img
-                                              src={range.imageUrl}
-                                              alt="Range"
-                                              className="w-full h-full object-cover"
-                                            />
-                                            <button
-                                              onClick={() =>
-                                                updateWeatherRange(
-                                                  tool.type,
-                                                  range.id,
-                                                  {
-                                                    imageUrl: undefined,
-                                                  }
-                                                )
-                                              }
-                                              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                                            >
-                                              <X className="w-4 h-4" />
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div className="w-10 h-10 rounded bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center shrink-0">
-                                            <ImageIcon className="w-4 h-4 text-slate-300" />
-                                          </div>
-                                        )}
-
-                                        <div className="flex-1">
-                                          <label className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded px-3 py-1.5 transition-colors w-max">
-                                            {uploadingRangeId === range.id ? (
-                                              <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-blue-primary" />
-                                            ) : (
-                                              <Upload className="w-3.5 h-3.5 text-slate-500" />
-                                            )}
-                                            <span className="text-xxs font-bold text-slate-600 uppercase">
-                                              {range.imageUrl
-                                                ? 'Change Image'
-                                                : 'Upload Image'}
-                                            </span>
-                                            <input
-                                              type="file"
-                                              className="hidden"
-                                              accept="image/*"
-                                              onChange={(e) => {
-                                                const file =
-                                                  e.target.files?.[0];
-                                                if (file) {
-                                                  void handleWeatherImageUpload(
-                                                    tool.type,
-                                                    range.id,
-                                                    file
-                                                  );
-                                                }
-                                              }}
-                                              disabled={!!uploadingRangeId}
-                                            />
-                                          </label>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
+                        }) as unknown as WeatherGlobalConfig
+                      }
+                      onChange={(newConfig) =>
+                        updatePermission(tool.type, {
+                          config: newConfig as unknown as Record<
+                            string,
+                            unknown
+                          >,
+                        })
+                      }
+                      onShowMessage={showMessage}
+                    />
                   )}
 
                   {tool.type === 'webcam' && (
-                    <div className="space-y-4">
-                      {(() => {
-                        const config = (permission.config ??
-                          {}) as unknown as WebcamGlobalConfig;
-                        return (
-                          <div>
-                            <label className="text-xxs font-bold text-slate-500 uppercase mb-1 block">
-                              OCR Mode
-                            </label>
-                            <div className="flex bg-white rounded-lg border border-slate-200 p-1">
-                              <button
-                                onClick={() =>
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...(permission.config ?? {}),
-                                      ocrMode: 'standard',
-                                    },
-                                  })
-                                }
-                                className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                                  config.ocrMode === 'standard' ||
-                                  !config.ocrMode
-                                    ? 'bg-brand-blue-primary text-white shadow-sm'
-                                    : 'text-slate-500 hover:bg-slate-50'
-                                }`}
-                              >
-                                Standard (Local)
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updatePermission(tool.type, {
-                                    config: {
-                                      ...(permission.config ?? {}),
-                                      ocrMode: 'gemini',
-                                    },
-                                  })
-                                }
-                                className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                                  config.ocrMode === 'gemini'
-                                    ? 'bg-brand-blue-primary text-white shadow-sm'
-                                    : 'text-slate-500 hover:bg-slate-50'
-                                }`}
-                              >
-                                Gemini (AI)
-                              </button>
-                            </div>
-                            <p className="text-xxs text-slate-400 mt-1">
-                              <strong>Standard:</strong> Uses browser-local OCR
-                              (no API usage).
-                              <br />
-                              <strong>Gemini:</strong> Uses Gemini 3 Flash for
-                              higher accuracy (uses AI limits).
-                            </p>
-                          </div>
-                        );
-                      })()}
-                    </div>
+                    <WebcamConfig
+                      config={
+                        (permission.config ??
+                          {}) as unknown as WebcamGlobalConfig
+                      }
+                      onChange={(newConfig) =>
+                        updatePermission(tool.type, {
+                          config: newConfig as unknown as Record<
+                            string,
+                            unknown
+                          >,
+                        })
+                      }
+                    />
                   )}
 
                   {tool.type === 'catalyst' && (
@@ -1270,167 +642,11 @@ export const FeaturePermissionsManager: React.FC = () => {
         })}
       </div>
 
-      {/* Instructional Routines Library Modal */}
-      {isRoutinesLibraryOpen && (
-        <div className="fixed inset-0 z-modal-nested bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">
-                Instructional Routines Library
-              </h3>
-              <button
-                onClick={() => setIsRoutinesLibraryOpen(false)}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 custom-scrollbar">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <p className="text-sm text-slate-500 font-medium">
-                    Manage global templates available to all teachers.
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    setEditingRoutine({
-                      id: crypto.randomUUID(),
-                      name: '',
-                      grades: 'Universal',
-                      gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
-                      icon: 'Zap',
-                      color: 'blue',
-                      steps: [
-                        {
-                          text: '',
-                          icon: 'Zap',
-                          color: 'blue',
-                          label: 'Step',
-                        },
-                      ],
-                    })
-                  }
-                  className="px-4 py-2 bg-brand-blue-primary text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-brand-blue-dark transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" /> New Routine
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                {routines.map((routine) => {
-                  const colorClasses = getRoutineColorClasses(
-                    routine.color || 'blue'
-                  );
-                  return (
-                    <div
-                      key={routine.id}
-                      className="bg-white border-2 border-slate-200 rounded-2xl p-4 flex items-center justify-between group hover:border-brand-blue-light transition-all shadow-sm"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`p-3 rounded-xl ${colorClasses.bg} ${colorClasses.text}`}
-                        >
-                          <div className="w-6 h-6 flex items-center justify-center">
-                            {/* Generic icon since dynamic lucide loading is complex here */}
-                            <div className="w-4 h-4 rounded-full bg-current opacity-50" />
-                          </div>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-black text-slate-800 leading-tight">
-                            {routine.name}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
-                            {routine.grades}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <button
-                          onClick={() => setEditingRoutine(routine)}
-                          className="p-2 hover:bg-blue-50 rounded-xl text-slate-400 hover:text-brand-blue-primary transition-colors flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
-                          title="Edit Routine"
-                        >
-                          <Edit size={16} />
-                          <span className="hidden sm:inline">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDeleteConfirm({
-                              routineId: routine.id,
-                              routineName: routine.name,
-                            });
-                          }}
-                          className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
-                          title="Delete Routine"
-                        >
-                          <Trash2 size={16} />
-                          <span className="hidden sm:inline">Delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {routines.length === 0 && (
-                  <div className="py-12 flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
-                    <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-                    <p className="font-black uppercase tracking-widest text-xs">
-                      No routines in library
-                    </p>
-                    <p className="text-xs mt-1">
-                      Create your first routine template to get started.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Routine Editor Modal */}
-      {editingRoutine && (
-        <div className="fixed inset-0 z-modal-deep bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-            <LibraryManager
-              routine={editingRoutine}
-              onChange={setEditingRoutine}
-              onSave={async () => {
-                await saveRoutine(editingRoutine);
-                setEditingRoutine(null);
-                showMessage('success', 'Routine saved to library');
-              }}
-              onCancel={() => setEditingRoutine(null)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      {deleteConfirm && (
-        <ConfirmDialog
-          title="Delete Routine"
-          message={`Are you sure you want to delete "${deleteConfirm.routineName}"? This action cannot be undone.`}
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
-          onConfirm={async () => {
-            try {
-              await deleteRoutine(deleteConfirm.routineId);
-              showMessage('success', 'Routine deleted successfully');
-            } catch (error) {
-              console.error('Failed to delete routine:', error);
-              showMessage(
-                'error',
-                'Failed to delete routine. Please try again.'
-              );
-            } finally {
-              setDeleteConfirm(null);
-            }
-          }}
-          onCancel={() => setDeleteConfirm(null)}
-        />
-      )}
+      <InstructionalRoutinesManager
+        isOpen={isRoutinesLibraryOpen}
+        onClose={() => setIsRoutinesLibraryOpen(false)}
+        onShowMessage={showMessage}
+      />
     </div>
   );
 };
