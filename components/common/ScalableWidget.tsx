@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 
 interface ScalableWidgetProps {
   width: number;
@@ -17,7 +17,7 @@ interface ScalableWidgetProps {
       }) => React.ReactNode);
 }
 
-export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
+const ScalableWidgetComponent: React.FC<ScalableWidgetProps> = ({
   width,
   height,
   baseWidth,
@@ -105,3 +105,5 @@ export const ScalableWidget: React.FC<ScalableWidgetProps> = ({
     </div>
   );
 };
+
+export const ScalableWidget = memo(ScalableWidgetComponent);

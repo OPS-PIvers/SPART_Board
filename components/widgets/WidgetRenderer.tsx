@@ -24,6 +24,13 @@ import {
   DEFAULT_SCALING_CONFIG,
 } from './WidgetRegistry';
 
+// Widgets that require real-time position updates for inter-widget functionality
+const POSITION_AWARE_WIDGETS: WidgetType[] = [
+  'catalyst',
+  'catalyst-instruction',
+  'catalyst-visual',
+];
+
 const LIVE_SESSION_UPDATE_DEBOUNCE_MS = 800; // Balance between real-time updates and reducing Firestore write costs
 
 const LoadingFallback = () => (
@@ -172,6 +179,12 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
   const HEADER_HEIGHT = UI_CONSTANTS.WIDGET_HEADER_HEIGHT;
   const PADDING = UI_CONSTANTS.WIDGET_PADDING;
 
+  // Calculate a key that changes only when relevant position changes for position-aware widgets.
+  // For standard widgets, this key is empty and doesn't trigger updates on drag.
+  const positionKey = POSITION_AWARE_WIDGETS.includes(widget.type)
+    ? `${widget.x},${widget.y}`
+    : '';
+
   const getWidgetContentInternal = useCallback(
     (w: number, h: number, scale?: number) => {
       return (
@@ -184,7 +197,38 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         />
       );
     },
-    [widget, isStudentView]
+    // We intentionally decompose the widget dependency here.
+    // If we depend on the full `widget` object, this callback will be recreated on every
+    // drag frame (since x/y change), forcing ScalableWidget to re-render constantly.
+    // InnerWidgetRenderer is already memoized to ignore x/y for most widgets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      widget.id,
+      widget.type,
+      widget.config,
+      widget.flipped,
+      widget.minimized,
+      widget.maximized,
+      widget.customTitle,
+      widget.isLive,
+      widget.transparency,
+      widget.annotation,
+      positionKey,
+      isStudentView,
+    ]
+  );
+
+  const renderScalableContent = useCallback(
+    ({
+      internalW,
+      internalH,
+      scale,
+    }: {
+      internalW: number;
+      internalH: number;
+      scale: number;
+    }) => getWidgetContentInternal(internalW, internalH, scale),
+    [getWidgetContentInternal]
   );
 
   if (widget.type === 'sticker') {
@@ -213,9 +257,7 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
       headerHeight={HEADER_HEIGHT}
       padding={scalingConfig.padding ?? PADDING}
     >
-      {({ internalW, internalH, scale }) =>
-        getWidgetContentInternal(internalW, internalH, scale)
-      }
+      {renderScalableContent}
     </ScalableWidget>
   );
 
