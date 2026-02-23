@@ -146,6 +146,16 @@ describe('DraggableWindow', () => {
   });
 
   // Helper function to render DraggableWindow with common props
+  const getMockActions = () => ({
+    updateWidget: mockUpdateWidget,
+    removeWidget: mockRemoveWidget,
+    duplicateWidget: mockDuplicateWidget,
+    bringToFront: mockBringToFront,
+    addToast: mockAddToast,
+    resetWidgetSize: mockResetWidgetSize,
+    deleteAllWidgets: mockDeleteAllWidgets,
+  });
+
   const renderComponent = (
     widgetProps: Partial<WidgetData> = {},
     children: React.ReactNode = <div>Content</div>,
@@ -158,13 +168,7 @@ describe('DraggableWindow', () => {
         title="Test Widget"
         settings={settings}
         globalStyle={mockGlobalStyle}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        resetWidgetSize={mockResetWidgetSize}
-        deleteAllWidgets={mockDeleteAllWidgets}
+        actions={getMockActions()}
       >
         {children}
       </DraggableWindow>
@@ -182,13 +186,7 @@ describe('DraggableWindow', () => {
         title="Test Widget"
         settings={<SettingsContent />}
         globalStyle={mockGlobalStyle}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        resetWidgetSize={mockResetWidgetSize}
-        deleteAllWidgets={mockDeleteAllWidgets}
+        actions={getMockActions()}
       >
         <div>Widget Content</div>
       </DraggableWindow>
@@ -205,13 +203,7 @@ describe('DraggableWindow', () => {
         title="Test Widget"
         settings={<SettingsContent />}
         globalStyle={mockGlobalStyle}
-        updateWidget={mockUpdateWidget}
-        removeWidget={mockRemoveWidget}
-        duplicateWidget={mockDuplicateWidget}
-        bringToFront={mockBringToFront}
-        addToast={mockAddToast}
-        resetWidgetSize={mockResetWidgetSize}
-        deleteAllWidgets={mockDeleteAllWidgets}
+        actions={getMockActions()}
       >
         <div>Widget Content</div>
       </DraggableWindow>

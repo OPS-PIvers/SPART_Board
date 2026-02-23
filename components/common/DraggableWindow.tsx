@@ -48,13 +48,15 @@ interface DraggableWindowProps {
   skipCloseConfirmation?: boolean;
   headerActions?: React.ReactNode;
   globalStyle: GlobalStyle;
-  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
-  removeWidget: (id: string) => void;
-  duplicateWidget: (id: string) => void;
-  bringToFront: (id: string) => void;
-  addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
-  resetWidgetSize: (id: string) => void;
-  deleteAllWidgets: () => void;
+  actions: {
+    updateWidget: (id: string, updates: Partial<WidgetData>) => void;
+    removeWidget: (id: string) => void;
+    duplicateWidget: (id: string) => void;
+    bringToFront: (id: string) => void;
+    addToast: (message: string, type?: 'info' | 'success' | 'error') => void;
+    resetWidgetSize: (id: string) => void;
+    deleteAllWidgets: () => void;
+  };
 }
 
 const ResizeHandleIcon = ({
@@ -95,14 +97,18 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   skipCloseConfirmation = false,
   headerActions,
   globalStyle,
-  updateWidget,
-  removeWidget,
-  duplicateWidget,
-  bringToFront,
-  addToast,
-  resetWidgetSize,
-  deleteAllWidgets,
+  actions,
 }) => {
+  const {
+    updateWidget,
+    removeWidget,
+    duplicateWidget,
+    bringToFront,
+    addToast,
+    resetWidgetSize,
+    deleteAllWidgets,
+  } = actions || {};
+
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

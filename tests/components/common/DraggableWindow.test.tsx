@@ -72,7 +72,7 @@ describe('DraggableWindow (Tests folder)', () => {
         settings={<div>Settings</div>}
         title="Test Widget"
         globalStyle={mockGlobalStyle}
-        {...mockActions}
+        actions={mockActions}
       >
         <div>Content</div>
       </DraggableWindow>
@@ -122,7 +122,7 @@ describe('DraggableWindow (Tests folder)', () => {
           settings={<div>Settings</div>}
           title="Maximized Widget"
           globalStyle={mockGlobalStyle}
-          {...mockActions}
+          actions={mockActions}
         >
           <div data-testid="maximized-content">Maximized Content</div>
         </DraggableWindow>

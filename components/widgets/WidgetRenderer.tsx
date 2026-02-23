@@ -251,13 +251,15 @@ const WidgetRendererComponent: React.FC<WidgetRendererProps> = ({
         widget.type === 'classes' || dashboardSettings?.disableCloseConfirmation
       }
       globalStyle={globalStyle}
-      updateWidget={updateWidget}
-      removeWidget={removeWidget}
-      duplicateWidget={duplicateWidget}
-      bringToFront={bringToFront}
-      addToast={addToast}
-      resetWidgetSize={resetWidgetSize}
-      deleteAllWidgets={deleteAllWidgets}
+      actions={{
+        updateWidget,
+        removeWidget,
+        duplicateWidget,
+        bringToFront,
+        addToast,
+        resetWidgetSize,
+        deleteAllWidgets,
+      }}
       headerActions={
         (isLive || canAccessFeature('live-session')) && (
           <LiveControl
