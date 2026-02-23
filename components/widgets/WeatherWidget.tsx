@@ -760,7 +760,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${condition === c.id ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-100 bg-white text-slate-400'}`}
                 >
                   <c.icon className="w-4 h-4" />
-                  <span className="text-[7px]  uppercase">{c.id}</span>
+                  <span className="text-xxxs uppercase">{c.id}</span>
                 </button>
               ))}
             </div>

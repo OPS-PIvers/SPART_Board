@@ -383,7 +383,7 @@ export const GlobalPermissionsManager: React.FC = () => {
                       generations per day
                     </span>
                   </div>
-                  <p className="text-[10px] text-purple-500 mt-2 leading-tight">
+                  <p className="text-xxs text-purple-500 mt-2 leading-tight">
                     Administrators have unlimited usage. Standard users will see
                     a &quot;limit reached&quot; message after this many
                     generations.

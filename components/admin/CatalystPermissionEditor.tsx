@@ -357,7 +357,7 @@ export const CatalystPermissionEditor: React.FC<
                             <div className="font-bold text-slate-700 text-sm truncate">
                               {routine.title}
                             </div>
-                            <div className="text-[10px] text-slate-400 truncate">
+                            <div className="text-xxs text-slate-400 truncate">
                               {routine.shortDesc}
                             </div>
                           </div>

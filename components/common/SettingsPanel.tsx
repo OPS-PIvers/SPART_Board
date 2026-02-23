@@ -163,7 +163,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <span className="text-sm font-bold text-slate-800 truncate">
               {widget.customTitle ?? title}
             </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+            <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest shrink-0">
               Settings
             </span>
           </div>
@@ -190,7 +190,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="pt-4 border-t border-slate-100">
               <div className="flex flex-col gap-2 bg-slate-50/80 px-4 py-3 rounded-xl border border-slate-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest">
                     Transparency{' '}
                     {widget.transparency === undefined ? '(Global)' : ''}
                   </span>
@@ -200,7 +200,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       onClick={() =>
                         updateWidget(widget.id, { transparency: undefined })
                       }
-                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase"
+                      className="text-xxs font-black text-indigo-600 hover:text-indigo-700 uppercase"
                       aria-label="Reset transparency to global default"
                     >
                       Reset

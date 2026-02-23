@@ -573,7 +573,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+                <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
                   App Title
                 </label>
                 <input
@@ -598,7 +598,7 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               )}
             </div>
             <div className="flex-1 flex flex-col min-h-[250px]">
-              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+              <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
                 HTML Code
               </label>
               <textarea
