@@ -23,10 +23,17 @@ export function detectWidgetType(text: string): PasteResult | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
-  // 1. Board Import (Share Link)
-  // Normalize and validate as a URL before treating as an import link.
-  // Only allow http(s) URLs or same-origin relative paths whose pathname starts with /share/.
-  let candidate = trimmed;
+  return (
+    tryParseBoardImport(trimmed) ??
+    tryParseMiniApp(trimmed) ??
+    tryParseUrlBasedWidgets(trimmed) ??
+    tryParseChecklist(trimmed) ??
+    createDefaultTextWidget(trimmed)
+  );
+}
+
+function tryParseBoardImport(text: string): PasteResult | null {
+  let candidate = text;
   // Add protocol for bare domains (e.g., "example.com/share/abc")
   const hasShareProtocol = /^(http|https):\/\//i.test(candidate);
   if (!hasShareProtocol) {
@@ -50,24 +57,28 @@ export function detectWidgetType(text: string): PasteResult | null {
       };
     }
   } catch {
-    // If parsing fails, fall through and let other detectors handle the text.
+    // If parsing fails, fall through
   }
+  return null;
+}
 
-  // 2. HTML Content (Mini App)
-  if (/^\s*<[a-z][\s\S]*>/i.test(trimmed)) {
+function tryParseMiniApp(text: string): PasteResult | null {
+  if (/^\s*<[a-z][\s\S]*>/i.test(text)) {
     // Extract title if present
-    const titleMatch = trimmed.match(/<title>(.*?)<\/title>/i);
+    const titleMatch = text.match(/<title>(.*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : undefined;
 
     return {
       action: 'create-mini-app',
-      html: trimmed,
+      html: text,
       title,
     };
   }
+  return null;
+}
 
-  // URL Handling: Normalize by adding protocol if missing but looks like a domain
-  let normalizedUrl = trimmed;
+function tryParseUrlBasedWidgets(text: string): PasteResult | null {
+  let normalizedUrl = text;
   const hasProtocol = /^(http|https):\/\//i.test(normalizedUrl);
   if (!hasProtocol) {
     // Basic domain check: something.something with at least 2 chars TLD
@@ -81,44 +92,55 @@ export function detectWidgetType(text: string): PasteResult | null {
   // URL Detection
   const isUrl = /^(http|https):\/\/[^ "]+$/.test(normalizedUrl);
 
-  if (isUrl) {
-    // Image URL (Sticker)
-    if (/\.(png|jpg|jpeg|gif|webp|svg)(\?[^#]*)?(#.*)?$/i.test(normalizedUrl)) {
-      return {
-        action: 'create-widget',
-        type: 'sticker',
-        config: { url: normalizedUrl, rotation: 0 } as WidgetConfig,
-      };
-    }
+  if (!isUrl) return null;
 
-    // Embed URL (YouTube, Vimeo, Google Docs)
-    const isEmbed =
-      /(youtube\.com|youtu\.be|vimeo\.com|docs\.google\.com)/.test(
-        normalizedUrl
-      );
+  return (
+    tryParseImageWidget(normalizedUrl) ??
+    tryParseEmbedWidget(normalizedUrl) ??
+    createQrWidget(normalizedUrl)
+  );
+}
 
-    if (isEmbed) {
-      return {
-        action: 'create-widget',
-        type: 'embed',
-        config: {
-          url: convertToEmbedUrl(normalizedUrl),
-          mode: 'url',
-        } as WidgetConfig,
-      };
-    }
-
-    // Default to QR for other URLs
+function tryParseImageWidget(url: string): PasteResult | null {
+  if (/\.(png|jpg|jpeg|gif|webp|svg)(\?[^#]*)?(#.*)?$/i.test(url)) {
     return {
       action: 'create-widget',
-      type: 'qr',
-      config: { url: normalizedUrl } as WidgetConfig,
+      type: 'sticker',
+      config: { url, rotation: 0 } as WidgetConfig,
     };
   }
+  return null;
+}
 
-  // Checklist Detection (Multi-line)
+function tryParseEmbedWidget(url: string): PasteResult | null {
+  const isEmbed = /(youtube\.com|youtu\.be|vimeo\.com|docs\.google\.com)/.test(
+    url
+  );
+
+  if (isEmbed) {
+    return {
+      action: 'create-widget',
+      type: 'embed',
+      config: {
+        url: convertToEmbedUrl(url),
+        mode: 'url',
+      } as WidgetConfig,
+    };
+  }
+  return null;
+}
+
+function createQrWidget(url: string): PasteResult {
+  return {
+    action: 'create-widget',
+    type: 'qr',
+    config: { url } as WidgetConfig,
+  };
+}
+
+function tryParseChecklist(text: string): PasteResult | null {
   // Heuristic: If there are 3 or more non-empty lines, assume it's a list.
-  const lines = trimmed
+  const lines = text
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l);
@@ -136,14 +158,15 @@ export function detectWidgetType(text: string): PasteResult | null {
       } as WidgetConfig,
     };
   }
+  return null;
+}
 
-  // Text Fallback
-  // Convert newlines to breaks for HTML display
+function createDefaultTextWidget(text: string): PasteResult {
   return {
     action: 'create-widget',
     type: 'text',
     config: {
-      content: trimmed
+      content: text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
