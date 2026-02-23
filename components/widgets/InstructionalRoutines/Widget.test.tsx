@@ -9,7 +9,6 @@ const addWidgetSpy = vi.fn();
 vi.mock('../../../context/useDashboard', () => ({
   useDashboard: () => ({
     updateWidget: vi.fn(),
-    gradeFilter: 'all',
     addWidget: addWidgetSpy,
     clearAllStickers: vi.fn(),
   }),
@@ -18,6 +17,7 @@ vi.mock('../../../context/useDashboard', () => ({
 vi.mock('../../../context/useAuth', () => ({
   useAuth: () => ({
     isAdmin: false,
+    userGradeLevels: [],
   }),
 }));
 

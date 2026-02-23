@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   User,
   signInWithPopup,
@@ -6,15 +6,23 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
 } from 'firebase/auth';
-import { doc, getDoc, collection, onSnapshot } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  onSnapshot,
+} from 'firebase/firestore';
 import { auth, googleProvider, db, isAuthBypass } from '../config/firebase';
 import {
   FeaturePermission,
   WidgetType,
   GlobalFeaturePermission,
   GlobalFeature,
+  GradeLevel,
 } from '../types';
 import { AuthContext } from './AuthContextValue';
+import { getBuildingGradeLevels } from '../config/buildings';
 
 /**
  * IMPORTANT: Authentication bypass / mock user mode
@@ -136,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [globalPermissions, setGlobalPermissions] = useState<
     GlobalFeaturePermission[]
   >([]);
+  const [selectedBuildings, setSelectedBuildingsState] = useState<string[]>([]);
 
   // Persist googleAccessToken to localStorage
   useEffect(() => {
@@ -222,6 +231,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       globalUnsubscribe();
     };
   }, [user]);
+
+  // Load user profile (selectedBuildings) from Firestore when user signs in
+  useEffect(() => {
+    if (isAuthBypass) return;
+
+    const loadProfile = async () => {
+      if (!user) {
+        setSelectedBuildingsState([]);
+        return;
+      }
+      try {
+        const profileDoc = await getDoc(
+          doc(db, 'users', user.uid, 'userProfile', 'profile')
+        );
+        if (profileDoc.exists()) {
+          const data = profileDoc.data();
+          if (Array.isArray(data.selectedBuildings)) {
+            setSelectedBuildingsState(data.selectedBuildings as string[]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+
+    void loadProfile();
+  }, [user]);
+
+  const setSelectedBuildings = useCallback(
+    async (buildings: string[]) => {
+      setSelectedBuildingsState(buildings);
+      if (!user || isAuthBypass) return;
+      try {
+        await setDoc(
+          doc(db, 'users', user.uid, 'userProfile', 'profile'),
+          { selectedBuildings: buildings },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error('Error saving user profile:', error);
+      }
+    },
+    [user]
+  );
+
+  const userGradeLevels = useMemo<GradeLevel[]>(
+    () => getBuildingGradeLevels(selectedBuildings),
+    [selectedBuildings]
+  );
 
   // Auth state listener
   useEffect(() => {
@@ -355,6 +413,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         canAccessFeature,
         signInWithGoogle,
         signOut,
+        selectedBuildings,
+        userGradeLevels,
+        setSelectedBuildings,
       }}
     >
       {children}

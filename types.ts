@@ -828,6 +828,15 @@ export interface DashboardSettings {
   disableCloseConfirmation?: boolean;
 }
 
+/**
+ * Per-user profile data stored in Firestore at /users/{userId}/userProfile.
+ * This is separate from dashboard settings and persists across dashboards.
+ */
+export interface UserProfile {
+  /** IDs of the buildings the user works in (matches Building.id in config/buildings.ts) */
+  selectedBuildings: string[];
+}
+
 export interface SharedGroup {
   id: string;
   name: string;

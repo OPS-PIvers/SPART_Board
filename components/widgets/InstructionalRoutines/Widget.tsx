@@ -377,9 +377,8 @@ import { WidgetLayout } from '../WidgetLayout';
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, gradeFilter, addWidget, clearAllStickers } =
-    useDashboard();
-  const { isAdmin } = useAuth();
+  const { updateWidget, addWidget, clearAllStickers } = useDashboard();
+  const { isAdmin, userGradeLevels } = useAuth();
   const {
     routines: cloudRoutines,
     saveRoutine,
@@ -467,8 +466,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
 
   const displayedRoutines = useMemo(() => {
     const filtered = ROUTINES.filter((r) => {
-      if (gradeFilter === 'all') return true;
-      return r.gradeLevels?.includes(gradeFilter);
+      // No buildings selected → show all routines
+      if (userGradeLevels.length === 0) return true;
+      // Show routine if it applies to any of the user's grade levels
+      return r.gradeLevels?.some((gl) => userGradeLevels.includes(gl));
     });
     return filtered.sort((a, b) => {
       const aFav = favorites.includes(a.id);
@@ -477,7 +478,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       if (!aFav && bFav) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [gradeFilter, favorites, ROUTINES]);
+  }, [userGradeLevels, favorites, ROUTINES]);
 
   const selectRoutine = (r: InstructionalRoutine) => {
     const initialSteps: RoutineStep[] = r.steps.map((step) => ({
@@ -558,7 +559,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               className="font-black uppercase text-slate-400 tracking-widest"
               style={{ fontSize: 'min(10px, 3cqmin)' }}
             >
-              Library ({gradeFilter.toUpperCase()})
+              Library
             </div>
             <div
               className="flex items-center"
