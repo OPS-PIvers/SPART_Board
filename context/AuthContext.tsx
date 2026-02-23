@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   User,
   signInWithPopup,
@@ -145,6 +151,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     GlobalFeaturePermission[]
   >([]);
   const [selectedBuildings, setSelectedBuildingsState] = useState<string[]>([]);
+  // Tracks the latest setSelectedBuildings call to detect and suppress stale writes
+  const writeTokenRef = useRef(0);
 
   // Persist googleAccessToken to localStorage
   useEffect(() => {
@@ -248,24 +256,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           doc(db, 'users', user.uid, 'userProfile', 'profile')
         );
         if (isCancelled) return;
-        if (profileDoc.exists()) {
-          const rawData: unknown = profileDoc.data();
+        if (!profileDoc.exists()) {
+          setSelectedBuildingsState([]);
+          return;
+        }
+        const rawData: unknown = profileDoc.data();
+        if (
+          typeof rawData === 'object' &&
+          rawData !== null &&
+          'selectedBuildings' in rawData
+        ) {
+          const { selectedBuildings } = rawData as {
+            selectedBuildings: unknown;
+          };
           if (
-            typeof rawData === 'object' &&
-            rawData !== null &&
-            'selectedBuildings' in rawData
+            Array.isArray(selectedBuildings) &&
+            selectedBuildings.every((id) => typeof id === 'string')
           ) {
-            const { selectedBuildings } = rawData as {
-              selectedBuildings: unknown;
-            };
-            if (
-              Array.isArray(selectedBuildings) &&
-              selectedBuildings.every((id) => typeof id === 'string')
-            ) {
-              setSelectedBuildingsState(selectedBuildings);
-            }
+            setSelectedBuildingsState(selectedBuildings);
+            return;
           }
         }
+        // Profile exists but has no valid selectedBuildings; clear any previous selection
+        setSelectedBuildingsState([]);
       } catch (error) {
         if (!isCancelled) {
           console.error('Error loading user profile:', error);
@@ -283,6 +296,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     async (buildings: string[]) => {
       setSelectedBuildingsState(buildings);
       if (!user || isAuthBypass) return;
+      // Assign a token so we can detect if a newer call supersedes this one
+      const myToken = ++writeTokenRef.current;
       try {
         await setDoc(
           doc(db, 'users', user.uid, 'userProfile', 'profile'),
@@ -290,7 +305,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           { merge: true }
         );
       } catch (error) {
-        console.error('Error saving user profile:', error);
+        // Only log if this is still the latest write (not superseded by a newer one)
+        if (myToken === writeTokenRef.current) {
+          console.error('Error saving user profile:', error);
+        }
       }
     },
     [user]
