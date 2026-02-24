@@ -711,7 +711,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                           <span className="text-sm font-black text-slate-800 leading-tight">
                             {routine.name}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                          <span className="text-xxs text-slate-400 font-black uppercase tracking-wider">
                             {routine.grades}
                           </span>
                         </div>
@@ -719,7 +719,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                       <div className="flex items-center gap-1 sm:gap-2">
                         <button
                           onClick={() => setEditingRoutine(routine)}
-                          className="p-2 hover:bg-blue-50 rounded-xl text-slate-400 hover:text-brand-blue-primary transition-colors flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
+                          className="p-2 hover:bg-blue-50 rounded-xl text-slate-400 hover:text-brand-blue-primary transition-colors flex items-center gap-1.5 text-xxs font-black uppercase tracking-wider"
                           title="Edit Routine"
                         >
                           <Edit size={16} />
@@ -732,7 +732,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                               routineName: routine.name,
                             });
                           }}
-                          className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
+                          className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1.5 text-xxs font-black uppercase tracking-wider"
                           title="Delete Routine"
                         >
                           <Trash2 size={16} />

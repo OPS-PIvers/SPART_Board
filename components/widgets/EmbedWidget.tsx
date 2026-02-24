@@ -327,7 +327,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 <XCircle className="w-3 h-3 mt-0.5 shrink-0" />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xxs font-bold">Embedding Blocked</span>
-                  <span className="text-[10px] leading-tight opacity-80">
+                  <span className="text-xxs leading-tight opacity-80">
                     {errorMsg} Fallback mode will be used.
                   </span>
                 </div>
@@ -387,7 +387,7 @@ export const EmbedSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   config: { ...config, html: e.target.value },
                 })
               }
-              className="w-full h-48 p-3 text-[11px] font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none leading-relaxed custom-scrollbar"
+              className="w-full h-48 p-3 text-xxs font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none leading-relaxed custom-scrollbar"
               spellCheck={false}
             />
           </div>
