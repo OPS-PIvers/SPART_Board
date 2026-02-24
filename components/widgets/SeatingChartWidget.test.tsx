@@ -235,12 +235,12 @@ describe('SeatingChartWidget', () => {
     });
 
     it('removes assignment on click', () => {
-      const widgetWithAssignment = {
+      const widgetWithAssignment: WidgetData = {
         ...rosterWidget,
         config: {
           ...rosterWidget.config,
           assignments: { 'Alice A': 'desk-1' },
-        },
+        } as SeatingChartConfig,
       };
       render(<SeatingChartWidget widget={widgetWithAssignment} />);
 
