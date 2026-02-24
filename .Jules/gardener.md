@@ -47,3 +47,9 @@
 **Weed:** `ClassesWidget.tsx` contained multiple components (`ClassesWidget`, `RosterEditor`) and complex string manipulation logic for parsing names.
 **Root Cause:** "Complexity Trap"; UI and business logic were mixed, making it hard to test the parsing logic.
 **Plan:** Extracted `RosterEditor` to its own component, moved parsing logic to `rosterUtils.ts` with unit tests, and reorganized file structure into `components/widgets/Classes/`.
+
+## 2025-06-06 - Refactor Sidebar
+
+**Weed:** `Sidebar.tsx` was ~1300 lines, acting as a "God Component" that managed boards, backgrounds, widgets, and settings all in one file.
+**Root Cause:** Features were added incrementally to the sidebar over time without separating concerns, leading to a massive file with mixed responsibilities.
+**Plan:** Decomposed into `SidebarBoards.tsx`, `SidebarBackgrounds.tsx`, `SidebarWidgets.tsx`, and `SidebarSettings.tsx`. Extracted relevant state and logic to each component. Used `createPortal` for modals within the sub-components to handle stacking context issues.
