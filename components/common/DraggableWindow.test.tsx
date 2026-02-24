@@ -389,4 +389,32 @@ describe('DraggableWindow', () => {
       expect.objectContaining({ minimized: true, flipped: false })
     );
   });
+
+  it('triggers deleteAllWidgets on Alt + Delete with confirmation', () => {
+    // Mock confirmation to true
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderComponent();
+    const windowEl = screen.getByTestId('draggable-window');
+
+    fireEvent.keyDown(windowEl, { key: 'Delete', altKey: true });
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      'Are you sure you want to clear the entire board?'
+    );
+    expect(mockDeleteAllWidgets).toHaveBeenCalled();
+  });
+
+  it('does NOT trigger deleteAllWidgets on Alt + Delete if cancelled', () => {
+    // Mock confirmation to false
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    renderComponent();
+    const windowEl = screen.getByTestId('draggable-window');
+
+    fireEvent.keyDown(windowEl, { key: 'Delete', altKey: true });
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockDeleteAllWidgets).not.toHaveBeenCalled();
+  });
 });

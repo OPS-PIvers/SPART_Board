@@ -107,7 +107,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     addToast,
     resetWidgetSize,
     deleteAllWidgets,
-  } = actions || {};
+  } = actions;
 
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
