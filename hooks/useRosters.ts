@@ -262,6 +262,7 @@ export const useRosters = (user: User | null) => {
       if (localStorage.getItem(migrationKey)) return;
 
       let didMigrate = false;
+      let hasFailures = false;
 
       for (const docSnap of rawSnapDocs) {
         const raw = docSnap.data() as Record<string, unknown>;
@@ -316,15 +317,17 @@ export const useRosters = (user: User | null) => {
             `[PII Migration] Failed for roster ${docSnap.id}:`,
             err
           );
+          hasFailures = true;
         }
       }
 
       if (
-        didMigrate ||
-        rawSnapDocs.every((d) => {
-          const raw = d.data() as Record<string, unknown>;
-          return !Array.isArray(raw.students) || raw.students.length === 0;
-        })
+        !hasFailures &&
+        (didMigrate ||
+          rawSnapDocs.every((d) => {
+            const raw = d.data() as Record<string, unknown>;
+            return !Array.isArray(raw.students) || raw.students.length === 0;
+          }))
       ) {
         localStorage.setItem(migrationKey, '1');
       }
@@ -460,6 +463,10 @@ export const useRosters = (user: User | null) => {
       if (students !== undefined) {
         const withPins = assignPins(students);
 
+        // Capture previous students for rollback
+        const previousStudents = studentsCacheRef.current.get(id) ?? [];
+        const previousCount = previousStudents.length;
+
         // Optimistically update cache
         studentsCacheRef.current.set(id, withPins);
 
@@ -488,13 +495,20 @@ export const useRosters = (user: User | null) => {
             });
           } catch (err) {
             console.error('Failed to upload updated roster to Drive:', err);
-            // Fall through — Firestore metadata still updated without driveFileId change
-            if (Object.keys(metaUpdates).length > 0) {
-              await updateDoc(
-                doc(db, 'users', user.uid, 'rosters', id),
-                metaUpdates
-              );
-            }
+            // Revert optimistic updates
+            studentsCacheRef.current.set(id, previousStudents);
+            setRosters((prev) =>
+              prev.map((r) =>
+                r.id === id
+                  ? {
+                      ...r,
+                      students: previousStudents,
+                      studentCount: previousCount,
+                    }
+                  : r
+              )
+            );
+            throw new Error('Failed to save roster changes to Drive');
           }
         } else {
           // Drive unavailable — update count in Firestore at least

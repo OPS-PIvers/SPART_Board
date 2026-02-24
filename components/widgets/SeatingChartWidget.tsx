@@ -247,9 +247,30 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     migrationDoneRef.current = true;
     const nameToId = new Map(students.map((s) => [s.label, s.id]));
     const migrated: Record<string, string> = {};
+    const unmappedLegacyKeys: string[] = [];
+
     for (const [key, furnitureId] of Object.entries(assignments)) {
-      const resolvedId = studentIds.has(key) ? key : nameToId.get(key);
-      if (resolvedId) migrated[resolvedId] = furnitureId;
+      if (studentIds.has(key)) {
+        migrated[key] = furnitureId;
+        continue;
+      }
+      const resolvedId = nameToId.get(key);
+      if (resolvedId) {
+        migrated[resolvedId] = furnitureId;
+      } else {
+        migrated[key] = furnitureId;
+        unmappedLegacyKeys.push(key);
+      }
+    }
+
+    if (unmappedLegacyKeys.length > 0) {
+      console.warn(
+        'SeatingChartWidget: Unable to migrate some legacy seating assignments to student IDs.',
+        {
+          widgetId: widget.id,
+          unmappedLegacyKeys,
+        }
+      );
     }
     updateWidget(widget.id, { config: { ...config, assignments: migrated } });
   }, [rosterMode, students, assignments, config, updateWidget, widget.id]);
