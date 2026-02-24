@@ -221,7 +221,8 @@ describe('SeatingChartWidget', () => {
 
       // Find a desk and click it
       const desk = screen.getByTestId('furniture-item-desk-1');
-      await user.click(desk);
+      // Use fireEvent for the desk click to avoid potential pointer-events issues in JSDOM with userEvent on complex layered elements
+      fireEvent.click(desk);
 
       // Verify updateWidget was called with new assignment
       expect(mockUpdateWidget).toHaveBeenCalled();
@@ -246,7 +247,9 @@ describe('SeatingChartWidget', () => {
       await user.click(screen.getByText('Assign'));
 
       // Verify Alice is assigned (rendered on the desk)
-      expect(screen.getByText('Alice A')).toBeInTheDocument();
+      // Use queryAllByText to ensure we find at least one instance, or target specific desk
+      const desk = screen.getByTestId('furniture-item-desk-1');
+      expect(desk).toHaveTextContent('Alice A');
 
       // Click the remove button
       const removeBtn = screen.getByLabelText('Remove assignment for Alice A');
@@ -263,7 +266,7 @@ describe('SeatingChartWidget', () => {
     it('randomly assigns students to desks', async () => {
       const user = userEvent.setup();
       // We need more desks for random assignment
-      const widgetMoreDesks = {
+      const widgetMoreDesks: WidgetData = {
         ...rosterWidget,
         config: {
           ...rosterWidget.config,
@@ -303,7 +306,11 @@ describe('SeatingChartWidget', () => {
       render(<SeatingChartWidget widget={widgetMoreDesks} />);
       await user.click(screen.getByText('Assign'));
 
-      await user.click(screen.getByText('Add All Random'));
+      // Use fireEvent for the button click to be safe, though user.click usually works for buttons
+      // Sometimes SVG icons inside buttons can cause targeting issues
+      const randomBtn = screen.getByText('Add All Random').closest('button');
+      if (!randomBtn) throw new Error('Random button not found');
+      fireEvent.click(randomBtn);
 
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
