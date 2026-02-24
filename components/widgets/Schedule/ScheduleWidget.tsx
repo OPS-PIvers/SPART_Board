@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
@@ -30,6 +31,7 @@ interface ScheduleRowProps {
 
 const ScheduleRow = React.memo<ScheduleRowProps>(
   ({ item, index, onToggle, onStartTimer }) => {
+    const { t } = useTranslation();
     return (
       <div
         className={`flex-1 w-full flex items-center rounded-2xl border transition-all ${
@@ -84,8 +86,8 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
               padding: 'min(4px, 1cqmin)',
               marginRight: 'min(12px, 2.5cqmin)',
             }}
-            title={`Start countdown timer until ${item.endTime}`}
-            aria-label={`Start countdown timer until ${item.endTime}`}
+            title={t('widgets.schedule.startTimerUntil', { time: item.endTime })}
+            aria-label={t('widgets.schedule.startTimerUntil', { time: item.endTime })}
           >
             <Timer
               className="shrink-0"
@@ -108,6 +110,7 @@ import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
+  const { t } = useTranslation();
   const { updateWidget, activeDashboard, addWidget } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;

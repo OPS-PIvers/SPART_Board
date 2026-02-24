@@ -28,6 +28,10 @@ export interface AuthContextType {
   userGradeLevels: GradeLevel[];
   /** Persist the user's building selection to Firestore */
   setSelectedBuildings: (buildings: string[]) => Promise<void>;
+  /** The active UI language code (e.g. 'en', 'es', 'de', 'fr') */
+  language: string;
+  /** Persist the user's language preference to Firestore and update i18n */
+  setLanguage: (lang: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

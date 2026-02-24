@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Upload,
@@ -28,6 +29,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
   isSaving,
   hasUnsavedChanges,
 }) => {
+  const { t } = useTranslation();
   const { uploadAdminSticker, deleteFile, uploading } = useStorage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -103,7 +105,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
 
   const handleClose = () => {
     if (hasUnsavedChanges) {
-      if (!window.confirm('You have unsaved changes. Close without saving?')) {
+      if (!window.confirm(t('admin.stickers.confirmDiscardChanges'))) {
         return;
       }
       // Delete Storage objects for stickers uploaded this session that were
@@ -126,7 +128,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
           <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">
-            Global Sticker Library
+            {t('admin.stickers.title')}
           </h3>
           <div className="flex items-center gap-2">
             <button
@@ -140,10 +142,10 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
             >
               <Save className="w-3.5 h-3.5" />
               {isSaving
-                ? 'Saving...'
+                ? t('common.saving')
                 : hasUnsavedChanges
-                  ? 'Save Changes'
-                  : 'Saved'}
+                  ? t('admin.stickers.saveChanges')
+                  : t('common.saved')}
             </button>
             <button
               onClick={handleClose}
@@ -157,9 +159,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50 custom-scrollbar">
           <p className="text-sm text-slate-500 font-medium mb-4">
-            Stickers uploaded here appear in the{' '}
-            <strong className="text-slate-700">Global Collection</strong>{' '}
-            section of every user&apos;s Sticker Book widget.
+            {t('admin.stickers.description')}
           </p>
 
           {/* Upload zone */}
@@ -180,7 +180,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
             {uploading ? (
               <>
                 <Loader2 className="w-8 h-8 text-brand-blue-primary animate-spin" />
-                <p className="text-sm font-bold text-slate-500">Uploading...</p>
+                <p className="text-sm font-bold text-slate-500">{t('common.loading')}</p>
               </>
             ) : (
               <>
@@ -189,10 +189,10 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-black text-slate-600 uppercase tracking-tight">
-                    Drop images here or click to browse
+                    {t('admin.stickers.dropImages')}
                   </p>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                    PNG, JPG, GIF, WebP, SVG · Multiple files supported
+                    {t('admin.stickers.supportedFiles')}
                   </p>
                 </div>
               </>

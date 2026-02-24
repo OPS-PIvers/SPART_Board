@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, Trash2, Loader2, Eraser, MousePointer2 } from 'lucide-react';
 import { WidgetData, StickerBookConfig, StickerGlobalConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
@@ -25,6 +26,7 @@ import { WidgetLayout } from '../WidgetLayout';
 export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
+  const { t } = useTranslation();
   const { updateWidget, clearAllStickers, addWidget, addToast } =
     useDashboard();
   const { featurePermissions } = useAuth();
@@ -157,7 +159,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
       h,
       config: { url, rotation: 0 },
     });
-    addToast('Sticker added to board!', 'success');
+    addToast(t('widgets.stickers.stickerAdded'), 'success');
   };
 
   return (
@@ -172,7 +174,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             className="text-slate-700 font-black uppercase tracking-widest"
             style={{ fontSize: 'min(12px, 3cqmin)' }}
           >
-            Sticker Collection
+            {t('widgets.stickers.collectionTitle')}
           </span>
           <div className="flex" style={{ gap: 'min(8px, 2cqmin)' }}>
             <button
@@ -183,7 +185,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                 fontSize: 'min(10px, 2.5cqmin)',
                 padding: 'min(6px, 1.5cqmin) min(12px, 2.5cqmin)',
               }}
-              title="Clear all stickers from board"
+              title={t('widgets.stickers.clearAll')}
             >
               <Eraser
                 style={{
@@ -191,7 +193,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   height: 'min(12px, 3cqmin)',
                 }}
               />
-              Clear
+              {t('common.clearAll')}
             </button>
             <label
               className={`flex items-center bg-blue-600 text-white rounded-full font-black uppercase tracking-widest cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
@@ -217,7 +219,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   }}
                 />
               )}
-              {uploading ? 'Wait...' : 'Upload'}
+              {uploading ? t('widgets.stickers.wait') : t('common.upload')}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -277,13 +279,13 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                     className="font-black uppercase text-slate-500 group-hover:text-blue-600 tracking-tight"
                     style={{ fontSize: 'min(12px, 3cqmin)' }}
                   >
-                    Drop or Paste Image
+                    {t('widgets.stickers.dropOrPaste')}
                   </p>
                   <p
                     className="font-bold text-slate-400 uppercase tracking-widest"
                     style={{ fontSize: 'min(10px, 2.5cqmin)' }}
                   >
-                    to add custom stickers
+                    {t('widgets.stickers.toAddCustom')}
                   </p>
                 </div>
               </div>
@@ -300,7 +302,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                 padding: '0 min(4px, 1cqmin)',
               }}
             >
-              Essentials
+              {t('widgets.stickers.essentials')}
             </h4>
             <div
               className="grid grid-cols-4"
@@ -314,7 +316,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   onDragStart={(e) => handleDragStart(e, url)}
                   onClick={() => handleStickerClick(url)}
                   className="aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200 group"
-                  title="Drag or Click to add"
+                  title={t('widgets.stickers.dragOrClick')}
                 >
                   <img
                     src={url}
@@ -341,7 +343,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   padding: '0 min(4px, 1cqmin)',
                 }}
               >
-                Global Collection
+                {t('widgets.stickers.globalCollection')}
               </h4>
               <div
                 className="grid grid-cols-4"
@@ -355,7 +357,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) => handleDragStart(e, url)}
                     onClick={() => handleStickerClick(url)}
                     className="aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200 group"
-                    title="Drag or Click to add"
+                    title={t('widgets.stickers.dragOrClick')}
                   >
                     <img
                       src={url}
@@ -383,7 +385,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                   padding: '0 min(4px, 1cqmin)',
                 }}
               >
-                My Collection
+                {t('widgets.stickers.myCollection')}
               </h4>
               <div
                 className="grid grid-cols-4"
@@ -397,7 +399,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                     onDragStart={(e) => handleDragStart(e, url)}
                     onClick={() => handleStickerClick(url)}
                     className="group relative aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200"
-                    title="Drag or Click to add"
+                    title={t('widgets.stickers.dragOrClick')}
                   >
                     <img
                       src={url}
@@ -412,7 +414,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                       }}
                       className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10"
                       style={{ padding: 'min(6px, 1.5cqmin)' }}
-                      title="Delete Sticker"
+                      title={t('widgets.stickers.deleteSticker')}
                     >
                       <Trash2
                         style={{
@@ -447,7 +449,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
             className="font-black text-slate-400 uppercase tracking-widest text-center flex-1"
             style={{ fontSize: 'min(9px, 2.2cqmin)' }}
           >
-            Drag stickers from library to the board
+            {t('widgets.stickers.dragFromLibrary')}
           </span>
         </div>
       }

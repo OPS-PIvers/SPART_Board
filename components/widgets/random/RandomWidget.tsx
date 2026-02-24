@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../../../context/useDashboard';
 import {
   WidgetData,
@@ -39,6 +40,7 @@ import { RandomFlash } from './RandomFlash';
 import { WidgetLayout } from '../WidgetLayout';
 
 export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
+  const { t } = useTranslation();
   const {
     updateWidget,
     updateDashboard,
@@ -229,7 +231,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           teams: newTeams,
         },
       });
-      addToast(`Updated scoreboard with ${newTeams.length} teams!`, 'success');
+      addToast(
+        t('widgets.random.scoreboardUpdated', { count: newTeams.length }),
+        'success'
+      );
     } else {
       // Create new widget
       addWidget('scoreboard', {
@@ -237,7 +242,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           teams: newTeams,
         },
       });
-      addToast(`Created scoreboard with ${newTeams.length} teams!`, 'success');
+      addToast(
+        t('widgets.random.scoreboardCreated', { count: newTeams.length }),
+        'success'
+      );
     }
   };
 
@@ -791,14 +799,14 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 variant="secondary"
                 shape="pill"
                 onClick={handleSendToScoreboard}
-                aria-label="Send to Scoreboard"
+                aria-label={t('widgets.random.sendToScoreboard')}
                 style={{
                   width: 'min(48px, 12cqmin)',
                   height: 'min(48px, 12cqmin)',
                   padding: 0,
                 }}
                 className="flex-shrink-0"
-                title="Send to Scoreboard"
+                title={t('widgets.random.sendToScoreboard')}
                 icon={
                   <Trophy
                     style={{
