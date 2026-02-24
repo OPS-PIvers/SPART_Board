@@ -31,6 +31,7 @@ import {
   scrubDashboardPII,
   extractDashboardPII,
   mergeDashboardPII,
+  dashboardHasPII,
 } from '../utils/dashboardPII';
 import { useRosters } from '../hooks/useRosters';
 import { useGoogleDrive } from '../hooks/useGoogleDrive';
@@ -196,21 +197,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (e) {
           console.error('Failed to export to Drive during save:', e);
         }
+      }
 
-        // Also save a lightweight PII supplement file to Drive so custom widget
-        // names can be restored independently of the full dashboard export.
+      // Save PII supplement to Drive for ALL users (including admins) to prevent
+      // data loss. PII scrubbing below is unconditional, so without this backup
+      // admin users who use custom roster features would permanently lose student names.
+      if (driveService && dashboardHasPII(dashboard)) {
         const pii = extractDashboardPII(dashboard);
-        if (Object.keys(pii).length > 0) {
-          driveService
-            .uploadFile(
-              new Blob([JSON.stringify(pii)], { type: 'application/json' }),
-              `${dashboard.id}-pii.json`,
-              'Data/Dashboards'
-            )
-            .catch((e) =>
-              console.error('[PII] Failed to save PII supplement to Drive:', e)
-            );
-        }
+        driveService
+          .uploadFile(
+            new Blob([JSON.stringify(pii)], { type: 'application/json' }),
+            `${dashboard.id}-pii.json`,
+            'Data/Dashboards'
+          )
+          .catch((e) =>
+            console.error('[PII] Failed to save PII supplement to Drive:', e)
+          );
       }
 
       // CRITICAL: Strip all student PII before writing to Firestore.

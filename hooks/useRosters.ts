@@ -195,11 +195,19 @@ export const useRosters = (user: User | null) => {
               typeof student.firstName === 'string' &&
               typeof student.lastName === 'string'
             ) {
+              const hasValidPin =
+                typeof student.pin === 'string' && student.pin.trim() !== '';
+              if (!hasValidPin) {
+                console.warn(
+                  'Student loaded from Drive without valid PIN; will be reassigned on save:',
+                  `id=${String(student.id)}, name=${String(student.firstName)} ${String(student.lastName)}`
+                );
+              }
               return {
                 id: student.id,
                 firstName: student.firstName,
                 lastName: student.lastName,
-                pin: typeof student.pin === 'string' ? student.pin : '??',
+                pin: hasValidPin ? (student.pin as string) : '',
               };
             }
             return null;
@@ -266,7 +274,7 @@ export const useRosters = (user: User | null) => {
                 id: s.id,
                 firstName: s.firstName,
                 lastName: s.lastName,
-                pin: typeof s.pin === 'string' ? s.pin : '??',
+                pin: typeof s.pin === 'string' ? s.pin : '',
               };
             }
             return null;
