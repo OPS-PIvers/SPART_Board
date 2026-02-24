@@ -209,19 +209,17 @@ describe('SeatingChartWidget', () => {
       expect(screen.getByText('Charlie C')).toBeInTheDocument();
     });
 
-    it('assigns a student to a desk on click', async () => {
-      const user = userEvent.setup();
+    it('assigns a student to a desk on click', () => {
       render(<SeatingChartWidget widget={rosterWidget} />);
 
       // Switch to Assign mode
-      await user.click(screen.getByText('Assign'));
+      fireEvent.click(screen.getByText('Assign'));
 
       // Click a student
-      await user.click(screen.getByText('Alice A'));
+      fireEvent.click(screen.getByText('Alice A'));
 
       // Find a desk and click it
       const desk = screen.getByTestId('furniture-item-desk-1');
-      // Use fireEvent for the desk click to avoid potential pointer-events issues in JSDOM with userEvent on complex layered elements
       fireEvent.click(desk);
 
       // Verify updateWidget was called with new assignment
@@ -263,8 +261,7 @@ describe('SeatingChartWidget', () => {
       expect(config.assignments['Alice A']).toBeUndefined();
     });
 
-    it('randomly assigns students to desks', async () => {
-      const user = userEvent.setup();
+    it('randomly assigns students to desks', () => {
       // We need more desks for random assignment
       const widgetMoreDesks: WidgetData = {
         ...rosterWidget,
@@ -304,10 +301,8 @@ describe('SeatingChartWidget', () => {
       };
 
       render(<SeatingChartWidget widget={widgetMoreDesks} />);
-      await user.click(screen.getByText('Assign'));
+      fireEvent.click(screen.getByText('Assign'));
 
-      // Use fireEvent for the button click to be safe, though user.click usually works for buttons
-      // Sometimes SVG icons inside buttons can cause targeting issues
       const randomBtn = screen.getByText('Add All Random').closest('button');
       if (!randomBtn) throw new Error('Random button not found');
       fireEvent.click(randomBtn);
