@@ -115,6 +115,8 @@ interface RubberBand {
   y2: number;
 }
 
+const EMPTY_ARRAY: string[] = [];
+
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -274,6 +276,22 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     }
     updateWidget(widget.id, { config: { ...config, assignments: migrated } });
   }, [rosterMode, students, assignments, config, updateWidget, widget.id]);
+
+  // Optimization: Pre-compute assignments map to avoid O(N) filtering and new array references on every render.
+  // Assignments now map studentIds -> furnitureId, so we resolve the studentId to the display label here.
+  const assignedStudentLabelsByFurnitureId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    Object.entries(assignments).forEach(([studentId, furnitureId]) => {
+      const label = studentLabelById.get(studentId) ?? studentId;
+      const list = map.get(furnitureId);
+      if (list) {
+        list.push(label);
+      } else {
+        map.set(furnitureId, [label]);
+      }
+    });
+    return map;
+  }, [assignments, studentLabelById]);
 
   // --- SCALE HELPER ---
   const getCanvasScale = useCallback((): number => {
@@ -846,17 +864,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // --- RENDERING ---
 
-  // Helper to get assigned student display labels for a furniture item.
-  // The assignments keys are student IDs; we resolve them to display labels here.
-  const getAssignedStudents = useCallback(
-    (furnitureId: string) => {
-      return Object.entries(assignments)
-        .filter(([, fId]) => fId === furnitureId)
-        .map(([studentId]) => studentLabelById.get(studentId) ?? studentId);
-    },
-    [assignments, studentLabelById]
-  );
-
   const studentCount = students.length;
   const multiSelected = selectedIds.size > 1;
 
@@ -1149,7 +1156,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             const dragPos = dragState?.get(item.id);
             const resizeSize =
               resizeState?.id === item.id ? resizeState : undefined;
-            const assignedStudents = getAssignedStudents(item.id);
+            const assignedStudents =
+              assignedStudentLabelsByFurnitureId.get(item.id) ?? EMPTY_ARRAY;
             const isSelected = selectedIds.has(item.id) && mode === 'setup';
             const isSingleSelected = isSelected && selectedIds.size === 1;
 
