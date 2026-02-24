@@ -7,7 +7,8 @@ export type ButtonVariant =
   | 'danger'
   | 'ghost-danger'
   | 'ghost'
-  | 'hero';
+  | 'hero'
+  | 'dark';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 export type ButtonShape = 'default' | 'pill' | 'square';
 
@@ -42,6 +43,7 @@ export const Button: React.FC<ButtonProps> = ({
     'ghost-danger': 'text-red-500 hover:bg-red-50 hover:text-red-600',
     ghost: 'text-slate-400 hover:text-brand-blue-primary hover:bg-indigo-50',
     hero: 'bg-brand-blue-primary text-white shadow-lg shadow-brand-blue-primary/30 hover:bg-brand-blue-dark active:scale-95 hover:-translate-y-1',
+    dark: 'bg-slate-800 text-white shadow-sm hover:bg-slate-900',
   };
 
   const sizeStyles: Record<ButtonSize, string> = {

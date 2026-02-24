@@ -8,6 +8,7 @@ import {
 import { TOOLS } from '../../../config/tools';
 import { Plus, Trash2, Upload, Loader2 } from 'lucide-react';
 import { Modal } from '../../common/Modal';
+import { Button } from '../../common/Button';
 import { IconPicker } from './IconPicker';
 
 interface RoutineEditorProps {
@@ -167,18 +168,12 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
       maxWidth="max-w-2xl"
       footer={
         <div className="flex gap-2 justify-end w-full">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold"
-          >
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSave}>
             Save
-          </button>
+          </Button>
         </div>
       }
     >
@@ -360,7 +355,10 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
                 </div>
               </div>
             ))}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Plus size={14} />}
               onClick={() =>
                 setEditingRoutine({
                   ...editingRoutine,
@@ -374,10 +372,9 @@ export const RoutineEditor: React.FC<RoutineEditorProps> = ({
                   ],
                 })
               }
-              className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
             >
-              <Plus size={14} /> Add Widget
-            </button>
+              Add Widget
+            </Button>
           </div>
         </div>
       </div>

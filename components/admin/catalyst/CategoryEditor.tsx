@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CatalystCategory } from '../../../types';
 import { COLORS } from '../../../config/catalystColors';
 import { Modal } from '../../common/Modal';
+import { Button } from '../../common/Button';
 import { IconPicker } from './IconPicker';
 import { Upload, X, Loader2 } from 'lucide-react';
 
@@ -67,18 +68,12 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
       maxWidth="max-w-md"
       footer={
         <div className="flex gap-2 justify-end w-full">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold"
-          >
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            onClick={() => onSave(editingCat)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700"
-          >
+          </Button>
+          <Button variant="primary" onClick={() => onSave(editingCat)}>
             Save
-          </button>
+          </Button>
         </div>
       }
     >
