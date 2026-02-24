@@ -3,14 +3,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { RandomWidget } from './RandomWidget';
 import { useDashboard } from '../../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { WidgetData, RandomConfig, WidgetType } from '../../../types';
+import { WidgetData, RandomConfig } from '../../../types';
 
 vi.mock('../../../context/useDashboard');
 
 // Mock subcomponents
-vi.mock('./RandomWheel', () => ({ RandomWheel: () => <div data-testid="random-wheel" /> }));
-vi.mock('./RandomSlots', () => ({ RandomSlots: () => <div data-testid="random-slots" /> }));
-vi.mock('./RandomFlash', () => ({ RandomFlash: () => <div data-testid="random-flash" /> }));
+vi.mock('./RandomWheel', () => ({
+  RandomWheel: () => <div data-testid="random-wheel" />,
+}));
+vi.mock('./RandomSlots', () => ({
+  RandomSlots: () => <div data-testid="random-slots" />,
+}));
+vi.mock('./RandomFlash', () => ({
+  RandomFlash: () => <div data-testid="random-flash" />,
+}));
 vi.mock('./audioUtils', () => ({
   getAudioCtx: vi.fn(),
   playTick: vi.fn(),
@@ -19,7 +25,13 @@ vi.mock('./audioUtils', () => ({
 
 // Mock WidgetLayout to render content and footer
 vi.mock('../WidgetLayout', () => ({
-  WidgetLayout: ({ content, footer }: { content: React.ReactNode; footer: React.ReactNode }) => (
+  WidgetLayout: ({
+    content,
+    footer,
+  }: {
+    content: React.ReactNode;
+    footer: React.ReactNode;
+  }) => (
     <div data-testid="widget-layout">
       <div data-testid="content">{content}</div>
       <div data-testid="footer">{footer}</div>
@@ -48,7 +60,9 @@ const mockDashboardContext = {
 describe('RandomWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockDashboardContext);
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockDashboardContext
+    );
   });
 
   it('renders correctly in empty state', () => {
@@ -126,7 +140,9 @@ describe('RandomWidget', () => {
     // Find the button (it doesn't exist yet, so we use queryByText and expect it to fail currently,
     // but for the sake of the plan step we will assert it exists to drive implementation)
     // For now, I'll assume the button text is "Send to Scoreboard"
-    const sendButton = screen.getByRole('button', { name: /Send to Scoreboard/i });
+    const sendButton = screen.getByRole('button', {
+      name: /Send to Scoreboard/i,
+    });
 
     fireEvent.click(sendButton);
 
@@ -143,6 +159,9 @@ describe('RandomWidget', () => {
       })
     );
 
-    expect(mockAddToast).toHaveBeenCalledWith(expect.stringMatching(/scoreboard/i), 'success');
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringMatching(/scoreboard/i),
+      'success'
+    );
   });
 });
