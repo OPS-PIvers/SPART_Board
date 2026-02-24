@@ -42,7 +42,9 @@ const INTERACTIVE_ELEMENTS_SELECTOR =
 const SCROLLABLE_ELEMENTS_SELECTOR =
   '.overflow-y-auto, .overflow-auto, .overflow-x-auto, [data-scrollable="true"], [style*="overflow:auto"], [style*="overflow: auto"], [style*="overflow-y:auto"], [style*="overflow-y: auto"], [style*="overflow-x:auto"], [style*="overflow-x: auto"]';
 
-const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"], ${SCROLLABLE_ELEMENTS_SELECTOR}`;
+const DRAG_BLOCKING_SELECTOR = `${INTERACTIVE_ELEMENTS_SELECTOR}, .resize-handle, [draggable="true"], [data-no-drag="true"]`;
+
+const TOUCH_GESTURE_BLOCKING_SELECTOR = `${DRAG_BLOCKING_SELECTOR}, ${SCROLLABLE_ELEMENTS_SELECTOR}`;
 
 const MIN_GESTURE_SWIPE_DISTANCE = 100;
 
@@ -622,7 +624,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   // --- MULTI-TOUCH GESTURE HANDLERS ---
   const handleTouchStart = (e: React.TouchEvent) => {
     // Scroll protection: Don't start gesture if touching scrollable/interactive element
-    if ((e.target as HTMLElement).closest(DRAG_BLOCKING_SELECTOR)) {
+    if ((e.target as HTMLElement).closest(TOUCH_GESTURE_BLOCKING_SELECTOR)) {
       return;
     }
 
