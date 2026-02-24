@@ -7,9 +7,18 @@ import {
   TimeToolConfig,
   RandomGroup,
   SharedGroup,
+  ScoreboardTeam,
 } from '../../../types';
 import { Button } from '../../common/Button';
-import { Users, RefreshCw, Layers, Target, RotateCcw } from 'lucide-react';
+import {
+  Users,
+  RefreshCw,
+  Layers,
+  Target,
+  RotateCcw,
+  Trophy,
+} from 'lucide-react';
+import { TEAM_COLORS } from '../ScoreboardItem';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
 import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
@@ -21,6 +30,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     updateWidget,
     updateDashboard,
+    addWidget,
+    addToast,
     rosters,
     activeRosterId,
     activeDashboard,
@@ -146,6 +157,63 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
     setDisplayResult('');
     setRotation(0);
+  };
+
+  const handleSendToScoreboard = () => {
+    // 1. Get current groups
+    const result = displayResult as RandomGroup[];
+
+    if (
+      !Array.isArray(result) ||
+      result.length === 0 ||
+      typeof result[0] !== 'object' ||
+      !('names' in result[0])
+    ) {
+      return;
+    }
+
+    // 2. Map to ScoreboardTeam
+    const newTeams: ScoreboardTeam[] = result.map((group, index) => {
+      let name = `Group ${index + 1}`;
+      // If linked to shared group, use that name
+      if (group.id && activeDashboard?.sharedGroups) {
+        const shared = activeDashboard.sharedGroups.find(
+          (g) => g.id === group.id
+        );
+        if (shared) name = shared.name;
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        name,
+        score: 0,
+        color: TEAM_COLORS[index % TEAM_COLORS.length],
+        linkedGroupId: group.id,
+      };
+    });
+
+    // 3. Find or Create Scoreboard Widget
+    const existingScoreboard = activeDashboard?.widgets.find(
+      (w) => w.type === 'scoreboard'
+    );
+
+    if (existingScoreboard) {
+      updateWidget(existingScoreboard.id, {
+        config: {
+          ...existingScoreboard.config,
+          teams: newTeams,
+        } as WidgetConfig,
+      });
+      addToast(`Updated scoreboard with ${newTeams.length} teams!`, 'success');
+    } else {
+      // Create new widget
+      addWidget('scoreboard', {
+        config: {
+          teams: newTeams,
+        } as WidgetConfig,
+      });
+      addToast(`Created scoreboard with ${newTeams.length} teams!`, 'success');
+    }
   };
 
   const handlePick = async () => {
@@ -678,14 +746,29 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div className="w-full px-2 pb-2">
+        <div className="w-full px-2 pb-2 flex gap-2">
+          {mode === 'groups' &&
+            Array.isArray(displayResult) &&
+            displayResult.length > 0 &&
+            typeof displayResult[0] === 'object' &&
+            'names' in displayResult[0] && (
+              <Button
+                variant="secondary"
+                size="lg"
+                shape="pill"
+                onClick={handleSendToScoreboard}
+                className="w-12 h-12 p-0 flex-shrink-0"
+                title="Send to Scoreboard"
+                icon={<Trophy className="w-5 h-5 text-amber-500" />}
+              />
+            )}
           <Button
             variant="hero"
             size="lg"
             shape="pill"
             onClick={handlePick}
             disabled={isSpinning}
-            className="w-full h-12"
+            className="flex-1 h-12"
             icon={
               <RefreshCw
                 className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`}
