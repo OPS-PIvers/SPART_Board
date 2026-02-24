@@ -78,7 +78,10 @@ test.describe('Board Sharing', () => {
 
     // If clipboard text is still empty, fall back to assuming success if toast appeared
     if (!clipboardText) {
-      console.log('Clipboard mock empty, skipping specific URL check but verify toast appeared.');
+      // eslint-disable-next-line no-console
+      console.log(
+        'Clipboard mock empty, skipping specific URL check but verify toast appeared.'
+      );
     } else {
       await expect(async () => {
         expect(clipboardText).toContain('/share/');
@@ -87,35 +90,36 @@ test.describe('Board Sharing', () => {
 
     // If we have a URL, test visiting it. If not (clipboard mock fail), skip the visit part to avoid failing the whole suite on a flake
     if (clipboardText && clipboardText.includes('/share/')) {
-        const shareUrl = clipboardText;
-        // eslint-disable-next-line no-console
-        console.log('Share URL:', shareUrl);
+      const shareUrl = clipboardText;
+      // eslint-disable-next-line no-console
+      console.log('Share URL:', shareUrl);
 
-        await page.goto(shareUrl);
+      await page.goto(shareUrl);
 
-        await expect(page.getByText('Import Board')).toBeVisible();
-        await expect(page.getByText('Loading shared board...')).not.toBeVisible();
+      await expect(page.getByText('Import Board')).toBeVisible();
+      await expect(page.getByText('Loading shared board...')).not.toBeVisible();
 
-        await page.getByRole('button', { name: 'Add Board' }).click();
+      await page.getByRole('button', { name: 'Add Board' }).click();
 
-        await expect(page.getByText('Import Board')).not.toBeVisible();
+      await expect(page.getByText('Import Board')).not.toBeVisible();
 
-        await page.getByTitle('Open Menu').click();
-        // Use a specific locator for the Sidebar Boards button
-        await page
-          .locator('nav button')
-          .filter({ hasText: /Boards/i })
-          .click();
+      await page.getByTitle('Open Menu').click();
+      // Use a specific locator for the Sidebar Boards button
+      await page
+        .locator('nav button')
+        .filter({ hasText: /Boards/i })
+        .click();
 
-        // Use a more generic locator for the imported board if specific text fails
-        await expect(
+      // Use a more generic locator for the imported board if specific text fails
+      await expect(
         page
-            .locator('.group.relative')
-            .filter({ hasText: /Imported:/ })
-            .first()
-        ).toBeVisible();
+          .locator('.group.relative')
+          .filter({ hasText: /Imported:/ })
+          .first()
+      ).toBeVisible();
     } else {
-        console.log('Skipping import test steps due to missing clipboard URL.');
+      // eslint-disable-next-line no-console
+      console.log('Skipping import test steps due to missing clipboard URL.');
     }
   });
 });
