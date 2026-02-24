@@ -13,6 +13,7 @@ import {
   Cast,
   FolderPlus,
   Square,
+  Minimize,
 } from 'lucide-react';
 import {
   DndContext,
@@ -918,6 +919,23 @@ export const Dock: React.FC = () => {
                   </DockIcon>
                   <DockLabel className="text-slate-600 font-bold">
                     More
+                  </DockLabel>
+                </button>
+
+                {/* Minimize Button */}
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="group flex flex-col items-center gap-1 min-w-[50px] transition-transform active:scale-90 touch-none flex-shrink-0"
+                  title="Minimize Toolbar"
+                >
+                  <DockIcon
+                    color="bg-slate-200 shadow-lg shadow-slate-200/50"
+                    className="flex items-center justify-center text-slate-500 group-hover:scale-110 group-hover:bg-slate-300 transition-all"
+                  >
+                    <Minimize className="w-5 h-5 md:w-6 md:h-6" />
+                  </DockIcon>
+                  <DockLabel className="text-slate-600 font-bold">
+                    Hide
                   </DockLabel>
                 </button>
               </>
