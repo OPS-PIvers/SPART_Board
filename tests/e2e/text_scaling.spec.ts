@@ -18,7 +18,8 @@ test('Text Widget scaling verification', async ({ page }) => {
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
   await expect(noteButton).toBeVisible();
   await noteButton.click({ force: true });
-  await page.getByTitle('Minimize Toolbar').click();
+  // Close dock by clicking outside
+  await page.mouse.click(0, 0);
 
   // 3. Locate Text Widget
   const textWidget = page

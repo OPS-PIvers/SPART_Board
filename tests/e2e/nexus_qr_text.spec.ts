@@ -25,8 +25,8 @@ test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
   await expect(qrButton).toBeVisible();
   await qrButton.click({ force: true });
 
-  // Close dock (Minimize)
-  await page.getByTitle('Minimize Toolbar').click();
+  // Close dock by clicking outside
+  await page.mouse.click(0, 0);
 
   // Move QR Widget to avoid overlap
   // The QR widget is likely on top because it was added last.
