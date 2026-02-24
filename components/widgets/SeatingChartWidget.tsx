@@ -115,6 +115,8 @@ interface RubberBand {
   y2: number;
 }
 
+const EMPTY_ARRAY: string[] = [];
+
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -212,6 +214,20 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   const unassignedStudents = students.filter(
     (s) => !assignedStudentNames.has(s)
   );
+
+  // Optimization: Pre-compute assignments map to avoid O(N) filtering and new array references on every render
+  const studentsByFurnitureId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    Object.entries(assignments).forEach(([student, furnitureId]) => {
+      const list = map.get(furnitureId);
+      if (list) {
+        list.push(student);
+      } else {
+        map.set(furnitureId, [student]);
+      }
+    });
+    return map;
+  }, [assignments]);
 
   // --- SCALE HELPER ---
   const getCanvasScale = useCallback((): number => {
@@ -780,16 +796,6 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // --- RENDERING ---
 
-  // Helper to get assigned students for an item (memoized here for use in map loop)
-  const getAssignedStudents = useCallback(
-    (furnitureId: string) => {
-      return Object.entries(assignments)
-        .filter(([, fId]) => fId === furnitureId)
-        .map(([name]) => name);
-    },
-    [assignments]
-  );
-
   const studentCount = students.length;
   const multiSelected = selectedIds.size > 1;
 
@@ -1082,7 +1088,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             const dragPos = dragState?.get(item.id);
             const resizeSize =
               resizeState?.id === item.id ? resizeState : undefined;
-            const assignedStudents = getAssignedStudents(item.id);
+            const assignedStudents =
+              studentsByFurnitureId.get(item.id) ?? EMPTY_ARRAY;
             const isSelected = selectedIds.has(item.id) && mode === 'setup';
             const isSingleSelected = isSelected && selectedIds.size === 1;
 
