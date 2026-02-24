@@ -33,10 +33,12 @@ function assignPins(students: Student[]): Student[] {
 const ROSTER_DRIVE_FOLDER = 'Data/Rosters';
 
 /**
- * localStorage key used to track whether the one-time PII migration
+ * localStorage key prefix used to track whether the one-time PII migration
  * (moving students[] from Firestore docs into Drive files) has run.
+ * Scoped per-user (appended with user.uid) so that multiple users sharing
+ * the same browser profile each get their own migration flag.
  */
-const MIGRATION_KEY = 'spart_roster_pii_migrated_v1';
+const MIGRATION_KEY_PREFIX = 'spart_roster_pii_migrated_v1';
 
 // ─── Mock store (auth-bypass mode) ────────────────────────────────────────────
 
@@ -263,7 +265,8 @@ export const useRosters = (user: User | null) => {
       rawSnapDocs: { id: string; data: () => unknown }[]
     ) => {
       if (!driveService || !user) return;
-      if (localStorage.getItem(MIGRATION_KEY)) return;
+      const migrationKey = `${MIGRATION_KEY_PREFIX}_${user.uid}`;
+      if (localStorage.getItem(migrationKey)) return;
 
       let didMigrate = false;
 
@@ -330,7 +333,7 @@ export const useRosters = (user: User | null) => {
           return !Array.isArray(raw.students) || raw.students.length === 0;
         })
       ) {
-        localStorage.setItem(MIGRATION_KEY, '1');
+        localStorage.setItem(migrationKey, '1');
       }
     },
     [driveService, user, uploadStudentsToDrive]
@@ -364,9 +367,6 @@ export const useRosters = (user: User | null) => {
 
       metaListRef.current = metaList;
 
-      // Run one-time migration (async, fire-and-forget)
-      void runMigrationIfNeeded(metaList, rawDocs);
-
       // Invalidate cache for any roster whose driveFileId changed (including
       // null→id, id→null, or id→different-id scenarios)
       for (const meta of metaList) {
@@ -378,7 +378,12 @@ export const useRosters = (user: User | null) => {
         prevDriveFileIdRef.current.set(meta.id, meta.driveFileId);
       }
 
-      void buildRosters(metaList).then((full) => setRosters(full));
+      // Run migration first, then build rosters. Sequencing avoids a race
+      // where buildRosters reads stale Firestore metadata before migration has
+      // written the driveFileIds back to each roster document.
+      void runMigrationIfNeeded(metaList, rawDocs)
+        .then(() => buildRosters(metaList))
+        .then((full) => setRosters(full));
     };
 
     const unsubscribe = onSnapshot(

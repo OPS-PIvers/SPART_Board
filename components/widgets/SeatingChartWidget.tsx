@@ -161,6 +161,10 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     String(templateColumns)
   );
 
+  // Ensures the legacy name→id migration runs at most once per widget mount,
+  // preventing re-runs triggered by the state update from updateWidget itself.
+  const migrationDoneRef = useRef(false);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null
@@ -230,6 +234,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   // key (keeping PII out of Firestore), we remap any legacy name-string keys
   // to their corresponding student IDs on first load.
   useEffect(() => {
+    // Guard prevents re-running when updateWidget triggers a re-render
+    if (migrationDoneRef.current) return;
     if (rosterMode !== 'class' || students.length === 0) return;
     const assignmentKeys = Object.keys(assignments);
     if (assignmentKeys.length === 0) return;
@@ -238,6 +244,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     const hasLegacyKeys = assignmentKeys.some((key) => !studentIds.has(key));
     if (!hasLegacyKeys) return;
 
+    migrationDoneRef.current = true;
     const nameToId = new Map(students.map((s) => [s.label, s.id]));
     const migrated: Record<string, string> = {};
     for (const [key, furnitureId] of Object.entries(assignments)) {
@@ -245,8 +252,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       if (resolvedId) migrated[resolvedId] = furnitureId;
     }
     updateWidget(widget.id, { config: { ...config, assignments: migrated } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosterMode, students]);
+  }, [rosterMode, students, assignments, config, updateWidget, widget.id]);
 
   // --- SCALE HELPER ---
   const getCanvasScale = useCallback((): number => {

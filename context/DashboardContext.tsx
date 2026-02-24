@@ -272,6 +272,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
       await deleteDashboardFirestore(id);
+      // Clear stale PII file ID to prevent failed in-place update attempts
+      piiDriveFileIdRef.current.delete(id);
     },
     [isAdmin, driveService, dashboards, deleteDashboardFirestore]
   );
@@ -676,21 +678,39 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     if (lastPiiRestoredIdRef.current === activeId) return;
     lastPiiRestoredIdRef.current = activeId;
 
-    // Try to load the PII supplement file from Drive
+    // Capture activeId to guard against race condition if it changes before the
+    // async Drive call completes
+    const currentId = activeId;
+    const expectedFileName = `${currentId}-pii.json`;
+
+    // Use a static query string to avoid query injection, then filter by exact
+    // filename client-side
     void driveService
-      .listFiles(`name = '${activeId}-pii.json'`)
+      .listFiles("name contains '-pii.json'")
       .then(async (files) => {
-        if (files.length === 0) return;
-        const blob = await driveService.downloadFile(files[0].id);
+        const piiFile = files.find((f) => f.name === expectedFileName);
+        if (!piiFile) {
+          // No supplement found — clear any stale cached ID for this dashboard
+          piiDriveFileIdRef.current.delete(currentId);
+          return;
+        }
+        // Cache the file ID so future saves can update in-place
+        piiDriveFileIdRef.current.set(currentId, piiFile.id);
+        const blob = await driveService.downloadFile(piiFile.id);
         const text = await blob.text();
         const pii = JSON.parse(text) as ReturnType<typeof extractDashboardPII>;
         if (Object.keys(pii).length === 0) return;
 
         setDashboards((prev) =>
-          prev.map((d) => (d.id === activeId ? mergeDashboardPII(d, pii) : d))
+          prev.map((d) => (d.id === currentId ? mergeDashboardPII(d, pii) : d))
         );
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
+        // Clear stale file ID if Drive returns 404 (file was manually deleted)
+        const isNotFound = err instanceof Error && err.message.includes('404');
+        if (isNotFound) {
+          piiDriveFileIdRef.current.delete(currentId);
+        }
         // Silent — Drive may be unavailable or no supplement exists yet
         console.warn('[PII Restore] Could not load supplement:', err);
       });

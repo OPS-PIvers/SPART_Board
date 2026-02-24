@@ -242,6 +242,19 @@ export const useLiveSession = (
       teacherId,
       STUDENTS_COLLECTION
     );
+    // Warn when duplicate PINs are detected so teachers know they may not be
+    // able to distinguish students with the same PIN in the roster view.
+    const existingSnap = await getDocs(studentsRef);
+    const pinInUse = existingSnap.docs.some(
+      (d) => (d.data() as { pin?: string }).pin === sanitizedPin
+    );
+    if (pinInUse) {
+      console.warn(
+        `[LiveSession] PIN "${sanitizedPin}" is already in use in this session. ` +
+          'Teacher may not be able to distinguish students with the same PIN.'
+      );
+    }
+
     const newStudent: Omit<LiveStudent, 'id'> = {
       pin: sanitizedPin,
       status: 'active',

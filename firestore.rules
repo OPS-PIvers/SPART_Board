@@ -188,7 +188,7 @@ service cloud.firestore {
            request.resource.data.score == resource.data.score &&
            request.resource.data.diff(resource.data)
              .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings']) &&
-           (!request.resource.data.diff(resource.data).changedKeys().hasAll(['tabSwitchWarnings']) ||
+           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tabSwitchWarnings']) ||
             request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)))
         );
         allow delete: if request.auth != null &&

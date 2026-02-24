@@ -29,6 +29,7 @@ import { QuizSession, QuizPublicQuestion } from '@/types';
 
 export const QuizStudentApp: React.FC = () => {
   const [authReady, setAuthReady] = useState(false);
+  const [authFailed, setAuthFailed] = useState(false);
 
   // Sign in anonymously on mount — no user interaction required.
   // This satisfies Firestore security rules (request.auth != null) without
@@ -36,9 +37,12 @@ export const QuizStudentApp: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       if (!auth.currentUser) {
-        await signInAnonymously(auth).catch((err) =>
-          console.warn('[QuizStudentApp] Anonymous auth failed:', err)
-        );
+        try {
+          await signInAnonymously(auth);
+        } catch (err) {
+          console.warn('[QuizStudentApp] Anonymous auth failed:', err);
+          setAuthFailed(true);
+        }
       }
       setAuthReady(true);
     };
@@ -47,6 +51,17 @@ export const QuizStudentApp: React.FC = () => {
 
   if (!authReady) {
     return <FullPageLoader message="Loading…" />;
+  }
+
+  if (authFailed || !auth.currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-4 p-6">
+        <AlertCircle className="w-10 h-10 text-red-400" />
+        <p className="text-slate-300 text-sm text-center">
+          Unable to connect. Please refresh the page and try again.
+        </p>
+      </div>
+    );
   }
 
   return <QuizJoinFlow />;
