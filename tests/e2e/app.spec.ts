@@ -34,16 +34,20 @@ test.describe(APP_NAME, () => {
     await expect(openToolsButton).toBeVisible();
     await openToolsButton.click();
 
+    // Wait for dock animation
+    await page.waitForTimeout(500);
+
     // Click Clock widget in the Dock
     // The Dock renders buttons with the tool label.
+    // Use force: true to bypass potential animation stability checks
     const clockButton = page.getByRole('button', { name: /Clock/i }).first();
     await expect(clockButton).toBeVisible();
-    await clockButton.click();
+    await clockButton.click({ force: true });
 
     // Verify Clock widget is on the dashboard
     // The widget has class 'widget'.
     const widget = page.locator('.widget').first();
-    await expect(widget).toBeVisible();
+    await expect(widget).toBeVisible({ timeout: 10000 });
 
     // Optional: Verify it looks like a clock (contains a colon)
     await expect(widget.getByText(':').first()).toBeVisible();

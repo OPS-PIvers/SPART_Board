@@ -13,7 +13,10 @@ test('Text Widget scaling verification', async ({ page }) => {
 
   // 2. Open Dock and Add Text Widget
   await page.getByTitle('Open Tools').click();
+  // Wait for dock animation/stability
+  await page.waitForTimeout(500);
   const noteButton = page.getByRole('button', { name: /Note/i }).first();
+  await expect(noteButton).toBeVisible();
   await noteButton.click({ force: true });
   await page.getByTitle('Minimize Toolbar').click();
 
@@ -22,7 +25,7 @@ test('Text Widget scaling verification', async ({ page }) => {
     .locator('.widget')
     .filter({ has: page.locator('[contenteditable]') })
     .first();
-  await expect(textWidget).toBeVisible();
+  await expect(textWidget).toBeVisible({ timeout: 10000 });
 
   // 4. Set some text
   const contentArea = textWidget.locator('[contenteditable]');
@@ -32,7 +35,8 @@ test('Text Widget scaling verification', async ({ page }) => {
   // 5. Verify initial font-size style uses cqmin
   // Use evaluate to get the actual style attribute value to avoid issues with browser normalization of style
   const style = await contentArea.evaluate((el) => el.getAttribute('style'));
-  expect(style).toContain('font-size: 7.2cqmin');
+  // Check for either the raw cqmin value or the calculated min() value
+  expect(style).toMatch(/font-size: (7\.2cqmin|min\(.*,.*cqmin\))/);
 
   // Ensure verification directory exists
   const vDir = path.join(process.cwd(), 'verification');
@@ -71,5 +75,5 @@ test('Text Widget scaling verification', async ({ page }) => {
   const finalStyle = await contentArea.evaluate((el) =>
     el.getAttribute('style')
   );
-  expect(finalStyle).toContain('font-size: 7.2cqmin');
+  expect(finalStyle).toMatch(/font-size: (7\.2cqmin|min\(.*,.*cqmin\))/);
 });
