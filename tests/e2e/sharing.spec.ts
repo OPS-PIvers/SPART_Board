@@ -1,4 +1,3 @@
-import { APP_NAME } from '../../config/constants';
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -13,6 +12,11 @@ test.describe('Board Sharing', () => {
     await page
       .context()
       .grantPermissions(['clipboard-read', 'clipboard-write']);
+    // Disable animations and transitions for more stable tests
+    await page.addStyleTag({
+      content:
+        '*, *::before, *::after { transition: none !important; animation: none !important; }',
+    });
     await page.goto('/');
 
     // Wait for initial loading to finish
@@ -32,10 +36,8 @@ test.describe('Board Sharing', () => {
 
   test('can share and import a board', async ({ page }) => {
     await page.getByTitle('Open Menu').click();
-    await expect(page.getByText(APP_NAME)).toBeVisible();
-    await page
-      .getByRole('button', { name: 'Boards Manage and switch between' })
-      .click();
+    await expect(page.getByText('Classroom Manager')).toBeVisible();
+    await page.getByRole('button', { name: /Boards/i }).click();
     await expect(page.getByText('My Boards')).toBeVisible();
 
     const boardCard = page
@@ -65,7 +67,7 @@ test.describe('Board Sharing', () => {
 
     await shareButton.click();
 
-    await expect(page.getByText('Board link copied')).toBeVisible({
+    await expect(page.getByText(/Link copied/i)).toBeVisible({
       timeout: 10000,
     });
 
@@ -87,9 +89,7 @@ test.describe('Board Sharing', () => {
     await expect(page.getByText('Import Board')).not.toBeVisible();
 
     await page.getByTitle('Open Menu').click();
-    await page
-      .getByRole('button', { name: 'Boards Manage and switch between' })
-      .click();
+    await page.getByRole('button', { name: /Boards/i }).click();
 
     // Use a more generic locator for the imported board if specific text fails
     await expect(

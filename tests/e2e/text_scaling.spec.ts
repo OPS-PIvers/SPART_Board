@@ -3,6 +3,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 test('Text Widget scaling verification', async ({ page }) => {
+  // Disable animations
+  await page.addStyleTag({
+    content:
+      '*, *::before, *::after { transition: none !important; animation: none !important; }',
+  });
   // 1. Load dashboard
   await page.goto('/');
 

@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test('Nexus: Text Widget to QR Widget Sync', async ({ page }) => {
+  // Disable animations
+  await page.addStyleTag({
+    content:
+      '*, *::before, *::after { transition: none !important; animation: none !important; }',
+  });
   // 1. Load dashboard
   await page.goto('/');
 

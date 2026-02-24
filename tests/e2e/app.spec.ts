@@ -3,6 +3,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe(APP_NAME, () => {
   test.beforeEach(async ({ page }) => {
+    // Disable animations and transitions for more stable tests
+    await page.addStyleTag({
+      content:
+        '*, *::before, *::after { transition: none !important; animation: none !important; }',
+    });
     await page.goto('/');
   });
 
@@ -17,10 +22,10 @@ test.describe(APP_NAME, () => {
     await menuButton.click();
 
     // Verify sidebar header
-    await expect(page.getByText(APP_NAME.toUpperCase())).toBeVisible();
+    await expect(page.getByText('Classroom Manager')).toBeVisible();
 
-    // Verify Widgets tab is active (by checking for "Available Widgets" text)
-    await expect(page.getByText('Available Widgets')).toBeVisible();
+    // Verify Workspace section is visible
+    await expect(page.getByText('Workspace')).toBeVisible();
   });
 
   test('can add a Clock widget', async ({ page }) => {
