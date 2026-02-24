@@ -6,14 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  LayoutGrid,
-  Plus,
-  Users,
-  Cast,
-  FolderPlus,
-  Square,
-} from 'lucide-react';
+import { LayoutGrid, Users, Cast, Square } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -305,6 +298,7 @@ export const Dock: React.FC = () => {
   } | null>(null);
   const livePopoverRef = useRef<HTMLDivElement>(null);
   const dockContainerRef = useRef<HTMLDivElement>(null); // Ref for click-outside detection
+  const libraryRef = useRef<HTMLDivElement>(null); // Ref for widget library
 
   // Close live popover when clicking outside
   useClickOutside(livePopoverRef, () => {
@@ -313,20 +307,12 @@ export const Dock: React.FC = () => {
 
   // Handle exiting edit mode when clicking outside the dock area
   useClickOutside(dockContainerRef, () => {
-    if (
-      isEditMode &&
-      !showLibrary &&
-      !renamingFolderId &&
-      !showCreateFolderModal
-    ) {
+    if (isEditMode && !renamingFolderId && !showCreateFolderModal) {
       setIsEditMode(false);
+      setShowLibrary(false);
+      setShowMoreMenu(false);
     }
-  });
-
-  const exitEditMode = () => {
-    setIsEditMode(false);
-    setShowLibrary(false);
-  };
+  }, [libraryRef]);
 
   const openClassEditor = () => {
     addWidget('classes');
@@ -342,6 +328,7 @@ export const Dock: React.FC = () => {
 
   const handleLongPress = () => {
     setIsEditMode(true);
+    setShowLibrary(true);
   };
 
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -479,44 +466,6 @@ export const Dock: React.FC = () => {
         />
       )}
 
-      {/* Edit Mode Controls (Above the main dock) */}
-      {isEditMode && (
-        <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-300">
-          {!showLibrary && (
-            <>
-              <button
-                onClick={() => setShowLibrary(true)}
-                className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-brand-blue-light text-brand-blue-primary rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
-              >
-                <div className="p-1 bg-brand-blue-primary text-white rounded-full group-hover:rotate-90 transition-transform duration-300">
-                  <Plus className="w-3 h-3" />
-                </div>
-                <span className="text-xxs font-black uppercase tracking-widest text-slate-700">
-                  Add Widgets
-                </span>
-              </button>
-              <button
-                onClick={() => setShowCreateFolderModal(true)}
-                className="px-4 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200 text-slate-600 rounded-full shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all group"
-              >
-                <div className="p-1 bg-slate-100 text-slate-500 rounded-full group-hover:bg-slate-200 transition-colors">
-                  <FolderPlus className="w-3 h-3" />
-                </div>
-                <span className="text-xxs font-black uppercase tracking-widest text-slate-700">
-                  Add Folder
-                </span>
-              </button>
-            </>
-          )}
-          <button
-            onClick={exitEditMode}
-            className="px-5 py-2 bg-brand-blue-primary text-white text-xs font-black uppercase tracking-wider rounded-full shadow-2xl hover:bg-brand-blue-dark transition-all hover:scale-105 active:scale-95 ring-4 ring-white/20"
-          >
-            Done
-          </button>
-        </div>
-      )}
-
       {showCreateFolderModal && (
         <RenameFolderModal
           name=""
@@ -564,9 +513,19 @@ export const Dock: React.FC = () => {
           {/* Widget Library Modal (Triggered by button) */}
           {(showMoreMenu || (isEditMode && showLibrary)) && (
             <WidgetLibrary
+              ref={libraryRef}
               visibleTools={visibleTools}
+              isEditMode={isEditMode}
               onToggle={(type) => {
-                toggleToolVisibility(type);
+                if (isEditMode) {
+                  toggleToolVisibility(type);
+                } else {
+                  addWidget(
+                    type as WidgetType,
+                    getBuildingAwareOverrides(type as WidgetType)
+                  );
+                  setShowMoreMenu(false);
+                }
               }}
               canAccess={(type) => {
                 if (type === 'record')
@@ -582,6 +541,7 @@ export const Dock: React.FC = () => {
               triggerRef={moreButtonRef}
               libraryOrder={libraryOrder}
               onReorderLibrary={reorderLibrary}
+              onAddFolder={() => setShowCreateFolderModal(true)}
             />
           )}
 
