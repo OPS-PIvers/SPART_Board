@@ -90,14 +90,17 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     [rosters, activeRosterId]
   );
 
-  // Process Roster Names
-  const students = useMemo(() => {
+  // Process Roster Names — always returns { id, label } objects.
+  // In class mode, `id` is the student's UUID (keeps PII out of completedNames).
+  // In custom mode, `id` and `label` are both the entered name string.
+  const students = useMemo((): { id: string; label: string }[] => {
     if (mode !== 'roster') return [];
 
     if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) =>
-        `${s.firstName} ${s.lastName}`.trim()
-      );
+      return activeRoster.students.map((s) => ({
+        id: s.id,
+        label: `${s.firstName} ${s.lastName}`.trim(),
+      }));
     }
 
     const firsts = firstNames
@@ -109,10 +112,10 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       .map((n) => n.trim())
       .filter((n) => n);
     const count = Math.max(firsts.length, lasts.length);
-    const combined = [];
+    const combined: { id: string; label: string }[] = [];
     for (let i = 0; i < count; i++) {
       const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
-      if (name) combined.push(name);
+      if (name) combined.push({ id: name, label: name });
     }
     return combined;
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
@@ -225,24 +228,25 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             }}
           >
             <ul style={{ gap: '0.4em' }} className="flex flex-col">
-              {(mode === 'manual' ? items : students).map((item) => {
-                const isManual = typeof item !== 'string';
-                const label = isManual ? item.text : item;
-                const isCompleted = isManual
-                  ? item.completed
-                  : completedNames.includes(item);
-                const id = isManual ? item.id : item;
-
-                return (
-                  <ChecklistRow
-                    key={id}
-                    id={id}
-                    label={label}
-                    isCompleted={isCompleted}
-                    onToggle={toggleItem}
-                  />
-                );
-              })}
+              {mode === 'manual'
+                ? items.map((item) => (
+                    <ChecklistRow
+                      key={item.id}
+                      id={item.id}
+                      label={item.text}
+                      isCompleted={item.completed}
+                      onToggle={toggleItem}
+                    />
+                  ))
+                : students.map((student) => (
+                    <ChecklistRow
+                      key={student.id}
+                      id={student.id}
+                      label={student.label}
+                      isCompleted={completedNames.includes(student.id)}
+                      onToggle={toggleItem}
+                    />
+                  ))}
             </ul>
           </div>
         </div>

@@ -102,10 +102,10 @@ export const StudentApp = () => {
     return bg;
   }, [session]);
 
-  const handleJoin = async (code: string, name: string) => {
+  const handleJoin = async (code: string, pin: string) => {
     setError(null);
     try {
-      const sessionId = await joinSession(name, code);
+      const sessionId = await joinSession(pin, code);
       setJoinedCode(sessionId);
     } catch (error) {
       console.error('Join error:', error);

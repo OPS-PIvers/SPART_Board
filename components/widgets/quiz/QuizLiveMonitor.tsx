@@ -485,7 +485,7 @@ export const QuizLiveMonitor: React.FC<QuizLiveMonitorProps> = ({
               >
                 {responses
                   .slice()
-                  .sort((a, b) => a.studentName.localeCompare(b.studentName))
+                  .sort((a, b) => a.pin.localeCompare(b.pin))
                   .map((r) => (
                     <StudentRow
                       key={r.studentUid}
@@ -641,7 +641,7 @@ const StudentRow: React.FC<{
         className="flex-1 flex items-center gap-2 text-brand-blue-dark font-bold truncate"
         style={{ fontSize: 'min(13px, 4cqmin)' }}
       >
-        {response.studentName}
+        <span className="font-mono">PIN {response.pin}</span>
 
         {warnings > 0 && (
           <span

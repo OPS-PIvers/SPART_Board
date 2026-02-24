@@ -76,7 +76,7 @@ export const generateStudentsList = (
       const existing = existingStudents[i];
       const id = existing ? existing.id : crypto.randomUUID();
 
-      return { id, firstName: first, lastName: last };
+      return { id, firstName: first, lastName: last, pin: existing?.pin ?? '' };
     })
     .filter((s): s is Student => s !== null);
 };

@@ -58,13 +58,30 @@ export interface Student {
   id: string;
   firstName: string;
   lastName: string;
+  /** Teacher-distributed join code used for live sessions and quizzes (zero-padded, e.g. "01") */
+  pin: string;
 }
 
-export interface ClassRoster {
+/**
+ * Shape of the Firestore roster document — contains NO student PII.
+ * Student names/PII live exclusively in a Google Drive file (driveFileId).
+ */
+export interface ClassRosterMeta {
   id: string;
   name: string;
-  students: Student[];
+  /** Drive file ID for the JSON file containing Student[] */
+  driveFileId: string | null;
+  /** Denormalised count for UI display without loading Drive */
+  studentCount: number;
   createdAt: number;
+}
+
+/**
+ * In-memory roster shape (used by hooks and components).
+ * Extends the Firestore metadata with the students array loaded from Drive.
+ */
+export interface ClassRoster extends ClassRosterMeta {
+  students: Student[];
 }
 
 // --- LIVE SESSION TYPES ---
@@ -83,11 +100,11 @@ export interface LiveSession {
 
 export interface LiveStudent {
   id: string; // Unique ID for this session
-  name: string;
+  /** Student's roster PIN — replaces name to keep PII out of Firestore */
+  pin: string;
   status: 'active' | 'frozen' | 'disconnected';
   joinedAt: number;
   lastActive: number;
-  authUid?: string; // Firebase auth UID for the student (for security rules)
 }
 
 // Supporting types for widget configs
@@ -625,11 +642,18 @@ export interface QuizResponseAnswer {
 
 export type QuizResponseStatus = 'joined' | 'in-progress' | 'completed';
 
-/** Per-student response document in Firestore (/quiz_sessions/{sessionId}/responses/{studentUid}) */
+/** Per-student response document in Firestore (/quiz_sessions/{sessionId}/responses/{anonymousUid}) */
 export interface QuizResponse {
+  /**
+   * Firebase anonymous auth UID — used as the Firestore document key.
+   * Not PII: ephemeral, not linked to any identity without the Drive roster.
+   */
   studentUid: string;
-  studentEmail: string;
-  studentName: string;
+  /**
+   * Student's roster PIN. Teacher cross-references this with the Drive roster
+   * to identify the student. No name or email is stored in Firestore.
+   */
+  pin: string;
   joinedAt: number;
   status: QuizResponseStatus;
   answers: QuizResponseAnswer[];

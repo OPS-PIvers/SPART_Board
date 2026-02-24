@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Cast } from 'lucide-react';
 
 interface StudentLobbyProps {
-  onJoin: (code: string, name: string) => void;
+  onJoin: (code: string, pin: string) => void;
   isLoading: boolean;
   error?: string | null;
 }
@@ -13,11 +13,11 @@ export const StudentLobby: React.FC<StudentLobbyProps> = ({
   error,
 }) => {
   const [code, setCode] = useState('');
-  const [name, setName] = useState('');
+  const [pin, setPin] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code && name) onJoin(code, name);
+    if (code && pin) onJoin(code, pin);
   };
 
   return (
@@ -51,13 +51,13 @@ export const StudentLobby: React.FC<StudentLobbyProps> = ({
           />
         </div>
         <div>
-          <label className="sr-only">Your Name</label>
+          <label className="sr-only">Your PIN</label>
           <input
             type="text"
-            placeholder="Your Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-center"
+            placeholder="Your PIN"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-center font-mono tracking-widest"
             required
           />
         </div>

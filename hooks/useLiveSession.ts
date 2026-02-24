@@ -5,7 +5,6 @@ import {
   updateDoc,
   setDoc,
   collection,
-  addDoc,
   deleteDoc,
   query,
   where,
@@ -18,7 +17,7 @@ import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 const SESSIONS_COLLECTION = 'sessions';
 const STUDENTS_COLLECTION = 'students';
 
-const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
+const MAX_PIN_LENGTH = 10; // Prevent storage abuse on the PIN field
 
 /**
  * Custom hook for managing live classroom sessions.
@@ -84,7 +83,7 @@ export interface UseLiveSessionResult {
     currentStatus: 'active' | 'frozen' | 'disconnected'
   ) => Promise<void>;
   toggleGlobalFreeze: (freeze: boolean) => Promise<void>;
-  joinSession: (name: string, unsanitizedCode: string) => Promise<string>;
+  joinSession: (pin: string, unsanitizedCode: string) => Promise<string>;
   studentId: string | null;
   individualFrozen: boolean;
 }
@@ -199,7 +198,7 @@ export const useLiveSession = (
 
   // --- ACTIONS ---
 
-  const joinSession = async (name: string, unsanitizedCode: string) => {
+  const joinSession = async (pin: string, unsanitizedCode: string) => {
     // 1. Find session by Code with robust sanitization
     // Remove all non-alphanumeric characters and normalize to uppercase
     const normalizedCode = unsanitizedCode
@@ -222,30 +221,49 @@ export const useLiveSession = (
     const sessionDoc = querySnapshot.docs[0];
     const teacherId = sessionDoc.id;
 
-    // Sanitize name (max length limit, simple trim)
-    const sanitizedName = name.trim().substring(0, MAX_STUDENT_NAME_LENGTH);
+    // Sanitize PIN (max length limit, simple trim)
+    const sanitizedPin = pin.trim().substring(0, MAX_PIN_LENGTH);
 
-    if (!sanitizedName) {
-      throw new Error('Name is required');
+    if (!sanitizedPin) {
+      throw new Error('PIN is required');
     }
 
-    // 2. Add student to subcollection
+    // 2. Add student to subcollection using their anonymous auth UID as the doc ID.
+    // This ties the record to the authenticated user so Firestore rules can
+    // allow students to update their own heartbeat/disconnect status.
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      throw new Error('Not authenticated — please wait and try again');
+    }
+
     const studentsRef = collection(
       db,
       SESSIONS_COLLECTION,
       teacherId,
       STUDENTS_COLLECTION
     );
+    // Reject duplicate PINs to prevent students from being indistinguishable
+    // in the teacher's roster view during live sessions.
+    const existingSnap = await getDocs(studentsRef);
+    const pinInUse = existingSnap.docs.some(
+      (d) => (d.data() as { pin?: string }).pin === sanitizedPin
+    );
+    if (pinInUse) {
+      throw new Error(
+        `PIN "${sanitizedPin}" is already in use in this session. ` +
+          'Please contact your teacher for a unique PIN.'
+      );
+    }
+
     const newStudent: Omit<LiveStudent, 'id'> = {
-      name: sanitizedName,
+      pin: sanitizedPin,
       status: 'active',
       joinedAt: Date.now(),
       lastActive: Date.now(),
-      authUid: auth.currentUser?.uid, // Store the student's auth UID for security
     };
 
-    const docRef = await addDoc(studentsRef, newStudent);
-    setStudentId(docRef.id);
+    await setDoc(doc(studentsRef, uid), newStudent);
+    setStudentId(uid);
     return teacherId;
   };
 

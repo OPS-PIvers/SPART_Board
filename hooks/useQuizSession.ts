@@ -27,7 +27,8 @@ import {
   writeBatch,
   increment,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
+import { signInAnonymously } from 'firebase/auth';
 import {
   QuizSession,
   QuizSessionStatus,
@@ -375,12 +376,7 @@ export interface UseQuizSessionStudentResult {
   loading: boolean;
   error: string | null;
   teacherUidRef: MutableRefObject<string | null>;
-  joinQuizSession: (
-    code: string,
-    studentName: string,
-    studentEmail: string,
-    studentUid: string
-  ) => Promise<string>;
+  joinQuizSession: (code: string, pin: string) => Promise<string>;
   submitAnswer: (questionId: string, answer: string) => Promise<void>;
   completeQuiz: () => Promise<void>;
   /**
@@ -444,12 +440,7 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
   }, [teacherUidState, studentUidState]);
 
   const joinQuizSession = useCallback(
-    async (
-      code: string,
-      studentName: string,
-      studentEmail: string,
-      studentUid: string
-    ): Promise<string> => {
+    async (code: string, pin: string): Promise<string> => {
       setLoading(true);
       setError(null);
       try {
@@ -458,6 +449,20 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           .replace(/[^a-zA-Z0-9]/g, '')
           .toUpperCase();
         if (!normCode) throw new Error('Invalid code');
+
+        // Prevent storage abuse on the PIN field
+        const sanitizedPin = pin.trim().substring(0, 10);
+        if (!sanitizedPin) throw new Error('PIN is required');
+
+        // Ensure we have an anonymous Firebase Auth session so Firestore
+        // security rules (request.auth != null) are satisfied.
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
+        const currentUser = auth.currentUser;
+        if (!currentUser)
+          throw new Error('Anonymous auth failed — no current user.');
+        const studentUid = currentUser.uid;
 
         const snap = await getDocs(
           query(
@@ -491,10 +496,10 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
         // in-memory ref which may still be null before the snapshot arrives.
         const existingSnap = await getDoc(responseRef);
         if (!existingSnap.exists()) {
+          // No PII stored — only the PIN for teacher cross-reference
           const newResponse: QuizResponse = {
             studentUid,
-            studentEmail,
-            studentName,
+            pin: sanitizedPin,
             joinedAt: Date.now(),
             status: 'joined',
             answers: [],

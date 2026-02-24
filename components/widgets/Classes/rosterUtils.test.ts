@@ -81,7 +81,7 @@ describe('rosterUtils', () => {
 
     it('preserves existing IDs', () => {
       const existing = [
-        { id: '123', firstName: 'OldJohn', lastName: 'OldDoe' },
+        { id: '123', firstName: 'OldJohn', lastName: 'OldDoe', pin: '01' },
       ];
       const firsts = 'John';
       const lasts = 'Doe';
@@ -95,7 +95,7 @@ describe('rosterUtils', () => {
 
     it('generates new IDs for new students', () => {
       const existing = [
-        { id: '123', firstName: 'OldJohn', lastName: 'OldDoe' },
+        { id: '123', firstName: 'OldJohn', lastName: 'OldDoe', pin: '01' },
       ];
       const firsts = 'John\nJane';
       const lasts = 'Doe\nSmith';

@@ -27,6 +27,12 @@ import {
   migrateLocalStorageToFirestore,
   migrateWidget,
 } from '../utils/migration';
+import {
+  scrubDashboardPII,
+  extractDashboardPII,
+  mergeDashboardPII,
+  dashboardHasPII,
+} from '../utils/dashboardPII';
 import { useRosters } from '../hooks/useRosters';
 import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import { DashboardContext } from './DashboardContextValue';
@@ -164,6 +170,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const lastLocalUpdateAt = useRef<number>(0);
   // Counter (not boolean) to correctly track overlapping in-flight saves
   const pendingSaveCountRef = useRef<number>(0);
+  // Tracks Drive file IDs for PII supplements per dashboard to enable in-place updates
+  const piiDriveFileIdRef = useRef<Map<string, string>>(new Map());
 
   // Sync activeId to ref
   useEffect(() => {
@@ -182,7 +190,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       // Always save to Firestore for real-time sync
       let driveFileId = dashboard.driveFileId;
 
-      // MANDATE: Save to Drive for non-admins
+      // MANDATE: Save to Drive for non-admins (full dashboard with PII goes to Drive)
       if (!isAdmin && driveService) {
         try {
           // Only perform immediate export if it's a new dashboard or doesn't have an ID yet
@@ -193,8 +201,41 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
+      // Save PII supplement to Drive for ALL users (including admins) to prevent
+      // data loss. PII scrubbing below is unconditional, so without this backup
+      // admin users who use custom roster features would permanently lose student names.
+      // Update in-place when the file already exists to avoid orphaned duplicates.
+      if (driveService && dashboardHasPII(dashboard)) {
+        const pii = extractDashboardPII(dashboard);
+        const blob = new Blob([JSON.stringify(pii)], {
+          type: 'application/json',
+        });
+        const existingPiiFileId = piiDriveFileIdRef.current.get(dashboard.id);
+        try {
+          if (existingPiiFileId) {
+            await driveService.updateFileContent(existingPiiFileId, blob);
+          } else {
+            const file = await driveService.uploadFile(
+              blob,
+              `${dashboard.id}-pii.json`,
+              'Data/Dashboards'
+            );
+            piiDriveFileIdRef.current.set(dashboard.id, file.id);
+          }
+        } catch (e) {
+          // Abort Firestore save to avoid losing PII when Drive is temporarily unavailable.
+          console.error('[PII] Failed to save PII supplement to Drive:', e);
+          return;
+        }
+      }
+
+      // CRITICAL: Strip all student PII before writing to Firestore.
+      // Custom widget names (firstNames, lastNames, completedNames, etc.) must
+      // NEVER reach Firestore — they are preserved in Drive only.
+      const scrubbed = scrubDashboardPII(dashboard);
+
       await saveDashboardFirestore({
-        ...dashboard,
+        ...scrubbed,
         driveFileId,
       });
     },
@@ -236,6 +277,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
       await deleteDashboardFirestore(id);
+      // Clear stale PII file ID to prevent failed in-place update attempts
+      piiDriveFileIdRef.current.delete(id);
     },
     [isAdmin, driveService, dashboards, deleteDashboardFirestore]
   );
@@ -627,6 +670,56 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     loading,
     saveDashboardFirestore,
   ]);
+
+  // --- PII RESTORE EFFECT ---
+  // When the active dashboard changes, attempt to restore any custom widget
+  // names (PII) from the Drive PII supplement file. Firestore only stores the
+  // scrubbed version; Drive is the authoritative source of PII fields.
+  const lastPiiRestoredIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!driveService || !activeId || loading) return;
+    // Only run once per dashboard switch
+    if (lastPiiRestoredIdRef.current === activeId) return;
+    lastPiiRestoredIdRef.current = activeId;
+
+    // Capture activeId to guard against race condition if it changes before the
+    // async Drive call completes
+    const currentId = activeId;
+    const expectedFileName = `${currentId}-pii.json`;
+
+    // Use a static query string to avoid query injection, then filter by exact
+    // filename client-side
+    void driveService
+      .listFiles("name contains '-pii.json'")
+      .then(async (files) => {
+        const piiFile = files.find((f) => f.name === expectedFileName);
+        if (!piiFile) {
+          // No supplement found — clear any stale cached ID for this dashboard
+          piiDriveFileIdRef.current.delete(currentId);
+          return;
+        }
+        // Cache the file ID so future saves can update in-place
+        piiDriveFileIdRef.current.set(currentId, piiFile.id);
+        const blob = await driveService.downloadFile(piiFile.id);
+        const text = await blob.text();
+        const pii = JSON.parse(text) as ReturnType<typeof extractDashboardPII>;
+        if (Object.keys(pii).length === 0) return;
+
+        setDashboards((prev) =>
+          prev.map((d) => (d.id === currentId ? mergeDashboardPII(d, pii) : d))
+        );
+      })
+      .catch((err: unknown) => {
+        // Clear stale file ID if Drive returns 404 (file was manually deleted)
+        const isNotFound = err instanceof Error && err.message.includes('404');
+        if (isNotFound) {
+          piiDriveFileIdRef.current.delete(currentId);
+        }
+        // Silent — Drive may be unavailable or no supplement exists yet
+        console.warn('[PII Restore] Could not load supplement:', err);
+      });
+  }, [activeId, loading, driveService]);
 
   // Flush pending saves on page refresh/close
   useEffect(() => {

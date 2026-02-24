@@ -328,6 +328,31 @@ export class GoogleDriveService {
   }
 
   /**
+   * Update the content of an existing Drive file in-place (PATCH media upload).
+   * Use this instead of uploadFile when the file already exists to avoid
+   * accumulating duplicate/orphaned files in Drive.
+   */
+  async updateFileContent(fileId: string, content: Blob): Promise<void> {
+    const response = await fetch(
+      `${UPLOAD_API_URL}/files/${fileId}?uploadType=media`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': content.type || 'application/octet-stream',
+        },
+        body: content,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Failed to update Drive file content:', error);
+      throw new Error('Failed to update file content in Drive');
+    }
+  }
+
+  /**
    * Delete a file from Google Drive.
    */
   async deleteFile(fileId: string): Promise<void> {

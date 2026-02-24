@@ -9,15 +9,42 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
+import { deleteField } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { ClassRoster, Student } from '../types';
+import { ClassRoster, ClassRosterMeta, Student } from '../types';
 import { db, isAuthBypass } from '../config/firebase';
 import { useGoogleDrive } from './useGoogleDrive';
 
 /**
+ * Assigns zero-padded sequential PINs to students that don't have one yet.
+ * Returns a new array — does not mutate the input.
+ */
+function assignPins(students: Student[]): Student[] {
+  return students.map((s, i) => ({
+    ...s,
+    pin: s.pin || String(i + 1).padStart(2, '0'),
+  }));
+}
+
+/**
+ * Drive folder path for per-roster student files.
+ * Structure: SPART Board/Data/Rosters/{rosterId}.json → Student[]
+ */
+const ROSTER_DRIVE_FOLDER = 'Data/Rosters';
+
+/**
+ * localStorage key prefix used to track whether the one-time PII migration
+ * (moving students[] from Firestore docs into Drive files) has run.
+ * Scoped per-user (appended with user.uid) so that multiple users sharing
+ * the same browser profile each get their own migration flag.
+ */
+const MIGRATION_KEY_PREFIX = 'spart_roster_pii_migrated_v1';
+
+// ─── Mock store (auth-bypass mode) ────────────────────────────────────────────
+
+/**
  * Singleton pattern for mock roster storage in bypass mode.
- * This ensures rosters created in bypass mode are properly stored and
- * accessible in the UI, following the same pattern as mockDashboards.
+ * Students are stored in memory alongside roster metadata.
  */
 class MockRosterStore {
   private static instance: MockRosterStore;
@@ -25,7 +52,7 @@ class MockRosterStore {
   private listeners = new Set<(rosters: ClassRoster[]) => void>();
 
   private constructor() {
-    // Private constructor for singleton
+    // Singleton — use getInstance()
   }
 
   static getInstance(): MockRosterStore {
@@ -40,10 +67,13 @@ class MockRosterStore {
   }
 
   addRoster(id: string, name: string, students: Student[]): void {
+    const withPins = assignPins(students);
     const newRoster: ClassRoster = {
       id,
       name,
-      students,
+      students: withPins,
+      driveFileId: null,
+      studentCount: withPins.length,
       createdAt: Date.now(),
     };
     this.rosters.push(newRoster);
@@ -53,7 +83,12 @@ class MockRosterStore {
   updateRoster(id: string, updates: Partial<ClassRoster>): void {
     const index = this.rosters.findIndex((r) => r.id === id);
     if (index >= 0) {
-      this.rosters[index] = { ...this.rosters[index], ...updates };
+      const updated = { ...this.rosters[index], ...updates };
+      if (updates.students !== undefined) {
+        updated.students = assignPins(updates.students);
+        updated.studentCount = updated.students.length;
+      }
+      this.rosters[index] = updated;
       this.notifyListeners();
     }
   }
@@ -79,9 +114,6 @@ class MockRosterStore {
     this.listeners.forEach((callback) => callback(sorted));
   }
 
-  /**
-   * Reset the store - useful for testing and clearing state.
-   */
   reset(): void {
     this.rosters = [];
     this.listeners.clear();
@@ -90,85 +122,221 @@ class MockRosterStore {
 
 const mockRosterStore = MockRosterStore.getInstance();
 
-// Helper to validate roster data from Firestore
-const validateRoster = (id: string, data: unknown): ClassRoster | null => {
+// ─── Firestore validation ──────────────────────────────────────────────────────
+
+/**
+ * Validates and normalises a raw Firestore document into ClassRosterMeta.
+ * Note: the `students` field is intentionally ignored — it lives in Drive.
+ */
+const validateRosterMeta = (
+  id: string,
+  data: unknown
+): ClassRosterMeta | null => {
   if (!data || typeof data !== 'object') return null;
-
   const d = data as Record<string, unknown>;
-
   if (typeof d.name !== 'string') return null;
-
-  const rawStudents = d.students;
-
-  const students: Student[] = Array.isArray(rawStudents)
-    ? rawStudents
-        .map((s: unknown) => {
-          if (!s || typeof s !== 'object') return null;
-
-          const student = s as Record<string, unknown>;
-
-          if (
-            typeof student.id === 'string' &&
-            typeof student.firstName === 'string' &&
-            typeof student.lastName === 'string'
-          ) {
-            return {
-              id: student.id,
-              firstName: student.firstName,
-              lastName: student.lastName,
-            };
-          }
-
-          return null;
-        })
-        .filter((s): s is Student => s !== null)
-    : [];
 
   return {
     id,
     name: d.name,
-    students,
+    driveFileId: typeof d.driveFileId === 'string' ? d.driveFileId : null,
+    studentCount: typeof d.studentCount === 'number' ? d.studentCount : 0,
     createdAt: typeof d.createdAt === 'number' ? d.createdAt : Date.now(),
   };
 };
 
+// ─── Hook ──────────────────────────────────────────────────────────────────────
+
 export const useRosters = (user: User | null) => {
+  // In-memory rosters include the students array loaded from Drive.
   const [rosters, setRosters] = useState<ClassRoster[]>([]);
   const { driveService } = useGoogleDrive();
-  const [activeRosterId, setActiveRosterIdState] = useState<string | null>(
-    () => {
-      return localStorage.getItem('spart_active_roster_id');
-    }
+  const [activeRosterId, setActiveRosterIdState] = useState<string | null>(() =>
+    localStorage.getItem('spart_active_roster_id')
   );
 
-  const lastExportedRostersRef = useRef<string>('');
+  // Cache of rosterId → Student[] already loaded from Drive (avoids re-fetching)
+  const studentsCacheRef = useRef<Map<string, Student[]>>(new Map());
+  // Roster metadata from Firestore snapshot (no students)
+  const metaListRef = useRef<ClassRosterMeta[]>([]);
+  // Tracks the last-seen driveFileId per roster to detect changes for cache busting
+  const prevDriveFileIdRef = useRef<Map<string, string | null>>(new Map());
 
-  // --- DRIVE SYNC EFFECT ---
-  useEffect(() => {
-    if (!user || !driveService || rosters.length === 0) return;
+  // ─── Helper: upload Student[] to Drive and return the file ID ─────────────
 
-    const rostersJson = JSON.stringify(rosters);
-    if (rostersJson === lastExportedRostersRef.current) return;
+  const uploadStudentsToDrive = useCallback(
+    async (
+      rosterId: string,
+      students: Student[],
+      existingFileId?: string | null
+    ): Promise<string> => {
+      if (!driveService) throw new Error('Drive not available');
+      const blob = new Blob([JSON.stringify(students)], {
+        type: 'application/json',
+      });
+      // Update in-place when we already have a Drive file to avoid orphaned files
+      if (existingFileId) {
+        await driveService.updateFileContent(existingFileId, blob);
+        return existingFileId;
+      }
+      const file = await driveService.uploadFile(
+        blob,
+        `${rosterId}.json`,
+        ROSTER_DRIVE_FOLDER
+      );
+      return file.id;
+    },
+    [driveService]
+  );
 
-    const timer = setTimeout(() => {
-      void driveService
-        .uploadFile(
-          new Blob([rostersJson], { type: 'application/json' }),
-          'rosters.json',
-          'Data'
-        )
-        .then(() => {
-          lastExportedRostersRef.current = rostersJson;
+  // ─── Helper: load Student[] from Drive by file ID ─────────────────────────
+
+  const loadStudentsFromDrive = useCallback(
+    async (driveFileId: string): Promise<Student[]> => {
+      if (!driveService) return [];
+      try {
+        const blob = await driveService.downloadFile(driveFileId);
+        const text = await blob.text();
+        const parsed = JSON.parse(text) as unknown;
+        if (!Array.isArray(parsed)) return [];
+        const students = (parsed as unknown[])
+          .map((s) => {
+            if (!s || typeof s !== 'object') return null;
+            const student = s as Record<string, unknown>;
+            if (
+              typeof student.id === 'string' &&
+              typeof student.firstName === 'string' &&
+              typeof student.lastName === 'string'
+            ) {
+              return {
+                id: student.id,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                pin: typeof student.pin === 'string' ? student.pin : '',
+              };
+            }
+            return null;
+          })
+          .filter((s): s is Student => s !== null);
+        return assignPins(students);
+      } catch (err) {
+        console.error('Failed to load students from Drive:', err);
+        return [];
+      }
+    },
+    [driveService]
+  );
+
+  // ─── Helper: merge metadata + Drive students into full ClassRoster[] ───────
+
+  const buildRosters = useCallback(
+    async (metaList: ClassRosterMeta[]): Promise<ClassRoster[]> => {
+      return Promise.all(
+        metaList.map(async (meta) => {
+          let students: Student[] = [];
+          if (meta.driveFileId) {
+            const cached = studentsCacheRef.current.get(meta.id);
+            if (cached) {
+              students = cached;
+            } else {
+              students = await loadStudentsFromDrive(meta.driveFileId);
+              studentsCacheRef.current.set(meta.id, students);
+            }
+          }
+          return { ...meta, students };
         })
-        .catch((err) => {
-          console.error('Failed to sync rosters to Drive:', err);
-        });
-    }, 2000); // Debounce roster export
+      );
+    },
+    [loadStudentsFromDrive]
+  );
 
-    return () => clearTimeout(timer);
-  }, [user, driveService, rosters]);
+  // ─── One-time migration: move students[] from Firestore docs to Drive ──────
 
-  // --- ROSTER EFFECT ---
+  const runMigrationIfNeeded = useCallback(
+    async (
+      metaList: ClassRosterMeta[],
+      rawSnapDocs: { id: string; data: () => unknown }[]
+    ) => {
+      if (!driveService || !user) return;
+      const migrationKey = `${MIGRATION_KEY_PREFIX}_${user.uid}`;
+      if (localStorage.getItem(migrationKey)) return;
+
+      let didMigrate = false;
+      let hasFailures = false;
+
+      for (const docSnap of rawSnapDocs) {
+        const raw = docSnap.data() as Record<string, unknown>;
+
+        // Only migrate docs that still have a students[] array in Firestore
+        if (!Array.isArray(raw.students) || raw.students.length === 0) continue;
+
+        const rawStudents = raw.students as Record<string, unknown>[];
+        const students: Student[] = rawStudents
+          .map((s) => {
+            if (
+              typeof s.id === 'string' &&
+              typeof s.firstName === 'string' &&
+              typeof s.lastName === 'string'
+            ) {
+              return {
+                id: s.id,
+                firstName: s.firstName,
+                lastName: s.lastName,
+                pin: typeof s.pin === 'string' ? s.pin : '',
+              };
+            }
+            return null;
+          })
+          .filter((s): s is Student => s !== null);
+
+        const withPins = assignPins(students);
+
+        try {
+          const driveFileId = await uploadStudentsToDrive(docSnap.id, withPins);
+          await updateDoc(doc(db, 'users', user.uid, 'rosters', docSnap.id), {
+            driveFileId,
+            studentCount: withPins.length,
+            students: deleteField(), // Remove PII from Firestore
+          });
+          studentsCacheRef.current.set(docSnap.id, withPins);
+          // Update local meta
+          const idx = metaListRef.current.findIndex((m) => m.id === docSnap.id);
+          if (idx >= 0) {
+            metaListRef.current[idx] = {
+              ...metaListRef.current[idx],
+              driveFileId,
+              studentCount: withPins.length,
+            };
+          }
+          didMigrate = true;
+          console.warn(
+            `[PII Migration] Moved students for roster ${docSnap.id} to Drive`
+          );
+        } catch (err) {
+          console.error(
+            `[PII Migration] Failed for roster ${docSnap.id}:`,
+            err
+          );
+          hasFailures = true;
+        }
+      }
+
+      if (
+        !hasFailures &&
+        (didMigrate ||
+          rawSnapDocs.every((d) => {
+            const raw = d.data() as Record<string, unknown>;
+            return !Array.isArray(raw.students) || raw.students.length === 0;
+          }))
+      ) {
+        localStorage.setItem(migrationKey, '1');
+      }
+    },
+    [driveService, user, uploadStudentsToDrive]
+  );
+
+  // ─── Firestore snapshot listener ──────────────────────────────────────────
+
   useEffect(() => {
     if (!user) {
       const timer = setTimeout(() => setRosters([]), 0);
@@ -176,47 +344,53 @@ export const useRosters = (user: User | null) => {
     }
 
     if (isAuthBypass) {
-      // Use mock roster store in bypass mode
-      const callback = (updatedRosters: ClassRoster[]) => {
+      const callback = (updatedRosters: ClassRoster[]) =>
         setRosters(updatedRosters);
-      };
       mockRosterStore.addListener(callback);
-      // Initial callback with current state
       callback(mockRosterStore.getRosters());
-      return () => {
-        mockRosterStore.removeListener(callback);
-      };
+      return () => mockRosterStore.removeListener(callback);
     }
 
     const rostersRef = collection(db, 'users', user.uid, 'rosters');
     const q = query(rostersRef, orderBy('name'));
 
-    // Track the current subscription to allow fallback cleanup
     let innerUnsubscribe: (() => void) | null = null;
+
+    const handleSnapshot = (rawDocs: { id: string; data: () => unknown }[]) => {
+      const metaList = rawDocs
+        .map((d) => validateRosterMeta(d.id, d.data()))
+        .filter((m): m is ClassRosterMeta => m !== null);
+
+      metaListRef.current = metaList;
+
+      // Invalidate cache for any roster whose driveFileId changed (including
+      // null→id, id→null, or id→different-id scenarios)
+      for (const meta of metaList) {
+        const cached = studentsCacheRef.current.get(meta.id);
+        const prevFileId = prevDriveFileIdRef.current.get(meta.id) ?? null;
+        if (cached && meta.driveFileId !== prevFileId) {
+          studentsCacheRef.current.delete(meta.id);
+        }
+        prevDriveFileIdRef.current.set(meta.id, meta.driveFileId);
+      }
+
+      // Run migration first, then build rosters. Sequencing avoids a race
+      // where buildRosters reads stale Firestore metadata before migration has
+      // written the driveFileIds back to each roster document.
+      void runMigrationIfNeeded(metaList, rawDocs)
+        .then(() => buildRosters(metaList))
+        .then((full) => setRosters(full));
+    };
 
     const unsubscribe = onSnapshot(
       q,
-      (snapshot) => {
-        const loaded: ClassRoster[] = [];
-        snapshot.forEach((docSnap) => {
-          const validated = validateRoster(docSnap.id, docSnap.data());
-          if (validated) loaded.push(validated);
-        });
-        setRosters(loaded);
-      },
+      (snapshot) => handleSnapshot(snapshot.docs),
       (error) => {
         console.error('Roster subscription error:', error);
-        // Fallback if index isn't created yet: try without orderBy
         if (error.code === 'failed-precondition') {
-          innerUnsubscribe = onSnapshot(rostersRef, (innerSnapshot) => {
-            const innerLoaded: ClassRoster[] = [];
-            innerSnapshot.forEach((docSnap) => {
-              const validated = validateRoster(docSnap.id, docSnap.data());
-              if (validated) innerLoaded.push(validated);
-            });
-            innerLoaded.sort((a, b) => a.name.localeCompare(b.name));
-            setRosters(innerLoaded);
-          });
+          innerUnsubscribe = onSnapshot(rostersRef, (innerSnapshot) =>
+            handleSnapshot(innerSnapshot.docs)
+          );
         }
       }
     );
@@ -225,9 +399,10 @@ export const useRosters = (user: User | null) => {
       unsubscribe();
       if (innerUnsubscribe) innerUnsubscribe();
     };
-  }, [user]);
+  }, [user, buildRosters, runMigrationIfNeeded]);
 
-  // --- ROSTER ACTIONS ---
+  // ─── CRUD actions ─────────────────────────────────────────────────────────
+
   const addRoster = useCallback(
     async (name: string, students: Student[] = []) => {
       if (!user) throw new Error('No user');
@@ -238,14 +413,39 @@ export const useRosters = (user: User | null) => {
         return id;
       }
 
-      const newRoster = { name, students, createdAt: Date.now() };
+      const withPins = assignPins(students);
+
+      // Write metadata-only to Firestore first to get the document ID
+      const firestoreData: Omit<ClassRosterMeta, 'id'> = {
+        name,
+        driveFileId: null,
+        studentCount: withPins.length,
+        createdAt: Date.now(),
+      };
       const ref = await addDoc(
         collection(db, 'users', user.uid, 'rosters'),
-        newRoster
+        firestoreData
       );
+
+      // Upload students to Drive (if Drive is available)
+      if (driveService && withPins.length > 0) {
+        try {
+          const driveFileId = await uploadStudentsToDrive(ref.id, withPins);
+          await updateDoc(doc(db, 'users', user.uid, 'rosters', ref.id), {
+            driveFileId,
+          });
+          studentsCacheRef.current.set(ref.id, withPins);
+        } catch (err) {
+          console.error('Failed to upload roster students to Drive:', err);
+          // Roster is still usable — Drive sync will retry next time
+        }
+      } else if (withPins.length > 0) {
+        studentsCacheRef.current.set(ref.id, withPins);
+      }
+
       return ref.id;
     },
-    [user]
+    [user, driveService, uploadStudentsToDrive]
   );
 
   const updateRoster = useCallback(
@@ -257,9 +457,72 @@ export const useRosters = (user: User | null) => {
         return;
       }
 
-      await updateDoc(doc(db, 'users', user.uid, 'rosters', id), updates);
+      // Separate student data from metadata
+      const { students, ...metaUpdates } = updates;
+
+      if (students !== undefined) {
+        const withPins = assignPins(students);
+
+        // Capture previous students for rollback
+        const previousStudents = studentsCacheRef.current.get(id) ?? [];
+        const previousCount = previousStudents.length;
+
+        // Optimistically update cache
+        studentsCacheRef.current.set(id, withPins);
+
+        // Reflect in local state immediately
+        setRosters((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? { ...r, students: withPins, studentCount: withPins.length }
+              : r
+          )
+        );
+
+        // Upload to Drive (update in-place when a file already exists)
+        if (driveService) {
+          try {
+            const existingMeta = metaListRef.current.find((m) => m.id === id);
+            const driveFileId = await uploadStudentsToDrive(
+              id,
+              withPins,
+              existingMeta?.driveFileId
+            );
+            await updateDoc(doc(db, 'users', user.uid, 'rosters', id), {
+              ...metaUpdates,
+              driveFileId,
+              studentCount: withPins.length,
+            });
+          } catch (err) {
+            console.error('Failed to upload updated roster to Drive:', err);
+            // Revert optimistic updates
+            studentsCacheRef.current.set(id, previousStudents);
+            setRosters((prev) =>
+              prev.map((r) =>
+                r.id === id
+                  ? {
+                      ...r,
+                      students: previousStudents,
+                      studentCount: previousCount,
+                    }
+                  : r
+              )
+            );
+            throw new Error('Failed to save roster changes to Drive');
+          }
+        } else {
+          // Drive unavailable — update count in Firestore at least
+          await updateDoc(doc(db, 'users', user.uid, 'rosters', id), {
+            ...metaUpdates,
+            studentCount: withPins.length,
+          });
+        }
+      } else if (Object.keys(metaUpdates).length > 0) {
+        // No student changes — just update metadata fields
+        await updateDoc(doc(db, 'users', user.uid, 'rosters', id), metaUpdates);
+      }
     },
-    [user]
+    [user, driveService, uploadStudentsToDrive]
   );
 
   const setActiveRoster = useCallback((id: string | null) => {
@@ -278,10 +541,19 @@ export const useRosters = (user: User | null) => {
         return;
       }
 
+      // Delete Drive file if we know its ID
+      const meta = metaListRef.current.find((m) => m.id === id);
+      if (meta?.driveFileId && driveService) {
+        driveService.deleteFile(meta.driveFileId).catch((err) => {
+          console.error('Failed to delete Drive roster file:', err);
+        });
+      }
+
       await deleteDoc(doc(db, 'users', user.uid, 'rosters', id));
+      studentsCacheRef.current.delete(id);
       if (activeRosterId === id) setActiveRoster(null);
     },
-    [user, activeRosterId, setActiveRoster]
+    [user, activeRosterId, setActiveRoster, driveService]
   );
 
   return useMemo(

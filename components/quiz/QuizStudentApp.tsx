@@ -13,7 +13,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ClipboardList,
-  LogIn,
   Loader2,
   CheckCircle2,
   Timer,
@@ -21,96 +20,61 @@ import {
   Trophy,
   AlertCircle,
 } from 'lucide-react';
-import {
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  User,
-} from 'firebase/auth';
-import { auth, googleProvider } from '@/config/firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { auth } from '@/config/firebase';
 import { useQuizSessionStudent } from '@/hooks/useQuizSession';
 import { QuizSession, QuizPublicQuestion } from '@/types';
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
 export const QuizStudentApp: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
+  const [authFailed, setAuthFailed] = useState(false);
 
+  // Sign in anonymously on mount — no user interaction required.
+  // This satisfies Firestore security rules (request.auth != null) without
+  // storing any student PII in Firebase Authentication.
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthLoading(false);
-    });
-    return unsub;
+    const init = async () => {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (err) {
+          console.warn('[QuizStudentApp] Anonymous auth failed:', err);
+          setAuthFailed(true);
+        }
+      }
+      setAuthReady(true);
+    };
+    void init();
   }, []);
 
-  if (authLoading) {
+  if (!authReady) {
     return <FullPageLoader message="Loading…" />;
   }
 
-  if (!user) {
-    return <SignInScreen />;
+  if (authFailed || !auth.currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-4 p-6">
+        <AlertCircle className="w-10 h-10 text-red-400" />
+        <p className="text-slate-300 text-sm text-center">
+          Unable to connect. Please refresh the page and try again.
+        </p>
+      </div>
+    );
   }
 
-  return <QuizJoinFlow user={user} />;
-};
-
-// ─── Sign in screen ───────────────────────────────────────────────────────────
-
-const SignInScreen: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-16 h-16 bg-violet-600/20 border border-violet-500/30 rounded-2xl flex items-center justify-center mb-6">
-        <ClipboardList className="w-8 h-8 text-violet-400" />
-      </div>
-      <h1 className="text-3xl font-black text-white mb-2">Student Quiz</h1>
-      <p className="text-slate-400 text-sm mb-8 max-w-xs">
-        Sign in with your Google account to join your teacher&apos;s quiz.
-      </p>
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-sm">
-          {error}
-        </div>
-      )}
-      <button
-        onClick={() => void handleSignIn()}
-        disabled={loading}
-        className="flex items-center gap-3 px-6 py-3 bg-white hover:bg-slate-100 text-slate-800 font-semibold rounded-xl shadow-lg transition-colors disabled:opacity-50"
-      >
-        {loading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          <LogIn className="w-5 h-5" />
-        )}
-        Sign in with Google
-      </button>
-    </div>
-  );
+  return <QuizJoinFlow />;
 };
 
 // ─── Join flow ────────────────────────────────────────────────────────────────
 
-const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
+const QuizJoinFlow: React.FC = () => {
   const params = new URLSearchParams(window.location.search);
   const urlCode = params.get('code') ?? '';
 
   const [code, setCode] = useState(urlCode);
+  const [pin, setPin] = useState('');
   const [joined, setJoined] = useState(false);
 
   const {
@@ -126,19 +90,11 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
   } = useQuizSessionStudent();
 
   const handleJoin = useCallback(
-    async (joinCode: string) => {
-      if (!user.email) {
-        return;
-      }
-      await joinQuizSession(
-        joinCode,
-        user.displayName ?? user.email,
-        user.email,
-        user.uid
-      );
+    async (joinCode: string, joinPin: string) => {
+      await joinQuizSession(joinCode, joinPin);
       setJoined(true);
     },
-    [user, joinQuizSession]
+    [joinQuizSession]
   );
 
   const handleAnswer = useCallback(
@@ -152,42 +108,29 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     await completeQuiz();
   }, [completeQuiz]);
 
-  // Auto-join if code is in URL. handleJoin is async — setState runs after
-  // await (not synchronously), so set-state-in-effect is a false positive here.
-  useEffect(() => {
-    if (urlCode && !joined && user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      void handleJoin(urlCode);
-    }
-  }, [urlCode, user, joined, handleJoin]);
-
-  const handleSignOut = () => void signOut(auth);
+  // Auto-join only works when a code AND a pin are both known. Since pin comes
+  // from a form field there's no auto-join on URL code alone — the student
+  // must always enter their PIN manually.
+  // (If you want URL-based pin support: ?code=XXXXXX&pin=01 is an option for
+  // future work, but not implemented here to avoid leaking PINs in URL logs.)
 
   // Not yet joined
   if (!joined || !session) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-violet-400" />
-              <span className="text-sm text-slate-300">
-                {user.displayName ?? user.email}
-              </span>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              Sign out
-            </button>
+          <div className="flex items-center justify-center mb-8">
+            <ClipboardList className="w-5 h-5 text-violet-400 mr-2" />
+            <span className="text-sm text-slate-300 font-semibold">
+              Student Quiz
+            </span>
           </div>
 
           <h1 className="text-2xl font-black text-white mb-2 text-center">
             Join Quiz
           </h1>
           <p className="text-slate-400 text-sm text-center mb-6">
-            Enter the code your teacher shared.
+            Enter the code and your PIN from your teacher.
           </p>
 
           {error && (
@@ -200,7 +143,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              void handleJoin(code);
+              void handleJoin(code, pin);
             }}
             className="space-y-4"
           >
@@ -208,14 +151,23 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="XXXXXX"
+              placeholder="Quiz Code (XXXXXX)"
               maxLength={8}
               className="w-full px-4 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white text-xl font-black font-mono tracking-widest text-center uppercase placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500"
               required
             />
+            <input
+              type="text"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="Your PIN"
+              maxLength={10}
+              className="w-full px-4 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white text-xl font-black font-mono tracking-widest text-center placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              required
+            />
             <button
               type="submit"
-              disabled={loading || !code.trim()}
+              disabled={loading || !code.trim() || !pin.trim()}
               className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-colors"
             >
               {loading ? (
@@ -234,13 +186,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
 
   // Waiting room
   if (session.status === 'waiting') {
-    return (
-      <WaitingRoom
-        session={session}
-        studentName={user.displayName ?? user.email ?? ''}
-        onSignOut={handleSignOut}
-      />
-    );
+    return <WaitingRoom session={session} pin={pin} />;
   }
 
   // Active quiz
@@ -274,8 +220,7 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
     <ResultsScreen
       answeredCount={(myResponse?.answers ?? []).length}
       totalQuestions={session.totalQuestions}
-      studentName={user.displayName ?? user.email ?? ''}
-      onSignOut={handleSignOut}
+      pin={pin}
     />
   );
 };
@@ -284,9 +229,8 @@ const QuizJoinFlow: React.FC<{ user: User }> = ({ user }) => {
 
 const WaitingRoom: React.FC<{
   session: QuizSession;
-  studentName: string;
-  onSignOut: () => void;
-}> = ({ session, studentName, onSignOut }) => (
+  pin: string;
+}> = ({ session, pin }) => (
   <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
     <div className="w-16 h-16 bg-violet-600/20 border border-violet-500/30 rounded-2xl flex items-center justify-center mb-6 animate-pulse">
       <ClipboardList className="w-8 h-8 text-violet-400" />
@@ -300,16 +244,10 @@ const WaitingRoom: React.FC<{
     </p>
     <div className="p-4 bg-slate-800 rounded-xl">
       <p className="text-slate-300 text-sm">
-        Signed in as{' '}
-        <span className="font-semibold text-white">{studentName}</span>
+        Joined as PIN{' '}
+        <span className="font-semibold text-white font-mono">{pin}</span>
       </p>
     </div>
-    <button
-      onClick={onSignOut}
-      className="mt-6 text-xs text-slate-600 hover:text-slate-400 transition-colors"
-    >
-      Sign out
-    </button>
   </div>
 );
 
@@ -902,13 +840,15 @@ const StructuredQuestionInput: React.FC<{
 const ResultsScreen: React.FC<{
   answeredCount: number;
   totalQuestions: number;
-  studentName: string;
-  onSignOut: () => void;
-}> = ({ answeredCount, totalQuestions, studentName, onSignOut }) => (
+  pin: string;
+}> = ({ answeredCount, totalQuestions, pin }) => (
   <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
     <Trophy className="w-16 h-16 text-amber-400 mb-6" />
     <h1 className="text-3xl font-black text-white mb-2">Quiz Complete!</h1>
-    <p className="text-slate-400 text-sm mb-8">Great job, {studentName}!</p>
+    <p className="text-slate-400 text-sm mb-8">
+      Great job, PIN{' '}
+      <span className="font-mono font-bold text-white">{pin}</span>!
+    </p>
 
     <div className="mb-8 p-6 bg-slate-800 rounded-2xl">
       <p className="text-5xl font-black text-white mb-2">{answeredCount}</p>
@@ -917,16 +857,9 @@ const ResultsScreen: React.FC<{
       </p>
     </div>
 
-    <p className="text-slate-500 text-sm mb-8 max-w-xs">
+    <p className="text-slate-500 text-sm max-w-xs">
       Your answers have been submitted. Ask your teacher to see your results.
     </p>
-
-    <button
-      onClick={onSignOut}
-      className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-    >
-      Sign out
-    </button>
   </div>
 );
 
