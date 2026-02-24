@@ -229,7 +229,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
       expect(config.assignments['Alice A']).toBe('desk-1');
     });
@@ -257,7 +257,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
       expect(config.assignments['Alice A']).toBeUndefined();
     });
@@ -309,7 +309,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       // All 3 students should be assigned
@@ -334,7 +334,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       // Should have 2 items now (original desk + new table)
@@ -362,7 +362,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       expect(config.furniture[0].rotation).toBe(45);
@@ -387,7 +387,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       expect(config.furniture).toHaveLength(2);
@@ -412,7 +412,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       expect(config.furniture).toHaveLength(0);
@@ -448,7 +448,9 @@ describe('SeatingChartWidget', () => {
         } as SeatingChartConfig,
       };
 
-      const { container } = render(<SeatingChartWidget widget={widget2Desks} />);
+      const { container } = render(
+        <SeatingChartWidget widget={widget2Desks} />
+      );
       await user.click(screen.getByText('Setup'));
 
       const d1 = container.querySelector('div[style*="left: 0px"]');
@@ -477,7 +479,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       expect(config.furniture).toHaveLength(0);
@@ -516,7 +518,7 @@ describe('SeatingChartWidget', () => {
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
         (mockUpdateWidget as Mock).mock.calls.length - 1
-      ];
+      ] as [string, { config: SeatingChartConfig }];
       const config = lastCall[1].config;
 
       // Original size 60x50. Grid 20.
