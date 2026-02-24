@@ -152,11 +152,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     GlobalFeaturePermission[]
   >([]);
   const [selectedBuildings, setSelectedBuildingsState] = useState<string[]>([]);
+  // Initialise from i18n.language. If i18n.init() hasn't resolved its async
+  // language detection yet, the useEffect below will sync the state once it fires.
   const [language, setLanguageState] = useState<string>(
-    () => localStorage.getItem('spart_language') ?? i18n.language ?? 'en'
+    () => i18n.language ?? 'en'
   );
   // Tracks the latest setSelectedBuildings / setLanguage call to detect and suppress stale writes
   const writeTokenRef = useRef(0);
+
+  // Keep language state in sync with i18next, including the async startup
+  // detection that may resolve after the first render.
+  useEffect(() => {
+    const handleLanguageChange = (lng: string) => {
+      setLanguageState(lng);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    // Catch cases where detection finished before this effect mounted
+    if (i18n.language && i18n.language !== language) {
+      setLanguageState(i18n.language);
+    }
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+    // language intentionally omitted — we only want to subscribe once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist googleAccessToken to localStorage
   useEffect(() => {
@@ -336,7 +356,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setLanguage = useCallback(
     async (lang: string) => {
-      setLanguageState(lang);
+      // i18n.changeLanguage() triggers the 'languageChanged' event, which the
+      // effect above uses to update React state — no manual setLanguageState needed.
       void i18n.changeLanguage(lang);
       if (!user || isAuthBypass) return;
       const myToken = ++writeTokenRef.current;
