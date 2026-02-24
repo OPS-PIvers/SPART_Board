@@ -450,7 +450,8 @@ export const useQuizSessionStudent = (): UseQuizSessionStudentResult => {
           .toUpperCase();
         if (!normCode) throw new Error('Invalid code');
 
-        const sanitizedPin = pin.trim();
+        // Prevent storage abuse on the PIN field
+        const sanitizedPin = pin.trim().substring(0, 10);
         if (!sanitizedPin) throw new Error('PIN is required');
 
         // Ensure we have an anonymous Firebase Auth session so Firestore
