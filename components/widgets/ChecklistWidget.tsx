@@ -228,24 +228,25 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
             }}
           >
             <ul style={{ gap: '0.4em' }} className="flex flex-col">
-              {(mode === 'manual' ? items : students).map((item) => {
-                const isManual = 'text' in item; // ChecklistItem has .text
-                const label = isManual ? item.text : item.label;
-                const isCompleted = isManual
-                  ? item.completed
-                  : completedNames.includes(item.id);
-                const id = item.id;
-
-                return (
-                  <ChecklistRow
-                    key={id}
-                    id={id}
-                    label={label}
-                    isCompleted={isCompleted}
-                    onToggle={toggleItem}
-                  />
-                );
-              })}
+              {mode === 'manual'
+                ? items.map((item) => (
+                    <ChecklistRow
+                      key={item.id}
+                      id={item.id}
+                      label={item.text}
+                      isCompleted={item.completed}
+                      onToggle={toggleItem}
+                    />
+                  ))
+                : students.map((student) => (
+                    <ChecklistRow
+                      key={student.id}
+                      id={student.id}
+                      label={student.label}
+                      isCompleted={completedNames.includes(student.id)}
+                      onToggle={toggleItem}
+                    />
+                  ))}
             </ul>
           </div>
         </div>

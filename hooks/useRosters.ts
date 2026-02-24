@@ -157,15 +157,26 @@ export const useRosters = (user: User | null) => {
   const studentsCacheRef = useRef<Map<string, Student[]>>(new Map());
   // Roster metadata from Firestore snapshot (no students)
   const metaListRef = useRef<ClassRosterMeta[]>([]);
+  // Tracks the last-seen driveFileId per roster to detect changes for cache busting
+  const prevDriveFileIdRef = useRef<Map<string, string | null>>(new Map());
 
   // ─── Helper: upload Student[] to Drive and return the file ID ─────────────
 
   const uploadStudentsToDrive = useCallback(
-    async (rosterId: string, students: Student[]): Promise<string> => {
+    async (
+      rosterId: string,
+      students: Student[],
+      existingFileId?: string | null
+    ): Promise<string> => {
       if (!driveService) throw new Error('Drive not available');
       const blob = new Blob([JSON.stringify(students)], {
         type: 'application/json',
       });
+      // Update in-place when we already have a Drive file to avoid orphaned files
+      if (existingFileId) {
+        await driveService.updateFileContent(existingFileId, blob);
+        return existingFileId;
+      }
       const file = await driveService.uploadFile(
         blob,
         `${rosterId}.json`,
@@ -225,21 +236,21 @@ export const useRosters = (user: User | null) => {
 
   const buildRosters = useCallback(
     async (metaList: ClassRosterMeta[]): Promise<ClassRoster[]> => {
-      const results: ClassRoster[] = [];
-      for (const meta of metaList) {
-        let students: Student[] = [];
-        if (meta.driveFileId) {
-          const cached = studentsCacheRef.current.get(meta.id);
-          if (cached) {
-            students = cached;
-          } else {
-            students = await loadStudentsFromDrive(meta.driveFileId);
-            studentsCacheRef.current.set(meta.id, students);
+      return Promise.all(
+        metaList.map(async (meta) => {
+          let students: Student[] = [];
+          if (meta.driveFileId) {
+            const cached = studentsCacheRef.current.get(meta.id);
+            if (cached) {
+              students = cached;
+            } else {
+              students = await loadStudentsFromDrive(meta.driveFileId);
+              studentsCacheRef.current.set(meta.id, students);
+            }
           }
-        }
-        results.push({ ...meta, students });
-      }
-      return results;
+          return { ...meta, students };
+        })
+      );
     },
     [loadStudentsFromDrive]
   );
@@ -356,13 +367,15 @@ export const useRosters = (user: User | null) => {
       // Run one-time migration (async, fire-and-forget)
       void runMigrationIfNeeded(metaList, rawDocs);
 
-      // Invalidate cache for any roster whose driveFileId changed
+      // Invalidate cache for any roster whose driveFileId changed (including
+      // null→id, id→null, or id→different-id scenarios)
       for (const meta of metaList) {
         const cached = studentsCacheRef.current.get(meta.id);
-        // If cache exists but driveFileId changed, bust it
-        if (cached && !meta.driveFileId) {
+        const prevFileId = prevDriveFileIdRef.current.get(meta.id) ?? null;
+        if (cached && meta.driveFileId !== prevFileId) {
           studentsCacheRef.current.delete(meta.id);
         }
+        prevDriveFileIdRef.current.set(meta.id, meta.driveFileId);
       }
 
       void buildRosters(metaList).then((full) => setRosters(full));
@@ -461,10 +474,15 @@ export const useRosters = (user: User | null) => {
           )
         );
 
-        // Upload to Drive
+        // Upload to Drive (update in-place when a file already exists)
         if (driveService) {
           try {
-            const driveFileId = await uploadStudentsToDrive(id, withPins);
+            const existingMeta = metaListRef.current.find((m) => m.id === id);
+            const driveFileId = await uploadStudentsToDrive(
+              id,
+              withPins,
+              existingMeta?.driveFileId
+            );
             await updateDoc(doc(db, 'users', user.uid, 'rosters', id), {
               ...metaUpdates,
               driveFileId,

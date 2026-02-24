@@ -170,6 +170,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const lastLocalUpdateAt = useRef<number>(0);
   // Counter (not boolean) to correctly track overlapping in-flight saves
   const pendingSaveCountRef = useRef<number>(0);
+  // Tracks Drive file IDs for PII supplements per dashboard to enable in-place updates
+  const piiDriveFileIdRef = useRef<Map<string, string>>(new Map());
 
   // Sync activeId to ref
   useEffect(() => {
@@ -202,17 +204,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       // Save PII supplement to Drive for ALL users (including admins) to prevent
       // data loss. PII scrubbing below is unconditional, so without this backup
       // admin users who use custom roster features would permanently lose student names.
+      // Update in-place when the file already exists to avoid orphaned duplicates.
       if (driveService && dashboardHasPII(dashboard)) {
         const pii = extractDashboardPII(dashboard);
-        driveService
-          .uploadFile(
-            new Blob([JSON.stringify(pii)], { type: 'application/json' }),
-            `${dashboard.id}-pii.json`,
-            'Data/Dashboards'
-          )
-          .catch((e) =>
-            console.error('[PII] Failed to save PII supplement to Drive:', e)
-          );
+        const blob = new Blob([JSON.stringify(pii)], {
+          type: 'application/json',
+        });
+        const existingPiiFileId = piiDriveFileIdRef.current.get(dashboard.id);
+        void (
+          existingPiiFileId
+            ? driveService.updateFileContent(existingPiiFileId, blob)
+            : driveService
+                .uploadFile(blob, `${dashboard.id}-pii.json`, 'Data/Dashboards')
+                .then((file) => {
+                  piiDriveFileIdRef.current.set(dashboard.id, file.id);
+                })
+        ).catch((e) =>
+          console.error('[PII] Failed to save PII supplement to Drive:', e)
+        );
       }
 
       // CRITICAL: Strip all student PII before writing to Firestore.

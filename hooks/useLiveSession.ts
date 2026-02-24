@@ -5,13 +5,12 @@ import {
   updateDoc,
   setDoc,
   collection,
-  addDoc,
   deleteDoc,
   query,
   where,
   getDocs,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 
 // Constants for Firestore Paths
@@ -229,7 +228,14 @@ export const useLiveSession = (
       throw new Error('PIN is required');
     }
 
-    // 2. Add student to subcollection — no PII stored in Firestore
+    // 2. Add student to subcollection using their anonymous auth UID as the doc ID.
+    // This ties the record to the authenticated user so Firestore rules can
+    // allow students to update their own heartbeat/disconnect status.
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      throw new Error('Not authenticated — please wait and try again');
+    }
+
     const studentsRef = collection(
       db,
       SESSIONS_COLLECTION,
@@ -243,8 +249,8 @@ export const useLiveSession = (
       lastActive: Date.now(),
     };
 
-    const docRef = await addDoc(studentsRef, newStudent);
-    setStudentId(docRef.id);
+    await setDoc(doc(studentsRef, uid), newStudent);
+    setStudentId(uid);
     return teacherId;
   };
 

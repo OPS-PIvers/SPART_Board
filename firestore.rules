@@ -126,13 +126,19 @@ service cloud.firestore {
 
       match /students/{studentId} {
         // Student session records store only a PIN — no PII.
+        // The student's anonymous auth UID is used as the document ID so that
+        // Firestore rules can validate ownership without server-side logic.
         // - Teacher (session owner) can read/write all student records
-        // - Any authenticated user (including anonymous) can create a student record
-        // - Only teacher and admins can update/delete student records
+        // - Students can create and update only their own record (for heartbeats/disconnects)
+        // - Only teacher and admins can delete records
         allow read: if request.auth != null &&
           (request.auth.uid == userId || isAdmin());
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null &&
+        allow create: if request.auth != null &&
+          request.auth.uid == studentId;
+        allow update: if request.auth != null &&
+          (request.auth.uid == userId || isAdmin() ||
+           request.auth.uid == studentId);
+        allow delete: if request.auth != null &&
           (request.auth.uid == userId || isAdmin());
       }
     }
@@ -174,13 +180,16 @@ service cloud.firestore {
           // pin and join metadata are immutable; only answers, status,
           // submittedAt, and tabSwitchWarnings may change.
           // score is never written by students.
+          // tabSwitchWarnings may only increase (monotonic) to prevent tampering.
           (request.auth.uid == studentUid &&
            request.resource.data.studentUid == resource.data.studentUid &&
            request.resource.data.pin == resource.data.pin &&
            request.resource.data.joinedAt == resource.data.joinedAt &&
            request.resource.data.score == resource.data.score &&
            request.resource.data.diff(resource.data)
-             .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings']))
+             .changedKeys().hasOnly(['answers', 'status', 'submittedAt', 'tabSwitchWarnings']) &&
+           (!request.resource.data.diff(resource.data).changedKeys().hasAll(['tabSwitchWarnings']) ||
+            request.resource.data.tabSwitchWarnings >= resource.data.get('tabSwitchWarnings', 0)))
         );
         allow delete: if request.auth != null &&
           (request.auth.uid == teacherUid || isAdmin());

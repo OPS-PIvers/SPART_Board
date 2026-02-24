@@ -224,6 +224,30 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     (s) => !assignedStudentIds.has(s.id)
   );
 
+  // --- LEGACY MIGRATION: name-keyed → id-keyed assignments ---
+  // Prior to adding roster support, seating-chart assignments used student
+  // display names as keys. Now that class-mode uses the student UUID as the
+  // key (keeping PII out of Firestore), we remap any legacy name-string keys
+  // to their corresponding student IDs on first load.
+  useEffect(() => {
+    if (rosterMode !== 'class' || students.length === 0) return;
+    const assignmentKeys = Object.keys(assignments);
+    if (assignmentKeys.length === 0) return;
+
+    const studentIds = new Set(students.map((s) => s.id));
+    const hasLegacyKeys = assignmentKeys.some((key) => !studentIds.has(key));
+    if (!hasLegacyKeys) return;
+
+    const nameToId = new Map(students.map((s) => [s.label, s.id]));
+    const migrated: Record<string, string> = {};
+    for (const [key, furnitureId] of Object.entries(assignments)) {
+      const resolvedId = studentIds.has(key) ? key : nameToId.get(key);
+      if (resolvedId) migrated[resolvedId] = furnitureId;
+    }
+    updateWidget(widget.id, { config: { ...config, assignments: migrated } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rosterMode, students]);
+
   // --- SCALE HELPER ---
   const getCanvasScale = useCallback((): number => {
     const el = canvasRef.current;
