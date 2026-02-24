@@ -196,11 +196,12 @@ describe('SeatingChartWidget', () => {
       } as DashboardContextValue);
     });
 
-    it('renders students from roster in Assign mode', () => {
+    it('renders students from roster in Assign mode', async () => {
+      const user = userEvent.setup();
       render(<SeatingChartWidget widget={rosterWidget} />);
 
       // Switch to Assign mode
-      fireEvent.click(screen.getByText('Assign'));
+      await user.click(screen.getByText('Assign'));
 
       // Check if students are listed
       expect(screen.getByText('Alice A')).toBeInTheDocument();
@@ -208,22 +209,19 @@ describe('SeatingChartWidget', () => {
       expect(screen.getByText('Charlie C')).toBeInTheDocument();
     });
 
-    it('assigns a student to a desk on click', () => {
-      const { container } = render(
-        <SeatingChartWidget widget={rosterWidget} />
-      );
+    it('assigns a student to a desk on click', async () => {
+      const user = userEvent.setup();
+      render(<SeatingChartWidget widget={rosterWidget} />);
 
       // Switch to Assign mode
-      fireEvent.click(screen.getByText('Assign'));
+      await user.click(screen.getByText('Assign'));
 
       // Click a student
-      fireEvent.click(screen.getByText('Alice A'));
+      await user.click(screen.getByText('Alice A'));
 
       // Find a desk and click it
-      const desk = container.querySelector('div[style*="left: 100px"]');
-      if (!desk) throw new Error('Desk not found');
-
-      fireEvent.click(desk);
+      const desk = screen.getByTestId('furniture-item-desk-1');
+      await user.click(desk);
 
       // Verify updateWidget was called with new assignment
       expect(mockUpdateWidget).toHaveBeenCalled();
@@ -234,7 +232,8 @@ describe('SeatingChartWidget', () => {
       expect(config.assignments['Alice A']).toBe('desk-1');
     });
 
-    it('removes assignment on click', () => {
+    it('removes assignment on click', async () => {
+      const user = userEvent.setup();
       const widgetWithAssignment: WidgetData = {
         ...rosterWidget,
         config: {
@@ -244,15 +243,14 @@ describe('SeatingChartWidget', () => {
       };
       render(<SeatingChartWidget widget={widgetWithAssignment} />);
 
-      fireEvent.click(screen.getByText('Assign'));
+      await user.click(screen.getByText('Assign'));
 
       // Verify Alice is assigned (rendered on the desk)
-      // The FurnitureItemRenderer renders the name
       expect(screen.getByText('Alice A')).toBeInTheDocument();
 
-      // Click the remove button (x)
-      const removeBtn = screen.getByText('×');
-      fireEvent.click(removeBtn);
+      // Click the remove button
+      const removeBtn = screen.getByLabelText('Remove assignment for Alice A');
+      await user.click(removeBtn);
 
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
@@ -262,7 +260,8 @@ describe('SeatingChartWidget', () => {
       expect(config.assignments['Alice A']).toBeUndefined();
     });
 
-    it('randomly assigns students to desks', () => {
+    it('randomly assigns students to desks', async () => {
+      const user = userEvent.setup();
       // We need more desks for random assignment
       const widgetMoreDesks = {
         ...rosterWidget,
@@ -302,9 +301,9 @@ describe('SeatingChartWidget', () => {
       };
 
       render(<SeatingChartWidget widget={widgetMoreDesks} />);
-      fireEvent.click(screen.getByText('Assign'));
+      await user.click(screen.getByText('Assign'));
 
-      fireEvent.click(screen.getByText('Add All Random'));
+      await user.click(screen.getByText('Add All Random'));
 
       expect(mockUpdateWidget).toHaveBeenCalled();
       const lastCall = (mockUpdateWidget as Mock).mock.calls[
@@ -498,9 +497,7 @@ describe('SeatingChartWidget', () => {
       fireEvent.click(desk);
 
       // Find resize handle (bottom-right corner)
-      // It has cursor-nwse-resize class
-      const handle = container.querySelector('.cursor-nwse-resize');
-      if (!handle) throw new Error('Resize handle not found');
+      const handle = screen.getByTestId('resize-handle');
 
       fireEvent.pointerDown(handle, { clientX: 160, clientY: 150 });
 

@@ -95,6 +95,7 @@ export const FurnitureItemRenderer = memo(
 
     return (
       <div
+        data-testid={`furniture-item-${item.id}`}
         onPointerDown={(e) => onPointerDown(e, item.id)}
         onClick={(e) => {
           e.stopPropagation();
@@ -119,6 +120,7 @@ export const FurnitureItemRenderer = memo(
         {/* Resize Handle — only for the single selected item */}
         {mode === 'setup' && isSingleSelected && (
           <div
+            data-testid="resize-handle"
             onPointerDown={(e) => onResizeStart(e, item.id)}
             className="absolute -bottom-2 -right-2 w-6 h-6 flex items-center justify-center cursor-nwse-resize z-50 bg-white shadow rounded-full border border-slate-200 hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors"
           >
@@ -204,6 +206,7 @@ export const FurnitureItemRenderer = memo(
                   <span className="truncate">{name}</span>
                   {mode === 'assign' && (
                     <button
+                      aria-label={`Remove assignment for ${name}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onRemoveAssignment(name);
