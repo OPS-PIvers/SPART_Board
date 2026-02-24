@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SeatingChartWidget } from './SeatingChartWidget';
 import {
@@ -209,7 +209,7 @@ describe('SeatingChartWidget', () => {
       expect(screen.getByText('Charlie C')).toBeInTheDocument();
     });
 
-    it('assigns a student to a desk on click', () => {
+    it('assigns a student to a desk on click', async () => {
       render(<SeatingChartWidget widget={rosterWidget} />);
 
       // Switch to Assign mode
@@ -220,13 +220,26 @@ describe('SeatingChartWidget', () => {
 
       // Find a desk and click it
       const desk = screen.getByTestId('furniture-item-desk-1');
-      fireEvent.click(desk);
 
-      // Verify updateWidget was called with new assignment
-      expect(mockUpdateWidget).toHaveBeenCalled();
-      const lastCall = (mockUpdateWidget as Mock).mock.calls[
-        (mockUpdateWidget as Mock).mock.calls.length - 1
-      ] as [string, { config: SeatingChartConfig }];
+      // Wait for state updates if any, though fireEvent is sync
+      await waitFor(() => {
+        fireEvent.click(desk);
+        expect(mockUpdateWidget).toHaveBeenCalled();
+      });
+
+      const calls = (mockUpdateWidget as Mock).mock.calls;
+      const lastCall = calls[calls.length - 1] as [string, { config: SeatingChartConfig }];
+
+      // Debug logging
+      if (!lastCall) {
+        console.error('Mock was not called!');
+      } else {
+        const config = lastCall[1].config;
+        if (!config.assignments['Alice A']) {
+          console.error('Assignment missing! Config:', JSON.stringify(config, null, 2));
+        }
+      }
+
       const config = lastCall[1].config;
       expect(config.assignments['Alice A']).toBe('desk-1');
     });
@@ -261,7 +274,7 @@ describe('SeatingChartWidget', () => {
       expect(config.assignments['Alice A']).toBeUndefined();
     });
 
-    it('randomly assigns students to desks', () => {
+    it('randomly assigns students to desks', async () => {
       // We need more desks for random assignment
       const widgetMoreDesks: WidgetData = {
         ...rosterWidget,
@@ -305,12 +318,24 @@ describe('SeatingChartWidget', () => {
 
       const randomBtn = screen.getByText('Add All Random').closest('button');
       if (!randomBtn) throw new Error('Random button not found');
-      fireEvent.click(randomBtn);
 
-      expect(mockUpdateWidget).toHaveBeenCalled();
-      const lastCall = (mockUpdateWidget as Mock).mock.calls[
-        (mockUpdateWidget as Mock).mock.calls.length - 1
-      ] as [string, { config: SeatingChartConfig }];
+      await waitFor(() => {
+        fireEvent.click(randomBtn);
+        expect(mockUpdateWidget).toHaveBeenCalled();
+      });
+
+      const calls = (mockUpdateWidget as Mock).mock.calls;
+      const lastCall = calls[calls.length - 1] as [string, { config: SeatingChartConfig }];
+
+      if (!lastCall) {
+        console.error('Random assign: mock not called');
+      } else {
+        const config = lastCall[1].config;
+        if (Object.keys(config.assignments).length === 0) {
+           console.error('Random assign: assignments empty!', config);
+        }
+      }
+
       const config = lastCall[1].config;
 
       // All 3 students should be assigned
