@@ -211,17 +211,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           type: 'application/json',
         });
         const existingPiiFileId = piiDriveFileIdRef.current.get(dashboard.id);
-        void (
-          existingPiiFileId
-            ? driveService.updateFileContent(existingPiiFileId, blob)
-            : driveService
-                .uploadFile(blob, `${dashboard.id}-pii.json`, 'Data/Dashboards')
-                .then((file) => {
-                  piiDriveFileIdRef.current.set(dashboard.id, file.id);
-                })
-        ).catch((e) =>
-          console.error('[PII] Failed to save PII supplement to Drive:', e)
-        );
+        try {
+          if (existingPiiFileId) {
+            await driveService.updateFileContent(existingPiiFileId, blob);
+          } else {
+            const file = await driveService.uploadFile(
+              blob,
+              `${dashboard.id}-pii.json`,
+              'Data/Dashboards'
+            );
+            piiDriveFileIdRef.current.set(dashboard.id, file.id);
+          }
+        } catch (e) {
+          // Abort Firestore save to avoid losing PII when Drive is temporarily unavailable.
+          console.error('[PII] Failed to save PII supplement to Drive:', e);
+          return;
+        }
       }
 
       // CRITICAL: Strip all student PII before writing to Firestore.

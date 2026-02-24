@@ -22,7 +22,7 @@ import { useGoogleDrive } from './useGoogleDrive';
 function assignPins(students: Student[]): Student[] {
   return students.map((s, i) => ({
     ...s,
-    pin: s.pin ?? String(i + 1).padStart(2, '0'),
+    pin: s.pin || String(i + 1).padStart(2, '0'),
   }));
 }
 
@@ -199,7 +199,7 @@ export const useRosters = (user: User | null) => {
         const text = await blob.text();
         const parsed = JSON.parse(text) as unknown;
         if (!Array.isArray(parsed)) return [];
-        return (parsed as unknown[])
+        const students = (parsed as unknown[])
           .map((s) => {
             if (!s || typeof s !== 'object') return null;
             const student = s as Record<string, unknown>;
@@ -208,24 +208,17 @@ export const useRosters = (user: User | null) => {
               typeof student.firstName === 'string' &&
               typeof student.lastName === 'string'
             ) {
-              const hasValidPin =
-                typeof student.pin === 'string' && student.pin.trim() !== '';
-              if (!hasValidPin) {
-                console.warn(
-                  'Student loaded from Drive without valid PIN; will be reassigned on save:',
-                  `id=${String(student.id)}, name=${String(student.firstName)} ${String(student.lastName)}`
-                );
-              }
               return {
                 id: student.id,
                 firstName: student.firstName,
                 lastName: student.lastName,
-                pin: hasValidPin ? (student.pin as string) : '',
+                pin: typeof student.pin === 'string' ? student.pin : '',
               };
             }
             return null;
           })
           .filter((s): s is Student => s !== null);
+        return assignPins(students);
       } catch (err) {
         console.error('Failed to load students from Drive:', err);
         return [];
