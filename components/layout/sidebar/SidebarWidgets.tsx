@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { Filter, CheckSquare } from 'lucide-react';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { TOOLS } from '../../../config/tools';
-import { getWidgetGradeLevels } from '../../../config/widgetGradeLevels';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { TOOLS } from '@/config/tools';
+import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
 
 interface SidebarWidgetsProps {
   isVisible: boolean;

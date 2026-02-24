@@ -17,9 +17,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { Dashboard } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { Dashboard } from '@/types';
 import { SortableDashboardItem } from './SortableDashboardItem';
 
 interface SidebarBoardsProps {

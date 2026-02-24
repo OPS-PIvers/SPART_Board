@@ -18,12 +18,12 @@ import {
   CloudCheck,
   AlertCircle,
 } from 'lucide-react';
-import { GoogleDriveIcon } from '../../common/GoogleDriveIcon';
-import { useGoogleDrive } from '../../../hooks/useGoogleDrive';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { AdminSettings } from '../../admin/AdminSettings';
-import { GlassCard } from '../../common/GlassCard';
+import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { AdminSettings } from '@/components/admin/AdminSettings';
+import { GlassCard } from '@/components/common/GlassCard';
 import { IconButton } from '@/components/common/IconButton';
 import { StylePanel } from './StylePanel';
 import { SidebarBoards } from './SidebarBoards';
@@ -44,7 +44,11 @@ export const Sidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { user, signOut, isAdmin } = useAuth();
+  const {
+    user,
+    signOut,
+    isAdmin,
+  } = useAuth();
   const {
     dashboards,
     activeDashboard,

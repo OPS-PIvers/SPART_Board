@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Loader2, Grid } from 'lucide-react';
-import { useBackgrounds } from '../../../hooks/useBackgrounds';
-import { useStorage } from '../../../hooks/useStorage';
-import { useAuth } from '../../../context/useAuth';
-import { useDashboard } from '../../../context/useDashboard';
+import { useBackgrounds } from '@/hooks/useBackgrounds';
+import { useStorage } from '@/hooks/useStorage';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
 
 interface SidebarBackgroundsProps {
   isVisible: boolean;

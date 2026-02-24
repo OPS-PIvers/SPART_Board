@@ -1,13 +1,13 @@
 import React from 'react';
 import { Settings, AlertCircle, Building2, Save } from 'lucide-react';
-import { GoogleDriveIcon } from '../../common/GoogleDriveIcon';
-import { Toggle } from '../../common/Toggle';
-import { useDashboard } from '../../../context/useDashboard';
-import { useAuth } from '../../../context/useAuth';
-import { useGoogleDrive } from '../../../hooks/useGoogleDrive';
-import { APP_NAME } from '../../../config/constants';
-import { BUILDINGS } from '../../../config/buildings';
-import { TOOLS } from '../../../config/tools';
+import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
+import { Toggle } from '@/components/common/Toggle';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { APP_NAME } from '@/config/constants';
+import { BUILDINGS } from '@/config/buildings';
+import { TOOLS } from '@/config/tools';
 
 interface SidebarSettingsProps {
   isVisible: boolean;
