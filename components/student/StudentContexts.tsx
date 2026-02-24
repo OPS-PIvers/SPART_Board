@@ -30,6 +30,10 @@ const mockAuth: AuthContextType = {
   setSelectedBuildings: async () => {
     // No-op in student view
   },
+  language: 'en',
+  setLanguage: async () => {
+    // No-op in student view
+  },
 };
 
 // --- MOCK DASHBOARD ---

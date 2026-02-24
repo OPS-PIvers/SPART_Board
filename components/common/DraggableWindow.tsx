@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Settings,
@@ -96,6 +97,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   headerActions,
   globalStyle,
 }) => {
+  const { t } = useTranslation();
   const {
     updateWidget,
     removeWidget,
@@ -167,15 +169,15 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
   const fileName = `Classroom-${widget.type.charAt(0).toUpperCase() + widget.type.slice(1)}-${dateStr}`;
 
   const handleScreenshotSuccess = useCallback(() => {
-    addToast('Screenshot saved', 'success');
-  }, [addToast]);
+    addToast(t('widgetWindow.screenshotSaved'), 'success');
+  }, [addToast, t]);
 
   const handleScreenshotError = useCallback(
     (err: unknown) => {
       console.error('Screenshot error:', err);
-      addToast('Failed to save screenshot', 'error');
+      addToast(t('widgetWindow.screenshotFailed'), 'error');
     },
-    [addToast]
+    [addToast, t]
   );
 
   const { takeScreenshot, isFlashing, isCapturing } = useScreenshot(
@@ -264,7 +266,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     if (e.key === 'Delete' && e.altKey) {
       e.preventDefault();
       e.stopPropagation();
-      if (confirm('Are you sure you want to clear the entire board?')) {
+      if (confirm(t('widgetWindow.clearEntireBoard'))) {
         deleteAllWidgets();
       }
       return;
@@ -786,7 +788,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
               id={`dialog-title-${widget.id}`}
               className="text-white font-semibold mb-4 text-sm"
             >
-              Close widget? Data will be lost.
+              {t('widgetWindow.closeWidget')}
             </p>
             <div className="flex gap-2">
               <button
@@ -796,7 +798,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 }}
                 className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs font-bold hover:bg-slate-600 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={(e) => {
@@ -805,7 +807,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 }}
                 className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
               >
-                Close
+                {t('widgetWindow.close')}
               </button>
             </div>
           </div>
@@ -862,7 +864,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     setAnnotationColor('eraser');
                   }}
                   icon={<Eraser className="w-3.5 h-3.5" />}
-                  label="Eraser"
+                  label={t('widgetWindow.eraser')}
                   size="sm"
                   variant="ghost"
                   active={annotationColor === 'eraser'}
@@ -882,7 +884,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     }
                   }}
                   icon={<Undo2 className="w-3.5 h-3.5" />}
-                  label="Undo"
+                  label={t('widgetWindow.undo')}
                   size="sm"
                   variant="ghost"
                 />
@@ -899,7 +901,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     });
                   }}
                   icon={<Trash2 className="w-3.5 h-3.5" />}
-                  label="Clear All"
+                  label={t('widgetWindow.clearAll')}
                   size="sm"
                   variant="danger"
                 />
@@ -911,7 +913,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                   }}
                   className="px-2 py-0.5 text-xxs font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
                 >
-                  DONE
+                  {t('widgetWindow.done')}
                 </button>
               </div>
             </>
@@ -1003,7 +1005,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         setShowTools(false);
                       }}
                       icon={<Settings className="w-3.5 h-3.5" />}
-                      label={widget.flipped ? 'Close Settings' : 'Settings'}
+                      label={
+                        widget.flipped
+                          ? t('widgetWindow.closeSettings')
+                          : t('widgetWindow.settings')
+                      }
                       size="sm"
                       variant="glass"
                       active={widget.flipped}
@@ -1023,7 +1029,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                         }
                       }}
                       icon={<X className="w-3.5 h-3.5" />}
-                      label="Close"
+                      label={t('widgetWindow.close')}
                       size="sm"
                       variant="danger"
                       className="hover:!bg-red-500/20"
@@ -1033,8 +1039,8 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       icon={<ChevronRight className="w-3.5 h-3.5" />}
                       label={
                         isToolbarExpanded
-                          ? 'Collapse Toolbar'
-                          : 'Expand Toolbar'
+                          ? t('widgetWindow.collapseToolbar')
+                          : t('widgetWindow.expandToolbar')
                       }
                       size="sm"
                       variant="glass"

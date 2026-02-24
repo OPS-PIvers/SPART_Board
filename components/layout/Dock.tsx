@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutGrid,
   Plus,
@@ -60,6 +61,7 @@ import { useScreenRecord } from '../../hooks/useScreenRecord';
 import { useGoogleDrive } from '../../hooks/useGoogleDrive';
 
 export const Dock: React.FC = () => {
+  const { t } = useTranslation();
   const {
     addWidget,
     removeWidget,
@@ -115,13 +117,13 @@ export const Dock: React.FC = () => {
       const fileName = `SPART-Board-Recording-${new Date().toISOString()}.webm`;
 
       if (driveService) {
-        addToast('Uploading recording to Google Drive...', 'info');
+        addToast(t('dock.uploadingToDrive'), 'info');
         try {
           await driveService.uploadFile(blob, fileName, 'Recordings');
-          addToast('Recording saved to Google Drive!', 'success');
+          addToast(t('dock.recordingSavedToDrive'), 'success');
         } catch (err) {
           console.error('Failed to upload recording:', err);
-          addToast('Failed to save to Drive. Downloading locally...', 'error');
+          addToast(t('dock.recordingDriveFailed'), 'error');
           // Fallback to local download
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -131,7 +133,7 @@ export const Dock: React.FC = () => {
           URL.revokeObjectURL(url);
         }
       } else {
-        addToast('No Google Drive connected. Downloading locally...', 'info');
+        addToast(t('dock.noGoogleDrive'), 'info');
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -140,7 +142,7 @@ export const Dock: React.FC = () => {
         URL.revokeObjectURL(url);
       }
     },
-    [driveService, addToast]
+    [driveService, addToast, t]
   );
 
   const { isRecording, duration, startRecording, stopRecording } =
