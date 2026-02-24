@@ -13,7 +13,7 @@ describe('Button', () => {
   it('renders dark variant correctly', () => {
     render(<Button variant="dark">Dark Button</Button>);
     const button = screen.getByRole('button', { name: /dark button/i });
-    expect(button).toHaveClass('bg-slate-800');
+    expect(button).toHaveClass('bg-brand-gray-dark');
     expect(button).toHaveClass('text-white');
   });
 
