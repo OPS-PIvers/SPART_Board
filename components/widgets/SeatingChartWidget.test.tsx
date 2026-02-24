@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { SeatingChartWidget } from './SeatingChartWidget';
 import {
   generateColumnsLayout,
@@ -109,10 +110,9 @@ describe('SeatingChartWidget', () => {
     expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
 
     // Check arguments
-    const lastCall = (mockUpdateWidget as Mock).mock.lastCall as [
-      string,
-      { config: SeatingChartConfig },
-    ];
+    const lastCall = (mockUpdateWidget as Mock).mock.calls[
+      (mockUpdateWidget as Mock).mock.calls.length - 1
+    ] as [string, { config: SeatingChartConfig }];
     expect(lastCall).toBeDefined();
 
     const [id, updates] = lastCall;
@@ -145,7 +145,7 @@ describe('SeatingChartWidget', () => {
 
     // 4. Verify selection (the item should have a ring class or the floating menu should be visible)
     expect(furnitureItem.className).toContain('ring-2');
-    expect(screen.getByTitle('Rotate Left')).toBeTruthy();
+    expect(screen.getByTitle('Rotate Left')).toBeInTheDocument();
   });
 
   it('should deselect an item when clicking the canvas', () => {
@@ -173,6 +173,358 @@ describe('SeatingChartWidget', () => {
     // 5. Verify deselection
     expect(furnitureItem.className).not.toContain('ring-2');
     expect(screen.queryByTitle('Rotate Left')).toBeNull();
+  });
+
+  describe('Roster & Assignments', () => {
+    const rosterWidget = createWidget();
+    const mockRoster = {
+      id: 'roster-1',
+      name: 'Class A',
+      students: [
+        { id: 's1', firstName: 'Alice', lastName: 'A' },
+        { id: 's2', firstName: 'Bob', lastName: 'B' },
+        { id: 's3', firstName: 'Charlie', lastName: 'C' },
+      ],
+    };
+
+    beforeEach(() => {
+      // Override the mock for these tests to include a roster
+      vi.mocked(useDashboard).mockReturnValue({
+        ...mockDashboardContext,
+        rosters: [mockRoster],
+        activeRosterId: 'roster-1',
+      } as DashboardContextValue);
+    });
+
+    it('renders students from roster in Assign mode', () => {
+      render(<SeatingChartWidget widget={rosterWidget} />);
+
+      // Switch to Assign mode
+      fireEvent.click(screen.getByText('Assign'));
+
+      // Check if students are listed
+      expect(screen.getByText('Alice A')).toBeInTheDocument();
+      expect(screen.getByText('Bob B')).toBeInTheDocument();
+      expect(screen.getByText('Charlie C')).toBeInTheDocument();
+    });
+
+    it('assigns a student to a desk on click', () => {
+      const { container } = render(
+        <SeatingChartWidget widget={rosterWidget} />
+      );
+
+      // Switch to Assign mode
+      fireEvent.click(screen.getByText('Assign'));
+
+      // Click a student
+      fireEvent.click(screen.getByText('Alice A'));
+
+      // Find a desk and click it
+      const desk = container.querySelector('div[style*="left: 100px"]');
+      if (!desk) throw new Error('Desk not found');
+
+      fireEvent.click(desk);
+
+      // Verify updateWidget was called with new assignment
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+      expect(config.assignments['Alice A']).toBe('desk-1');
+    });
+
+    it('removes assignment on click', () => {
+      const widgetWithAssignment = {
+        ...rosterWidget,
+        config: {
+          ...rosterWidget.config,
+          assignments: { 'Alice A': 'desk-1' },
+        },
+      };
+      render(<SeatingChartWidget widget={widgetWithAssignment} />);
+
+      fireEvent.click(screen.getByText('Assign'));
+
+      // Verify Alice is assigned (rendered on the desk)
+      // The FurnitureItemRenderer renders the name
+      expect(screen.getByText('Alice A')).toBeInTheDocument();
+
+      // Click the remove button (x)
+      const removeBtn = screen.getByText('×');
+      fireEvent.click(removeBtn);
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+      expect(config.assignments['Alice A']).toBeUndefined();
+    });
+
+    it('randomly assigns students to desks', () => {
+      // We need more desks for random assignment
+      const widgetMoreDesks = {
+        ...rosterWidget,
+        config: {
+          ...rosterWidget.config,
+          furniture: [
+            {
+              id: 'd1',
+              type: 'desk',
+              x: 0,
+              y: 0,
+              width: 50,
+              height: 50,
+              rotation: 0,
+            },
+            {
+              id: 'd2',
+              type: 'desk',
+              x: 50,
+              y: 0,
+              width: 50,
+              height: 50,
+              rotation: 0,
+            },
+            {
+              id: 'd3',
+              type: 'desk',
+              x: 100,
+              y: 0,
+              width: 50,
+              height: 50,
+              rotation: 0,
+            },
+          ],
+          assignments: {},
+        } as SeatingChartConfig,
+      };
+
+      render(<SeatingChartWidget widget={widgetMoreDesks} />);
+      fireEvent.click(screen.getByText('Assign'));
+
+      fireEvent.click(screen.getByText('Add All Random'));
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      // All 3 students should be assigned
+      expect(Object.keys(config.assignments)).toHaveLength(3);
+      expect(config.assignments['Alice A']).toBeDefined();
+      expect(config.assignments['Bob B']).toBeDefined();
+      expect(config.assignments['Charlie C']).toBeDefined();
+    });
+  });
+
+  describe('Furniture Operations', () => {
+    // Use the base widget but ensure we are in Setup mode
+    const furnitureWidget = createWidget();
+
+    it('adds new furniture from Setup sidebar', () => {
+      render(<SeatingChartWidget widget={furnitureWidget} />);
+      fireEvent.click(screen.getByText('Setup'));
+
+      // Click to add a Table (Rect)
+      fireEvent.click(screen.getByText('Table (Rect)'));
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      // Should have 2 items now (original desk + new table)
+      expect(config.furniture).toHaveLength(2);
+      const newItem = config.furniture[1];
+      expect(newItem.type).toBe('table-rect');
+    });
+
+    it('rotates furniture using floating menu', () => {
+      const { container } = render(
+        <SeatingChartWidget widget={furnitureWidget} />
+      );
+      fireEvent.click(screen.getByText('Setup'));
+
+      const desk = container.querySelector('div[style*="left: 100px"]');
+      if (!desk) throw new Error('Desk not found');
+
+      // Select the desk
+      fireEvent.click(desk);
+
+      // Click Rotate Right button
+      const rotateBtn = screen.getByTitle('Rotate Right');
+      fireEvent.click(rotateBtn);
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      expect(config.furniture[0].rotation).toBe(45);
+    });
+
+    it('duplicates furniture using floating menu', () => {
+      const { container } = render(
+        <SeatingChartWidget widget={furnitureWidget} />
+      );
+      fireEvent.click(screen.getByText('Setup'));
+
+      const desk = container.querySelector('div[style*="left: 100px"]');
+      if (!desk) throw new Error('Desk not found');
+
+      // Select the desk
+      fireEvent.click(desk);
+
+      // Click Duplicate button
+      const duplicateBtn = screen.getByTitle('Duplicate');
+      fireEvent.click(duplicateBtn);
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      expect(config.furniture).toHaveLength(2);
+    });
+
+    it('deletes furniture using floating menu', () => {
+      const { container } = render(
+        <SeatingChartWidget widget={furnitureWidget} />
+      );
+      fireEvent.click(screen.getByText('Setup'));
+
+      const desk = container.querySelector('div[style*="left: 100px"]');
+      if (!desk) throw new Error('Desk not found');
+
+      // Select the desk
+      fireEvent.click(desk);
+
+      // Click Delete button
+      const deleteBtn = screen.getByTitle('Delete');
+      fireEvent.click(deleteBtn);
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      expect(config.furniture).toHaveLength(0);
+    });
+
+    it('multi-selects and deletes group', async () => {
+      const user = userEvent.setup();
+      // Create widget with 2 desks
+      const widget2Desks = {
+        ...furnitureWidget,
+        config: {
+          ...furnitureWidget.config,
+          furniture: [
+            {
+              id: 'd1',
+              type: 'desk',
+              x: 0,
+              y: 0,
+              width: 50,
+              height: 50,
+              rotation: 0,
+            },
+            {
+              id: 'd2',
+              type: 'desk',
+              x: 100,
+              y: 0,
+              width: 50,
+              height: 50,
+              rotation: 0,
+            },
+          ],
+        } as SeatingChartConfig,
+      };
+
+      const { container } = render(<SeatingChartWidget widget={widget2Desks} />);
+      await user.click(screen.getByText('Setup'));
+
+      const d1 = container.querySelector('div[style*="left: 0px"]');
+      const d2 = container.querySelector('div[style*="left: 100px"]');
+      if (!d1 || !d2) throw new Error('Desks not found');
+
+      // Click first desk
+      await user.click(d1);
+
+      // Re-query d2 to ensure we have the fresh DOM node after re-render
+      const d2Fresh = container.querySelector('div[style*="left: 100px"]');
+      if (!d2Fresh) throw new Error('d2 not found');
+
+      // Ctrl+Click second desk
+      await user.keyboard('{Control>}');
+      await user.click(d2Fresh);
+      await user.keyboard('{/Control}');
+
+      // Check for group action bar
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+      // Click delete all selected
+      const deleteGroupBtn = screen.getByTitle('Delete all selected');
+      await user.click(deleteGroupBtn);
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      expect(config.furniture).toHaveLength(0);
+    });
+
+    it('resizes furniture', () => {
+      const { container } = render(
+        <SeatingChartWidget widget={furnitureWidget} />
+      );
+      fireEvent.click(screen.getByText('Setup'));
+
+      const desk = container.querySelector('div[style*="left: 100px"]');
+      if (!desk) throw new Error('Desk not found');
+
+      // Click desk to select
+      fireEvent.click(desk);
+
+      // Find resize handle (bottom-right corner)
+      // It has cursor-nwse-resize class
+      const handle = container.querySelector('.cursor-nwse-resize');
+      if (!handle) throw new Error('Resize handle not found');
+
+      fireEvent.pointerDown(handle, { clientX: 160, clientY: 150 });
+
+      fireEvent(
+        window,
+        new PointerEvent('pointermove', {
+          clientX: 180, // Moved +20
+          clientY: 170, // Moved +20
+          bubbles: true,
+        })
+      );
+
+      fireEvent(window, new PointerEvent('pointerup', { bubbles: true }));
+
+      expect(mockUpdateWidget).toHaveBeenCalled();
+      const lastCall = (mockUpdateWidget as Mock).mock.calls[
+        (mockUpdateWidget as Mock).mock.calls.length - 1
+      ];
+      const config = lastCall[1].config;
+
+      // Original size 60x50. Grid 20.
+      // New width: 60 + 20 = 80.
+      // New height: 50 + 20 = 70 -> snapped to 80.
+      expect(config.furniture[0].width).toBe(80);
+      expect(config.furniture[0].height).toBe(80);
+    });
   });
 });
 
