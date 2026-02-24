@@ -44,11 +44,7 @@ export const Sidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const {
-    user,
-    signOut,
-    isAdmin,
-  } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const {
     dashboards,
     activeDashboard,
