@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Toggle } from '../common/Toggle';
 import { Toast } from '../common/Toast';
+import { Button } from '../common/Button';
 
 const DEFAULT_PRESETS = [
   {
@@ -413,43 +414,36 @@ export const BackgroundManager: React.FC = () => {
           Managed Backgrounds
         </h3>
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="dark"
             onClick={() => void loadDriveImages()}
-            disabled={!isDriveConnected || loadingDrive}
-            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors flex items-center gap-2 disabled:opacity-50"
+            disabled={!isDriveConnected}
+            isLoading={loadingDrive}
+            icon={<Database size={16} />}
             title={
               isDriveConnected
                 ? 'Select from Google Drive'
                 : 'Sign in with Google to use Drive'
             }
           >
-            {loadingDrive ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Database className="w-4 h-4" />
-            )}
             Google Drive
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => void restoreDefaults()}
-            className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2"
+            icon={<Plus size={16} />}
             title="Restore original stock images"
           >
-            <Plus className="w-4 h-4" />
             Restore Defaults
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="px-4 py-2 bg-brand-blue-primary text-white rounded-lg hover:bg-brand-blue-dark transition-colors flex items-center gap-2 disabled:opacity-50"
+            isLoading={uploading}
+            icon={<Upload size={16} />}
           >
-            {uploading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4" />
-            )}
             Upload New
-          </button>
+          </Button>
         </div>
         <input
           type="file"
