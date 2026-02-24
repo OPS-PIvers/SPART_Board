@@ -9,8 +9,8 @@ const renderLiveControl = (overrides = {}) => {
     isLive: true, // Default to live so we can see the menu button
     studentCount: 2,
     students: [
-      { id: 's1', name: 'Alice', status: 'active' },
-      { id: 's2', name: 'Bob', status: 'frozen' },
+      { id: 's1', pin: '01', status: 'active', joinedAt: 0, lastActive: 0 },
+      { id: 's2', pin: '02', status: 'frozen', joinedAt: 0, lastActive: 0 },
     ] as LiveStudent[],
     code: 'ABC-123',
     joinUrl: 'https://app.school.com/join',
@@ -79,24 +79,24 @@ describe('LiveControl', () => {
     renderLiveControl();
     fireEvent.click(screen.getByLabelText(/connected students/));
 
-    expect(screen.getByText('Alice')).toBeInTheDocument();
-    expect(screen.getByText('Bob')).toBeInTheDocument();
+    // Students are now identified by PIN, not name
+    expect(screen.getByText(/PIN 01/)).toBeInTheDocument();
+    expect(screen.getByText(/PIN 02/)).toBeInTheDocument();
 
-    // Verify status indicators (implementation detail check via class, or accessible status)
-    // Alice is active (green dot implied), Bob is frozen (line-through text)
-    const bobName = screen.getByText('Bob');
-    expect(bobName.className).toContain('line-through');
+    // Verify status indicators — PIN 02 (frozen) should have line-through
+    const pin02 = screen.getByText(/PIN 02/);
+    expect(pin02.className).toContain('line-through');
 
-    const aliceName = screen.getByText('Alice');
-    expect(aliceName.className).not.toContain('line-through');
+    const pin01 = screen.getByText(/PIN 01/);
+    expect(pin01.className).not.toContain('line-through');
   });
 
   it('calls onFreezeStudent when freeze button is clicked', () => {
     const { props } = renderLiveControl();
     fireEvent.click(screen.getByLabelText(/connected students/));
 
-    const freezeAliceBtn = screen.getByLabelText('Freeze Alice');
-    fireEvent.click(freezeAliceBtn);
+    const freezeBtn = screen.getByLabelText('Freeze PIN 01');
+    fireEvent.click(freezeBtn);
 
     expect(props.onFreezeStudent).toHaveBeenCalledWith('s1', 'active');
   });
@@ -105,8 +105,8 @@ describe('LiveControl', () => {
     const { props } = renderLiveControl();
     fireEvent.click(screen.getByLabelText(/connected students/));
 
-    const unfreezeBobBtn = screen.getByLabelText('Unfreeze Bob');
-    fireEvent.click(unfreezeBobBtn);
+    const unfreezeBtn = screen.getByLabelText('Unfreeze PIN 02');
+    fireEvent.click(unfreezeBtn);
 
     expect(props.onFreezeStudent).toHaveBeenCalledWith('s2', 'frozen');
   });
@@ -115,8 +115,8 @@ describe('LiveControl', () => {
     const { props } = renderLiveControl();
     fireEvent.click(screen.getByLabelText(/connected students/));
 
-    const removeAliceBtn = screen.getByLabelText('Remove Alice');
-    fireEvent.click(removeAliceBtn);
+    const removeBtn = screen.getByLabelText('Remove PIN 01');
+    fireEvent.click(removeBtn);
 
     expect(props.onRemoveStudent).toHaveBeenCalledWith('s1');
   });

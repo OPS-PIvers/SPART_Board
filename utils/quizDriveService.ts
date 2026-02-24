@@ -437,8 +437,7 @@ export class QuizDriveService {
   ): Promise<string> {
     // Build header row
     const headers = [
-      'Student Name',
-      'Email',
+      'PIN',
       'Status',
       'Score (%)',
       'Warnings',
@@ -469,8 +468,7 @@ export class QuizDriveService {
           ? `${Math.round((correct / questions.length) * 100)}%`
           : '';
       return [
-        r.studentName,
-        r.studentEmail,
+        r.pin,
         r.status,
         scoreDisplay,
         warnings,

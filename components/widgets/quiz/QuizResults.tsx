@@ -498,10 +498,10 @@ const StudentsTab: React.FC<{
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p
-                  className="font-bold text-brand-blue-dark truncate"
+                  className="font-bold text-brand-blue-dark truncate font-mono"
                   style={{ fontSize: 'min(13px, 4.5cqmin)' }}
                 >
-                  {r.studentName}
+                  PIN {r.pin}
                 </p>
                 {warnings > 0 && (
                   <span
@@ -513,12 +513,6 @@ const StudentsTab: React.FC<{
                   </span>
                 )}
               </div>
-              <p
-                className="text-brand-blue-primary/40 truncate font-medium"
-                style={{ fontSize: 'min(10px, 3cqmin)' }}
-              >
-                {r.studentEmail}
-              </p>
             </div>
 
             <div className="text-right shrink-0 ml-4 pl-4 border-l border-brand-blue-primary/5">

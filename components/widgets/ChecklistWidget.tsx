@@ -90,14 +90,17 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
     [rosters, activeRosterId]
   );
 
-  // Process Roster Names
-  const students = useMemo(() => {
+  // Process Roster Names — always returns { id, label } objects.
+  // In class mode, `id` is the student's UUID (keeps PII out of completedNames).
+  // In custom mode, `id` and `label` are both the entered name string.
+  const students = useMemo((): { id: string; label: string }[] => {
     if (mode !== 'roster') return [];
 
     if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) =>
-        `${s.firstName} ${s.lastName}`.trim()
-      );
+      return activeRoster.students.map((s) => ({
+        id: s.id,
+        label: `${s.firstName} ${s.lastName}`.trim(),
+      }));
     }
 
     const firsts = firstNames
@@ -109,10 +112,10 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
       .map((n) => n.trim())
       .filter((n) => n);
     const count = Math.max(firsts.length, lasts.length);
-    const combined = [];
+    const combined: { id: string; label: string }[] = [];
     for (let i = 0; i < count; i++) {
       const name = `${firsts[i] || ''} ${lasts[i] || ''}`.trim();
-      if (name) combined.push(name);
+      if (name) combined.push({ id: name, label: name });
     }
     return combined;
   }, [firstNames, lastNames, mode, rosterMode, activeRoster]);
@@ -226,12 +229,12 @@ export const ChecklistWidget: React.FC<{ widget: WidgetData }> = ({
           >
             <ul style={{ gap: '0.4em' }} className="flex flex-col">
               {(mode === 'manual' ? items : students).map((item) => {
-                const isManual = typeof item !== 'string';
-                const label = isManual ? item.text : item;
+                const isManual = 'text' in item; // ChecklistItem has .text
+                const label = isManual ? item.text : item.label;
                 const isCompleted = isManual
                   ? item.completed
-                  : completedNames.includes(item);
-                const id = isManual ? item.id : item;
+                  : completedNames.includes(item.id);
+                const id = item.id;
 
                 return (
                   <ChecklistRow

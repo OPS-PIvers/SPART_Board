@@ -193,24 +193,35 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     [rosters, activeRosterId]
   );
 
-  const students = useMemo(() => {
+  // Always returns {id, label}[] so the assignment key is always `student.id`.
+  // In class mode, id = student UUID (keeps PII out of Firestore).
+  // In custom mode, id = name string (same as before, stored in Drive only).
+  const students = useMemo((): { id: string; label: string }[] => {
     if (rosterMode === 'class' && activeRoster) {
-      return activeRoster.students.map((s) =>
-        `${s.firstName} ${s.lastName}`.trim()
-      );
+      return activeRoster.students.map((s) => ({
+        id: s.id,
+        label: `${s.firstName} ${s.lastName}`.trim(),
+      }));
     }
     if (rosterMode === 'custom' && config.names) {
       return config.names
         .split('\n')
         .map((n) => n.trim())
-        .filter((n) => n !== '');
+        .filter((n) => n !== '')
+        .map((n) => ({ id: n, label: n }));
     }
     return [];
   }, [activeRoster, rosterMode, config.names]);
 
-  const assignedStudentNames = new Set(Object.keys(assignments));
+  // Build a label lookup map for fast id → display-name resolution
+  const studentLabelById = useMemo(
+    () => new Map(students.map((s) => [s.id, s.label])),
+    [students]
+  );
+
+  const assignedStudentIds = new Set(Object.keys(assignments));
   const unassignedStudents = students.filter(
-    (s) => !assignedStudentNames.has(s)
+    (s) => !assignedStudentIds.has(s.id)
   );
 
   // --- SCALE HELPER ---
@@ -398,9 +409,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     );
   };
 
-  const handleStudentClick = (studentName: string) => {
+  const handleStudentClick = (studentId: string) => {
     if (mode !== 'assign') return;
-    setSelectedStudent(selectedStudent === studentName ? null : studentName);
+    setSelectedStudent(selectedStudent === studentId ? null : studentId);
   };
 
   const handleFurnitureClick = useCallback(
@@ -424,12 +435,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
           },
         });
         setSelectedStudent(null);
-        addToast(`Assigned ${selectedStudent}`, 'success');
+        addToast(
+          `Assigned ${studentLabelById.get(selectedStudent) ?? selectedStudent}`,
+          'success'
+        );
       }
     },
     [
       mode,
       selectedStudent,
+      studentLabelById,
       widget.id,
       config,
       assignments,
@@ -660,15 +675,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       e.stopPropagation();
       if (mode !== 'assign') return;
 
-      const studentName = e.dataTransfer.getData('studentName');
-      if (!studentName) return;
+      const studentId = e.dataTransfer.getData('studentId');
+      if (!studentId) return;
 
-      if (assignments[studentName] === furnitureId) return;
+      if (assignments[studentId] === furnitureId) return;
 
       updateWidget(widget.id, {
         config: {
           ...config,
-          assignments: { ...assignments, [studentName]: furnitureId },
+          assignments: { ...assignments, [studentId]: furnitureId },
         },
       });
     },
@@ -676,9 +691,9 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   );
 
   const handleRemoveAssignment = useCallback(
-    (studentName: string) => {
+    (studentId: string) => {
       const next = { ...assignments };
-      delete next[studentName];
+      delete next[studentId];
       updateWidget(widget.id, { config: { ...config, assignments: next } });
     },
     [assignments, widget.id, config, updateWidget]
@@ -726,7 +741,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
       const student = unassigned.pop();
       const spotId = emptySpots.pop();
       if (student && spotId) {
-        nextAssignments[student] = spotId;
+        nextAssignments[student.id] = spotId;
         count++;
       }
     }
@@ -780,14 +795,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // --- RENDERING ---
 
-  // Helper to get assigned students for an item (memoized here for use in map loop)
+  // Helper to get assigned student display labels for a furniture item.
+  // The assignments keys are student IDs; we resolve them to display labels here.
   const getAssignedStudents = useCallback(
     (furnitureId: string) => {
       return Object.entries(assignments)
         .filter(([, fId]) => fId === furnitureId)
-        .map(([name]) => name);
+        .map(([studentId]) => studentLabelById.get(studentId) ?? studentId);
     },
-    [assignments]
+    [assignments, studentLabelById]
   );
 
   const studentCount = students.length;
@@ -1035,16 +1051,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
                   ) : (
                     unassignedStudents.map((student) => (
                       <div
-                        key={student}
+                        key={student.id}
                         draggable
                         onDragStart={(e) =>
-                          e.dataTransfer.setData('studentName', student)
+                          e.dataTransfer.setData('studentId', student.id)
                         }
-                        onClick={() => handleStudentClick(student)}
-                        className={`p-2 bg-white border ${selectedStudent === student ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'} rounded-lg shadow-sm text-xs font-black text-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all`}
+                        onClick={() => handleStudentClick(student.id)}
+                        className={`p-2 bg-white border ${selectedStudent === student.id ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'} rounded-lg shadow-sm text-xs font-black text-slate-700 cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all`}
                         title="Drag or Click to assign"
                       >
-                        {student}
+                        {student.label}
                       </div>
                     ))
                   )}

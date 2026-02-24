@@ -11,14 +11,14 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import { db, auth } from '../config/firebase';
+import { db } from '../config/firebase';
 import { LiveSession, LiveStudent, WidgetType, WidgetConfig } from '../types';
 
 // Constants for Firestore Paths
 const SESSIONS_COLLECTION = 'sessions';
 const STUDENTS_COLLECTION = 'students';
 
-const MAX_STUDENT_NAME_LENGTH = 20; // Prevent UI overflow and storage abuse
+const MAX_PIN_LENGTH = 10; // Prevent storage abuse on the PIN field
 
 /**
  * Custom hook for managing live classroom sessions.
@@ -84,7 +84,7 @@ export interface UseLiveSessionResult {
     currentStatus: 'active' | 'frozen' | 'disconnected'
   ) => Promise<void>;
   toggleGlobalFreeze: (freeze: boolean) => Promise<void>;
-  joinSession: (name: string, unsanitizedCode: string) => Promise<string>;
+  joinSession: (pin: string, unsanitizedCode: string) => Promise<string>;
   studentId: string | null;
   individualFrozen: boolean;
 }
@@ -199,7 +199,7 @@ export const useLiveSession = (
 
   // --- ACTIONS ---
 
-  const joinSession = async (name: string, unsanitizedCode: string) => {
+  const joinSession = async (pin: string, unsanitizedCode: string) => {
     // 1. Find session by Code with robust sanitization
     // Remove all non-alphanumeric characters and normalize to uppercase
     const normalizedCode = unsanitizedCode
@@ -222,14 +222,14 @@ export const useLiveSession = (
     const sessionDoc = querySnapshot.docs[0];
     const teacherId = sessionDoc.id;
 
-    // Sanitize name (max length limit, simple trim)
-    const sanitizedName = name.trim().substring(0, MAX_STUDENT_NAME_LENGTH);
+    // Sanitize PIN (max length limit, simple trim)
+    const sanitizedPin = pin.trim().substring(0, MAX_PIN_LENGTH);
 
-    if (!sanitizedName) {
-      throw new Error('Name is required');
+    if (!sanitizedPin) {
+      throw new Error('PIN is required');
     }
 
-    // 2. Add student to subcollection
+    // 2. Add student to subcollection — no PII stored in Firestore
     const studentsRef = collection(
       db,
       SESSIONS_COLLECTION,
@@ -237,11 +237,10 @@ export const useLiveSession = (
       STUDENTS_COLLECTION
     );
     const newStudent: Omit<LiveStudent, 'id'> = {
-      name: sanitizedName,
+      pin: sanitizedPin,
       status: 'active',
       joinedAt: Date.now(),
       lastActive: Date.now(),
-      authUid: auth.currentUser?.uid, // Store the student's auth UID for security
     };
 
     const docRef = await addDoc(studentsRef, newStudent);

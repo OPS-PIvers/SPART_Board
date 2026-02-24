@@ -222,9 +222,9 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                     className={`w-2 h-2 rounded-full ${s.status === 'active' ? 'bg-green-500' : 'bg-blue-400'}`}
                   ></div>
                   <span
-                    className={`text-xs  truncate max-w-[100px] ${s.status === 'frozen' ? 'text-blue-400 line-through' : 'text-slate-700'}`}
+                    className={`text-xs  truncate max-w-[100px] font-mono ${s.status === 'frozen' ? 'text-blue-400 line-through' : 'text-slate-700'}`}
                   >
-                    {s.name}
+                    PIN {s.pin}
                   </span>
                 </div>
                 <div className="flex gap-1">
@@ -233,8 +233,8 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                     className={`p-1 rounded hover:bg-blue-50 ${s.status === 'frozen' ? 'text-blue-600' : 'text-slate-300 hover:text-blue-500'}`}
                     aria-label={
                       s.status === 'frozen'
-                        ? `Unfreeze ${s.name}`
-                        : `Freeze ${s.name}`
+                        ? `Unfreeze PIN ${s.pin}`
+                        : `Freeze PIN ${s.pin}`
                     }
                   >
                     <Snowflake size={14} />
@@ -242,7 +242,7 @@ export const LiveControl: React.FC<LiveControlProps> = ({
                   <button
                     onClick={() => onRemoveStudent(s.id)}
                     className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Remove ${s.name}`}
+                    aria-label={`Remove PIN ${s.pin}`}
                   >
                     <Trash2 size={14} />
                   </button>

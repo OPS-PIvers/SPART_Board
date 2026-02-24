@@ -67,6 +67,7 @@ const ClassesWidget: React.FC<Props> = ({ widget: _widget }) => {
           id: crypto.randomUUID(),
           firstName: s.givenName,
           lastName: s.familyName,
+          pin: '',
         })
       );
 
