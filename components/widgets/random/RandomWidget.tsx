@@ -167,6 +167,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       !Array.isArray(result) ||
       result.length === 0 ||
       typeof result[0] !== 'object' ||
+      result[0] === null ||
       !('names' in result[0])
     ) {
       return;
@@ -751,15 +752,28 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
             Array.isArray(displayResult) &&
             displayResult.length > 0 &&
             typeof displayResult[0] === 'object' &&
+            displayResult[0] !== null &&
             'names' in displayResult[0] && (
               <Button
                 variant="secondary"
-                size="lg"
                 shape="pill"
                 onClick={handleSendToScoreboard}
-                className="w-12 h-12 p-0 flex-shrink-0"
+                style={{
+                  width: 'min(48px, 12cqmin)',
+                  height: 'min(48px, 12cqmin)',
+                  padding: 0,
+                }}
+                className="flex-shrink-0"
                 title="Send to Scoreboard"
-                icon={<Trophy className="w-5 h-5 text-amber-500" />}
+                icon={
+                  <Trophy
+                    style={{
+                      width: 'min(20px, 5cqmin)',
+                      height: 'min(20px, 5cqmin)',
+                    }}
+                    className="text-amber-500"
+                  />
+                }
               />
             )}
           <Button
