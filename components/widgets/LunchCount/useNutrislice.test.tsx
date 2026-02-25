@@ -5,13 +5,15 @@ import { useNutrislice } from './useNutrislice';
 import { LunchCountConfig, WidgetData } from '../../../types';
 
 describe('useNutrislice', () => {
-  const mockUpdateWidget = vi.fn(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (id: string, updates: Partial<WidgetData>) => {}
-  );
+  const mockUpdateWidget = vi.fn((id: string, updates: Partial<WidgetData>) => {
+    // Mock implementation
+    return { id, updates };
+  });
   const mockAddToast = vi.fn(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (message: string, type?: 'info' | 'success' | 'error') => {}
+    (message: string, type?: 'info' | 'success' | 'error') => {
+      // Mock implementation
+      return { message, type };
+    }
   );
   const mockWidgetId = 'test-widget-id';
   const mockConfig: LunchCountConfig = {
