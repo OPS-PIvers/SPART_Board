@@ -7,24 +7,14 @@ import {
   InstructionalRoutinesConfig,
   RoutineStep,
   WidgetType,
-  WidgetConfig,
 } from '../../../types';
 import {
   ROUTINES as DEFAULT_ROUTINES,
   InstructionalRoutine,
 } from '../../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import {
-  Star,
-  Trash2,
-  ArrowLeft,
-  Rocket,
-  ArrowDown,
-  RefreshCw,
-  Info,
-} from 'lucide-react';
+import { Star, Trash2, ArrowLeft, Rocket, Info } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
-import { getRoutineColorClasses } from './colorHelpers';
 
 // Color mapping for routines
 const ROUTINE_COLORS: Record<
@@ -169,7 +159,7 @@ interface RoutineStepItemProps {
     label?: string,
     stickerUrl?: string
   ) => void;
-  onAddWidget: (type: WidgetType, config?: any) => void;
+  onAddWidget: (type: WidgetType, config?: Record<string, unknown>) => void;
 }
 
 const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
@@ -184,8 +174,8 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
     : null;
 
   const isVisualCue = structure === 'visual-cue';
-  const hasSticker = step.stickerUrl || (StepIcon && step.icon);
-  const hasWidget = step.attachedWidget;
+  const hasSticker = (step.stickerUrl ?? '') !== '' || !!StepIcon;
+  const hasWidget = !!step.attachedWidget;
 
   return (
     <div
@@ -249,7 +239,7 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
             }}
           >
             <Rocket style={{ width: '1.2em', height: '1.2em' }} />
-            Launch {step.attachedWidget?.label || 'Tool'}
+            Launch {step.attachedWidget?.label ?? 'Tool'}
           </button>
         )}
 
@@ -282,7 +272,7 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
                 <StepIcon style={{ width: '1.2em', height: '1.2em' }} />
               )
             )}
-            Launch {step.label || 'Sticker'}
+            Launch {step.label ?? 'Sticker'}
           </button>
         )}
       </div>
@@ -404,7 +394,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         ? {
             type: step.attachedWidget.type as WidgetType,
             label: step.attachedWidget.label,
-            config: step.attachedWidget.config as any,
+            config: step.attachedWidget.config as Record<string, unknown>,
           }
         : undefined,
     }));
