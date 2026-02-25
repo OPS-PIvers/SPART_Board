@@ -570,6 +570,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <WidgetLayout
       padding="p-0"
+      contentClassName="flex-1 min-h-0 flex flex-col"
       header={
         <div className="flex flex-col shrink-0" style={scalingStyles}>
           <div
