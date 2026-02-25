@@ -1,9 +1,12 @@
 import time
+import os
 from playwright.sync_api import sync_playwright
 
+BASE_URL = os.environ.get("PLAYWRIGHT_BASE_URL", "http://localhost:3000")
+
 def verify_instructional_routines_manager(page):
-    print("Navigating to home page...")
-    page.goto("http://localhost:3001")
+    print(f"Navigating to home page at {BASE_URL}...")
+    page.goto(BASE_URL)
 
     # Wait for the page to load
     page.wait_for_load_state("networkidle")
