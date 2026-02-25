@@ -509,12 +509,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     return (
       <WidgetLayout
         padding="p-0"
+        contentClassName="h-full w-full flex flex-col"
         content={
           <div
             className="flex-1 flex flex-col overflow-y-auto custom-scrollbar"
             style={{
               ...scalingStyles,
-              padding: '0 1cqw', // Only side padding
+              padding: '1cqmin', // Small equal padding on all sides
               gap: '1cqh', // Exact gap for height calculation
             }}
           >
@@ -532,7 +533,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   key={r.id}
                   className={`group/card relative bg-white rounded-2xl shadow-sm border transition-all hover:shadow-md flex items-center shrink-0 ${colors.border} ${colors.hoverBorder}`}
                   style={{
-                    height: '19.2cqh', // (100 - (4 * 1)) / 5 = 19.2
+                    height: '18.8cqh', // (100 - (4 * 1gap) - (2 * 1pad)) / 5 = 18.8
                     padding: '0 1.2em',
                     gap: '1.2em',
                   }}
