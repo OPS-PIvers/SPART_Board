@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import { useAuth } from '../../../context/useAuth';
 import { useInstructionalRoutines } from '../../../hooks/useInstructionalRoutines';
@@ -20,14 +20,11 @@ import {
   ArrowLeft,
   Grab,
   Rocket,
-  Settings,
-  PlusCircle,
   ArrowDown,
   RefreshCw,
   Info,
 } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
-import { LibraryManager } from './LibraryManager';
 import {
   getRoutineColorClasses,
   getRoutineStepBorderClass,
@@ -378,12 +375,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, addWidget, clearAllStickers } = useDashboard();
-  const { isAdmin, userGradeLevels } = useAuth();
-  const {
-    routines: cloudRoutines,
-    saveRoutine,
-    deleteRoutine,
-  } = useInstructionalRoutines();
+  const { userGradeLevels } = useAuth();
+  const { routines: cloudRoutines } = useInstructionalRoutines();
 
   // Merge cloud routines with defaults
   const ROUTINES = useMemo(() => {
@@ -403,10 +396,6 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     favorites = [],
     scaleMultiplier = 1,
   } = config;
-
-  const [isManagingLibrary, setIsManagingLibrary] = useState(false);
-  const [editingRoutine, setEditingRoutine] =
-    useState<InstructionalRoutine | null>(null);
 
   const handleStepClick = (
     icon: string | undefined,
@@ -515,95 +504,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  if (isManagingLibrary && isAdmin) {
-    const routine = editingRoutine ?? {
-      id: crypto.randomUUID(),
-      name: '',
-      grades: 'Universal',
-      gradeLevels: ['k-2', '3-5', '6-8', '9-12'],
-      icon: 'Zap',
-      color: 'blue',
-      steps: [{ text: '', icon: 'Zap', color: 'blue', label: 'Step' }],
-    };
-
-    const handleSave = async () => {
-      if (!routine.name) return;
-      await saveRoutine(routine);
-      setIsManagingLibrary(false);
-      setEditingRoutine(null);
-    };
-
-    return (
-      <LibraryManager
-        routine={routine}
-        onChange={setEditingRoutine}
-        onSave={handleSave}
-        onCancel={() => {
-          setIsManagingLibrary(false);
-          setEditingRoutine(null);
-        }}
-      />
-    );
-  }
-
   if (!selectedRoutineId || !selectedRoutine) {
     return (
       <WidgetLayout
         padding="p-0"
-        header={
-          <div
-            className="flex justify-between items-center border-b border-slate-100 bg-slate-50/50 shrink-0"
-            style={{ padding: 'min(12px, 2.5cqmin)' }}
-          >
-            <div
-              className="font-black uppercase text-slate-400 tracking-widest"
-              style={{ fontSize: 'min(10px, 3cqmin)' }}
-            >
-              Library
-            </div>
-            <div
-              className="flex items-center"
-              style={{ gap: 'min(12px, 3cqmin)' }}
-            >
-              {isAdmin && (
-                <button
-                  onClick={() => setIsManagingLibrary(true)}
-                  className="flex items-center font-black uppercase text-blue-600 hover:text-blue-700 transition-colors"
-                  style={{
-                    gap: 'min(4px, 1cqmin)',
-                    fontSize: 'min(10px, 3cqmin)',
-                  }}
-                  title="Manage global routine library"
-                >
-                  <Settings
-                    style={{
-                      width: 'min(12px, 3cqmin)',
-                      height: 'min(12px, 3cqmin)',
-                    }}
-                  />
-                  Manage
-                </button>
-              )}
-              <button
-                onClick={clearAllStickers}
-                className="flex items-center font-black uppercase text-red-500 hover:text-red-600 transition-colors"
-                style={{
-                  gap: 'min(4px, 1cqmin)',
-                  fontSize: 'min(10px, 3cqmin)',
-                }}
-                title="Remove all stickers from board"
-              >
-                <Trash2
-                  style={{
-                    width: 'min(12px, 3cqmin)',
-                    height: 'min(12px, 3cqmin)',
-                  }}
-                />
-                Clear Board
-              </button>
-            </div>
-          </div>
-        }
         content={
           <div
             className="flex-1 flex flex-col overflow-y-auto custom-scrollbar"
@@ -715,50 +619,6 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                         className={isFav ? 'fill-current' : ''}
                       />
                     </button>
-
-                    {isAdmin && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingRoutine(r);
-                            setIsManagingLibrary(true);
-                          }}
-                          className="rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          style={{ padding: 'min(8px, 2cqmin)' }}
-                          title="Edit"
-                        >
-                          <PlusCircle
-                            style={{
-                              width: 'min(16px, 4cqmin)',
-                              height: 'min(16px, 4cqmin)',
-                            }}
-                          />
-                        </button>
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (
-                              confirm(
-                                'Delete this template from the global library?'
-                              )
-                            ) {
-                              await deleteRoutine(r.id);
-                            }
-                          }}
-                          className="rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          style={{ padding: 'min(8px, 2cqmin)' }}
-                          title="Delete"
-                        >
-                          <Trash2
-                            style={{
-                              width: 'min(16px, 4cqmin)',
-                              height: 'min(16px, 4cqmin)',
-                            }}
-                          />
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
               );

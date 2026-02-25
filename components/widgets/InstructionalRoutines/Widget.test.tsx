@@ -59,7 +59,7 @@ const mockBloomsWidget: WidgetData = {
 describe('InstructionalRoutinesWidget', () => {
   it('renders correctly in library mode', () => {
     render(<InstructionalRoutinesWidget widget={mockWidget} />);
-    expect(screen.getByText(/Library/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Select/i)[0]).toBeInTheDocument();
   });
 
   it('calls addWidget with Tailwind classes when launching Blooms resources', () => {
