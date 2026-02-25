@@ -2,11 +2,14 @@ import { render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { useState, useCallback } from 'react';
 import { useNutrislice } from './useNutrislice';
-import { LunchCountConfig } from '../../../types';
+import { LunchCountConfig, WidgetData } from '../../../types';
 
 describe('useNutrislice', () => {
-  const mockUpdateWidget = vi.fn();
-  const mockAddToast = vi.fn();
+  const mockUpdateWidget = vi.fn<[string, Partial<WidgetData>], void>();
+  const mockAddToast = vi.fn<
+    [string, 'info' | 'success' | 'error' | undefined],
+    void
+  >();
   const mockWidgetId = 'test-widget-id';
   const mockConfig: LunchCountConfig = {
     schoolSite: 'test-school',
@@ -48,14 +51,24 @@ describe('useNutrislice', () => {
     vi.restoreAllMocks();
   });
 
-  const TestComponent = ({ initialConfig = mockConfig }: { initialConfig?: LunchCountConfig }) => {
+  const TestComponent = ({
+    initialConfig = mockConfig,
+  }: {
+    initialConfig?: LunchCountConfig;
+  }) => {
     const [config, setConfig] = useState(initialConfig);
-    const updateWidget = useCallback((id: string, updates: any) => {
-      mockUpdateWidget(id, updates);
-      if (updates.config) {
-        setConfig((prev) => ({ ...prev, ...updates.config }));
-      }
-    }, []);
+    const updateWidget = useCallback(
+      (id: string, updates: Partial<WidgetData>) => {
+        mockUpdateWidget(id, updates);
+        if (updates.config) {
+          setConfig((prev) => ({
+            ...prev,
+            ...(updates.config as unknown as Partial<LunchCountConfig>),
+          }));
+        }
+      },
+      []
+    );
 
     useNutrislice({
       widgetId: mockWidgetId,
@@ -71,7 +84,7 @@ describe('useNutrislice', () => {
       await new Promise((r) => setTimeout(r, 10));
       return {
         ok: true,
-        text: async () => JSON.stringify(mockMenuData),
+        text: () => Promise.resolve(JSON.stringify(mockMenuData)),
       };
     });
 
@@ -81,7 +94,7 @@ describe('useNutrislice', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
-    const fetchUrl = (global.fetch as Mock).mock.calls[0][0];
+    const fetchUrl = (global.fetch as Mock).mock.calls[0][0] as string;
     expect(fetchUrl).toContain('test-school');
     // URL is encoded, so we check for encoded date parts or just verify logic
     expect(fetchUrl).toContain('2023');
@@ -96,10 +109,10 @@ describe('useNutrislice', () => {
             cachedMenu: {
               hotLunch: 'Cheese Pizza',
               bentoBox: 'Veggie Bento Box',
-              date: expect.any(String),
+              date: expect.any(String) as unknown as string,
             },
             syncError: null,
-          }),
+          }) as unknown as LunchCountConfig,
         })
       );
     });
@@ -121,7 +134,7 @@ describe('useNutrislice', () => {
       }
       return {
         ok: true,
-        text: async () => JSON.stringify(mockMenuData),
+        text: () => Promise.resolve(JSON.stringify(mockMenuData)),
       };
     });
 
@@ -139,9 +152,9 @@ describe('useNutrislice', () => {
             cachedMenu: {
               hotLunch: 'Cheese Pizza',
               bentoBox: 'Veggie Bento Box',
-              date: expect.any(String),
+              date: expect.any(String) as unknown as string,
             },
-          }),
+          }) as unknown as LunchCountConfig,
         })
       );
     });
@@ -157,10 +170,10 @@ describe('useNutrislice', () => {
     // Mock console.error to suppress expected error output
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
-      .mockImplementation(() => {});
+      .mockImplementation(() => undefined);
     const consoleWarnSpy = vi
       .spyOn(console, 'warn')
-      .mockImplementation(() => {});
+      .mockImplementation(() => undefined);
 
     render(<TestComponent />);
 
@@ -174,7 +187,7 @@ describe('useNutrislice', () => {
       expect.objectContaining({
         config: expect.objectContaining({
           syncError: 'E-SYNC-404',
-        }),
+        }) as unknown as LunchCountConfig,
       })
     );
 
@@ -226,7 +239,7 @@ describe('useNutrislice', () => {
       await new Promise((r) => setTimeout(r, 10));
       return {
         ok: true,
-        text: async () => JSON.stringify(bentoData),
+        text: () => Promise.resolve(JSON.stringify(bentoData)),
       };
     });
 
@@ -240,9 +253,9 @@ describe('useNutrislice', () => {
             cachedMenu: {
               hotLunch: 'Chicken Nuggets',
               bentoBox: 'Teriyaki Bento',
-              date: expect.any(String),
+              date: expect.any(String) as unknown as string,
             },
-          }),
+          }) as unknown as LunchCountConfig,
         })
       );
     });
