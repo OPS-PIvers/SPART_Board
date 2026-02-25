@@ -28,6 +28,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `TimeToolWidget.tsx` (via `useTimeTool.ts`) monitors the timer completion and updates the `TrafficLightWidget` if `timerEndTrafficColor` is set.
 **Configuration:** Enabled via the "Traffic Light Control" section in Time Tool Settings.
 
+### Randomizer -> Seating Chart
+
+**Description:** Automatically highlights the student's seat in the Seating Chart when they are picked by the Randomizer.
+**Implementation:** `SeatingChartWidget.tsx` monitors the `lastResult` of any active `RandomWidget` and updates the `randomHighlight` state.
+**Configuration:** Automatic. Requires both widgets to be active and the student name to match (either via Class Roster or identical Custom Roster names).
+
 ## Planned Connections
 
 ## WILL NOT IMPLEMENT

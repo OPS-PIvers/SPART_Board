@@ -9,16 +9,25 @@ import { useDashboard } from '../../context/useDashboard';
 import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
 import { DashboardContextValue } from '../../context/DashboardContextValue';
+import { RandomConfig } from '../../types';
 
 vi.mock('../../context/useDashboard');
 
 const mockUpdateWidget = vi.fn();
+const mockAddToast = vi.fn();
 
 const mockDashboardContext: Partial<DashboardContextValue> = {
   updateWidget: mockUpdateWidget,
   rosters: [],
   activeRosterId: null,
-  addToast: vi.fn(),
+  addToast: mockAddToast,
+  activeDashboard: {
+    id: 'dashboard-1',
+    name: 'Test Dashboard',
+    background: 'bg-slate-50',
+    createdAt: Date.now(),
+    widgets: [],
+  },
 };
 
 describe('SeatingChartWidget', () => {
@@ -36,6 +45,12 @@ describe('SeatingChartWidget', () => {
   const createWidget = (): WidgetData => ({
     id: 'test-widget-id',
     type: 'seating-chart',
+    x: 0,
+    y: 0,
+    w: 800,
+    h: 600,
+    z: 1,
+    flipped: false,
     config: {
       furniture: [
         {
@@ -52,12 +67,71 @@ describe('SeatingChartWidget', () => {
       gridSize: 20,
       rosterMode: 'class',
     } as SeatingChartConfig,
-    x: 0,
-    y: 0,
-    w: 800,
-    h: 600,
-    z: 1,
-    flipped: false,
+  });
+
+  it('should highlight student seat when RandomWidget picks a winner', () => {
+    // 1. Setup Seating Chart with a student assigned to a desk
+    const seatingWidget = createWidget();
+    const config = seatingWidget.config as SeatingChartConfig;
+    config.rosterMode = 'custom';
+    config.names = 'Student A\nStudent B';
+    config.assignments = {
+      'Student A': 'desk-1',
+    };
+    config.furniture = [
+      {
+        id: 'desk-1',
+        type: 'desk',
+        x: 100,
+        y: 100,
+        width: 80,
+        height: 65,
+        rotation: 0,
+      },
+    ];
+
+    // 2. Setup RandomWidget with a winner
+    const randomWidget: WidgetData = {
+      id: 'random-1',
+      type: 'random',
+      x: 0,
+      y: 0,
+      w: 400,
+      h: 400,
+      z: 1,
+      flipped: false,
+      config: {
+        lastResult: 'Student A',
+      } as RandomConfig,
+    };
+
+    // 3. Mock Dashboard Context to include both widgets
+    vi.mocked(useDashboard).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        ...(mockDashboardContext.activeDashboard ?? {
+          id: 'temp',
+          name: 'Temp',
+          background: '',
+          createdAt: 0,
+          widgets: [],
+        }),
+        widgets: [seatingWidget, randomWidget],
+      },
+      addToast: mockAddToast,
+    } as DashboardContextValue);
+
+    // 4. Render
+    const { container } = render(<SeatingChartWidget widget={seatingWidget} />);
+
+    // 5. Verify Highlight
+    // The furniture item should have bg-yellow-300 border-yellow-500
+    const highlightedItem = container.querySelector('.bg-yellow-300');
+    expect(highlightedItem).toBeTruthy();
+    expect(highlightedItem?.className).toContain('border-yellow-500');
+
+    // 6. Verify Toast
+    expect(mockAddToast).toHaveBeenCalledWith('Highlighted Student A', 'info');
   });
 
   it('should only call updateWidget on pointerUp, not on pointerMove', () => {

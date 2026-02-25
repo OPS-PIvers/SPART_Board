@@ -11,6 +11,7 @@ import {
   SeatingChartConfig,
   FurnitureItem,
   SeatingChartTemplate,
+  RandomConfig,
 } from '../../types';
 import {
   Armchair,
@@ -120,7 +121,8 @@ const EMPTY_ARRAY: string[] = [];
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, rosters, activeRosterId, addToast } = useDashboard();
+  const { updateWidget, rosters, activeRosterId, addToast, activeDashboard } =
+    useDashboard();
   const config = widget.config as SeatingChartConfig;
   // Fall back to the legacy templateRows field so existing Firestore widgets
   // preserve their saved column count after the rename to templateColumns.
@@ -224,6 +226,39 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
     () => new Map(students.map((s) => [s.id, s.label])),
     [students]
   );
+
+  // Nexus Connection: Listen for Randomizer picks
+  const randomLastResult = useMemo(() => {
+    const randomWidget = activeDashboard?.widgets.find(
+      (w) => w.type === 'random'
+    );
+    const config = randomWidget?.config as RandomConfig | undefined;
+    return config?.lastResult;
+  }, [activeDashboard?.widgets]);
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+
+    if (typeof randomLastResult === 'string' && randomLastResult) {
+      // Find student by name (label)
+      const student = students.find((s) => s.label === randomLastResult);
+      if (student) {
+        const furnitureId = assignments[student.id];
+        if (furnitureId) {
+          setRandomHighlight(furnitureId);
+          addToast(`Highlighted ${randomLastResult}`, 'info');
+
+          // Auto-clear after 5 seconds
+          const timer = setTimeout(() => {
+            setRandomHighlight(null);
+          }, 5000);
+          cleanup = () => clearTimeout(timer);
+        }
+      }
+    }
+
+    return cleanup;
+  }, [randomLastResult, students, assignments, addToast]);
 
   const assignedStudentIds = new Set(Object.keys(assignments));
   const unassignedStudents = students.filter(
