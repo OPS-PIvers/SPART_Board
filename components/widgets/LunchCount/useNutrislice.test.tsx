@@ -76,7 +76,7 @@ describe('useNutrislice', () => {
           }));
         }
       },
-      [mockUpdateWidget]
+      []
     );
 
     useNutrislice({
