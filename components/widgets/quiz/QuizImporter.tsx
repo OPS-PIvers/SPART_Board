@@ -235,7 +235,10 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
                   Incorrect 1–4 (MC only)
                 </p>
               </div>
-              <p className="text-brand-gray-primary text-xxs leading-relaxed italic">
+              <p
+                className="text-brand-gray-primary leading-relaxed italic"
+                style={{ fontSize: 'min(10px, 3cqmin)' }}
+              >
                 <strong>Tip:</strong> CSV is private and doesn&apos;t require
                 public link sharing. Use it for sensitive assessments.
               </p>
@@ -289,12 +292,20 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
                   <span className="font-bold text-indigo-600 text-xs">
                     Generate with AI
                   </span>
-                  <p className="text-indigo-400 text-xxs">Magic Quiz Creator</p>
+                  <p
+                    className="text-indigo-400"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
+                  >
+                    Magic Quiz Creator
+                  </p>
                 </button>
 
                 <div className="relative py-1 flex items-center">
                   <div className="flex-grow border-t border-brand-blue-primary/10"></div>
-                  <span className="flex-shrink mx-3 text-xxs font-black text-brand-blue-primary/30 uppercase tracking-widest">
+                  <span
+                    className="flex-shrink mx-3 font-black text-brand-blue-primary/30 uppercase tracking-widest"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
+                  >
                     OR
                   </span>
                   <div className="flex-grow border-t border-brand-blue-primary/10"></div>
@@ -330,7 +341,10 @@ export const QuizImporter: React.FC<QuizImporterProps> = ({
 
                 <div className="relative py-1 flex items-center">
                   <div className="flex-grow border-t border-brand-blue-primary/10"></div>
-                  <span className="flex-shrink mx-3 text-xxs font-black text-brand-blue-primary/30 uppercase tracking-widest">
+                  <span
+                    className="flex-shrink mx-3 font-black text-brand-blue-primary/30 uppercase tracking-widest"
+                    style={{ fontSize: 'min(10px, 3cqmin)' }}
+                  >
                     OR
                   </span>
                   <div className="flex-grow border-t border-brand-blue-primary/10"></div>

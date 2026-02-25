@@ -336,7 +336,7 @@ const OverviewTab: React.FC<{
           <Target className="w-4 h-4 text-brand-blue-primary" />
           <span
             className="font-black text-brand-blue-dark uppercase tracking-widest"
-            style={{ fontSize: 'min(11px, 3.5cqmin)' }}
+            style={{ fontSize: 'min(10px, 3.5cqmin)' }}
           >
             Score Distribution
           </span>
