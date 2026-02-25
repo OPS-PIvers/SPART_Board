@@ -5,18 +5,25 @@ import { useNutrislice } from './useNutrislice';
 import { LunchCountConfig, WidgetData } from '../../../types';
 
 describe('useNutrislice', () => {
-  const mockUpdateWidget = vi.fn<[string, Partial<WidgetData>], void>();
-  const mockAddToast = vi.fn<
-    [string, 'info' | 'success' | 'error' | undefined],
-    void
-  >();
+  const mockUpdateWidget = vi.fn(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (id: string, updates: Partial<WidgetData>) => {}
+  );
+  const mockAddToast = vi.fn(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (message: string, type?: 'info' | 'success' | 'error') => {}
+  );
   const mockWidgetId = 'test-widget-id';
   const mockConfig: LunchCountConfig = {
-    schoolSite: 'test-school',
+    schoolSite: 'schumann-elementary',
     isManualMode: false,
     cachedMenu: undefined,
     lastSyncDate: undefined,
     syncError: null,
+    manualHotLunch: '',
+    manualBentoBox: '',
+    roster: [],
+    assignments: {},
   };
 
   const mockMenuData = {
@@ -95,7 +102,7 @@ describe('useNutrislice', () => {
     });
 
     const fetchUrl = (global.fetch as Mock).mock.calls[0][0] as string;
-    expect(fetchUrl).toContain('test-school');
+    expect(fetchUrl).toContain('schumann-elementary');
     // URL is encoded, so we check for encoded date parts or just verify logic
     expect(fetchUrl).toContain('2023');
     expect(fetchUrl).toContain('10');
