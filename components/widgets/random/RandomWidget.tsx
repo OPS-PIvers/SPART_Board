@@ -356,12 +356,9 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   // the widget's aspect ratio.
   const maxWordLength = useMemo(
     () =>
-      students.reduce((max, name) => {
-        const longestWord = name
-          .split(' ')
-          .reduce((m, w) => Math.max(m, w.length), 0);
-        return Math.max(max, longestWord);
-      }, 0),
+      students
+        .flatMap((name) => name.split(' '))
+        .reduce((maxLen, word) => Math.max(maxLen, word.length), 0),
     [students]
   );
 
@@ -397,7 +394,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={32} // Internal scaling handled by RandomWheel
+          resultFontSize={resFontSize}
         />
       );
     }

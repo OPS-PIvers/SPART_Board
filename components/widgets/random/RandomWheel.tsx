@@ -11,7 +11,7 @@ interface RandomWheelProps {
   wheelSize: number;
   displayResult: string | string[] | string[][] | null;
   isSpinning: boolean;
-  resultFontSize: number;
+  resultFontSize: number | string;
 }
 
 export const RandomWheel: React.FC<RandomWheelProps> = ({
@@ -138,7 +138,10 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
           <div
             className="bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)] text-indigo-900 animate-bounce text-center max-w-[90%]"
             style={{
-              fontSize: `max(24px, ${resultFontSize ?? 24}px)`,
+              fontSize:
+                typeof resultFontSize === 'number'
+                  ? `max(24px, ${resultFontSize}px)`
+                  : `max(24px, ${resultFontSize})`,
               lineHeight: 1.1,
               padding: 'min(24px, 5cqmin) min(40px, 8cqmin)',
               borderWidth: 'min(6px, 1.5cqmin)',
