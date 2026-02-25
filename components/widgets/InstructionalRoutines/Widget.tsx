@@ -425,9 +425,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   // Mathematical Scaling (Preferred values for CSS Container Queries)
   const scalingStyles = useMemo(() => {
     if (!selectedRoutineId) {
-      // Library view scaling
+      // Library view scaling: ensure it scales with both width and height
+      // 5.5cqh ensures 5 cards fit with readable text
       return {
-        fontSize: `calc(clamp(10px, 4cqmin, 16px) * ${scaleMultiplier})`,
+        fontSize: `calc(min(20px, 4.5cqw, 5.5cqh) * ${scaleMultiplier})`,
       };
     }
 
@@ -513,9 +514,8 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             className="flex-1 flex flex-col overflow-y-auto custom-scrollbar"
             style={{
               ...scalingStyles,
-              gap: 'min(8px, 2cqmin)',
-              padding: 'min(12px, 2.5cqmin)',
-              paddingBottom: 'min(16px, 3.5cqmin)',
+              padding: '0 1cqw', // Only side padding
+              gap: '1cqh', // Exact gap for height calculation
             }}
           >
             {displayedRoutines.map((r) => {
@@ -530,23 +530,24 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
               return (
                 <div
                   key={r.id}
-                  className={`group/card relative bg-white rounded-xl shadow-sm border transition-all hover:shadow-md flex items-center ${colors.border} ${colors.hoverBorder}`}
+                  className={`group/card relative bg-white rounded-2xl shadow-sm border transition-all hover:shadow-md flex items-center shrink-0 ${colors.border} ${colors.hoverBorder}`}
                   style={{
-                    padding: 'min(10px, 2.5cqmin)',
-                    gap: 'min(12px, 2.5cqmin)',
+                    height: '19.2cqh', // (100 - (4 * 1)) / 5 = 19.2
+                    padding: '0 1.2em',
+                    gap: '1.2em',
                   }}
                 >
                   <div
-                    className={`rounded-xl flex items-center justify-center shrink-0 ${colors.bg} ${colors.text}`}
+                    className={`rounded-2xl flex items-center justify-center shrink-0 ${colors.bg} ${colors.text}`}
                     style={{
-                      width: 'min(40px, 10cqmin)',
-                      height: 'min(40px, 10cqmin)',
+                      width: '3em',
+                      height: '3em',
                     }}
                   >
                     <Icon
                       style={{
-                        width: 'min(24px, 6cqmin)',
-                        height: 'min(24px, 6cqmin)',
+                        width: '1.8em',
+                        height: '1.8em',
                       }}
                       strokeWidth={2}
                     />
@@ -555,28 +556,25 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   <div className="flex-1 min-w-0">
                     <h4
                       className="text-slate-700 font-black uppercase truncate tracking-wide"
-                      style={{ fontSize: 'min(14px, 4cqmin)' }}
+                      style={{ fontSize: '1.1em' }}
                     >
                       {r.name}
                     </h4>
                     <div
                       className="text-slate-500 font-bold uppercase tracking-widest"
-                      style={{ fontSize: 'min(10px, 3cqmin)' }}
+                      style={{ fontSize: '0.7em' }}
                     >
                       {r.grades}
                     </div>
                   </div>
 
-                  <div
-                    className="flex items-center"
-                    style={{ gap: 'min(4px, 1cqmin)' }}
-                  >
+                  <div className="flex items-center" style={{ gap: '0.5em' }}>
                     <button
                       onClick={() => selectRoutine(r)}
-                      className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg transition-colors font-black uppercase tracking-widest"
+                      className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-xl transition-colors font-black uppercase tracking-widest"
                       style={{
-                        padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
-                        fontSize: 'min(10px, 2.5cqmin)',
+                        padding: '0.6em 1.2em',
+                        fontSize: '0.8em',
                       }}
                       title="Use Routine"
                     >
@@ -587,9 +585,9 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                       className="bg-slate-200 shrink-0"
                       style={{
                         width: '1px',
-                        height: 'min(24px, 6cqmin)',
-                        marginLeft: 'min(4px, 1cqmin)',
-                        marginRight: 'min(4px, 1cqmin)',
+                        height: '2em',
+                        marginLeft: '0.4em',
+                        marginRight: '0.4em',
                       }}
                     />
 
@@ -603,18 +601,18 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           config: { ...config, favorites: next },
                         });
                       }}
-                      className={`rounded-lg hover:bg-slate-50 transition-colors ${
+                      className={`rounded-xl hover:bg-slate-50 transition-colors ${
                         isFav
                           ? 'text-amber-400'
                           : 'text-slate-300 hover:text-slate-400'
                       }`}
-                      style={{ padding: 'min(8px, 2cqmin)' }}
+                      style={{ padding: '0.6em' }}
                       title={isFav ? 'Remove Favorite' : 'Add Favorite'}
                     >
                       <Star
                         style={{
-                          width: 'min(16px, 4cqmin)',
-                          height: 'min(16px, 4cqmin)',
+                          width: '1.4em',
+                          height: '1.4em',
                         }}
                         className={isFav ? 'fill-current' : ''}
                       />
