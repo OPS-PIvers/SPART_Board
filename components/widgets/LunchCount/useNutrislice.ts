@@ -181,15 +181,22 @@ export const useNutrislice = ({
     if (isSyncing) return;
 
     const needsSync =
-      !config.cachedMenu ||
-      (config.lastSyncDate &&
-        new Date(config.lastSyncDate).toDateString() !==
-          new Date().toDateString());
+      (!config.cachedMenu ||
+        (config.lastSyncDate &&
+          new Date(config.lastSyncDate).toDateString() !==
+            new Date().toDateString())) &&
+      !config.syncError;
 
     if (needsSync) {
       void fetchNutrislice();
     }
-  }, [fetchNutrislice, config.cachedMenu, config.lastSyncDate, isSyncing]);
+  }, [
+    fetchNutrislice,
+    config.cachedMenu,
+    config.lastSyncDate,
+    config.syncError,
+    isSyncing,
+  ]);
 
   return { isSyncing, fetchNutrislice };
 };
