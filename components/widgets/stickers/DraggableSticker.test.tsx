@@ -104,15 +104,45 @@ describe('DraggableSticker', () => {
     expect(mockRemoveWidget).toHaveBeenCalledWith('sticker-1');
   });
 
-  it('removes sticker on widget-escape-press event', () => {
+  it('deselects sticker on widget-escape-press event', () => {
     render(
       <DraggableSticker widget={mockWidget}>
         <div>Sticker Content</div>
       </DraggableSticker>
     );
 
+    const sticker = screen.getByText('Sticker Content').closest('.absolute');
+    if (!sticker) throw new Error('Sticker not found');
+
+    // Select the sticker first
+    fireEvent(
+      sticker,
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    );
+
     const event = new CustomEvent('widget-escape-press', {
       detail: { widgetId: 'sticker-1' },
+    });
+    act(() => {
+      window.dispatchEvent(event);
+    });
+
+    // Should not remove widget, should just close selection
+    expect(mockRemoveWidget).not.toHaveBeenCalled();
+    // Verify rotate handle is gone
+    const rotateHandle = sticker.querySelector('.cursor-grab');
+    expect(rotateHandle).not.toBeInTheDocument();
+  });
+
+  it('removes sticker on widget-keyboard-action Delete event', () => {
+    render(
+      <DraggableSticker widget={mockWidget}>
+        <div>Sticker Content</div>
+      </DraggableSticker>
+    );
+
+    const event = new CustomEvent('widget-keyboard-action', {
+      detail: { widgetId: 'sticker-1', key: 'Delete', shiftKey: false },
     });
     act(() => {
       window.dispatchEvent(event);
