@@ -20,8 +20,13 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
   widget,
   children,
 }) => {
-  const { updateWidget, removeWidget, bringToFront, moveWidgetLayer } =
-    useDashboard();
+  const {
+    updateWidget,
+    removeWidget,
+    bringToFront,
+    moveWidgetLayer,
+    deleteAllWidgets,
+  } = useDashboard();
   const [isSelected, setIsSelected] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -42,12 +47,33 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
     const handleEscapePress = (e: Event) => {
       const customEvent = e as CustomEvent<{ widgetId: string }>;
       if (customEvent.detail?.widgetId !== widget.id) return;
-      removeWidget(widget.id);
+      setIsSelected(false);
+      setShowMenu(false);
+    };
+
+    const handleCustomKeyboard = (e: Event) => {
+      const { widgetId, key, shiftKey } = (
+        e as CustomEvent<{ widgetId: string; key: string; shiftKey: boolean }>
+      ).detail;
+      if (widgetId !== widget.id || shiftKey) return;
+
+      if (key === 'Escape') {
+        setIsSelected(false);
+        setShowMenu(false);
+      } else if (key === 'Delete' || key === 'Backspace') {
+        removeWidget(widget.id);
+      }
     };
 
     window.addEventListener('widget-escape-press', handleEscapePress);
-    return () =>
+    window.addEventListener('widget-keyboard-action', handleCustomKeyboard);
+    return () => {
       window.removeEventListener('widget-escape-press', handleEscapePress);
+      window.removeEventListener(
+        'widget-keyboard-action',
+        handleCustomKeyboard
+      );
+    };
   }, [widget.id, removeWidget]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -58,6 +84,9 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
     e.preventDefault();
     e.stopPropagation();
+
+    // Explicitly focus the sticker so it can receive keyboard events
+    (e.currentTarget as HTMLElement).focus();
 
     setIsSelected(true);
     // Select and bring this sticker to the front on click or drag start.
@@ -88,6 +117,38 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
 
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsSelected(false);
+      setShowMenu(false);
+      return;
+    }
+
+    if (
+      (e.key === 'Delete' || e.key === 'Backspace') &&
+      !e.shiftKey &&
+      !e.altKey &&
+      !e.ctrlKey
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      removeWidget(widget.id);
+      return;
+    }
+
+    // Alt + Delete: Clear all widgets
+    if ((e.key === 'Delete' || e.key === 'Backspace') && e.altKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (confirm('Are you sure you want to clear the entire board?')) {
+        deleteAllWidgets();
+      }
+      return;
+    }
   };
 
   const handleRotateStart = (e: React.PointerEvent) => {
@@ -159,7 +220,10 @@ export const DraggableSticker: React.FC<DraggableStickerProps> = ({
   return (
     <div
       ref={nodeRef}
-      className="absolute group select-none"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      data-widget-id={widget.id}
+      className="absolute group select-none widget focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
       style={{
         left: widget.x,
         top: widget.y,
