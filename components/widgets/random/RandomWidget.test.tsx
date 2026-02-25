@@ -137,9 +137,7 @@ describe('RandomWidget', () => {
 
     render(<RandomWidget widget={widget} />);
 
-    // Find the button (it doesn't exist yet, so we use queryByText and expect it to fail currently,
-    // but for the sake of the plan step we will assert it exists to drive implementation)
-    // For now, I'll assume the button text is "Send to Scoreboard"
+    // Find the "Send to Scoreboard" button that should send the current groups to a new scoreboard
     const sendButton = screen.getByRole('button', {
       name: /Send to Scoreboard/i,
     });

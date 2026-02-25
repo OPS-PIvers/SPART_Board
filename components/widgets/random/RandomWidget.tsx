@@ -160,21 +160,33 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const handleSendToScoreboard = () => {
-    // 1. Get current groups
-    const result = displayResult as RandomGroup[];
+    // 1. Normalize current groups from displayResult
+    const rawResult = displayResult;
+    let groups: RandomGroup[] | null = null;
 
-    if (
-      !Array.isArray(result) ||
-      result.length === 0 ||
-      typeof result[0] !== 'object' ||
-      result[0] === null ||
-      !('names' in result[0])
-    ) {
+    if (Array.isArray(rawResult) && rawResult.length > 0) {
+      const first = rawResult[0];
+      // Case A: Already in RandomGroup[] shape
+      if (
+        typeof first === 'object' &&
+        first !== null &&
+        'names' in (first as RandomGroup)
+      ) {
+        groups = rawResult as RandomGroup[];
+      }
+      // Case B: Legacy string[][] shape – convert to RandomGroup[]
+      else if (Array.isArray(first)) {
+        const stringGroups = rawResult as string[][];
+        groups = stringGroups.map((names): RandomGroup => ({ names }));
+      }
+    }
+
+    if (!groups || groups.length === 0) {
       return;
     }
 
     // 2. Map to ScoreboardTeam
-    const newTeams: ScoreboardTeam[] = result.map((group, index) => {
+    const newTeams: ScoreboardTeam[] = groups.map((group, index) => {
       let name = `Group ${index + 1}`;
       // If linked to shared group, use that name
       if (group.id && activeDashboard?.sharedGroups) {
@@ -203,7 +215,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         config: {
           ...existingScoreboard.config,
           teams: newTeams,
-        } as WidgetConfig,
+        },
       });
       addToast(`Updated scoreboard with ${newTeams.length} teams!`, 'success');
     } else {
@@ -211,7 +223,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       addWidget('scoreboard', {
         config: {
           teams: newTeams,
-        } as WidgetConfig,
+        },
       });
       addToast(`Created scoreboard with ${newTeams.length} teams!`, 'success');
     }
@@ -747,7 +759,10 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div className="w-full px-2 pb-2 flex gap-2">
+        <div
+          className="w-full px-2 pb-2 flex"
+          style={{ gap: 'min(8px, 2cqmin)' }}
+        >
           {mode === 'groups' &&
             Array.isArray(displayResult) &&
             displayResult.length > 0 &&
@@ -758,6 +773,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                 variant="secondary"
                 shape="pill"
                 onClick={handleSendToScoreboard}
+                aria-label="Send to Scoreboard"
                 style={{
                   width: 'min(48px, 12cqmin)',
                   height: 'min(48px, 12cqmin)',
