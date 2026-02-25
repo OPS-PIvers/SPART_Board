@@ -31,7 +31,14 @@ export const RandomFlash: React.FC<RandomFlashProps> = ({
         padding: 'min(12px, 2.5cqmin)',
       }}
     >
-      <span className="max-w-full break-words leading-tight uppercase">
+      <span
+        className="leading-tight uppercase"
+        style={{
+          maxWidth: '100%',
+          wordBreak: 'normal',
+          overflowWrap: 'normal',
+        }}
+      >
         {(displayResult as string) ?? 'Ready?'}
       </span>
     </div>

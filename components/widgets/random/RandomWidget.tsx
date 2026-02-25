@@ -350,24 +350,41 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
-  const maxNameLength = useMemo(
-    () => students.reduce((max, name) => Math.max(max, name.length), 0),
+  // Use the longest individual word (not full name length) so that a single
+  // word is never forced to wrap. cqw (container-width-relative) units ensure
+  // the chosen font size fits within the widget's actual width regardless of
+  // the widget's aspect ratio.
+  const maxWordLength = useMemo(
+    () =>
+      students.reduce((max, name) => {
+        const longestWord = name
+          .split(' ')
+          .reduce((m, w) => Math.max(m, w.length), 0);
+        return Math.max(max, longestWord);
+      }, 0),
     [students]
   );
 
-  // Scale font down for longer names so they always fit without resizing the widget
+  // Each step guarantees the longest word (~0.65 char-width ratio, uppercase
+  // bold, 15 % safety margin) fits in the container width at that cqw value.
   const resFontSize = useMemo(() => {
     const sizeSteps = [
-      { maxLength: 6, size: '45cqmin' },
-      { maxLength: 10, size: '35cqmin' },
-      { maxLength: 14, size: '28cqmin' },
-      { maxLength: 18, size: '22cqmin' },
-      { maxLength: 24, size: '18cqmin' },
+      { maxLength: 4, size: '32cqw' },
+      { maxLength: 5, size: '26cqw' },
+      { maxLength: 6, size: '21cqw' },
+      { maxLength: 7, size: '18cqw' },
+      { maxLength: 8, size: '16cqw' },
+      { maxLength: 9, size: '14cqw' },
+      { maxLength: 10, size: '13cqw' },
+      { maxLength: 11, size: '11cqw' },
+      { maxLength: 12, size: '10cqw' },
+      { maxLength: 14, size: '9cqw' },
+      { maxLength: 18, size: '7cqw' },
     ];
 
-    const step = sizeSteps.find((s) => maxNameLength <= s.maxLength);
-    return step ? step.size : '14cqmin';
-  }, [maxNameLength]);
+    const step = sizeSteps.find((s) => maxWordLength <= s.maxLength);
+    return step ? step.size : '6cqw';
+  }, [maxWordLength]);
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
