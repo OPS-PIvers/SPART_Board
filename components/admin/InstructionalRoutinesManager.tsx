@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { X, Plus, Edit, Trash2, Sparkles } from 'lucide-react';
-import { useInstructionalRoutines } from '../../hooks/useInstructionalRoutines';
-import { LibraryManager } from '../widgets/InstructionalRoutines/LibraryManager';
-import { InstructionalRoutine } from '../../config/instructionalRoutines';
-import { ConfirmDialog } from '../widgets/InstructionalRoutines/ConfirmDialog';
-import { getRoutineColorClasses } from '../widgets/InstructionalRoutines/colorHelpers';
-import { Toast } from '../common/Toast';
+import { useInstructionalRoutines } from '@/hooks/useInstructionalRoutines';
+import { LibraryManager } from '@/components/widgets/InstructionalRoutines/LibraryManager';
+import { InstructionalRoutine } from '@/config/instructionalRoutines';
+import { ConfirmDialog } from '@/components/widgets/InstructionalRoutines/ConfirmDialog';
+import { getRoutineColorClasses } from '@/components/widgets/InstructionalRoutines/colorHelpers';
+import { Toast } from '@/components/common/Toast';
 
 interface InstructionalRoutinesManagerProps {
   onClose: () => void;

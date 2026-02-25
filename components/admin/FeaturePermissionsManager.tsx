@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
-import { db, isAuthBypass } from '../../config/firebase';
+import { db, isAuthBypass } from '@/config/firebase';
 import {
   FeaturePermission,
   AccessLevel,
   WidgetType,
   GradeLevel,
   InternalToolType,
-} from '../../types';
-import { useStorage } from '../../hooks/useStorage';
-import { TOOLS } from '../../config/tools';
+} from '@/types';
+import { useStorage } from '@/hooks/useStorage';
+import { TOOLS } from '@/config/tools';
 import {
   getWidgetGradeLevels,
   ALL_GRADE_LEVELS,
-} from '../../config/widgetGradeLevels';
+} from '@/config/widgetGradeLevels';
 import {
   Shield,
   Users,
@@ -23,12 +23,12 @@ import {
   LayoutGrid,
   List,
 } from 'lucide-react';
-import { Toggle } from '../common/Toggle';
-import { Toast } from '../common/Toast';
+import { Toggle } from '@/components/common/Toggle';
+import { Toast } from '@/components/common/Toast';
 
-import { FeatureConfigurationPanel } from './FeatureConfigurationPanel';
-import { BetaUsersPanel } from './BetaUsersPanel';
-import { InstructionalRoutinesManager } from './InstructionalRoutinesManager';
+import { FeatureConfigurationPanel } from '@/components/admin/FeatureConfigurationPanel';
+import { BetaUsersPanel } from '@/components/admin/BetaUsersPanel';
+import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRoutinesManager';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
