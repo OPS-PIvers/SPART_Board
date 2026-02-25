@@ -13,7 +13,7 @@ import {
   InstructionalRoutine,
 } from '../../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import { Star, Trash2, ArrowLeft, Rocket, Info } from 'lucide-react';
+import { Star, Trash2, ArrowLeft, Rocket } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 
 // Color mapping for routines
@@ -571,73 +571,91 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   };
 
   const structure = config.structure ?? selectedRoutine.structure ?? 'linear';
-  const audience = config.audience ?? selectedRoutine.audience ?? 'student';
 
   return (
     <WidgetLayout
       padding="p-0"
       header={
-        <div
-          className="flex items-center shrink-0 border-b border-slate-100 bg-slate-50/50"
-          style={{ padding: '1em', gap: '1em', ...scalingStyles }}
-        >
-          <button
-            onClick={() =>
-              updateWidget(widget.id, {
-                config: { ...config, selectedRoutineId: null },
-              })
-            }
-            className="hover:bg-slate-100 rounded-xl transition-colors"
+        <div className="flex flex-col shrink-0 border-b border-slate-100 bg-slate-50/50">
+          <div
+            className="flex items-center"
             style={{
-              padding: '0.5em',
+              padding: 'min(16px, 3cqmin)',
+              gap: 'min(12px, 2.5cqmin)',
+              ...scalingStyles,
             }}
           >
-            <ArrowLeft style={{ width: '1.5em', height: '1.5em' }} />
-          </button>
-          <div className="flex-1 min-w-0 text-left">
+            <button
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, selectedRoutineId: null },
+                })
+              }
+              className="hover:bg-slate-100 rounded-xl transition-colors shrink-0"
+              style={{ padding: '0.5em' }}
+            >
+              <ArrowLeft style={{ width: '1.5em', height: '1.5em' }} />
+            </button>
             <h3
-              className="font-black text-slate-800 uppercase tracking-tight truncate"
+              className="font-black text-slate-800 uppercase tracking-tight truncate flex-1"
               style={{ fontSize: '1.5em' }}
             >
               {selectedRoutine.name}
             </h3>
-            <div className="flex items-center" style={{ gap: '0.5em' }}>
-              <span
-                className="text-slate-400 font-black uppercase tracking-widest"
-                style={{ fontSize: '0.6em' }}
-              >
-                {selectedRoutine.grades} Protocol
-              </span>
-              {audience === 'teacher' && (
-                <span
-                  className="bg-amber-100 text-amber-700 rounded-full font-black uppercase tracking-tighter flex items-center px-2"
-                  style={{ fontSize: '0.5em' }}
-                >
-                  <Info
-                    className="mr-1"
-                    style={{ width: '1em', height: '1em' }}
-                  />{' '}
-                  Teacher Focus
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center" style={{ gap: '0.5em' }}>
-            <button
-              onClick={clearAllStickers}
-              className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
-              style={{ padding: '0.6em' }}
-              title="Clear all stickers from board"
-            >
-              <Trash2 style={{ width: '1.25em', height: '1.25em' }} />
-            </button>
             <div
-              className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
-              style={{ padding: '0.8em' }}
+              className="flex items-center shrink-0"
+              style={{ gap: '0.5em' }}
             >
-              <RoutineIcon style={{ width: '1.8em', height: '1.8em' }} />
+              <button
+                onClick={clearAllStickers}
+                className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
+                style={{ padding: '0.6em' }}
+                title="Clear all stickers from board"
+              >
+                <Trash2 style={{ width: '1.25em', height: '1.25em' }} />
+              </button>
+              <div
+                className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
+                style={{ padding: '0.8em' }}
+              >
+                <RoutineIcon style={{ width: '1.8em', height: '1.8em' }} />
+              </div>
             </div>
           </div>
+
+          {selectedRoutine.id === 'blooms-analysis' && (
+            <div
+              className="flex shrink-0 animate-in slide-in-from-top duration-300"
+              style={{
+                paddingLeft: 'min(16px, 3cqmin)',
+                paddingRight: 'min(16px, 3cqmin)',
+                paddingBottom: 'min(16px, 3cqmin)',
+                gap: '1em',
+                ...scalingStyles,
+              }}
+            >
+              <button
+                onClick={() => launchBloomsResource('keyWords')}
+                className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-slate-700"
+                style={{
+                  padding: '0.8em',
+                  fontSize: '0.75em',
+                }}
+              >
+                Key Words
+              </button>
+              <button
+                onClick={() => launchBloomsResource('questionStarters')}
+                className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-slate-700"
+                style={{
+                  padding: '0.8em',
+                  fontSize: '0.75em',
+                }}
+              >
+                Sentence Starters
+              </button>
+            </div>
+          )}
         </div>
       }
       content={
@@ -649,37 +667,6 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             ...scalingStyles,
           }}
         >
-          {selectedRoutine.id === 'blooms-analysis' && (
-            <div
-              className="flex shrink-0 animate-in slide-in-from-top duration-300"
-              style={{
-                paddingBottom: '0.5em',
-                gap: '1em',
-              }}
-            >
-              <button
-                onClick={() => launchBloomsResource('keyWords')}
-                className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-slate-700"
-                style={{
-                  padding: '1em',
-                  fontSize: '0.75em',
-                }}
-              >
-                Key Words
-              </button>
-              <button
-                onClick={() => launchBloomsResource('questionStarters')}
-                className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-slate-700"
-                style={{
-                  padding: '1em',
-                  fontSize: '0.75em',
-                }}
-              >
-                Sentence Starters
-              </button>
-            </div>
-          )}
-
           <div className="flex flex-col text-left" style={{ gap: '1em' }}>
             {customSteps.map((step, idx) => (
               <RoutineStepItem
