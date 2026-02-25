@@ -776,7 +776,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
+            <p className="text-xxs font-bold text-slate-500 uppercase tracking-tight">
               Switch to Voice Level when finished:
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -816,7 +816,7 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
         )}
 
         <div className="pt-2 border-t border-slate-100 mt-4">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight mb-2">
+          <p className="text-xxs font-bold text-slate-500 uppercase tracking-tight mb-2">
             Auto-set Traffic Light:
           </p>
           {!hasTrafficLight ? (

@@ -100,7 +100,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                           });
                         }}
                         placeholder="Keyword"
-                        className="w-16 bg-transparent border-none p-0 text-[9px] font-bold text-emerald-600 focus:ring-0"
+                        className="w-16 bg-transparent border-none p-0 text-xxs font-bold text-emerald-600 focus:ring-0"
                       />
                     </div>
                   </div>
@@ -117,7 +117,7 @@ export const InstructionalRoutinesSettings: React.FC<{
                 }}
                 rows={2}
                 placeholder="Enter student direction..."
-                className="w-full text-[11px]  bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
+                className="w-full text-xxs  bg-transparent border-none focus:ring-0 p-0 leading-tight resize-none text-slate-800"
               />
               <div className="flex items-center gap-2">
                 <span className="text-xxxs font-bold text-slate-400 uppercase">

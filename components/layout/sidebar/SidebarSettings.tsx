@@ -149,7 +149,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
               <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
                 Disable Close Warning
               </span>
-              <span className="text-[10px] text-slate-400 leading-tight">
+              <span className="text-xxs text-slate-400 leading-tight">
                 Skip the confirmation prompt when closing widgets.
               </span>
             </div>

@@ -326,7 +326,7 @@ export const FeaturePermissionsManager: React.FC = () => {
 
                   {/* Enabled Toggle */}
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    <span className="text-xxs font-bold text-slate-400 uppercase">
                       Enabled
                     </span>
                     <Toggle
@@ -370,7 +370,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                         <button
                           key={level}
                           onClick={() => toggleGradeLevel(tool.type, level)}
-                          className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
+                          className={`px-2 py-1 rounded-md text-xxs font-bold border transition-all ${
                             isSelected
                               ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                               : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -382,7 +382,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                     })}
                     <button
                       onClick={() => toggleAllGradeLevels(tool.type)}
-                      className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
+                      className={`px-2 py-1 rounded-md text-xxs font-bold border transition-all ${
                         isAllSelected
                           ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
                           : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'

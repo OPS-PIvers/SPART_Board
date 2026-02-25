@@ -324,7 +324,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     {item.task}
                   </span>
                   {item.mode === 'timer' && (
-                    <span className="text-[10px] bg-slate-100 px-1 rounded text-slate-500">
+                    <span className="text-xxs bg-slate-100 px-1 rounded text-slate-500">
                       Timer
                     </span>
                   )}
