@@ -81,8 +81,7 @@ export const StickerItemWidget: React.FC<StickerItemWidgetProps> = ({
           {config.label && (
             <div className="w-full pt-1.5 pb-0.5 text-center">
               <span
-                className={`font-black uppercase tracking-wider ${theme.text} block truncate px-1`}
-                style={{ fontSize: 'min(10px, 3cqmin)' }}
+                className={`text-xxs font-black uppercase tracking-wider ${theme.text} block truncate px-1`}
               >
                 {config.label}
               </span>
