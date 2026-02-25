@@ -6,4 +6,4 @@
 
 ## 2026-01-30 - [Build Scripts & Chunk Optimization] **Bottleneck:** Missing convenience scripts for full-stack build caused friction; large chunk warnings in build output. **Fix:** Added `install:all`, `build:all` scripts and optimized `vite.config.ts` manual chunks.
 
-## 2026-02-05 - [E2E Speed & Deploy Safety] **Bottleneck:** E2E tests were slow due to re-downloading Playwright browsers on every run. **Fix:** Added caching for Playwright binaries in `pr-validation.yml`. **Safety:** Production deploy pipeline lacked tests. **Fix:** Added `pnpm test` step to `firebase-deploy.yml` to prevent broken code from shipping.
+## 2026-02-05 - [E2E Speed & Deploy Safety] **Bottleneck:** E2E tests were slow due to re-downloading Playwright browsers on every run. **Fix:** Added caching for Playwright binaries in `pr-validation.yml`. **Bottleneck:** Production deploy pipeline lacked tests. **Fix:** Added `pnpm test` step to `firebase-deploy.yml` to prevent broken code from shipping.
