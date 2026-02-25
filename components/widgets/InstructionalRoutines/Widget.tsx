@@ -606,10 +606,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         }
         content={
           <div
-            className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-y-auto custom-scrollbar"
+            className="flex-1 flex flex-col overflow-y-auto custom-scrollbar"
             style={{
               ...scalingStyles,
-              gap: 'min(12px, 2.5cqmin)',
+              gap: 'min(8px, 2cqmin)',
               padding: 'min(12px, 2.5cqmin)',
               paddingBottom: 'min(16px, 3.5cqmin)',
             }}
@@ -624,53 +624,71 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                 ROUTINE_COLORS[r.color || 'blue'] || ROUTINE_COLORS.blue;
 
               return (
-                <div key={r.id} className="relative group/card h-full">
-                  <button
-                    onClick={() => selectRoutine(r)}
-                    className={`w-full h-full relative border rounded-2xl bg-white shadow-sm transition-all duration-300 flex flex-col items-center text-center group-hover/card:shadow-md group-hover/card:-translate-y-1 ${colors.border} ${colors.hoverBorder}`}
-                    style={{ padding: 'min(16px, 3.5cqmin)' }}
-                  >
-                    <div
-                      className={`rounded-full transition-transform group-hover/card:scale-110 duration-300 ${colors.bg} ${colors.text}`}
-                      style={{
-                        padding: 'min(16px, 3.5cqmin)',
-                        marginBottom: 'min(12px, 2.5cqmin)',
-                      }}
-                    >
-                      <Icon
-                        style={{
-                          width: 'min(48px, 12cqmin)',
-                          height: 'min(48px, 12cqmin)',
-                        }}
-                        strokeWidth={2}
-                      />
-                    </div>
-                    <div
-                      className="flex flex-col w-full"
-                      style={{ gap: 'min(6px, 1.5cqmin)' }}
-                    >
-                      <div
-                        className="font-black text-slate-800 uppercase leading-tight tracking-wide"
-                        style={{ fontSize: 'min(16px, 5.5cqmin)' }}
-                      >
-                        {r.name}
-                      </div>
-                      <div
-                        className="font-bold text-slate-400 uppercase tracking-wider"
-                        style={{ fontSize: 'min(12px, 4.5cqmin)' }}
-                      >
-                        {r.grades}
-                      </div>
-                    </div>
-                  </button>
+                <div
+                  key={r.id}
+                  className={`group/card relative bg-white rounded-xl shadow-sm border transition-all hover:shadow-md flex items-center ${colors.border} ${colors.hoverBorder}`}
+                  style={{
+                    padding: 'min(10px, 2.5cqmin)',
+                    gap: 'min(12px, 2.5cqmin)',
+                  }}
+                >
                   <div
-                    className="absolute flex flex-col opacity-0 group-hover/card:opacity-100 transition-opacity z-10"
+                    className={`rounded-xl flex items-center justify-center shrink-0 ${colors.bg} ${colors.text}`}
                     style={{
-                      top: 'min(8px, 2cqmin)',
-                      right: 'min(8px, 2cqmin)',
-                      gap: 'min(6px, 1.5cqmin)',
+                      width: 'min(40px, 10cqmin)',
+                      height: 'min(40px, 10cqmin)',
                     }}
                   >
+                    <Icon
+                      style={{
+                        width: 'min(24px, 6cqmin)',
+                        height: 'min(24px, 6cqmin)',
+                      }}
+                      strokeWidth={2}
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h4
+                      className="text-slate-700 font-black uppercase truncate tracking-wide"
+                      style={{ fontSize: 'min(14px, 4cqmin)' }}
+                    >
+                      {r.name}
+                    </h4>
+                    <div
+                      className="text-slate-500 font-bold uppercase tracking-widest"
+                      style={{ fontSize: 'min(10px, 3cqmin)' }}
+                    >
+                      {r.grades}
+                    </div>
+                  </div>
+
+                  <div
+                    className="flex items-center"
+                    style={{ gap: 'min(4px, 1cqmin)' }}
+                  >
+                    <button
+                      onClick={() => selectRoutine(r)}
+                      className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg transition-colors font-black uppercase tracking-widest"
+                      style={{
+                        padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+                        fontSize: 'min(10px, 2.5cqmin)',
+                      }}
+                      title="Use Routine"
+                    >
+                      Select
+                    </button>
+
+                    <div
+                      className="bg-slate-200 shrink-0"
+                      style={{
+                        width: '1px',
+                        height: 'min(24px, 6cqmin)',
+                        marginLeft: 'min(4px, 1cqmin)',
+                        marginRight: 'min(4px, 1cqmin)',
+                      }}
+                    />
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -681,21 +699,23 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                           config: { ...config, favorites: next },
                         });
                       }}
-                      className={`rounded-full bg-white shadow-md border border-slate-100 hover:scale-110 transition-transform ${
+                      className={`rounded-lg hover:bg-slate-50 transition-colors ${
                         isFav
                           ? 'text-amber-400'
                           : 'text-slate-300 hover:text-slate-400'
                       }`}
-                      style={{ padding: 'min(6px, 1.5cqmin)' }}
+                      style={{ padding: 'min(8px, 2cqmin)' }}
+                      title={isFav ? 'Remove Favorite' : 'Add Favorite'}
                     >
                       <Star
                         style={{
-                          width: 'min(12px, 3cqmin)',
-                          height: 'min(12px, 3cqmin)',
+                          width: 'min(16px, 4cqmin)',
+                          height: 'min(16px, 4cqmin)',
                         }}
                         className={isFav ? 'fill-current' : ''}
                       />
                     </button>
+
                     {isAdmin && (
                       <>
                         <button
@@ -704,13 +724,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                             setEditingRoutine(r);
                             setIsManagingLibrary(true);
                           }}
-                          className="rounded-full bg-white shadow-md border border-slate-100 text-blue-400 hover:text-blue-600 hover:scale-110 transition-transform"
-                          style={{ padding: 'min(6px, 1.5cqmin)' }}
+                          className="rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          style={{ padding: 'min(8px, 2cqmin)' }}
+                          title="Edit"
                         >
                           <PlusCircle
                             style={{
-                              width: 'min(12px, 3cqmin)',
-                              height: 'min(12px, 3cqmin)',
+                              width: 'min(16px, 4cqmin)',
+                              height: 'min(16px, 4cqmin)',
                             }}
                           />
                         </button>
@@ -725,13 +746,14 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                               await deleteRoutine(r.id);
                             }
                           }}
-                          className="rounded-full bg-white shadow-md border border-slate-100 text-red-300 hover:text-red-500 hover:scale-110 transition-transform"
-                          style={{ padding: 'min(6px, 1.5cqmin)' }}
+                          className="rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          style={{ padding: 'min(8px, 2cqmin)' }}
+                          title="Delete"
                         >
                           <Trash2
                             style={{
-                              width: 'min(12px, 3cqmin)',
-                              height: 'min(12px, 3cqmin)',
+                              width: 'min(16px, 4cqmin)',
+                              height: 'min(16px, 4cqmin)',
                             }}
                           />
                         </button>
