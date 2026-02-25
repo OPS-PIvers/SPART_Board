@@ -2,7 +2,7 @@ import { render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { useState, useCallback } from 'react';
 import { useNutrislice } from './useNutrislice';
-import { LunchCountConfig, WidgetData } from '../../../types';
+import { LunchCountConfig, WidgetData } from '@/types';
 
 describe('useNutrislice', () => {
   const mockUpdateWidget = vi.fn((id: string, updates: Partial<WidgetData>) => {
@@ -118,10 +118,10 @@ describe('useNutrislice', () => {
             cachedMenu: {
               hotLunch: 'Cheese Pizza',
               bentoBox: 'Veggie Bento Box',
-              date: expect.any(String) as unknown as string,
+              date: expect.any(String),
             },
             syncError: null,
-          }) as unknown as LunchCountConfig,
+          }),
         })
       );
     });
@@ -161,9 +161,9 @@ describe('useNutrislice', () => {
             cachedMenu: {
               hotLunch: 'Cheese Pizza',
               bentoBox: 'Veggie Bento Box',
-              date: expect.any(String) as unknown as string,
+              date: expect.any(String),
             },
-          }) as unknown as LunchCountConfig,
+          }),
         })
       );
     });
@@ -196,8 +196,8 @@ describe('useNutrislice', () => {
       expect.objectContaining({
         config: expect.objectContaining({
           syncError: 'E-SYNC-404',
-          lastSyncDate: expect.any(String) as unknown as string,
-        }) as unknown as LunchCountConfig,
+          lastSyncDate: expect.any(String),
+        }),
       })
     );
 
@@ -220,8 +220,8 @@ describe('useNutrislice', () => {
 
     render(<TestComponent initialConfig={freshConfig} />);
 
-    // Wait a bit to ensure no async calls happen
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Advance fake timers a bit to ensure no async calls happen
+    await vi.advanceTimersByTimeAsync(100);
 
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -263,9 +263,9 @@ describe('useNutrislice', () => {
             cachedMenu: {
               hotLunch: 'Chicken Nuggets',
               bentoBox: 'Teriyaki Bento',
-              date: expect.any(String) as unknown as string,
+              date: expect.any(String),
             },
-          }) as unknown as LunchCountConfig,
+          }),
         })
       );
     });
