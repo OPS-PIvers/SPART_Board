@@ -76,7 +76,7 @@ describe('useNutrislice', () => {
           }));
         }
       },
-      []
+      [mockUpdateWidget]
     );
 
     useNutrislice({
@@ -196,6 +196,7 @@ describe('useNutrislice', () => {
       expect.objectContaining({
         config: expect.objectContaining({
           syncError: 'E-SYNC-404',
+          lastSyncDate: expect.any(String) as unknown as string,
         }) as unknown as LunchCountConfig,
       })
     );
