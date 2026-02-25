@@ -357,30 +357,32 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const maxWordLength = useMemo(
     () =>
       students
-        .flatMap((name) => name.split(' '))
+        .flatMap((name) => name.trim().split(/\s+/))
         .reduce((maxLen, word) => Math.max(maxLen, word.length), 0),
     [students]
   );
 
   // Each step guarantees the longest word (~0.65 char-width ratio, uppercase
   // bold, 15 % safety margin) fits in the container width at that cqw value.
+  // The cqh cap (20cqh) prevents vertical overflow in very wide-but-short
+  // widgets where a pure cqw value could produce an impossibly tall font.
   const resFontSize = useMemo(() => {
     const sizeSteps = [
-      { maxLength: 4, size: '32cqw' },
-      { maxLength: 5, size: '26cqw' },
-      { maxLength: 6, size: '21cqw' },
-      { maxLength: 7, size: '18cqw' },
-      { maxLength: 8, size: '16cqw' },
-      { maxLength: 9, size: '14cqw' },
-      { maxLength: 10, size: '13cqw' },
-      { maxLength: 11, size: '11cqw' },
-      { maxLength: 12, size: '10cqw' },
-      { maxLength: 14, size: '9cqw' },
-      { maxLength: 18, size: '7cqw' },
+      { maxLength: 4, size: 'min(32cqw, 20cqh)' },
+      { maxLength: 5, size: 'min(26cqw, 20cqh)' },
+      { maxLength: 6, size: 'min(21cqw, 20cqh)' },
+      { maxLength: 7, size: 'min(18cqw, 20cqh)' },
+      { maxLength: 8, size: 'min(16cqw, 20cqh)' },
+      { maxLength: 9, size: 'min(14cqw, 20cqh)' },
+      { maxLength: 10, size: 'min(13cqw, 20cqh)' },
+      { maxLength: 11, size: 'min(11cqw, 20cqh)' },
+      { maxLength: 12, size: 'min(10cqw, 20cqh)' },
+      { maxLength: 14, size: 'min(9cqw, 20cqh)' },
+      { maxLength: 18, size: 'min(7cqw, 20cqh)' },
     ];
 
     const step = sizeSteps.find((s) => maxWordLength <= s.maxLength);
-    return step ? step.size : '6cqw';
+    return step ? step.size : 'min(6cqw, 20cqh)';
   }, [maxWordLength]);
 
   const renderSinglePick = () => {

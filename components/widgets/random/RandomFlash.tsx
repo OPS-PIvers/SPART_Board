@@ -34,7 +34,9 @@ export const RandomFlash: React.FC<RandomFlashProps> = ({
       <span
         className="leading-tight uppercase"
         style={{
+          display: 'inline-block',
           maxWidth: '100%',
+          textAlign: 'center',
           wordBreak: 'normal',
           overflowWrap: 'normal',
         }}

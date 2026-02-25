@@ -140,8 +140,8 @@ export const RandomWheel: React.FC<RandomWheelProps> = ({
             style={{
               fontSize:
                 typeof resultFontSize === 'number'
-                  ? `max(24px, ${resultFontSize}px)`
-                  : `max(24px, ${resultFontSize})`,
+                  ? `${resultFontSize}px`
+                  : resultFontSize,
               lineHeight: 1.1,
               padding: 'min(24px, 5cqmin) min(40px, 8cqmin)',
               borderWidth: 'min(6px, 1.5cqmin)',
