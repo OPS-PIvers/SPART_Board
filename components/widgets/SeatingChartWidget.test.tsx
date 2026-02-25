@@ -228,18 +228,10 @@ describe('SeatingChartWidget', () => {
       });
 
       const calls = (mockUpdateWidget as Mock).mock.calls;
-      const lastCall = calls[calls.length - 1] as [string, { config: SeatingChartConfig }];
-
-      // Debug logging
-      if (!lastCall) {
-        console.error('Mock was not called!');
-      } else {
-        const config = lastCall[1].config;
-        if (!config.assignments['Alice A']) {
-          console.error('Assignment missing! Config:', JSON.stringify(config, null, 2));
-        }
-      }
-
+      const lastCall = calls[calls.length - 1] as [
+        string,
+        { config: SeatingChartConfig },
+      ];
       const config = lastCall[1].config;
       expect(config.assignments['Alice A']).toBe('desk-1');
     });
@@ -325,17 +317,10 @@ describe('SeatingChartWidget', () => {
       });
 
       const calls = (mockUpdateWidget as Mock).mock.calls;
-      const lastCall = calls[calls.length - 1] as [string, { config: SeatingChartConfig }];
-
-      if (!lastCall) {
-        console.error('Random assign: mock not called');
-      } else {
-        const config = lastCall[1].config;
-        if (Object.keys(config.assignments).length === 0) {
-           console.error('Random assign: assignments empty!', config);
-        }
-      }
-
+      const lastCall = calls[calls.length - 1] as [
+        string,
+        { config: SeatingChartConfig },
+      ];
       const config = lastCall[1].config;
 
       // All 3 students should be assigned
