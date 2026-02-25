@@ -114,10 +114,12 @@ describe('useNutrislice', () => {
       expect(mockUpdateWidget).toHaveBeenCalledWith(
         mockWidgetId,
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           config: expect.objectContaining({
             cachedMenu: {
               hotLunch: 'Cheese Pizza',
               bentoBox: 'Veggie Bento Box',
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               date: expect.any(String),
             },
             syncError: null,
@@ -157,10 +159,12 @@ describe('useNutrislice', () => {
       expect(mockUpdateWidget).toHaveBeenCalledWith(
         mockWidgetId,
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           config: expect.objectContaining({
             cachedMenu: {
               hotLunch: 'Cheese Pizza',
               bentoBox: 'Veggie Bento Box',
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               date: expect.any(String),
             },
           }),
@@ -194,8 +198,10 @@ describe('useNutrislice', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith(
       mockWidgetId,
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config: expect.objectContaining({
           syncError: 'E-SYNC-404',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           lastSyncDate: expect.any(String),
         }),
       })
@@ -259,10 +265,12 @@ describe('useNutrislice', () => {
       expect(mockUpdateWidget).toHaveBeenCalledWith(
         mockWidgetId,
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           config: expect.objectContaining({
             cachedMenu: {
               hotLunch: 'Chicken Nuggets',
               bentoBox: 'Teriyaki Bento',
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               date: expect.any(String),
             },
           }),
