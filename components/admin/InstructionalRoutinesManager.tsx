@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { X, Plus, Edit, Trash2, Sparkles } from 'lucide-react';
 import { useInstructionalRoutines } from '@/hooks/useInstructionalRoutines';
 import { LibraryManager } from '@/components/widgets/InstructionalRoutines/LibraryManager';
@@ -26,10 +26,22 @@ export const InstructionalRoutinesManager: React.FC<
     text: string;
   } | null>(null);
 
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-    const timeoutId = setTimeout(() => setMessage(null), 3000);
-    return () => clearTimeout(timeoutId);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => setMessage(null), 3000);
   }, []);
 
   return (
@@ -42,6 +54,8 @@ export const InstructionalRoutinesManager: React.FC<
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+            aria-label="Close"
+            type="button"
           >
             <X size={20} />
           </button>

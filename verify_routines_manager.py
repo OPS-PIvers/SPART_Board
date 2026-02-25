@@ -1,7 +1,7 @@
 import time
 from playwright.sync_api import sync_playwright
 
-def verify_feature_permissions(page):
+def verify_instructional_routines_manager(page):
     print("Navigating to home page...")
     page.goto("http://localhost:3001")
 
@@ -19,7 +19,7 @@ def verify_feature_permissions(page):
     except Exception as e:
         print("Admin Settings button not found. Taking screenshot of dock.")
         page.screenshot(path="debug_dock.png")
-        raise e
+        raise
 
     admin_settings_button.click()
     print("Admin Settings opened.")
@@ -57,7 +57,7 @@ def verify_feature_permissions(page):
 
     # Wait for the modal "Instructional Routines Library"
     print("Waiting for library modal...")
-    page.locator("h3:text('Instructional Routines Library')").wait_for(state="visible", timeout=10000)
+    page.get_by_role("heading", name="Instructional Routines Library").wait_for(state="visible", timeout=10000)
 
     # Wait a bit for animations
     time.sleep(1)
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         context = browser.new_context(viewport={"width": 1280, "height": 720})
         page = context.new_page()
         try:
-            verify_feature_permissions(page)
+            verify_instructional_routines_manager(page)
         except Exception as e:
             print(f"Error: {e}")
             page.screenshot(path="error_screenshot.png")
