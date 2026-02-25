@@ -557,7 +557,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                           ...step,
                           attachedWidget: {
                             type: val,
-                            label: tool?.label || val,
+                            label: tool?.label ?? val,
                           },
                         };
                       }
@@ -568,7 +568,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                     <option value="">None</option>
                     {WIDGET_TYPES.map((t) => (
                       <option key={t} value={t}>
-                        {TOOLS.find((tool) => tool.type === t)?.label || t}
+                        {TOOLS.find((tool) => tool.type === t)?.label ?? t}
                       </option>
                     ))}
                   </select>
