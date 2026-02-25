@@ -13,7 +13,7 @@ import {
   InstructionalRoutine,
 } from '../../../config/instructionalRoutines';
 import * as Icons from 'lucide-react';
-import { Star, Trash2, ArrowLeft, Rocket } from 'lucide-react';
+import { Star, ArrowLeft, Rocket } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
 
 // Color mapping for routines
@@ -285,7 +285,7 @@ import { WidgetLayout } from '../WidgetLayout';
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { updateWidget, addWidget, clearAllStickers } = useDashboard();
+  const { updateWidget, addWidget } = useDashboard();
   const { userGradeLevels } = useAuth();
   const { routines: cloudRoutines } = useInstructionalRoutines();
 
@@ -532,11 +532,6 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const RoutineIcon =
-    (Icons as unknown as Record<string, React.ElementType>)[
-      selectedRoutine.icon
-    ] ?? Icons.HelpCircle;
-
   const launchBloomsResource = (type: 'keyWords' | 'questionStarters') => {
     const title =
       type === 'keyWords' ? "Bloom's Key Words" : "Bloom's Sentence Starters";
@@ -576,14 +571,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="flex flex-col shrink-0 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex flex-col shrink-0" style={scalingStyles}>
           <div
-            className="flex items-center"
-            style={{
-              padding: 'min(16px, 3cqmin)',
-              gap: 'min(12px, 2.5cqmin)',
-              ...scalingStyles,
-            }}
+            className="flex items-center shrink-0"
+            style={{ padding: '1em' }}
           >
             <button
               onClick={() =>
@@ -591,8 +582,11 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                   config: { ...config, selectedRoutineId: null },
                 })
               }
-              className="hover:bg-slate-100 rounded-xl transition-colors shrink-0"
-              style={{ padding: '0.5em' }}
+              className="hover:bg-slate-100 rounded-lg"
+              style={{
+                padding: '0.4em',
+                marginRight: '0.5em',
+              }}
             >
               <ArrowLeft style={{ width: '1.5em', height: '1.5em' }} />
             </button>
@@ -602,36 +596,16 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
             >
               {selectedRoutine.name}
             </h3>
-            <div
-              className="flex items-center shrink-0"
-              style={{ gap: '0.5em' }}
-            >
-              <button
-                onClick={clearAllStickers}
-                className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
-                style={{ padding: '0.6em' }}
-                title="Clear all stickers from board"
-              >
-                <Trash2 style={{ width: '1.25em', height: '1.25em' }} />
-              </button>
-              <div
-                className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
-                style={{ padding: '0.8em' }}
-              >
-                <RoutineIcon style={{ width: '1.8em', height: '1.8em' }} />
-              </div>
-            </div>
           </div>
 
           {selectedRoutine.id === 'blooms-analysis' && (
             <div
               className="flex shrink-0 animate-in slide-in-from-top duration-300"
               style={{
-                paddingLeft: 'min(16px, 3cqmin)',
-                paddingRight: 'min(16px, 3cqmin)',
-                paddingBottom: 'min(16px, 3cqmin)',
+                paddingLeft: '1em',
+                paddingRight: '1em',
+                paddingBottom: '1em',
                 gap: '1em',
-                ...scalingStyles,
               }}
             >
               <button
@@ -660,9 +634,10 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       }
       content={
         <div
-          className="flex-1 flex flex-col overflow-y-auto custom-scrollbar"
+          className="flex-1 flex flex-col overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-200"
           style={{
             padding: '1em',
+            paddingTop: 0,
             gap: '1em',
             ...scalingStyles,
           }}
