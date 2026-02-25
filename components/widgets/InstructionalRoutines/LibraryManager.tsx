@@ -239,7 +239,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                 }
               />
               <select
-                value={routine.color || 'blue'}
+                value={routine.color ?? 'blue'}
                 onChange={(e) =>
                   onChange({
                     ...routine,
@@ -305,7 +305,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                   <button
                     key={level}
                     onClick={() => {
-                      const current = routine.gradeLevels || [];
+                      const current = routine.gradeLevels ?? [];
                       const next = isSelected
                         ? current.filter((l) => l !== level)
                         : [...current, level];
