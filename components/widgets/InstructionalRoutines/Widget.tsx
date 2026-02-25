@@ -18,17 +18,13 @@ import {
   Star,
   Trash2,
   ArrowLeft,
-  Grab,
   Rocket,
   ArrowDown,
   RefreshCw,
   Info,
 } from 'lucide-react';
 import { BLOOMS_DATA } from '../../../config/bloomsData';
-import {
-  getRoutineColorClasses,
-  getRoutineStepBorderClass,
-} from './colorHelpers';
+import { getRoutineColorClasses } from './colorHelpers';
 
 // Color mapping for routines
 const ROUTINE_COLORS: Record<
@@ -167,27 +163,19 @@ interface RoutineStepItemProps {
   step: RoutineStep;
   index: number;
   structure: string;
-  onDragStart: (
-    e: React.DragEvent,
-    icon: string | undefined,
-    color: string,
-    label?: string,
-    stickerUrl?: string
-  ) => void;
   onStepClick: (
     icon: string | undefined,
     color: string,
     label?: string,
     stickerUrl?: string
   ) => void;
-  onAddWidget: (type: WidgetType, config?: WidgetConfig) => void;
+  onAddWidget: (type: WidgetType, config?: any) => void;
 }
 
 const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
   step,
   index,
   structure,
-  onDragStart,
   onStepClick,
   onAddWidget,
 }) => {
@@ -196,170 +184,105 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
     : null;
 
   const isVisualCue = structure === 'visual-cue';
+  const hasSticker = step.stickerUrl || (StepIcon && step.icon);
+  const hasWidget = step.attachedWidget;
 
   return (
     <div
       className={`
-        flex animate-in slide-in-from-left duration-300 group
-        ${isVisualCue ? 'flex-col items-center bg-slate-50 rounded-2xl border border-slate-100 shadow-sm text-center' : 'items-start'}
+        flex animate-in slide-in-from-right duration-300 group bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all
+        ${isVisualCue ? 'flex-col items-center text-center' : 'items-center'}
       `}
       style={{
+        padding: '1em',
         gap: '1em',
-        ...(isVisualCue ? { padding: '1em' } : {}),
       }}
     >
-      {structure === 'linear' && (
-        <span
-          className="bg-brand-blue-primary text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-          style={{
-            width: '2.5em',
-            height: '2.5em',
-            fontSize: '0.8em',
-          }}
-        >
-          {index + 1}
-        </span>
-      )}
-      {structure === 'cycle' && (
-        <span
-          className="bg-brand-blue-primary text-white rounded-full flex items-center justify-center shrink-0 shadow-lg"
-          style={{
-            width: '2.5em',
-            height: '2.5em',
-            fontSize: '0.8em',
-          }}
-        >
-          {index + 1}
-        </span>
-      )}
-
-      <div
-        className={`flex-1 flex flex-col ${isVisualCue ? 'w-full' : ''}`}
-        style={{ gap: '0.5em' }}
-      >
-        <div
-          className={`flex ${isVisualCue ? 'flex-col items-center' : 'items-start justify-between'}`}
-          style={{ gap: '1em' }}
-        >
-          {step.imageUrl && (
-            <div
-              className={`${isVisualCue ? 'w-full aspect-square' : 'shrink-0'}`}
-              style={isVisualCue ? { marginBottom: '0.5em' } : { width: '6em' }}
-            >
-              <img
-                src={step.imageUrl}
-                alt="Step Illustration"
-                className="w-full h-full object-cover rounded-xl shadow-sm border border-slate-200"
-              />
-            </div>
-          )}
-
-          <p
-            className="font-bold text-brand-gray-darkest leading-relaxed"
-            style={{ fontSize: '1em', paddingTop: '0.25em' }}
-          >
-            {step.text}
-          </p>
-
-          {(step.stickerUrl ?? (StepIcon && step.icon)) && (
-            <div
-              draggable
-              onDragStart={(e) =>
-                onDragStart(
-                  e,
-                  step.icon as string,
-                  step.color ?? 'blue',
-                  step.label,
-                  step.stickerUrl
-                )
-              }
-              onClick={() =>
-                onStepClick(
-                  step.icon as string,
-                  step.color ?? 'blue',
-                  step.label,
-                  step.stickerUrl
-                )
-              }
-              className={`
-                rounded-xl bg-white border-2 ${getRoutineStepBorderClass(step.color ?? 'blue')} shadow-sm cursor-grab active:cursor-grabbing hover:scale-110 hover:-rotate-3 transition-all shrink-0 flex flex-col items-center group/sticker
-                ${isVisualCue ? 'mt-3 w-max' : ''}
-              `}
-              style={{ padding: '0.5em', gap: '0.25em' }}
-              title="Drag or Click to add to whiteboard"
-            >
-              {step.stickerUrl ? (
-                <div
-                  className="rounded-lg bg-transparent"
-                  style={{ padding: '0.4em' }}
-                >
-                  <img
-                    src={step.stickerUrl}
-                    alt={step.label ?? 'Sticker'}
-                    className="object-contain"
-                    style={{
-                      width: '1.5em',
-                      height: '1.5em',
-                    }}
-                  />
-                </div>
-              ) : (
-                <div
-                  className={`rounded-lg ${getRoutineColorClasses(step.color ?? 'blue').bg} ${getRoutineColorClasses(step.color ?? 'blue').text}`}
-                  style={{ padding: '0.4em' }}
-                >
-                  {StepIcon && (
-                    <StepIcon
-                      style={{ width: '1.5em', height: '1.5em' }}
-                      strokeWidth={2.5}
-                    />
-                  )}
-                </div>
-              )}
-
-              {step.label && (
-                <span
-                  className="font-black uppercase text-slate-500 text-center leading-none"
-                  style={{ fontSize: '0.5em' }}
-                >
-                  {step.label}
-                </span>
-              )}
-              <div
-                className="flex items-center opacity-0 group-hover/sticker:opacity-100 transition-opacity"
-                style={{ gap: '0.1em' }}
-              >
-                <Grab
-                  style={{ width: '0.5em', height: '0.5em' }}
-                  className="text-slate-300"
-                />
-                <span
-                  className="font-black uppercase text-slate-400"
-                  style={{ fontSize: '0.4em' }}
-                >
-                  Drag
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-        {step.attachedWidget && (
-          <button
-            onClick={() =>
-              onAddWidget(
-                step.attachedWidget?.type as WidgetType,
-                step.attachedWidget?.config
-              )
-            }
-            className={`self-start bg-brand-blue-light/10 text-brand-blue-primary rounded-lg font-black uppercase tracking-wider flex items-center hover:bg-brand-blue-light/20 transition-colors ${isVisualCue ? 'self-center mx-auto' : ''}`}
+      <div className="flex items-center shrink-0" style={{ gap: '1em' }}>
+        {(structure === 'linear' || structure === 'cycle') && (
+          <span
+            className={`text-white font-black flex items-center justify-center shrink-0 shadow-sm ${structure === 'cycle' ? 'rounded-full' : 'rounded-xl'}`}
             style={{
-              padding: '0.5em 1em',
-              gap: '0.5em',
+              width: '2.5em',
+              height: '2.5em',
               fontSize: '0.8em',
+              backgroundColor: '#2d3f89',
             }}
           >
-            <Rocket style={{ width: '1em', height: '1.5em' }} />
-            Launch {step.attachedWidget.label}
+            {index + 1}
+          </span>
+        )}
+
+        {step.imageUrl && (
+          <div className="shrink-0" style={{ width: '4em', height: '4em' }}>
+            <img
+              src={step.imageUrl}
+              alt="Step Illustration"
+              className="w-full h-full object-cover rounded-xl border border-slate-100"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0 text-left">
+        <p
+          className="font-bold text-slate-700 leading-tight"
+          style={{ fontSize: '1em' }}
+        >
+          {step.text}
+        </p>
+      </div>
+
+      <div className="flex items-center shrink-0" style={{ gap: '0.5em' }}>
+        {hasWidget && (
+          <button
+            onClick={() =>
+              onAddWidget(step.attachedWidget?.type as WidgetType, {
+                config: step.attachedWidget?.config,
+              })
+            }
+            className="bg-brand-blue-lighter text-brand-blue-primary hover:bg-brand-blue-light/20 rounded-xl font-black uppercase tracking-widest transition-colors flex items-center shadow-sm"
+            style={{
+              padding: '0.6em 1em',
+              gap: '0.5em',
+              fontSize: '0.7em',
+            }}
+          >
+            <Rocket style={{ width: '1.2em', height: '1.2em' }} />
+            Launch {step.attachedWidget?.label || 'Tool'}
+          </button>
+        )}
+
+        {hasSticker && (
+          <button
+            onClick={() =>
+              onStepClick(
+                step.icon as string,
+                step.color ?? 'blue',
+                step.label,
+                step.stickerUrl
+              )
+            }
+            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl font-black uppercase tracking-widest transition-colors flex items-center shadow-sm"
+            style={{
+              padding: '0.6em 1em',
+              gap: '0.5em',
+              fontSize: '0.7em',
+            }}
+          >
+            {step.stickerUrl ? (
+              <img
+                src={step.stickerUrl}
+                alt="Sticker"
+                className="object-contain"
+                style={{ width: '1.2em', height: '1.2em' }}
+              />
+            ) : (
+              StepIcon && (
+                <StepIcon style={{ width: '1.2em', height: '1.2em' }} />
+              )
+            )}
+            Launch {step.label || 'Sticker'}
           </button>
         )}
       </div>
@@ -368,8 +291,6 @@ const RoutineStepItem: React.FC<RoutineStepItemProps> = ({
 };
 
 import { WidgetLayout } from '../WidgetLayout';
-
-// ... (RoutineStepItem stays the same)
 
 export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -441,12 +362,12 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       totalVerticalEms += 3;
     }
 
-    // Steps: each step is roughly 3em including its gap (1em)
+    // Steps: each step is roughly 4em in the new card layout
     const stepCount = customSteps.length || 1;
-    totalVerticalEms += stepCount * 3;
+    totalVerticalEms += stepCount * 4;
 
     const vScale = (100 / totalVerticalEms).toFixed(2);
-    const hScale = (100 / 20).toFixed(2); // Estimate horizontal capacity (20 chars)
+    const hScale = (100 / 25).toFixed(2); // Slightly wider capacity estimate
 
     return {
       fontSize: `calc(min(18px, ${Math.min(parseFloat(vScale), parseFloat(hScale))}cqmin) * ${scaleMultiplier})`,
@@ -479,6 +400,13 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       label: step.label,
       stickerUrl: step.stickerUrl,
       imageUrl: step.imageUrl,
+      attachedWidget: step.attachedWidget
+        ? {
+            type: step.attachedWidget.type as WidgetType,
+            label: step.attachedWidget.label,
+            config: step.attachedWidget.config as any,
+          }
+        : undefined,
     }));
     updateWidget(widget.id, {
       config: {
@@ -489,20 +417,6 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
         audience: r.audience,
       },
     });
-  };
-
-  const onDragStart = (
-    e: React.DragEvent,
-    icon: string | undefined,
-    color: string,
-    label?: string,
-    stickerUrl?: string
-  ) => {
-    e.dataTransfer.setData(
-      'application/spart-sticker',
-      JSON.stringify({ icon, color, label, url: stickerUrl })
-    );
-    e.dataTransfer.effectAllowed = 'copy';
   };
 
   if (!selectedRoutineId || !selectedRoutine) {
@@ -554,7 +468,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
                     />
                   </div>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <h4
                       className="text-slate-700 font-black uppercase truncate tracking-wide"
                       style={{ fontSize: '1.1em' }}
@@ -673,169 +587,120 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={
-        <div className="flex flex-col shrink-0 border-b border-brand-blue-lighter bg-slate-50/30">
-          <div
-            className="flex items-center"
+        <div
+          className="flex items-center shrink-0 border-b border-slate-100 bg-slate-50/50"
+          style={{ padding: '1em', gap: '1em', ...scalingStyles }}
+        >
+          <button
+            onClick={() =>
+              updateWidget(widget.id, {
+                config: { ...config, selectedRoutineId: null },
+              })
+            }
+            className="hover:bg-slate-100 rounded-xl transition-colors"
             style={{
-              padding: '0.75em',
-              gap: '0.75em',
-              ...scalingStyles,
+              padding: '0.5em',
             }}
           >
-            <button
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, selectedRoutineId: null },
-                })
-              }
-              className="rounded-full transition-colors hover:bg-slate-100"
-              style={{ padding: '0.5em' }}
-              title="Back to Library"
+            <ArrowLeft style={{ width: '1.5em', height: '1.5em' }} />
+          </button>
+          <div className="flex-1 min-w-0 text-left">
+            <h3
+              className="font-black text-slate-800 uppercase tracking-tight truncate"
+              style={{ fontSize: '1.5em' }}
             >
-              <ArrowLeft
-                style={{
-                  width: '1.5em',
-                  height: '1.5em',
-                }}
-                className="text-slate-600"
-              />
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center" style={{ gap: '0.5em' }}>
-                <h2
-                  className="text-brand-blue-primary leading-tight font-black truncate uppercase tracking-tight"
-                  style={{ fontSize: '1.4em' }}
-                >
-                  {selectedRoutine.name}
-                </h2>
-                {audience === 'teacher' && (
-                  <span
-                    className="bg-amber-100 text-amber-700 rounded-full font-black uppercase tracking-tighter flex items-center shrink-0"
-                    style={{
-                      fontSize: '0.5em',
-                      padding: '0.25em 1em',
-                      gap: '0.5em',
-                    }}
-                  >
-                    <Info style={{ width: '0.8em', height: '0.8em' }} /> Teacher
-                    Focus
-                  </span>
-                )}
-              </div>
+              {selectedRoutine.name}
+            </h3>
+            <div className="flex items-center" style={{ gap: '0.5em' }}>
               <span
-                className="text-brand-blue-light uppercase tracking-widest block mt-[0.2em] font-bold"
+                className="text-slate-400 font-black uppercase tracking-widest"
                 style={{ fontSize: '0.6em' }}
               >
-                {selectedRoutine.grades} Protocol •{' '}
-                {structure.replace('-', ' ')}
+                {selectedRoutine.grades} Protocol
               </span>
-            </div>
-            <div className="flex items-center" style={{ gap: '0.5em' }}>
-              <button
-                onClick={clearAllStickers}
-                className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
-                style={{ padding: '0.6em' }}
-                title="Clear all stickers from board"
-              >
-                <Trash2 style={{ width: '1.25em', height: '1.25em' }} />
-              </button>
-              <div
-                className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
-                style={{ padding: '0.8em' }}
-              >
-                <RoutineIcon style={{ width: '1.8em', height: '1.8em' }} />
-              </div>
+              {audience === 'teacher' && (
+                <span
+                  className="bg-amber-100 text-amber-700 rounded-full font-black uppercase tracking-tighter flex items-center px-2"
+                  style={{ fontSize: '0.5em' }}
+                >
+                  <Info
+                    className="mr-1"
+                    style={{ width: '1em', height: '1em' }}
+                  />{' '}
+                  Teacher Focus
+                </span>
+              )}
             </div>
           </div>
-
-          {selectedRoutine.id === 'blooms-analysis' && (
-            <div
-              className="flex shrink-0"
-              style={{
-                paddingLeft: '0.75em',
-                paddingRight: '0.75em',
-                paddingBottom: '0.75em',
-                gap: '0.75em',
-                ...scalingStyles,
-              }}
+          <div className="flex items-center" style={{ gap: '0.5em' }}>
+            <button
+              onClick={clearAllStickers}
+              className="bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center shadow-sm"
+              style={{ padding: '0.6em' }}
+              title="Clear all stickers from board"
             >
-              <button
-                onClick={() => launchBloomsResource('keyWords')}
-                className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center shadow-sm"
-                style={{ padding: '0.8em', gap: '0.5em', fontSize: '0.7em' }}
-              >
-                <Icons.Key style={{ width: '1.2em', height: '1.2em' }} /> Key
-                Words
-              </button>
-              <button
-                onClick={() => launchBloomsResource('questionStarters')}
-                className="flex-1 bg-brand-blue-lighter/50 text-brand-blue-primary rounded-xl font-black uppercase tracking-wider hover:bg-brand-blue-lighter transition-colors border border-brand-blue-lighter flex items-center justify-center shadow-sm"
-                style={{ padding: '0.8em', gap: '0.5em', fontSize: '0.7em' }}
-              >
-                <Icons.MessageSquare
-                  style={{ width: '1.2em', height: '1.2em' }}
-                />{' '}
-                Starters
-              </button>
+              <Trash2 style={{ width: '1.25em', height: '1.25em' }} />
+            </button>
+            <div
+              className="bg-brand-blue-lighter text-brand-red-primary rounded-2xl shadow-sm flex items-center justify-center"
+              style={{ padding: '0.8em' }}
+            >
+              <RoutineIcon style={{ width: '1.8em', height: '1.8em' }} />
             </div>
-          )}
+          </div>
         </div>
       }
       content={
         <div
-          className="flex-1 overflow-y-auto custom-scrollbar"
-          style={{ padding: '1em', ...scalingStyles }}
+          className="flex-1 flex flex-col overflow-y-auto custom-scrollbar"
+          style={{
+            padding: '1em',
+            gap: '1em',
+            ...scalingStyles,
+          }}
         >
-          <div
-            className={`
-              ${structure === 'visual-cue' ? 'grid grid-cols-2' : 'flex flex-col'}
-            `}
-            style={{ gap: structure === 'visual-cue' ? '0.75em' : '1em' }}
-          >
-            {customSteps.map((step, i) => {
-              return (
-                <React.Fragment key={step.id}>
-                  <RoutineStepItem
-                    step={step}
-                    index={i}
-                    structure={structure}
-                    onDragStart={onDragStart}
-                    onStepClick={handleStepClick}
-                    onAddWidget={(type, config) => addWidget(type, { config })}
-                  />
-                  {structure === 'cycle' && i < customSteps.length - 1 && (
-                    <div
-                      className="flex justify-center text-slate-300"
-                      style={{ marginTop: '-0.5em', marginBottom: '-0.5em' }}
-                    >
-                      <ArrowDown style={{ width: '1.5em', height: '1.5em' }} />
-                    </div>
-                  )}
-                  {structure === 'cycle' && i === customSteps.length - 1 && (
-                    <div
-                      className="flex justify-center"
-                      style={{ marginTop: '0.5em' }}
-                    >
-                      <div
-                        className="flex flex-col items-center text-blue-500/50"
-                        style={{ gap: '0.25em' }}
-                      >
-                        <RefreshCw
-                          style={{ width: '1.5em', height: '1.5em' }}
-                          className="animate-spin-slow"
-                        />
-                        <span
-                          className="font-black uppercase tracking-widest"
-                          style={{ fontSize: '0.6em' }}
-                        >
-                          Repeat
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
+          {selectedRoutine.id === 'blooms-analysis' && (
+            <div
+              className="flex shrink-0 animate-in slide-in-from-top duration-300"
+              style={{
+                paddingBottom: '0.5em',
+                gap: '1em',
+              }}
+            >
+              <button
+                onClick={() => launchBloomsResource('keyWords')}
+                className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-slate-700"
+                style={{
+                  padding: '1em',
+                  fontSize: '0.75em',
+                }}
+              >
+                Key Words
+              </button>
+              <button
+                onClick={() => launchBloomsResource('questionStarters')}
+                className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-slate-700"
+                style={{
+                  padding: '1em',
+                  fontSize: '0.75em',
+                }}
+              >
+                Sentence Starters
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-col text-left" style={{ gap: '1em' }}>
+            {customSteps.map((step, idx) => (
+              <RoutineStepItem
+                key={step.id}
+                step={step}
+                index={idx}
+                structure={structure}
+                onStepClick={handleStepClick}
+                onAddWidget={addWidget}
+              />
+            ))}
           </div>
         </div>
       }
