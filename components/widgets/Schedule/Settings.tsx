@@ -432,6 +432,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                     })
                   }
                   className="w-8 h-8 rounded cursor-pointer border border-slate-200 p-0.5"
+                  aria-label="Card color"
                   title="Choose card background color"
                 />
               </div>
@@ -462,6 +463,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   } as ScheduleConfig,
                 })
               }
+              aria-label="Card opacity"
               className="w-full accent-blue-500"
             />
             <p className="text-xs text-slate-400 mt-1">

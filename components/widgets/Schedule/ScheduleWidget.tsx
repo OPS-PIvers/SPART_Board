@@ -86,43 +86,29 @@ const hexToRgba = (hex: string, alpha: number): string => {
 interface CountdownDisplayProps {
   startTime?: string;
   endTime: string;
+  /** Seconds since midnight, driven by the parent's single shared interval. */
+  nowSeconds: number;
 }
 
-/** Live countdown that ticks every second and shows a depleting progress bar. */
+/** Pure countdown display – no internal timer, driven by parent's nowSeconds. */
 const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
   startTime,
   endTime,
+  nowSeconds,
 }) => {
-  const [remaining, setRemaining] = useState(0);
-  const [progress, setProgress] = useState(1);
+  const endSec = parseScheduleTimeSeconds(endTime);
+  if (endSec === -1) return null;
 
-  useEffect(() => {
-    const update = () => {
-      const endSec = parseScheduleTimeSeconds(endTime);
-      if (endSec === -1) {
-        setRemaining(0);
-        setProgress(0);
-        return;
-      }
-      const now = new Date();
-      const nowSec =
-        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-      const rem = Math.max(0, endSec - nowSec);
-      setRemaining(rem);
+  const rem = Math.max(0, endSec - nowSeconds);
 
-      const startSec = parseScheduleTimeSeconds(startTime);
-      if (startSec !== -1 && endSec > startSec) {
-        const total = endSec - startSec;
-        setProgress(total > 0 ? rem / total : 0);
-      } else {
-        setProgress(rem > 0 ? 1 : 0);
-      }
-    };
-
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [startTime, endTime]);
+  const startSec = parseScheduleTimeSeconds(startTime);
+  let progress: number;
+  if (startSec !== -1 && endSec > startSec) {
+    const total = endSec - startSec;
+    progress = total > 0 ? rem / total : 0;
+  } else {
+    progress = rem > 0 ? 1 : 0;
+  }
 
   return (
     <div className="flex flex-col w-full" style={{ gap: 'min(4px, 0.8cqmin)' }}>
@@ -133,7 +119,7 @@ const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {formatCountdown(remaining)}
+        {formatCountdown(rem)}
       </span>
       <div
         className="w-full rounded-full overflow-hidden bg-slate-200"
@@ -160,9 +146,8 @@ interface ScheduleRowProps {
   cardColor: string;
   /** Whether to display times in 24-hour format. Mirrors the linked Clock widget setting; defaults to false (12-hour). */
   format24: boolean;
-  timeSize: number;
-  taskSize: number;
-  iconSize: number;
+  /** Seconds since midnight from the parent's shared ticker. */
+  nowSeconds: number;
 }
 
 const ScheduleRow = React.memo<ScheduleRowProps>(
@@ -174,6 +159,7 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
     cardOpacity,
     cardColor,
     format24,
+    nowSeconds,
   }) => {
     const { t } = useTranslation();
 
@@ -219,6 +205,7 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
               <CountdownDisplay
                 startTime={item.startTime}
                 endTime={item.endTime ?? ''}
+                nowSeconds={nowSeconds}
               />
             ) : (
               /* Issue 3 fix: removed font-mono so the font-family from the parent
@@ -282,6 +269,19 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     cardOpacity = 1,
     cardColor = '#ffffff',
   } = config;
+
+  // Single shared ticker for all CountdownDisplay instances in this widget.
+  const [nowSeconds, setNowSeconds] = useState(() => {
+    const n = new Date();
+    return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      setNowSeconds(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds());
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Find the clock widget on the board (if any) so we can mirror its time format.
   const clockWidget = useMemo(
@@ -365,9 +365,10 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       currentItems.forEach((item, index) => {
         if (!item.linkedWidgets || item.linkedWidgets.length === 0) return;
 
-        // Use a stable key per item to track whether we've launched for it.
-        const itemKey =
+        // Key is scoped to the calendar date so items re-launch each day.
+        const baseKey =
           item.id ?? `${item.task}-${item.startTime ?? item.time}`;
+        const itemKey = `${baseKey}-${now.toISOString().slice(0, 10)}`;
         if (launchedItemsRef.current.has(itemKey)) return;
 
         const startMin = parseScheduleTime(item.startTime ?? item.time);
@@ -475,7 +476,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
           >
             {items.map((item: ScheduleItem, i: number) => (
               <ScheduleRow
-                key={i}
+                key={item.id ?? `${item.task}-${item.startTime ?? item.time}`}
                 index={i}
                 item={item}
                 onToggle={toggle}
@@ -483,9 +484,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 cardOpacity={cardOpacity}
                 cardColor={cardColor}
                 format24={format24}
-                timeSize={14}
-                taskSize={18}
-                iconSize={20}
+                nowSeconds={nowSeconds}
               />
             ))}
             {items.length === 0 && (
