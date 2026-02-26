@@ -1,7 +1,8 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { Upload, Trash2, Loader2, Eraser, MousePointer2 } from 'lucide-react';
-import { WidgetData, StickerBookConfig } from '@/types';
+import { WidgetData, StickerBookConfig, StickerGlobalConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 import { useImageUpload } from '@/hooks/useImageUpload';
 
 const DEFAULT_STICKERS = [
@@ -26,6 +27,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget, clearAllStickers, addWidget, addToast } =
     useDashboard();
+  const { featurePermissions } = useAuth();
   const { processAndUploadImage, uploading } = useImageUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +36,16 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     () => config.uploadedUrls ?? [],
     [config.uploadedUrls]
   );
+
+  const globalStickers = React.useMemo(() => {
+    const stickerPermission = featurePermissions.find(
+      (p) => p.widgetType === 'stickers'
+    );
+    return (
+      (stickerPermission?.config as StickerGlobalConfig | undefined)
+        ?.globalStickers ?? []
+    );
+  }, [featurePermissions]);
 
   const removeCustomSticker = (index: number) => {
     const next = [...customStickers];
@@ -317,6 +329,48 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
               ))}
             </div>
           </div>
+
+          {/* Global Collection (admin-uploaded stickers) */}
+          {globalStickers.length > 0 && (
+            <div className="mb-8">
+              <h4
+                className="font-black text-slate-400 uppercase tracking-widest"
+                style={{
+                  fontSize: 'min(10px, 2.5cqmin)',
+                  marginBottom: 'min(16px, 3.5cqmin)',
+                  padding: '0 min(4px, 1cqmin)',
+                }}
+              >
+                Global Collection
+              </h4>
+              <div
+                className="grid grid-cols-4"
+                style={{ gap: 'min(16px, 3.5cqmin)' }}
+              >
+                {globalStickers.map((url, i) => (
+                  <div
+                    key={i}
+                    draggable
+                    data-no-drag="true"
+                    onDragStart={(e) => handleDragStart(e, url)}
+                    onClick={() => handleStickerClick(url)}
+                    className="aspect-square flex items-center justify-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-grab active:cursor-grabbing border border-slate-100 hover:border-blue-200 group"
+                    title="Drag or Click to add"
+                  >
+                    <img
+                      src={url}
+                      alt="Global Sticker"
+                      className="object-contain pointer-events-none group-hover:rotate-12 transition-transform"
+                      style={{
+                        width: 'min(40px, 10cqmin)',
+                        height: 'min(40px, 10cqmin)',
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Custom */}
           {customStickers.length > 0 && (
