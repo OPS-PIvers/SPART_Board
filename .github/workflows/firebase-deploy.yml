@@ -61,25 +61,13 @@ jobs:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
           VITE_OPENWEATHER_API_KEY: ${{ secrets.VITE_OPENWEATHER_API_KEY }}
 
-      - name: Deploy to Firebase Hosting (Live)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: spartboard
-          channelId: live
-
-      - name: Create Service Account File
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
-
-      - name: Deploy Firebase Rules and Functions
+      - name: Deploy to Firebase
         run: |
-          pnpm exec firebase deploy --only storage --project spartboard --non-interactive
-          pnpm exec firebase deploy --only firestore --project spartboard --non-interactive
-          pnpm exec firebase deploy --only functions --project spartboard --non-interactive
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
+          export GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
+          pnpm exec firebase deploy --only hosting,firestore,storage,functions --project spartboard --non-interactive
 
       - name: Cleanup Service Account File
         if: always()
         run: rm -f service-account.json
+
