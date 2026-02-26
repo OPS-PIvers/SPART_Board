@@ -44,7 +44,9 @@ export function useImageUpload(options?: {
 
         const url = options?.uploadFn
           ? await options.uploadFn(processedFile)
-          : ((await uploadSticker(user!.uid, processedFile)) as string | null);
+          : user
+            ? ((await uploadSticker(user.uid, processedFile)) as string | null)
+            : null;
 
         return url;
       } catch (err) {
@@ -54,7 +56,7 @@ export function useImageUpload(options?: {
         setProcessing(false);
       }
     },
-    [user, uploadSticker, options?.uploadFn]
+    [user, uploadSticker, options]
   );
 
   return { processAndUploadImage, uploading };

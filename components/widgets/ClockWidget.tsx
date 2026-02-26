@@ -9,7 +9,7 @@ import { SettingsLabel } from '../common/SettingsLabel';
 import { WidgetLayout } from './WidgetLayout';
 
 export const ClockWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const { activeDashboard } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const [time, setTime] = useState(new Date());
