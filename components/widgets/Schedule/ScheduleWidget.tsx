@@ -14,6 +14,7 @@ const parseScheduleTime = (t: string | undefined): number => {
   if (!t || !t.includes(':')) return -1;
   const [h, m] = t.split(':').map(Number);
   if (isNaN(h) || isNaN(m)) return -1;
+  if (h < 0 || h > 23 || m < 0 || m > 59) return -1;
   return h * 60 + m;
 };
 
@@ -36,16 +37,12 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
             ? 'bg-slate-100 border-slate-200 opacity-60'
             : 'bg-white border-slate-200 shadow-sm'
         }`}
-        style={{
-          gap: 'min(8px, 2cqmin)',
-          padding: 'min(16px, 3cqmin)',
-          minHeight: 0,
-        }}
+        style={{ minHeight: 0 }}
       >
         <button
           onClick={() => onToggle(index)}
           className="flex items-center flex-1 min-w-0"
-          style={{ gap: 'min(16px, 3cqmin)' }}
+          style={{ gap: 'min(16px, 3cqmin)', padding: 'min(16px, 3cqmin)' }}
         >
           {item.done ? (
             <CheckCircle2
@@ -83,8 +80,12 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
           <button
             onClick={() => onStartTimer(item)}
             className="shrink-0 text-indigo-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-            style={{ padding: 'min(4px, 1cqmin)' }}
+            style={{
+              padding: 'min(4px, 1cqmin)',
+              marginRight: 'min(12px, 2.5cqmin)',
+            }}
             title={`Start countdown timer until ${item.endTime}`}
+            aria-label={`Start countdown timer until ${item.endTime}`}
           >
             <Timer
               className="shrink-0"
@@ -175,7 +176,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         },
       });
     },
-    [addWidget, widget]
+    [addWidget, widget.x, widget.y, widget.w]
   );
 
   // Logic for Auto-Progress
