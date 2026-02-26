@@ -3,6 +3,7 @@ import { Dashboard } from '../types';
 
 const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
+const DEFAULT_TIMEOUT = 15000; // 15 seconds
 
 export interface DriveFile {
   id: string;
@@ -37,6 +38,34 @@ export class GoogleDriveService {
   }
 
   /**
+   * Enhanced fetch with timeout to prevent indefinite hangs.
+   */
+  private async fetchWithTimeout(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(id);
+      return response;
+    } catch (error) {
+      clearTimeout(id);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(
+          'Google Drive request timed out. Please check your connection.'
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
    * List files in the user's Google Drive.
    * @param query Google Drive API Q parameter (e.g., "mimeType = 'image/jpeg'")
    */
@@ -50,7 +79,7 @@ export class GoogleDriveService {
       url.searchParams.append('q', query);
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await this.fetchWithTimeout(url.toString(), {
       headers: this.headers,
     });
 
@@ -94,7 +123,7 @@ export class GoogleDriveService {
       body.parents = [parentId];
     }
 
-    const response = await fetch(`${DRIVE_API_URL}/files`, {
+    const response = await this.fetchWithTimeout(`${DRIVE_API_URL}/files`, {
       method: 'POST',
       headers: this.headers,
       body: JSON.stringify(body),
@@ -148,7 +177,7 @@ export class GoogleDriveService {
     if (dashboard.driveFileId) {
       try {
         // Update content
-        const uploadResponse = await fetch(
+        const uploadResponse = await this.fetchWithTimeout(
           `${UPLOAD_API_URL}/files/${dashboard.driveFileId}?uploadType=media`,
           {
             method: 'PATCH',
@@ -185,14 +214,14 @@ export class GoogleDriveService {
       const fileId = existingFiles[0].id;
 
       // Update metadata (name might have changed)
-      await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
+      await this.fetchWithTimeout(`${DRIVE_API_URL}/files/${fileId}`, {
         method: 'PATCH',
         headers: this.headers,
         body: JSON.stringify({ name: fileName }),
       });
 
       // Update content
-      const uploadResponse = await fetch(
+      const uploadResponse = await this.fetchWithTimeout(
         `${UPLOAD_API_URL}/files/${fileId}?uploadType=media`,
         {
           method: 'PATCH',
@@ -213,11 +242,14 @@ export class GoogleDriveService {
     } else {
       // Create new
       // First create metadata
-      const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify(metadata),
-      });
+      const createResponse = await this.fetchWithTimeout(
+        `${DRIVE_API_URL}/files`,
+        {
+          method: 'POST',
+          headers: this.headers,
+          body: JSON.stringify(metadata),
+        }
+      );
 
       if (!createResponse.ok) {
         const errorBody = await createResponse.text();
@@ -227,7 +259,7 @@ export class GoogleDriveService {
       const file = (await createResponse.json()) as DriveFileCreateResponse;
 
       // Then upload content
-      const uploadResponse = await fetch(
+      const uploadResponse = await this.fetchWithTimeout(
         `${UPLOAD_API_URL}/files/${file.id}?uploadType=media`,
         {
           method: 'PATCH',
@@ -264,11 +296,14 @@ export class GoogleDriveService {
     };
 
     // Create metadata
-    const createResponse = await fetch(`${DRIVE_API_URL}/files`, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify(metadata),
-    });
+    const createResponse = await this.fetchWithTimeout(
+      `${DRIVE_API_URL}/files`,
+      {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(metadata),
+      }
+    );
 
     if (!createResponse.ok) {
       throw new Error('Failed to create file metadata in Drive');
@@ -277,13 +312,13 @@ export class GoogleDriveService {
     const driveFile = (await createResponse.json()) as DriveFile;
 
     // Upload content
-    const uploadResponse = await fetch(
+    const uploadResponse = await this.fetchWithTimeout(
       `${UPLOAD_API_URL}/files/${driveFile.id}?uploadType=media`,
       {
         method: 'PATCH',
         headers: {
           ...this.headers,
-          'Content-Type': file.type || 'application/octet-stream',
+          'Content-Type': (file as File).type || 'application/octet-stream',
         },
         body: file,
       }
@@ -294,7 +329,7 @@ export class GoogleDriveService {
     }
 
     // Get full file details (including links)
-    const detailResponse = await fetch(
+    const detailResponse = await this.fetchWithTimeout(
       `${DRIVE_API_URL}/files/${driveFile.id}?fields=id,name,mimeType,webViewLink,webContentLink,thumbnailLink`,
       {
         headers: this.headers,
@@ -308,7 +343,7 @@ export class GoogleDriveService {
    * Make a file public (anyone with the link can view).
    */
   async makePublic(fileId: string): Promise<void> {
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       `${DRIVE_API_URL}/files/${fileId}/permissions`,
       {
         method: 'POST',
@@ -333,7 +368,7 @@ export class GoogleDriveService {
    * accumulating duplicate/orphaned files in Drive.
    */
   async updateFileContent(fileId: string, content: Blob): Promise<void> {
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       `${UPLOAD_API_URL}/files/${fileId}?uploadType=media`,
       {
         method: 'PATCH',
@@ -356,12 +391,15 @@ export class GoogleDriveService {
    * Delete a file from Google Drive.
    */
   async deleteFile(fileId: string): Promise<void> {
-    const response = await fetch(`${DRIVE_API_URL}/files/${fileId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
+    const response = await this.fetchWithTimeout(
+      `${DRIVE_API_URL}/files/${fileId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      }
+    );
 
     if (!response.ok && response.status !== 404) {
       const error = await response.text();
@@ -374,9 +412,12 @@ export class GoogleDriveService {
    * Import a dashboard from a Google Drive file.
    */
   async importDashboard(fileId: string): Promise<Dashboard> {
-    const response = await fetch(`${DRIVE_API_URL}/files/${fileId}?alt=media`, {
-      headers: this.headers,
-    });
+    const response = await this.fetchWithTimeout(
+      `${DRIVE_API_URL}/files/${fileId}?alt=media`,
+      {
+        headers: this.headers,
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Failed to download dashboard from Drive');
@@ -389,11 +430,14 @@ export class GoogleDriveService {
    * Download a file from Drive as a Blob.
    */
   async downloadFile(fileId: string): Promise<Blob> {
-    const response = await fetch(`${DRIVE_API_URL}/files/${fileId}?alt=media`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
+    const response = await this.fetchWithTimeout(
+      `${DRIVE_API_URL}/files/${fileId}?alt=media`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Failed to download file from Drive');

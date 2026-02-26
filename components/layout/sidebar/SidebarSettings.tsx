@@ -6,6 +6,7 @@ import {
   Building2,
   Save,
   Languages,
+  RefreshCw,
 } from 'lucide-react';
 import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
 import { Toggle } from '@/components/common/Toggle';
@@ -33,13 +34,27 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
     saveCurrentDashboard,
     addToast,
   } = useDashboard();
-  const { signOut, signInWithGoogle, selectedBuildings, setSelectedBuildings } =
-    useAuth();
+  const {
+    signOut,
+    signInWithGoogle,
+    selectedBuildings,
+    setSelectedBuildings,
+    refreshGoogleToken,
+  } = useAuth();
   const { isConnected: isDriveConnected } = useGoogleDrive();
 
   const handleLanguageChange = (code: string) => {
     void i18n.changeLanguage(code);
     addToast(t('toasts.settingsSaved'), 'success');
+  };
+
+  const handleRefreshDrive = async () => {
+    const token = await refreshGoogleToken();
+    if (token) {
+      addToast('Google Drive session refreshed', 'success');
+    } else {
+      addToast('Failed to refresh Google Drive session', 'error');
+    }
   };
 
   return (
@@ -80,24 +95,36 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
               </span>
             </div>
 
-            <button
-              onClick={() => {
-                if (isDriveConnected) {
-                  void signOut();
-                } else {
-                  void signInWithGoogle();
-                }
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${
-                isDriveConnected
-                  ? 'text-slate-400 hover:text-brand-red-primary bg-slate-50 hover:bg-brand-red-lighter'
-                  : 'bg-brand-blue-primary text-white shadow-sm'
-              }`}
-            >
-              {isDriveConnected
-                ? t('sidebar.settings.disconnect')
-                : t('sidebar.settings.connect')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (isDriveConnected) {
+                    void signOut();
+                  } else {
+                    void signInWithGoogle();
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all ${
+                  isDriveConnected
+                    ? 'text-slate-400 hover:text-brand-red-primary bg-slate-50 hover:bg-brand-red-lighter'
+                    : 'bg-brand-blue-primary text-white shadow-sm'
+                }`}
+              >
+                {isDriveConnected
+                  ? t('sidebar.settings.disconnect')
+                  : t('sidebar.settings.connect')}
+              </button>
+
+              {isDriveConnected && (
+                <button
+                  onClick={handleRefreshDrive}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-brand-blue-primary bg-slate-50 hover:bg-brand-blue-lighter transition-all"
+                  title="Refresh Drive Connection"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

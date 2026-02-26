@@ -3,7 +3,7 @@ import { useAuth } from '../context/useAuth';
 import { GoogleDriveService } from '../utils/googleDriveService';
 
 export const useGoogleDrive = () => {
-  const { googleAccessToken } = useAuth();
+  const { googleAccessToken, refreshGoogleToken } = useAuth();
 
   const driveService = useMemo(() => {
     if (!googleAccessToken) return null;
@@ -13,5 +13,6 @@ export const useGoogleDrive = () => {
   return {
     driveService,
     isConnected: !!googleAccessToken,
+    refreshGoogleToken,
   };
 };

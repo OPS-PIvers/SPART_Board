@@ -77,6 +77,7 @@ const MOCK_ACCESS_TOKEN = 'mock-google-access-token';
 const MOCK_TIME = new Date().toISOString(); // Fixed time at module load
 
 const GOOGLE_ACCESS_TOKEN_KEY = 'spart_google_access_token';
+const GOOGLE_TOKEN_EXPIRY_KEY = 'spart_google_token_expiry';
 
 /**
  * Mock user object for bypass mode.
@@ -135,7 +136,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
     () => {
       if (isAuthBypass) return MOCK_ACCESS_TOKEN;
-      return localStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
+      const token = localStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
+      const expiry = localStorage.getItem(GOOGLE_TOKEN_EXPIRY_KEY);
+
+      // If token is expired or about to expire (within 5 mins), don't load it
+      if (
+        token &&
+        expiry &&
+        Date.now() > parseInt(expiry, 10) - 5 * 60 * 1000
+      ) {
+        localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+        localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
+        return null;
+      }
+      return token;
     }
   );
   // Note: In bypass mode we initialize `loading` to false because the mock user
@@ -176,6 +190,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
     // language intentionally omitted — we only want to subscribe once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Check for Google token expiry periodically
+  useEffect(() => {
+    if (isAuthBypass) return;
+
+    const checkToken = () => {
+      const expiry = localStorage.getItem(GOOGLE_TOKEN_EXPIRY_KEY);
+      if (expiry && Date.now() > parseInt(expiry, 10)) {
+        setGoogleAccessToken(null);
+        localStorage.removeItem(GOOGLE_ACCESS_TOKEN_KEY);
+        localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
+      }
+    };
+
+    const interval = setInterval(checkToken, 60000); // Check every minute
+    return () => clearInterval(interval);
   }, []);
 
   // Persist googleAccessToken to localStorage
@@ -467,6 +498,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn('Bypassing Google Sign In');
       setUser(MOCK_USER);
       setGoogleAccessToken(MOCK_ACCESS_TOKEN);
+      localStorage.setItem(
+        GOOGLE_TOKEN_EXPIRY_KEY,
+        (Date.now() + 3600 * 1000).toString()
+      );
       setIsAdmin(true); // Restore admin status on sign in
       return;
     }
@@ -474,11 +509,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const result = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential) {
-        setGoogleAccessToken(credential.accessToken ?? null);
+        const token = credential.accessToken ?? null;
+        setGoogleAccessToken(token);
+        if (token) {
+          // Tokens usually last 1 hour (3600s). Save expiry time.
+          localStorage.setItem(
+            GOOGLE_TOKEN_EXPIRY_KEY,
+            (Date.now() + 3600 * 1000).toString()
+          );
+        }
       }
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
+    }
+  };
+
+  const refreshGoogleToken = async (): Promise<string | null> => {
+    if (isAuthBypass) return MOCK_ACCESS_TOKEN;
+
+    try {
+      // Re-running signInWithPopup with the same provider will refresh the credential.
+      // If the user is already signed into Chrome and has authorized, this
+      // is usually very quick and sometimes doesn't even show a full UI interaction.
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential) {
+        const token = credential.accessToken ?? null;
+        setGoogleAccessToken(token);
+        if (token) {
+          localStorage.setItem(
+            GOOGLE_TOKEN_EXPIRY_KEY,
+            (Date.now() + 3600 * 1000).toString()
+          );
+        }
+        return token;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error refreshing Google token:', error);
+      return null;
     }
   };
 
@@ -518,6 +588,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setSelectedBuildings,
         language,
         setLanguage,
+        refreshGoogleToken,
       }}
     >
       {children}

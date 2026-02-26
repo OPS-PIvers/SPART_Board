@@ -653,8 +653,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             void saveDashboardFirestore({ ...active, driveFileId: newFileId });
           }
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error('[Drive Sync] Background export failed:', err);
+          if (err instanceof Error && err.message.includes('expired')) {
+            addToast(
+              'Google Drive session expired. Please reconnect in settings.',
+              'error'
+            );
+          }
         });
     }, 5000);
 
@@ -669,6 +675,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     activeId,
     loading,
     saveDashboardFirestore,
+    addToast,
   ]);
 
   // --- PII RESTORE EFFECT ---
@@ -713,13 +720,24 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       .catch((err: unknown) => {
         // Clear stale file ID if Drive returns 404 (file was manually deleted)
         const isNotFound = err instanceof Error && err.message.includes('404');
+        const isExpired =
+          err instanceof Error && err.message.includes('expired');
+
         if (isNotFound) {
           piiDriveFileIdRef.current.delete(currentId);
         }
-        // Silent — Drive may be unavailable or no supplement exists yet
-        console.warn('[PII Restore] Could not load supplement:', err);
+
+        if (isExpired) {
+          addToast(
+            'Google Drive session expired. Some names may be hidden.',
+            'error'
+          );
+        } else {
+          // Silent for other errors — Drive may be unavailable or no supplement exists yet
+          console.warn('[PII Restore] Could not load supplement:', err);
+        }
       });
-  }, [activeId, loading, driveService]);
+  }, [activeId, loading, driveService, addToast]);
 
   // Flush pending saves on page refresh/close
   useEffect(() => {
