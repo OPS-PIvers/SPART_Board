@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GoogleDriveService } from '../../utils/googleDriveService';
 import { Dashboard } from '../../types';
@@ -6,16 +7,17 @@ import { Dashboard } from '../../types';
 const mockFetch = (
   response: Partial<Response> | Promise<Partial<Response>>
 ) => {
-  return vi.spyOn(global, 'fetch').mockImplementation(() =>
-    Promise.resolve({
+  return vi.spyOn(global, 'fetch').mockImplementation(async () => {
+    const resolvedResponse = await Promise.resolve(response);
+    return {
       ok: true,
       json: () => Promise.resolve({}),
       text: () => Promise.resolve(''),
       blob: () => Promise.resolve(new Blob()),
       headers: new Headers(),
-      ...response,
-    } as Response)
-  );
+      ...resolvedResponse,
+    } as Response;
+  });
 };
 
 describe('GoogleDriveService', () => {
@@ -96,14 +98,16 @@ describe('GoogleDriveService', () => {
     it('should create folder if not found', async () => {
       // First call (listFiles) returns empty
       // Second call (create) returns new folder
-      const fetchSpy = vi.spyOn(global, 'fetch')
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ files: [] }),
         } as Response)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ id: 'new-folder-id', name: 'TestFolder' }),
+          json: () =>
+            Promise.resolve({ id: 'new-folder-id', name: 'TestFolder' }),
         } as Response);
 
       const folderId = await service.getOrCreateFolder('TestFolder');
@@ -132,7 +136,8 @@ describe('GoogleDriveService', () => {
       const mockMiscFolder = { id: 'misc-folder-id' };
       const mockFile = { id: 'file-id', webViewLink: 'link' };
 
-      const fetchSpy = vi.spyOn(global, 'fetch')
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
         // 1. getAppFolder -> listFiles
         .mockResolvedValueOnce({
           ok: true,
@@ -179,7 +184,8 @@ describe('GoogleDriveService', () => {
       const dashboardWithId = { ...mockDashboard, driveFileId: 'existing-id' };
 
       // Mock getFolderPath (2 calls: App -> Dashboards)
-      const fetchSpy = vi.spyOn(global, 'fetch')
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
         // 1. getAppFolder -> listFiles
         .mockResolvedValueOnce({
           ok: true,
@@ -205,7 +211,8 @@ describe('GoogleDriveService', () => {
     });
 
     it('should create new file if ID not present and name not found', async () => {
-       const fetchSpy = vi.spyOn(global, 'fetch')
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
         // 1. getAppFolder -> listFiles
         .mockResolvedValueOnce({
           ok: true,
@@ -258,7 +265,7 @@ describe('GoogleDriveService', () => {
         expect.stringContaining('/files/file-id?alt=media'),
         expect.objectContaining({
           headers: expect.objectContaining({
-             Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
           }),
         })
       );
