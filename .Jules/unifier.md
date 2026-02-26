@@ -111,3 +111,8 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Identified multiple hardcoded font sizes (`text-[10px]`, `text-[11px]`, `text-[7px]`, `text-[8px]`, `text-[9px]`) across components, bypassing the design system's `text-xxs` and `text-xxxs` tokens.
 **Fix:** Refactored all instances to use standard Tailwind utility classes (`text-xxs` for 10px, `text-xxxs` for 8px) to enforce consistency.
+
+## 2026-02-17 - Micro-Typography Standardization (Library Manager)
+
+**Drift:** Found lingering hardcoded `9px` and `10px` font sizes in `InstructionalRoutines/LibraryManager.tsx`, violating design system tokens.
+**Fix:** Refactored to use `text-xxs` (which covers 10px, 11px, 9px per guidelines).
