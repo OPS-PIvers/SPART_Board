@@ -34,6 +34,9 @@ const mockAuth: AuthContextType = {
   setLanguage: async () => {
     // No-op in student view
   },
+  refreshGoogleToken: () => {
+    return Promise.resolve(null);
+  },
 };
 
 // --- MOCK DASHBOARD ---

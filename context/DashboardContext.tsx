@@ -143,6 +143,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [migrated, setMigrated] = useState(false);
 
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const addToast = useCallback(
+    (message: string, type: Toast['type'] = 'info') => {
+      const id = crypto.randomUUID();
+      setToasts((prev) => [...prev, { id, message, type }]);
+      setTimeout(() => {
+        removeToast(id);
+      }, 3000);
+    },
+    [removeToast]
+  );
+
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>(() => {
     const saved = localStorage.getItem('spartboard_gradeFilter');
     const validFilters: GradeFilter[] = ['all', 'k-2', '3-5', '6-8', '9-12'];
@@ -842,21 +857,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     setDockItems(items);
     localStorage.setItem('classroom_dock_items', JSON.stringify(items));
   }, []);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const addToast = useCallback(
-    (message: string, type: Toast['type'] = 'info') => {
-      const id = crypto.randomUUID();
-      setToasts((prev) => [...prev, { id, message, type }]);
-      setTimeout(() => {
-        removeToast(id);
-      }, 3000);
-    },
-    [removeToast]
-  );
 
   // Use a ref to prevent duplicate processing of the same share ID
   // which can happen if dependencies change during the async load
