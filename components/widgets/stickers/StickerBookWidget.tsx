@@ -347,9 +347,9 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
                 className="grid grid-cols-4"
                 style={{ gap: 'min(16px, 3.5cqmin)' }}
               >
-                {globalStickers.map((url, i) => (
+                {globalStickers.map((url) => (
                   <div
-                    key={i}
+                    key={url}
                     draggable
                     data-no-drag="true"
                     onDragStart={(e) => handleDragStart(e, url)}

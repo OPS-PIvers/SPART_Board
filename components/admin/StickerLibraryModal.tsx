@@ -70,6 +70,16 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
     onStickersChange(stickers.filter((s) => s !== url));
   };
 
+  const handleClose = () => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('You have unsaved changes. Close without saving?')
+    ) {
+      return;
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-modal-nested bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
@@ -96,7 +106,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
                   : 'Saved'}
             </button>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
             >
               <X size={20} />
@@ -171,9 +181,9 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-              {stickers.map((url, i) => (
+              {stickers.map((url) => (
                 <div
-                  key={i}
+                  key={url}
                   className="group relative aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center justify-center overflow-visible"
                 >
                   <img
