@@ -1,7 +1,5 @@
-import { APP_NAME } from '@/config/constants';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGUAGES } from '@/i18n';
 import {
   X,
   Menu,
@@ -20,7 +18,6 @@ import {
   Cloud,
   CloudCheck,
   AlertCircle,
-  Globe,
 } from 'lucide-react';
 import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
@@ -49,7 +46,7 @@ export const Sidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<MenuSection>('main');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { user, signOut, isAdmin, language, setLanguage } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const {
     dashboards,
     activeDashboard,
@@ -298,7 +295,9 @@ export const Sidebar: React.FC = () => {
                       <CloudCheck className="w-3 h-3" />
                     )}
                     <span className="text-xxxs font-black uppercase tracking-tighter">
-                      {isSaving ? t('sidebar.header.syncing') : t('sidebar.header.cloud')}
+                      {isSaving
+                        ? t('sidebar.header.syncing')
+                        : t('sidebar.header.cloud')}
                     </span>
                   </div>
 

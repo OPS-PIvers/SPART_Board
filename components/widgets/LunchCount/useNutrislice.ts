@@ -182,7 +182,7 @@ export const useNutrislice = ({
     } finally {
       setIsSyncing(false);
     }
-  }, [widgetId, updateWidget, addToast, isSyncing]);
+  }, [widgetId, updateWidget, addToast, isSyncing, t]);
 
   useEffect(() => {
     if (isSyncing) return;

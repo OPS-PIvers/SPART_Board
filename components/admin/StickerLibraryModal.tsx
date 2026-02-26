@@ -180,7 +180,9 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
             {uploading ? (
               <>
                 <Loader2 className="w-8 h-8 text-brand-blue-primary animate-spin" />
-                <p className="text-sm font-bold text-slate-500">{t('common.loading')}</p>
+                <p className="text-sm font-bold text-slate-500">
+                  {t('common.loading')}
+                </p>
               </>
             ) : (
               <>

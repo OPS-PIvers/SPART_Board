@@ -86,8 +86,12 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
               padding: 'min(4px, 1cqmin)',
               marginRight: 'min(12px, 2.5cqmin)',
             }}
-            title={t('widgets.schedule.startTimerUntil', { time: item.endTime })}
-            aria-label={t('widgets.schedule.startTimerUntil', { time: item.endTime })}
+            title={t('widgets.schedule.startTimerUntil', {
+              time: item.endTime,
+            })}
+            aria-label={t('widgets.schedule.startTimerUntil', {
+              time: item.endTime,
+            })}
           >
             <Timer
               className="shrink-0"
@@ -110,7 +114,6 @@ import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
-  const { t } = useTranslation();
   const { updateWidget, activeDashboard, addWidget } = useDashboard();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
