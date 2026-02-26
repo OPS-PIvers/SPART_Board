@@ -1,13 +1,21 @@
 import React, { useCallback, useRef, useEffect, useMemo } from 'react';
-import { useDashboard } from '../../../context/useDashboard';
+import { useDashboard } from '@/context/useDashboard';
 import {
   WidgetData,
   ScheduleItem,
   ScheduleConfig,
   DEFAULT_GLOBAL_STYLE,
-} from '../../../types';
+} from '@/types';
 import { Circle, CheckCircle2, Clock, Timer } from 'lucide-react';
-import { ScaledEmptyState } from '../../common/ScaledEmptyState';
+import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
+
+/** Parses an "HH:MM" time string and returns minutes since midnight, or -1 if invalid. */
+const parseScheduleTime = (t: string | undefined): number => {
+  if (!t || !t.includes(':')) return -1;
+  const [h, m] = t.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return -1;
+  return h * 60 + m;
+};
 
 interface ScheduleRowProps {
   item: ScheduleItem;
@@ -94,7 +102,7 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
 
 ScheduleRow.displayName = 'ScheduleRow';
 
-import { WidgetLayout } from '../WidgetLayout';
+import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 
 export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -142,17 +150,13 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     (item: ScheduleItem) => {
       if (!item.endTime) return;
 
-      const parseTimeToSeconds = (t: string): number => {
-        const [h, m] = t.split(':').map(Number);
-        if (isNaN(h) || isNaN(m)) return -1;
-        return h * 3600 + m * 60;
-      };
+      const endMinutes = parseScheduleTime(item.endTime);
+      if (endMinutes < 0) return;
 
       const now = new Date();
       const nowSeconds =
         now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-      const endSeconds = parseTimeToSeconds(item.endTime);
-      if (endSeconds < 0) return;
+      const endSeconds = endMinutes * 60;
 
       const remainingSeconds = Math.max(0, endSeconds - nowSeconds);
       const spawnNow = Date.now();
@@ -188,24 +192,16 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       const currentItems = itemsRef.current;
       const currentConfig = configRef.current;
 
-      // Helper to parse "HH:MM" with validation
-      const parseTime = (t?: string) => {
-        if (!t || !t.includes(':')) return -1;
-        const [h, m] = t.split(':').map(Number);
-        if (isNaN(h) || isNaN(m)) return -1;
-        return h * 60 + m;
-      };
-
       const newItems = currentItems.map((item, index) => {
         let isDone = false;
 
         let nextTime = -1;
         if (index < currentItems.length - 1) {
           const nextItem = currentItems[index + 1];
-          nextTime = parseTime(nextItem.startTime ?? nextItem.time);
+          nextTime = parseScheduleTime(nextItem.startTime ?? nextItem.time);
         } else {
           // Last item: assume 60 mins duration for auto-complete?
-          const myTime = parseTime(item.startTime ?? item.time);
+          const myTime = parseScheduleTime(item.startTime ?? item.time);
           if (myTime !== -1) nextTime = myTime + 60;
         }
 
