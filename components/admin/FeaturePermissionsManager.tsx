@@ -29,6 +29,8 @@ import { Toast } from '@/components/common/Toast';
 import { FeatureConfigurationPanel } from '@/components/admin/FeatureConfigurationPanel';
 import { BetaUsersPanel } from '@/components/admin/BetaUsersPanel';
 import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRoutinesManager';
+import { StickerLibraryModal } from '@/components/admin/StickerLibraryModal';
+import { StickerGlobalConfig } from '@/types';
 
 export const FeaturePermissionsManager: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -50,6 +52,8 @@ export const FeaturePermissionsManager: React.FC = () => {
     WidgetType | InternalToolType | null
   >(null);
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
+  const [isStickerLibraryOpen, setIsStickerLibraryOpen] = useState(false);
+  const [isSavingStickers, setIsSavingStickers] = useState(false);
   const { uploadWeatherImage } = useStorage();
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
@@ -58,6 +62,54 @@ export const FeaturePermissionsManager: React.FC = () => {
     // Return cleanup function
     return () => clearTimeout(timeoutId);
   }, []);
+
+  const getGlobalStickers = (): string[] => {
+    const config = getPermission('stickers').config as
+      | StickerGlobalConfig
+      | undefined;
+    return config?.globalStickers ?? [];
+  };
+
+  const handleStickerLibraryChange = (newStickers: string[]) => {
+    const current = getPermission('stickers');
+    const updatedConfig: StickerGlobalConfig = {
+      ...(current.config as StickerGlobalConfig | undefined),
+      globalStickers: newStickers,
+    };
+    updatePermission('stickers', {
+      config: updatedConfig as unknown as Record<string, unknown>,
+    });
+  };
+
+  const handleStickerLibraryDiscard = (originalStickers: string[]) => {
+    const current = getPermission('stickers');
+    const revertedConfig: StickerGlobalConfig = {
+      ...(current.config as StickerGlobalConfig | undefined),
+      globalStickers: originalStickers,
+    };
+    // Revert permission state and clear unsaved flag — no round-trip through
+    // updatePermission so we don't re-add 'stickers' to unsavedChanges.
+    setPermissions((prev) =>
+      new Map(prev).set('stickers', {
+        ...current,
+        config: revertedConfig as unknown as Record<string, unknown>,
+      })
+    );
+    setUnsavedChanges((prev) => {
+      const next = new Set(prev);
+      next.delete('stickers');
+      return next;
+    });
+  };
+
+  const handleStickerLibrarySave = async () => {
+    setIsSavingStickers(true);
+    try {
+      await savePermission('stickers');
+    } finally {
+      setIsSavingStickers(false);
+    }
+  };
 
   const loadPermissions = useCallback(async () => {
     if (isAuthBypass) {
@@ -382,6 +434,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                       onClick={() => {
                         if (tool.type === 'instructionalRoutines') {
                           setIsRoutinesLibraryOpen(true);
+                        } else if (tool.type === 'stickers') {
+                          setIsStickerLibraryOpen(true);
                         } else {
                           setEditingConfig(
                             editingConfig === tool.type ? null : tool.type
@@ -391,6 +445,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                       className={`p-2 rounded-lg transition-colors ${
                         (tool.type === 'instructionalRoutines' &&
                           isRoutinesLibraryOpen) ||
+                        (tool.type === 'stickers' && isStickerLibraryOpen) ||
                         editingConfig === tool.type
                           ? 'bg-brand-blue-primary text-white'
                           : 'text-slate-400 hover:bg-slate-100'
@@ -482,6 +537,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                     onClick={() => {
                       if (tool.type === 'instructionalRoutines') {
                         setIsRoutinesLibraryOpen(true);
+                      } else if (tool.type === 'stickers') {
+                        setIsStickerLibraryOpen(true);
                       } else {
                         setEditingConfig(
                           editingConfig === tool.type ? null : tool.type
@@ -491,6 +548,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                     className={`p-2 rounded-lg transition-colors ${
                       (tool.type === 'instructionalRoutines' &&
                         isRoutinesLibraryOpen) ||
+                      (tool.type === 'stickers' && isStickerLibraryOpen) ||
                       editingConfig === tool.type
                         ? 'bg-brand-blue-primary text-white'
                         : 'text-slate-400 hover:bg-slate-100'
@@ -629,6 +687,19 @@ export const FeaturePermissionsManager: React.FC = () => {
       {isRoutinesLibraryOpen && (
         <InstructionalRoutinesManager
           onClose={() => setIsRoutinesLibraryOpen(false)}
+        />
+      )}
+
+      {/* Global Sticker Library Modal */}
+      {isStickerLibraryOpen && (
+        <StickerLibraryModal
+          stickers={getGlobalStickers()}
+          onClose={() => setIsStickerLibraryOpen(false)}
+          onDiscard={handleStickerLibraryDiscard}
+          onStickersChange={handleStickerLibraryChange}
+          onSave={handleStickerLibrarySave}
+          isSaving={isSavingStickers}
+          hasUnsavedChanges={unsavedChanges.has('stickers')}
         />
       )}
     </div>

@@ -187,6 +187,12 @@ export const useStorage = () => {
     return getDownloadURL(snapshot.ref);
   };
 
+  const uploadAdminSticker = async (file: File): Promise<string> => {
+    // Admins always save to Firebase Storage for global availability
+    const timestamp = Date.now();
+    return uploadFile(`admin_stickers/${timestamp}-${file.name}`, file);
+  };
+
   const uploadPdf = async (
     userId: string,
     file: File
@@ -245,6 +251,7 @@ export const useStorage = () => {
     deleteFile,
     uploadAdminBackground,
     uploadWeatherImage,
+    uploadAdminSticker,
     uploadPdf,
     uploadAndRegisterPdf,
   };

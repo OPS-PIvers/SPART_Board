@@ -684,6 +684,7 @@ export const FeatureConfigurationPanel: React.FC<
         'instructionalRoutines',
         'catalyst',
         'webcam',
+        'stickers',
       ].includes(tool.type) && (
         <p className="text-xs text-slate-500 italic">
           No additional configuration available for this widget.

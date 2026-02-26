@@ -493,6 +493,10 @@ export interface StickerBookConfig {
   uploadedUrls?: string[];
 }
 
+export interface StickerGlobalConfig {
+  globalStickers?: string[];
+}
+
 export interface FurnitureItem {
   id: string;
   type: 'desk' | 'table-rect' | 'table-round' | 'rug' | 'teacher-desk';
