@@ -75,8 +75,21 @@ describe('ScheduleWidget', () => {
   it('renders schedule items', () => {
     render(<ScheduleWidget widget={createWidget()} />);
     expect(screen.getByText('Math')).toBeInTheDocument();
-    expect(screen.getByText('08:00')).toBeInTheDocument();
+    // No clock widget in mock → defaults to 12-hour format
+    expect(screen.getByText('8:00 AM')).toBeInTheDocument();
     expect(screen.getByText('Reading')).toBeInTheDocument();
+  });
+
+  it('renders times in 24-hour format when clock widget has format24:true', () => {
+    (useDashboard as unknown as Mock).mockReturnValue({
+      ...mockDashboardContext,
+      activeDashboard: {
+        ...mockDashboardContext.activeDashboard,
+        widgets: [{ id: 'clock-1', type: 'clock', config: { format24: true } }],
+      },
+    });
+    render(<ScheduleWidget widget={createWidget()} />);
+    expect(screen.getByText('08:00')).toBeInTheDocument();
   });
 
   it('toggles item status on click', () => {

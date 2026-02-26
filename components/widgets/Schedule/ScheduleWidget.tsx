@@ -11,6 +11,7 @@ import {
   WidgetData,
   ScheduleItem,
   ScheduleConfig,
+  ClockConfig,
   DEFAULT_GLOBAL_STYLE,
 } from '@/types';
 import { Circle, CheckCircle2, Clock, Timer } from 'lucide-react';
@@ -45,6 +46,26 @@ const formatCountdown = (totalSeconds: number): string => {
     return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   }
   return `${m}:${sec.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Formats an "HH:MM" (24-hour) stored time string for display.
+ * Returns 12-hour "h:MM AM/PM" when format24 is false, otherwise "HH:MM".
+ * Defaults to 12-hour when no clock widget is present on the dashboard.
+ */
+const formatScheduleTime = (
+  time: string | undefined,
+  format24: boolean
+): string => {
+  if (!time || !time.includes(':')) return '';
+  const [h, m] = time.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return time;
+  if (format24) {
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hours12 = h % 12 || 12;
+  return `${hours12}:${m.toString().padStart(2, '0')} ${period}`;
 };
 
 /** Converts a hex color + alpha into an rgba() CSS string. */
@@ -133,13 +154,23 @@ interface ScheduleRowProps {
   onStartTimer?: (item: ScheduleItem) => void;
   cardOpacity: number;
   cardColor: string;
+  /** Whether to display times in 24-hour format. Mirrors the linked Clock widget setting; defaults to false (12-hour). */
+  format24: boolean;
   timeSize: number;
   taskSize: number;
   iconSize: number;
 }
 
 const ScheduleRow = React.memo<ScheduleRowProps>(
-  ({ item, index, onToggle, onStartTimer, cardOpacity, cardColor }) => {
+  ({
+    item,
+    index,
+    onToggle,
+    onStartTimer,
+    cardOpacity,
+    cardColor,
+    format24,
+  }) => {
     const { t } = useTranslation();
 
     // Use the user-selected card color. Done items get a neutral gray tint.
@@ -192,7 +223,7 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
                 className={`font-black ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
                 style={{ fontSize: 'min(24px, 6cqmin, 30cqw)' }}
               >
-                {item.startTime ?? item.time ?? ''}
+                {formatScheduleTime(item.startTime ?? item.time, format24)}
               </span>
             )}
             <span
@@ -248,10 +279,15 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     cardColor = '#ffffff',
   } = config;
 
-  const hasClock = useMemo(
-    () => activeDashboard?.widgets?.some((w) => w.type === 'clock') ?? false,
+  // Find the clock widget on the board (if any) so we can mirror its time format.
+  const clockWidget = useMemo(
+    () => activeDashboard?.widgets?.find((w) => w.type === 'clock') ?? null,
     [activeDashboard?.widgets]
   );
+  const hasClock = clockWidget !== null;
+  // Default to 12-hour format when no clock widget is present on the dashboard.
+  const format24 =
+    (clockWidget?.config as ClockConfig | undefined)?.format24 ?? false;
 
   // Stable refs so interval callbacks always see the latest values without
   // re-registering the interval on every render.
@@ -433,6 +469,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
                 onStartTimer={handleStartTimer}
                 cardOpacity={cardOpacity}
                 cardColor={cardColor}
+                format24={format24}
                 timeSize={14}
                 taskSize={18}
                 iconSize={20}
