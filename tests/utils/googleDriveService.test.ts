@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GoogleDriveService } from '../../utils/googleDriveService';
-import { Dashboard } from '../../types';
+import { GoogleDriveService } from '@/utils/googleDriveService';
+import { Dashboard } from '@/types';
 
 // Helper to mock fetch responses
 const mockFetch = (
