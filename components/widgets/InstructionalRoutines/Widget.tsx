@@ -398,24 +398,28 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
     }
 
     // Routine view scaling: Estimate total vertical "ems" to fit without scrolling
-    // Padding (2em) + Header area (~3.5em)
-    let totalVerticalEms = 5.5;
+    // Header back-button row: ~3.5em (1em padding-top + 1.5em button + 1em padding-bottom)
+    let totalVerticalEms = 3.5;
 
-    // Bloom's specific buttons (~3em)
+    // Bloom's specific buttons section: ~3.5em (buttons + paddingBottom)
     if (selectedRoutineId === 'blooms-analysis') {
-      totalVerticalEms += 3;
+      totalVerticalEms += 3.5;
     }
 
-    // Steps: each step is roughly 4em in the new card layout
+    // Each step card (list mode): 1em padding-top + 2.5em badge height + 1em padding-bottom = 4.5em
+    // Plus 1em gap between steps (N-1 gaps, but approximating as N for simplicity at N>=2)
+    // Combined per-step cost including gap: ~5.5em
+    // Content div bottom padding: 1em (included in the per-step amortization)
     const stepCount = customSteps.length || 1;
-    totalVerticalEms += stepCount * 4;
+    totalVerticalEms += stepCount * 5.5;
 
     const vScale = (100 / totalVerticalEms).toFixed(2);
-    const hScale = (100 / 25).toFixed(2); // Slightly wider capacity estimate
+    const hScale = (100 / 25).toFixed(2); // Horizontal capacity estimate
 
+    // Use cqh for vertical and cqw for horizontal so each axis is independently constrained
     return {
-      fontSize: `calc(min(18px, ${Math.min(parseFloat(vScale), parseFloat(hScale))}cqmin) * ${scaleMultiplier})`,
-      '--dynamic-font-size': `calc(min(18px, ${Math.min(parseFloat(vScale), parseFloat(hScale))}cqmin) * ${scaleMultiplier})`,
+      fontSize: `calc(min(18px, min(${vScale}cqh, ${hScale}cqw)) * ${scaleMultiplier})`,
+      '--dynamic-font-size': `calc(min(18px, min(${vScale}cqh, ${hScale}cqw)) * ${scaleMultiplier})`,
     } as React.CSSProperties;
   }, [selectedRoutineId, customSteps.length, scaleMultiplier]);
 
@@ -689,7 +693,7 @@ export const InstructionalRoutinesWidget: React.FC<{ widget: WidgetData }> = ({
       }
       content={
         <div
-          className="flex-1 flex flex-col overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-200"
+          className="flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-200"
           style={{
             padding: '1em',
             paddingTop: 0,

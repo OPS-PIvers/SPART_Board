@@ -173,10 +173,11 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={renderSubViewHeader('Volume Level')}
+      contentClassName="flex-1 min-h-0 flex flex-col"
       content={
         <div
-          className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
-          style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
+          className="flex-1 min-h-0 overflow-y-auto flex flex-col custom-scrollbar w-full animate-in slide-in-from-right duration-200"
+          style={{ padding: 'min(16px, 3cqmin)', gap: 'min(8px, 1.5cqmin)' }}
         >
           {VOLUME_OPTIONS.map((v) => (
             <button
@@ -184,14 +185,14 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() =>
                 updateConfig({ voiceLevel: voiceLevel === v.id ? null : v.id })
               }
-              className={`flex items-center rounded-2xl border-2 transition-all ${
+              className={`flex-1 flex items-center rounded-2xl border-2 transition-all ${
                 voiceLevel === v.id
-                  ? `${v.bg} border-current ${v.color} shadow-sm scale-[1.02]`
+                  ? `${v.bg} border-current ${v.color} shadow-sm`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
               style={{
                 gap: 'min(20px, 4cqmin)',
-                padding: 'min(16px, 3cqmin)',
+                padding: 'min(12px, 2.5cqmin)',
               }}
             >
               <span
@@ -237,9 +238,10 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={renderSubViewHeader('Group Size')}
+      contentClassName="flex-1 min-h-0 flex flex-col"
       content={
         <div
-          className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
+          className="flex-1 min-h-0 overflow-y-auto flex flex-col custom-scrollbar w-full animate-in slide-in-from-right duration-200"
           style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
         >
           {GROUP_OPTIONS.map((g) => (
@@ -248,12 +250,15 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
               onClick={() =>
                 updateConfig({ workMode: workMode === g.id ? null : g.id })
               }
-              className={`flex items-center rounded-2xl border-2 transition-all ${
+              className={`flex-1 flex items-center rounded-2xl border-2 transition-all ${
                 workMode === g.id
-                  ? `${g.bg} border-current ${g.color} shadow-sm scale-[1.02]`
+                  ? `${g.bg} border-current ${g.color} shadow-sm`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
-              style={{ gap: 'min(20px, 4cqmin)', padding: 'min(20px, 4cqmin)' }}
+              style={{
+                gap: 'min(20px, 4cqmin)',
+                padding: 'min(16px, 3.5cqmin)',
+              }}
             >
               <g.icon
                 style={{
@@ -288,9 +293,10 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
     <WidgetLayout
       padding="p-0"
       header={renderSubViewHeader('Interaction')}
+      contentClassName="flex-1 min-h-0 flex flex-col"
       content={
         <div
-          className="flex-1 overflow-y-auto flex flex-col custom-scrollbar w-full h-full animate-in slide-in-from-right duration-200"
+          className="flex-1 min-h-0 overflow-y-auto flex flex-col custom-scrollbar w-full animate-in slide-in-from-right duration-200"
           style={{ padding: 'min(16px, 3cqmin)', gap: 'min(12px, 2.5cqmin)' }}
         >
           {INTERACTION_OPTIONS.map((i) => (
@@ -301,12 +307,15 @@ export const ExpectationsWidget: React.FC<{ widget: WidgetData }> = ({
                   interactionMode: interactionMode === i.id ? null : i.id,
                 })
               }
-              className={`flex items-center rounded-2xl border-2 transition-all ${
+              className={`flex-1 flex items-center rounded-2xl border-2 transition-all ${
                 interactionMode === i.id
-                  ? `${i.bg} border-current ${i.color} shadow-sm scale-[1.02]`
+                  ? `${i.bg} border-current ${i.color} shadow-sm`
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
               }`}
-              style={{ gap: 'min(20px, 4cqmin)', padding: 'min(20px, 4cqmin)' }}
+              style={{
+                gap: 'min(20px, 4cqmin)',
+                padding: 'min(16px, 3.5cqmin)',
+              }}
             >
               <i.icon
                 style={{
