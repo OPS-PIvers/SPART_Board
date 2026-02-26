@@ -73,7 +73,10 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
 
       - name: Deploy Firebase Rules and Functions
-        run: pnpm exec firebase deploy --only functions,firestore,storage --project spartboard
+        run: |
+          pnpm exec firebase deploy --only storage --project spartboard --non-interactive
+          pnpm exec firebase deploy --only firestore --project spartboard --non-interactive
+          pnpm exec firebase deploy --only functions --project spartboard --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ./service-account.json
 
