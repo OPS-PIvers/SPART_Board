@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { useStorage } from '@/hooks/useStorage';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { GlobalSticker, GradeLevel } from '@/types';
+import { ALL_GRADE_LEVELS } from '@/config/widgetGradeLevels';
 
 interface StickerLibraryModalProps {
-  stickers: string[];
+  stickers: (string | GlobalSticker)[];
   onClose: () => void;
-  onDiscard: (originalStickers: string[]) => void;
-  onStickersChange: (stickers: string[]) => void;
+  onDiscard: (originalStickers: (string | GlobalSticker)[]) => void;
+  onStickersChange: (stickers: (string | GlobalSticker)[]) => void;
   onSave: () => Promise<void>;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
@@ -43,13 +45,26 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Normalize stickers to GlobalSticker objects
+  const normalizedStickers = React.useMemo(() => {
+    return stickers.map((s) => {
+      if (typeof s === 'string') {
+        return { url: s, gradeLevels: [...ALL_GRADE_LEVELS] } as GlobalSticker;
+      }
+      return {
+        ...s,
+        gradeLevels: s.gradeLevels ?? [...ALL_GRADE_LEVELS],
+      } as GlobalSticker;
+    });
+  }, [stickers]);
+
   // Tracks URLs uploaded during this modal session that have not yet been
   // persisted to Firestore. Used to clean up orphaned Storage objects when
   // the user removes a freshly-uploaded sticker or discards the modal.
   const uploadedThisSessionRef = useRef<Set<string>>(new Set());
   // Snapshot of stickers as they were when the modal first opened (or after
   // a successful save), used to revert parent state on discard.
-  const initialStickersRef = useRef<string[]>(stickers);
+  const initialStickersRef = useRef<(string | GlobalSticker)[]>(stickers);
 
   // When a save completes successfully (isSaving: true → false and no longer
   // dirty), advance the baseline so a subsequent cancel can't delete already-
@@ -72,20 +87,20 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
       );
       if (!fileArray.length) return;
 
-      const newUrls: string[] = [];
+      const newStickers: GlobalSticker[] = [];
       for (const file of fileArray) {
         try {
           const url = await processAndUploadImage(file);
           if (url) {
             uploadedThisSessionRef.current.add(url);
-            newUrls.push(url);
+            newStickers.push({ url, gradeLevels: [...ALL_GRADE_LEVELS] });
           }
         } catch (e) {
           console.error('Failed to upload sticker:', e);
         }
       }
-      if (newUrls.length > 0) {
-        onStickersChange([...stickers, ...newUrls]);
+      if (newStickers.length > 0) {
+        onStickersChange([...stickers, ...newStickers]);
       }
     },
     [stickers, onStickersChange, processAndUploadImage]
@@ -154,7 +169,25 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
       uploadedThisSessionRef.current.delete(url);
       void deleteFile(url);
     }
-    onStickersChange(stickers.filter((s) => s !== url));
+    onStickersChange(
+      stickers.filter((s) =>
+        typeof s === 'string' ? s !== url : s.url !== url
+      )
+    );
+  };
+
+  const toggleGradeLevel = (stickerUrl: string, level: GradeLevel) => {
+    const nextStickers = normalizedStickers.map((s) => {
+      if (s.url === stickerUrl) {
+        const currentLevels = s.gradeLevels ?? [];
+        const nextLevels = currentLevels.includes(level)
+          ? currentLevels.filter((l) => l !== level)
+          : [...currentLevels, level];
+        return { ...s, gradeLevels: nextLevels };
+      }
+      return s;
+    });
+    onStickersChange(nextStickers);
   };
 
   const handleClose = () => {
@@ -178,7 +211,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-modal-nested bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="bg-white w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
           <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">
@@ -265,7 +298,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
           </div>
 
           {/* Sticker grid */}
-          {stickers.length === 0 ? (
+          {normalizedStickers.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 rounded-3xl text-slate-400">
               <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
               <p className="font-black uppercase tracking-widest text-xs">
@@ -276,24 +309,50 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-              {stickers.map((url) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {normalizedStickers.map((sticker) => (
                 <div
-                  key={url}
-                  className="group relative aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center justify-center overflow-visible"
+                  key={sticker.url}
+                  className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group"
                 >
-                  <img
-                    src={url}
-                    alt="Global sticker"
-                    className="w-full h-full object-contain p-2 pointer-events-none rounded-2xl"
-                  />
-                  <button
-                    onClick={() => removeSticker(url)}
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 scale-75 group-hover:scale-100 z-10 p-1"
-                    title="Remove from global library"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  <div className="relative aspect-square bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden">
+                    <img
+                      src={sticker.url}
+                      alt="Global sticker"
+                      className="w-full h-full object-contain p-4"
+                    />
+                    <button
+                      onClick={() => removeSticker(sticker.url)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-red-600 p-1.5 z-10"
+                      title="Remove from global library"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block px-1">
+                      Grade Levels
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {ALL_GRADE_LEVELS.map((level) => {
+                        const isSelected = sticker.gradeLevels?.includes(level);
+                        return (
+                          <button
+                            key={level}
+                            onClick={() => toggleGradeLevel(sticker.url, level)}
+                            className={`px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border-2 ${
+                              isSelected
+                                ? 'bg-brand-blue-primary text-white border-brand-blue-primary shadow-sm'
+                                : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-500'
+                            }`}
+                          >
+                            {level}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

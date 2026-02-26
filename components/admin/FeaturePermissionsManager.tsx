@@ -7,6 +7,7 @@ import {
   WidgetType,
   GradeLevel,
   InternalToolType,
+  GlobalSticker,
 } from '@/types';
 import { useStorage } from '@/hooks/useStorage';
 import { TOOLS } from '@/config/tools';
@@ -63,14 +64,16 @@ export const FeaturePermissionsManager: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, []);
 
-  const getGlobalStickers = (): string[] => {
+  const getGlobalStickers = (): (string | GlobalSticker)[] => {
     const config = getPermission('stickers').config as
       | StickerGlobalConfig
       | undefined;
     return config?.globalStickers ?? [];
   };
 
-  const handleStickerLibraryChange = (newStickers: string[]) => {
+  const handleStickerLibraryChange = (
+    newStickers: (string | GlobalSticker)[]
+  ) => {
     const current = getPermission('stickers');
     const updatedConfig: StickerGlobalConfig = {
       ...(current.config as StickerGlobalConfig | undefined),
@@ -81,7 +84,9 @@ export const FeaturePermissionsManager: React.FC = () => {
     });
   };
 
-  const handleStickerLibraryDiscard = (originalStickers: string[]) => {
+  const handleStickerLibraryDiscard = (
+    originalStickers: (string | GlobalSticker)[]
+  ) => {
     const current = getPermission('stickers');
     const revertedConfig: StickerGlobalConfig = {
       ...(current.config as StickerGlobalConfig | undefined),

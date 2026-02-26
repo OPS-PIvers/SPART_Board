@@ -493,8 +493,13 @@ export interface StickerBookConfig {
   uploadedUrls?: string[];
 }
 
+export interface GlobalSticker {
+  url: string;
+  gradeLevels?: GradeLevel[];
+}
+
 export interface StickerGlobalConfig {
-  globalStickers?: string[];
+  globalStickers?: (string | GlobalSticker)[];
 }
 
 export interface FurnitureItem {

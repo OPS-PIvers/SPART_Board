@@ -14,7 +14,7 @@ const DEFAULT_STICKERS = [
   // Check
   `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2322c55e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
   // Smile
-  `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fbbf24" stroke="%23d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`,
+  `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fbbf24" stroke="%23d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y2="9"/><line x1="15" x2="15.01" y2="9"/></svg>`,
   // 100
   `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><text y="40" font-family="sans-serif" font-size="40" font-weight="bold" fill="%23ef4444" text-decoration="underline">100</text></svg>`,
   // Great Job
@@ -29,7 +29,7 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
   const { t } = useTranslation();
   const { updateWidget, clearAllStickers, addWidget, addToast } =
     useDashboard();
-  const { featurePermissions } = useAuth();
+  const { featurePermissions, userGradeLevels } = useAuth();
   const { processAndUploadImage, uploading } = useImageUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,11 +43,24 @@ export const StickerBookWidget: React.FC<{ widget: WidgetData }> = ({
     const stickerPermission = featurePermissions.find(
       (p) => p.widgetType === 'stickers'
     );
-    return (
+    const stickers =
       (stickerPermission?.config as StickerGlobalConfig | undefined)
-        ?.globalStickers ?? []
-    );
-  }, [featurePermissions]);
+        ?.globalStickers ?? [];
+
+    return stickers
+      .map((s) => (typeof s === 'string' ? { url: s } : s))
+      .filter((s) => {
+        // If user has no specific grade levels, show all
+        if (!userGradeLevels || userGradeLevels.length === 0) return true;
+
+        // If sticker has no specific grade levels, show it (backward compatibility or intended for all)
+        if (!s.gradeLevels || s.gradeLevels.length === 0) return true;
+
+        // Show if there is any overlap between user grade levels and sticker grade levels
+        return s.gradeLevels.some((level) => userGradeLevels.includes(level));
+      })
+      .map((s) => s.url);
+  }, [featurePermissions, userGradeLevels]);
 
   const removeCustomSticker = (index: number) => {
     const next = [...customStickers];
