@@ -8,6 +8,7 @@ import {
   WebcamGlobalConfig,
   WeatherTemperatureRange,
   CatalystGlobalConfig,
+  ExpectationsGlobalConfig,
   ToolMetadata,
 } from '../../types';
 import {
@@ -20,6 +21,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { CatalystPermissionEditor } from './CatalystPermissionEditor';
+import { ExpectationsConfigurationPanel } from './ExpectationsConfigurationPanel';
 import { Toggle } from '../common/Toggle';
 
 // Helper type guard
@@ -662,6 +664,23 @@ export const FeatureConfigurationPanel: React.FC<
         </div>
       )}
 
+      {tool.type === 'expectations' && (
+        <div className="space-y-4">
+          <ExpectationsConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildings: {},
+              }) as unknown as ExpectationsGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
       {tool.type === 'catalyst' && (
         <div className="space-y-4">
           <CatalystPermissionEditor
@@ -685,6 +704,7 @@ export const FeatureConfigurationPanel: React.FC<
         'catalyst',
         'webcam',
         'stickers',
+        'expectations',
       ].includes(tool.type) && (
         <p className="text-xs text-slate-500 italic">
           No additional configuration available for this widget.

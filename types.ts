@@ -294,6 +294,22 @@ export interface ExpectationsConfig {
   layout?: 'secondary' | 'elementary';
 }
 
+export interface ExpectationsOptionOverride {
+  enabled: boolean;
+  customLabel?: string;
+  customSub?: string;
+}
+
+export interface ExpectationsBuildingConfig {
+  volumeOverrides?: Record<number, ExpectationsOptionOverride>;
+  groupOverrides?: Record<string, ExpectationsOptionOverride>;
+  interactionOverrides?: Record<string, ExpectationsOptionOverride>;
+}
+
+export interface ExpectationsGlobalConfig {
+  buildings: Record<string, ExpectationsBuildingConfig>;
+}
+
 export interface WeatherConfig {
   temp: number;
   condition: string;
