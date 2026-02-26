@@ -911,7 +911,11 @@ export interface Dashboard {
 export interface Toast {
   id: string;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning' | 'loading';
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 export interface ToolMetadata {

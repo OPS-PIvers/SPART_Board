@@ -7,7 +7,13 @@ import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  AlertTriangle,
+  Loader2,
+} from 'lucide-react';
 import {
   DEFAULT_GLOBAL_STYLE,
   LiveStudent,
@@ -20,28 +26,64 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
     <div className="fixed top-6 right-6 z-toast space-y-3 pointer-events-none">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          onClick={() => removeToast(toast.id)}
-          className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border pointer-events-auto cursor-pointer animate-in slide-in-from-right duration-300 ${
-            toast.type === 'success'
-              ? 'bg-green-50/90 border-green-200 text-green-800'
-              : toast.type === 'error'
-                ? 'bg-red-50/90 border-red-200 text-red-800'
-                : 'bg-white/90 border-slate-200 text-slate-800'
-          }`}
-        >
-          {toast.type === 'success' && (
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
-          )}
-          {toast.type === 'error' && (
-            <AlertCircle className="w-5 h-5 text-red-600" />
-          )}
-          {toast.type === 'info' && <Info className="w-5 h-5 text-blue-600" />}
-          <span className="font-semibold text-sm">{toast.message}</span>
-        </div>
-      ))}
+      {toasts.map((toast) => {
+        const getStyles = () => {
+          switch (toast.type) {
+            case 'success':
+              return 'bg-green-50/90 border-green-200 text-green-800';
+            case 'error':
+              return 'bg-red-50/90 border-red-200 text-red-800';
+            case 'warning':
+              return 'bg-yellow-50/90 border-yellow-200 text-yellow-800';
+            case 'loading':
+              return 'bg-blue-50/90 border-blue-200 text-blue-800';
+            case 'info':
+            default:
+              return 'bg-white/90 border-slate-200 text-slate-800';
+          }
+        };
+
+        const getIcon = () => {
+          switch (toast.type) {
+            case 'success':
+              return <CheckCircle2 className="w-5 h-5 text-green-600" />;
+            case 'error':
+              return <AlertCircle className="w-5 h-5 text-red-600" />;
+            case 'warning':
+              return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
+            case 'loading':
+              return <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />;
+            case 'info':
+            default:
+              return <Info className="w-5 h-5 text-blue-600" />;
+          }
+        };
+
+        return (
+          <div
+            key={toast.id}
+            onClick={() => removeToast(toast.id)}
+            className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border pointer-events-auto cursor-pointer animate-in slide-in-from-right duration-300 ${getStyles()}`}
+          >
+            {getIcon()}
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-sm">{toast.message}</span>
+              {toast.action && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toast.action?.onClick();
+                    removeToast(toast.id);
+                  }}
+                  className="w-fit px-2 py-1 bg-black/5 hover:bg-black/10 rounded-lg text-xxs font-black uppercase tracking-widest transition-all"
+                >
+                  {toast.action.label}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

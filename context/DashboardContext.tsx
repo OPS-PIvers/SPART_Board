@@ -56,7 +56,7 @@ const serializeDashboard = (d: Dashboard): string =>
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, refreshGoogleToken } = useAuth();
   const { driveService } = useGoogleDrive();
   const {
     saveDashboard: saveDashboardFirestore,
@@ -148,12 +148,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const addToast = useCallback(
-    (message: string, type: Toast['type'] = 'info') => {
+    (
+      message: string,
+      type: Toast['type'] = 'info',
+      action?: Toast['action']
+    ) => {
       const id = crypto.randomUUID();
-      setToasts((prev) => [...prev, { id, message, type }]);
+      setToasts((prev) => [...prev, { id, message, type, action }]);
+      // If there's an action, keep it longer (10s) so the user has time to click
+      const duration = action ? 10000 : 3000;
       setTimeout(() => {
         removeToast(id);
-      }, 3000);
+      }, duration);
     },
     [removeToast]
   );
@@ -672,8 +678,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error('[Drive Sync] Background export failed:', err);
           if (err instanceof Error && err.message.includes('expired')) {
             addToast(
-              'Google Drive session expired. Please reconnect in settings.',
-              'error'
+              'Google Drive session expired. Please reconnect to keep syncing.',
+              'error',
+              {
+                label: 'Reconnect',
+                onClick: async () => {
+                  const token = await refreshGoogleToken();
+                  if (token) {
+                    addToast('Google Drive session refreshed', 'success');
+                  } else {
+                    addToast('Failed to refresh Drive session', 'error');
+                  }
+                },
+              }
             );
           }
         });
@@ -691,6 +708,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     loading,
     saveDashboardFirestore,
     addToast,
+    refreshGoogleToken,
   ]);
 
   // --- PII RESTORE EFFECT ---
@@ -745,14 +763,25 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         if (isExpired) {
           addToast(
             'Google Drive session expired. Some names may be hidden.',
-            'error'
+            'error',
+            {
+              label: 'Reconnect',
+              onClick: async () => {
+                const token = await refreshGoogleToken();
+                if (token) {
+                  addToast('Google Drive session refreshed', 'success');
+                } else {
+                  addToast('Failed to refresh Drive session', 'error');
+                }
+              },
+            }
           );
         } else {
           // Silent for other errors — Drive may be unavailable or no supplement exists yet
           console.warn('[PII Restore] Could not load supplement:', err);
         }
       });
-  }, [activeId, loading, driveService, addToast]);
+  }, [activeId, loading, driveService, addToast, refreshGoogleToken]);
 
   // Flush pending saves on page refresh/close
   useEffect(() => {
