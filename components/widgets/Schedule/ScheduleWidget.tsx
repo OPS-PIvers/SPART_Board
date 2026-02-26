@@ -90,7 +90,13 @@ interface CountdownDisplayProps {
   nowSeconds: number;
 }
 
-/** Pure countdown display – no internal timer, driven by parent's nowSeconds. */
+/**
+ * Pure countdown display – no internal timer, driven by parent's nowSeconds.
+ *
+ * NOTE: Cross-midnight events (e.g. startTime "23:00" → endTime "01:00") are
+ * not supported. The Schedule widget is designed for same-day classroom
+ * schedules where all times fall within a single calendar day.
+ */
 const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
   startTime,
   endTime,
@@ -115,7 +121,7 @@ const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
       <span
         className="text-indigo-400"
         style={{
-          fontSize: 'min(24px, 6cqmin, 30cqw)',
+          fontSize: 'min(24px, 6cqmin)',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
@@ -212,14 +218,14 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
                  container (getFontClass) cascades down to the time display. */
               <span
                 className={`font-black ${item.done ? 'text-slate-400' : 'text-indigo-400'}`}
-                style={{ fontSize: 'min(24px, 6cqmin, 30cqw)' }}
+                style={{ fontSize: 'min(24px, 6cqmin)' }}
               >
                 {formatScheduleTime(item.startTime ?? item.time, format24)}
               </span>
             )}
             <span
               className={`font-black leading-tight truncate w-full text-left ${item.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-              style={{ fontSize: 'min(36px, 10cqmin, 80cqw)' }}
+              style={{ fontSize: 'min(36px, 10cqmin)' }}
             >
               {item.task}
             </span>
@@ -359,8 +365,14 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     const checkAutoLaunch = () => {
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const today = now.toISOString().slice(0, 10);
       const currentItems = itemsRef.current;
       const w = widgetRef.current;
+
+      // Prune keys from previous days so the Set doesn't grow across long sessions.
+      for (const key of [...launchedItemsRef.current]) {
+        if (!key.endsWith(today)) launchedItemsRef.current.delete(key);
+      }
 
       currentItems.forEach((item, index) => {
         if (!item.linkedWidgets || item.linkedWidgets.length === 0) return;
@@ -368,7 +380,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         // Key is scoped to the calendar date so items re-launch each day.
         const baseKey =
           item.id ?? `${item.task}-${item.startTime ?? item.time}`;
-        const itemKey = `${baseKey}-${now.toISOString().slice(0, 10)}`;
+        const itemKey = `${baseKey}-${today}`;
         if (launchedItemsRef.current.has(itemKey)) return;
 
         const startMin = parseScheduleTime(item.startTime ?? item.time);

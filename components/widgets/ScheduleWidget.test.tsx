@@ -41,10 +41,10 @@ const mockAddWidget = vi.fn();
 const mockDashboardContext = {
   activeDashboard: {
     globalStyle: DEFAULT_GLOBAL_STYLE,
+    widgets: [],
   },
   updateWidget: mockUpdateWidget,
   addWidget: mockAddWidget,
-  widgets: [],
 };
 
 describe('ScheduleWidget', () => {
