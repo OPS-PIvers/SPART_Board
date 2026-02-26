@@ -284,7 +284,7 @@ export const Sidebar: React.FC = () => {
                     ) : (
                       <CloudCheck className="w-3 h-3" />
                     )}
-                    <span className="text-[8px] font-black uppercase tracking-tighter">
+                    <span className="text-xxxs font-black uppercase tracking-tighter">
                       {isSaving ? 'Syncing' : 'Cloud'}
                     </span>
                   </div>
@@ -295,7 +295,7 @@ export const Sidebar: React.FC = () => {
                       title="Google Drive Connected"
                     >
                       <GoogleDriveIcon className="w-3 h-3" />
-                      <span className="text-[8px] font-black uppercase tracking-tighter">
+                      <span className="text-xxxs font-black uppercase tracking-tighter">
                         Drive
                       </span>
                     </div>
@@ -423,7 +423,7 @@ export const Sidebar: React.FC = () => {
                   <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-grow">
-                  <span className="text-[11px] font-bold text-slate-900 truncate">
+                  <span className="text-xxs font-bold text-slate-900 truncate">
                     {user?.displayName}
                   </span>
                   <span className="text-xxs text-slate-500 truncate">

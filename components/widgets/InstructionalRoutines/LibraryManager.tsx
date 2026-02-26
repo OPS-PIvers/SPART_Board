@@ -250,7 +250,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                 }
               />
               <select
-                value={routine.color || 'blue'}
+                value={routine.color ?? 'blue'}
                 onChange={(e) =>
                   onChange({
                     ...routine,
@@ -330,7 +330,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                   <button
                     key={level}
                     onClick={() => {
-                      const current = routine.gradeLevels || [];
+                      const current = routine.gradeLevels ?? [];
                       const next = isSelected
                         ? current.filter((l) => l !== level)
                         : [...current, level];
@@ -355,7 +355,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                         grades: gradesStr,
                       });
                     }}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                    className={`px-2 py-1 rounded-lg text-xxs font-black uppercase transition-all ${
                       isSelected
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
@@ -505,7 +505,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                       });
                     }}
                     placeholder="Label"
-                    className="w-16 bg-white border-none rounded px-2 py-0.5 text-[9px] font-bold text-emerald-600"
+                    className="w-16 bg-white border-none rounded px-2 py-0.5 text-xxs font-bold text-emerald-600"
                   />
                   <select
                     value={step.color ?? 'blue'}
@@ -517,7 +517,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                         steps: nextSteps,
                       });
                     }}
-                    className="bg-white border-none rounded px-2 py-0.5 text-[9px] font-bold text-slate-600"
+                    className="bg-white border-none rounded px-2 py-0.5 text-xxs font-bold text-slate-600"
                   >
                     {ROUTINE_STEP_COLORS.map((c) => (
                       <option key={c} value={c}>
@@ -538,7 +538,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                   }}
                   rows={1}
                   placeholder="Instruction text..."
-                  className="w-full text-[11px] font-bold bg-white border-none rounded-lg px-2 py-1 leading-tight resize-none text-slate-800"
+                  className="w-full text-xxs font-bold bg-white border-none rounded-lg px-2 py-1 leading-tight resize-none text-slate-800"
                 />
                 <div className="flex items-center gap-2 mt-1 bg-white/50 p-1.5 rounded-lg border border-slate-100">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
