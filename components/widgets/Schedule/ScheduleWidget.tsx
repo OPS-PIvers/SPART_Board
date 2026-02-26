@@ -71,12 +71,16 @@ const formatScheduleTime = (
 /** Converts a hex color + alpha into an rgba() CSS string. */
 const hexToRgba = (hex: string, alpha: number): string => {
   const clean = (hex ?? '#ffffff').replace('#', '');
-  if (clean.length !== 6) return `rgba(255, 255, 255, ${alpha})`;
+  const a =
+    typeof alpha === 'number' && !isNaN(alpha)
+      ? Math.max(0, Math.min(1, alpha))
+      : 1;
+  if (clean.length !== 6) return `rgba(255, 255, 255, ${a})`;
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${alpha})`;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${a})`;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
 
 interface CountdownDisplayProps {
@@ -411,17 +415,26 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
       const newItems = currentItems.map((item, index) => {
         let isDone = false;
-        let nextTime = -1;
+        let completionTime = -1;
 
-        if (index < currentItems.length - 1) {
+        const itemEndTime = parseScheduleTime(item.endTime);
+        if (itemEndTime !== -1) {
+          // Prioritize the item's own end time when available.
+          completionTime = itemEndTime;
+        } else if (index < currentItems.length - 1) {
+          // Fall back to the next item's start time.
           const nextItem = currentItems[index + 1];
-          nextTime = parseScheduleTime(nextItem.startTime ?? nextItem.time);
+          completionTime = parseScheduleTime(
+            nextItem.startTime ?? nextItem.time
+          );
         } else {
+          // Last item with no end time: assume a 60-minute duration.
           const myTime = parseScheduleTime(item.startTime ?? item.time);
-          if (myTime !== -1) nextTime = myTime + 60;
+          if (myTime !== -1) completionTime = myTime + 60;
         }
 
-        if (nextTime !== -1 && nowMinutes >= nextTime) isDone = true;
+        if (completionTime !== -1 && nowMinutes >= completionTime)
+          isDone = true;
 
         if (item.done !== isDone) {
           changed = true;
