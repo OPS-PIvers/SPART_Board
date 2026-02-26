@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useLayoutEffect,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -121,6 +122,7 @@ const EMPTY_ARRAY: { id: string; label: string }[] = [];
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
+  const { t } = useTranslation();
   const { updateWidget, rosters, activeRosterId, addToast } = useDashboard();
   const config = widget.config as SeatingChartConfig;
   // Fall back to the legacy templateRows field so existing Firestore widgets
@@ -1253,8 +1255,8 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
               </p>
               <p className="text-xs">
                 {template === 'freeform'
-                  ? 'Add furniture from the sidebar.'
-                  : 'Pick a template and click Apply Layout.'}
+                  ? t('widgets.seatingChart.emptyStateFreeform')
+                  : t('widgets.seatingChart.emptyStateTemplate')}
               </p>
             </div>
           )}
