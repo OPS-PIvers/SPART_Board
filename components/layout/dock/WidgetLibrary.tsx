@@ -155,7 +155,7 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
       });
 
     return createPortal(
-      <div className="fixed inset-0 z-modal flex items-center justify-center p-4 animate-in fade-in duration-200 pointer-events-none">
+      <div className="fixed inset-0 z-modal flex items-center justify-center p-4 animate-in fade-in duration-200 bg-slate-900/40 backdrop-blur-sm pointer-events-auto">
         <GlassCard
           ref={ref}
           globalStyle={globalStyle}
