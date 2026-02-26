@@ -14,7 +14,8 @@
     "saved": "Saved",
     "upload": "Upload",
     "success": "Success",
-    "error": "Error"
+    "error": "Error",
+    "clearAll": "Clear All"
   },
   "sidebar": {
     "header": {
@@ -266,6 +267,20 @@
         "longSleeves": "Long Sleeves",
         "shortSleeves": "Short Sleeves"
       }
+    },
+    "stickers": {
+      "collectionTitle": "Sticker Collection",
+      "clearAll": "Clear all stickers from board",
+      "wait": "Wait...",
+      "dropOrPaste": "Drop or Paste Image",
+      "toAddCustom": "to add custom stickers",
+      "essentials": "Essentials",
+      "globalCollection": "Global Collection",
+      "myCollection": "My Collection",
+      "dragOrClick": "Drag or Click to add",
+      "deleteSticker": "Delete Sticker",
+      "dragFromLibrary": "Drag stickers from library to the board",
+      "stickerAdded": "Sticker added to board!"
     }
   },
   "admin": {

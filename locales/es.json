@@ -11,7 +11,8 @@
     "none": "Ninguno",
     "loading": "Cargando...",
     "saving": "Guardando...",
-    "upload": "Subir"
+    "upload": "Subir",
+    "clearAll": "Borrar Todo"
   },
   "sidebar": {
     "header": {
@@ -235,6 +236,20 @@
         "longSleeves": "Manga Larga",
         "shortSleeves": "Manga Corta"
       }
+    },
+    "stickers": {
+      "collectionTitle": "Colección de Stickers",
+      "clearAll": "Limpiar todos los stickers del tablero",
+      "wait": "Espera...",
+      "dropOrPaste": "Suelta o Pega una Imagen",
+      "toAddCustom": "para añadir stickers personalizados",
+      "essentials": "Esenciales",
+      "globalCollection": "Colección Global",
+      "myCollection": "Mi Colección",
+      "dragOrClick": "Arrastra o Haz Clic para añadir",
+      "deleteSticker": "Eliminar Sticker",
+      "dragFromLibrary": "Arrastra stickers desde la biblioteca al tablero",
+      "stickerAdded": "¡Sticker añadido al tablero!"
     }
   }
 }
