@@ -255,9 +255,12 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   };
 
   const getClothing = () => {
-    if (temp < 40) return { label: t('widgets.weather.clothing.heavyCoat'), icon: '🧤' };
-    if (temp < 60) return { label: t('widgets.weather.clothing.lightJacket'), icon: '🧥' };
-    if (temp < 75) return { label: t('widgets.weather.clothing.longSleeves'), icon: '👕' };
+    if (temp < 40)
+      return { label: t('widgets.weather.clothing.heavyCoat'), icon: '🧤' };
+    if (temp < 60)
+      return { label: t('widgets.weather.clothing.lightJacket'), icon: '🧥' };
+    if (temp < 75)
+      return { label: t('widgets.weather.clothing.longSleeves'), icon: '👕' };
     return { label: t('widgets.weather.clothing.shortSleeves'), icon: '🩳' };
   };
 
@@ -267,11 +270,16 @@ export const WeatherWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   let displayMessage: React.ReactNode = (
     <Trans
       i18nKey="widgets.weather.messageTemplate"
-      values={{ condition: t(`widgets.weather.conditions.${condition.toLowerCase()}`, { defaultValue: condition }), clothing: clothing.label }}
+      values={{
+        condition: t(`widgets.weather.conditions.${condition.toLowerCase()}`, {
+          defaultValue: condition,
+        }),
+        clothing: clothing.label,
+      }}
       components={{
         cond: <span className="text-indigo-600 uppercase" />,
         cloth: <span className="text-indigo-600" />,
-        br: <br />
+        br: <br />,
       }}
     />
   );
@@ -542,7 +550,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         },
       });
 
-      addToast(`${t('widgets.weather.connectedTo')} ${STATION_CONFIG.name}`, 'success');
+      addToast(
+        `${t('widgets.weather.connectedTo')} ${STATION_CONFIG.name}`,
+        'success'
+      );
     } catch (err) {
       console.error(err);
       let message = t('widgets.weather.stationFailed');
@@ -557,10 +568,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const fetchWeather = async (params: string) => {
     if (!hasApiKey) {
-      addToast(
-        t('widgets.weather.serviceNotConfigured'),
-        'error'
-      );
+      addToast(t('widgets.weather.serviceNotConfigured'), 'error');
       return;
     }
 
@@ -571,9 +579,7 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       );
 
       if (res.status === 401) {
-        throw new Error(
-          t('widgets.weather.invalidApiKey')
-        );
+        throw new Error(t('widgets.weather.invalidApiKey'));
       }
 
       const data = (await res.json()) as OpenWeatherData;
@@ -630,9 +636,21 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
   const conditions = [
     { id: 'sunny', icon: Sun, label: t('widgets.weather.conditions.sunny') },
-    { id: 'cloudy', icon: Cloud, label: t('widgets.weather.conditions.cloudy') },
-    { id: 'rainy', icon: CloudRain, label: t('widgets.weather.conditions.rainy') },
-    { id: 'snowy', icon: CloudSnow, label: t('widgets.weather.conditions.snowy') },
+    {
+      id: 'cloudy',
+      icon: Cloud,
+      label: t('widgets.weather.conditions.cloudy'),
+    },
+    {
+      id: 'rainy',
+      icon: CloudRain,
+      label: t('widgets.weather.conditions.rainy'),
+    },
+    {
+      id: 'snowy',
+      icon: CloudSnow,
+      label: t('widgets.weather.conditions.snowy'),
+    },
     { id: 'windy', icon: Wind, label: t('widgets.weather.conditions.windy') },
   ];
 
@@ -681,7 +699,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
       <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
         <div className="flex flex-col gap-0.5">
           <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
-            <Palette className="w-3 h-3" /> {t('widgets.weather.syncBackground')}
+            <Palette className="w-3 h-3" />{' '}
+            {t('widgets.weather.syncBackground')}
           </span>
           <span className="text-xxs text-slate-400 leading-tight">
             {t('widgets.weather.syncBackgroundDescription')}
@@ -725,7 +744,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
         <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
           <div>
             <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-4 block flex items-center gap-2">
-              <Thermometer className="w-3 h-3" /> {t('widgets.weather.temperature')} (°F)
+              <Thermometer className="w-3 h-3" />{' '}
+              {t('widgets.weather.temperature')} (°F)
             </label>
             <div className="flex items-center gap-4 px-2">
               <input
@@ -767,7 +787,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                   className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${condition === c.id ? 'border-indigo-500 bg-indigo-50 text-indigo-600 shadow-sm' : 'border-slate-100 bg-white text-slate-400'}`}
                 >
                   <c.icon className="w-4 h-4" />
-                  <span className="text-[8px] font-black uppercase tracking-tighter">{c.label}</span>
+                  <span className="text-[8px] font-black uppercase tracking-tighter">
+                    {c.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -820,7 +842,10 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                     <p className="text-xs text-indigo-800  leading-tight">
                       <Trans
                         i18nKey="widgets.weather.stationConnectedTo"
-                        values={{ name: STATION_CONFIG.name, id: STATION_CONFIG.id }}
+                        values={{
+                          name: STATION_CONFIG.name,
+                          id: STATION_CONFIG.id,
+                        }}
                         components={{ b: <span className="font-bold" /> }}
                       />
                     </p>
@@ -849,7 +874,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
 
                   <div>
                     <label className="text-xxs  text-slate-400 uppercase tracking-widest mb-2 block flex items-center gap-2">
-                      <MapPin className="w-3 h-3" /> {t('widgets.weather.cityZip')}
+                      <MapPin className="w-3 h-3" />{' '}
+                      {t('widgets.weather.cityZip')}
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -881,7 +907,9 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                       <div className="w-full border-t border-slate-100" />
                     </div>
                     <div className="relative flex justify-center text-[8px] font-black  text-slate-300 uppercase tracking-widest">
-                      <span className="bg-white px-2">{t('widgets.weather.or')}</span>
+                      <span className="bg-white px-2">
+                        {t('widgets.weather.or')}
+                      </span>
                     </div>
                   </div>
 
@@ -890,7 +918,8 @@ export const WeatherSettings: React.FC<{ widget: WidgetData }> = ({
                     disabled={loading || !hasApiKey}
                     className="w-full py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl  text-xxs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all disabled:opacity-50"
                   >
-                    <MapPin className="w-4 h-4" /> {t('widgets.weather.useLocation')}
+                    <MapPin className="w-4 h-4" />{' '}
+                    {t('widgets.weather.useLocation')}
                   </button>
                 </>
               )}

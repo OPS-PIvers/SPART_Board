@@ -143,7 +143,11 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     { id: 'global', label: t('widgets.clock.fonts.inherit'), icon: 'G' },
     { id: 'font-mono', label: t('widgets.clock.fonts.digital'), icon: '01' },
     { id: 'font-sans', label: t('widgets.clock.fonts.modern'), icon: 'Aa' },
-    { id: 'font-handwritten', label: t('widgets.clock.fonts.school'), icon: '✏️' },
+    {
+      id: 'font-handwritten',
+      label: t('widgets.clock.fonts.school'),
+      icon: '✏️',
+    },
   ];
 
   const colors = WIDGET_PALETTE;
@@ -182,7 +186,9 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Font Family */}
       <div>
-        <SettingsLabel icon={Type}>{t('widgets.clock.typography')}</SettingsLabel>
+        <SettingsLabel icon={Type}>
+          {t('widgets.clock.typography')}
+        </SettingsLabel>
         <div className="grid grid-cols-4 gap-2">
           {fonts.map((f) => (
             <button
@@ -205,7 +211,9 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
 
       {/* Clock Style */}
       <div>
-        <SettingsLabel icon={Sparkles}>{t('widgets.clock.displayStyle')}</SettingsLabel>
+        <SettingsLabel icon={Sparkles}>
+          {t('widgets.clock.displayStyle')}
+        </SettingsLabel>
         <div className="flex bg-slate-100 p-1 rounded-xl">
           {styles.map((s) => (
             <button
@@ -226,7 +234,9 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
       {/* Color & Glow */}
       <div className="flex items-end justify-between gap-4">
         <div className="flex-1">
-          <SettingsLabel icon={Palette}>{t('widgets.clock.colorPalette')}</SettingsLabel>
+          <SettingsLabel icon={Palette}>
+            {t('widgets.clock.colorPalette')}
+          </SettingsLabel>
           <div className="flex gap-1.5">
             {colors.map((c) => (
               <button
@@ -251,7 +261,9 @@ export const ClockSettings: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           className={`p-2 rounded-lg border-2 flex items-center gap-2 transition-all ${config.glow ? 'bg-amber-100 border-amber-300 text-amber-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
         >
           <Sun className={`w-4 h-4 ${config.glow ? 'fill-current' : ''}`} />
-          <span className="text-xxs font-black uppercase tracking-widest">{t('widgets.clock.glow')}</span>
+          <span className="text-xxs font-black uppercase tracking-widest">
+            {t('widgets.clock.glow')}
+          </span>
         </button>
       </div>
     </div>

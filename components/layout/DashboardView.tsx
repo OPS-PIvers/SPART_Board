@@ -366,7 +366,10 @@ export const DashboardView: React.FC = () => {
                 activePdfName: pdfData.name,
               },
             });
-            addToast(`"${pdfData.name}" ${t('sidebar.header.allChangesSavedTooltip')}`, 'success');
+            addToast(
+              `"${pdfData.name}" ${t('sidebar.header.allChangesSavedTooltip')}`,
+              'success'
+            );
           } catch (err) {
             console.error('PDF drop upload failed', err);
             addToast(t('common.error'), 'error');

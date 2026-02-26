@@ -44,9 +44,7 @@ export function useImageUpload(options?: {
 
         const url = options?.uploadFn
           ? await options.uploadFn(processedFile)
-          : ((await uploadSticker(user!.uid, processedFile)) as
-              | string
-              | null);
+          : ((await uploadSticker(user!.uid, processedFile)) as string | null);
 
         return url;
       } catch (err) {

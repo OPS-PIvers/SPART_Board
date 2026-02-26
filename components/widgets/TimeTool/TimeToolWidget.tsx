@@ -577,7 +577,11 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
     { id: 'global', label: t('widgets.clock.fonts.inherit'), icon: 'G' },
     { id: 'font-mono', label: t('widgets.clock.fonts.digital'), icon: '01' },
     { id: 'font-sans', label: t('widgets.clock.fonts.modern'), icon: 'Aa' },
-    { id: 'font-handwritten', label: t('widgets.clock.fonts.school'), icon: '\u270F\uFE0F' },
+    {
+      id: 'font-handwritten',
+      label: t('widgets.clock.fonts.school'),
+      icon: '\u270F\uFE0F',
+    },
   ];
 
   const styles = [
@@ -592,7 +596,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
     <div className="space-y-6 p-1">
       {/* Mode Selection */}
       <div>
-        <SettingsLabel icon={TimerIcon}>{t('widgets.timeTool.mode')}</SettingsLabel>
+        <SettingsLabel icon={TimerIcon}>
+          {t('widgets.timeTool.mode')}
+        </SettingsLabel>
         <div className="grid grid-cols-2 gap-2">
           {(['timer', 'stopwatch'] as const).map((m) => (
             <button
@@ -632,7 +638,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
               ) : (
                 <ClockIcon size={14} />
               )}
-              {m === 'timer' ? t('widgets.timeTool.timer') : t('widgets.timeTool.stopwatch')}
+              {m === 'timer'
+                ? t('widgets.timeTool.timer')
+                : t('widgets.timeTool.stopwatch')}
             </button>
           ))}
         </div>
@@ -640,7 +648,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Display Style */}
       <div>
-        <SettingsLabel icon={Sparkles}>{t('widgets.clock.displayStyle')}</SettingsLabel>
+        <SettingsLabel icon={Sparkles}>
+          {t('widgets.clock.displayStyle')}
+        </SettingsLabel>
         <div className="grid grid-cols-2 gap-2">
           {(['digital', 'visual'] as const).map((v) => (
             <button
@@ -656,7 +666,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
                   : 'bg-white border-slate-200 text-slate-600'
               }`}
             >
-              {v === 'digital' ? t('widgets.timeTool.digital') : t('widgets.timeTool.visualRing')}
+              {v === 'digital'
+                ? t('widgets.timeTool.digital')
+                : t('widgets.timeTool.visualRing')}
             </button>
           ))}
         </div>
@@ -664,7 +676,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Sound Selector */}
       <div>
-        <SettingsLabel icon={Bell}>{t('widgets.timeTool.alertSound')}</SettingsLabel>
+        <SettingsLabel icon={Bell}>
+          {t('widgets.timeTool.alertSound')}
+        </SettingsLabel>
         <div className="grid grid-cols-4 gap-2">
           {SOUNDS.map((s) => (
             <button
@@ -688,7 +702,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Font Family */}
       <div>
-        <SettingsLabel icon={Type}>{t('widgets.clock.typography')}</SettingsLabel>
+        <SettingsLabel icon={Type}>
+          {t('widgets.clock.typography')}
+        </SettingsLabel>
         <div className="grid grid-cols-4 gap-2">
           {fonts.map((f) => (
             <button
@@ -715,7 +731,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
 
       {/* Clock Style */}
       <div>
-        <SettingsLabel icon={Sparkles}>{t('widgets.timeTool.numberStyle')}</SettingsLabel>
+        <SettingsLabel icon={Sparkles}>
+          {t('widgets.timeTool.numberStyle')}
+        </SettingsLabel>
         <div className="flex bg-slate-100 p-1 rounded-xl">
           {styles.map((s) => (
             <button
@@ -736,7 +754,9 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
       {/* Color & Glow */}
       <div className="flex items-end justify-between gap-4">
         <div className="flex-1">
-          <SettingsLabel icon={Palette}>{t('widgets.clock.colorPalette')}</SettingsLabel>
+          <SettingsLabel icon={Palette}>
+            {t('widgets.clock.colorPalette')}
+          </SettingsLabel>
           <div className="flex gap-1.5">
             {colors.map((c) => (
               <button
@@ -761,13 +781,17 @@ export const TimeToolSettings: React.FC<{ widget: WidgetData }> = ({
           className={`p-2 rounded-lg border-2 flex items-center gap-2 transition-all ${config.glow ? 'bg-amber-100 border-amber-300 text-amber-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
         >
           <Sun className={`w-4 h-4 ${config.glow ? 'fill-current' : ''}`} />
-          <span className="text-xxs font-black uppercase tracking-widest">{t('widgets.clock.glow')}</span>
+          <span className="text-xxs font-black uppercase tracking-widest">
+            {t('widgets.clock.glow')}
+          </span>
         </button>
       </div>
 
       {/* Timer End Action */}
       <div>
-        <SettingsLabel icon={Bell}>{t('widgets.timeTool.timerEndAction')}</SettingsLabel>
+        <SettingsLabel icon={Bell}>
+          {t('widgets.timeTool.timerEndAction')}
+        </SettingsLabel>
 
         {!hasExpectations ? (
           <div className="text-xs text-brand-red-primary bg-brand-red-lighter/20 p-4 rounded-2xl border border-brand-red-lighter/30 flex items-start gap-3">

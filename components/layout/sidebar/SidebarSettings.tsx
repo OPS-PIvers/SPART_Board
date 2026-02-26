@@ -1,6 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, AlertCircle, Building2, Save, Languages } from 'lucide-react';
+import {
+  Settings,
+  AlertCircle,
+  Building2,
+  Save,
+  Languages,
+} from 'lucide-react';
 import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
 import { Toggle } from '@/components/common/Toggle';
 import { useDashboard } from '@/context/useDashboard';
@@ -55,7 +61,9 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           </div>
 
           <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
-            {t('sidebar.settings.googleDriveDescription', { appName: APP_NAME })}
+            {t('sidebar.settings.googleDriveDescription', {
+              appName: APP_NAME,
+            })}
           </p>
 
           <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">

@@ -31,8 +31,11 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
   hasUnsavedChanges,
 }) => {
   const { t } = useTranslation();
-  const { uploadAdminSticker, deleteFile, uploading: storageUploading } =
-    useStorage();
+  const {
+    uploadAdminSticker,
+    deleteFile,
+    uploading: storageUploading,
+  } = useStorage();
   const { processAndUploadImage, uploading: processing } = useImageUpload({
     uploadFn: uploadAdminSticker,
   });
