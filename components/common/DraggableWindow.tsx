@@ -1073,7 +1073,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     onClick={() => void takeScreenshot()}
                     disabled={isCapturing}
                     icon={<Camera className="w-3.5 h-3.5" />}
-                    label="Take Screenshot"
+                    label={t('widgetWindow.takeScreenshot')}
                     size="sm"
                     variant="glass"
                   />
@@ -1084,7 +1084,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     setShowTools(false);
                   }}
                   icon={<Highlighter className="w-3.5 h-3.5" />}
-                  label="Annotate"
+                  label={t('widgetWindow.annotate')}
                   size="sm"
                   variant="glass"
                   active={isAnnotating}
@@ -1095,7 +1095,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                 <IconButton
                   onClick={() => duplicateWidget(widget.id)}
                   icon={<Copy className="w-3.5 h-3.5" />}
-                  label="Duplicate"
+                  label={t('widgetWindow.duplicate')}
                   size="sm"
                   variant="glass"
                 />
@@ -1108,7 +1108,11 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                       <Maximize className="w-3.5 h-3.5" />
                     )
                   }
-                  label={isMaximized ? 'Restore' : 'Maximize'}
+                  label={
+                    isMaximized
+                      ? t('widgetWindow.restore')
+                      : t('widgetWindow.maximize')
+                  }
                   size="sm"
                   variant="glass"
                 />
@@ -1120,7 +1124,7 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
                     })
                   }
                   icon={<Minus className="w-3.5 h-3.5" />}
-                  label="Minimize"
+                  label={t('widgetWindow.minimize')}
                   size="sm"
                   variant="glass"
                 />

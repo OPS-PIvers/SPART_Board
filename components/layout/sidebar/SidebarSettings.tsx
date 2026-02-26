@@ -1,5 +1,6 @@
 import React from 'react';
-import { Settings, AlertCircle, Building2, Save } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Settings, AlertCircle, Building2, Save, Languages } from 'lucide-react';
 import { GoogleDriveIcon } from '@/components/common/GoogleDriveIcon';
 import { Toggle } from '@/components/common/Toggle';
 import { useDashboard } from '@/context/useDashboard';
@@ -8,6 +9,7 @@ import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { APP_NAME } from '@/config/constants';
 import { BUILDINGS } from '@/config/buildings';
 import { TOOLS } from '@/config/tools';
+import { SUPPORTED_LANGUAGES } from '@/i18n';
 
 interface SidebarSettingsProps {
   isVisible: boolean;
@@ -18,6 +20,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
   isVisible,
   onCancel,
 }) => {
+  const { t, i18n } = useTranslation();
   const {
     activeDashboard,
     updateDashboardSettings,
@@ -27,6 +30,11 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
   const { signOut, signInWithGoogle, selectedBuildings, setSelectedBuildings } =
     useAuth();
   const { isConnected: isDriveConnected } = useGoogleDrive();
+
+  const handleLanguageChange = (code: string) => {
+    void i18n.changeLanguage(code);
+    addToast(t('toasts.settingsSaved'), 'success');
+  };
 
   return (
     <div
@@ -42,13 +50,12 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           <div className="flex items-center gap-2 mb-3 px-1">
             <GoogleDriveIcon className="w-4 h-4" />
             <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
-              Google Drive Integration
+              {t('sidebar.settings.googleDriveIntegration')}
             </label>
           </div>
 
           <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
-            Your boards and assets are automatically backed up to your
-            {`"${APP_NAME}"`} folder in Drive.
+            {t('sidebar.settings.googleDriveDescription', { appName: APP_NAME })}
           </p>
 
           <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
@@ -59,7 +66,9 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
                 <AlertCircle className="w-4 h-4 text-amber-500" />
               )}
               <span className="text-xxs font-bold text-slate-600 uppercase">
-                {isDriveConnected ? 'Connected & Synced' : 'Disconnected'}
+                {isDriveConnected
+                  ? t('sidebar.settings.connectedSynced')
+                  : t('sidebar.settings.disconnected')}
               </span>
             </div>
 
@@ -77,8 +86,49 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
                   : 'bg-brand-blue-primary text-white shadow-sm'
               }`}
             >
-              {isDriveConnected ? 'Disconnect' : 'Connect'}
+              {isDriveConnected
+                ? t('sidebar.settings.disconnect')
+                : t('sidebar.settings.connect')}
             </button>
+          </div>
+        </div>
+
+        {/* Language Selection */}
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Languages className="w-4 h-4 text-slate-400" />
+            <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
+              {t('sidebar.settings.language')}
+            </label>
+          </div>
+          <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
+            {t('sidebar.settings.languageDescription')}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleLanguageChange(lang.code)}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                  i18n.language === lang.code
+                    ? 'bg-brand-blue-primary border-brand-blue-primary text-white shadow-md'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-brand-blue-lighter hover:text-brand-blue-primary'
+                }`}
+              >
+                <span className="text-xxs font-black uppercase tracking-widest">
+                  {lang.nativeLabel}
+                </span>
+                <span
+                  className={`text-[9px] font-bold uppercase mt-1 ${
+                    i18n.language === lang.code
+                      ? 'text-white/60'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  {lang.label}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -87,13 +137,11 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           <div className="flex items-center gap-2 mb-3 px-1">
             <Building2 className="w-4 h-4 text-slate-400" />
             <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
-              My Building(s)
+              {t('sidebar.settings.myBuildings')}
             </label>
           </div>
           <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
-            Select the building(s) you work in. Widgets like Instructional
-            Routines will automatically show content for your grade level.
-            Select multiple if you work across buildings.
+            {t('sidebar.settings.myBuildingsDescription')}
           </p>
           <div className="flex flex-col gap-2">
             {BUILDINGS.map((building) => {
@@ -131,7 +179,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           </div>
           {selectedBuildings.length === 0 && (
             <p className="text-xxs text-slate-400 mt-3 px-1 italic">
-              No building selected — widgets will show all available content.
+              {t('sidebar.settings.noBuildingSelected')}
             </p>
           )}
         </div>
@@ -140,17 +188,17 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           <div className="flex items-center gap-2 mb-3 px-1">
             <Settings className="w-4 h-4 text-slate-400" />
             <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
-              Interface Preferences
+              {t('sidebar.settings.interfacePreferences')}
             </label>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
             <div className="flex flex-col gap-0.5">
               <span className="text-xxs font-bold text-slate-700 uppercase tracking-tight">
-                Disable Close Warning
+                {t('sidebar.settings.disableCloseWarning')}
               </span>
               <span className="text-xxs text-slate-400 leading-tight">
-                Skip the confirmation prompt when closing widgets.
+                {t('sidebar.settings.skipConfirmation')}
               </span>
             </div>
             <Toggle
@@ -170,7 +218,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
           <div className="flex justify-between items-center mb-3 px-1">
             <label className="text-xxs font-bold text-slate-700 uppercase tracking-tight block">
-              Quick Access Widgets
+              {t('sidebar.settings.quickAccessWidgets')}
             </label>
             <span className="text-xxs font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-full">
               {activeDashboard?.settings?.quickAccessWidgets?.length ?? 0}
@@ -178,7 +226,7 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
             </span>
           </div>
           <p className="text-xxs text-slate-400 mb-4 px-1 leading-relaxed">
-            Select up to 2 widgets to appear when the dock is minimized.
+            {t('sidebar.settings.quickAccessDescription')}
           </p>
           <div className="grid grid-cols-6 gap-2">
             {TOOLS.map((tool) => {
@@ -234,18 +282,18 @@ export const SidebarSettings: React.FC<SidebarSettingsProps> = ({
           <button
             onClick={() => {
               saveCurrentDashboard();
-              addToast('Settings saved successfully', 'success');
+              addToast(t('toasts.settingsSaved'), 'success');
             }}
             className="w-full py-3 bg-brand-blue-primary text-white rounded-xl font-bold text-xxs uppercase tracking-widest shadow-sm hover:bg-brand-blue-dark transition-all flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" />
-            Save all changes
+            {t('sidebar.settings.saveAllChanges')}
           </button>
           <button
             onClick={onCancel}
             className="w-full py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-xxs uppercase tracking-widest hover:bg-slate-200 transition-all"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
@@ -46,6 +47,7 @@ const ToastContainer: React.FC = () => {
 };
 
 export const DashboardView: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const {
     activeDashboard,
@@ -148,7 +150,7 @@ export const DashboardView: React.FC = () => {
         e.preventDefault();
 
         if (e.shiftKey || e.altKey) {
-          if (confirm('Are you sure you want to clear the entire board?')) {
+          if (confirm(t('sidebar.confirmClearBoard'))) {
             deleteAllWidgets();
           }
         } else if (activeDashboard && activeDashboard.widgets.length > 0) {
@@ -197,6 +199,7 @@ export const DashboardView: React.FC = () => {
     activeDashboard,
     minimizeAllWidgets,
     deleteAllWidgets,
+    t,
   ]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -341,14 +344,14 @@ export const DashboardView: React.FC = () => {
       if (pdfFile && user) {
         e.preventDefault();
         if (pdfFile.size > MAX_PDF_SIZE_BYTES) {
-          addToast('PDF is too large. Maximum size is 50MB.', 'error');
+          addToast(t('toasts.imageTooLarge'), 'error');
           return;
         }
         const w = 600;
         const h = 750;
         const dropX = Math.max(0, e.clientX - w / 2);
         const dropY = Math.max(0, e.clientY - h / 2);
-        addToast('Uploading PDF…', 'info');
+        addToast(t('sidebar.header.syncingChanges'), 'info');
         void (async () => {
           try {
             const pdfData = await uploadAndRegisterPdf(user.uid, pdfFile);
@@ -363,10 +366,10 @@ export const DashboardView: React.FC = () => {
                 activePdfName: pdfData.name,
               },
             });
-            addToast(`"${pdfData.name}" added to board`, 'success');
+            addToast(`"${pdfData.name}" ${t('sidebar.header.allChangesSavedTooltip')}`, 'success');
           } catch (err) {
             console.error('PDF drop upload failed', err);
-            addToast('Failed to upload PDF', 'error');
+            addToast(t('common.error'), 'error');
           }
         })();
         return;
@@ -487,7 +490,7 @@ export const DashboardView: React.FC = () => {
         <div className="animate-pulse flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="font-black uppercase tracking-[0.3em] text-xs">
-            Waking up Classroom...
+            {t('common.loading')}
           </span>
         </div>
       </div>

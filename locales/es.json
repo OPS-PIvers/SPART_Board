@@ -53,7 +53,10 @@
       "enterNewName": "Ingresa un nuevo nombre para tu tablero.",
       "newBoardTitle": "Nuevo Tablero",
       "enterName": "Ingresa un nombre para tu nuevo tablero.",
-      "boardName": "Nombre del tablero"
+      "boardName": "Nombre del tablero",
+      "create": "Crear",
+      "enterBoardData": "Pega los datos de tu tablero aquí:",
+      "imported": "Importado"
     },
     "backgrounds": {
       "presets": "Presets",
@@ -96,6 +99,12 @@
     "collapseToolbar": "Contraer Barra",
     "screenshotSaved": "Captura guardada",
     "screenshotFailed": "Error al guardar la captura",
+    "takeScreenshot": "Tomar Captura",
+    "annotate": "Anotar",
+    "duplicate": "Duplicar",
+    "restore": "Restaurar",
+    "maximize": "Maximizar",
+    "minimize": "Minimizar",
     "eraser": "Borrador",
     "undo": "Deshacer",
     "clearAll": "Borrar Todo",
@@ -129,5 +138,103 @@
     "es": "Español",
     "de": "Deutsch",
     "fr": "Français"
+  },
+  "widgets": {
+    "clock": {
+      "format24": "Formato 24H",
+      "showSeconds": "Mostrar Segundos",
+      "typography": "Tipografía",
+      "displayStyle": "Estilo de Pantalla",
+      "colorPalette": "Paleta de Colores",
+      "glow": "Resplandor",
+      "fonts": {
+        "inherit": "Heredar",
+        "digital": "Digital",
+        "modern": "Moderno",
+        "school": "Escolar"
+      },
+      "styles": {
+        "default": "Predeterminado",
+        "lcd": "Panel LCD",
+        "minimal": "Minimalista"
+      }
+    },
+    "timeTool": {
+      "mode": "Modo",
+      "timer": "Temporizador",
+      "stopwatch": "Cronómetro",
+      "digital": "Digital",
+      "visualRing": "Anillo Visual",
+      "alertSound": "Sonido de Alerta",
+      "numberStyle": "Estilo de Números",
+      "timerEndAction": "Acción al Finalizar",
+      "addExpectationsTip": "¡Añade un widget de \"Expectativas\" para activar cambios automáticos de nivel de voz!",
+      "switchToVoiceLevel": "Cambiar a Nivel de Voz al terminar",
+      "level": "Nivel",
+      "autoSetTrafficLight": "Semáforo Automático",
+      "addTrafficLightTip": "¡Añade un widget de Semáforo para activar cambios automáticos de color!",
+      "stop": "Parar",
+      "slow": "Despacio",
+      "go": "Ir",
+      "backspace": "Borrar",
+      "confirmTime": "Confirmar tiempo",
+      "closeKeypad": "Cerrar teclado"
+    },
+    "weather": {
+      "actual": "Real",
+      "feelsLike": "Sensación",
+      "weatherImageAlt": "Clima",
+      "connectedTo": "Conectado a",
+      "stationFailed": "Fallo en la conexión de la estación",
+      "serviceNotConfigured": "El servicio meteorológico no está configurado. Por favor, contacta a tu administrador.",
+      "invalidApiKey": "Clave API inválida. Si es nueva, espera hasta 2 horas para su activación.",
+      "updatedFor": "Clima actualizado para",
+      "syncFailed": "Fallo en la sincronización del clima",
+      "enterCity": "Por favor, introduce el nombre de una ciudad",
+      "geoNotSupported": "Geolocalización no soportada",
+      "locationDenied": "Acceso a la ubicación denegado",
+      "prioritizeFeelsLike": "Priorizar Sensación Térmica",
+      "prioritizeDescription": "Cambia la prominencia entre la temperatura real y la sensación térmica.",
+      "hideClothing": "Ocultar Sugerencias de Ropa",
+      "hideClothingDescription": "Elimina el contenedor de ropa y mensajes del widget.",
+      "syncBackground": "Sincronizar Fondo",
+      "syncBackgroundDescription": "Cambia automáticamente el fondo del tablero según el clima.",
+      "manual": "Manual",
+      "automatic": "Automático",
+      "temperature": "Temperatura",
+      "condition": "Condición",
+      "manualMode": "Modo Manual",
+      "managedByAdmin": "El clima es gestionado por tu administrador.",
+      "schoolStation": "Estación Escolar",
+      "stationReady": "Señal de Estación Lista",
+      "stationConnectedTo": "Conectado a la estación meteorológica <b>{{name}} ({{id}})</b>.",
+      "refreshStation": "Actualizar Datos de la Estación",
+      "serviceNotConfiguredAdmin": "El servicio meteorológico no está configurado. Contacta a tu administrador para configurar la clave API.",
+      "cityZip": "Ciudad / Código Postal",
+      "cityPlaceholder": "ej. Londres, ES",
+      "or": "O",
+      "useLocation": "Usar Ubicación Actual",
+      "messageTemplate": "Hoy está <cond>{{condition}}</cond>.<br />¡Usa <cloth>{{clothing}}</cloth>!",
+      "conditions": {
+        "sunny": "Soleado",
+        "clear": "Despejado",
+        "cloudy": "Nublado",
+        "clouds": "Nubes",
+        "rainy": "Lluvioso",
+        "rain": "Lluvia",
+        "drizzle": "Llovizna",
+        "snowy": "Nevado",
+        "snow": "Nieve",
+        "windy": "Ventoso",
+        "squall": "Chubasco",
+        "tornado": "Tornado"
+      },
+      "clothing": {
+        "heavyCoat": "Abrigo Grueso y Gorro",
+        "lightJacket": "Chaqueta Ligera",
+        "longSleeves": "Manga Larga",
+        "shortSleeves": "Manga Corta"
+      }
+    }
   }
 }

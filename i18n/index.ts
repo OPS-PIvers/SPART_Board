@@ -29,10 +29,10 @@ void i18n
     },
     fallbackLng: 'en',
     supportedLngs: ['en', 'es', 'de', 'fr'],
-    // LanguageDetector will check localStorage key 'spart_language' first,
-    // then browser navigator language as fallback.
+    // Only use localStorage to persist user choice.
+    // Default to 'en' if no choice is made to avoid browser-language surprises.
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'],
       lookupLocalStorage: 'spart_language',
       caches: ['localStorage'],
     },

@@ -9,6 +9,7 @@ import {
   Save,
 } from 'lucide-react';
 import { useStorage } from '@/hooks/useStorage';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface StickerLibraryModalProps {
   stickers: string[];
@@ -30,7 +31,12 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
   hasUnsavedChanges,
 }) => {
   const { t } = useTranslation();
-  const { uploadAdminSticker, deleteFile, uploading } = useStorage();
+  const { uploadAdminSticker, deleteFile, uploading: storageUploading } =
+    useStorage();
+  const { processAndUploadImage, uploading: processing } = useImageUpload({
+    uploadFn: uploadAdminSticker,
+  });
+  const uploading = storageUploading || processing;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -66,9 +72,11 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
       const newUrls: string[] = [];
       for (const file of fileArray) {
         try {
-          const url = await uploadAdminSticker(file);
-          uploadedThisSessionRef.current.add(url);
-          newUrls.push(url);
+          const url = await processAndUploadImage(file);
+          if (url) {
+            uploadedThisSessionRef.current.add(url);
+            newUrls.push(url);
+          }
         } catch (e) {
           console.error('Failed to upload sticker:', e);
         }
@@ -77,8 +85,46 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
         onStickersChange([...stickers, ...newUrls]);
       }
     },
-    [stickers, onStickersChange, uploadAdminSticker]
+    [stickers, onStickersChange, processAndUploadImage]
   );
+
+  // Handle global paste events when this modal is mounted
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            // Create a pseudo-filename if it's from a screenshot
+            const namedFile = new File(
+              [file],
+              `pasted-admin-sticker-${Date.now()}.png`,
+              { type: file.type }
+            );
+            void handleFiles([namedFile]);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [handleFiles]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {

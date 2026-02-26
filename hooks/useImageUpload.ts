@@ -6,7 +6,9 @@ import {
   removeBackground,
 } from '../utils/imageProcessing';
 
-export function useImageUpload() {
+export function useImageUpload(options?: {
+  uploadFn?: (file: File) => Promise<string | null>;
+}) {
   const { user } = useAuth();
   const { uploadSticker, uploading: storageUploading } = useStorage();
   const [processing, setProcessing] = useState(false);
@@ -15,7 +17,8 @@ export function useImageUpload() {
 
   const processAndUploadImage = useCallback(
     async (file: File): Promise<string | null> => {
-      if (!file.type.startsWith('image/') || !user) return null;
+      if (!file.type.startsWith('image/') || (!user && !options?.uploadFn))
+        return null;
 
       setProcessing(true);
       try {
@@ -39,9 +42,11 @@ export function useImageUpload() {
           { type: 'image/png' }
         );
 
-        const url = (await uploadSticker(user.uid, processedFile)) as
-          | string
-          | null;
+        const url = options?.uploadFn
+          ? await options.uploadFn(processedFile)
+          : ((await uploadSticker(user!.uid, processedFile)) as
+              | string
+              | null);
 
         return url;
       } catch (err) {
@@ -51,7 +56,7 @@ export function useImageUpload() {
         setProcessing(false);
       }
     },
-    [user, uploadSticker]
+    [user, uploadSticker, options?.uploadFn]
   );
 
   return { processAndUploadImage, uploading };
