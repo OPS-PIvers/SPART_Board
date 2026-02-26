@@ -109,6 +109,10 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
+          // Found an image, prevent duplicate processing by Dock
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
           const file = items[i].getAsFile();
           if (file) {
             // Create a pseudo-filename if it's from a screenshot
@@ -123,9 +127,10 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
       }
     };
 
-    window.addEventListener('paste', handlePaste);
+    // Use capture phase to ensure this runs before the global listener on window in Dock.tsx
+    window.addEventListener('paste', handlePaste, true);
     return () => {
-      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('paste', handlePaste, true);
     };
   }, [handleFiles]);
 
@@ -240,7 +245,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-black text-slate-600 uppercase tracking-tight">
-                    {t('admin.stickers.dropImages')}
+                    {t('widgets.stickers.dropOrPaste')}
                   </p>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
                     {t('admin.stickers.supportedFiles')}
