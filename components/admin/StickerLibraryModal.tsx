@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   X,
   Upload,
@@ -7,11 +7,12 @@ import {
   Image as ImageIcon,
   Save,
 } from 'lucide-react';
-import { useStorage } from '../../hooks/useStorage';
+import { useStorage } from '@/hooks/useStorage';
 
 interface StickerLibraryModalProps {
   stickers: string[];
   onClose: () => void;
+  onDiscard: (originalStickers: string[]) => void;
   onStickersChange: (stickers: string[]) => void;
   onSave: () => Promise<void>;
   isSaving: boolean;
@@ -21,14 +22,37 @@ interface StickerLibraryModalProps {
 export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
   stickers,
   onClose,
+  onDiscard,
   onStickersChange,
   onSave,
   isSaving,
   hasUnsavedChanges,
 }) => {
-  const { uploadAdminSticker, uploading } = useStorage();
+  const { uploadAdminSticker, deleteFile, uploading } = useStorage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Tracks URLs uploaded during this modal session that have not yet been
+  // persisted to Firestore. Used to clean up orphaned Storage objects when
+  // the user removes a freshly-uploaded sticker or discards the modal.
+  const uploadedThisSessionRef = useRef<Set<string>>(new Set());
+  // Snapshot of stickers as they were when the modal first opened (or after
+  // a successful save), used to revert parent state on discard.
+  const initialStickersRef = useRef<string[]>(stickers);
+
+  // When a save completes successfully (isSaving: true → false and no longer
+  // dirty), advance the baseline so a subsequent cancel can't delete already-
+  // saved stickers.
+  const prevIsSavingRef = useRef(isSaving);
+  useEffect(() => {
+    const wasSaving = prevIsSavingRef.current;
+    prevIsSavingRef.current = isSaving;
+    if (wasSaving && !isSaving && !hasUnsavedChanges) {
+      // Save succeeded — update baseline
+      initialStickersRef.current = stickers;
+      uploadedThisSessionRef.current.clear();
+    }
+  }, [isSaving, hasUnsavedChanges, stickers]);
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
@@ -41,6 +65,7 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
       for (const file of fileArray) {
         try {
           const url = await uploadAdminSticker(file);
+          uploadedThisSessionRef.current.add(url);
           newUrls.push(url);
         } catch (e) {
           console.error('Failed to upload sticker:', e);
@@ -67,15 +92,30 @@ export const StickerLibraryModal: React.FC<StickerLibraryModalProps> = ({
   };
 
   const removeSticker = (url: string) => {
+    // If this sticker was uploaded in the current session it isn't in Firestore
+    // yet, so it's safe to delete the Storage object immediately.
+    if (uploadedThisSessionRef.current.has(url)) {
+      uploadedThisSessionRef.current.delete(url);
+      void deleteFile(url);
+    }
     onStickersChange(stickers.filter((s) => s !== url));
   };
 
   const handleClose = () => {
-    if (
-      hasUnsavedChanges &&
-      !window.confirm('You have unsaved changes. Close without saving?')
-    ) {
-      return;
+    if (hasUnsavedChanges) {
+      if (!window.confirm('You have unsaved changes. Close without saving?')) {
+        return;
+      }
+      // Delete Storage objects for stickers uploaded this session that were
+      // never saved to Firestore (i.e. still in the current list but not in
+      // the original baseline).
+      for (const url of uploadedThisSessionRef.current) {
+        void deleteFile(url);
+      }
+      uploadedThisSessionRef.current.clear();
+      // Revert the parent's permission state to the pre-edit baseline so the
+      // sticker card doesn't show phantom unsaved changes after close.
+      onDiscard(initialStickersRef.current);
     }
     onClose();
   };

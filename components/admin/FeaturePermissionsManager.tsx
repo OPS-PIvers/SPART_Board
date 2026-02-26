@@ -54,7 +54,6 @@ export const FeaturePermissionsManager: React.FC = () => {
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
   const [isStickerLibraryOpen, setIsStickerLibraryOpen] = useState(false);
   const [isSavingStickers, setIsSavingStickers] = useState(false);
-  const [stickerLibraryDirty, setStickerLibraryDirty] = useState(false);
   const { uploadWeatherImage } = useStorage();
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
@@ -80,14 +79,33 @@ export const FeaturePermissionsManager: React.FC = () => {
     updatePermission('stickers', {
       config: updatedConfig as unknown as Record<string, unknown>,
     });
-    setStickerLibraryDirty(true);
+  };
+
+  const handleStickerLibraryDiscard = (originalStickers: string[]) => {
+    const current = getPermission('stickers');
+    const revertedConfig: StickerGlobalConfig = {
+      ...(current.config as StickerGlobalConfig | undefined),
+      globalStickers: originalStickers,
+    };
+    // Revert permission state and clear unsaved flag — no round-trip through
+    // updatePermission so we don't re-add 'stickers' to unsavedChanges.
+    setPermissions((prev) =>
+      new Map(prev).set('stickers', {
+        ...current,
+        config: revertedConfig as unknown as Record<string, unknown>,
+      })
+    );
+    setUnsavedChanges((prev) => {
+      const next = new Set(prev);
+      next.delete('stickers');
+      return next;
+    });
   };
 
   const handleStickerLibrarySave = async () => {
     setIsSavingStickers(true);
     try {
       await savePermission('stickers');
-      setStickerLibraryDirty(false);
     } finally {
       setIsSavingStickers(false);
     }
@@ -676,14 +694,12 @@ export const FeaturePermissionsManager: React.FC = () => {
       {isStickerLibraryOpen && (
         <StickerLibraryModal
           stickers={getGlobalStickers()}
-          onClose={() => {
-            setIsStickerLibraryOpen(false);
-            setStickerLibraryDirty(false);
-          }}
+          onClose={() => setIsStickerLibraryOpen(false)}
+          onDiscard={handleStickerLibraryDiscard}
           onStickersChange={handleStickerLibraryChange}
           onSave={handleStickerLibrarySave}
           isSaving={isSavingStickers}
-          hasUnsavedChanges={stickerLibraryDirty}
+          hasUnsavedChanges={unsavedChanges.has('stickers')}
         />
       )}
     </div>
