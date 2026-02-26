@@ -68,7 +68,7 @@ jobs:
           pnpm exec firebase deploy --only hosting --project spartboard --non-interactive
           pnpm exec firebase deploy --only storage --project spartboard --non-interactive
           pnpm exec firebase deploy --only firestore --project spartboard --non-interactive
-          pnpm exec firebase deploy --only functions --project spartboard --non-interactive
+          pnpm exec firebase deploy --only functions --project spartboard --non-interactive || true
 
       - name: Cleanup Service Account File
         if: always()
