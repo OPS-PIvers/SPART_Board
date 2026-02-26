@@ -98,6 +98,8 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
         { time: '08:00', task: 'Morning Meeting' },
         { time: '09:00', task: 'Math' },
       ],
+      cardColor: '#ffffff',
+      cardOpacity: 1,
     },
   },
   calendar: {

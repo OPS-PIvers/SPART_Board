@@ -334,6 +334,10 @@ export interface ScheduleConfig {
   items: ScheduleItem[];
   fontFamily?: string;
   autoProgress?: boolean;
+  /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
+  cardColor?: string;
+  /** Card background opacity, 0 (fully transparent) to 1 (fully opaque). Default: 1. */
+  cardOpacity?: number;
 }
 
 export interface CalendarConfig {

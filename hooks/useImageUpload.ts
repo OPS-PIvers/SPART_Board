@@ -12,13 +12,13 @@ export function useImageUpload(options?: {
   const { user } = useAuth();
   const { uploadSticker, uploading: storageUploading } = useStorage();
   const [processing, setProcessing] = useState(false);
+  const uploadFn = options?.uploadFn;
 
   const uploading = storageUploading || processing;
 
   const processAndUploadImage = useCallback(
     async (file: File): Promise<string | null> => {
-      if (!file.type.startsWith('image/') || (!user && !options?.uploadFn))
-        return null;
+      if (!file.type.startsWith('image/') || (!user && !uploadFn)) return null;
 
       setProcessing(true);
       try {
@@ -42,8 +42,8 @@ export function useImageUpload(options?: {
           { type: 'image/png' }
         );
 
-        const url = options?.uploadFn
-          ? await options.uploadFn(processedFile)
+        const url = uploadFn
+          ? await uploadFn(processedFile)
           : user
             ? ((await uploadSticker(user.uid, processedFile)) as string | null)
             : null;
@@ -56,7 +56,7 @@ export function useImageUpload(options?: {
         setProcessing(false);
       }
     },
-    [user, uploadSticker, options]
+    [user, uploadSticker, uploadFn]
   );
 
   return { processAndUploadImage, uploading };
