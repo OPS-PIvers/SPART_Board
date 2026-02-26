@@ -1,6 +1,6 @@
 import React from 'react';
 import { RefreshCw, Trash2, UserPlus } from 'lucide-react';
-import { SeatingChartConfig, FurnitureItem, WidgetData } from '../../types';
+import { SeatingChartConfig, FurnitureItem, WidgetData } from '@/types';
 import { TEMPLATES, FURNITURE_TYPES } from './seatingChartConstants';
 
 interface SeatingChartSidebarProps {

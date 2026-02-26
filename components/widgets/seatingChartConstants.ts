@@ -1,4 +1,4 @@
-import React from 'react';
+import { ElementType } from 'react';
 import {
   Armchair,
   LayoutGrid,
@@ -8,7 +8,7 @@ import {
   Grip,
   LayoutTemplate,
 } from 'lucide-react';
-import { FurnitureItem, SeatingChartTemplate } from '../../types';
+import { FurnitureItem, SeatingChartTemplate } from '@/types';
 
 // UI chrome sizes — must match the Tailwind classes used in the layout
 // (w-48 sidebar = 192px, h-12 toolbar = 48px). Named here so a future
@@ -24,7 +24,7 @@ export const FURNITURE_TYPES: {
   label: string;
   w: number;
   h: number;
-  icon: React.ElementType;
+  icon: ElementType;
 }[] = [
   { type: 'desk', label: 'Desk', w: 80, h: 65, icon: Monitor },
   {
@@ -49,7 +49,7 @@ export const FURNITURE_TYPES: {
 export const TEMPLATES: {
   id: SeatingChartTemplate;
   label: string;
-  icon: React.ElementType;
+  icon: ElementType;
   description: string;
 }[] = [
   {

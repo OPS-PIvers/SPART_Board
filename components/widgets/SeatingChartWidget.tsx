@@ -6,8 +6,8 @@ import React, {
   useCallback,
   useLayoutEffect,
 } from 'react';
-import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, SeatingChartConfig, FurnitureItem } from '@/types';
 import { LayoutGrid, LayoutTemplate } from 'lucide-react';
 import {
   generateColumnsLayout,
