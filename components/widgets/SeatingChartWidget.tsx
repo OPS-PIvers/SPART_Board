@@ -4,6 +4,7 @@ import React, {
   useRef,
   useEffect,
   useCallback,
+  useLayoutEffect,
 } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
@@ -308,14 +309,16 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   });
 
   // Keep ref up to date
-  Object.assign(latestRef.current, {
-    config,
-    furniture,
-    assignments,
-    mode,
-    selectedIds,
-    selectedStudent,
-    studentLabelById,
+  useLayoutEffect(() => {
+    Object.assign(latestRef.current, {
+      config,
+      furniture,
+      assignments,
+      mode,
+      selectedIds,
+      selectedStudent,
+      studentLabelById,
+    });
   });
   // --- OPTIMIZATION END ---
 
