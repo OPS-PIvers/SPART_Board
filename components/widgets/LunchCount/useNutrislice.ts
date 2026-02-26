@@ -169,7 +169,12 @@ export const useNutrislice = ({
     } catch (err) {
       console.error('Nutrislice Sync Error:', err);
       updateWidget(widgetId, {
-        config: { ...configRef.current, syncError: 'E-SYNC-404' },
+        config: {
+          ...configRef.current,
+          syncError: 'E-SYNC-404',
+          // Mark this as a sync attempt so we don't loop endlessly
+          lastSyncDate: new Date().toISOString(),
+        },
       });
       addToast('Failed to sync menu', 'error');
     } finally {
@@ -180,16 +185,19 @@ export const useNutrislice = ({
   useEffect(() => {
     if (isSyncing) return;
 
-    const needsSync =
-      !config.cachedMenu ||
-      (config.lastSyncDate &&
-        new Date(config.lastSyncDate).toDateString() !==
-          new Date().toDateString());
+    const lastSyncDate = config.lastSyncDate
+      ? new Date(config.lastSyncDate)
+      : null;
+    const today = new Date();
 
-    if (needsSync) {
+    const isSyncedToday =
+      lastSyncDate && lastSyncDate.toDateString() === today.toDateString();
+
+    // Only try to sync if we haven't already synced (or attempted to) today
+    if (!isSyncedToday) {
       void fetchNutrislice();
     }
-  }, [fetchNutrislice, config.cachedMenu, config.lastSyncDate, isSyncing]);
+  }, [fetchNutrislice, config.lastSyncDate, isSyncing]);
 
   return { isSyncing, fetchNutrislice };
 };
