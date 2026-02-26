@@ -116,7 +116,7 @@ interface RubberBand {
   y2: number;
 }
 
-const EMPTY_ARRAY: string[] = [];
+const EMPTY_ARRAY: { id: string; label: string }[] = [];
 
 export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
@@ -280,15 +280,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Optimization: Pre-compute assignments map to avoid O(N) filtering and new array references on every render.
   // Assignments now map studentIds -> furnitureId, so we resolve the studentId to the display label here.
-  const assignedStudentLabelsByFurnitureId = useMemo(() => {
-    const map = new Map<string, string[]>();
+  const assignedStudentsByFurnitureId = useMemo(() => {
+    const map = new Map<string, { id: string; label: string }[]>();
     Object.entries(assignments).forEach(([studentId, furnitureId]) => {
       const label = studentLabelById.get(studentId) ?? studentId;
       const list = map.get(furnitureId);
       if (list) {
-        list.push(label);
+        list.push({ id: studentId, label });
       } else {
-        map.set(furnitureId, [label]);
+        map.set(furnitureId, [{ id: studentId, label }]);
       }
     });
     return map;
@@ -1204,7 +1204,7 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
             const resizeSize =
               resizeState?.id === item.id ? resizeState : undefined;
             const assignedStudents =
-              assignedStudentLabelsByFurnitureId.get(item.id) ?? EMPTY_ARRAY;
+              assignedStudentsByFurnitureId.get(item.id) ?? EMPTY_ARRAY;
             const isSelected = selectedIds.has(item.id) && mode === 'setup';
             const isSingleSelected = isSelected && selectedIds.size === 1;
 
