@@ -307,7 +307,11 @@ export const Dock: React.FC = () => {
 
   // Handle exiting edit mode when clicking outside the dock area
   useClickOutside(dockContainerRef, () => {
-    if (isEditMode && !renamingFolderId && !showCreateFolderModal) {
+    if (
+      (isEditMode || showMoreMenu) &&
+      !renamingFolderId &&
+      !showCreateFolderModal
+    ) {
       setIsEditMode(false);
       setShowLibrary(false);
       setShowMoreMenu(false);
@@ -538,7 +542,7 @@ export const Dock: React.FC = () => {
                 setShowLibrary(false);
               }}
               globalStyle={globalStyle}
-              triggerRef={moreButtonRef}
+              triggerRef={dockContainerRef}
               libraryOrder={libraryOrder}
               onReorderLibrary={reorderLibrary}
               onAddFolder={() => setShowCreateFolderModal(true)}

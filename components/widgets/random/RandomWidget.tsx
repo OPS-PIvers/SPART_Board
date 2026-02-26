@@ -350,24 +350,29 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     }
   };
 
-  const maxNameLength = useMemo(
-    () => students.reduce((max, name) => Math.max(max, name.length), 0),
+  // Use the longest individual word (not full name length) so that a single
+  // word is never forced to wrap. cqw (container-width-relative) units ensure
+  // the chosen font size fits within the widget's actual width regardless of
+  // the widget's aspect ratio.
+  const maxWordLength = useMemo(
+    () =>
+      students
+        .flatMap((name) => name.trim().split(/\s+/))
+        .reduce((maxLen, word) => Math.max(maxLen, word.length), 0),
     [students]
   );
 
-  // Scale font down for longer names so they always fit without resizing the widget
+  // 130/N cqw guarantees the N-char word fits (uppercase bold, ~0.65
+  // char-width ratio, 15 % safety margin). Derived dynamically so the
+  // guarantee holds for any word length, not just those in a lookup table.
+  // Capped at 40cqw for very short words and 4cqw as an absolute minimum.
+  // The cqh cap (20cqh) prevents vertical overflow in very wide-but-short
+  // widgets where a pure cqw value could produce an impossibly tall font.
   const resFontSize = useMemo(() => {
-    const sizeSteps = [
-      { maxLength: 6, size: '45cqmin' },
-      { maxLength: 10, size: '35cqmin' },
-      { maxLength: 14, size: '28cqmin' },
-      { maxLength: 18, size: '22cqmin' },
-      { maxLength: 24, size: '18cqmin' },
-    ];
-
-    const step = sizeSteps.find((s) => maxNameLength <= s.maxLength);
-    return step ? step.size : '14cqmin';
-  }, [maxNameLength]);
+    if (maxWordLength === 0) return 'min(26cqw, 20cqh)';
+    const cqwValue = Math.min(40, Math.max(4, Math.round(130 / maxWordLength)));
+    return `min(${cqwValue}cqw, 20cqh)`;
+  }, [maxWordLength]);
 
   const renderSinglePick = () => {
     if (visualStyle === 'wheel' && students.length > 0) {
@@ -380,7 +385,7 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
           wheelSize={wheelSize}
           displayResult={displayResult as string | string[] | string[][] | null}
           isSpinning={isSpinning}
-          resultFontSize={32} // Internal scaling handled by RandomWheel
+          resultFontSize={resFontSize}
         />
       );
     }
