@@ -34,6 +34,12 @@ Nexus is the system that allows widgets to interact with each other, creating a 
 **Implementation:** `RandomWidget.tsx` provides a "Send to Scoreboard" button when groups are generated. It updates or creates a Scoreboard widget with the groups as teams.
 **Configuration:** Manual trigger via button in Randomizer (Groups mode).
 
+### Quiz Results -> Scoreboard (Leaderboard)
+
+**Description:** Instantly creates a scoreboard from quiz results to celebrate top performers or track progress.
+**Implementation:** `QuizResults.tsx` provides a "Send to Scoreboard" button. It updates or creates a Scoreboard widget with student names and scores.
+**Configuration:** Manual trigger via button in Quiz Results.
+
 ## Planned Connections
 
 ## WILL NOT IMPLEMENT

@@ -18,7 +18,15 @@ import {
   Target,
   AlertTriangle,
 } from 'lucide-react';
-import { QuizResponse, QuizData, QuizQuestion } from '@/types';
+import {
+  QuizResponse,
+  QuizData,
+  QuizQuestion,
+  ScoreboardTeam,
+  ScoreboardConfig,
+  WidgetConfig,
+} from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
 import { QuizDriveService } from '@/utils/quizDriveService';
 import { gradeAnswer } from '@/hooks/useQuizSession';
@@ -26,6 +34,19 @@ import { gradeAnswer } from '@/hooks/useQuizSession';
 /**
  * Compute a student's percentage score by re-grading answers with gradeAnswer
  */
+const TEAM_COLORS = [
+  'bg-blue-500',
+  'bg-red-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-purple-500',
+  'bg-pink-500',
+  'bg-indigo-500',
+  'bg-orange-500',
+  'bg-teal-600',
+  'bg-cyan-500',
+];
+
 function getResponseScore(r: QuizResponse, questions: QuizQuestion[]): number {
   if (questions.length === 0) return 0;
   const correct = r.answers.filter((a) => {
@@ -46,6 +67,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   responses,
   onBack,
 }) => {
+  const {
+    activeDashboard,
+    activeRosterId,
+    rosters,
+    addWidget,
+    updateWidget,
+    addToast,
+  } = useDashboard();
   const { googleAccessToken } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
@@ -89,6 +118,64 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   };
 
+  const handleSendToScoreboard = () => {
+    if (completed.length === 0) return;
+
+    const newTeams: ScoreboardTeam[] = completed
+      .slice()
+      .sort((a, b) => {
+        const scoreA = getResponseScore(a, quiz.questions);
+        const scoreB = getResponseScore(b, quiz.questions);
+        return scoreB - scoreA;
+      })
+      .map((r, index) => {
+        let studentName = `PIN ${r.pin}`;
+        if (activeRosterId) {
+          const roster = rosters.find((ro) => ro.id === activeRosterId);
+          if (roster) {
+            const student = roster.students.find((s) => s.pin === r.pin);
+            if (student) {
+              studentName = `${student.firstName} ${student.lastName}`;
+            }
+          }
+        }
+
+        return {
+          id: r.studentUid,
+          name: studentName,
+          score: getResponseScore(r, quiz.questions),
+          color: TEAM_COLORS[index % TEAM_COLORS.length],
+        };
+      });
+
+    const existingScoreboard = activeDashboard?.widgets.find(
+      (w) => w.type === 'scoreboard'
+    );
+
+    if (existingScoreboard) {
+      updateWidget(existingScoreboard.id, {
+        config: {
+          ...existingScoreboard.config,
+          teams: newTeams,
+        } as ScoreboardConfig as unknown as WidgetConfig,
+      });
+      addToast(
+        `Updated scoreboard with ${newTeams.length} students!`,
+        'success'
+      );
+    } else {
+      addWidget('scoreboard', {
+        config: {
+          teams: newTeams,
+        } as ScoreboardConfig as unknown as WidgetConfig,
+      });
+      addToast(
+        `Created scoreboard with ${newTeams.length} students!`,
+        'success'
+      );
+    }
+  };
+
   return (
     <div className="flex flex-col h-full font-sans">
       {/* Header */}
@@ -124,6 +211,27 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             {completed.length} of {responses.length} students finished
           </p>
         </div>
+
+        {completed.length > 0 && (
+          <button
+            onClick={handleSendToScoreboard}
+            className="flex items-center bg-amber-400 hover:bg-amber-500 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0 mr-2"
+            style={{
+              gap: 'min(6px, 1.5cqmin)',
+              padding: 'min(8px, 2cqmin) min(12px, 3cqmin)',
+              fontSize: 'min(11px, 3.5cqmin)',
+            }}
+            title="Create Scoreboard"
+          >
+            <Trophy
+              style={{
+                width: 'min(14px, 4cqmin)',
+                height: 'min(14px, 4cqmin)',
+              }}
+            />
+            SCOREBOARD
+          </button>
+        )}
 
         {exportUrl ? (
           <a
