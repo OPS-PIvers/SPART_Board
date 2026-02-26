@@ -65,10 +65,7 @@ jobs:
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
           export GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
-          pnpm exec firebase deploy --only hosting --project spartboard --non-interactive
-          pnpm exec firebase deploy --only storage --project spartboard --non-interactive
-          pnpm exec firebase deploy --only firestore --project spartboard --non-interactive
-          pnpm exec firebase deploy --only functions --project spartboard --non-interactive || true
+          pnpm exec firebase deploy --project spartboard --non-interactive
 
       - name: Cleanup Service Account File
         if: always()
