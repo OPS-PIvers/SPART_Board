@@ -20,6 +20,13 @@ vi.mock('lucide-react', () => ({
   Clock: () => <div>Clock Icon</div>,
   AlertTriangle: () => <div>Alert Icon</div>,
   Plus: () => <div>Plus Icon</div>,
+  Timer: () => <div>Timer Icon</div>,
+  Palette: () => <div>Palette Icon</div>,
+  Trash2: () => <div>Trash Icon</div>,
+  Pencil: () => <div>Pencil Icon</div>,
+  X: () => <div>X Icon</div>,
+  Save: () => <div>Save Icon</div>,
+  GripVertical: () => <div>Grip Icon</div>,
 }));
 
 const mockUpdateWidget = vi.fn();
