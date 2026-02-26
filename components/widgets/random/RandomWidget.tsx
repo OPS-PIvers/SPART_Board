@@ -7,10 +7,31 @@ import {
   TimeToolConfig,
   RandomGroup,
   SharedGroup,
+  ScoreboardTeam,
 } from '../../../types';
 import { Button } from '../../common/Button';
-import { Users, RefreshCw, Layers, Target, RotateCcw } from 'lucide-react';
+import {
+  Users,
+  RefreshCw,
+  Layers,
+  Target,
+  RotateCcw,
+  Trophy,
+} from 'lucide-react';
 import { getAudioCtx, playTick, playWinner } from './audioUtils';
+
+const TEAM_COLORS = [
+  'bg-blue-500',
+  'bg-red-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-purple-500',
+  'bg-pink-500',
+  'bg-indigo-500',
+  'bg-orange-500',
+  'bg-teal-600',
+  'bg-cyan-500',
+];
 import { RandomWheel } from './RandomWheel';
 import { RandomSlots } from './RandomSlots';
 import { RandomFlash } from './RandomFlash';
@@ -21,6 +42,8 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
   const {
     updateWidget,
     updateDashboard,
+    addWidget,
+    addToast,
     rosters,
     activeRosterId,
     activeDashboard,
@@ -146,6 +169,76 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     });
     setDisplayResult('');
     setRotation(0);
+  };
+
+  const handleSendToScoreboard = () => {
+    // 1. Normalize current groups from displayResult
+    const rawResult = displayResult;
+    let groups: RandomGroup[] | null = null;
+
+    if (Array.isArray(rawResult) && rawResult.length > 0) {
+      const first = rawResult[0];
+      // Case A: Already in RandomGroup[] shape
+      if (
+        typeof first === 'object' &&
+        first !== null &&
+        'names' in (first as RandomGroup)
+      ) {
+        groups = rawResult as RandomGroup[];
+      }
+      // Case B: Legacy string[][] shape – convert to RandomGroup[]
+      else if (Array.isArray(first)) {
+        const stringGroups = rawResult as string[][];
+        groups = stringGroups.map((names): RandomGroup => ({ names }));
+      }
+    }
+
+    if (!groups || groups.length === 0) {
+      return;
+    }
+
+    // 2. Map to ScoreboardTeam
+    const newTeams: ScoreboardTeam[] = groups.map((group, index) => {
+      let name = `Group ${index + 1}`;
+      // If linked to shared group, use that name
+      if (group.id && activeDashboard?.sharedGroups) {
+        const shared = activeDashboard.sharedGroups.find(
+          (g) => g.id === group.id
+        );
+        if (shared) name = shared.name;
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        name,
+        score: 0,
+        color: TEAM_COLORS[index % TEAM_COLORS.length],
+        linkedGroupId: group.id,
+      };
+    });
+
+    // 3. Find or Create Scoreboard Widget
+    const existingScoreboard = activeDashboard?.widgets.find(
+      (w) => w.type === 'scoreboard'
+    );
+
+    if (existingScoreboard) {
+      updateWidget(existingScoreboard.id, {
+        config: {
+          ...existingScoreboard.config,
+          teams: newTeams,
+        },
+      });
+      addToast(`Updated scoreboard with ${newTeams.length} teams!`, 'success');
+    } else {
+      // Create new widget
+      addWidget('scoreboard', {
+        config: {
+          teams: newTeams,
+        },
+      });
+      addToast(`Created scoreboard with ${newTeams.length} teams!`, 'success');
+    }
   };
 
   const handlePick = async () => {
@@ -683,14 +776,47 @@ export const RandomWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div className="w-full px-2 pb-2">
+        <div
+          className="w-full px-2 pb-2 flex"
+          style={{ gap: 'min(8px, 2cqmin)' }}
+        >
+          {mode === 'groups' &&
+            Array.isArray(displayResult) &&
+            displayResult.length > 0 &&
+            ((typeof displayResult[0] === 'object' &&
+              displayResult[0] !== null &&
+              'names' in displayResult[0]) ||
+              Array.isArray(displayResult[0])) && (
+              <Button
+                variant="secondary"
+                shape="pill"
+                onClick={handleSendToScoreboard}
+                aria-label="Send to Scoreboard"
+                style={{
+                  width: 'min(48px, 12cqmin)',
+                  height: 'min(48px, 12cqmin)',
+                  padding: 0,
+                }}
+                className="flex-shrink-0"
+                title="Send to Scoreboard"
+                icon={
+                  <Trophy
+                    style={{
+                      width: 'min(20px, 5cqmin)',
+                      height: 'min(20px, 5cqmin)',
+                    }}
+                    className="text-amber-500"
+                  />
+                }
+              />
+            )}
           <Button
             variant="hero"
             size="lg"
             shape="pill"
             onClick={handlePick}
             disabled={isSpinning}
-            className="w-full h-12"
+            className="flex-1 h-12"
             icon={
               <RefreshCw
                 className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`}
