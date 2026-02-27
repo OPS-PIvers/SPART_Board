@@ -290,4 +290,51 @@ describe('GoogleDriveService', () => {
       await expect(service.deleteFile('file-id')).resolves.not.toThrow();
     });
   });
+
+  describe('makePublic', () => {
+    it('should perform a network request to make the file public', async () => {
+      const fetchSpy = mockFetch({ ok: true });
+      await service.makePublic('file-id');
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateFileContent', () => {
+    it('should perform a network request to update file content', async () => {
+      const fetchSpy = mockFetch({ ok: true });
+      const blob = new Blob(['updated content'], { type: 'text/plain' });
+      await service.updateFileContent('file-id', blob);
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('downloadFile', () => {
+    it('should fetch and return file blob', async () => {
+      const expectedBlob = new Blob(['file content'], { type: 'text/plain' });
+      const fetchSpy = mockFetch({
+        blob: () => Promise.resolve(expectedBlob),
+      });
+      const result = await service.downloadFile('file-id');
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(Blob);
+      // Narrow equality check to verify we return the blob from fetch
+      expect(result).toBe(expectedBlob);
+    });
+  });
+
+  describe('getBackgroundImages', () => {
+    it('should delegate to listFiles and return the result', async () => {
+      const mockImages = [
+        { id: 'bg1', name: 'Background 1' },
+        { id: 'bg2', name: 'Background 2' },
+      ];
+      const listFilesSpy = vi
+        .spyOn(service, 'listFiles')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+        .mockResolvedValue(mockImages as any);
+      const result = await service.getBackgroundImages();
+      expect(listFilesSpy).toHaveBeenCalled();
+      expect(result).toEqual(mockImages);
+    });
+  });
 });
