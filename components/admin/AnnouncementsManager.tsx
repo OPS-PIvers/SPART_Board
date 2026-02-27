@@ -20,10 +20,15 @@ import {
   Square,
   ChevronDown,
   ChevronUp,
+  Link2,
+  Code,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { useDashboard } from '@/context/useDashboard';
+import { useStorage } from '@/hooks/useStorage';
 import {
   Announcement,
   AnnouncementActivationType,
@@ -205,23 +210,119 @@ const TextConfigEditor: React.FC<{
 const EmbedConfigEditor: React.FC<{
   config: Record<string, unknown>;
   onChange: (config: Record<string, unknown>) => void;
-}> = ({ config, onChange }) => (
-  <div>
-    <label className="block text-xs font-semibold text-slate-700 mb-1">
-      URL to Embed
-    </label>
-    <input
-      type="url"
-      value={(config.url as string) ?? ''}
-      onChange={(e) => onChange({ ...config, url: e.target.value })}
-      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
-      placeholder="https://example.com"
-    />
-    <p className="mt-1 text-xs text-slate-500">
-      Note: Some sites block embedding. Use direct content URLs when possible.
-    </p>
-  </div>
-);
+}> = ({ config, onChange }) => {
+  const mode = (config.mode as string) || 'url';
+  const { uploadFile, uploading } = useStorage();
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadFile(
+        `announcements/${Date.now()}-${file.name}`,
+        file
+      );
+      // Auto-generate video HTML embed code
+      const html = `<video src="${url}" controls style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+      onChange({ ...config, mode: 'code', html, url: '' });
+    } catch (error) {
+      console.error('Failed to upload video:', error);
+      alert('Failed to upload video');
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex bg-slate-100 p-1 rounded-xl">
+        <button
+          onClick={() => onChange({ ...config, mode: 'url' })}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'url' ? 'bg-white shadow-sm text-brand-blue-primary' : 'text-slate-500 hover:bg-slate-200/50'}`}
+        >
+          <Link2 className="w-3.5 h-3.5" /> URL
+        </button>
+        <button
+          onClick={() => onChange({ ...config, mode: 'code' })}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'code' ? 'bg-white shadow-sm text-brand-blue-primary' : 'text-slate-500 hover:bg-slate-200/50'}`}
+        >
+          <Code className="w-3.5 h-3.5" /> Code / Embed
+        </button>
+      </div>
+
+      {mode === 'url' ? (
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            URL to Embed
+          </label>
+          <input
+            type="url"
+            value={(config.url as string) ?? ''}
+            onChange={(e) => onChange({ ...config, url: e.target.value })}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+            placeholder="https://example.com"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Note: Some sites block embedding. Use direct content URLs when
+            possible.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Custom HTML / iframe Embed Code
+            </label>
+            <textarea
+              value={(config.html as string) ?? ''}
+              onChange={(e) => onChange({ ...config, html: e.target.value })}
+              className="w-full h-32 px-3 py-2 text-xs font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
+              placeholder={
+                '<iframe src="..."></iframe>\nor\n<video src="..."></video>'
+              }
+            />
+          </div>
+
+          <div className="relative">
+            <div
+              className="absolute inset-0 flex items-center"
+              aria-hidden="true"
+            >
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-2 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                OR UPLOAD VIDEO
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors gap-2 group">
+              {uploading ? (
+                <Loader2 className="w-4 h-4 text-brand-blue-primary animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 text-slate-400 group-hover:text-brand-blue-primary" />
+              )}
+              <span className="text-sm text-slate-600 font-medium">
+                {uploading ? 'Uploading...' : 'Click to Upload Video'}
+              </span>
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleVideoUpload}
+                disabled={uploading}
+              />
+            </label>
+            <p className="mt-1 text-xs text-slate-500 text-center">
+              Will automatically generate the correct HTML video code.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const QRConfigEditor: React.FC<{
   config: Record<string, unknown>;
