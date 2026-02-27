@@ -9,7 +9,7 @@ import {
   Bot,
   Bell,
 } from 'lucide-react';
-import { useAuth } from '../../context/useAuth';
+import { useAuth } from '@/context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';

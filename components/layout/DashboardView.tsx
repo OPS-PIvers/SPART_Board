@@ -7,7 +7,7 @@ import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
-import { AnnouncementOverlay } from '../announcements/AnnouncementOverlay';
+import { AnnouncementOverlay } from '@/components/announcements/AnnouncementOverlay';
 import {
   AlertCircle,
   CheckCircle2,

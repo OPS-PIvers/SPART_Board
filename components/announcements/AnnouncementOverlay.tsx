@@ -30,11 +30,10 @@ import React, {
 } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { X, Bell, Lock } from 'lucide-react';
-import { db, isAuthBypass } from '../../config/firebase';
-import { useAuth } from '../../context/useAuth';
-import { Announcement, WidgetData, WidgetConfig } from '../../types';
-import { WIDGET_COMPONENTS } from '../widgets/WidgetRegistry';
-import { DEFAULT_GLOBAL_STYLE } from '../../types';
+import { db, isAuthBypass } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
+import { Announcement, WidgetData, WidgetConfig } from '@/types';
+import { WIDGET_COMPONENTS } from '@/components/widgets/WidgetRegistry';
 
 const DISMISSALS_KEY = 'spart_announcement_dismissals';
 const SCHEDULE_CHECK_INTERVAL_MS = 30_000;
@@ -107,6 +106,20 @@ const WidgetLoadingFallback: React.FC = () => (
 const AnnouncementWidgetContent: React.FC<{ announcement: Announcement }> = ({
   announcement,
 }) => {
+  // Track viewport size reactively so maximized widgets stay correct on resize
+  const [viewportSize, setViewportSize] = useState({
+    w: window.innerWidth,
+    h: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportSize({ w: window.innerWidth, h: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const WidgetComponent = WIDGET_COMPONENTS[announcement.widgetType];
 
   const fakeWidget: WidgetData = {
@@ -114,8 +127,8 @@ const AnnouncementWidgetContent: React.FC<{ announcement: Announcement }> = ({
     type: announcement.widgetType,
     x: 0,
     y: 0,
-    w: announcement.maximized ? window.innerWidth : announcement.widgetSize.w,
-    h: announcement.maximized ? window.innerHeight : announcement.widgetSize.h,
+    w: announcement.maximized ? viewportSize.w : announcement.widgetSize.w,
+    h: announcement.maximized ? viewportSize.h : announcement.widgetSize.h,
     z: 9990,
     flipped: false,
     minimized: false,
@@ -408,6 +421,3 @@ export const AnnouncementOverlay: React.FC = () => {
     </>
   );
 };
-
-// Re-export the default global style so callers don't need an extra import
-export { DEFAULT_GLOBAL_STYLE };

@@ -21,17 +21,18 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { db } from '../../config/firebase';
-import { useAuth } from '../../context/useAuth';
+import { db } from '@/config/firebase';
+import { useAuth } from '@/context/useAuth';
+import { useDashboard } from '@/context/useDashboard';
 import {
   Announcement,
   AnnouncementActivationType,
   AnnouncementDismissalType,
   WidgetType,
-} from '../../types';
-import { BUILDINGS } from '../../config/buildings';
-import { WIDGET_DEFAULTS } from '../../config/widgetDefaults';
-import { TOOLS } from '../../config/tools';
+} from '@/types';
+import { BUILDINGS } from '@/config/buildings';
+import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
+import { TOOLS } from '@/config/tools';
 
 // Widget types that make practical sense as announcements
 const ANNOUNCEMENT_WIDGET_TYPES: WidgetType[] = [
@@ -469,11 +470,13 @@ const FormSection: React.FC<{
 
 export const AnnouncementsManager: React.FC = () => {
   const { user } = useAuth();
+  const { addToast } = useDashboard();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<AnnouncementFormData>(buildDefaultForm);
 
   // Subscribe to announcements collection
@@ -549,7 +552,7 @@ export const AnnouncementsManager: React.FC = () => {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      alert('Please enter an announcement name.');
+      addToast('Please enter an announcement name.', 'error');
       return;
     }
     setSaving(true);
@@ -560,6 +563,10 @@ export const AnnouncementsManager: React.FC = () => {
           : form.dismissalDurationSeconds;
 
       const now = Date.now();
+      const existing = editingId
+        ? announcements.find((a) => a.id === editingId)
+        : undefined;
+
       const payload: Omit<Announcement, 'id'> = {
         name: form.name.trim(),
         widgetType: form.widgetType,
@@ -571,12 +578,8 @@ export const AnnouncementsManager: React.FC = () => {
           form.activationType === 'scheduled'
             ? form.scheduledActivationTime
             : undefined,
-        isActive: editingId
-          ? (announcements.find((a) => a.id === editingId)?.isActive ?? false)
-          : false,
-        activatedAt: editingId
-          ? (announcements.find((a) => a.id === editingId)?.activatedAt ?? null)
-          : null,
+        isActive: existing?.isActive ?? false,
+        activatedAt: existing?.activatedAt ?? null,
         dismissalType: form.dismissalType,
         scheduledDismissalTime:
           form.dismissalType === 'scheduled'
@@ -585,9 +588,7 @@ export const AnnouncementsManager: React.FC = () => {
         dismissalDurationSeconds:
           form.dismissalType === 'duration' ? durationSeconds : undefined,
         targetBuildings: form.targetBuildings,
-        createdAt: editingId
-          ? (announcements.find((a) => a.id === editingId)?.createdAt ?? now)
-          : now,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
         createdBy: user?.email ?? 'admin',
       };
@@ -607,18 +608,19 @@ export const AnnouncementsManager: React.FC = () => {
       closeForm();
     } catch (err) {
       console.error('[AnnouncementsManager] Save error:', err);
-      alert('Failed to save announcement. Please try again.');
+      addToast('Failed to save announcement. Please try again.', 'error');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this announcement? This cannot be undone.')) return;
     try {
       await deleteDoc(doc(db, 'announcements', id));
+      setConfirmDeleteId(null);
     } catch (err) {
       console.error('[AnnouncementsManager] Delete error:', err);
+      addToast('Failed to delete announcement.', 'error');
     }
   };
 
@@ -752,13 +754,30 @@ export const AnnouncementsManager: React.FC = () => {
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => void handleDelete(a.id)}
-                      title="Delete announcement"
-                      className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {confirmDeleteId === a.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => void handleDelete(a.id)}
+                          className="px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDeleteId(a.id)}
+                        title="Delete announcement"
+                        className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
