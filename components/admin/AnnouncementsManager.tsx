@@ -38,6 +38,7 @@ import {
 import { BUILDINGS } from '@/config/buildings';
 import { WIDGET_DEFAULTS } from '@/config/widgetDefaults';
 import { TOOLS } from '@/config/tools';
+import { convertToEmbedUrl } from '@/utils/urlHelpers';
 
 // Widget types that make practical sense as announcements
 const ANNOUNCEMENT_WIDGET_TYPES: WidgetType[] = [
@@ -257,7 +258,11 @@ const EmbedConfigEditor: React.FC<{
           <input
             type="url"
             value={(config.url as string) ?? ''}
-            onChange={(e) => onChange({ ...config, url: e.target.value })}
+            onChange={(e) => {
+              const rawUrl = e.target.value;
+              const embedUrl = convertToEmbedUrl(rawUrl);
+              onChange({ ...config, url: embedUrl });
+            }}
             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
             placeholder="https://example.com"
           />
