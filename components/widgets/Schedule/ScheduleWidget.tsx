@@ -168,9 +168,28 @@ const areScheduleRowPropsEqual = (
   if (prev.cardColor !== next.cardColor) return false;
   if (prev.format24 !== next.format24) return false;
 
-  // Deep comparison for `item` object (ScheduleItem)
-  // This is safe because ScheduleItem properties are primitives (strings, booleans) or small arrays
-  if (JSON.stringify(prev.item) !== JSON.stringify(next.item)) return false;
+  // Optimized manual comparison for `item` object (ScheduleItem) instead of JSON.stringify
+  // to avoid serialization overhead on every tick.
+  const prevItem = prev.item;
+  const nextItem = next.item;
+
+  if (prevItem.id !== nextItem.id) return false;
+  if (prevItem.time !== nextItem.time) return false;
+  if (prevItem.task !== nextItem.task) return false;
+  if (prevItem.done !== nextItem.done) return false;
+  if (prevItem.mode !== nextItem.mode) return false;
+  if (prevItem.startTime !== nextItem.startTime) return false;
+  if (prevItem.endTime !== nextItem.endTime) return false;
+
+  // Compare linkedWidgets array shallowly
+  if (prevItem.linkedWidgets !== nextItem.linkedWidgets) {
+    if (!prevItem.linkedWidgets || !nextItem.linkedWidgets) return false;
+    if (prevItem.linkedWidgets.length !== nextItem.linkedWidgets.length)
+      return false;
+    for (let i = 0; i < prevItem.linkedWidgets.length; i++) {
+      if (prevItem.linkedWidgets[i] !== nextItem.linkedWidgets[i]) return false;
+    }
+  }
 
   // Optimized check for `nowSeconds`:
   // Only re-render if the item is in active timer mode.
