@@ -191,38 +191,44 @@ describe('AnnouncementOverlay', () => {
   // Scheduled activation
   // -------------------------------------------------------------------------
 
-  it('hides a scheduled announcement whose activation time has not yet passed', () => {
-    vi.useFakeTimers();
-    // Set clock to 08:00, activation at 09:00
-    vi.setSystemTime(new Date('2024-01-01T08:00:00'));
-    render(<AnnouncementOverlay />);
-    emitAnnouncements([
-      {
-        ...BASE_ANNOUNCEMENT,
-        activationType: 'scheduled',
-        scheduledActivationTime: '09:00',
-        isActive: true,
-      },
-    ]);
-    expect(screen.queryByText('Test Announcement')).not.toBeInTheDocument();
-    vi.useRealTimers();
-  });
+  describe('scheduled activation', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
 
-  it('shows a scheduled announcement whose activation time has passed', () => {
-    vi.useFakeTimers();
-    // Set clock to 10:00, activation at 09:00
-    vi.setSystemTime(new Date('2024-01-01T10:00:00'));
-    render(<AnnouncementOverlay />);
-    emitAnnouncements([
-      {
-        ...BASE_ANNOUNCEMENT,
-        activationType: 'scheduled',
-        scheduledActivationTime: '09:00',
-        isActive: true,
-      },
-    ]);
-    expect(screen.getByText('Test Announcement')).toBeInTheDocument();
-    vi.useRealTimers();
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('hides a scheduled announcement whose activation time has not yet passed', () => {
+      // Set clock to 08:00, activation at 09:00
+      vi.setSystemTime(new Date('2024-01-01T08:00:00'));
+      render(<AnnouncementOverlay />);
+      emitAnnouncements([
+        {
+          ...BASE_ANNOUNCEMENT,
+          activationType: 'scheduled',
+          scheduledActivationTime: '09:00',
+          isActive: true,
+        },
+      ]);
+      expect(screen.queryByText('Test Announcement')).not.toBeInTheDocument();
+    });
+
+    it('shows a scheduled announcement whose activation time has passed', () => {
+      // Set clock to 10:00, activation at 09:00
+      vi.setSystemTime(new Date('2024-01-01T10:00:00'));
+      render(<AnnouncementOverlay />);
+      emitAnnouncements([
+        {
+          ...BASE_ANNOUNCEMENT,
+          activationType: 'scheduled',
+          scheduledActivationTime: '09:00',
+          isActive: true,
+        },
+      ]);
+      expect(screen.getByText('Test Announcement')).toBeInTheDocument();
+    });
   });
 
   // -------------------------------------------------------------------------

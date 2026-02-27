@@ -35,6 +35,7 @@ import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { Announcement, WidgetData, WidgetConfig } from '@/types';
 import { WIDGET_COMPONENTS } from '@/components/widgets/WidgetRegistry';
+import { useWindowSize } from '@/hooks/useWindowSize';
 
 const DISMISSALS_KEY = 'spart_announcement_dismissals';
 const SCHEDULE_CHECK_INTERVAL_MS = 30_000;
@@ -95,7 +96,10 @@ function isScheduledTimeReached(a: Announcement, nowMins: number): boolean {
 }
 
 /** Returns true when a scheduled-dismissal announcement has passed its dismissal time. */
-function isScheduledDismissalPast(a: Announcement): boolean {
+function isScheduledDismissalPast(a: {
+  dismissalType: string;
+  scheduledDismissalTime?: string;
+}): boolean {
   if (a.dismissalType !== 'scheduled' || !a.scheduledDismissalTime)
     return false;
   return currentMinutes() >= timeToMinutes(a.scheduledDismissalTime);
@@ -115,19 +119,8 @@ const WidgetLoadingFallback: React.FC = () => (
 const AnnouncementWidgetContent: React.FC<{ announcement: Announcement }> = ({
   announcement,
 }) => {
-  // Track viewport size reactively so maximized widgets stay correct on resize
-  const [viewportSize, setViewportSize] = useState({
-    w: window.innerWidth,
-    h: window.innerHeight,
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportSize({ w: window.innerWidth, h: window.innerHeight });
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Only track viewport size when maximized (avoids extra resize listeners for windowed announcements)
+  const { width, height } = useWindowSize(announcement.maximized);
 
   const WidgetComponent = WIDGET_COMPONENTS[announcement.widgetType];
 
@@ -136,8 +129,8 @@ const AnnouncementWidgetContent: React.FC<{ announcement: Announcement }> = ({
     type: announcement.widgetType,
     x: 0,
     y: 0,
-    w: announcement.maximized ? viewportSize.w : announcement.widgetSize.w,
-    h: announcement.maximized ? viewportSize.h : announcement.widgetSize.h,
+    w: announcement.maximized ? width : announcement.widgetSize.w,
+    h: announcement.maximized ? height : announcement.widgetSize.h,
     z: 9990,
     flipped: false,
     minimized: false,
@@ -200,12 +193,16 @@ const AnnouncementWindow: React.FC<{
     return () => clearInterval(interval);
   }, [announcementId, announcementActivatedAt, isDuration, onDismiss, total]);
 
-  // Scheduled dismissal check
+  // Scheduled dismissal check — deps are narrowed to the specific fields used so
+  // unrelated Firestore updates (e.g. name/targeting changes) don't tear down
+  // and recreate the interval or trigger a spurious immediate check().
+  const dismissalType = announcement.dismissalType;
+  const scheduledDismissalTime = announcement.scheduledDismissalTime;
   useEffect(() => {
-    if (announcement.dismissalType !== 'scheduled') return;
+    if (dismissalType !== 'scheduled') return;
 
     const check = () => {
-      if (isScheduledDismissalPast(announcement)) {
+      if (isScheduledDismissalPast({ dismissalType, scheduledDismissalTime })) {
         setScheduledDismissed(true);
         onDismiss(announcementId, announcementActivatedAt);
       }
@@ -214,7 +211,13 @@ const AnnouncementWindow: React.FC<{
     check();
     const interval = setInterval(check, SCHEDULE_CHECK_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [announcement, announcementId, announcementActivatedAt, onDismiss]);
+  }, [
+    dismissalType,
+    scheduledDismissalTime,
+    announcementId,
+    announcementActivatedAt,
+    onDismiss,
+  ]);
 
   if (scheduledDismissed) return null;
 

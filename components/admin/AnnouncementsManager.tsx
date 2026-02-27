@@ -583,7 +583,10 @@ export const AnnouncementsManager: React.FC = () => {
           form.activationType === 'scheduled'
             ? form.scheduledActivationTime
             : undefined,
-        isActive: existing?.isActive ?? false,
+        // Scheduled announcements are enabled ("active") as soon as they're created —
+        // the overlay itself gates visibility by the clock time. Manual announcements
+        // start inactive until the admin explicitly clicks Activate.
+        isActive: existing?.isActive ?? form.activationType === 'scheduled',
         activatedAt: existing?.activatedAt ?? null,
         dismissalType: form.dismissalType,
         scheduledDismissalTime:
