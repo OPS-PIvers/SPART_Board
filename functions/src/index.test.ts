@@ -101,9 +101,10 @@ describe('triggerJulesWidgetGeneration', () => {
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
     // Verify axios call arguments
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     expect(mockPost).toHaveBeenCalledWith(
       JULES_API_SESSIONS_ENDPOINT,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -123,7 +124,7 @@ describe('triggerJulesWidgetGeneration', () => {
       })
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     expect(result).toEqual({
       success: true,
       message: expect.stringContaining('12345'),
