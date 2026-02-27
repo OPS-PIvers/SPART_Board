@@ -346,21 +346,30 @@ export interface WebcamGlobalConfig {
   ocrMode?: 'standard' | 'gemini';
 }
 
-export interface ScheduleGlobalEvent {
+export interface BuildingScheduleDefaults {
+  buildingId: string;
+  items: ScheduleItem[];
+}
+
+export interface ScheduleGlobalConfig {
+  buildingDefaults: Record<string, BuildingScheduleDefaults>;
+}
+
+export interface CalendarGlobalEvent {
   id: string;
   date: string; // ISO Date string (YYYY-MM-DD)
   title: string;
 }
 
-export interface BuildingScheduleDefaults {
+export interface BuildingCalendarDefaults {
   buildingId: string;
-  items: ScheduleItem[];
+  events: CalendarEvent[];
   googleCalendarIds?: string[];
 }
 
-export interface ScheduleGlobalConfig {
+export interface CalendarGlobalConfig {
   blockedDates: string[]; // Array of ISO Date strings (YYYY-MM-DD)
-  buildingDefaults: Record<string, BuildingScheduleDefaults>;
+  buildingDefaults: Record<string, BuildingCalendarDefaults>;
 }
 
 export interface ScheduleConfig {
@@ -378,6 +387,8 @@ export interface ScheduleConfig {
 
 export interface CalendarConfig {
   events: CalendarEvent[];
+  isBuildingSyncEnabled?: boolean;
+  lastSyncedBuildingId?: string;
 }
 
 export interface LunchMenuDay {

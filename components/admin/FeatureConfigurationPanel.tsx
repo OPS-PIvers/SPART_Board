@@ -9,8 +9,8 @@ import {
   WeatherTemperatureRange,
   CatalystGlobalConfig,
   ExpectationsGlobalConfig,
-  ScheduleGlobalConfig,
   ToolMetadata,
+  ScheduleGlobalConfig,
 } from '../../types';
 import {
   Settings,
@@ -704,7 +704,6 @@ export const FeatureConfigurationPanel: React.FC<
           <ScheduleConfigurationPanel
             config={
               (permission.config ?? {
-                blockedDates: [],
                 buildingDefaults: {},
               }) as unknown as ScheduleGlobalConfig
             }

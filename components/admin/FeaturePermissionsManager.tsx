@@ -31,6 +31,7 @@ import { FeatureConfigurationPanel } from '@/components/admin/FeatureConfigurati
 import { BetaUsersPanel } from '@/components/admin/BetaUsersPanel';
 import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRoutinesManager';
 import { StickerLibraryModal } from '@/components/admin/StickerLibraryModal';
+import { CalendarConfigurationModal } from '@/components/admin/CalendarConfigurationModal';
 import { StickerGlobalConfig } from '@/types';
 
 export const FeaturePermissionsManager: React.FC = () => {
@@ -54,6 +55,7 @@ export const FeaturePermissionsManager: React.FC = () => {
   >(null);
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
   const [isStickerLibraryOpen, setIsStickerLibraryOpen] = useState(false);
+  const [isCalendarConfigOpen, setIsCalendarConfigOpen] = useState(false);
   const [isSavingStickers, setIsSavingStickers] = useState(false);
   const { uploadWeatherImage } = useStorage();
 
@@ -441,6 +443,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                           setIsRoutinesLibraryOpen(true);
                         } else if (tool.type === 'stickers') {
                           setIsStickerLibraryOpen(true);
+                        } else if (tool.type === 'calendar') {
+                          setIsCalendarConfigOpen(true);
                         } else {
                           setEditingConfig(
                             editingConfig === tool.type ? null : tool.type
@@ -451,6 +455,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                         (tool.type === 'instructionalRoutines' &&
                           isRoutinesLibraryOpen) ||
                         (tool.type === 'stickers' && isStickerLibraryOpen) ||
+                        (tool.type === 'calendar' && isCalendarConfigOpen) ||
                         editingConfig === tool.type
                           ? 'bg-brand-blue-primary text-white'
                           : 'text-slate-400 hover:bg-slate-100'
@@ -544,6 +549,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                         setIsRoutinesLibraryOpen(true);
                       } else if (tool.type === 'stickers') {
                         setIsStickerLibraryOpen(true);
+                      } else if (tool.type === 'calendar') {
+                        setIsCalendarConfigOpen(true);
                       } else {
                         setEditingConfig(
                           editingConfig === tool.type ? null : tool.type
@@ -554,6 +561,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                       (tool.type === 'instructionalRoutines' &&
                         isRoutinesLibraryOpen) ||
                       (tool.type === 'stickers' && isStickerLibraryOpen) ||
+                      (tool.type === 'calendar' && isCalendarConfigOpen) ||
                       editingConfig === tool.type
                         ? 'bg-brand-blue-primary text-white'
                         : 'text-slate-400 hover:bg-slate-100'
@@ -705,6 +713,14 @@ export const FeaturePermissionsManager: React.FC = () => {
           onSave={handleStickerLibrarySave}
           isSaving={isSavingStickers}
           hasUnsavedChanges={unsavedChanges.has('stickers')}
+        />
+      )}
+
+      {/* Calendar Configuration Modal */}
+      {isCalendarConfigOpen && (
+        <CalendarConfigurationModal
+          isOpen={isCalendarConfigOpen}
+          onClose={() => setIsCalendarConfigOpen(false)}
         />
       )}
     </div>

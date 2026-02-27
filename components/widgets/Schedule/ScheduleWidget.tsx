@@ -15,14 +15,7 @@ import {
   DEFAULT_GLOBAL_STYLE,
   ScheduleGlobalConfig,
 } from '@/types';
-import {
-  Circle,
-  CheckCircle2,
-  Clock,
-  Timer,
-  Calendar,
-  Ban,
-} from 'lucide-react';
+import { Circle, CheckCircle2, Clock, Timer } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
@@ -330,10 +323,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
   const items = useMemo(() => config.items ?? [], [config.items]);
-  const localEvents = useMemo(
-    () => config.localEvents ?? [],
-    [config.localEvents]
-  );
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
 
   const {
@@ -343,15 +332,10 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     cardColor = '#ffffff',
   } = config;
 
-  const [globalConfig, setGlobalConfig] = useState<ScheduleGlobalConfig | null>(
-    null
-  );
-
   useEffect(() => {
     return subscribeToPermission('schedule', (perm) => {
       if (perm?.config) {
         const gConfig = perm.config as unknown as ScheduleGlobalConfig;
-        setGlobalConfig(gConfig);
 
         // Auto-populate logic:
         // 1. Must have sync enabled
@@ -387,21 +371,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     widget.id,
     updateWidget,
   ]);
-
-  // Merge building events and local events, filtered by blocked dates
-  const mergedUpcomingEvents = useMemo(() => {
-    if (!isBuildingSyncEnabled) return localEvents;
-
-    const today = new Date().toISOString().split('T')[0];
-    const isBlocked = globalConfig?.blockedDates?.includes(today);
-
-    if (isBlocked) return [];
-
-    // In a real scenario, we'd fetch Google Calendar events here.
-    // For now, we'll just show the local events.
-    // Future expansion: Integrate Google Calendar API calls using globalConfig.buildingDefaults[buildingId].googleCalendarIds
-    return localEvents;
-  }, [isBuildingSyncEnabled, localEvents, globalConfig]);
 
   // Single shared ticker for all CountdownDisplay instances in this widget.
   const [nowSeconds, setNowSeconds] = useState(() => {
@@ -611,114 +580,22 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         >
           <div
             className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
-            style={{ gap: 'min(16px, 3cqmin)' }}
+            style={{ gap: 'min(10px, 2cqmin)' }}
           >
-            {/* Daily Tasks Section */}
-            <div className="flex flex-col" style={{ gap: 'min(10px, 2cqmin)' }}>
-              {items.length > 0 && (
-                <div
-                  className="flex items-center gap-2 text-slate-400 uppercase font-black tracking-widest px-1"
-                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                >
-                  <Clock style={{ width: '1.2em', height: '1.2em' }} /> Daily
-                  Tasks
-                </div>
-              )}
-              {items.map((item: ScheduleItem, i: number) => (
-                <ScheduleRow
-                  key={item.id ?? `${item.task}-${item.startTime ?? item.time}`}
-                  index={i}
-                  item={item}
-                  onToggle={toggle}
-                  onStartTimer={handleStartTimer}
-                  cardOpacity={cardOpacity}
-                  cardColor={cardColor}
-                  format24={format24}
-                  nowSeconds={nowSeconds}
-                />
-              ))}
-            </div>
-
-            {/* Upcoming Events Section */}
-            {mergedUpcomingEvents.length > 0 && (
-              <div
-                className="flex flex-col"
-                style={{
-                  gap: 'min(10px, 2cqmin)',
-                  marginTop: 'min(8px, 2cqmin)',
-                }}
-              >
-                <div
-                  className="flex items-center gap-2 text-blue-400 uppercase font-black tracking-widest px-1"
-                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                >
-                  <Calendar style={{ width: '1.2em', height: '1.2em' }} />{' '}
-                  Upcoming Events
-                </div>
-                {mergedUpcomingEvents.map((event, idx) => (
-                  <div
-                    key={idx}
-                    className="flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
-                    style={{
-                      backgroundColor: hexToRgba(cardColor, cardOpacity),
-                    }}
-                  >
-                    <div
-                      className="bg-blue-500/10 flex flex-col items-center justify-center border-r border-blue-100 shrink-0"
-                      style={{
-                        padding: 'min(12px, 2.5cqmin)',
-                        minWidth: 'min(60px, 15cqmin)',
-                      }}
-                    >
-                      <span
-                        className="text-blue-600 font-black uppercase"
-                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                      >
-                        {new Date(event.date + 'T00:00:00').toLocaleDateString(
-                          undefined,
-                          { month: 'short' }
-                        )}
-                      </span>
-                      <span
-                        className="text-blue-700 font-black"
-                        style={{ fontSize: 'min(24px, 6cqmin)' }}
-                      >
-                        {new Date(event.date + 'T00:00:00').getDate()}
-                      </span>
-                    </div>
-                    <div
-                      className="flex-1 flex items-center min-w-0"
-                      style={{ padding: 'min(12px, 2.5cqmin)' }}
-                    >
-                      <span
-                        className="font-black text-slate-700 truncate"
-                        style={{ fontSize: 'min(18px, 4.5cqmin)' }}
-                      >
-                        {event.title}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Blocked Date State */}
-            {isBuildingSyncEnabled &&
-              globalConfig?.blockedDates?.includes(
-                new Date().toISOString().split('T')[0]
-              ) && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center opacity-40">
-                  <Ban className="w-12 h-12 text-red-400 mb-2" />
-                  <p className="text-xs font-black uppercase text-red-500 tracking-widest">
-                    Schedule Blocked
-                  </p>
-                  <p className="text-xxs text-slate-500 mt-1">
-                    Global district events take precedence today.
-                  </p>
-                </div>
-              )}
-
-            {items.length === 0 && mergedUpcomingEvents.length === 0 && (
+            {items.map((item: ScheduleItem, i: number) => (
+              <ScheduleRow
+                key={item.id ?? `${item.task}-${item.startTime ?? item.time}`}
+                index={i}
+                item={item}
+                onToggle={toggle}
+                onStartTimer={handleStartTimer}
+                cardOpacity={cardOpacity}
+                cardColor={cardColor}
+                format24={format24}
+                nowSeconds={nowSeconds}
+              />
+            ))}
+            {items.length === 0 && (
               <ScaledEmptyState
                 icon={Clock}
                 title="No Schedule"
