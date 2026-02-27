@@ -129,26 +129,6 @@ export const RandomConfigurationPanel: React.FC<
             showLabels={false}
           />
         </div>
-
-        {/* Elimination Mode */}
-        <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
-          <div>
-            <span className="text-xxs font-bold text-slate-700 block">
-              Elimination Mode
-            </span>
-            <span className="text-xxs text-slate-400">
-              Remove selected students from the pool until all have been picked
-            </span>
-          </div>
-          <Toggle
-            checked={currentBuildingConfig.eliminationMode ?? false}
-            onChange={(checked) =>
-              handleUpdateBuilding({ eliminationMode: checked })
-            }
-            size="xs"
-            showLabels={false}
-          />
-        </div>
       </div>
     </div>
   );

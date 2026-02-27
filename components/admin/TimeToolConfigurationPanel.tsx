@@ -47,7 +47,7 @@ export const TimeToolConfigurationPanel: React.FC<
     });
   };
 
-  const durationSeconds = currentBuildingConfig.duration ?? 300;
+  const durationSeconds = currentBuildingConfig.duration ?? 600;
   const durationMinutes = Math.floor(durationSeconds / 60);
   const durationRemainingSeconds = durationSeconds % 60;
 

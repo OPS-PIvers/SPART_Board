@@ -56,7 +56,13 @@ const serializeDashboard = (d: Dashboard): string =>
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, isAdmin, refreshGoogleToken } = useAuth();
+  const {
+    user,
+    isAdmin,
+    refreshGoogleToken,
+    featurePermissions,
+    selectedBuildings,
+  } = useAuth();
   const { driveService } = useGoogleDrive();
   const {
     saveDashboard: saveDashboardFirestore,
@@ -1408,10 +1414,82 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeDashboard = dashboards.find((d) => d.id === activeId) ?? null;
 
+  /**
+   * Extracts building-level config overrides for a widget type from the admin's
+   * feature_permissions config. These are applied between widget defaults and
+   * explicit overrides so that per-building admin settings pre-configure new
+   * widget instances for the teacher's building.
+   */
+  const getAdminBuildingConfig = useCallback(
+    (type: WidgetType): Record<string, unknown> => {
+      if (!selectedBuildings.length) return {};
+      const buildingId = selectedBuildings[0];
+      const perm = featurePermissions.find((p) => p.widgetType === type);
+      const raw = (
+        perm?.config as
+          | { buildingDefaults?: Record<string, Record<string, unknown>> }
+          | undefined
+      )?.buildingDefaults?.[buildingId];
+      if (!raw) return {};
+
+      const out: Record<string, unknown> = {};
+      switch (type) {
+        case 'clock':
+          if (raw.format24 !== undefined) out.format24 = raw.format24;
+          if (raw.fontFamily) out.fontFamily = raw.fontFamily;
+          if (raw.themeColor) out.themeColor = raw.themeColor;
+          break;
+        case 'time-tool':
+          if (typeof raw.duration === 'number') {
+            out.duration = raw.duration;
+            out.elapsedTime = raw.duration;
+          }
+          if (raw.timerEndTrafficColor !== undefined)
+            out.timerEndTrafficColor = raw.timerEndTrafficColor;
+          break;
+        case 'checklist':
+          if (Array.isArray(raw.items) && raw.items.length > 0) {
+            out.items = (raw.items as Array<{ id: string; text: string }>).map(
+              (item) => ({
+                id: crypto.randomUUID(),
+                text: item.text,
+                completed: false,
+              })
+            );
+          }
+          if (raw.scaleMultiplier !== undefined)
+            out.scaleMultiplier = raw.scaleMultiplier;
+          break;
+        case 'sound':
+          if (raw.visual) out.visual = raw.visual;
+          if (raw.sensitivity !== undefined) out.sensitivity = raw.sensitivity;
+          break;
+        case 'text':
+          if (raw.bgColor) out.bgColor = raw.bgColor;
+          if (raw.fontSize) out.fontSize = raw.fontSize;
+          break;
+        case 'traffic':
+          if (raw.active !== undefined) out.active = raw.active;
+          break;
+        case 'random':
+          if (raw.visualStyle) out.visualStyle = raw.visualStyle;
+          if (raw.soundEnabled !== undefined)
+            out.soundEnabled = raw.soundEnabled;
+          break;
+        default:
+          break;
+      }
+      return out;
+    },
+    [featurePermissions, selectedBuildings]
+  );
+
   const addWidget = useCallback(
     (type: WidgetType, overrides?: AddWidgetOverrides) => {
       if (!activeId) return;
       lastLocalUpdateAt.current = Date.now();
+
+      const adminConfig = getAdminBuildingConfig(type);
 
       setDashboards((prev) =>
         prev.map((d) => {
@@ -1430,10 +1508,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             z: maxZ + 1,
             ...defaults,
             ...overrides,
-            // Defaults supply the full required config; overrides patch a subset.
-            // The spread result is a valid WidgetConfig at runtime.
+            // Layer order: widget defaults → admin building defaults → explicit overrides
             config: {
               ...(defaults.config ?? {}),
+              ...adminConfig,
               ...(overrides?.config ?? {}),
             } as WidgetConfig,
           };
@@ -1441,7 +1519,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
     },
-    [activeId]
+    [activeId, getAdminBuildingConfig]
   );
 
   const addWidgets = useCallback(

@@ -431,7 +431,6 @@ export interface BuildingRandomDefaults {
   buildingId: string;
   visualStyle?: 'flash' | 'slots' | 'wheel';
   soundEnabled?: boolean;
-  eliminationMode?: boolean;
 }
 
 export interface RandomGlobalConfig {

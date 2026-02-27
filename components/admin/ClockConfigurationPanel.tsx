@@ -9,9 +9,10 @@ interface ClockConfigurationPanelProps {
 }
 
 const FONT_FAMILY_OPTIONS = [
-  { value: 'sans', label: 'Sans-serif (Default)' },
-  { value: 'mono', label: 'Monospace' },
-  { value: 'handwritten', label: 'Handwritten' },
+  { value: 'global', label: 'Inherit (Default)' },
+  { value: 'font-sans', label: 'Sans-serif' },
+  { value: 'font-mono', label: 'Monospace' },
+  { value: 'font-handwritten', label: 'Handwritten' },
 ];
 
 export const ClockConfigurationPanel: React.FC<
@@ -78,12 +79,10 @@ export const ClockConfigurationPanel: React.FC<
             <span className="text-xxs font-bold text-slate-700 block">
               24-Hour Format
             </span>
-            <span className="text-xxs text-slate-400">
-              Default: {currentBuildingConfig.format24 ? 'On' : 'Off'}
-            </span>
+            <span className="text-xxs text-slate-400">Widget default: On</span>
           </div>
           <Toggle
-            checked={currentBuildingConfig.format24 ?? false}
+            checked={currentBuildingConfig.format24 ?? true}
             onChange={(checked) => handleUpdateBuilding({ format24: checked })}
             size="xs"
             showLabels={false}
@@ -101,7 +100,7 @@ export const ClockConfigurationPanel: React.FC<
                 key={opt.value}
                 onClick={() => handleUpdateBuilding({ fontFamily: opt.value })}
                 className={`flex-1 py-1.5 text-xxs font-bold rounded transition-colors ${
-                  (currentBuildingConfig.fontFamily ?? 'sans') === opt.value
+                  (currentBuildingConfig.fontFamily ?? 'global') === opt.value
                     ? 'bg-brand-blue-primary text-white shadow-sm'
                     : 'text-slate-500 hover:bg-slate-50'
                 }`}
