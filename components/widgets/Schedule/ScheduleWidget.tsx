@@ -156,6 +156,35 @@ interface ScheduleRowProps {
   nowSeconds: number;
 }
 
+const areScheduleRowPropsEqual = (
+  prev: ScheduleRowProps,
+  next: ScheduleRowProps
+) => {
+  // Check primitive/stable props equality
+  if (prev.index !== next.index) return false;
+  if (prev.onToggle !== next.onToggle) return false;
+  if (prev.onStartTimer !== next.onStartTimer) return false;
+  if (prev.cardOpacity !== next.cardOpacity) return false;
+  if (prev.cardColor !== next.cardColor) return false;
+  if (prev.format24 !== next.format24) return false;
+
+  // Deep comparison for `item` object (ScheduleItem)
+  // This is safe because ScheduleItem properties are primitives (strings, booleans) or small arrays
+  if (JSON.stringify(prev.item) !== JSON.stringify(next.item)) return false;
+
+  // Optimized check for `nowSeconds`:
+  // Only re-render if the item is in active timer mode.
+  // If not in timer mode, `nowSeconds` changes should be ignored.
+  const isTimerActive =
+    next.item.mode === 'timer' && !!next.item.endTime && !next.item.done;
+
+  if (isTimerActive) {
+    return prev.nowSeconds === next.nowSeconds;
+  }
+
+  return true;
+};
+
 const ScheduleRow = React.memo<ScheduleRowProps>(
   ({
     item,
@@ -257,7 +286,8 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
         )}
       </div>
     );
-  }
+  },
+  areScheduleRowPropsEqual
 );
 
 ScheduleRow.displayName = 'ScheduleRow';
