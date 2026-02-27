@@ -653,7 +653,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     });
 
     const client = await auth.getClient();
-    const accessToken = await (client as unknown as TokenClient).getAccessToken();
+    const accessToken = await (
+      client as unknown as TokenClient
+    ).getAccessToken();
 
     if (!accessToken?.token) {
       throw new functionsV2.https.HttpsError(
