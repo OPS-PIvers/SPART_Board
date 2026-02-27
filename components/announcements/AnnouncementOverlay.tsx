@@ -31,7 +31,7 @@ import React, {
 } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { X, Bell, Lock } from 'lucide-react';
-import { db, isAuthBypass } from '@/config/firebase';
+import { db } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
 import { Announcement, WidgetData, WidgetConfig } from '@/types';
 import { WIDGET_COMPONENTS } from '@/components/widgets/WidgetRegistry';
@@ -342,7 +342,10 @@ export const AnnouncementOverlay: React.FC = () => {
 
   // Subscribe to the announcements collection (only active announcements)
   useEffect(() => {
-    if (!user && !isAuthBypass) return;
+    // We only subscribe if we have a user object.
+    // isAuthBypass allows the UI to render, but Firestore still needs an auth token
+    // unless the rules are set to allow public read (which they are not).
+    if (!user) return;
 
     const unsub = onSnapshot(
       query(collection(db, 'announcements'), where('isActive', '==', true)),

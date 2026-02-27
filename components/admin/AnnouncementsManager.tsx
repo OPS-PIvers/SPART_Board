@@ -486,6 +486,8 @@ export const AnnouncementsManager: React.FC = () => {
 
   // Subscribe to announcements collection
   useEffect(() => {
+    if (!user) return;
+
     const unsub = onSnapshot(
       collection(db, 'announcements'),
       (snap) => {
@@ -503,7 +505,7 @@ export const AnnouncementsManager: React.FC = () => {
       }
     );
     return unsub;
-  }, []);
+  }, [user]);
 
   const openCreate = useCallback(() => {
     setForm(buildDefaultForm());
