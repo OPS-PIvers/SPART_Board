@@ -156,6 +156,54 @@ interface ScheduleRowProps {
   nowSeconds: number;
 }
 
+const areScheduleRowPropsEqual = (
+  prev: ScheduleRowProps,
+  next: ScheduleRowProps
+) => {
+  // Check primitive/stable props equality
+  if (prev.index !== next.index) return false;
+  if (prev.onToggle !== next.onToggle) return false;
+  if (prev.onStartTimer !== next.onStartTimer) return false;
+  if (prev.cardOpacity !== next.cardOpacity) return false;
+  if (prev.cardColor !== next.cardColor) return false;
+  if (prev.format24 !== next.format24) return false;
+
+  // Optimized manual comparison for `item` object (ScheduleItem) instead of JSON.stringify
+  // to avoid serialization overhead on every tick.
+  const prevItem = prev.item;
+  const nextItem = next.item;
+
+  if (prevItem.id !== nextItem.id) return false;
+  if (prevItem.time !== nextItem.time) return false;
+  if (prevItem.task !== nextItem.task) return false;
+  if (prevItem.done !== nextItem.done) return false;
+  if (prevItem.mode !== nextItem.mode) return false;
+  if (prevItem.startTime !== nextItem.startTime) return false;
+  if (prevItem.endTime !== nextItem.endTime) return false;
+
+  // Compare linkedWidgets array shallowly
+  if (prevItem.linkedWidgets !== nextItem.linkedWidgets) {
+    if (!prevItem.linkedWidgets || !nextItem.linkedWidgets) return false;
+    if (prevItem.linkedWidgets.length !== nextItem.linkedWidgets.length)
+      return false;
+    for (let i = 0; i < prevItem.linkedWidgets.length; i++) {
+      if (prevItem.linkedWidgets[i] !== nextItem.linkedWidgets[i]) return false;
+    }
+  }
+
+  // Optimized check for `nowSeconds`:
+  // Only re-render if the item is in active timer mode.
+  // If not in timer mode, `nowSeconds` changes should be ignored.
+  const isTimerActive =
+    next.item.mode === 'timer' && !!next.item.endTime && !next.item.done;
+
+  if (isTimerActive) {
+    return prev.nowSeconds === next.nowSeconds;
+  }
+
+  return true;
+};
+
 const ScheduleRow = React.memo<ScheduleRowProps>(
   ({
     item,
@@ -257,7 +305,8 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
         )}
       </div>
     );
-  }
+  },
+  areScheduleRowPropsEqual
 );
 
 ScheduleRow.displayName = 'ScheduleRow';
