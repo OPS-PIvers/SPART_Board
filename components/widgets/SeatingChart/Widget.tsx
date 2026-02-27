@@ -7,8 +7,8 @@ import React, {
   useLayoutEffect,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDashboard } from '../../../context/useDashboard';
-import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { WidgetData, SeatingChartConfig, FurnitureItem } from '@/types';
 import { LayoutGrid, LayoutTemplate } from 'lucide-react';
 import {
   generateColumnsLayout,

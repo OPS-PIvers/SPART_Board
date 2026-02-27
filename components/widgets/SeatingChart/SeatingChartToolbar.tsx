@@ -6,7 +6,7 @@ import {
   Dice5,
   MousePointer2,
 } from 'lucide-react';
-import { Button } from '../../common/Button';
+import { Button } from '@/components/common/Button';
 
 interface SeatingChartToolbarProps {
   mode: 'setup' | 'assign' | 'interact';

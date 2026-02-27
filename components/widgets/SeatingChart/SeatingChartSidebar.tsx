@@ -4,7 +4,7 @@ import {
   FurnitureItem,
   SeatingChartTemplate,
   WidgetData,
-} from '../../../types';
+} from '@/types';
 import { RefreshCw, Trash2, UserPlus } from 'lucide-react';
 import { TEMPLATES, FURNITURE_TYPES } from './constants';
 
