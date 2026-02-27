@@ -379,9 +379,14 @@ export interface TimeToolGlobalConfig {
 }
 
 // --- Checklist Global Config ---
+export interface ChecklistDefaultItem {
+  id: string;
+  text: string;
+}
+
 export interface BuildingChecklistDefaults {
   buildingId: string;
-  items?: string[]; // Default item labels pre-populated on widget creation
+  items?: ChecklistDefaultItem[]; // Default item labels pre-populated on widget creation
   scaleMultiplier?: number;
 }
 

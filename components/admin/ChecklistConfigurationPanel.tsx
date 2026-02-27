@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
-import { ChecklistGlobalConfig, BuildingChecklistDefaults } from '@/types';
+import {
+  ChecklistGlobalConfig,
+  BuildingChecklistDefaults,
+  ChecklistDefaultItem,
+} from '@/types';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 
 interface ChecklistConfigurationPanelProps {
@@ -24,7 +28,7 @@ export const ChecklistConfigurationPanel: React.FC<
     items: [],
   };
 
-  const items = currentBuildingConfig.items ?? [];
+  const items: ChecklistDefaultItem[] = currentBuildingConfig.items ?? [];
 
   const handleUpdateBuilding = (
     updates: Partial<BuildingChecklistDefaults>
@@ -44,18 +48,22 @@ export const ChecklistConfigurationPanel: React.FC<
   const handleAddItem = () => {
     const text = newItemText.trim();
     if (!text) return;
-    handleUpdateBuilding({ items: [...items, text] });
+    handleUpdateBuilding({
+      items: [...items, { id: crypto.randomUUID(), text }],
+    });
     setNewItemText('');
   };
 
-  const handleUpdateItem = (index: number, value: string) => {
-    const newItems = [...items];
-    newItems[index] = value;
-    handleUpdateBuilding({ items: newItems });
+  const handleUpdateItem = (id: string, value: string) => {
+    handleUpdateBuilding({
+      items: items.map((item) =>
+        item.id === id ? { ...item, text: value } : item
+      ),
+    });
   };
 
-  const handleRemoveItem = (index: number) => {
-    handleUpdateBuilding({ items: items.filter((_, i) => i !== index) });
+  const handleRemoveItem = (id: string) => {
+    handleUpdateBuilding({ items: items.filter((item) => item.id !== id) });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -138,21 +146,21 @@ export const ChecklistConfigurationPanel: React.FC<
           </div>
 
           <div className="space-y-1.5 mb-3">
-            {items.map((item, index) => (
+            {items.map((item) => (
               <div
-                key={index}
+                key={item.id}
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-2 shadow-sm"
               >
                 <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
                 <input
                   type="text"
-                  value={item}
-                  onChange={(e) => handleUpdateItem(index, e.target.value)}
+                  value={item.text}
+                  onChange={(e) => handleUpdateItem(item.id, e.target.value)}
                   className="flex-1 text-xs border-none outline-none bg-transparent"
                   placeholder="Item text..."
                 />
                 <button
-                  onClick={() => handleRemoveItem(index)}
+                  onClick={() => handleRemoveItem(item.id)}
                   className="text-red-400 hover:text-red-600 p-0.5 shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

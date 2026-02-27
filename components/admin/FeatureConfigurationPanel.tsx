@@ -10,14 +10,6 @@ import {
   CatalystGlobalConfig,
   ExpectationsGlobalConfig,
   ToolMetadata,
-  ScheduleGlobalConfig,
-  ClockGlobalConfig,
-  TimeToolGlobalConfig,
-  ChecklistGlobalConfig,
-  SoundGlobalConfig,
-  NoteGlobalConfig,
-  TrafficLightGlobalConfig,
-  RandomGlobalConfig,
 } from '../../types';
 import {
   Settings,
@@ -43,6 +35,25 @@ import { Toggle } from '../common/Toggle';
 // Helper type guard
 const isCatalystConfig = (config: unknown): config is CatalystGlobalConfig => {
   return typeof config === 'object' && config !== null;
+};
+
+// Shared prop shape for all "building-defaults" config panels
+type BuildingConfigPanel = React.ComponentType<{
+  config: Record<string, unknown>;
+  onChange: (newConfig: Record<string, unknown>) => void;
+}>;
+
+// Map from widget/tool type to its building-defaults configuration panel.
+// Catalyst is excluded here because it requires additional props.
+const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
+  schedule: ScheduleConfigurationPanel as unknown as BuildingConfigPanel,
+  clock: ClockConfigurationPanel as unknown as BuildingConfigPanel,
+  'time-tool': TimeToolConfigurationPanel as unknown as BuildingConfigPanel,
+  checklist: ChecklistConfigurationPanel as unknown as BuildingConfigPanel,
+  sound: SoundConfigurationPanel as unknown as BuildingConfigPanel,
+  text: NoteConfigurationPanel as unknown as BuildingConfigPanel,
+  traffic: TrafficLightConfigurationPanel as unknown as BuildingConfigPanel,
+  random: RandomConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {
@@ -713,141 +724,24 @@ export const FeatureConfigurationPanel: React.FC<
         </div>
       )}
 
-      {tool.type === 'schedule' && (
-        <div className="space-y-4">
-          <ScheduleConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as ScheduleGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'clock' && (
-        <div className="space-y-4">
-          <ClockConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as ClockGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'time-tool' && (
-        <div className="space-y-4">
-          <TimeToolConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as TimeToolGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'checklist' && (
-        <div className="space-y-4">
-          <ChecklistConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as ChecklistGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'sound' && (
-        <div className="space-y-4">
-          <SoundConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as SoundGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'text' && (
-        <div className="space-y-4">
-          <NoteConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as NoteGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'traffic' && (
-        <div className="space-y-4">
-          <TrafficLightConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as TrafficLightGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
-
-      {tool.type === 'random' && (
-        <div className="space-y-4">
-          <RandomConfigurationPanel
-            config={
-              (permission.config ?? {
-                buildingDefaults: {},
-              }) as unknown as RandomGlobalConfig
-            }
-            onChange={(newConfig) =>
-              updatePermission(tool.type, {
-                config: newConfig as unknown as Record<string, unknown>,
-              })
-            }
-          />
-        </div>
-      )}
+      {(() => {
+        const BuildingPanel = BUILDING_CONFIG_PANELS[tool.type];
+        if (!BuildingPanel) return null;
+        return (
+          <div className="space-y-4">
+            <BuildingPanel
+              config={
+                permission.config ?? {
+                  buildingDefaults: {},
+                }
+              }
+              onChange={(newConfig) =>
+                updatePermission(tool.type, { config: newConfig })
+              }
+            />
+          </div>
+        );
+      })()}
 
       {![
         'lunchCount',
@@ -857,14 +751,7 @@ export const FeatureConfigurationPanel: React.FC<
         'webcam',
         'stickers',
         'expectations',
-        'schedule',
-        'clock',
-        'time-tool',
-        'checklist',
-        'sound',
-        'text',
-        'traffic',
-        'random',
+        ...Object.keys(BUILDING_CONFIG_PANELS),
       ].includes(tool.type) && (
         <p className="text-xs text-slate-500 italic">
           No additional configuration available for this widget.
