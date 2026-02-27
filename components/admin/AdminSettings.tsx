@@ -208,7 +208,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
