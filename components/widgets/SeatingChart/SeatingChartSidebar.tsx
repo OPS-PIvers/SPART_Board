@@ -1,5 +1,10 @@
 import React from 'react';
-import { SeatingChartConfig, FurnitureItem, SeatingChartTemplate } from '../../../types';
+import {
+  SeatingChartConfig,
+  FurnitureItem,
+  SeatingChartTemplate,
+  WidgetData,
+} from '../../../types';
 import { RefreshCw, Trash2, UserPlus } from 'lucide-react';
 import { TEMPLATES, FURNITURE_TYPES } from './constants';
 
@@ -7,7 +12,7 @@ interface SeatingChartSidebarProps {
   mode: 'setup' | 'assign' | 'interact';
   widgetId: string;
   config: SeatingChartConfig;
-  updateWidget: (id: string, updates: any) => void;
+  updateWidget: (id: string, updates: Partial<WidgetData>) => void;
   template: SeatingChartTemplate;
   localTemplateColumns: string;
   setLocalTemplateColumns: (val: string) => void;
@@ -97,7 +102,9 @@ export const SeatingChartSidebar: React.FC<SeatingChartSidebarProps> = ({
                   onBlur={() => {
                     const parsed = Number.parseInt(localTemplateColumns, 10);
                     if (Number.isNaN(parsed)) {
-                      setLocalTemplateColumns(String(config.templateColumns ?? 6));
+                      setLocalTemplateColumns(
+                        String(config.templateColumns ?? 6)
+                      );
                     }
                   }}
                   className="w-full p-2 text-xs border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-black"
@@ -128,8 +135,7 @@ export const SeatingChartSidebar: React.FC<SeatingChartSidebarProps> = ({
           <div className="px-3 py-2 border-b border-slate-200 bg-indigo-50/50">
             <p className="text-xxs text-indigo-500 font-bold leading-tight">
               <span className="font-black">Ctrl+Click</span> to add/remove from
-              selection.{' '}
-              <span className="font-black">Drag empty space</span> to
+              selection. <span className="font-black">Drag empty space</span> to
               rubber-band select.
             </p>
           </div>

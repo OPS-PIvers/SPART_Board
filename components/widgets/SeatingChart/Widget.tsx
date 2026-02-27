@@ -8,21 +8,8 @@ import React, {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../../../context/useDashboard';
-import {
-  WidgetData,
-  SeatingChartConfig,
-  FurnitureItem,
-} from '../../../types';
-import {
-  LayoutGrid,
-  RotateCw,
-  RotateCcw,
-  Trash2,
-  Dice5,
-  UserPlus,
-  RefreshCw,
-  LayoutTemplate,
-} from 'lucide-react';
+import { WidgetData, SeatingChartConfig, FurnitureItem } from '../../../types';
+import { LayoutGrid, LayoutTemplate } from 'lucide-react';
 import {
   generateColumnsLayout,
   generateHorseshoeLayout,
@@ -32,6 +19,7 @@ import { FurnitureItemRenderer } from './FurnitureItemRenderer';
 import { SeatingChartToolbar } from './SeatingChartToolbar';
 import { SeatingChartSidebar } from './SeatingChartSidebar';
 import {
+  FURNITURE_TYPES,
   SETUP_SIDEBAR_W,
   TOOLBAR_H,
   MIN_CANVAS_DIM,
@@ -230,7 +218,15 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
   // Store latest state/props in ref to avoid re-creating handlers.
   // This ensures that passing these handlers to memoized children (FurnitureItemRenderer)
   // does not cause unnecessary re-renders when other unrelated state changes.
-  const latestRef = useRef({
+  const latestRef = useRef<{
+    config: SeatingChartConfig;
+    furniture: FurnitureItem[];
+    assignments: Record<string, string>;
+    mode: 'setup' | 'assign' | 'interact';
+    selectedIds: Set<string>;
+    selectedStudent: string | null;
+    studentLabelById: Map<string, string>;
+  }>({
     config,
     furniture,
     assignments,
@@ -242,15 +238,14 @@ export const SeatingChartWidget: React.FC<{ widget: WidgetData }> = ({
 
   // Keep ref up to date
   useLayoutEffect(() => {
-    Object.assign(latestRef.current, {
-      config,
-      furniture,
-      assignments,
-      mode,
-      selectedIds,
-      selectedStudent,
-      studentLabelById,
-    });
+    // Manually updating properties is cleaner for TS than Object.assign(any)
+    latestRef.current.config = config;
+    latestRef.current.furniture = furniture;
+    latestRef.current.assignments = assignments;
+    latestRef.current.mode = mode;
+    latestRef.current.selectedIds = selectedIds;
+    latestRef.current.selectedStudent = selectedStudent;
+    latestRef.current.studentLabelById = studentLabelById;
   });
   // --- OPTIMIZATION END ---
 

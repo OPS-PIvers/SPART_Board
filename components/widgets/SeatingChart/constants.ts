@@ -1,8 +1,5 @@
 import React from 'react';
-import {
-  FurnitureItem,
-  SeatingChartTemplate,
-} from '../../../types';
+import { FurnitureItem, SeatingChartTemplate } from '../../../types';
 import {
   Armchair,
   LayoutGrid,
