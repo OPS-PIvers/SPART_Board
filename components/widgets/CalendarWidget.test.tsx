@@ -56,7 +56,9 @@ describe('CalendarWidget', () => {
     };
     render(<CalendarWidget widget={emptyWidget} />);
     expect(screen.getByText('No Events')).toBeInTheDocument();
-    expect(screen.getByText('Flip to add calendar events.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Flip to add calendar events.')
+    ).toBeInTheDocument();
   });
 });
 
@@ -71,9 +73,7 @@ describe('CalendarSettings', () => {
   });
 
   const mockConfig: CalendarConfig = {
-    events: [
-      { title: 'Art Class', date: 'Tuesday' },
-    ],
+    events: [{ title: 'Art Class', date: 'Tuesday' }],
   };
 
   const mockWidget: WidgetData = {
@@ -95,9 +95,10 @@ describe('CalendarSettings', () => {
 
   it('adds a new event', async () => {
     const user = userEvent.setup();
-    const promptSpy = vi.spyOn(window, 'prompt')
+    const promptSpy = vi
+      .spyOn(window, 'prompt')
       .mockReturnValueOnce('Science Fair') // First prompt: Title
-      .mockReturnValueOnce('Wednesday');   // Second prompt: Date
+      .mockReturnValueOnce('Wednesday'); // Second prompt: Date
 
     render(<CalendarSettings widget={mockWidget} />);
     const addButton = screen.getByRole('button', { name: /add event/i });
