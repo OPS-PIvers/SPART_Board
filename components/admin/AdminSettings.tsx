@@ -7,12 +7,14 @@ import {
   Image as ImageIcon,
   Zap,
   Bot,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { FeaturePermissionsManager } from './FeaturePermissionsManager';
 import { BackgroundManager } from './BackgroundManager';
 import { GlobalPermissionsManager } from './GlobalPermissionsManager';
 import { JulesWidgetGenerator } from './JulesWidgetGenerator';
+import { AnnouncementsManager } from './AnnouncementsManager';
 
 interface AdminSettingsProps {
   onClose: () => void;
@@ -47,7 +49,7 @@ const TabButton: React.FC<{
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'features' | 'global' | 'backgrounds' | 'jules'
+    'features' | 'global' | 'backgrounds' | 'jules' | 'announcements'
   >('features');
 
   // Close modal on Escape key press
@@ -124,6 +126,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               onClick={() => setActiveTab('jules')}
               icon={<Bot className="w-4 h-4" />}
               label="Jules Agent"
+            />
+            <TabButton
+              id="tab-announcements"
+              controls="panel-announcements"
+              isActive={activeTab === 'announcements'}
+              onClick={() => setActiveTab('announcements')}
+              icon={<Bell className="w-4 h-4" />}
+              label="Announcements"
             />
           </div>
         </div>
@@ -206,6 +216,27 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
                 </p>
               </div>
               <JulesWidgetGenerator />
+            </div>
+          )}
+
+          {activeTab === 'announcements' && (
+            <div
+              id="panel-announcements"
+              role="tabpanel"
+              aria-labelledby="tab-announcements"
+              className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full"
+            >
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  Announcements
+                </h3>
+                <p className="text-slate-600">
+                  Push widget-based announcements to users in real time. Control
+                  when they activate, how they can be dismissed, and which
+                  buildings receive them.
+                </p>
+              </div>
+              <AnnouncementsManager />
             </div>
           )}
         </div>
