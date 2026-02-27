@@ -25,6 +25,8 @@ let firestoreCallback:
 
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
+  query: vi.fn((_col: unknown, ..._constraints: unknown[]) => _col),
+  where: vi.fn(),
   onSnapshot: vi.fn((_ref: unknown, cb: typeof firestoreCallback) => {
     firestoreCallback = cb;
     return vi.fn(); // unsubscribe no-op
@@ -190,6 +192,7 @@ describe('AnnouncementOverlay', () => {
   // -------------------------------------------------------------------------
 
   it('hides a scheduled announcement whose activation time has not yet passed', () => {
+    vi.useFakeTimers();
     // Set clock to 08:00, activation at 09:00
     vi.setSystemTime(new Date('2024-01-01T08:00:00'));
     render(<AnnouncementOverlay />);
@@ -198,7 +201,7 @@ describe('AnnouncementOverlay', () => {
         ...BASE_ANNOUNCEMENT,
         activationType: 'scheduled',
         scheduledActivationTime: '09:00',
-        isActive: false,
+        isActive: true,
       },
     ]);
     expect(screen.queryByText('Test Announcement')).not.toBeInTheDocument();
@@ -206,6 +209,7 @@ describe('AnnouncementOverlay', () => {
   });
 
   it('shows a scheduled announcement whose activation time has passed', () => {
+    vi.useFakeTimers();
     // Set clock to 10:00, activation at 09:00
     vi.setSystemTime(new Date('2024-01-01T10:00:00'));
     render(<AnnouncementOverlay />);
@@ -214,7 +218,7 @@ describe('AnnouncementOverlay', () => {
         ...BASE_ANNOUNCEMENT,
         activationType: 'scheduled',
         scheduledActivationTime: '09:00',
-        isActive: false,
+        isActive: true,
       },
     ]);
     expect(screen.getByText('Test Announcement')).toBeInTheDocument();

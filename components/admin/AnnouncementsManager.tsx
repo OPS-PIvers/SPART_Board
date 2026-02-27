@@ -187,9 +187,14 @@ const TextConfigEditor: React.FC<{
           min={10}
           max={72}
           value={(config.fontSize as number) ?? 18}
-          onChange={(e) =>
-            onChange({ ...config, fontSize: parseInt(e.target.value, 10) })
-          }
+          onChange={(e) => {
+            const parsed = parseInt(e.target.value, 10);
+            if (!Number.isFinite(parsed)) return;
+            onChange({
+              ...config,
+              fontSize: Math.min(72, Math.max(10, parsed)),
+            });
+          }}
           className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
         />
       </div>
@@ -873,15 +878,17 @@ export const AnnouncementsManager: React.FC = () => {
                       max={1920}
                       step={10}
                       value={form.widgetSize.w}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        if (!Number.isFinite(parsed)) return;
                         setForm((f) => ({
                           ...f,
                           widgetSize: {
                             ...f.widgetSize,
-                            w: parseInt(e.target.value, 10),
+                            w: Math.min(1920, Math.max(200, parsed)),
                           },
-                        }))
-                      }
+                        }));
+                      }}
                       className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
                     />
                   </div>
@@ -895,15 +902,17 @@ export const AnnouncementsManager: React.FC = () => {
                       max={1080}
                       step={10}
                       value={form.widgetSize.h}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        if (!Number.isFinite(parsed)) return;
                         setForm((f) => ({
                           ...f,
                           widgetSize: {
                             ...f.widgetSize,
-                            h: parseInt(e.target.value, 10),
+                            h: Math.min(1080, Math.max(100, parsed)),
                           },
-                        }))
-                      }
+                        }));
+                      }}
                       className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
                     />
                   </div>
@@ -1020,15 +1029,14 @@ export const AnnouncementsManager: React.FC = () => {
                         form.dismissalDurationUnit === 'minutes' ? 1440 : 86400
                       }
                       value={form.dismissalDurationSeconds}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        if (!Number.isFinite(parsed) || parsed < 1) return;
                         setForm((f) => ({
                           ...f,
-                          dismissalDurationSeconds: parseInt(
-                            e.target.value,
-                            10
-                          ),
-                        }))
-                      }
+                          dismissalDurationSeconds: parsed,
+                        }));
+                      }}
                       className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
                     />
                     <select

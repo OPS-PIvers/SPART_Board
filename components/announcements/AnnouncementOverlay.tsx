@@ -29,7 +29,7 @@ import React, {
   useMemo,
   Suspense,
 } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { X, Bell, Lock } from 'lucide-react';
 import { db, isAuthBypass } from '@/config/firebase';
 import { useAuth } from '@/context/useAuth';
@@ -79,11 +79,19 @@ function currentMinutes(): number {
   return now.getHours() * 60 + now.getMinutes();
 }
 
-/** Returns true when the announcement should currently be visible based on scheduled activation time. */
-function isScheduledTimeReached(a: Announcement): boolean {
-  if (a.activationType !== 'scheduled') return a.isActive;
+/**
+ * Returns true when the announcement should currently be visible.
+ * @param nowMins - current wall-clock time in minutes (hours * 60 + minutes),
+ *                  passed explicitly so callers can include it in useMemo deps.
+ */
+function isScheduledTimeReached(a: Announcement, nowMins: number): boolean {
+  // isActive acts as a master enable flag for all activation types.
+  if (!a.isActive) return false;
+  // Non-scheduled announcements are visible whenever they are active.
+  if (a.activationType !== 'scheduled') return true;
+  // Scheduled announcements become visible once the wall clock passes the configured activation time.
   if (!a.scheduledActivationTime) return false;
-  return currentMinutes() >= timeToMinutes(a.scheduledActivationTime);
+  return nowMins >= timeToMinutes(a.scheduledActivationTime);
 }
 
 /** Returns true when a scheduled-dismissal announcement has passed its dismissal time. */
@@ -325,15 +333,16 @@ export const AnnouncementOverlay: React.FC = () => {
     const rec = getDismissals();
     return new Set(Object.keys(rec));
   });
-  // Re-evaluate scheduled announcements periodically
-  const [tick, setTick] = useState(0);
+  // Current wall-clock time in minutes, updated every SCHEDULE_CHECK_INTERVAL_MS
+  // so scheduled activation/dismissal logic in useMemo re-runs automatically.
+  const [nowMinutes, setNowMinutes] = useState(currentMinutes);
 
-  // Subscribe to the announcements collection
+  // Subscribe to the announcements collection (only active announcements)
   useEffect(() => {
     if (!user && !isAuthBypass) return;
 
     const unsub = onSnapshot(
-      collection(db, 'announcements'),
+      query(collection(db, 'announcements'), where('isActive', '==', true)),
       (snap) => {
         const items: Announcement[] = [];
         snap.forEach((d) =>
@@ -348,10 +357,10 @@ export const AnnouncementOverlay: React.FC = () => {
     return unsub;
   }, [user]);
 
-  // Periodic tick for scheduled activation/dismissal checks
+  // Periodic clock update for scheduled activation/dismissal checks
   useEffect(() => {
     const interval = setInterval(
-      () => setTick((t) => t + 1),
+      () => setNowMinutes(currentMinutes()),
       SCHEDULE_CHECK_INTERVAL_MS
     );
     return () => clearInterval(interval);
@@ -367,41 +376,33 @@ export const AnnouncementOverlay: React.FC = () => {
   );
 
   // Determine which announcements are visible to this user.
-  // `tick` is included in the dependency array so scheduled activation/dismissal
-  // times are re-evaluated every SCHEDULE_CHECK_INTERVAL_MS without the anti-pattern
-  // of `void tick`.
+  // nowMinutes is the current wall-clock time (minutes since midnight) and
+  // is updated every SCHEDULE_CHECK_INTERVAL_MS so scheduled announcements
+  // appear/disappear without a full re-subscribe.
   const visible = useMemo(
     () =>
       announcements.filter((a) => {
         // Must pass scheduled/manual activation check
-        const activated = isScheduledTimeReached(a);
-        if (!activated) return false;
+        if (!isScheduledTimeReached(a, nowMinutes)) return false;
 
         // Must not have been dismissed by this user in this push epoch
         const epochKey = `${a.id}_${a.activatedAt}`;
         if (dismissed.has(epochKey) || isDismissed(a)) return false;
 
-        // Check building targeting (empty = all buildings)
+        // Check building targeting (empty targetBuildings = all users see it)
         if (a.targetBuildings.length > 0) {
-          const userBuildings =
-            selectedBuildings.length > 0 ? selectedBuildings : [];
-          // If user has no buildings set, they see all-building announcements (no specific targeting)
-          if (userBuildings.length === 0) {
-            // User has no building configured — only show untargeted announcements
-            return a.targetBuildings.length === 0;
-          }
-          // User has buildings — check for overlap
+          // User has no building configured — do not show targeted announcements
+          if (selectedBuildings.length === 0) return false;
+          // User has buildings — check for overlap with announcement targets
           const hasOverlap = a.targetBuildings.some((b) =>
-            userBuildings.includes(b)
+            selectedBuildings.includes(b)
           );
           if (!hasOverlap) return false;
         }
 
         return true;
       }),
-    // tick drives periodic re-evaluation of scheduled times
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [announcements, dismissed, selectedBuildings, tick]
+    [announcements, dismissed, selectedBuildings, nowMinutes]
   );
 
   if (visible.length === 0) return null;
