@@ -3,8 +3,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
-import { WidgetData, CalendarConfig } from '../../types';
-import { useDashboard } from '../../context/useDashboard';
+import { WidgetData, CalendarConfig } from '@/types';
+import { useDashboard } from '@/context/useDashboard';
 
 // Mock useDashboard
 const mockUpdateWidget = vi.fn();
@@ -12,7 +12,7 @@ const mockDashboardContext = {
   updateWidget: mockUpdateWidget,
 };
 
-vi.mock('../../context/useDashboard');
+vi.mock('@/context/useDashboard');
 
 describe('CalendarWidget', () => {
   beforeEach(() => {
