@@ -26,6 +26,7 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useMemo,
   Suspense,
 } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -168,6 +169,10 @@ const AnnouncementWindow: React.FC<{
   // Mount timestamp recorded inside the effect (avoids impure Date.now() in render)
   const mountedAt = useRef<number>(0);
 
+  // Stable primitives to avoid resetting countdown on unrelated Firestore updates
+  const announcementId = announcement.id;
+  const announcementActivatedAt = announcement.activatedAt;
+
   // Duration-based countdown: tick once per second via setInterval
   useEffect(() => {
     if (!isDuration) return;
@@ -178,14 +183,14 @@ const AnnouncementWindow: React.FC<{
       const remaining = total - elapsed;
       if (remaining <= 0) {
         clearInterval(interval);
-        onDismiss(announcement.id, announcement.activatedAt);
+        onDismiss(announcementId, announcementActivatedAt);
       } else {
         setSecondsLeft(remaining);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [announcement, isDuration, onDismiss, total]);
+  }, [announcementId, announcementActivatedAt, isDuration, onDismiss, total]);
 
   // Scheduled dismissal check
   useEffect(() => {
@@ -194,14 +199,14 @@ const AnnouncementWindow: React.FC<{
     const check = () => {
       if (isScheduledDismissalPast(announcement)) {
         setScheduledDismissed(true);
-        onDismiss(announcement.id, announcement.activatedAt);
+        onDismiss(announcementId, announcementActivatedAt);
       }
     };
 
     check();
     const interval = setInterval(check, SCHEDULE_CHECK_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [announcement, onDismiss]);
+  }, [announcement, announcementId, announcementActivatedAt, onDismiss]);
 
   if (scheduledDismissed) return null;
 
@@ -236,18 +241,23 @@ const AnnouncementWindow: React.FC<{
     ? 'calc(100% - 48px)'
     : announcement.widgetSize.h;
 
+  const headingId = `announcement-heading-${announcement.id}`;
+
   return (
     <div
       className={`rounded-2xl overflow-hidden shadow-2xl border border-white/20 flex flex-col ${
         isMaximized ? 'fixed inset-0 rounded-none' : ''
       }`}
       style={isMaximized ? { zIndex: 9990 } : containerStyle}
+      role="dialog"
+      aria-modal={isMaximized ? 'true' : undefined}
+      aria-labelledby={headingId}
     >
       {/* Header bar */}
       <div style={headerStyle}>
         <div className="flex items-center gap-2 text-white/90 min-w-0">
           <Bell className="w-4 h-4 shrink-0 text-yellow-400" />
-          <span className="text-sm font-semibold truncate">
+          <span id={headingId} className="text-sm font-semibold truncate">
             {announcement.name}
           </span>
         </div>
@@ -256,7 +266,11 @@ const AnnouncementWindow: React.FC<{
           {/* Duration countdown chip */}
           {announcement.dismissalType === 'duration' &&
             secondsLeft !== null && (
-              <span className="text-xs font-mono bg-white/10 text-white/80 px-2 py-0.5 rounded-full">
+              <span
+                className="text-xs font-mono bg-white/10 text-white/80 px-2 py-0.5 rounded-full"
+                aria-live="polite"
+                aria-label={`Closes in ${secondsLeft} seconds`}
+              >
                 {secondsLeft}s
               </span>
             )}
@@ -267,7 +281,7 @@ const AnnouncementWindow: React.FC<{
               title="Only an admin can close this announcement"
               className="flex items-center gap-1 text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded-full"
             >
-              <Lock className="w-3 h-3" />
+              <Lock className="w-3 h-3" aria-hidden="true" />
               Admin only
             </span>
           )}
@@ -278,10 +292,10 @@ const AnnouncementWindow: React.FC<{
               onClick={() =>
                 onDismiss(announcement.id, announcement.activatedAt)
               }
-              title="Dismiss announcement"
+              aria-label={`Dismiss announcement: ${announcement.name}`}
               className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white/80 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" aria-hidden="true" />
               Dismiss
             </button>
           )}
@@ -352,38 +366,43 @@ export const AnnouncementOverlay: React.FC = () => {
     []
   );
 
-  // Determine which announcements are visible to this user
-  const visible = announcements.filter((a) => {
-    // Must pass scheduled/manual activation check
-    const activated = isScheduledTimeReached(a);
-    if (!activated) return false;
+  // Determine which announcements are visible to this user.
+  // `tick` is included in the dependency array so scheduled activation/dismissal
+  // times are re-evaluated every SCHEDULE_CHECK_INTERVAL_MS without the anti-pattern
+  // of `void tick`.
+  const visible = useMemo(
+    () =>
+      announcements.filter((a) => {
+        // Must pass scheduled/manual activation check
+        const activated = isScheduledTimeReached(a);
+        if (!activated) return false;
 
-    // Must not have been dismissed by this user in this push epoch
-    const epochKey = `${a.id}_${a.activatedAt}`;
-    if (dismissed.has(epochKey) || isDismissed(a)) return false;
+        // Must not have been dismissed by this user in this push epoch
+        const epochKey = `${a.id}_${a.activatedAt}`;
+        if (dismissed.has(epochKey) || isDismissed(a)) return false;
 
-    // Check building targeting (empty = all buildings)
-    if (a.targetBuildings.length > 0) {
-      const userBuildings =
-        selectedBuildings.length > 0 ? selectedBuildings : [];
-      // If user has no buildings set, they see all-building announcements (no specific targeting)
-      if (userBuildings.length === 0) {
-        // User has no building configured — only show untargeted announcements
-        return a.targetBuildings.length === 0;
-      }
-      // User has buildings — check for overlap
-      const hasOverlap = a.targetBuildings.some((b) =>
-        userBuildings.includes(b)
-      );
-      if (!hasOverlap) return false;
-    }
+        // Check building targeting (empty = all buildings)
+        if (a.targetBuildings.length > 0) {
+          const userBuildings =
+            selectedBuildings.length > 0 ? selectedBuildings : [];
+          // If user has no buildings set, they see all-building announcements (no specific targeting)
+          if (userBuildings.length === 0) {
+            // User has no building configured — only show untargeted announcements
+            return a.targetBuildings.length === 0;
+          }
+          // User has buildings — check for overlap
+          const hasOverlap = a.targetBuildings.some((b) =>
+            userBuildings.includes(b)
+          );
+          if (!hasOverlap) return false;
+        }
 
-    return true;
-  });
-
-  // Re-run filtering on each tick (for scheduled activation)
-  // The tick dependency ensures `visible` is recomputed
-  void tick;
+        return true;
+      }),
+    // tick drives periodic re-evaluation of scheduled times
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [announcements, dismissed, selectedBuildings, tick]
+  );
 
   if (visible.length === 0) return null;
 

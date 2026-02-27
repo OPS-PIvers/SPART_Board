@@ -599,7 +599,7 @@ export const AnnouncementsManager: React.FC = () => {
           payload as Record<string, unknown>
         );
       } else {
-        const newId = `announcement-${now}-${Math.random().toString(36).slice(2, 7)}`;
+        const newId = `announcement-${crypto.randomUUID()}`;
         await setDoc(doc(db, 'announcements', newId), {
           id: newId,
           ...payload,
