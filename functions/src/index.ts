@@ -483,8 +483,7 @@ export const generateWithAI = functionsV1
       }
 
       console.log('AI Generation successful');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return JSON.parse(text);
+      return JSON.parse(text) as Record<string, unknown>;
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
 
@@ -518,8 +517,7 @@ export const fetchWeatherProxy = functionsV1
     }
 
     try {
-      const response = await axios.get(data.url);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      const response = await axios.get<unknown>(data.url);
       return response.data;
     } catch (error: unknown) {
       console.error('Weather Proxy Error:', error);
@@ -609,6 +607,11 @@ interface JulesError {
   };
 }
 
+// To avoid `any`, we can define a minimal interface for the expected client.
+interface TokenClient {
+  getAccessToken(): Promise<{ token?: string | null } | null | undefined>;
+}
+
 export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
   {
     timeoutSeconds: 300,
@@ -648,13 +651,11 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     const auth = new GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    const client = (await auth.getClient()) as any;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const accessToken = await client.getAccessToken();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (!accessToken.token) {
+    const client = await auth.getClient();
+    const accessToken = await (client as unknown as TokenClient).getAccessToken();
+
+    if (!accessToken?.token) {
       throw new functionsV2.https.HttpsError(
         'internal',
         'Failed to generate OAuth token.'
@@ -708,8 +709,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         },
         {
           headers: {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            Authorization: `Bearer ${accessToken.token}`,
+            Authorization: `Bearer ${accessToken?.token}`,
             'Content-Type': 'application/json',
           },
         }

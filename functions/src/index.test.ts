@@ -48,10 +48,6 @@ vi.mock('firebase-functions/v1', () => ({
 // Mock axios
 vi.mock('axios');
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // Import the function under test
 import {
   triggerJulesWidgetGeneration,
@@ -101,20 +97,25 @@ describe('triggerJulesWidgetGeneration', () => {
     };
 
     // Verify type casting if needed, but since we mocked onCall to return the handler, it is the handler.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
     // Verify axios call arguments
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     expect(mockPost).toHaveBeenCalledWith(
       JULES_API_SESSIONS_ENDPOINT,
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         sourceContext: expect.objectContaining({
           source: 'sources/github.com/OPS-PIvers/SPART_Board',
         }),
         automationMode: 'AUTO_CREATE_PR',
         title: 'Generate Widget: Test Widget',
       }),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         headers: expect.objectContaining({
           Authorization: 'Bearer mock-token',
           'Content-Type': 'application/json',
@@ -122,6 +123,7 @@ describe('triggerJulesWidgetGeneration', () => {
       })
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     expect(result).toEqual({
       success: true,
       message: expect.stringContaining('12345'),
