@@ -715,7 +715,8 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         }
       );
 
-      const sessionId = session.name?.split('/').pop() || session.id || 'unknown';
+      const sessionId =
+        session.name?.split('/').pop() || session.id || 'unknown';
       console.log(`Jules session created: ${sessionId}`);
 
       return {
