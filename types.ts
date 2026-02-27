@@ -389,6 +389,7 @@ export interface CalendarConfig {
   events: CalendarEvent[];
   isBuildingSyncEnabled?: boolean;
   lastSyncedBuildingId?: string;
+  daysVisible?: number;
 }
 
 export interface LunchMenuDay {

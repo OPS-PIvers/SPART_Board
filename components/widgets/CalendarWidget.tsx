@@ -169,8 +169,25 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const displayEvents = useMemo(() => {
     // Merge local and synced, then sort by date
     const combined = [...localEvents, ...syncedEvents];
-    return combined.sort((a, b) => a.date.localeCompare(b.date));
-  }, [localEvents, syncedEvents]);
+    const sorted = combined.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Filter by daysVisible if set
+    const daysVisible = config.daysVisible ?? 5;
+    const now = new Date();
+    const today = new Date(now.setHours(0, 0, 0, 0));
+    const futureLimit = new Date(today);
+    futureLimit.setDate(today.getDate() + daysVisible);
+
+    return sorted.filter((event) => {
+      // If it's an ISO date (YYYY-MM-DD), filter by range
+      if (event.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const eventDate = new Date(event.date + 'T00:00:00');
+        return eventDate >= today && eventDate < futureLimit;
+      }
+      // If it's a manual string (e.g. "Monday"), always show it
+      return true;
+    });
+  }, [localEvents, syncedEvents, config.daysVisible]);
 
   if (isBlocked) {
     return (
@@ -197,7 +214,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
       content={
         <div
           className="h-full w-full flex flex-col overflow-hidden"
-          style={{ padding: 'min(16px, 3.5cqmin)' }}
+          style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           {isLoadingSync && syncedEvents.length === 0 && (
             <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-blue-50 rounded-lg animate-pulse">
@@ -236,7 +253,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
 
           <div
             className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
-            style={{ gap: 'min(12px, 2.5cqmin)' }}
+            style={{ gap: 'min(10px, 2cqmin)' }}
           >
             {displayEvents.map((event, i: number) => (
               <div
@@ -302,17 +319,23 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as CalendarConfig;
   const events = config.events ?? [];
+  const daysVisible = config.daysVisible ?? 5;
+
+  const [newTitle, setNewTitle] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const addEvent = () => {
-    const title = prompt('Event title (e.g., Art, PE, Field Trip):');
-    const date = prompt('Day/Date (e.g., Monday, 10/12):');
-    if (title && date) {
+    if (newTitle && newDate) {
       updateWidget(widget.id, {
         config: {
           ...config,
-          events: [...events, { title, date }],
+          events: [...events, { title: newTitle, date: newDate }],
         } as CalendarConfig,
       });
+      setNewTitle('');
+      setNewDate('');
+      setIsAdding(false);
     }
   };
 
@@ -322,22 +345,56 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
         <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
           <Plus className="w-3 h-3" /> Quick Add
         </label>
-        <button
-          onClick={addEvent}
-          className="w-full py-3 bg-rose-600 text-white rounded-xl  text-xxs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:bg-rose-700 transition-colors"
-        >
-          <CalendarIcon className="w-4 h-4" /> Add Local Event
-        </button>
+        {isAdding ? (
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+            <input
+              type="text"
+              placeholder="Event title (e.g., Art, PE)"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+            <input
+              type="text"
+              placeholder="Day/Date (e.g., Monday, 2024-10-12)"
+              value={newDate}
+              onChange={(e) => setNewDate(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={addEvent}
+                disabled={!newTitle || !newDate}
+                className="flex-1 py-2 bg-rose-600 text-white rounded-lg text-xxs font-black uppercase tracking-widest disabled:opacity-50"
+              >
+                Add Event
+              </button>
+              <button
+                onClick={() => setIsAdding(false)}
+                className="px-3 py-2 bg-slate-200 text-slate-600 rounded-lg text-xxs font-black uppercase tracking-widest"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAdding(true)}
+            className="w-full py-3 bg-rose-600 text-white rounded-xl text-xxs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:bg-rose-700 transition-colors"
+          >
+            <CalendarIcon className="w-4 h-4" /> Add Local Event
+          </button>
+        )}
       </div>
 
       <hr className="border-slate-100" />
 
-      {/* Building Sync */}
+      {/* Building Sync & Display Days */}
       <div>
         <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Settings2 className="w-3 h-3" /> Building Integration
+          <Settings2 className="w-3 h-3" /> Display Options
         </label>
-        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-slate-700">
               Sync Building Schedule
@@ -354,10 +411,32 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
               }
             />
           </div>
-          <p className="text-xs text-slate-500">
-            Automatically show district events and Google Calendars for your
-            building.
-          </p>
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-slate-700">
+                Days to Display
+              </span>
+              <span className="text-xxs text-slate-500">
+                Show events for the next X days
+              </span>
+            </div>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={daysVisible}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    daysVisible: parseInt(e.target.value, 10),
+                  } as CalendarConfig,
+                })
+              }
+              className="w-16 px-2 py-1 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+          </div>
         </div>
       </div>
 

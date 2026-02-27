@@ -108,6 +108,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     config: {
       events: [],
       isBuildingSyncEnabled: true,
+      daysVisible: 5,
     },
   },
   lunchCount: {
