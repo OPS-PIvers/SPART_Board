@@ -12,7 +12,6 @@ export default mergeConfig(
         ...configDefaults.exclude,
         'tests/e2e/**',
         'functions/lib/**',
-        'functions/src/**',
       ],
     },
   })

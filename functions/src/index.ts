@@ -483,7 +483,8 @@ export const generateWithAI = functionsV1
       }
 
       console.log('AI Generation successful');
-      return JSON.parse(text) as Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return JSON.parse(text);
     } catch (error: unknown) {
       console.error('AI Generation Error Details:', error);
 
@@ -518,6 +519,7 @@ export const fetchWeatherProxy = functionsV1
 
     try {
       const response = await axios.get(data.url);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return response.data;
     } catch (error: unknown) {
       console.error('Weather Proxy Error:', error);
@@ -596,6 +598,17 @@ interface JulesData {
   description: string;
 }
 
+interface JulesSessionResponse {
+  name?: string;
+  id?: string;
+}
+
+interface JulesError {
+  error?: {
+    message?: string;
+  };
+}
+
 export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
   {
     timeoutSeconds: 300,
@@ -631,12 +644,16 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     }
 
     // Generate OAuth 2.0 Access Token
+
     const auth = new GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
     });
-    const client = await auth.getClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    const client = (await auth.getClient()) as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const accessToken = await client.getAccessToken();
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!accessToken.token) {
       throw new functionsV2.https.HttpsError(
         'internal',
@@ -676,7 +693,7 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
     try {
       console.log('Sending request to Jules API...');
       // Use the named constant for the endpoint
-      const { data: session } = await axios.post(
+      const { data: session } = await axios.post<JulesSessionResponse>(
         JULES_API_SESSIONS_ENDPOINT,
         {
           prompt: prompt,
@@ -691,13 +708,14 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         },
         {
           headers: {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             Authorization: `Bearer ${accessToken.token}`,
             'Content-Type': 'application/json',
           },
         }
       );
 
-      const sessionId = session.name?.split('/').pop() || session.id;
+      const sessionId = session.name?.split('/').pop() || session.id || 'unknown';
       console.log(`Jules session created: ${sessionId}`);
 
       return {
@@ -715,7 +733,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       if (axios.isAxiosError(error)) {
         console.error('Jules API Error Response Data:', error.response?.data);
         console.error('Jules API Error Status:', error.response?.status);
-        errorMessage = error.response?.data?.error?.message || error.message;
+
+        const data = error.response?.data as JulesError | undefined;
+        errorMessage = data?.error?.message || error.message;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }

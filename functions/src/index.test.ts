@@ -48,11 +48,26 @@ vi.mock('firebase-functions/v1', () => ({
 // Mock axios
 vi.mock('axios');
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Import the function under test
 import {
   triggerJulesWidgetGeneration,
   JULES_API_SESSIONS_ENDPOINT,
 } from './index';
+
+// Mock google-auth-library
+vi.mock('google-auth-library', () => {
+  return {
+    GoogleAuth: class {
+      getClient = vi.fn().mockResolvedValue({
+        getAccessToken: vi.fn().mockResolvedValue({ token: 'mock-token' }),
+      });
+    },
+  };
+});
 
 describe('triggerJulesWidgetGeneration', () => {
   beforeEach(() => {
@@ -62,12 +77,15 @@ describe('triggerJulesWidgetGeneration', () => {
 
   it('should call Jules API with correct endpoint', async () => {
     // Mock Admin Check using the granular mock
-    getMock.mockResolvedValue({ exists: true });
+    getMock.mockResolvedValue({ exists: true }); // Admin check passes
 
     // Mock Axios response using vi.mocked for type safety
-    vi.mocked(axios.post).mockResolvedValue({
+    // Use proper casting to unknown then to specific type to avoid linter errors
+    const mockPost = vi.mocked(axios.post);
+    mockPost.mockResolvedValue({
       data: {
         name: 'sessions/12345',
+        id: '12345',
       },
     });
 
@@ -83,20 +101,23 @@ describe('triggerJulesWidgetGeneration', () => {
     };
 
     // Verify type casting if needed, but since we mocked onCall to return the handler, it is the handler.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
-    expect(vi.mocked(axios.post)).toHaveBeenCalledWith(
+    // Verify axios call arguments
+    expect(mockPost).toHaveBeenCalledWith(
       JULES_API_SESSIONS_ENDPOINT,
       expect.objectContaining({
         prompt: expect.stringContaining('Test Widget'),
         sourceContext: expect.objectContaining({
-          source: 'sources/github/OPS-PIvers/SPART_Board',
+          source: 'sources/github.com/OPS-PIvers/SPART_Board',
         }),
+        automationMode: 'AUTO_CREATE_PR',
+        title: 'Generate Widget: Test Widget',
       }),
       expect.objectContaining({
         headers: expect.objectContaining({
-          'X-Goog-Api-Key': 'test-api-key',
+          Authorization: 'Bearer mock-token',
+          'Content-Type': 'application/json',
         }),
       })
     );
