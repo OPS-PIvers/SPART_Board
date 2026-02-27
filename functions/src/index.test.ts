@@ -101,11 +101,10 @@ describe('triggerJulesWidgetGeneration', () => {
     const result = await (triggerJulesWidgetGeneration as any)(request);
 
     // Verify axios call arguments
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     expect(mockPost).toHaveBeenCalledWith(
       JULES_API_SESSIONS_ENDPOINT,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         prompt: expect.stringContaining('Test Widget'),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         sourceContext: expect.objectContaining({
@@ -114,7 +113,6 @@ describe('triggerJulesWidgetGeneration', () => {
         automationMode: 'AUTO_CREATE_PR',
         title: 'Generate Widget: Test Widget',
       }),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expect.objectContaining({
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         headers: expect.objectContaining({
@@ -124,9 +122,9 @@ describe('triggerJulesWidgetGeneration', () => {
       })
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     expect(result).toEqual({
       success: true,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       message: expect.stringContaining('12345'),
       consoleUrl: 'https://jules.google.com/session/12345',
     });
