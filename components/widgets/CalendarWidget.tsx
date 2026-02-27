@@ -1,17 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/useDashboard';
-import { WidgetData, CalendarConfig, CalendarGlobalConfig } from '../../types';
+import {
+  WidgetData,
+  CalendarConfig,
+  CalendarGlobalConfig,
+  CalendarEvent,
+} from '../../types';
 import {
   Calendar as CalendarIcon,
   Plus,
   Trash2,
   Settings2,
   Ban,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { WidgetLayout } from './WidgetLayout';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useAuth } from '@/context/useAuth';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { Toggle } from '../common/Toggle';
 
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
@@ -20,53 +28,121 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
+  const { calendarService, isConnected } = useGoogleCalendar();
   const config = widget.config as CalendarConfig;
-  const events = useMemo(() => config.events ?? [], [config.events]);
+  const localEvents = useMemo(() => config.events ?? [], [config.events]);
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
 
   const [globalConfig, setGlobalConfig] = useState<CalendarGlobalConfig | null>(
     null
   );
+  const [syncedEvents, setSyncedEvents] = useState<CalendarEvent[]>([]);
+  const [isLoadingSync, setIsLoadingSync] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
+  // 1. Subscribe to Global Admin Config
   useEffect(() => {
     return subscribeToPermission('calendar', (perm) => {
       if (perm?.config) {
         const gConfig = perm.config as unknown as CalendarGlobalConfig;
         setGlobalConfig(gConfig);
-
-        // Auto-populate logic:
-        // 1. Must have sync enabled
-        // 2. Local events must be empty
-        // 3. User must have a building selected
-        // 4. We haven't synced this building yet
-        if (
-          isBuildingSyncEnabled &&
-          events.length === 0 &&
-          selectedBuildings?.[0] &&
-          config.lastSyncedBuildingId !== selectedBuildings[0]
-        ) {
-          const buildingId = selectedBuildings[0];
-          const defaults = gConfig.buildingDefaults?.[buildingId];
-          if (defaults && defaults.events?.length > 0) {
-            updateWidget(widget.id, {
-              config: {
-                ...config,
-                events: defaults.events,
-                lastSyncedBuildingId: buildingId,
-              } as CalendarConfig,
-            });
-          }
-        }
       }
     });
+  }, [subscribeToPermission]);
+
+  // 2. Fetch Google Calendar Events
+  useEffect(() => {
+    if (
+      !isBuildingSyncEnabled ||
+      !globalConfig ||
+      !isConnected ||
+      !calendarService
+    ) {
+      setSyncedEvents([]);
+      return;
+    }
+
+    const buildingId = selectedBuildings?.[0];
+    if (!buildingId) return;
+
+    const buildingDefaults = globalConfig.buildingDefaults?.[buildingId];
+    const calendarIds = buildingDefaults?.googleCalendarIds ?? [];
+
+    if (calendarIds.length === 0) {
+      setSyncedEvents([]);
+      return;
+    }
+
+    const fetchAll = async () => {
+      setIsLoadingSync(true);
+      setSyncError(null);
+      try {
+        const now = new Date();
+        const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        const timeMax = new Date(now.setDate(now.getDate() + 30)).toISOString();
+
+        const allPromises = calendarIds.map((id) =>
+          calendarService.getEvents(id, timeMin, timeMax)
+        );
+        const results = await Promise.all(allPromises);
+        const merged = results
+          .flat()
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        setSyncedEvents(merged);
+      } catch (err) {
+        console.error('Failed to sync Google Calendars:', err);
+        setSyncError('Failed to sync Google Calendar.');
+      } finally {
+        setIsLoadingSync(false);
+      }
+    };
+
+    void fetchAll();
   }, [
-    subscribeToPermission,
     isBuildingSyncEnabled,
-    events.length,
+    globalConfig,
+    isConnected,
+    calendarService,
+    selectedBuildings,
+  ]);
+
+  // 3. Auto-populate Building Defaults (One-time check per building)
+  useEffect(() => {
+    if (!globalConfig || !isBuildingSyncEnabled || !selectedBuildings?.[0])
+      return;
+
+    const buildingId = selectedBuildings[0];
+    // Only trigger if we haven't synced this building's static defaults to this widget instance yet
+    if (config.lastSyncedBuildingId !== buildingId) {
+      const defaults = globalConfig.buildingDefaults?.[buildingId];
+      if (defaults && defaults.events?.length > 0) {
+        // Merge with existing events to prevent data loss, but mark as synced
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            events: [...localEvents, ...defaults.events],
+            lastSyncedBuildingId: buildingId,
+          } as CalendarConfig,
+        });
+      } else {
+        // Just mark as "checked" for this building even if no defaults found
+        updateWidget(widget.id, {
+          config: {
+            ...config,
+            lastSyncedBuildingId: buildingId,
+          } as CalendarConfig,
+        });
+      }
+    }
+  }, [
+    globalConfig,
+    isBuildingSyncEnabled,
     selectedBuildings,
     config,
     widget.id,
     updateWidget,
+    localEvents,
   ]);
 
   // Blocked Date logic
@@ -75,6 +151,13 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     const today = new Date().toISOString().split('T')[0];
     return globalConfig?.blockedDates?.includes(today);
   }, [isBuildingSyncEnabled, globalConfig]);
+
+  // Combined events for display (Local + Building Synced)
+  const displayEvents = useMemo(() => {
+    // Merge local and synced, then sort by date
+    const combined = [...localEvents, ...syncedEvents];
+    return combined.sort((a, b) => a.date.localeCompare(b.date));
+  }, [localEvents, syncedEvents]);
 
   if (isBlocked) {
     return (
@@ -103,13 +186,31 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
           className="h-full w-full flex flex-col overflow-hidden"
           style={{ padding: 'min(16px, 3.5cqmin)' }}
         >
+          {isLoadingSync && syncedEvents.length === 0 && (
+            <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-blue-50 rounded-lg animate-pulse">
+              <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+              <span className="text-xxs font-bold text-blue-600 uppercase tracking-wider">
+                Syncing Calendar...
+              </span>
+            </div>
+          )}
+
+          {syncError && (
+            <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-amber-50 rounded-lg border border-amber-100 text-amber-600">
+              <AlertCircle className="w-3 h-3" />
+              <span className="text-xxs font-bold uppercase tracking-wider">
+                {syncError}
+              </span>
+            </div>
+          )}
+
           <div
             className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
             style={{ gap: 'min(12px, 2.5cqmin)' }}
           >
-            {events.map((event, i: number) => (
+            {displayEvents.map((event, i: number) => (
               <div
-                key={i}
+                key={`${event.date}-${event.title}-${i}`}
                 className="group relative flex bg-white rounded-2xl border border-slate-200 transition-all hover:bg-slate-50 shadow-sm"
                 style={{
                   gap: 'min(16px, 3.5cqmin)',
@@ -150,11 +251,11 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 </div>
               </div>
             ))}
-            {events.length === 0 && (
+            {displayEvents.length === 0 && !isLoadingSync && (
               <ScaledEmptyState
                 icon={CalendarIcon}
                 title="No Events"
-                subtitle="Flip to add calendar events."
+                subtitle="Flip to add local events or check building sync."
                 className="opacity-40"
               />
             )}
@@ -224,7 +325,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
             />
           </div>
           <p className="text-xs text-slate-500">
-            Automatically show A/B schedule and district events for your
+            Automatically show district events and Google Calendars for your
             building.
           </p>
         </div>
@@ -234,7 +335,7 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div>
         <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block">
-          Current Events
+          Local Events
         </label>
         <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
           {events.map((event, i: number) => (
