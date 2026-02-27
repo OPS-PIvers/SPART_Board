@@ -12,6 +12,10 @@ export interface GoogleCalendarEvent {
   };
 }
 
+export interface CalendarApiError extends Error {
+  status?: number;
+}
+
 export class GoogleCalendarService {
   private accessToken: string;
 
@@ -71,7 +75,11 @@ export class GoogleCalendarService {
         `Failed to fetch calendar ${calendarId}:`,
         response.statusText
       );
-      return [];
+      const error = new Error(
+        `Calendar API Error: ${response.statusText}`
+      ) as CalendarApiError;
+      error.status = response.status;
+      throw error;
     }
 
     const data = (await response.json()) as { items?: GoogleCalendarEvent[] };

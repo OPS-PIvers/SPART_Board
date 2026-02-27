@@ -43,17 +43,19 @@ describe('GoogleCalendarService', () => {
     expect(events[1]).toEqual({ title: 'Timed Event', date: '2026-03-02' });
   });
 
-  it('handles API errors gracefully', async () => {
+  it('handles API errors gracefully by throwing', async () => {
     (global.fetch as Mock).mockResolvedValue({
       ok: false,
+      status: 404,
       statusText: 'Not Found',
     });
 
-    const events = await service.getEvents(
-      'invalid-cal',
-      '2026-03-01T00:00:00Z',
-      '2026-03-31T00:00:00Z'
-    );
-    expect(events).toEqual([]);
+    await expect(
+      service.getEvents(
+        'invalid-cal',
+        '2026-03-01T00:00:00Z',
+        '2026-03-31T00:00:00Z'
+      )
+    ).rejects.toThrow('Calendar API Error: Not Found');
   });
 });

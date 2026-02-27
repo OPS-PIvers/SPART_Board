@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -14,6 +14,7 @@ import {
   Ban,
   Loader2,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { WidgetLayout } from './WidgetLayout';
@@ -21,12 +22,13 @@ import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useAuth } from '@/context/useAuth';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { Toggle } from '../common/Toggle';
+import { CalendarApiError } from '@/utils/googleCalendarService';
 
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget } = useDashboard();
-  const { selectedBuildings } = useAuth();
+  const { selectedBuildings, signInWithGoogle } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
   const { calendarService, isConnected } = useGoogleCalendar();
   const config = widget.config as CalendarConfig;
@@ -39,6 +41,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const [syncedEvents, setSyncedEvents] = useState<CalendarEvent[]>([]);
   const [isLoadingSync, setIsLoadingSync] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
 
   // 1. Subscribe to Global Admin Config
   useEffect(() => {
@@ -51,7 +54,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   }, [subscribeToPermission]);
 
   // 2. Fetch Google Calendar Events
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     if (
       !isBuildingSyncEnabled ||
       !globalConfig ||
@@ -73,32 +76,38 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
       return;
     }
 
-    const fetchAll = async () => {
-      setIsLoadingSync(true);
-      setSyncError(null);
-      try {
-        const now = new Date();
-        const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-        const timeMax = new Date(now.setDate(now.getDate() + 30)).toISOString();
+    setIsLoadingSync(true);
+    setSyncError(null);
+    setNeedsReauth(false);
+    try {
+      const now = new Date();
+      const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      const timeMax = new Date(now.setDate(now.getDate() + 30)).toISOString();
 
-        const allPromises = calendarIds.map((id) =>
-          calendarService.getEvents(id, timeMin, timeMax)
-        );
-        const results = await Promise.all(allPromises);
-        const merged = results
-          .flat()
-          .sort((a, b) => a.date.localeCompare(b.date));
+      const allPromises = calendarIds.map((id) =>
+        calendarService.getEvents(id, timeMin, timeMax)
+      );
+      const results = await Promise.all(allPromises);
+      const merged = results
+        .flat()
+        .sort((a, b) => a.date.localeCompare(b.date));
 
-        setSyncedEvents(merged);
-      } catch (err) {
-        console.error('Failed to sync Google Calendars:', err);
+      setSyncedEvents(merged);
+    } catch (err) {
+      console.error('Failed to sync Google Calendars:', err);
+      const is403 =
+        (err as CalendarApiError)?.status === 403 ||
+        (err as Error)?.message?.includes('403');
+
+      if (is403) {
+        setSyncError('Permission denied (403).');
+        setNeedsReauth(true);
+      } else {
         setSyncError('Failed to sync Google Calendar.');
-      } finally {
-        setIsLoadingSync(false);
       }
-    };
-
-    void fetchAll();
+    } finally {
+      setIsLoadingSync(false);
+    }
   }, [
     isBuildingSyncEnabled,
     globalConfig,
@@ -106,6 +115,10 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     calendarService,
     selectedBuildings,
   ]);
+
+  useEffect(() => {
+    void fetchAll();
+  }, [fetchAll]);
 
   // 3. Auto-populate Building Defaults (One-time check per building)
   useEffect(() => {
@@ -196,11 +209,28 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
           )}
 
           {syncError && (
-            <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-amber-50 rounded-lg border border-amber-100 text-amber-600">
-              <AlertCircle className="w-3 h-3" />
-              <span className="text-xxs font-bold uppercase tracking-wider">
-                {syncError}
-              </span>
+            <div className="flex items-center justify-between gap-2 mb-3 px-2 py-1.5 bg-amber-50 rounded-lg border border-amber-100 text-amber-600">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="text-xxs font-black uppercase tracking-wider truncate">
+                  {syncError}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  if (needsReauth) {
+                    void signInWithGoogle();
+                  } else {
+                    void fetchAll();
+                  }
+                }}
+                className="p-1 hover:bg-amber-100 rounded transition-colors shrink-0"
+                title={needsReauth ? 'Sign in for permission' : 'Retry Sync'}
+              >
+                <RefreshCw
+                  className={`w-3 h-3 ${isLoadingSync ? 'animate-spin' : ''}`}
+                />
+              </button>
             </div>
           )}
 
