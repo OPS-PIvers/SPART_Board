@@ -15,6 +15,9 @@ import {
   TimeToolGlobalConfig,
   ChecklistGlobalConfig,
   SoundGlobalConfig,
+  NoteGlobalConfig,
+  TrafficLightGlobalConfig,
+  RandomGlobalConfig,
 } from '../../types';
 import {
   Settings,
@@ -32,6 +35,9 @@ import { ClockConfigurationPanel } from './ClockConfigurationPanel';
 import { TimeToolConfigurationPanel } from './TimeToolConfigurationPanel';
 import { ChecklistConfigurationPanel } from './ChecklistConfigurationPanel';
 import { SoundConfigurationPanel } from './SoundConfigurationPanel';
+import { NoteConfigurationPanel } from './NoteConfigurationPanel';
+import { TrafficLightConfigurationPanel } from './TrafficLightConfigurationPanel';
+import { RandomConfigurationPanel } from './RandomConfigurationPanel';
 import { Toggle } from '../common/Toggle';
 
 // Helper type guard
@@ -792,6 +798,57 @@ export const FeatureConfigurationPanel: React.FC<
         </div>
       )}
 
+      {tool.type === 'text' && (
+        <div className="space-y-4">
+          <NoteConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as NoteGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {tool.type === 'traffic' && (
+        <div className="space-y-4">
+          <TrafficLightConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as TrafficLightGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {tool.type === 'random' && (
+        <div className="space-y-4">
+          <RandomConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as RandomGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
       {![
         'lunchCount',
         'weather',
@@ -805,6 +862,9 @@ export const FeatureConfigurationPanel: React.FC<
         'time-tool',
         'checklist',
         'sound',
+        'text',
+        'traffic',
+        'random',
       ].includes(tool.type) && (
         <p className="text-xs text-slate-500 italic">
           No additional configuration available for this widget.

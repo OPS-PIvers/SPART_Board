@@ -400,6 +400,39 @@ export interface SoundGlobalConfig {
   buildingDefaults: Record<string, BuildingSoundDefaults>;
 }
 
+// --- Note (text) Global Config ---
+export interface BuildingNoteDefaults {
+  buildingId: string;
+  fontSize?: number;
+  bgColor?: string;
+}
+
+export interface NoteGlobalConfig {
+  buildingDefaults: Record<string, BuildingNoteDefaults>;
+}
+
+// --- Traffic Light Global Config ---
+export interface BuildingTrafficLightDefaults {
+  buildingId: string;
+  active?: 'red' | 'yellow' | 'green' | null;
+}
+
+export interface TrafficLightGlobalConfig {
+  buildingDefaults: Record<string, BuildingTrafficLightDefaults>;
+}
+
+// --- Random Global Config ---
+export interface BuildingRandomDefaults {
+  buildingId: string;
+  visualStyle?: 'flash' | 'slots' | 'wheel';
+  soundEnabled?: boolean;
+  eliminationMode?: boolean;
+}
+
+export interface RandomGlobalConfig {
+  buildingDefaults: Record<string, BuildingRandomDefaults>;
+}
+
 export interface CalendarGlobalEvent {
   id: string;
   date: string; // ISO Date string (YYYY-MM-DD)
