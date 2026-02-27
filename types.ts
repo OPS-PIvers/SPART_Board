@@ -355,6 +355,51 @@ export interface ScheduleGlobalConfig {
   buildingDefaults: Record<string, BuildingScheduleDefaults>;
 }
 
+// --- Clock Global Config ---
+export interface BuildingClockDefaults {
+  buildingId: string;
+  format24?: boolean;
+  fontFamily?: string;
+  themeColor?: string;
+}
+
+export interface ClockGlobalConfig {
+  buildingDefaults: Record<string, BuildingClockDefaults>;
+}
+
+// --- TimeTool (Timer/Stopwatch) Global Config ---
+export interface BuildingTimeToolDefaults {
+  buildingId: string;
+  duration?: number; // in seconds
+  timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+}
+
+export interface TimeToolGlobalConfig {
+  buildingDefaults: Record<string, BuildingTimeToolDefaults>;
+}
+
+// --- Checklist Global Config ---
+export interface BuildingChecklistDefaults {
+  buildingId: string;
+  items?: string[]; // Default item labels pre-populated on widget creation
+  scaleMultiplier?: number;
+}
+
+export interface ChecklistGlobalConfig {
+  buildingDefaults: Record<string, BuildingChecklistDefaults>;
+}
+
+// --- Sound Global Config ---
+export interface BuildingSoundDefaults {
+  buildingId: string;
+  visual?: 'thermometer' | 'speedometer' | 'line' | 'balls';
+  sensitivity?: number;
+}
+
+export interface SoundGlobalConfig {
+  buildingDefaults: Record<string, BuildingSoundDefaults>;
+}
+
 export interface CalendarGlobalEvent {
   id: string;
   date: string; // ISO Date string (YYYY-MM-DD)

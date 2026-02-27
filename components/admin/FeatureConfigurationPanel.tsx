@@ -11,6 +11,10 @@ import {
   ExpectationsGlobalConfig,
   ToolMetadata,
   ScheduleGlobalConfig,
+  ClockGlobalConfig,
+  TimeToolGlobalConfig,
+  ChecklistGlobalConfig,
+  SoundGlobalConfig,
 } from '../../types';
 import {
   Settings,
@@ -24,6 +28,10 @@ import {
 import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 import { ExpectationsConfigurationPanel } from './ExpectationsConfigurationPanel';
 import { ScheduleConfigurationPanel } from './ScheduleConfigurationPanel';
+import { ClockConfigurationPanel } from './ClockConfigurationPanel';
+import { TimeToolConfigurationPanel } from './TimeToolConfigurationPanel';
+import { ChecklistConfigurationPanel } from './ChecklistConfigurationPanel';
+import { SoundConfigurationPanel } from './SoundConfigurationPanel';
 import { Toggle } from '../common/Toggle';
 
 // Helper type guard
@@ -716,6 +724,74 @@ export const FeatureConfigurationPanel: React.FC<
         </div>
       )}
 
+      {tool.type === 'clock' && (
+        <div className="space-y-4">
+          <ClockConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as ClockGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {tool.type === 'time-tool' && (
+        <div className="space-y-4">
+          <TimeToolConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as TimeToolGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {tool.type === 'checklist' && (
+        <div className="space-y-4">
+          <ChecklistConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as ChecklistGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {tool.type === 'sound' && (
+        <div className="space-y-4">
+          <SoundConfigurationPanel
+            config={
+              (permission.config ?? {
+                buildingDefaults: {},
+              }) as unknown as SoundGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
       {![
         'lunchCount',
         'weather',
@@ -725,6 +801,10 @@ export const FeatureConfigurationPanel: React.FC<
         'stickers',
         'expectations',
         'schedule',
+        'clock',
+        'time-tool',
+        'checklist',
+        'sound',
       ].includes(tool.type) && (
         <p className="text-xs text-slate-500 italic">
           No additional configuration available for this widget.
