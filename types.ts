@@ -346,8 +346,37 @@ export interface WebcamGlobalConfig {
   ocrMode?: 'standard' | 'gemini';
 }
 
+export interface BuildingScheduleDefaults {
+  buildingId: string;
+  items: ScheduleItem[];
+}
+
+export interface ScheduleGlobalConfig {
+  buildingDefaults: Record<string, BuildingScheduleDefaults>;
+}
+
+export interface CalendarGlobalEvent {
+  id: string;
+  date: string; // ISO Date string (YYYY-MM-DD)
+  title: string;
+}
+
+export interface BuildingCalendarDefaults {
+  buildingId: string;
+  events: CalendarEvent[];
+  googleCalendarIds?: string[];
+}
+
+export interface CalendarGlobalConfig {
+  blockedDates: string[]; // Array of ISO Date strings (YYYY-MM-DD)
+  buildingDefaults: Record<string, BuildingCalendarDefaults>;
+}
+
 export interface ScheduleConfig {
   items: ScheduleItem[];
+  localEvents?: CalendarEvent[];
+  isBuildingSyncEnabled?: boolean;
+  lastSyncedBuildingId?: string;
   fontFamily?: string;
   autoProgress?: boolean;
   /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
@@ -358,6 +387,8 @@ export interface ScheduleConfig {
 
 export interface CalendarConfig {
   events: CalendarEvent[];
+  isBuildingSyncEnabled?: boolean;
+  lastSyncedBuildingId?: string;
 }
 
 export interface LunchMenuDay {

@@ -57,7 +57,7 @@ const ProgressRing: React.FC<{
         cy="110"
       />
       <circle
-        className="transition-all duration-100 ease-linear"
+        className="transition-colors duration-300 ease-linear"
         stroke={ringColor}
         strokeWidth="12"
         strokeLinecap="round"

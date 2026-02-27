@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Settings,
   X,
-  ArrowLeft,
   Shield,
   Image as ImageIcon,
   Zap,
@@ -239,17 +238,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ onClose }) => {
               <AnnouncementsManager />
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-slate-200 p-4 bg-white">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </button>
         </div>
       </div>
     </div>
