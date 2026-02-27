@@ -75,11 +75,11 @@ export class GoogleCalendarService {
     }
 
     const data = (await response.json()) as { items?: GoogleCalendarEvent[] };
-    const items = data.items || [];
+    const items = data.items ?? [];
 
     return items.map((item) => {
       // Use date for all-day events, otherwise use dateTime
-      const startValue = item.start.date || item.start.dateTime || '';
+      const startValue = item.start.date ?? item.start.dateTime ?? '';
       // Format to YYYY-MM-DD for consistency
       const dateOnly = startValue.split('T')[0];
 
