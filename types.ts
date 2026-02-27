@@ -346,8 +346,28 @@ export interface WebcamGlobalConfig {
   ocrMode?: 'standard' | 'gemini';
 }
 
+export interface ScheduleGlobalEvent {
+  id: string;
+  date: string; // ISO Date string (YYYY-MM-DD)
+  title: string;
+}
+
+export interface BuildingScheduleDefaults {
+  buildingId: string;
+  items: ScheduleItem[];
+  googleCalendarIds?: string[];
+}
+
+export interface ScheduleGlobalConfig {
+  blockedDates: string[]; // Array of ISO Date strings (YYYY-MM-DD)
+  buildingDefaults: Record<string, BuildingScheduleDefaults>;
+}
+
 export interface ScheduleConfig {
   items: ScheduleItem[];
+  localEvents?: CalendarEvent[];
+  isBuildingSyncEnabled?: boolean;
+  lastSyncedBuildingId?: string;
   fontFamily?: string;
   autoProgress?: boolean;
   /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */

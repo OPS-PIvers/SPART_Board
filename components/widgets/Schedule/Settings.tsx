@@ -5,6 +5,7 @@ import {
   ScheduleConfig,
   ScheduleItem,
   WidgetType,
+  CalendarEvent,
 } from '../../../types';
 import {
   Type,
@@ -18,6 +19,8 @@ import {
   GripVertical,
   Timer,
   Palette,
+  Calendar,
+  Settings2,
 } from 'lucide-react';
 import { Toggle } from '../../common/Toggle';
 import { Button } from '../../common/Button';
@@ -54,9 +57,17 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   const { updateWidget } = useDashboard();
   const config = widget.config as ScheduleConfig;
   const items = config.items ?? [];
+  const localEvents = config.localEvents ?? [];
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [tempItem, setTempItem] = useState<ScheduleItem | null>(null);
+
+  // For Local Events
+  const [isAddingEvent, setIsAddingEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState<CalendarEvent>({
+    date: new Date().toISOString().split('T')[0],
+    title: '',
+  });
 
   const handleStartEdit = (index: number) => {
     setEditingIndex(index);
@@ -500,6 +511,151 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
           <p className="text-xs text-slate-500">
             Automatically check off items when their time passes.
           </p>
+        </div>
+      </div>
+
+      <hr className="border-slate-100" />
+
+      {/* Building Sync */}
+      <div>
+        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <Settings2 className="w-3 h-3" /> Building Integration
+        </label>
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-700">
+              Sync Building Schedule
+            </span>
+            <Toggle
+              checked={config.isBuildingSyncEnabled ?? true}
+              onChange={(checked) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    isBuildingSyncEnabled: checked,
+                  } as ScheduleConfig,
+                })
+              }
+            />
+          </div>
+          <p className="text-xs text-slate-500">
+            Automatically show A/B schedule and district events for your
+            building.
+          </p>
+        </div>
+      </div>
+
+      <hr className="border-slate-100" />
+
+      {/* Local Events (Upcoming Dates) */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
+            <Calendar className="w-3 h-3" /> Upcoming Events
+          </label>
+          <button
+            onClick={() => setIsAddingEvent(true)}
+            className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <Plus className="w-3 h-3" /> Add Event
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {isAddingEvent && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl space-y-3 animate-in zoom-in-95">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={newEvent.date}
+                  onChange={(e) =>
+                    setNewEvent({ ...newEvent, date: e.target.value })
+                  }
+                  className="p-2 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Event Title"
+                  value={newEvent.title}
+                  onChange={(e) =>
+                    setNewEvent({ ...newEvent, title: e.target.value })
+                  }
+                  className="p-2 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAddingEvent(false)}
+                  className="flex-1 py-1.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (!newEvent.title) return;
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        localEvents: [...localEvents, newEvent],
+                      } as ScheduleConfig,
+                    });
+                    setNewEvent({
+                      date: new Date().toISOString().split('T')[0],
+                      title: '',
+                    });
+                    setIsAddingEvent(false);
+                  }}
+                  className="flex-1 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+
+          {localEvents.map((event, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm group"
+            >
+              <div className="min-w-0">
+                <div className="text-xxs font-black text-blue-500 uppercase tracking-wider">
+                  {new Date(event.date + 'T00:00:00').toLocaleDateString(
+                    undefined,
+                    {
+                      month: 'short',
+                      day: 'numeric',
+                      weekday: 'short',
+                    }
+                  )}
+                </div>
+                <div className="text-sm font-bold text-slate-700 truncate">
+                  {event.title}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const nextEvents = [...localEvents];
+                  nextEvents.splice(idx, 1);
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      localEvents: nextEvents,
+                    } as ScheduleConfig,
+                  });
+                }}
+                className="p-1.5 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+
+          {localEvents.length === 0 && !isAddingEvent && (
+            <div className="text-center py-6 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xxs italic">
+              No local events added.
+            </div>
+          )}
         </div>
       </div>
     </div>

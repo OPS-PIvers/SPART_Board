@@ -9,6 +9,7 @@ import {
   WeatherTemperatureRange,
   CatalystGlobalConfig,
   ExpectationsGlobalConfig,
+  ScheduleGlobalConfig,
   ToolMetadata,
 } from '../../types';
 import {
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { CatalystPermissionEditor } from './CatalystPermissionEditor';
 import { ExpectationsConfigurationPanel } from './ExpectationsConfigurationPanel';
+import { ScheduleConfigurationPanel } from './ScheduleConfigurationPanel';
 import { Toggle } from '../common/Toggle';
 
 // Helper type guard
@@ -697,6 +699,24 @@ export const FeatureConfigurationPanel: React.FC<
         </div>
       )}
 
+      {tool.type === 'schedule' && (
+        <div className="space-y-4">
+          <ScheduleConfigurationPanel
+            config={
+              (permission.config ?? {
+                blockedDates: [],
+                buildingDefaults: {},
+              }) as unknown as ScheduleGlobalConfig
+            }
+            onChange={(newConfig) =>
+              updatePermission(tool.type, {
+                config: newConfig as unknown as Record<string, unknown>,
+              })
+            }
+          />
+        </div>
+      )}
+
       {![
         'lunchCount',
         'weather',
@@ -705,6 +725,7 @@ export const FeatureConfigurationPanel: React.FC<
         'webcam',
         'stickers',
         'expectations',
+        'schedule',
       ].includes(tool.type) && (
         <p className="text-xs text-slate-500 italic">
           No additional configuration available for this widget.
