@@ -292,10 +292,37 @@ describe('GoogleDriveService', () => {
   });
 
   describe('makePublic', () => {
-    it('should perform a network request to make the file public', async () => {
+    it('should share with domain when a non-consumer domain is provided', async () => {
+      const fetchSpy = mockFetch({ ok: true });
+      await service.makePublic('file-id', 'school.edu');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/permissions'),
+        expect.objectContaining({
+          body: JSON.stringify({ role: 'reader', type: 'domain', domain: 'school.edu' }),
+        })
+      );
+    });
+
+    it('should fall back to anyone-with-link for consumer domains', async () => {
+      const fetchSpy = mockFetch({ ok: true });
+      await service.makePublic('file-id', 'gmail.com');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/permissions'),
+        expect.objectContaining({
+          body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+        })
+      );
+    });
+
+    it('should fall back to anyone-with-link when no domain is provided', async () => {
       const fetchSpy = mockFetch({ ok: true });
       await service.makePublic('file-id');
-      expect(fetchSpy).toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/permissions'),
+        expect.objectContaining({
+          body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+        })
+      );
     });
   });
 

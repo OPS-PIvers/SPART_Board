@@ -5,6 +5,18 @@ const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API_URL = 'https://www.googleapis.com/upload/drive/v3';
 const DEFAULT_TIMEOUT = 15000; // 15 seconds
 
+// Consumer email domains that don't support Google Workspace domain-level sharing.
+// Files shared with these domains fall back to anyone-with-link.
+const CONSUMER_DOMAINS = new Set([
+  'gmail.com',
+  'yahoo.com',
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'icloud.com',
+  'me.com',
+]);
+
 export interface DriveFile {
   id: string;
   name: string;
@@ -340,25 +352,28 @@ export class GoogleDriveService {
   }
 
   /**
-   * Make a file public (anyone with the link can view).
+   * Share a file with users in a Google Workspace domain, or with anyone
+   * if no domain is provided or the domain is a consumer email provider.
    */
-  async makePublic(fileId: string): Promise<void> {
+  async makePublic(fileId: string, domain?: string): Promise<void> {
+    const permission =
+      domain && !CONSUMER_DOMAINS.has(domain.toLowerCase())
+        ? { role: 'reader', type: 'domain', domain }
+        : { role: 'reader', type: 'anyone' };
+
     const response = await this.fetchWithTimeout(
       `${DRIVE_API_URL}/files/${fileId}/permissions`,
       {
         method: 'POST',
         headers: this.headers,
-        body: JSON.stringify({
-          role: 'reader',
-          type: 'anyone',
-        }),
+        body: JSON.stringify(permission),
       }
     );
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Failed to make file public:', error);
-      throw new Error('Failed to make file public in Drive');
+      console.error('Failed to share file:', error);
+      throw new Error('Failed to share file in Drive');
     }
   }
 
