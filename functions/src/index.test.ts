@@ -107,30 +107,31 @@ describe('triggerJulesWidgetGeneration', () => {
     const result = await handler(request);
 
     // Verify axios call arguments
-    expect(mockPost).toHaveBeenCalledWith(
-      JULES_API_SESSIONS_ENDPOINT,
-      expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        prompt: expect.stringContaining('Test Widget'),
-        sourceContext: {
-          source: 'sources/github.com/OPS-PIvers/SPART_Board',
-          githubRepoContext: { startingBranch: 'main' },
-        },
-        automationMode: 'AUTO_CREATE_PR',
-        title: 'Generate Widget: Test Widget',
-      }),
-      expect.objectContaining({
-        headers: {
-          Authorization: 'Bearer mock-token',
-          'Content-Type': 'application/json',
-        },
-      })
-    );
+    // We expect 1 call
+    expect(mockPost).toHaveBeenCalledTimes(1);
 
-    expect(result).toEqual({
-      success: true,
-      message: expect.stringContaining('12345') as unknown as string,
-      consoleUrl: 'https://jules.google.com/session/12345',
+    // Extract the call arguments to assert against them cleanly without `any` assignments
+    const callArgs = mockPost.mock.calls[0];
+    expect(callArgs[0]).toBe(JULES_API_SESSIONS_ENDPOINT);
+
+    const payload = callArgs[1] as Record<string, unknown>;
+    expect(payload.prompt).toContain('Test Widget');
+    expect(payload.sourceContext).toEqual({
+      source: 'sources/github.com/OPS-PIvers/SPART_Board',
+      githubRepoContext: { startingBranch: 'main' },
     });
+    expect(payload.automationMode).toBe('AUTO_CREATE_PR');
+    expect(payload.title).toBe('Generate Widget: Test Widget');
+
+    const config = callArgs[2] as { headers: Record<string, string> };
+    expect(config.headers).toEqual({
+      Authorization: 'Bearer mock-token',
+      'Content-Type': 'application/json',
+    });
+
+    // Check result
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('12345');
+    expect(result.consoleUrl).toBe('https://jules.google.com/session/12345');
   });
 });

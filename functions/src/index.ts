@@ -516,10 +516,18 @@ export const fetchWeatherProxy = functionsV1
       );
     }
 
-    if (!data.url.startsWith('https://api.openweathermap.org/')) {
+    try {
+      const parsedUrl = new URL(data.url);
+      if (
+        parsedUrl.protocol !== 'https:' ||
+        parsedUrl.hostname !== 'api.openweathermap.org'
+      ) {
+        throw new Error('Invalid host or protocol');
+      }
+    } catch {
       throw new functionsV1.https.HttpsError(
         'invalid-argument',
-        'Invalid proxy URL. Only openweathermap.org is allowed.'
+        'Invalid proxy URL. Only https://api.openweathermap.org is allowed.'
       );
     }
 
