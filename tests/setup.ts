@@ -41,3 +41,4 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string): any => {
   }
   return null;
 });
+vi.stubEnv('VITE_FIREBASE_API_KEY', 'test-api-key');
