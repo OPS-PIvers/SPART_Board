@@ -124,6 +124,16 @@ const AnnouncementWidgetContent: React.FC<{ announcement: Announcement }> = ({
 
   const WidgetComponent = WIDGET_COMPONENTS[announcement.widgetType];
 
+  // For interactive widgets (e.g. poll), inject the announcement id into
+  // the config so they can write responses to the correct Firestore path.
+  const injectedConfig: WidgetConfig =
+    announcement.widgetType === 'poll'
+      ? ({
+          ...announcement.widgetConfig,
+          _announcementId: announcement.id,
+        } as WidgetConfig)
+      : (announcement.widgetConfig as WidgetConfig);
+
   const fakeWidget: WidgetData = {
     id: `announcement-${announcement.id}`,
     type: announcement.widgetType,
@@ -135,7 +145,7 @@ const AnnouncementWidgetContent: React.FC<{ announcement: Announcement }> = ({
     flipped: false,
     minimized: false,
     maximized: announcement.maximized,
-    config: announcement.widgetConfig as WidgetConfig,
+    config: injectedConfig,
   };
 
   if (!WidgetComponent) {
