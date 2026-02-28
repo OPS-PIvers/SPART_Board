@@ -231,7 +231,10 @@ const EmbedConfigEditor: React.FC<{
   config: Record<string, unknown>;
   onChange: (config: Record<string, unknown>) => void;
 }> = ({ config, onChange }) => {
-  const activeTab = (config.mode as EmbedTab | undefined) ?? 'url';
+  const [activeTab, setActiveTab] = useState<EmbedTab>(() => {
+    const mode = config.mode as EmbedTab | undefined;
+    return mode === 'url' || mode === 'code' ? mode : 'url';
+  });
   const { driveService, userDomain } = useGoogleDrive();
 
   // Keep raw URL in local state so the input remains editable while typing.
@@ -316,16 +319,17 @@ const EmbedConfigEditor: React.FC<{
       }
     } catch (err) {
       console.error('Failed to upload video:', err);
+      alert('Failed to upload video. Please try again.');
     } finally {
       setUploadingVideo(false);
     }
   };
 
   const setTab = (tab: EmbedTab) => {
-    onChange({
-      ...config,
-      mode: tab === 'url' || tab === 'code' ? tab : (config.mode ?? 'url'),
-    });
+    setActiveTab(tab);
+    if (tab === 'url' || tab === 'code') {
+      onChange({ ...config, mode: tab });
+    }
   };
 
   const TABS: { id: EmbedTab; label: string; icon: React.ReactNode }[] = [
@@ -960,7 +964,7 @@ const PollResponsesPanel: React.FC<{
 
   const exportCsv = () => {
     const rows = options.map(
-      (o, i) => `"${o.label.replace(/"/g, '""')}",${votes[i] ?? 0}`,
+      (o, i) => `"${o.label.replace(/"/g, '""')}",${votes[i] ?? 0}`
     );
     const csv = `Option,Votes\n${rows.join('\n')}`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
