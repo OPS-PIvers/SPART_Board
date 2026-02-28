@@ -26,7 +26,10 @@ vi.mock('firebase-admin', () => ({
 // Mock firebase-functions/v2
 vi.mock('firebase-functions/v2', () => ({
   https: {
-    onCall: (_options: unknown, handler: unknown) => handler,
+    onCall: <T>(
+      _options: unknown,
+      handler: (request: { data: T; auth?: { token: { email: string }; uid: string } }) => Promise<unknown>
+    ) => handler,
     HttpsError: class extends Error {
       constructor(code: string, message: string) {
         super(message);
@@ -58,9 +61,7 @@ import {
 vi.mock('google-auth-library', () => {
   return {
     GoogleAuth: class {
-      getClient = vi.fn().mockResolvedValue({
-        getAccessToken: vi.fn().mockResolvedValue({ token: 'mock-token' }),
-      });
+      getAccessToken = vi.fn().mockResolvedValue('mock-token');
     },
   };
 });
@@ -96,9 +97,9 @@ describe('triggerJulesWidgetGeneration', () => {
       },
     };
 
-    // Verify type casting if needed, but since we mocked onCall to return the handler, it is the handler.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-    const result = await (triggerJulesWidgetGeneration as any)(request);
+    // Ensure the handler is typed correctly to match the return of onCall
+    const handler = triggerJulesWidgetGeneration as unknown as (req: typeof request) => Promise<{ success: boolean; message: string; consoleUrl: string }>;
+    const result = await handler(request);
 
     // Verify axios call arguments
     expect(mockPost).toHaveBeenCalledWith(
@@ -106,26 +107,24 @@ describe('triggerJulesWidgetGeneration', () => {
       expect.objectContaining({
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         prompt: expect.stringContaining('Test Widget'),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        sourceContext: expect.objectContaining({
+        sourceContext: {
           source: 'sources/github.com/OPS-PIvers/SPART_Board',
-        }),
+          githubRepoContext: { startingBranch: 'main' }
+        },
         automationMode: 'AUTO_CREATE_PR',
         title: 'Generate Widget: Test Widget',
       }),
       expect.objectContaining({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        headers: expect.objectContaining({
+        headers: {
           Authorization: 'Bearer mock-token',
           'Content-Type': 'application/json',
-        }),
+        },
       })
     );
 
     expect(result).toEqual({
       success: true,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      message: expect.stringContaining('12345'),
+      message: expect.stringContaining('12345') as unknown as string,
       consoleUrl: 'https://jules.google.com/session/12345',
     });
   });

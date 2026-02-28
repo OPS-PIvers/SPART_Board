@@ -516,6 +516,13 @@ export const fetchWeatherProxy = functionsV1
       );
     }
 
+    if (!data.url.startsWith('https://api.openweathermap.org/')) {
+      throw new functionsV1.https.HttpsError(
+        'invalid-argument',
+        'Invalid proxy URL. Only openweathermap.org is allowed.'
+      );
+    }
+
     try {
       const response = await axios.get<unknown>(data.url);
       return response.data;
@@ -607,11 +614,6 @@ interface JulesError {
   };
 }
 
-// To avoid `any`, we can define a minimal interface for the expected client.
-interface TokenClient {
-  getAccessToken(): Promise<{ token?: string | null } | null | undefined>;
-}
-
 export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
   {
     timeoutSeconds: 300,
@@ -652,12 +654,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
     });
 
-    const client = await auth.getClient();
-    const accessToken = await (
-      client as unknown as TokenClient
-    ).getAccessToken();
+    const accessToken = await auth.getAccessToken();
 
-    if (!accessToken?.token) {
+    if (!accessToken) {
       throw new functionsV2.https.HttpsError(
         'internal',
         'Failed to generate OAuth token.'
@@ -711,14 +710,22 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
         },
         {
           headers: {
-            Authorization: `Bearer ${accessToken?.token}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         }
       );
 
-      const sessionId =
-        session.name?.split('/').pop() || session.id || 'unknown';
+      const sessionIdFromName = session.name?.split('/').pop();
+      const sessionId = sessionIdFromName || session.id;
+
+      if (!sessionId) {
+        throw new functionsV2.https.HttpsError(
+          'internal',
+          'Jules API response is missing a session identifier (name or id).'
+        );
+      }
+
       console.log(`Jules session created: ${sessionId}`);
 
       return {
