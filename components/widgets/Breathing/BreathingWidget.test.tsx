@@ -15,8 +15,8 @@ const mockWidget: WidgetData = {
   config: {
     pattern: '4-4-4-4',
     visual: 'circle',
-    color: '#3b82f6'
-  }
+    color: '#3b82f6',
+  },
 };
 
 describe('BreathingWidget', () => {
@@ -32,7 +32,6 @@ describe('BreathingWidget', () => {
     });
 
     // Mock performance.now to work correctly with vitest fake timers
-    let mockTime = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => {
       return Date.now();
     });
@@ -58,7 +57,7 @@ describe('BreathingWidget', () => {
     expect(resetButton).toBeDisabled();
   });
 
-  it('starts breathing sequence when play is clicked', async () => {
+  it('starts breathing sequence when play is clicked', () => {
     render(<BreathingWidget widget={mockWidget} />);
 
     const startButton = screen.getByLabelText('Start');
