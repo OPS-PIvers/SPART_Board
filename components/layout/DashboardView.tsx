@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
+import { z } from 'zod';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
@@ -460,10 +461,11 @@ export const DashboardView: React.FC = () => {
     if (stickerData) {
       e.preventDefault();
       try {
-        const parsed = JSON.parse(stickerData) as {
-          url: string;
-          ratio?: number;
-        };
+        const StickerDataSchema = z.object({
+          url: z.string(),
+          ratio: z.number().optional(),
+        });
+        const parsed = StickerDataSchema.parse(JSON.parse(stickerData));
         const url = parsed.url;
         const ratio = parsed.ratio ?? 1;
 
