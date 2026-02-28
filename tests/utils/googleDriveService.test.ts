@@ -298,7 +298,11 @@ describe('GoogleDriveService', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining('/permissions'),
         expect.objectContaining({
-          body: JSON.stringify({ role: 'reader', type: 'domain', domain: 'school.edu' }),
+          body: JSON.stringify({
+            role: 'reader',
+            type: 'domain',
+            domain: 'school.edu',
+          }),
         })
       );
     });

@@ -43,8 +43,9 @@ export const convertToEmbedUrl = (url: string): string => {
   }
 
   // Google Drive file links  (drive.google.com/file/d/{id}/...)
-  const driveFileMatch =
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/.exec(trimmedUrl);
+  const driveFileMatch = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/.exec(
+    trimmedUrl
+  );
   if (driveFileMatch) {
     return `https://drive.google.com/file/d/${driveFileMatch[1]}/preview`;
   }

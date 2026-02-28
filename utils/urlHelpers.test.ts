@@ -75,7 +75,9 @@ describe('urlHelpers', () => {
         convertToEmbedUrl('https://www.youtube.com/live/dQw4w9WgXcQ')
       ).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ');
       expect(
-        convertToEmbedUrl('https://www.youtube.com/live/dQw4w9WgXcQ?feature=share')
+        convertToEmbedUrl(
+          'https://www.youtube.com/live/dQw4w9WgXcQ?feature=share'
+        )
       ).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ');
     });
 
