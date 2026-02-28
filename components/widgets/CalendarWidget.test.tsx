@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { WidgetData, CalendarConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
 
 // Mock useDashboard
 const mockUpdateWidget = vi.fn();
@@ -12,6 +13,7 @@ const mockDashboardContext = {
 };
 
 vi.mock('@/context/useDashboard');
+vi.mock('@/context/useAuth');
 
 describe('CalendarWidget', () => {
   beforeEach(() => {
@@ -67,6 +69,10 @@ describe('CalendarSettings', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       mockDashboardContext
     );
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: null,
+      customClaims: {},
+    });
     // Mock window.prompt
     vi.spyOn(window, 'prompt').mockImplementation(() => null);
   });
@@ -89,7 +95,8 @@ describe('CalendarSettings', () => {
 
   it('renders existing events', () => {
     render(<CalendarSettings widget={mockWidget} />);
-    expect(screen.getByText('Tuesday: Art Class')).toBeInTheDocument();
+    expect(screen.getByText('Tuesday')).toBeInTheDocument();
+    expect(screen.getByText('Art Class')).toBeInTheDocument();
   });
 
   it('adds a new event', async () => {
@@ -100,7 +107,7 @@ describe('CalendarSettings', () => {
       .mockReturnValueOnce('Wednesday'); // Second prompt: Date
 
     render(<CalendarSettings widget={mockWidget} />);
-    const addButton = screen.getByRole('button', { name: /add event/i });
+    const addButton = screen.getByRole('button', { name: /add local event/i });
     await user.click(addButton);
 
     expect(promptSpy).toHaveBeenCalledTimes(2);
@@ -120,7 +127,7 @@ describe('CalendarSettings', () => {
     vi.spyOn(window, 'prompt').mockReturnValue(null);
 
     render(<CalendarSettings widget={mockWidget} />);
-    const addButton = screen.getByRole('button', { name: /add event/i });
+    const addButton = screen.getByRole('button', { name: /add local event/i });
     await user.click(addButton);
 
     expect(mockUpdateWidget).not.toHaveBeenCalled();
@@ -128,16 +135,14 @@ describe('CalendarSettings', () => {
 
   it('removes an event', async () => {
     const user = userEvent.setup();
-    render(<CalendarSettings widget={mockWidget} />);
+    const { container } = render(<CalendarSettings widget={mockWidget} />);
 
-    // Find the row containing the event text, then find the button within it
-    const eventText = screen.getByText('Tuesday: Art Class');
-    const eventRow = eventText.closest('div');
-    expect(eventRow).toBeInTheDocument();
+    // In the CI structure, the event text is separated into day and title.
+    // The trash icon is inside a button next to the event details.
+    const removeButton = container.querySelector('svg.lucide-trash2')?.closest('button');
+    expect(removeButton).toBeInTheDocument();
 
-    if (eventRow) {
-      // The delete button is the only button inside the event row
-      const removeButton = within(eventRow).getByRole('button');
+    if (removeButton) {
       await user.click(removeButton);
 
       expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
