@@ -175,15 +175,14 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
 
   const handleMoveUp = async (index: number) => {
     if (index === 0) return;
-    const reordered = [...apps];
-    [reordered[index - 1], reordered[index]] = [
-      reordered[index],
-      reordered[index - 1],
-    ];
+    const appToMoveUp = apps[index];
+    const appToMoveDown = apps[index - 1];
+    // Swap only the two affected documents — O(1) writes instead of O(n)
+    const orderUp = appToMoveUp.order ?? index;
+    const orderDown = appToMoveDown.order ?? index - 1;
     const batch = writeBatch(db);
-    reordered.forEach((app, i) => {
-      batch.set(doc(db, COLLECTION, app.id), { ...app, order: i });
-    });
+    batch.update(doc(db, COLLECTION, appToMoveUp.id), { order: orderDown });
+    batch.update(doc(db, COLLECTION, appToMoveDown.id), { order: orderUp });
     try {
       await batch.commit();
     } catch (err) {
@@ -423,8 +422,9 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
                   placeholder="Paste your HTML, CSS, and JS here…"
                 />
                 <p className="text-xxs text-slate-400 mt-1">
-                  Apps run in a sandboxed iframe. Scripts are allowed but
-                  cross-origin requests may be blocked.
+                  Apps run in a sandboxed iframe (null origin). Scripts run
+                  freely inside the app, but it cannot access the parent
+                  page&apos;s storage, DOM, or auth tokens.
                 </p>
               </div>
             </div>

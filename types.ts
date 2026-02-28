@@ -449,6 +449,7 @@ export interface DiceGlobalConfig {
 
 // --- Scoreboard Global Config ---
 export interface ScoreboardDefaultTeam {
+  id: string;
   name: string;
   color?: string;
 }

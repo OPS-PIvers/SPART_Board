@@ -14,8 +14,8 @@ interface ScoreboardConfigurationPanelProps {
 }
 
 const DEFAULT_TEAMS: ScoreboardDefaultTeam[] = [
-  { name: 'Team A', color: WIDGET_PALETTE[4] }, // blue
-  { name: 'Team B', color: WIDGET_PALETTE[1] }, // red
+  { id: crypto.randomUUID(), name: 'Team A', color: WIDGET_PALETTE[4] }, // blue
+  { id: crypto.randomUUID(), name: 'Team B', color: WIDGET_PALETTE[1] }, // red
 ];
 
 export const ScoreboardConfigurationPanel: React.FC<
@@ -52,23 +52,29 @@ export const ScoreboardConfigurationPanel: React.FC<
   };
 
   const handleAddTeam = () => {
-    const colors = WIDGET_PALETTE;
-    const nextColor = colors[teams.length % colors.length];
+    const nextColor = WIDGET_PALETTE[teams.length % WIDGET_PALETTE.length];
     handleUpdateBuilding({
-      teams: [...teams, { name: `Team ${teams.length + 1}`, color: nextColor }],
+      teams: [
+        ...teams,
+        {
+          id: crypto.randomUUID(),
+          name: `Team ${teams.length + 1}`,
+          color: nextColor,
+        },
+      ],
     });
   };
 
   const handleUpdateTeam = (
-    index: number,
+    id: string,
     updates: Partial<ScoreboardDefaultTeam>
   ) => {
-    const next = teams.map((t, i) => (i === index ? { ...t, ...updates } : t));
+    const next = teams.map((t) => (t.id === id ? { ...t, ...updates } : t));
     handleUpdateBuilding({ teams: next });
   };
 
-  const handleRemoveTeam = (index: number) => {
-    handleUpdateBuilding({ teams: teams.filter((_, i) => i !== index) });
+  const handleRemoveTeam = (id: string) => {
+    handleUpdateBuilding({ teams: teams.filter((t) => t.id !== id) });
   };
 
   const handleResetToDefault = () => {
@@ -121,9 +127,9 @@ export const ScoreboardConfigurationPanel: React.FC<
           </div>
 
           <div className="space-y-1.5 mb-3">
-            {teams.map((team, idx) => (
+            {teams.map((team) => (
               <div
-                key={idx}
+                key={team.id}
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-2 shadow-sm"
               >
                 <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
@@ -132,11 +138,9 @@ export const ScoreboardConfigurationPanel: React.FC<
                 <div className="relative shrink-0">
                   <input
                     type="color"
-                    value={
-                      team.color ?? WIDGET_PALETTE[idx % WIDGET_PALETTE.length]
-                    }
+                    value={team.color ?? WIDGET_PALETTE[0]}
                     onChange={(e) =>
-                      handleUpdateTeam(idx, { color: e.target.value })
+                      handleUpdateTeam(team.id, { color: e.target.value })
                     }
                     className="w-6 h-6 rounded border border-slate-200 cursor-pointer p-0 bg-white"
                     title="Team color"
@@ -147,14 +151,14 @@ export const ScoreboardConfigurationPanel: React.FC<
                   type="text"
                   value={team.name}
                   onChange={(e) =>
-                    handleUpdateTeam(idx, { name: e.target.value })
+                    handleUpdateTeam(team.id, { name: e.target.value })
                   }
                   className="flex-1 text-xs border-none outline-none bg-transparent font-medium"
                   placeholder="Team name..."
                 />
 
                 <button
-                  onClick={() => handleRemoveTeam(idx)}
+                  onClick={() => handleRemoveTeam(team.id)}
                   disabled={teams.length <= 2}
                   className="text-red-400 hover:text-red-600 p-0.5 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
                   title={
