@@ -131,7 +131,7 @@ describe('useStorage', () => {
       );
       expect(mockDriveService.makePublic).toHaveBeenCalledWith(
         'drive-file-id',
-        'school.edu',
+        'school.edu'
       );
       expect(url).toBe('https://drive.google.com/content-link');
       expect(mockUploadBytes).not.toHaveBeenCalled();

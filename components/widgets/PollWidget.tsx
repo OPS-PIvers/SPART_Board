@@ -6,10 +6,10 @@ import {
   setDoc,
   increment,
 } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { useDashboard } from '../../context/useDashboard';
-import { useAuth } from '../../context/useAuth';
-import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
+import { db } from '@/config/firebase';
+import { useDashboard } from '@/context/useDashboard';
+import { useAuth } from '@/context/useAuth';
+import { WidgetData, PollConfig, DEFAULT_GLOBAL_STYLE } from '@/types';
 import {
   RotateCcw,
   Plus,
