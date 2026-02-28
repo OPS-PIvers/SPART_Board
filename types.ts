@@ -31,7 +31,8 @@ export type WidgetType =
   | 'smartNotebook'
   | 'recessGear'
   | 'pdf'
-  | 'quiz';
+  | 'quiz'
+  | 'breathing';
 
 // --- ROSTER SYSTEM TYPES ---
 
@@ -550,6 +551,11 @@ export interface PdfItem {
   uploadedAt: number;
   order?: number;
 }
+export interface BreathingConfig {
+  pattern: '4-4-4-4' | '4-7-8' | '5-5';
+  visual: 'circle' | 'lotus' | 'wave';
+  color: string;
+}
 
 export interface PdfConfig {
   activePdfId: string | null;
@@ -860,7 +866,8 @@ export type WidgetConfig =
   | SmartNotebookConfig
   | RecessGearConfig
   | PdfConfig
-  | QuizConfig;
+  | QuizConfig
+  | BreathingConfig;
 
 // Helper type to get config type for a specific widget
 export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
@@ -929,7 +936,9 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                 ? PdfConfig
                                                                 : T extends 'quiz'
                                                                   ? QuizConfig
-                                                                  : never;
+                                                                  : T extends 'breathing'
+                                                                    ? BreathingConfig
+                                                                    : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
