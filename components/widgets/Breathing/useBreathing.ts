@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-type BreathingPhase = 'ready' | 'inhale' | 'hold1' | 'exhale' | 'hold2';
-type BreathingPattern = '4-4-4-4' | '4-7-8' | '5-5';
+import type { BreathingConfig } from '../../../types';
+
+type BreathingPattern = BreathingConfig['pattern'];
 
 interface PatternData {
   inhale: number;
@@ -15,6 +16,8 @@ const PATTERNS: Record<BreathingPattern, PatternData> = {
   '4-7-8': { inhale: 4, hold1: 7, exhale: 8, hold2: 0 }, // Relaxing breath
   '5-5': { inhale: 5, hold1: 0, exhale: 5, hold2: 0 }, // Coherent breathing
 };
+
+export type BreathingPhase = 'ready' | 'inhale' | 'hold1' | 'exhale' | 'hold2';
 
 export const useBreathing = (patternId: BreathingPattern) => {
   const pattern = PATTERNS[patternId];

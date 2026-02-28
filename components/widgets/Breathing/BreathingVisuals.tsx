@@ -1,10 +1,11 @@
 import React from 'react';
 import { BreathingConfig } from '../../../types';
+import { BreathingPhase } from './useBreathing';
 
 interface BreathingVisualsProps {
   visual: BreathingConfig['visual'];
   color: string;
-  phase: string;
+  phase: BreathingPhase;
   progress: number;
   isActive: boolean;
 }
