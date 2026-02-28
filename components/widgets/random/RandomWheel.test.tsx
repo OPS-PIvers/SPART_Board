@@ -10,7 +10,7 @@ vi.mock('../../../context/useDashboard', () => ({
 
 describe('RandomWheel Component', () => {
   it('renders correctly', () => {
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
     });
 
@@ -30,7 +30,7 @@ describe('RandomWheel Component', () => {
   });
 
   it('shows display result when not spinning', () => {
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
     });
 
@@ -49,7 +49,7 @@ describe('RandomWheel Component', () => {
   });
 
   it('does not show display result when spinning', () => {
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
     });
 

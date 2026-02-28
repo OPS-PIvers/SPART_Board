@@ -23,6 +23,8 @@
 - Verified folder creation logic and dashboard export (update vs create).
 
 **Result:** Coverage improved to ~60%.
+
 ## 2025-02-28 - [Firebase Config Mocking in Tests]
+
 **Gap:** Components utilizing Firebase logic immediately fail the Vitest suite locally and in CI when the real `VITE_FIREBASE_API_KEY` environment variable is not set.
 **Fix:** Modified `tests/setup.ts` to include `vi.stubEnv('VITE_FIREBASE_API_KEY', 'test-api-key')`, providing a harmless dummy variable that satisfies the `if (!import.meta.env.VITE_FIREBASE_API_KEY)` checks without risking real credentials.

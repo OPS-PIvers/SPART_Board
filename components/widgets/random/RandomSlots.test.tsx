@@ -10,7 +10,7 @@ vi.mock('../../../context/useDashboard', () => ({
 
 describe('RandomSlots Component', () => {
   it('renders correctly with default props', () => {
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
     });
 
@@ -20,11 +20,13 @@ describe('RandomSlots Component', () => {
   });
 
   it('renders correctly with a display result', () => {
-    (useDashboard as any).mockReturnValue({
+    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
     });
 
-    render(<RandomSlots displayResult="Winner!" fontSize={32} slotHeight={100} />);
+    render(
+      <RandomSlots displayResult="Winner!" fontSize={32} slotHeight={100} />
+    );
 
     expect(screen.getByText('Winner!')).toBeInTheDocument();
   });
