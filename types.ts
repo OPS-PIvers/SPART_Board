@@ -437,6 +437,41 @@ export interface RandomGlobalConfig {
   buildingDefaults: Record<string, BuildingRandomDefaults>;
 }
 
+// --- Dice Global Config ---
+export interface BuildingDiceDefaults {
+  buildingId: string;
+  count?: number; // Default number of dice (1-6)
+}
+
+export interface DiceGlobalConfig {
+  buildingDefaults: Record<string, BuildingDiceDefaults>;
+}
+
+// --- Scoreboard Global Config ---
+export interface ScoreboardDefaultTeam {
+  name: string;
+  color?: string;
+}
+
+export interface BuildingScoreboardDefaults {
+  buildingId: string;
+  teams?: ScoreboardDefaultTeam[];
+}
+
+export interface ScoreboardGlobalConfig {
+  buildingDefaults: Record<string, BuildingScoreboardDefaults>;
+}
+
+// --- Materials Global Config ---
+export interface BuildingMaterialsDefaults {
+  buildingId: string;
+  selectedItems?: string[]; // IDs of materials selected by default
+}
+
+export interface MaterialsGlobalConfig {
+  buildingDefaults: Record<string, BuildingMaterialsDefaults>;
+}
+
 export interface CalendarGlobalEvent {
   id: string;
   date: string; // ISO Date string (YYYY-MM-DD)
