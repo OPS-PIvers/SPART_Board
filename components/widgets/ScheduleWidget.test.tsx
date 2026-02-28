@@ -9,9 +9,13 @@ import {
 } from '@testing-library/react';
 import { ScheduleWidget, ScheduleSettings } from './Schedule';
 import { useDashboard } from '../../context/useDashboard';
+import { useAuth } from '../../context/useAuth';
+import { useFeaturePermissions } from '../../hooks/useFeaturePermissions';
 import { WidgetData, ScheduleConfig, DEFAULT_GLOBAL_STYLE } from '../../types';
 
 vi.mock('../../context/useDashboard');
+vi.mock('../../context/useAuth');
+vi.mock('../../hooks/useFeaturePermissions');
 
 // Mock useScaledFont to return a fixed size
 vi.mock('../../hooks/useScaledFont', () => ({
@@ -33,6 +37,9 @@ vi.mock('lucide-react', () => ({
   X: () => <div>X Icon</div>,
   Save: () => <div>Save Icon</div>,
   GripVertical: () => <div>Grip Icon</div>,
+  Settings2: () => <div>Settings2 Icon</div>,
+  Calendar: () => <div>Calendar Icon</div>,
+  Ban: () => <div>Ban Icon</div>,
 }));
 
 const mockUpdateWidget = vi.fn();
@@ -51,6 +58,17 @@ describe('ScheduleWidget', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     (useDashboard as unknown as Mock).mockReturnValue(mockDashboardContext);
+    (useAuth as unknown as Mock).mockReturnValue({
+      profile: { selectedBuildings: ['b1'] },
+    });
+    (useFeaturePermissions as unknown as Mock).mockReturnValue({
+      subscribeToPermission: vi.fn((type, cb) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        cb({ config: { blockedDates: [], buildingDefaults: {} } });
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        return () => {};
+      }),
+    });
     mockUpdateWidget.mockClear();
     mockAddWidget.mockClear();
   });
@@ -297,6 +315,12 @@ describe('ScheduleWidget', () => {
 describe('ScheduleSettings', () => {
   beforeEach(() => {
     (useDashboard as unknown as Mock).mockReturnValue(mockDashboardContext);
+    (useAuth as unknown as Mock).mockReturnValue({
+      profile: { selectedBuildings: ['b1'] },
+    });
+    (useFeaturePermissions as unknown as Mock).mockReturnValue({
+      subscribeToPermission: vi.fn(),
+    });
     mockUpdateWidget.mockClear();
   });
 

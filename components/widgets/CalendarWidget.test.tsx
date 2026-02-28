@@ -5,6 +5,8 @@ import { CalendarWidget, CalendarSettings } from './CalendarWidget';
 import { WidgetData, CalendarConfig } from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import { useAuth } from '@/context/useAuth';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 
 // Mock useDashboard
 const mockUpdateWidget = vi.fn();
@@ -14,6 +16,8 @@ const mockDashboardContext = {
 
 vi.mock('@/context/useDashboard');
 vi.mock('@/context/useAuth');
+vi.mock('@/hooks/useFeaturePermissions');
+vi.mock('@/hooks/useGoogleCalendar');
 
 describe('CalendarWidget', () => {
   beforeEach(() => {
@@ -25,6 +29,13 @@ describe('CalendarWidget', () => {
       user: null,
       customClaims: {},
       selectedBuildings: [],
+    });
+    (useFeaturePermissions as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      subscribeToPermission: vi.fn(),
+    });
+    (useGoogleCalendar as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      calendarService: null,
+      isConnected: false,
     });
   });
 
@@ -63,7 +74,7 @@ describe('CalendarWidget', () => {
     render(<CalendarWidget widget={emptyWidget} />);
     expect(screen.getByText('No Events')).toBeInTheDocument();
     expect(
-      screen.getByText('Flip to add calendar events.')
+      screen.getByText('Flip to add local events or check building sync.')
     ).toBeInTheDocument();
   });
 });
@@ -78,6 +89,13 @@ describe('CalendarSettings', () => {
       user: null,
       customClaims: {},
       selectedBuildings: [],
+    });
+    (useFeaturePermissions as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      subscribeToPermission: vi.fn(),
+    });
+    (useGoogleCalendar as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      calendarService: null,
+      isConnected: false,
     });
     // Mock window.prompt
     vi.spyOn(window, 'prompt').mockImplementation(() => null);
@@ -107,16 +125,24 @@ describe('CalendarSettings', () => {
 
   it('adds a new event', async () => {
     const user = userEvent.setup();
-    const promptSpy = vi
-      .spyOn(window, 'prompt')
-      .mockReturnValueOnce('Science Fair') // First prompt: Title
-      .mockReturnValueOnce('Wednesday'); // Second prompt: Date
-
     render(<CalendarSettings widget={mockWidget} />);
-    const addButton = screen.getByRole('button', { name: /add local event/i });
-    await user.click(addButton);
+    const addLocalEventBtn = screen.getByRole('button', {
+      name: /add local event/i,
+    });
+    await user.click(addLocalEventBtn);
 
-    expect(promptSpy).toHaveBeenCalledTimes(2);
+    const titleInput = screen.getByPlaceholderText(
+      'Event title (e.g., Art, PE)'
+    );
+    const dateInput = screen.getByPlaceholderText(
+      'Day/Date (e.g., Monday, 2024-10-12)'
+    );
+    const confirmAddBtn = screen.getByRole('button', { name: 'Add Event' });
+
+    await user.type(titleInput, 'Science Fair');
+    await user.type(dateInput, 'Wednesday');
+    await user.click(confirmAddBtn);
+
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
       config: {
         ...mockConfig,
@@ -128,15 +154,22 @@ describe('CalendarSettings', () => {
     });
   });
 
-  it('does not add event if prompt is cancelled', async () => {
+  it('cancels adding a new event', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'prompt').mockReturnValue(null);
-
     render(<CalendarSettings widget={mockWidget} />);
-    const addButton = screen.getByRole('button', { name: /add local event/i });
-    await user.click(addButton);
+    const addLocalEventBtn = screen.getByRole('button', {
+      name: /add local event/i,
+    });
+    await user.click(addLocalEventBtn);
+
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
+    await user.click(cancelBtn);
 
     expect(mockUpdateWidget).not.toHaveBeenCalled();
+    // The Add Local Event button should be visible again
+    expect(
+      screen.getByRole('button', { name: /add local event/i })
+    ).toBeInTheDocument();
   });
 
   it('removes an event', async () => {

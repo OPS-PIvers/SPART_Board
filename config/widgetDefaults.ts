@@ -106,10 +106,9 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     w: 300,
     h: 350,
     config: {
-      events: [
-        { date: 'Friday', title: 'Pillar Power' },
-        { date: 'Monday', title: 'Loon Day - PE' },
-      ],
+      events: [],
+      isBuildingSyncEnabled: true,
+      daysVisible: 5,
     },
   },
   lunchCount: {

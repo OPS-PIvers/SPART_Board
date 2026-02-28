@@ -13,10 +13,13 @@ import {
   ScheduleConfig,
   ClockConfig,
   DEFAULT_GLOBAL_STYLE,
+  ScheduleGlobalConfig,
 } from '@/types';
 import { Circle, CheckCircle2, Clock, Timer } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
 import { WidgetLayout } from '@/components/widgets/WidgetLayout';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useAuth } from '@/context/useAuth';
 
 /** Parses an "HH:MM" time string and returns minutes since midnight, or -1 if invalid. */
 const parseScheduleTime = (t: string | undefined): number => {
@@ -315,15 +318,59 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
   const { updateWidget, activeDashboard, addWidget } = useDashboard();
+  const { selectedBuildings } = useAuth();
+  const { subscribeToPermission } = useFeaturePermissions();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
   const items = useMemo(() => config.items ?? [], [config.items]);
+  const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
+
   const {
     fontFamily = 'global',
     autoProgress = false,
     cardOpacity = 1,
     cardColor = '#ffffff',
   } = config;
+
+  useEffect(() => {
+    return subscribeToPermission('schedule', (perm) => {
+      if (perm?.config) {
+        const gConfig = perm.config as unknown as ScheduleGlobalConfig;
+
+        // Auto-populate logic:
+        // 1. Must have sync enabled
+        // 2. Local items must be empty
+        // 3. User must have a building selected
+        // 4. We haven't synced this building yet
+        if (
+          isBuildingSyncEnabled &&
+          items.length === 0 &&
+          selectedBuildings?.[0] &&
+          config.lastSyncedBuildingId !== selectedBuildings[0]
+        ) {
+          const buildingId = selectedBuildings[0];
+          const defaults = gConfig.buildingDefaults?.[buildingId];
+          if (defaults && defaults.items?.length > 0) {
+            updateWidget(widget.id, {
+              config: {
+                ...config,
+                items: defaults.items,
+                lastSyncedBuildingId: buildingId,
+              } as ScheduleConfig,
+            });
+          }
+        }
+      }
+    });
+  }, [
+    subscribeToPermission,
+    isBuildingSyncEnabled,
+    items.length,
+    selectedBuildings,
+    config,
+    widget.id,
+    updateWidget,
+  ]);
 
   // Single shared ticker for all CountdownDisplay instances in this widget.
   const [nowSeconds, setNowSeconds] = useState(() => {

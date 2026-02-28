@@ -346,8 +346,37 @@ export interface WebcamGlobalConfig {
   ocrMode?: 'standard' | 'gemini';
 }
 
+export interface BuildingScheduleDefaults {
+  buildingId: string;
+  items: ScheduleItem[];
+}
+
+export interface ScheduleGlobalConfig {
+  buildingDefaults: Record<string, BuildingScheduleDefaults>;
+}
+
+export interface CalendarGlobalEvent {
+  id: string;
+  date: string; // ISO Date string (YYYY-MM-DD)
+  title: string;
+}
+
+export interface BuildingCalendarDefaults {
+  buildingId: string;
+  events: CalendarEvent[];
+  googleCalendarIds?: string[];
+}
+
+export interface CalendarGlobalConfig {
+  blockedDates: string[]; // Array of ISO Date strings (YYYY-MM-DD)
+  buildingDefaults: Record<string, BuildingCalendarDefaults>;
+}
+
 export interface ScheduleConfig {
   items: ScheduleItem[];
+  localEvents?: CalendarEvent[];
+  isBuildingSyncEnabled?: boolean;
+  lastSyncedBuildingId?: string;
   fontFamily?: string;
   autoProgress?: boolean;
   /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
@@ -358,6 +387,9 @@ export interface ScheduleConfig {
 
 export interface CalendarConfig {
   events: CalendarEvent[];
+  isBuildingSyncEnabled?: boolean;
+  lastSyncedBuildingId?: string;
+  daysVisible?: number;
 }
 
 export interface LunchMenuDay {
@@ -1095,6 +1127,63 @@ export interface ScalingConfig {
    * Used to eliminate excess space in modern layouts.
    */
   padding?: number;
+}
+
+// --- ANNOUNCEMENT SYSTEM TYPES ---
+
+export type AnnouncementActivationType = 'manual' | 'scheduled';
+export type AnnouncementDismissalType =
+  | 'user'
+  | 'scheduled'
+  | 'duration'
+  | 'admin';
+
+/**
+ * An admin-created announcement that is pushed to users' dashboards as an overlay widget.
+ * Stored in Firestore under /announcements/{id}.
+ * All authenticated users can read; only admins can write.
+ */
+export interface Announcement {
+  id: string;
+  /** Admin-facing label for this announcement */
+  name: string;
+  /** The widget type to display in the overlay */
+  widgetType: WidgetType;
+  /**
+   * The widget's configuration. Stored as a flexible record so partial configs
+   * from the admin form round-trip cleanly through Firestore.
+   */
+  widgetConfig: Record<string, unknown>;
+  /** Pixel dimensions for the widget window */
+  widgetSize: { w: number; h: number };
+  /** When true, the announcement expands to fill the full viewport */
+  maximized: boolean;
+  /** Whether activation is triggered manually or at a scheduled time of day */
+  activationType: AnnouncementActivationType;
+  /** HH:MM in 24h format — used when activationType is 'scheduled' */
+  scheduledActivationTime?: string;
+  /** Whether the announcement is currently active (visible to targeted users) */
+  isActive: boolean;
+  /**
+   * Timestamp (ms) when this announcement was most recently activated.
+   * Used as a push epoch — if a user dismissed it before this timestamp, it shows again.
+   */
+  activatedAt: number | null;
+  /** How the overlay can be dismissed by end users */
+  dismissalType: AnnouncementDismissalType;
+  /** HH:MM in 24h format — used when dismissalType is 'scheduled' */
+  scheduledDismissalTime?: string;
+  /** Seconds until auto-dismiss — used when dismissalType is 'duration' */
+  dismissalDurationSeconds?: number;
+  /**
+   * Building IDs this announcement targets.
+   * An empty array means ALL buildings (broadcast to everyone).
+   */
+  targetBuildings: string[];
+  createdAt: number;
+  updatedAt: number;
+  /** Email of the admin who created/last modified this announcement */
+  createdBy: string;
 }
 
 export const DEFAULT_GLOBAL_STYLE: GlobalStyle = {
