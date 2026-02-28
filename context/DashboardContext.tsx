@@ -63,7 +63,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     featurePermissions,
     selectedBuildings,
   } = useAuth();
-  const { driveService } = useGoogleDrive();
+  const { driveService, userDomain } = useGoogleDrive();
   const {
     saveDashboard: saveDashboardFirestore,
     saveDashboards: saveDashboardsFirestore,
@@ -316,7 +316,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!isAdmin && driveService) {
         try {
           const fileId = await driveService.exportDashboard(dashboard);
-          await driveService.makePublic(fileId);
+          await driveService.makePublic(fileId, userDomain);
           return `drive-${fileId}`;
         } catch (e) {
           console.error('Drive sharing failed, falling back to Firestore:', e);

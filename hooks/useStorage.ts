@@ -16,7 +16,7 @@ export const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
   const { isAdmin } = useAuth();
-  const { driveService } = useGoogleDrive();
+  const { driveService, userDomain } = useGoogleDrive();
 
   const uploadFile = async (path: string, file: File): Promise<string> => {
     setUploading(true);
@@ -43,7 +43,7 @@ export const useStorage = () => {
           'Assets/Backgrounds'
         );
         // Make it public so it can be viewed as a background
-        await driveService.makePublic(driveFile.id);
+        await driveService.makePublic(driveFile.id, userDomain);
         // Use webContentLink for direct image access
         return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
@@ -67,7 +67,7 @@ export const useStorage = () => {
           `sticker-${Date.now()}-${file.name}`,
           'Assets/Stickers'
         );
-        await driveService.makePublic(driveFile.id);
+        await driveService.makePublic(driveFile.id, userDomain);
         return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
         setUploading(false);
@@ -93,7 +93,7 @@ export const useStorage = () => {
           `display-${Date.now()}-${file.name}`,
           'Assets/DisplayImages'
         );
-        await driveService.makePublic(driveFile.id);
+        await driveService.makePublic(driveFile.id, userDomain);
         return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
         setUploading(false);
@@ -119,7 +119,7 @@ export const useStorage = () => {
           `screenshot-${Date.now()}.jpg`,
           'Assets/Screenshots'
         );
-        await driveService.makePublic(driveFile.id);
+        await driveService.makePublic(driveFile.id, userDomain);
         return driveFile.webContentLink ?? driveFile.webViewLink ?? '';
       } finally {
         setUploading(false);
@@ -205,7 +205,7 @@ export const useStorage = () => {
           `pdf-${Date.now()}-${file.name}`,
           'Assets/PDFs'
         );
-        await driveService.makePublic(driveFile.id);
+        await driveService.makePublic(driveFile.id, userDomain);
         const previewUrl = `https://drive.google.com/file/d/${driveFile.id}/preview`;
         return {
           url: previewUrl,
