@@ -85,7 +85,7 @@ export const RandomConfigurationPanel: React.FC<
           <div className="flex gap-1.5">
             {VISUAL_STYLE_OPTIONS.map((opt) => {
               const isSelected =
-                (currentBuildingConfig.visualStyle ?? 'wheel') === opt.value;
+                (currentBuildingConfig.visualStyle ?? 'flash') === opt.value;
               return (
                 <button
                   key={opt.value}

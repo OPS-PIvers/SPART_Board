@@ -151,7 +151,7 @@ export const TimeToolConfigurationPanel: React.FC<
                   handleUpdateBuilding({ timerEndTrafficColor: value })
                 }
                 className={`flex-1 py-1.5 text-xxs font-bold rounded-lg border transition-colors ${
-                  currentBuildingConfig.timerEndTrafficColor === value
+                  (currentBuildingConfig.timerEndTrafficColor ?? null) === value
                     ? value
                       ? COLOR_CLASSES[value]
                       : 'bg-slate-700 text-white border-slate-700'

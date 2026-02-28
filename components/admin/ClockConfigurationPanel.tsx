@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BUILDINGS } from '@/config/buildings';
 import { ClockGlobalConfig, BuildingClockDefaults } from '@/types';
 import { Toggle } from '../common/Toggle';
+import { STANDARD_COLORS } from '@/config/colors';
 
 interface ClockConfigurationPanelProps {
   config: ClockGlobalConfig;
@@ -119,7 +120,7 @@ export const ClockConfigurationPanel: React.FC<
           <div className="flex items-center gap-3">
             <input
               type="color"
-              value={currentBuildingConfig.themeColor ?? '#ffffff'}
+              value={currentBuildingConfig.themeColor ?? STANDARD_COLORS.slate}
               onChange={(e) =>
                 handleUpdateBuilding({ themeColor: e.target.value })
               }

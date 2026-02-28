@@ -1466,7 +1466,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           break;
         case 'text':
           if (raw.bgColor) out.bgColor = raw.bgColor;
-          if (raw.fontSize) out.fontSize = raw.fontSize;
+          if (typeof raw.fontSize === 'number') out.fontSize = raw.fontSize;
           break;
         case 'traffic':
           if (raw.active !== undefined) out.active = raw.active;
@@ -1538,6 +1538,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
 
           const newWidgets = widgetsToAdd.map((item, index) => {
             const defaults = WIDGET_DEFAULTS[item.type] ?? {};
+            const adminConfig = getAdminBuildingConfig(item.type);
             maxZ++;
 
             // 3-Column Grid Layout
@@ -1557,8 +1558,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               flipped: false,
               z: maxZ,
               ...defaults,
+              // Layer order: widget defaults → admin building defaults → explicit item config
               config: {
                 ...(defaults.config ?? {}),
+                ...adminConfig,
                 ...(item.config ?? {}),
               },
             } as WidgetData;
@@ -1568,7 +1571,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
     },
-    [activeId]
+    [activeId, getAdminBuildingConfig]
   );
 
   const removeWidget = useCallback(
