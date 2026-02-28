@@ -355,6 +355,88 @@ export interface ScheduleGlobalConfig {
   buildingDefaults: Record<string, BuildingScheduleDefaults>;
 }
 
+// --- Clock Global Config ---
+export interface BuildingClockDefaults {
+  buildingId: string;
+  format24?: boolean;
+  fontFamily?: string;
+  themeColor?: string;
+}
+
+export interface ClockGlobalConfig {
+  buildingDefaults: Record<string, BuildingClockDefaults>;
+}
+
+// --- TimeTool (Timer/Stopwatch) Global Config ---
+export interface BuildingTimeToolDefaults {
+  buildingId: string;
+  duration?: number; // in seconds
+  timerEndTrafficColor?: 'red' | 'yellow' | 'green' | null;
+}
+
+export interface TimeToolGlobalConfig {
+  buildingDefaults: Record<string, BuildingTimeToolDefaults>;
+}
+
+// --- Checklist Global Config ---
+export interface ChecklistDefaultItem {
+  id: string;
+  text: string;
+}
+
+export interface BuildingChecklistDefaults {
+  buildingId: string;
+  items?: ChecklistDefaultItem[]; // Default item labels pre-populated on widget creation
+  scaleMultiplier?: number;
+}
+
+export interface ChecklistGlobalConfig {
+  buildingDefaults: Record<string, BuildingChecklistDefaults>;
+}
+
+// --- Sound Global Config ---
+export interface BuildingSoundDefaults {
+  buildingId: string;
+  visual?: 'thermometer' | 'speedometer' | 'line' | 'balls';
+  sensitivity?: number;
+}
+
+export interface SoundGlobalConfig {
+  buildingDefaults: Record<string, BuildingSoundDefaults>;
+}
+
+// --- Note (text) Global Config ---
+export interface BuildingNoteDefaults {
+  buildingId: string;
+  fontSize?: number;
+  bgColor?: string;
+}
+
+export interface NoteGlobalConfig {
+  buildingDefaults: Record<string, BuildingNoteDefaults>;
+}
+
+// --- Traffic Light Global Config ---
+export interface BuildingTrafficLightDefaults {
+  buildingId: string;
+  active?: 'red' | 'yellow' | 'green' | null;
+}
+
+export interface TrafficLightGlobalConfig {
+  buildingDefaults: Record<string, BuildingTrafficLightDefaults>;
+}
+
+// --- Random Global Config ---
+export interface BuildingRandomDefaults {
+  buildingId: string;
+  visualStyle?: 'flash' | 'slots' | 'wheel';
+  soundEnabled?: boolean;
+}
+
+export interface RandomGlobalConfig {
+  buildingDefaults: Record<string, BuildingRandomDefaults>;
+}
+
 export interface CalendarGlobalEvent {
   id: string;
   date: string; // ISO Date string (YYYY-MM-DD)

@@ -2,6 +2,49 @@ SPART Board Widget Configuration Analysis
 
 This document outlines the administrative and user-level configuration capabilities for all widgets in the SPART Board application. It is divided into widgets that currently have global administrative settings and those that could benefit from them in the future. The focus is on establishing Global Admin Configurations that set Building-Level Defaults (the initial state a widget boots up with when a teacher adds it to their dashboard, based on their building assignment).
 
+---
+
+## Implementation Status
+
+| Widget                      | Status                   | Notes                                                                                |
+| --------------------------- | ------------------------ | ------------------------------------------------------------------------------------ |
+| Catalyst                    | ✅ Implemented           | `CatalystPermissionEditor` component                                                 |
+| Lunch Count                 | ✅ Implemented           | Sheet IDs + submission URL in `FeatureConfigurationPanel`                            |
+| Weather                     | ✅ Implemented           | Fetching strategy, source, temperature ranges, showFeelsLike                         |
+| Webcam                      | ✅ Implemented           | OCR mode toggle (Standard vs Gemini)                                                 |
+| Expectations                | ✅ Implemented           | `ExpectationsConfigurationPanel` per-building option overrides                       |
+| Schedule                    | ✅ Implemented           | `ScheduleConfigurationPanel` per-building default schedule items                     |
+| Calendar                    | ✅ Implemented           | `CalendarGlobalConfig` type + `CalendarConfigurationModal`                           |
+| Stickers                    | ✅ Implemented           | `StickerLibraryModal` + `StickerGlobalConfig` type                                   |
+| Instructional Routines      | ✅ Implemented           | `InstructionalRoutinesManager` component                                             |
+| **Clock**                   | ✅ **Implemented (new)** | Per-building defaults: format24, fontFamily, themeColor — `ClockConfigurationPanel`  |
+| **Timer (time-tool)**       | ✅ **Implemented (new)** | Per-building defaults: duration, timerEndTrafficColor — `TimeToolConfigurationPanel` |
+| **Checklist**               | ✅ **Implemented (new)** | Per-building defaults: items[], scaleMultiplier — `ChecklistConfigurationPanel`      |
+| **Sound**                   | ✅ **Implemented (new)** | Per-building defaults: visual style, sensitivity — `SoundConfigurationPanel`         |
+| **Note (text)**             | ✅ **Implemented (new)** | Per-building defaults: fontSize, bgColor — `NoteConfigurationPanel`                  |
+| **Traffic Light**           | ✅ **Implemented (new)** | Per-building defaults: default active state — `TrafficLightConfigurationPanel`       |
+| **Random**                  | ✅ **Implemented (new)** | Per-building defaults: visualStyle, soundEnabled — `RandomConfigurationPanel`        |
+| Checklist (user dice faces) | ⬜ Not started           | Custom word/value faces per die (user-facing feature)                                |
+| Classes                     | ⬜ Not started           | SIS sync rate limits, display name format                                            |
+| Dice                        | ⬜ Not started           | Custom preset arrays, default count/style                                            |
+| Drawing                     | ⬜ Not started           | Restricted palettes, default mode per building                                       |
+| Embed                       | ⬜ Not started           | Domain allowlist, default URL per building                                           |
+| Magic                       | ⬜ Not started           | Usage quotas, prompt suggestions                                                     |
+| Materials                   | ⬜ Not started           | Standardized asset library, default activeItems                                      |
+| Mini Apps                   | ⬜ Not started           | Approved app registry, default activeApp per building                                |
+| PDF Viewer                  | ⬜ Not started           | Max file size limit, default PDF URL                                                 |
+| Poll                        | ⬜ Not started           | District-wide pushed polls                                                           |
+| QR Code                     | ⬜ Not started           | UTM tracking parameter appender                                                      |
+| Quiz                        | ⬜ Not started           | District curriculum repository                                                       |
+| Recess Gear                 | ⬜ Not started           | Weather-linked thresholds, useFeelsLike default                                      |
+| Record                      | ⬜ Not started           | Max duration/resolution limits                                                       |
+| Scoreboard                  | ⬜ Not started           | Standardized teams, reset cron                                                       |
+| Seating Chart               | ⬜ Not started           | Max nodes, default template per building                                             |
+| Smart Notebook              | ⬜ Not started           | Max pages/stroke paths                                                               |
+| Stickers (per-item)         | ⬜ Not started           | Global asset drop per building                                                       |
+
+---
+
 # Part 1: Widgets WITH Global Admin Settings
 
 These widgets currently have explicit UI controls in the FeatureConfigurationPanel allowing administrators to enforce global states and defaults.
