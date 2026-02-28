@@ -89,7 +89,7 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
     'StickerBookWidget'
   ),
   'seating-chart': lazyNamed(
-    () => import('./SeatingChartWidget'),
+    () => import('./SeatingChart/Widget'),
     'SeatingChartWidget'
   ),
   catalyst: lazyNamed(() => import('./CatalystWidget'), 'CatalystWidget'),
@@ -142,7 +142,7 @@ export const WIDGET_SETTINGS_COMPONENTS: Partial<
     'TimeToolSettings'
   ),
   'seating-chart': lazyNamed(
-    () => import('./SeatingChartSettings'),
+    () => import('./SeatingChart/Settings'),
     'SeatingChartSettings'
   ),
   catalyst: lazyNamed(() => import('./CatalystWidget'), 'CatalystSettings'),
