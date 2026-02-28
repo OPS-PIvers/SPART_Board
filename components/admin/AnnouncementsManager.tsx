@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  Suspense,
+} from 'react';
 import {
   collection,
   onSnapshot,
@@ -316,7 +322,10 @@ const EmbedConfigEditor: React.FC<{
   };
 
   const setTab = (tab: EmbedTab) => {
-    onChange({ ...config, mode: tab === 'url' || tab === 'code' ? tab : config.mode ?? 'url' });
+    onChange({
+      ...config,
+      mode: tab === 'url' || tab === 'code' ? tab : (config.mode ?? 'url'),
+    });
   };
 
   const TABS: { id: EmbedTab; label: string; icon: React.ReactNode }[] = [
@@ -385,8 +394,8 @@ const EmbedConfigEditor: React.FC<{
             </div>
           )}
           <p className="text-xs text-slate-500">
-            Paste any YouTube, Google Drive, Docs, Slides, Sheets, or Forms
-            link — it will be converted automatically.
+            Paste any YouTube, Google Drive, Docs, Slides, Sheets, or Forms link
+            — it will be converted automatically.
           </p>
         </div>
       )}
@@ -402,11 +411,16 @@ const EmbedConfigEditor: React.FC<{
               value={(config.html as string) ?? ''}
               onChange={(e) => onChange({ ...config, html: e.target.value })}
               className="w-full h-32 px-3 py-2 text-xs font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-primary"
-              placeholder={'<iframe src="..."></iframe>\nor\n<video src="..."></video>'}
+              placeholder={
+                '<iframe src="..."></iframe>\nor\n<video src="..."></video>'
+              }
             />
           </div>
           <div className="relative">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div
+              className="absolute inset-0 flex items-center"
+              aria-hidden="true"
+            >
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center">
@@ -492,11 +506,13 @@ const EmbedConfigEditor: React.FC<{
             )}
             {recordingUploadState === 'error' && (
               <div className="text-sm text-red-600">
-                Upload failed. Make sure Google Drive is connected and try again.
+                Upload failed. Make sure Google Drive is connected and try
+                again.
               </div>
             )}
           </div>
-          {(recordingUploadState === 'done' || recordingUploadState === 'error') && (
+          {(recordingUploadState === 'done' ||
+            recordingUploadState === 'error') && (
             <button
               onClick={() => setRecordingUploadState('idle')}
               className="text-xs text-slate-500 hover:text-slate-700 underline"
@@ -513,10 +529,9 @@ const EmbedConfigEditor: React.FC<{
           <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <Tv className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
             <p className="text-xs text-blue-800">
-              Stream live from{' '}
-              <strong>Google Meet</strong> using your Google Workspace for
-              Education Plus account. The live feed appears inside the
-              announcement window — no third-party tools required.
+              Stream live from <strong>Google Meet</strong> using your Google
+              Workspace for Education Plus account. The live feed appears inside
+              the announcement window — no third-party tools required.
             </p>
           </div>
 
@@ -880,7 +895,13 @@ const AnnouncementPreview: React.FC<{
       <div className="flex items-center justify-center p-4 bg-slate-800 min-h-[120px]">
         {WidgetComponent ? (
           <div
-            style={{ width: scaledW, height: scaledH, position: 'relative', borderRadius: 8, overflow: 'hidden' }}
+            style={{
+              width: scaledW,
+              height: scaledH,
+              position: 'relative',
+              borderRadius: 8,
+              overflow: 'hidden',
+            }}
           >
             <div
               style={{
@@ -939,8 +960,7 @@ const PollResponsesPanel: React.FC<{
 
   const exportCsv = () => {
     const rows = options.map(
-      (o, i) =>
-        `"${o.label.replace(/"/g, '""')}",${votes[i] ?? 0}`
+      (o, i) => `"${o.label.replace(/"/g, '""')}",${votes[i] ?? 0}`,
     );
     const csv = `Option,Votes\n${rows.join('\n')}`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
