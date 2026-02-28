@@ -460,12 +460,12 @@ export const DashboardView: React.FC = () => {
     if (stickerData) {
       e.preventDefault();
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const parsed = JSON.parse(stickerData);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const url = parsed.url as string;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const ratio = (parsed.ratio as number) || 1;
+        const parsed = JSON.parse(stickerData) as {
+          url: string;
+          ratio?: number;
+        };
+        const url = parsed.url;
+        const ratio = parsed.ratio ?? 1;
 
         const baseSize = 200;
         let w = baseSize;
