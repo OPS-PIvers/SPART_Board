@@ -28,7 +28,10 @@ vi.mock('firebase-functions/v2', () => ({
   https: {
     onCall: <T>(
       _options: unknown,
-      handler: (request: { data: T; auth?: { token: { email: string }; uid: string } }) => Promise<unknown>
+      handler: (request: {
+        data: T;
+        auth?: { token: { email: string }; uid: string };
+      }) => Promise<unknown>
     ) => handler,
     HttpsError: class extends Error {
       constructor(code: string, message: string) {
@@ -98,7 +101,9 @@ describe('triggerJulesWidgetGeneration', () => {
     };
 
     // Ensure the handler is typed correctly to match the return of onCall
-    const handler = triggerJulesWidgetGeneration as unknown as (req: typeof request) => Promise<{ success: boolean; message: string; consoleUrl: string }>;
+    const handler = triggerJulesWidgetGeneration as unknown as (
+      req: typeof request
+    ) => Promise<{ success: boolean; message: string; consoleUrl: string }>;
     const result = await handler(request);
 
     // Verify axios call arguments
@@ -109,7 +114,7 @@ describe('triggerJulesWidgetGeneration', () => {
         prompt: expect.stringContaining('Test Widget'),
         sourceContext: {
           source: 'sources/github.com/OPS-PIvers/SPART_Board',
-          githubRepoContext: { startingBranch: 'main' }
+          githubRepoContext: { startingBranch: 'main' },
         },
         automationMode: 'AUTO_CREATE_PR',
         title: 'Generate Widget: Test Widget',
