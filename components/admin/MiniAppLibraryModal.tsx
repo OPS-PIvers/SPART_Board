@@ -16,7 +16,7 @@ import {
   Trash2,
   Save,
   Code2,
-  GripVertical,
+  ChevronUp,
   AppWindow,
   Building2,
   Globe,
@@ -275,7 +275,7 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
                         className="text-slate-300 hover:text-slate-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="Move up"
                       >
-                        <GripVertical className="w-4 h-4" />
+                        <ChevronUp className="w-4 h-4" />
                       </button>
                     </div>
 

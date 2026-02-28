@@ -1477,7 +1477,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             out.soundEnabled = raw.soundEnabled;
           break;
         case 'dice':
-          if (typeof raw.diceCount === 'number') out.count = raw.diceCount;
+          if (typeof raw.count === 'number') out.count = raw.count;
           break;
         case 'scoreboard':
           if (Array.isArray(raw.teams) && raw.teams.length > 0) {

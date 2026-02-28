@@ -5,7 +5,6 @@ import {
   BuildingScoreboardDefaults,
   ScoreboardDefaultTeam,
 } from '@/types';
-import { WIDGET_PALETTE } from '@/config/colors';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 
 interface ScoreboardConfigurationPanelProps {
@@ -13,9 +12,24 @@ interface ScoreboardConfigurationPanelProps {
   onChange: (newConfig: ScoreboardGlobalConfig) => void;
 }
 
+// Must match TEAM_COLORS in ScoreboardItem.tsx — these are the only valid
+// color classes the scoreboard widget knows how to render.
+const SCOREBOARD_COLORS = [
+  'bg-blue-500',
+  'bg-red-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-purple-500',
+  'bg-pink-500',
+  'bg-indigo-500',
+  'bg-orange-500',
+  'bg-teal-600',
+  'bg-cyan-500',
+];
+
 const DEFAULT_TEAMS: ScoreboardDefaultTeam[] = [
-  { id: crypto.randomUUID(), name: 'Team A', color: WIDGET_PALETTE[4] }, // blue
-  { id: crypto.randomUUID(), name: 'Team B', color: WIDGET_PALETTE[1] }, // red
+  { id: crypto.randomUUID(), name: 'Team A', color: 'bg-blue-500' },
+  { id: crypto.randomUUID(), name: 'Team B', color: 'bg-red-500' },
 ];
 
 export const ScoreboardConfigurationPanel: React.FC<
@@ -52,7 +66,8 @@ export const ScoreboardConfigurationPanel: React.FC<
   };
 
   const handleAddTeam = () => {
-    const nextColor = WIDGET_PALETTE[teams.length % WIDGET_PALETTE.length];
+    const nextColor =
+      SCOREBOARD_COLORS[teams.length % SCOREBOARD_COLORS.length];
     handleUpdateBuilding({
       teams: [
         ...teams,
@@ -128,47 +143,56 @@ export const ScoreboardConfigurationPanel: React.FC<
 
           <div className="space-y-1.5 mb-3">
             {teams.map((team) => (
-              <div
-                key={team.id}
-                className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-2 shadow-sm"
-              >
-                <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+              <div key={team.id} className="space-y-1.5">
+                <div className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 flex items-center gap-2 shadow-sm">
+                  <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
 
-                {/* Color swatch + picker */}
-                <div className="relative shrink-0">
-                  <input
-                    type="color"
-                    value={team.color ?? WIDGET_PALETTE[0]}
-                    onChange={(e) =>
-                      handleUpdateTeam(team.id, { color: e.target.value })
-                    }
-                    className="w-6 h-6 rounded border border-slate-200 cursor-pointer p-0 bg-white"
-                    title="Team color"
+                  {/* Color swatch showing current color */}
+                  <div
+                    className={`w-4 h-4 rounded-full shrink-0 ${team.color ?? 'bg-blue-500'}`}
                   />
+
+                  <input
+                    type="text"
+                    value={team.name}
+                    onChange={(e) =>
+                      handleUpdateTeam(team.id, { name: e.target.value })
+                    }
+                    className="flex-1 text-xs border-none outline-none bg-transparent font-medium"
+                    placeholder="Team name..."
+                  />
+
+                  <button
+                    onClick={() => handleRemoveTeam(team.id)}
+                    disabled={teams.length <= 2}
+                    className="text-red-400 hover:text-red-600 p-0.5 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={
+                      teams.length <= 2
+                        ? 'Minimum 2 teams required'
+                        : 'Remove team'
+                    }
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <input
-                  type="text"
-                  value={team.name}
-                  onChange={(e) =>
-                    handleUpdateTeam(team.id, { name: e.target.value })
-                  }
-                  className="flex-1 text-xs border-none outline-none bg-transparent font-medium"
-                  placeholder="Team name..."
-                />
-
-                <button
-                  onClick={() => handleRemoveTeam(team.id)}
-                  disabled={teams.length <= 2}
-                  className="text-red-400 hover:text-red-600 p-0.5 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={
-                    teams.length <= 2
-                      ? 'Minimum 2 teams required'
-                      : 'Remove team'
-                  }
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {/* Color palette row */}
+                <div className="flex gap-1 pl-6">
+                  {SCOREBOARD_COLORS.map((colorClass) => (
+                    <button
+                      key={colorClass}
+                      onClick={() =>
+                        handleUpdateTeam(team.id, { color: colorClass })
+                      }
+                      className={`w-4 h-4 rounded-full ${colorClass} transition-transform hover:scale-125 ${
+                        team.color === colorClass
+                          ? 'ring-2 ring-offset-1 ring-slate-400'
+                          : ''
+                      }`}
+                      title={colorClass}
+                    />
+                  ))}
+                </div>
               </div>
             ))}
 

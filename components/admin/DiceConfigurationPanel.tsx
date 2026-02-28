@@ -37,7 +37,7 @@ export const DiceConfigurationPanel: React.FC<DiceConfigurationPanelProps> = ({
     });
   };
 
-  const currentCount = currentBuildingConfig.count ?? 2;
+  const currentCount = currentBuildingConfig.count ?? 1;
 
   return (
     <div className="space-y-6">
@@ -91,7 +91,7 @@ export const DiceConfigurationPanel: React.FC<DiceConfigurationPanelProps> = ({
             ))}
           </div>
           <p className="text-xxs text-slate-400 mt-1.5">
-            Widget default: 2 dice
+            Widget default: 1 die
           </p>
         </div>
       </div>
