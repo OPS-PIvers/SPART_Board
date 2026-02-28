@@ -52,7 +52,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-  where,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -350,63 +349,32 @@ export const MiniAppWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
     return () => unsubscribe();
   }, [user, addToast]);
 
-  // Global library listener — uses two Firestore queries so only docs the teacher
-  // is entitled to see are fetched: (1) untagged apps (buildings == []) and
-  // (2) apps targeting this teacher's building(s). Results are merged and sorted
-  // by `order` on the client. When selectedBuildings is empty (building unknown),
-  // only untagged apps are shown.
+  // Global library listener — subscribes to all published mini apps and filters
+  // client-side. An app is visible when its `buildings` array is empty/absent
+  // (available to everyone) OR contains at least one of the teacher's buildings.
+  // When the teacher has no building context, only untagged apps are shown.
   useEffect(() => {
-    const globalRef = collection(db, 'global_mini_apps');
-    const orderClause = orderBy('order', 'asc');
-
-    // Local mutable buffers so each listener can update its slice independently.
-    let untaggedApps: GlobalMiniAppItem[] = [];
-    let buildingApps: GlobalMiniAppItem[] = [];
-
-    const merge = () => {
-      const seen = new Set<string>();
-      const merged: GlobalMiniAppItem[] = [];
-      for (const app of [...untaggedApps, ...buildingApps]) {
-        if (!seen.has(app.id)) {
-          seen.add(app.id);
-          merged.push(app);
-        }
-      }
-      merged.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      setGlobalLibrary(merged);
-    };
-
-    // Query 1: apps with no building targeting (visible to all teachers)
-    const q1 = query(globalRef, where('buildings', '==', []), orderClause);
-    const unsub1 = onSnapshot(q1, (snap) => {
-      untaggedApps = snap.docs.map(
-        (d) => ({ ...d.data(), id: d.id }) as GlobalMiniAppItem
-      );
-      merge();
-    });
-
-    if (selectedBuildings.length === 0) {
-      // No building context — only show untagged apps; skip second query.
-      return () => unsub1();
-    }
-
-    // Query 2: apps explicitly targeting at least one of the teacher's buildings
-    const q2 = query(
-      globalRef,
-      where('buildings', 'array-contains-any', selectedBuildings),
-      orderClause
+    const q = query(
+      collection(db, 'global_mini_apps'),
+      orderBy('order', 'asc')
     );
-    const unsub2 = onSnapshot(q2, (snap) => {
-      buildingApps = snap.docs.map(
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const allApps = snap.docs.map(
         (d) => ({ ...d.data(), id: d.id }) as GlobalMiniAppItem
       );
-      merge();
+      const filtered = allApps.filter((app) => {
+        // Treat absent or empty buildings as "all buildings"
+        const appBuildings = Array.isArray(app.buildings) ? app.buildings : [];
+        const isGlobal = appBuildings.length === 0;
+        if (isGlobal) return true;
+        if (selectedBuildings.length === 0) return false;
+        return appBuildings.some((b) => selectedBuildings.includes(b));
+      });
+      setGlobalLibrary(filtered);
     });
 
-    return () => {
-      unsub1();
-      unsub2();
-    };
+    return () => unsubscribe();
   }, [selectedBuildings]);
 
   // --- HANDLERS ---

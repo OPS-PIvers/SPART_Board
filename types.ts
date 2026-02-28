@@ -576,10 +576,11 @@ export interface MiniAppItem {
  * A MiniAppItem published to the global library by an admin.
  * Lives in the `/global_mini_apps/{id}` Firestore collection.
  * `buildings` is a list of building IDs this app is targeted to;
- * an empty array (or omitted) means it is available to all buildings.
+ * an empty array means it is available to all buildings.
+ * This field is always persisted (never omitted) so Firestore queries on it are reliable.
  */
 export interface GlobalMiniAppItem extends MiniAppItem {
-  buildings?: string[];
+  buildings: string[];
   gradeLevels?: GradeLevel[];
 }
 

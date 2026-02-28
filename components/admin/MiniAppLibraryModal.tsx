@@ -398,13 +398,6 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
                     })}
                   </div>
                 )}
-
-                {!isAllBuildings && editBuildings.length === 0 && (
-                  <p className="text-xxs text-amber-600 font-bold mt-1.5">
-                    No buildings selected — app will not be visible to any
-                    teachers until at least one building is selected.
-                  </p>
-                )}
               </div>
 
               {/* Code Editor */}
