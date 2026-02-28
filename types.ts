@@ -571,6 +571,17 @@ export interface MiniAppItem {
   order?: number;
 }
 
+/**
+ * A MiniAppItem published to the global library by an admin.
+ * Lives in the `/global_mini_apps/{id}` Firestore collection.
+ * `buildings` is a list of building IDs this app is targeted to;
+ * an empty array (or omitted) means it is available to all buildings.
+ */
+export interface GlobalMiniAppItem extends MiniAppItem {
+  buildings?: string[];
+  gradeLevels?: GradeLevel[];
+}
+
 // 2. Define the Widget Configuration
 export interface MiniAppConfig {
   activeApp: MiniAppItem | null;

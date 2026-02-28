@@ -757,6 +757,7 @@ export const FeatureConfigurationPanel: React.FC<
         'webcam',
         'stickers',
         'calendar',
+        'miniApp',
         'expectations',
         ...Object.keys(BUILDING_CONFIG_PANELS),
       ].includes(tool.type) && (
