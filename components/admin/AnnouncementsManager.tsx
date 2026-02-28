@@ -28,7 +28,6 @@ import {
   StopCircle,
   Copy,
   Check,
-  ExternalLink,
   Tv,
   BarChart2,
 } from 'lucide-react';
@@ -316,16 +315,6 @@ const EmbedConfigEditor: React.FC<{
     }
   };
 
-  // Jitsi live meeting room generation
-  const [jitsiRoom, setJitsiRoom] = useState('');
-  const generateJitsiRoom = () => {
-    const slug = `SPART-${Date.now().toString(36).toUpperCase()}`;
-    setJitsiRoom(slug);
-    const meetUrl = `https://meet.jit.si/${slug}`;
-    const html = `<iframe src="${meetUrl}" allow="camera; microphone; fullscreen; display-capture; autoplay" style="width:100%;height:100%;border:none;"></iframe>`;
-    onChange({ ...config, mode: 'code', html, url: '' });
-  };
-
   const setTab = (tab: EmbedTab) => {
     onChange({ ...config, mode: tab === 'url' || tab === 'code' ? tab : config.mode ?? 'url' });
   };
@@ -521,10 +510,46 @@ const EmbedConfigEditor: React.FC<{
       {/* Live Meeting tab */}
       {activeTab === 'live' && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-600">
-            Generate a free Jitsi Meet room or paste a YouTube Live URL. Students
-            will see the live feed inside the announcement window.
-          </p>
+          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <Tv className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-800">
+              Stream live from{' '}
+              <strong>Google Meet</strong> using your Google Workspace for
+              Education Plus account. The live feed appears inside the
+              announcement window — no third-party tools required.
+            </p>
+          </div>
+
+          {/* Step-by-step instructions */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+              How to start a live stream
+            </p>
+            <ol className="space-y-1.5">
+              {[
+                'Open Google Meet and start your meeting.',
+                <>
+                  Click <strong>Activities</strong> (puzzle piece icon, bottom
+                  right) &rarr; <strong>Live streaming</strong>.
+                </>,
+                <>
+                  Click <strong>Start streaming</strong>. Google creates a
+                  YouTube Live event automatically.
+                </>,
+                'Copy the YouTube Live URL shown in Meet.',
+                'Paste it in the field below and click away to apply.',
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-brand-blue-primary text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span className="text-xs text-slate-600">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {/* URL input */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-slate-700">
               YouTube Live URL
@@ -543,63 +568,19 @@ const EmbedConfigEditor: React.FC<{
               </p>
             )}
           </div>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-white px-2 text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                OR USE JITSI MEET (FREE)
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <button
-              onClick={generateJitsiRoom}
-              className="flex items-center gap-2 px-4 py-2.5 w-full justify-center bg-brand-blue-primary hover:bg-brand-blue-dark text-white text-sm font-semibold rounded-xl transition-colors"
+
+          <p className="text-xs text-slate-400">
+            Requires Google Workspace for Education Plus or the Teaching &amp;
+            Learning Upgrade.{' '}
+            <a
+              href="https://support.google.com/meet/answer/9308630"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-slate-600"
             >
-              <Tv className="w-4 h-4" />
-              Generate Jitsi Meeting Room
-            </button>
-            {jitsiRoom && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                <p className="text-xs font-semibold text-blue-800">
-                  Room created: {jitsiRoom}
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded truncate">
-                    https://meet.jit.si/{jitsiRoom}
-                  </code>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(`https://meet.jit.si/${jitsiRoom}`)
-                    }
-                    className="p-1.5 text-blue-600 hover:bg-blue-100 rounded"
-                    title="Copy meeting link"
-                  >
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                  <a
-                    href={`https://meet.jit.si/${jitsiRoom}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 text-blue-600 hover:bg-blue-100 rounded"
-                    title="Open meeting in new tab"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-                <p className="text-xs text-blue-600">
-                  Share the link above with yourself to start the meeting.
-                  Students will see it live in the announcement.
-                </p>
-              </div>
-            )}
-          </div>
+              Learn more
+            </a>
+          </p>
         </div>
       )}
     </div>
