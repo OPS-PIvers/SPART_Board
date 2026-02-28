@@ -102,8 +102,13 @@ export const SeatingChartSidebar: React.FC<SeatingChartSidebarProps> = ({
                   onBlur={() => {
                     const parsed = Number.parseInt(localTemplateColumns, 10);
                     if (Number.isNaN(parsed)) {
+                      const legacyTemplateRows = (
+                        config as SeatingChartConfig & { templateRows?: number }
+                      ).templateRows;
                       setLocalTemplateColumns(
-                        String(config.templateColumns ?? 6)
+                        String(
+                          config.templateColumns ?? legacyTemplateRows ?? 6
+                        )
                       );
                     }
                   }}

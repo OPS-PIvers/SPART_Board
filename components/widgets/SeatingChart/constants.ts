@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ElementType } from 'react';
 import { FurnitureItem, SeatingChartTemplate } from '@/types';
 import {
   Armchair,
@@ -16,7 +16,7 @@ export const FURNITURE_TYPES: {
   label: string;
   w: number;
   h: number;
-  icon: React.ElementType;
+  icon: ElementType;
 }[] = [
   { type: 'desk', label: 'Desk', w: 80, h: 65, icon: Monitor },
   {
@@ -49,7 +49,7 @@ export const MIN_CANVAS_DIM = 200;
 export const TEMPLATES: {
   id: SeatingChartTemplate;
   label: string;
-  icon: React.ElementType;
+  icon: ElementType;
   description: string;
 }[] = [
   {
