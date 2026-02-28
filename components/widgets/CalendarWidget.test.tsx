@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CalendarWidget, CalendarSettings } from './CalendarWidget';
@@ -21,6 +21,11 @@ describe('CalendarWidget', () => {
     (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       mockDashboardContext
     );
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: null,
+      customClaims: {},
+      selectedBuildings: [],
+    });
   });
 
   const mockConfig: CalendarConfig = {
@@ -72,6 +77,7 @@ describe('CalendarSettings', () => {
     (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       user: null,
       customClaims: {},
+      selectedBuildings: [],
     });
     // Mock window.prompt
     vi.spyOn(window, 'prompt').mockImplementation(() => null);
@@ -139,7 +145,9 @@ describe('CalendarSettings', () => {
 
     // In the CI structure, the event text is separated into day and title.
     // The trash icon is inside a button next to the event details.
-    const removeButton = container.querySelector('svg.lucide-trash2')?.closest('button');
+    const removeButton = container
+      .querySelector('svg.lucide-trash2')
+      ?.closest('button');
     expect(removeButton).toBeInTheDocument();
 
     if (removeButton) {
