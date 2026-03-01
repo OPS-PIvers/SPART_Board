@@ -324,7 +324,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return shareDashboardFirestore(dashboard);
     },
-    [isAdmin, driveService, shareDashboardFirestore]
+    [isAdmin, driveService, shareDashboardFirestore, userDomain]
   );
 
   const handleLoadSharedDashboard = useCallback(
