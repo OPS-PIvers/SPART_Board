@@ -271,7 +271,7 @@ const EmbedConfigEditor: React.FC<{
     if (finalUrl !== currentUrl) {
       onChange({ ...config, url: finalUrl });
     }
-  }, [config.mode, config.url, embedUrl, rawUrl, onChange]);
+  }, [config, embedUrl, rawUrl, onChange]);
 
   const applyUrl = () => {
     const finalUrl = embedUrl || rawUrl.trim();
@@ -981,6 +981,7 @@ const PollResponsesPanel: React.FC<{
       );
       return unsub;
     } catch {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       return () => {};
     }
   }, [announcement.id]);
