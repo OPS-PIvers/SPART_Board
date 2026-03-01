@@ -236,6 +236,7 @@ const EmbedConfigEditor: React.FC<{
     return mode === 'url' || mode === 'code' ? mode : 'url';
   });
   const { driveService, userDomain } = useGoogleDrive();
+  const { addToast } = useDashboard();
 
   // Keep raw URL in local state so the input remains editable while typing.
   // The converted (embeddable) URL is only written to config on blur.
@@ -319,7 +320,7 @@ const EmbedConfigEditor: React.FC<{
       }
     } catch (err) {
       console.error('Failed to upload video:', err);
-      alert('Failed to upload video. Please try again.');
+      addToast('Failed to upload video. Please try again.', 'error');
     } finally {
       setUploadingVideo(false);
     }
@@ -941,7 +942,7 @@ const PollResponsesPanel: React.FC<{
   announcement: Announcement;
   onClose: () => void;
 }> = ({ announcement, onClose }) => {
-  const config = announcement.widgetConfig as PollConfig;
+  const config = announcement.widgetConfig as unknown as PollConfig;
   const options = config.options ?? [];
   const [votes, setVotes] = useState<Record<number, number>>({});
 
