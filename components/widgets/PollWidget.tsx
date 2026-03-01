@@ -135,6 +135,16 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
               total === 0 ? 0 : Math.round((o.votes / total) * 100);
             const isVoted = userVoted === i;
 
+            const buttonCls = [
+              'w-full text-left group',
+              isVoted ? 'opacity-100' : '',
+              _announcementId && userVoted !== null && !isVoted
+                ? 'opacity-60'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+
             return (
               <button
                 key={i}
@@ -142,7 +152,7 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
                   vote(i);
                 }}
                 disabled={_announcementId !== undefined && userVoted !== null}
-                className={`w-full text-left group ${isVoted ? 'opacity-100' : ''} ${_announcementId && userVoted !== null && !isVoted ? 'opacity-60' : ''}`}
+                className={buttonCls}
               >
                 <div
                   className={`flex justify-between mb-1 uppercase tracking-wider text-slate-600 font-${globalStyle.fontFamily}`}
@@ -166,31 +176,33 @@ export const PollWidget: React.FC<{ widget: WidgetData }> = ({ widget }) => {
         </div>
       }
       footer={
-        <div
-          style={{
-            paddingLeft: 'min(16px, 3cqmin)',
-            paddingRight: 'min(16px, 3cqmin)',
-            paddingBottom: 'min(8px, 1.5cqmin)',
-          }}
-        >
-          <button
-            onClick={handleReset}
-            className="w-full flex items-center justify-center font-black uppercase text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+        !_announcementId ? (
+          <div
             style={{
-              gap: 'min(8px, 2cqmin)',
-              padding: 'min(8px, 1.5cqmin)',
-              fontSize: 'min(14px, 4cqmin)',
+              paddingLeft: 'min(16px, 3cqmin)',
+              paddingRight: 'min(16px, 3cqmin)',
+              paddingBottom: 'min(8px, 1.5cqmin)',
             }}
           >
-            <RotateCcw
+            <button
+              onClick={handleReset}
+              className="w-full flex items-center justify-center font-black uppercase text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
               style={{
-                width: 'min(16px, 4cqmin)',
-                height: 'min(16px, 4cqmin)',
+                gap: 'min(8px, 2cqmin)',
+                padding: 'min(8px, 1.5cqmin)',
+                fontSize: 'min(14px, 4cqmin)',
               }}
-            />{' '}
-            Reset Poll
-          </button>
-        </div>
+            >
+              <RotateCcw
+                style={{
+                  width: 'min(16px, 4cqmin)',
+                  height: 'min(16px, 4cqmin)',
+                }}
+              />{' '}
+              Reset Poll
+            </button>
+          </div>
+        ) : null
       }
     />
   );

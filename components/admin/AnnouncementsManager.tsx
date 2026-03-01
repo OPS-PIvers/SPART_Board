@@ -243,6 +243,13 @@ const EmbedConfigEditor: React.FC<{
   const [rawUrl, setRawUrl] = useState((config.url as string) ?? '');
   const [copied, setCopied] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   // Keep rawUrl in sync when config.url changes from the parent (e.g. on edit open)
   const prevConfigUrl = useRef(config.url);
@@ -256,6 +263,16 @@ const EmbedConfigEditor: React.FC<{
   const embedUrl = convertToEmbedUrl(rawUrl);
   const wasConverted = rawUrl.trim() !== '' && embedUrl !== rawUrl.trim();
 
+  // Keep config.url in sync with the latest rawUrl so saves never see a stale URL.
+  useEffect(() => {
+    if (config.mode === 'code') return;
+    const finalUrl = embedUrl || rawUrl.trim();
+    const currentUrl = (config.url as string | undefined) ?? '';
+    if (finalUrl !== currentUrl) {
+      onChange({ ...config, url: finalUrl });
+    }
+  }, [config.mode, config.url, embedUrl, rawUrl, onChange]);
+
   const applyUrl = () => {
     const finalUrl = embedUrl || rawUrl.trim();
     onChange({ ...config, url: finalUrl });
@@ -264,7 +281,8 @@ const EmbedConfigEditor: React.FC<{
   const copyToClipboard = (text: string) => {
     void navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copiedTimerRef.current !== null) clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   // Screen recording — upload result to Google Drive
@@ -282,7 +300,7 @@ const EmbedConfigEditor: React.FC<{
             const driveFile = await driveService.uploadFile(
               blob,
               fileName,
-              'SPART Board/Announcements'
+              'Announcements'
             );
             await driveService.makePublic(driveFile.id, userDomain);
             const videoUrl =
@@ -310,7 +328,7 @@ const EmbedConfigEditor: React.FC<{
         const driveFile = await driveService.uploadFile(
           file,
           `announcement-${Date.now()}-${file.name}`,
-          'SPART Board/Announcements'
+          'Announcements'
         );
         await driveService.makePublic(driveFile.id, userDomain);
         const videoUrl =
@@ -330,6 +348,8 @@ const EmbedConfigEditor: React.FC<{
     setActiveTab(tab);
     if (tab === 'url' || tab === 'code') {
       onChange({ ...config, mode: tab });
+    } else if (tab === 'live' && config.mode !== 'url') {
+      onChange({ ...config, mode: 'url' });
     }
   };
 
@@ -947,18 +967,22 @@ const PollResponsesPanel: React.FC<{
   const [votes, setVotes] = useState<Record<number, number>>({});
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'announcements', announcement.id, 'pollVotes'),
-      (snap) => {
-        const counts: Record<number, number> = {};
-        snap.forEach((d) => {
-          const data = d.data() as { count?: number };
-          counts[Number(d.id)] = data.count ?? 0;
-        });
-        setVotes(counts);
-      }
-    );
-    return unsub;
+    try {
+      const unsub = onSnapshot(
+        collection(db, 'announcements', announcement.id, 'pollVotes'),
+        (snap) => {
+          const counts: Record<number, number> = {};
+          snap.forEach((d) => {
+            const data = d.data() as { count?: number };
+            counts[Number(d.id)] = data.count ?? 0;
+          });
+          setVotes(counts);
+        }
+      );
+      return unsub;
+    } catch {
+      return () => {};
+    }
   }, [announcement.id]);
 
   const total = options.reduce((sum, _, i) => sum + (votes[i] ?? 0), 0);
