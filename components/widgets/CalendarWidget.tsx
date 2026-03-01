@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -24,6 +30,11 @@ import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { Toggle } from '../common/Toggle';
 import { CalendarApiError } from '@/utils/googleCalendarService';
 
+/** Maximum number of event cards visible at once before the list scrolls. */
+const MAX_VISIBLE_EVENTS = 5;
+/** Approximated gap between cards in px (max of the CSS `min(10px, 2cqmin)` expression). */
+const APPROX_GAP_PX = 10;
+
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -42,6 +53,20 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const [isLoadingSync, setIsLoadingSync] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setScrollContainerHeight(el.clientHeight);
+    });
+    observer.observe(el);
+    setScrollContainerHeight(el.clientHeight); // capture initial height before first resize
+    return () => observer.disconnect();
+  }, []);
 
   // 1. Subscribe to Global Admin Config
   useEffect(() => {
@@ -208,6 +233,18 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
+  const needsScroll = displayEvents.length > MAX_VISIBLE_EVENTS;
+  // Compute a per-item min-height so exactly MAX_VISIBLE_EVENTS cards are visible before scrolling.
+  // We approximate the gap at APPROX_GAP_PX (the max value of min(10px, 2cqmin)).
+  const itemHeight =
+    needsScroll && scrollContainerHeight > 0
+      ? Math.max(
+          40,
+          (scrollContainerHeight - (MAX_VISIBLE_EVENTS - 1) * APPROX_GAP_PX) /
+            MAX_VISIBLE_EVENTS
+        )
+      : undefined;
+
   return (
     <WidgetLayout
       padding="p-0"
@@ -252,6 +289,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
           )}
 
           <div
+            ref={scrollRef}
             className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
             style={{ gap: 'min(10px, 2cqmin)' }}
           >
@@ -262,6 +300,9 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 style={{
                   gap: 'min(16px, 3.5cqmin)',
                   padding: 'min(16px, 3.5cqmin)',
+                  flex: needsScroll && itemHeight ? '0 0 auto' : '1 1 0',
+                  minHeight:
+                    needsScroll && itemHeight ? `${itemHeight}px` : '0',
                 }}
               >
                 <div
