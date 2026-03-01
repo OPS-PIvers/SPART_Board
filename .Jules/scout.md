@@ -26,5 +26,5 @@
 
 ## 2025-02-28 - [Firebase Config Mocking in Tests]
 
-**Gap:** Components utilizing Firebase logic immediately fail the Vitest suite locally and in CI when the real `VITE_FIREBASE_API_KEY` environment variable is not set.
-**Fix:** Modified `tests/setup.ts` to include `vi.stubEnv('VITE_FIREBASE_API_KEY', 'test-api-key')`, providing a harmless dummy variable that satisfies the Firebase configuration gating (e.g., the `isConfigured` checks in the Firebase config/App initialization) without risking real credentials.
+**Gap:** Components utilizing Firebase logic immediately fail the Vitest suite locally and in CI when the real `VITE_FIREBASE_API_KEY` environment variable is not set. In addition, providing dummy variables still initializes the real Firebase SDK path, which adds overhead and can make tests flaky.
+**Fix:** Modified `tests/setup.ts` to globally mock `@/config/firebase` using `vi.mock()`. This returns lightweight dummy objects (`db`, `auth`, `storage`, etc.) and sets `isConfigured: false`, keeping tests fast and fully decoupled from real Firebase initialization logic.

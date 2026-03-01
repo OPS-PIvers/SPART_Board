@@ -41,9 +41,23 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string): any => {
   }
   return null;
 });
-vi.stubEnv('VITE_FIREBASE_API_KEY', 'test-api-key');
-vi.stubEnv('VITE_FIREBASE_AUTH_DOMAIN', 'test-auth-domain');
-vi.stubEnv('VITE_FIREBASE_PROJECT_ID', 'test-project-id');
-vi.stubEnv('VITE_FIREBASE_STORAGE_BUCKET', 'test-storage-bucket');
-vi.stubEnv('VITE_FIREBASE_MESSAGING_SENDER_ID', 'test-messaging-sender-id');
-vi.stubEnv('VITE_FIREBASE_APP_ID', 'test-app-id');
+// Globally mock Firebase config to avoid initializing the real SDK in tests
+vi.mock('@/config/firebase', () => {
+  const app = {};
+  const db = {};
+  const storage = {};
+  const functions = {};
+  const auth = {
+    onAuthStateChanged: vi.fn(),
+    signInWithPopup: vi.fn(),
+    signOut: vi.fn(),
+  };
+  return {
+    isConfigured: false,
+    app,
+    db,
+    auth,
+    storage,
+    functions,
+  };
+});
