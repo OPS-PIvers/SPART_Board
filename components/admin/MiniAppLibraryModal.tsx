@@ -200,13 +200,6 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
       .join(', ');
   };
 
-  const isAllBuildings =
-    editBuildings.length === 0 || editBuildings.length === BUILDINGS.length;
-
-  const toggleAllBuildings = () => {
-    setEditBuildings(isAllBuildings ? [] : BUILDINGS.map((b) => b.id));
-  };
-
   // --- Render ---
   return (
     <div className="fixed inset-0 z-modal-nested bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -353,49 +346,42 @@ export const MiniAppLibraryModal: React.FC<MiniAppLibraryModalProps> = ({
 
               {/* Building Targeting */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xxs font-black uppercase text-slate-400 tracking-widest">
-                    Available To
-                  </label>
-                  <button
-                    onClick={toggleAllBuildings}
-                    className="text-xxs font-bold text-violet-600 hover:text-violet-800 transition-colors"
-                  >
-                    {isAllBuildings
-                      ? 'Target Specific Buildings'
-                      : 'All Buildings'}
-                  </button>
+                <label className="block text-xxs font-black uppercase text-slate-400 tracking-widest mb-1">
+                  Available To
+                </label>
+                <p className="text-xs text-slate-500 mb-2">
+                  Select which buildings can use this app. Leave all unchecked
+                  to make it available to everyone.
+                </p>
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  {BUILDINGS.map((building) => {
+                    const isSelected = editBuildings.includes(building.id);
+                    return (
+                      <button
+                        key={building.id}
+                        type="button"
+                        onClick={() => toggleBuilding(building.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left text-xs font-bold transition-colors ${
+                          isSelected
+                            ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Building2 className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{building.name}</span>
+                        <span
+                          className={`ml-auto text-xxs font-normal ${isSelected ? 'text-violet-200' : 'text-slate-400'}`}
+                        >
+                          {building.gradeLabel}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-
-                {isAllBuildings ? (
+                {editBuildings.length === 0 && (
                   <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-bold">
                     <Globe className="w-4 h-4 shrink-0" />
                     Visible to teachers in all buildings
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {BUILDINGS.map((building) => {
-                      const isSelected = editBuildings.includes(building.id);
-                      return (
-                        <button
-                          key={building.id}
-                          onClick={() => toggleBuilding(building.id)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-left text-xs font-bold transition-colors ${
-                            isSelected
-                              ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          <Building2 className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">{building.name}</span>
-                          <span
-                            className={`ml-auto text-xxs font-normal ${isSelected ? 'text-violet-200' : 'text-slate-400'}`}
-                          >
-                            {building.gradeLabel}
-                          </span>
-                        </button>
-                      );
-                    })}
                   </div>
                 )}
               </div>
