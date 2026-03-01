@@ -30,6 +30,11 @@ import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { Toggle } from '../common/Toggle';
 import { CalendarApiError } from '@/utils/googleCalendarService';
 
+/** Maximum number of event cards visible at once before the list scrolls. */
+const MAX_VISIBLE_EVENTS = 5;
+/** Approximated gap between cards in px (max of the CSS `min(10px, 2cqmin)` expression). */
+const APPROX_GAP_PX = 10;
+
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -59,6 +64,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
       setScrollContainerHeight(el.clientHeight);
     });
     observer.observe(el);
+    setScrollContainerHeight(el.clientHeight); // capture initial height before first resize
     return () => observer.disconnect();
   }, []);
 
@@ -227,16 +233,15 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  const maxVisible = 5;
-  const needsScroll = displayEvents.length > maxVisible;
-  // Compute a per-item min-height so exactly maxVisible cards are visible before scrolling.
-  // We approximate the gap at 10px (the max value of min(10px, 2cqmin)).
-  const approxGap = 10;
+  const needsScroll = displayEvents.length > MAX_VISIBLE_EVENTS;
+  // Compute a per-item min-height so exactly MAX_VISIBLE_EVENTS cards are visible before scrolling.
+  // We approximate the gap at APPROX_GAP_PX (the max value of min(10px, 2cqmin)).
   const itemHeight =
     needsScroll && scrollContainerHeight > 0
       ? Math.max(
           40,
-          (scrollContainerHeight - (maxVisible - 1) * approxGap) / maxVisible
+          (scrollContainerHeight - (MAX_VISIBLE_EVENTS - 1) * APPROX_GAP_PX) /
+            MAX_VISIBLE_EVENTS
         )
       : undefined;
 
@@ -295,12 +300,9 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 style={{
                   gap: 'min(16px, 3.5cqmin)',
                   padding: 'min(16px, 3.5cqmin)',
-                  flex: needsScroll ? '0 0 auto' : '1 1 0',
-                  minHeight: needsScroll
-                    ? itemHeight
-                      ? `${itemHeight}px`
-                      : '0'
-                    : '0',
+                  flex: needsScroll && itemHeight ? '0 0 auto' : '1 1 0',
+                  minHeight:
+                    needsScroll && itemHeight ? `${itemHeight}px` : '0',
                 }}
               >
                 <div
