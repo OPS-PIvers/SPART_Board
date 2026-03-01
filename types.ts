@@ -437,6 +437,42 @@ export interface RandomGlobalConfig {
   buildingDefaults: Record<string, BuildingRandomDefaults>;
 }
 
+// --- Dice Global Config ---
+export interface BuildingDiceDefaults {
+  buildingId: string;
+  count?: number; // Default number of dice (1-6)
+}
+
+export interface DiceGlobalConfig {
+  buildingDefaults: Record<string, BuildingDiceDefaults>;
+}
+
+// --- Scoreboard Global Config ---
+export interface ScoreboardDefaultTeam {
+  id: string;
+  name: string;
+  color?: string;
+}
+
+export interface BuildingScoreboardDefaults {
+  buildingId: string;
+  teams?: ScoreboardDefaultTeam[];
+}
+
+export interface ScoreboardGlobalConfig {
+  buildingDefaults: Record<string, BuildingScoreboardDefaults>;
+}
+
+// --- Materials Global Config ---
+export interface BuildingMaterialsDefaults {
+  buildingId: string;
+  selectedItems?: string[]; // IDs of materials selected by default
+}
+
+export interface MaterialsGlobalConfig {
+  buildingDefaults: Record<string, BuildingMaterialsDefaults>;
+}
+
 export interface CalendarGlobalEvent {
   id: string;
   date: string; // ISO Date string (YYYY-MM-DD)
@@ -534,6 +570,18 @@ export interface MiniAppItem {
   html: string;
   createdAt: number;
   order?: number;
+}
+
+/**
+ * A MiniAppItem published to the global library by an admin.
+ * Lives in the `/global_mini_apps/{id}` Firestore collection.
+ * `buildings` is a list of building IDs this app is targeted to;
+ * an empty array means it is available to all buildings.
+ * This field is always persisted (never omitted) so Firestore queries on it are reliable.
+ */
+export interface GlobalMiniAppItem extends MiniAppItem {
+  buildings: string[];
+  gradeLevels?: GradeLevel[];
 }
 
 // 2. Define the Widget Configuration

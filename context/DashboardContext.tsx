@@ -1476,6 +1476,25 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           if (raw.soundEnabled !== undefined)
             out.soundEnabled = raw.soundEnabled;
           break;
+        case 'dice':
+          if (typeof raw.count === 'number') out.count = raw.count;
+          break;
+        case 'scoreboard':
+          if (Array.isArray(raw.teams) && raw.teams.length > 0) {
+            out.teams = (
+              raw.teams as Array<{ name: string; color?: string }>
+            ).map((t) => ({
+              id: crypto.randomUUID(),
+              name: t.name,
+              color: t.color,
+              score: 0,
+            }));
+          }
+          break;
+        case 'materials':
+          if (Array.isArray(raw.selectedItems) && raw.selectedItems.length > 0)
+            out.selectedItems = raw.selectedItems;
+          break;
         default:
           break;
       }

@@ -32,6 +32,7 @@ import { BetaUsersPanel } from '@/components/admin/BetaUsersPanel';
 import { InstructionalRoutinesManager } from '@/components/admin/InstructionalRoutinesManager';
 import { StickerLibraryModal } from '@/components/admin/StickerLibraryModal';
 import { CalendarConfigurationModal } from '@/components/admin/CalendarConfigurationModal';
+import { MiniAppLibraryModal } from '@/components/admin/MiniAppLibraryModal';
 import { StickerGlobalConfig } from '@/types';
 
 export const FeaturePermissionsManager: React.FC = () => {
@@ -56,6 +57,7 @@ export const FeaturePermissionsManager: React.FC = () => {
   const [isRoutinesLibraryOpen, setIsRoutinesLibraryOpen] = useState(false);
   const [isStickerLibraryOpen, setIsStickerLibraryOpen] = useState(false);
   const [isCalendarConfigOpen, setIsCalendarConfigOpen] = useState(false);
+  const [isMiniAppLibraryOpen, setIsMiniAppLibraryOpen] = useState(false);
   const [isSavingStickers, setIsSavingStickers] = useState(false);
   const { uploadWeatherImage } = useStorage();
 
@@ -445,6 +447,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                           setIsStickerLibraryOpen(true);
                         } else if (tool.type === 'calendar') {
                           setIsCalendarConfigOpen(true);
+                        } else if (tool.type === 'miniApp') {
+                          setIsMiniAppLibraryOpen(true);
                         } else {
                           setEditingConfig(
                             editingConfig === tool.type ? null : tool.type
@@ -456,6 +460,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                           isRoutinesLibraryOpen) ||
                         (tool.type === 'stickers' && isStickerLibraryOpen) ||
                         (tool.type === 'calendar' && isCalendarConfigOpen) ||
+                        (tool.type === 'miniApp' && isMiniAppLibraryOpen) ||
                         editingConfig === tool.type
                           ? 'bg-brand-blue-primary text-white'
                           : 'text-slate-400 hover:bg-slate-100'
@@ -551,6 +556,8 @@ export const FeaturePermissionsManager: React.FC = () => {
                         setIsStickerLibraryOpen(true);
                       } else if (tool.type === 'calendar') {
                         setIsCalendarConfigOpen(true);
+                      } else if (tool.type === 'miniApp') {
+                        setIsMiniAppLibraryOpen(true);
                       } else {
                         setEditingConfig(
                           editingConfig === tool.type ? null : tool.type
@@ -562,6 +569,7 @@ export const FeaturePermissionsManager: React.FC = () => {
                         isRoutinesLibraryOpen) ||
                       (tool.type === 'stickers' && isStickerLibraryOpen) ||
                       (tool.type === 'calendar' && isCalendarConfigOpen) ||
+                      (tool.type === 'miniApp' && isMiniAppLibraryOpen) ||
                       editingConfig === tool.type
                         ? 'bg-brand-blue-primary text-white'
                         : 'text-slate-400 hover:bg-slate-100'
@@ -722,6 +730,11 @@ export const FeaturePermissionsManager: React.FC = () => {
           isOpen={isCalendarConfigOpen}
           onClose={() => setIsCalendarConfigOpen(false)}
         />
+      )}
+
+      {/* Mini App Global Library Modal */}
+      {isMiniAppLibraryOpen && (
+        <MiniAppLibraryModal onClose={() => setIsMiniAppLibraryOpen(false)} />
       )}
     </div>
   );

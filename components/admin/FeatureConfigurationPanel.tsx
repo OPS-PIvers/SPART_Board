@@ -30,6 +30,9 @@ import { SoundConfigurationPanel } from './SoundConfigurationPanel';
 import { NoteConfigurationPanel } from './NoteConfigurationPanel';
 import { TrafficLightConfigurationPanel } from './TrafficLightConfigurationPanel';
 import { RandomConfigurationPanel } from './RandomConfigurationPanel';
+import { DiceConfigurationPanel } from './DiceConfigurationPanel';
+import { ScoreboardConfigurationPanel } from './ScoreboardConfigurationPanel';
+import { MaterialsConfigurationPanel } from './MaterialsConfigurationPanel';
 import { Toggle } from '../common/Toggle';
 
 // Helper type guard
@@ -54,6 +57,9 @@ const BUILDING_CONFIG_PANELS: Partial<Record<string, BuildingConfigPanel>> = {
   text: NoteConfigurationPanel as unknown as BuildingConfigPanel,
   traffic: TrafficLightConfigurationPanel as unknown as BuildingConfigPanel,
   random: RandomConfigurationPanel as unknown as BuildingConfigPanel,
+  dice: DiceConfigurationPanel as unknown as BuildingConfigPanel,
+  scoreboard: ScoreboardConfigurationPanel as unknown as BuildingConfigPanel,
+  materials: MaterialsConfigurationPanel as unknown as BuildingConfigPanel,
 };
 
 interface FeatureConfigurationPanelProps {
@@ -750,6 +756,8 @@ export const FeatureConfigurationPanel: React.FC<
         'catalyst',
         'webcam',
         'stickers',
+        'calendar',
+        'miniApp',
         'expectations',
         ...Object.keys(BUILDING_CONFIG_PANELS),
       ].includes(tool.type) && (
