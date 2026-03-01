@@ -14,16 +14,15 @@ export default defineConfig({
     },
   },
   build: {
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          firebase: [
-            'firebase/app',
-            'firebase/auth',
-            'firebase/firestore',
-            'firebase/storage',
-          ],
+          'firebase-app': ['firebase/app'],
+          'firebase-auth': ['firebase/auth'],
+          'firebase-firestore': ['firebase/firestore'],
+          'firebase-storage': ['firebase/storage'],
           'dnd-kit': [
             '@dnd-kit/core',
             '@dnd-kit/sortable',
@@ -31,7 +30,6 @@ export default defineConfig({
           ],
           'imgly-bg-removal': ['@imgly/background-removal'],
           utils: ['html-to-image', 'jszip'],
-          icons: ['lucide-react'],
         },
       },
     },
