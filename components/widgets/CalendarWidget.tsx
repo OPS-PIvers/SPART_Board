@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { useDashboard } from '../../context/useDashboard';
 import {
   WidgetData,
@@ -42,6 +48,19 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   const [isLoadingSync, setIsLoadingSync] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setScrollContainerHeight(el.clientHeight);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // 1. Subscribe to Global Admin Config
   useEffect(() => {
@@ -208,6 +227,19 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
+  const maxVisible = 5;
+  const needsScroll = displayEvents.length > maxVisible;
+  // Compute a per-item min-height so exactly maxVisible cards are visible before scrolling.
+  // We approximate the gap at 10px (the max value of min(10px, 2cqmin)).
+  const approxGap = 10;
+  const itemHeight =
+    needsScroll && scrollContainerHeight > 0
+      ? Math.max(
+          40,
+          (scrollContainerHeight - (maxVisible - 1) * approxGap) / maxVisible
+        )
+      : undefined;
+
   return (
     <WidgetLayout
       padding="p-0"
@@ -252,6 +284,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
           )}
 
           <div
+            ref={scrollRef}
             className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col"
             style={{ gap: 'min(10px, 2cqmin)' }}
           >
@@ -262,6 +295,12 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                 style={{
                   gap: 'min(16px, 3.5cqmin)',
                   padding: 'min(16px, 3.5cqmin)',
+                  flex: needsScroll ? '0 0 auto' : '1 1 0',
+                  minHeight: needsScroll
+                    ? itemHeight
+                      ? `${itemHeight}px`
+                      : '0'
+                    : '0',
                 }}
               >
                 <div
