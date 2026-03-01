@@ -24,6 +24,11 @@ import {
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
 
+const StickerDataSchema = z.object({
+  url: z.string(),
+  ratio: z.number().nullable().optional(),
+});
+
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
   return (
@@ -461,13 +466,16 @@ export const DashboardView: React.FC = () => {
     if (stickerData) {
       e.preventDefault();
       try {
-        const StickerDataSchema = z.object({
-          url: z.string(),
-          ratio: z.number().optional(),
-        });
         const parsed = StickerDataSchema.parse(JSON.parse(stickerData));
         const url = parsed.url;
-        const ratio = parsed.ratio ?? 1;
+        let ratio = parsed.ratio ?? 1;
+        if (
+          typeof ratio !== 'number' ||
+          !Number.isFinite(ratio) ||
+          ratio <= 0
+        ) {
+          ratio = 1;
+        }
 
         const baseSize = 200;
         let w = baseSize;
