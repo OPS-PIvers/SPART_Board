@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useLiveSession } from '../../hooks/useLiveSession';
+import { z } from 'zod';
 import { useStorage, MAX_PDF_SIZE_BYTES } from '../../hooks/useStorage';
 import { Sidebar } from './sidebar/Sidebar';
 import { Dock } from './Dock';
@@ -22,6 +23,11 @@ import {
 } from '../../types';
 
 const EMPTY_STUDENTS: LiveStudent[] = [];
+
+const StickerDataSchema = z.object({
+  url: z.string(),
+  ratio: z.number().nullable().optional(),
+});
 
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useDashboard();
@@ -460,12 +466,16 @@ export const DashboardView: React.FC = () => {
     if (stickerData) {
       e.preventDefault();
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const parsed = JSON.parse(stickerData);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const url = parsed.url as string;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const ratio = (parsed.ratio as number) || 1;
+        const parsed = StickerDataSchema.parse(JSON.parse(stickerData));
+        const url = parsed.url;
+        let ratio = parsed.ratio ?? 1;
+        if (
+          typeof ratio !== 'number' ||
+          !Number.isFinite(ratio) ||
+          ratio <= 0
+        ) {
+          ratio = 1;
+        }
 
         const baseSize = 200;
         let w = baseSize;
