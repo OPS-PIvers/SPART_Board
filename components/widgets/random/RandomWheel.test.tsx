@@ -1,19 +1,21 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { RandomWheel } from './RandomWheel';
-import { useDashboard } from '../../../context/useDashboard';
-import { DEFAULT_GLOBAL_STYLE } from '../../../types';
+import { useDashboard } from '@/context/useDashboard';
+import { DEFAULT_GLOBAL_STYLE } from '@/types';
 
-vi.mock('../../../context/useDashboard', () => ({
+vi.mock('@/context/useDashboard', () => ({
   useDashboard: vi.fn(),
 }));
 
 describe('RandomWheel Component', () => {
-  it('renders correctly', () => {
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+  beforeEach(() => {
+    (useDashboard as Mock).mockReturnValue({
       activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
     });
+  });
 
+  it('renders correctly', () => {
     render(
       <RandomWheel
         students={['Alice', 'Bob']}
@@ -30,10 +32,6 @@ describe('RandomWheel Component', () => {
   });
 
   it('shows display result when not spinning', () => {
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
-    });
-
     render(
       <RandomWheel
         students={['Alice', 'Bob']}
@@ -49,10 +47,6 @@ describe('RandomWheel Component', () => {
   });
 
   it('does not show display result when spinning', () => {
-    (useDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      activeDashboard: { globalStyle: DEFAULT_GLOBAL_STYLE },
-    });
-
     render(
       <RandomWheel
         students={['Alice', 'Bob']}
