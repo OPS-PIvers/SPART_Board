@@ -12,7 +12,7 @@ interface GenericConfigurationModalProps {
   tool: ToolMetadata;
   permission: FeaturePermission;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   updatePermission: (
@@ -101,7 +101,9 @@ export const GenericConfigurationModal: React.FC<
               Cancel
             </button>
             <button
-              onClick={onSave}
+              onClick={() => {
+                void onSave();
+              }}
               disabled={isSaving || !hasUnsavedChanges}
               className="px-8 py-2.5 bg-brand-blue-primary text-white rounded-2xl text-sm font-black shadow-lg shadow-blue-500/20 hover:bg-brand-blue-dark transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, getDoc } from 'firebase/firestore';
 import { db, isAuthBypass } from '@/config/firebase';
 import {
   FeaturePermission,
@@ -184,7 +184,7 @@ export const FeaturePermissionsManager: React.FC = () => {
     widgetType: WidgetType | InternalToolType
   ): Promise<boolean> => {
     try {
-      setSaving(new Set(saving).add(widgetType));
+      setSaving((prev) => new Set(prev).add(widgetType));
       const permission = getPermission(widgetType);
 
       await setDoc(doc(db, 'feature_permissions', widgetType), permission);
@@ -680,14 +680,52 @@ export const FeaturePermissionsManager: React.FC = () => {
             tool={activeModalTool}
             permission={getPermission(activeModalTool.type)}
             onClose={() => {
-              if (activeModalTool && unsavedChanges.has(activeModalTool.type)) {
+              const toolType = activeModalTool?.type;
+              if (toolType && unsavedChanges.has(toolType)) {
                 if (
                   window.confirm(
                     'You have unsaved changes. Are you sure you want to discard them?'
                   )
                 ) {
-                  void loadPermissions();
-                  setActiveModalTool(null);
+                  setUnsavedChanges((prev) => {
+                    const next = new Set(prev);
+                    next.delete(toolType);
+                    return next;
+                  });
+
+                  if (!isAuthBypass) {
+                    const docRef = doc(db, 'feature_permissions', toolType);
+                    getDoc(docRef)
+                      .then((snap) => {
+                        let data: FeaturePermission;
+                        if (snap.exists()) {
+                          data = snap.data() as FeaturePermission;
+                          if (
+                            data.gradeLevels &&
+                            data.gradeLevels.includes('universal' as GradeLevel)
+                          ) {
+                            data.gradeLevels = ALL_GRADE_LEVELS;
+                          }
+                        } else {
+                          data = {
+                            widgetType: toolType,
+                            accessLevel: 'public',
+                            betaUsers: [],
+                            enabled: true,
+                          };
+                        }
+                        setPermissions((prev) =>
+                          new Map(prev).set(toolType, data)
+                        );
+                        setActiveModalTool(null);
+                      })
+                      .catch((err) => {
+                        console.error('Failed to revert permission', err);
+                        setActiveModalTool(null);
+                      });
+                  } else {
+                    setActiveModalTool(null);
+                  }
                 }
               } else {
                 setActiveModalTool(null);
