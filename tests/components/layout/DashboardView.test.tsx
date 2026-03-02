@@ -29,6 +29,9 @@ vi.mock('../../../components/layout/sidebar/Sidebar', () => ({
 vi.mock('../../../components/layout/Dock', () => ({
   Dock: () => <div data-testid="dock">Dock</div>,
 }));
+vi.mock('@/components/announcements/AnnouncementOverlay', () => ({
+  AnnouncementOverlay: () => <div data-testid="announcement-overlay" />,
+}));
 vi.mock('../../../components/widgets/WidgetRenderer', () => ({
   WidgetRenderer: () => <div data-testid="widget">Widget</div>,
 }));

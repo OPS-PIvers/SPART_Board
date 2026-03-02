@@ -43,3 +43,23 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string): any => {
   }
   return null;
 });
+// Globally mock Firebase config to avoid initializing the real SDK in tests
+vi.mock('@/config/firebase', () => {
+  const app = {};
+  const db = {};
+  const storage = {};
+  const functions = {};
+  const auth = {
+    onAuthStateChanged: vi.fn(),
+    signInWithPopup: vi.fn(),
+    signOut: vi.fn(),
+  };
+  return {
+    isConfigured: false,
+    app,
+    db,
+    auth,
+    storage,
+    functions,
+  };
+});
