@@ -16,8 +16,6 @@ export const useStorage = () => {
   const [uploading, setUploading] = useState(false);
   const { driveService, userDomain } = useGoogleDrive();
 
-  // Internal helper: always writes to Firebase Storage.
-  // Used exclusively by admin-menu upload functions (global assets).
   const uploadFile = async (path: string, file: File): Promise<string> => {
     setUploading(true);
     try {
@@ -31,12 +29,10 @@ export const useStorage = () => {
   };
 
   // Board-level uploads: Drive when connected (for all users including admins),
-  // falling back to a session-scoped blob URL when Drive is not connected.
-  // Note: blob URLs are revoked when the tab closes, so the asset will only
-  // persist for the current session when Drive is disconnected.
+  // falling back to Firebase Storage when Drive is not connected.
 
   const uploadBackgroundImage = async (
-    _userId: string,
+    userId: string,
     file: File
   ): Promise<string> => {
     if (driveService) {
@@ -54,14 +50,14 @@ export const useStorage = () => {
       }
     }
 
-    // No Drive connection — return a session-scoped blob URL
-    return URL.createObjectURL(file);
+    const timestamp = Date.now();
+    return uploadFile(
+      `users/${userId}/backgrounds/${timestamp}-${file.name}`,
+      file
+    );
   };
 
-  const uploadSticker = async (
-    _userId: string,
-    file: File
-  ): Promise<string> => {
+  const uploadSticker = async (userId: string, file: File): Promise<string> => {
     if (driveService) {
       setUploading(true);
       try {
@@ -77,11 +73,15 @@ export const useStorage = () => {
       }
     }
 
-    return URL.createObjectURL(file);
+    const timestamp = Date.now();
+    return uploadFile(
+      `users/${userId}/stickers/${timestamp}-${file.name}`,
+      file
+    );
   };
 
   const uploadDisplayImage = async (
-    _userId: string,
+    userId: string,
     file: File
   ): Promise<string> => {
     if (driveService) {
@@ -99,11 +99,15 @@ export const useStorage = () => {
       }
     }
 
-    return URL.createObjectURL(file);
+    const timestamp = Date.now();
+    return uploadFile(
+      `users/${userId}/display_images/${timestamp}-${file.name}`,
+      file
+    );
   };
 
   const uploadScreenshot = async (
-    _userId: string,
+    userId: string,
     blob: Blob
   ): Promise<string> => {
     if (driveService) {
@@ -121,7 +125,19 @@ export const useStorage = () => {
       }
     }
 
-    return URL.createObjectURL(blob);
+    const timestamp = Date.now();
+    const storageRef = ref(
+      storage,
+      `users/${userId}/screenshots/${timestamp}.jpg`
+    );
+
+    setUploading(true);
+    try {
+      const snapshot = await uploadBytes(storageRef, blob);
+      return await getDownloadURL(snapshot.ref);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const deleteFile = async (filePath: string): Promise<void> => {
@@ -183,7 +199,7 @@ export const useStorage = () => {
   };
 
   const uploadPdf = async (
-    _userId: string,
+    userId: string,
     file: File
   ): Promise<{ url: string; storagePath: string }> => {
     if (driveService) {
@@ -205,11 +221,10 @@ export const useStorage = () => {
       }
     }
 
-    // PDFs are registered in Firestore with their URL; a blob URL would break
-    // on page reload, making the PDF permanently inaccessible.
-    throw new Error(
-      'Google Drive must be connected to upload PDFs. Please sign in with Google and try again.'
-    );
+    const timestamp = Date.now();
+    const storagePath = `users/${userId}/pdfs/${timestamp}-${file.name}`;
+    const url = await uploadFile(storagePath, file);
+    return { url, storagePath };
   };
 
   const uploadAndRegisterPdf = async (
