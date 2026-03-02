@@ -72,8 +72,9 @@ export const RecessGearWidget: React.FC<{ widget: WidgetData }> = ({
           }
         }
       );
-      return unsubscribe;
+      return () => unsubscribe();
     }
+    return undefined;
   }, [adminConfig?.fetchingStrategy]);
 
   const widgets = activeDashboard?.widgets;
