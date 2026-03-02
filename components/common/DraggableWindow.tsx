@@ -160,22 +160,27 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
     touches: number;
   } | null>(null);
 
-  const stateRef = useRef({ isEditingTitle, tempTitle, title, widget });
-  stateRef.current = { isEditingTitle, tempTitle, title, widget };
+  const saveTitle = useCallback(() => {
+    if (tempTitle.trim()) {
+      updateWidget(widget.id, { customTitle: tempTitle.trim() });
+    } else {
+      // If empty, revert to default (remove custom title)
+      updateWidget(widget.id, { customTitle: null });
+      setTempTitle(title);
+    }
+    setIsEditingTitle(false);
+  }, [tempTitle, title, widget.id, updateWidget]);
+
+  const stateRef = useRef({ isEditingTitle, saveTitle });
+  stateRef.current = { isEditingTitle, saveTitle };
 
   const handleCloseTools = useCallback(() => {
     setShowTools(false);
-    const { isEditingTitle, tempTitle, title, widget } = stateRef.current;
+    const { isEditingTitle, saveTitle } = stateRef.current;
     if (isEditingTitle) {
-      if (tempTitle.trim()) {
-        updateWidget(widget.id, { customTitle: tempTitle.trim() });
-      } else {
-        updateWidget(widget.id, { customTitle: null });
-        setTempTitle(title);
-      }
-      setIsEditingTitle(false);
+      saveTitle();
     }
-  }, [updateWidget]);
+  }, []);
 
   useClickOutside(menuRef, handleCloseTools, [windowRef]);
 
@@ -224,17 +229,6 @@ export const DraggableWindow: React.FC<DraggableWindowProps> = ({
       bringToFront(widget.id);
     }
   }, [isMaximized, widget.id, updateWidget, bringToFront]);
-
-  const saveTitle = useCallback(() => {
-    if (tempTitle.trim()) {
-      updateWidget(widget.id, { customTitle: tempTitle.trim() });
-    } else {
-      // If empty, revert to default (remove custom title)
-      updateWidget(widget.id, { customTitle: null });
-      setTempTitle(title);
-    }
-    setIsEditingTitle(false);
-  }, [tempTitle, title, widget.id, updateWidget]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Stop propagation if we're in an input to prevent global shortcuts
