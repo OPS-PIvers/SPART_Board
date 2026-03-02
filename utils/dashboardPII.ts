@@ -23,8 +23,6 @@ export const PII_WIDGET_FIELDS = [
   'remainingStudents', // RandomWidget — unpicked students in current session
   'names', // SeatingChartWidget — custom roster name list
   'roster', // LunchCountConfig — student name array
-  'lastResult', // RandomWidget — results of previous randomizations
-  'assignments', // SeatingChartWidget, LunchCountWidget — mapping of names to seats/choices
 ] as const;
 
 export type PiiWidgetField = (typeof PII_WIDGET_FIELDS)[number];

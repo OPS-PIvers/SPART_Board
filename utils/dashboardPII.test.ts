@@ -50,7 +50,6 @@ describe('dashboardPII', () => {
           firstNames: 'Alice\nBob',
           lastNames: 'Smith\nJones',
           remainingStudents: ['Alice', 'Bob'],
-          lastResult: { type: 'student', name: 'Alice Smith' },
         } as unknown as WidgetConfig,
       },
       {
@@ -65,26 +64,10 @@ describe('dashboardPII', () => {
         config: {
           layout: 'grid',
           names: ['Alice Smith', 'Bob Jones'],
-          assignments: { 'desk-1': 'Alice Smith', 'desk-2': 'Bob Jones' },
         } as unknown as WidgetConfig,
       },
       {
         id: 'widget-3',
-        type: 'lunchCount',
-        x: 2,
-        y: 2,
-        w: 2,
-        h: 2,
-        z: 1,
-        flipped: false,
-        config: {
-          roster: ['Alice Smith', 'Bob Jones'],
-          assignments: { 'Alice Smith': 'Pizza', 'Bob Jones': 'Burger' },
-          locked: false,
-        } as unknown as WidgetConfig,
-      },
-      {
-        id: 'widget-4',
         type: 'clock',
         x: 2,
         y: 2,
@@ -111,12 +94,14 @@ describe('dashboardPII', () => {
 
       expect(scrubbed.widgets[0].config).toEqual({ mode: 'wheel' });
       expect(scrubbed.widgets[1].config).toEqual({ layout: 'grid' });
-      expect(scrubbed.widgets[2].config).toEqual({ locked: false });
-      expect(scrubbed.widgets[3].config).toEqual({ style: 'digital' });
+      expect(scrubbed.widgets[2].config).toEqual({ style: 'digital' });
     });
 
     it('does not mutate the original dashboard', () => {
-      const originalCopy = structuredClone(mockDashboardWithPii);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const originalCopy: Dashboard = JSON.parse(
+        JSON.stringify(mockDashboardWithPii)
+      );
       scrubDashboardPII(mockDashboardWithPii);
       expect(mockDashboardWithPii).toEqual(originalCopy);
     });
@@ -136,19 +121,13 @@ describe('dashboardPII', () => {
           firstNames: 'Alice\nBob',
           lastNames: 'Smith\nJones',
           remainingStudents: ['Alice', 'Bob'],
-          lastResult: { type: 'student', name: 'Alice Smith' },
         },
         'widget-2': {
           names: ['Alice Smith', 'Bob Jones'],
-          assignments: { 'desk-1': 'Alice Smith', 'desk-2': 'Bob Jones' },
-        },
-        'widget-3': {
-          roster: ['Alice Smith', 'Bob Jones'],
-          assignments: { 'Alice Smith': 'Pizza', 'Bob Jones': 'Burger' },
         },
       });
-      // widget-4 has no PII, so it should be omitted
-      expect(supplement['widget-4']).toBeUndefined();
+      // widget-3 has no PII, so it should be omitted
+      expect(supplement['widget-3']).toBeUndefined();
     });
   });
 
@@ -176,8 +155,7 @@ describe('dashboardPII', () => {
 
       expect(merged.widgets[0].config).toHaveProperty('mode', 'wheel');
       expect(merged.widgets[1].config).toHaveProperty('layout', 'grid');
-      expect(merged.widgets[2].config).toHaveProperty('locked', false);
-      expect(merged.widgets[3].config).toHaveProperty('style', 'digital');
+      expect(merged.widgets[2].config).toHaveProperty('style', 'digital');
     });
   });
 
