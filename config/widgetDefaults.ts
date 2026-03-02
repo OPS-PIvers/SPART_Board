@@ -217,7 +217,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
     },
   },
   'sentence-stems': {
-    w: 320,
+    w: 500,
     h: 450,
     config: {},
   },

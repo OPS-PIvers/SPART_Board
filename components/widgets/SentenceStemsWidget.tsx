@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Quote } from 'lucide-react';
+import { Ear, MessageCircle, BookOpen, Quote } from 'lucide-react';
 import { WidgetComponentProps } from '@/types';
-import { WidgetLayout } from './WidgetLayout';
 
 interface Category {
   id: string;
   label: string;
   color: string;
+  icon: React.ElementType;
   stems: string[];
 }
 
@@ -14,7 +14,8 @@ const CATEGORIES: Category[] = [
   {
     id: 'listen',
     label: 'Listen Closely',
-    color: 'bg-blue-500',
+    color: '#008ab6',
+    icon: Ear,
     stems: [
       'What do you mean by ________?',
       'Can you tell me more about ________?',
@@ -25,7 +26,8 @@ const CATEGORIES: Category[] = [
   {
     id: 'share',
     label: 'Share What You Think',
-    color: 'bg-green-500',
+    color: '#009cc3',
+    icon: MessageCircle,
     stems: [
       'I think ________ because ________.',
       'First, ________. Also, ________. Finally, ________.',
@@ -38,7 +40,8 @@ const CATEGORIES: Category[] = [
   {
     id: 'support',
     label: 'Support What You Say',
-    color: 'bg-orange-500',
+    color: '#5aafd1',
+    icon: BookOpen,
     stems: [
       'In the text, ________.',
       'For example, ________.',
@@ -51,129 +54,135 @@ const CATEGORIES: Category[] = [
 ];
 
 export const SentenceStemsWidget: React.FC<WidgetComponentProps> = () => {
-  const [activeTab, setActiveTab] = useState<string | null>('listen');
+  const [activeTab, setActiveTab] = useState<string>('listen');
+  const activeCat = CATEGORIES.find((c) => c.id === activeTab) ?? CATEGORIES[0];
 
   return (
-    <WidgetLayout
-      header={
+    <div className="flex h-full w-full bg-white select-none overflow-hidden rounded-lg">
+      {/* Sidebar Navigation */}
+      <div
+        className="flex flex-col border-r border-slate-200 bg-slate-50 shrink-0"
+        style={{ width: 'min(140px, 35cqw)' }}
+      >
         <div
-          className="border-b border-slate-100 bg-slate-50/50"
+          className="border-b border-slate-200 bg-white"
           style={{ padding: 'min(12px, 3cqmin)' }}
         >
           <label
             className="font-black uppercase text-slate-400 tracking-widest block"
-            style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+            style={{
+              fontSize: 'min(9px, 2.2cqmin)',
+              marginBottom: 'min(4px, 1cqmin)',
+            }}
           >
-            Academic Scaffolding
+            Scaffolding
           </label>
-          <h2
-            className="font-bold text-slate-700 flex items-center gap-2"
-            style={{ fontSize: 'min(14px, 3.5cqmin)' }}
+          <div
+            className="flex items-center text-slate-700 font-bold uppercase tracking-tight"
+            style={{ gap: 'min(6px, 1.5cqmin)', fontSize: 'min(12px, 3cqmin)' }}
           >
             <Quote
-              className="text-blue-500"
+              className="text-slate-400"
               style={{
-                width: 'min(16px, 4cqmin)',
-                height: 'min(16px, 4cqmin)',
+                width: 'min(14px, 3.5cqmin)',
+                height: 'min(14px, 3.5cqmin)',
               }}
             />
-            Discussion Stems
-          </h2>
+            Stems
+          </div>
         </div>
-      }
-      content={
+
         <div
           className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar"
           style={{ padding: 'min(8px, 2cqmin)' }}
         >
-          <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
-            {CATEGORIES.map((cat) => {
-              const isExpanded = activeTab === cat.id;
-              return (
-                <div
-                  key={cat.id}
-                  className="border border-slate-100 rounded-xl overflow-hidden shadow-sm"
-                >
-                  <button
-                    onClick={() => setActiveTab(isExpanded ? null : cat.id)}
-                    className="w-full flex items-center justify-between bg-white hover:bg-slate-50 transition-colors"
-                    style={{ padding: 'min(12px, 3cqmin)' }}
-                  >
-                    <div
-                      className="flex items-center"
-                      style={{ gap: 'min(12px, 3cqmin)' }}
-                    >
-                      <div
-                        className={`rounded-full ${cat.color}`}
-                        style={{
-                          width: 'min(6px, 1.5cqmin)',
-                          height: 'min(20px, 5cqmin)',
-                        }}
-                      />
-                      <span
-                        className="font-bold text-slate-600 uppercase tracking-tight"
-                        style={{ fontSize: 'min(12px, 3cqmin)' }}
-                      >
-                        {cat.label}
-                      </span>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp
-                        className="text-slate-400"
-                        style={{
-                          width: 'min(16px, 4cqmin)',
-                          height: 'min(16px, 4cqmin)',
-                        }}
-                      />
-                    ) : (
-                      <ChevronDown
-                        className="text-slate-400"
-                        style={{
-                          width: 'min(16px, 4cqmin)',
-                          height: 'min(16px, 4cqmin)',
-                        }}
-                      />
-                    )}
-                  </button>
+          {CATEGORIES.map((cat) => {
+            const isActive = activeTab === cat.id;
+            const Icon = cat.icon;
 
-                  {isExpanded && (
-                    <div
-                      className="bg-slate-50 animate-in fade-in slide-in-from-top-1 duration-200"
-                      style={{
-                        paddingLeft: 'min(16px, 4cqmin)',
-                        paddingRight: 'min(16px, 4cqmin)',
-                        paddingBottom: 'min(16px, 4cqmin)',
-                        paddingTop: 'min(4px, 1cqmin)',
-                      }}
-                    >
-                      <ul
-                        className="flex flex-col"
-                        style={{ gap: 'min(12px, 3cqmin)' }}
-                      >
-                        {cat.stems.map((stem, i) => (
-                          <li
-                            key={i}
-                            className="font-medium text-slate-600 border-l-2 border-slate-200 leading-relaxed"
-                            style={{
-                              fontSize: 'min(13px, 3.2cqmin)',
-                              paddingLeft: 'min(12px, 3cqmin)',
-                              paddingTop: 'min(2px, 0.5cqmin)',
-                              paddingBottom: 'min(2px, 0.5cqmin)',
-                            }}
-                          >
-                            {stem}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveTab(cat.id)}
+                className={`w-full flex flex-col items-center justify-center transition-all border ${
+                  isActive
+                    ? 'shadow-md text-white scale-100'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100 scale-95'
+                }`}
+                style={{
+                  padding: 'min(12px, 3cqmin)',
+                  borderRadius: 'min(12px, 3cqmin)',
+                  marginBottom: 'min(8px, 2cqmin)',
+                  ...(isActive
+                    ? { backgroundColor: cat.color, borderColor: cat.color }
+                    : {
+                        borderBottomColor: cat.color,
+                        borderBottomWidth: '3px',
+                      }),
+                }}
+              >
+                <Icon
+                  className="mb-2"
+                  style={{
+                    width: 'min(22px, 5.5cqmin)',
+                    height: 'min(22px, 5.5cqmin)',
+                    color: isActive ? '#ffffff' : cat.color,
+                  }}
+                />
+                <span
+                  className="font-bold text-center leading-tight uppercase tracking-tight"
+                  style={{ fontSize: 'min(11px, 2.8cqmin)' }}
+                >
+                  {cat.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      }
-      padding="p-0"
-    />
+      </div>
+
+      {/* Main Content Area */}
+      <div
+        className="flex-1 overflow-y-auto bg-white custom-scrollbar"
+        style={{ padding: 'min(20px, 5cqmin)' }}
+      >
+        <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+          <h3
+            className="font-black mb-4 uppercase tracking-tight flex items-center"
+            style={{
+              color: activeCat.color,
+              fontSize: 'min(18px, 4.5cqmin)',
+              gap: 'min(8px, 2cqmin)',
+              marginBottom: 'min(16px, 4cqmin)',
+            }}
+          >
+            <activeCat.icon
+              style={{
+                width: 'min(20px, 5cqmin)',
+                height: 'min(20px, 5cqmin)',
+              }}
+            />
+            {activeCat.label}
+          </h3>
+          <ul className="flex flex-col" style={{ gap: 'min(12px, 3cqmin)' }}>
+            {activeCat.stems.map((stem, idx) => (
+              <li
+                key={idx}
+                className="font-medium text-slate-700 border-l-4 leading-relaxed shadow-sm bg-slate-50 rounded-r-lg"
+                style={{
+                  borderLeftColor: activeCat.color,
+                  fontSize: 'min(14px, 3.5cqmin)',
+                  paddingLeft: 'min(16px, 4cqmin)',
+                  paddingTop: 'min(8px, 2cqmin)',
+                  paddingBottom: 'min(8px, 2cqmin)',
+                }}
+              >
+                {stem}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 };

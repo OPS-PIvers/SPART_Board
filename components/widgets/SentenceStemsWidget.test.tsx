@@ -15,7 +15,7 @@ const mockWidget: WidgetData = {
   type: 'sentence-stems',
   x: 0,
   y: 0,
-  w: 320,
+  w: 500,
   h: 450,
   z: 1,
   flipped: false,
@@ -23,36 +23,45 @@ const mockWidget: WidgetData = {
 };
 
 describe('SentenceStemsWidget', () => {
-  it('renders correctly and defaults to "Listen Closely" expanded', () => {
+  it('renders correctly and defaults to "Listen Closely" tab', () => {
     render(<SentenceStemsWidget widget={mockWidget} />);
 
-    // Check if the title "Discussion Stems" is visible
-    expect(screen.getByText('Discussion Stems')).toBeDefined();
-
-    // Check if the category label is visible
-    expect(screen.getByText('Listen Closely')).toBeDefined();
+    // Check if the title "Listen Closely" is visible in the main content
+    expect(
+      screen.getByText('Listen Closely', { selector: 'h3' })
+    ).toBeDefined();
 
     // Check if a specific stem from "Listen Closely" is visible
     expect(screen.getByText(/What do you mean by/)).toBeDefined();
   });
 
-  it('toggles accordion sections when clicked', () => {
+  it('switches tabs when a sidebar button is clicked', () => {
     render(<SentenceStemsWidget widget={mockWidget} />);
 
-    // Find and click the "Share What You Think" button
+    // Find and click the "Share What You Think" button in the sidebar
     const shareButton = screen.getByText('Share What You Think');
     fireEvent.click(shareButton);
 
-    // Check if a specific stem from "Share What You Think" is now visible
+    // Check if the title "Share What You Think" is now visible in the main content
+    expect(
+      screen.getByText('Share What You Think', { selector: 'h3' })
+    ).toBeDefined();
+
+    // Check if a specific stem from "Share What You Think" is visible
     expect(
       screen.getByText(/I think ________ because ________./)
     ).toBeDefined();
 
-    // "Listen Closely" stems should no longer be visible as the accordion toggled
-    expect(screen.queryByText(/What do you mean by/)).toBeNull();
+    // Find and click the "Support What You Say" button in the sidebar
+    const supportButton = screen.getByText('Support What You Say');
+    fireEvent.click(supportButton);
 
-    // Click it again to collapse it
-    fireEvent.click(shareButton);
-    expect(screen.queryByText(/I think ________ because ________./)).toBeNull();
+    // Check if the title "Support What You Say" is visible
+    expect(
+      screen.getByText('Support What You Say', { selector: 'h3' })
+    ).toBeDefined();
+
+    // Check if a specific stem from "Support What You Say" is visible
+    expect(screen.getByText(/In the text, ________./)).toBeDefined();
   });
 });
