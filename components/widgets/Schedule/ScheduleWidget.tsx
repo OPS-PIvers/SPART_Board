@@ -407,35 +407,55 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
   /**
    * Derive the index of the currently active schedule item.
-   * Items are guaranteed to be sorted chronologically (Settings enforces this on
-   * every save), so inferring endTime from the next item's startTime is safe.
    *
-   * An item is "active" when: startTime <= now < endTime
-   * (or next item's startTime when endTime is absent).
+   * An item is "active" when: startTime <= now < endTime.
+   * If an explicit `endTime` is not set, we infer it as the nearest start time
+   * (by clock time) among all other items that begins after this one.
+   * This search is performed over the whole items array so the result is correct
+   * regardless of whether items happen to be stored in chronological array order
+   * (e.g. the user may have used the manual up/down move buttons in Settings).
+   *
    * Returns -1 when no item is active (e.g. before the first item starts).
    */
   const activeIndex = useMemo(() => {
-    if (!autoScroll) return -1;
+    if (!autoScroll || items.length === 0) return -1;
     const nowMinutes = Math.floor(nowSeconds / 60);
 
-    for (let i = 0; i < items.length; i++) {
-      const startMin = parseScheduleTime(items[i].startTime ?? items[i].time);
-      if (startMin === -1) continue;
+    // Precompute start minutes once to avoid repeated string parsing.
+    const startMinutes = items.map((item) =>
+      parseScheduleTime(item.startTime ?? item.time)
+    );
 
+    let bestIndex = -1;
+
+    for (let i = 0; i < items.length; i++) {
+      const startMin = startMinutes[i];
+      if (startMin === -1 || nowMinutes < startMin) continue;
+
+      // Resolve end boundary: explicit endTime → nearest later start → no bound.
       let endMin = parseScheduleTime(items[i].endTime ?? '');
-      if (endMin === -1 && i < items.length - 1) {
-        endMin = parseScheduleTime(items[i + 1].startTime ?? items[i + 1].time);
+      if (endMin === -1) {
+        let nearestLater = -1;
+        for (let j = 0; j < items.length; j++) {
+          const s = startMinutes[j];
+          if (s > startMin && (nearestLater === -1 || s < nearestLater)) {
+            nearestLater = s;
+          }
+        }
+        endMin = nearestLater;
       }
 
-      if (endMin === -1) {
-        // Last item with no explicit end time — active once its start passes.
-        if (nowMinutes >= startMin) return i;
-      } else {
-        if (nowMinutes >= startMin && nowMinutes < endMin) return i;
+      const isActive = endMin === -1 ? true : nowMinutes < endMin;
+      if (isActive) {
+        // When items overlap, prefer the one with the latest start time
+        // (the most recently started event is the most specific match).
+        if (bestIndex === -1 || startMin > startMinutes[bestIndex]) {
+          bestIndex = i;
+        }
       }
     }
 
-    return -1;
+    return bestIndex;
   }, [items, nowSeconds, autoScroll]);
 
   /**
