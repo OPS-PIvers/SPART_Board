@@ -216,7 +216,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       resultsSessionId: null,
     },
   },
-  'sentence-stems': {
+  'talking-tool': {
     w: 500,
     h: 450,
     config: {},

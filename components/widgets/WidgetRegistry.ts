@@ -108,9 +108,9 @@ export const WIDGET_COMPONENTS: Partial<Record<WidgetType, WidgetComponent>> = {
   recessGear: lazyNamed(() => import('./RecessGearWidget'), 'RecessGearWidget'),
   pdf: lazyNamed(() => import('./PdfWidget'), 'PdfWidget'),
   quiz: lazyNamed(() => import('./QuizWidget'), 'QuizWidget'),
-  'sentence-stems': lazyNamed(
-    () => import('./SentenceStemsWidget'),
-    'SentenceStemsWidget'
+  'talking-tool': lazyNamed(
+    () => import('./TalkingToolWidget'),
+    'TalkingToolWidget'
   ),
   breathing: lazyNamed(
     () => import('./Breathing/BreathingWidget'),
@@ -424,7 +424,7 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     skipScaling: true,
     padding: 0,
   },
-  'sentence-stems': {
+  'talking-tool': {
     baseWidth: 500,
     baseHeight: 450,
     canSpread: true,

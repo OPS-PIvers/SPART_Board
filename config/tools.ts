@@ -116,9 +116,9 @@ export const TOOLS: ToolMetadata[] = [
   { type: 'pdf', icon: FileText, label: 'PDF Viewer', color: 'bg-red-700' },
   { type: 'quiz', icon: ClipboardList, label: 'Quiz', color: 'bg-violet-600' },
   {
-    type: 'sentence-stems',
+    type: 'talking-tool',
     icon: Quote,
-    label: 'Sentence Stems',
+    label: 'Talking Tool',
     color: 'bg-sky-500',
     defaultWidth: 500,
     defaultHeight: 450,

@@ -53,7 +53,7 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-export const SentenceStemsWidget: React.FC<WidgetComponentProps> = () => {
+export const TalkingToolWidget: React.FC<WidgetComponentProps> = () => {
   const [activeTab, setActiveTab] = useState<string>('listen');
   const activeCat = CATEGORIES.find((c) => c.id === activeTab) ?? CATEGORIES[0];
 

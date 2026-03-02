@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { SentenceStemsWidget } from './SentenceStemsWidget';
+import { TalkingToolWidget } from './TalkingToolWidget';
 import { WidgetData } from '@/types';
 
 // Mock useDashboard since the widget might use it
@@ -12,7 +12,7 @@ vi.mock('@/context/useDashboard', () => ({
 
 const mockWidget: WidgetData = {
   id: 'test-widget',
-  type: 'sentence-stems',
+  type: 'talking-tool',
   x: 0,
   y: 0,
   w: 500,
@@ -22,9 +22,9 @@ const mockWidget: WidgetData = {
   config: {},
 };
 
-describe('SentenceStemsWidget', () => {
+describe('TalkingToolWidget', () => {
   it('renders correctly and defaults to "Listen Closely" tab', () => {
-    render(<SentenceStemsWidget widget={mockWidget} />);
+    render(<TalkingToolWidget widget={mockWidget} />);
 
     // Check if the title "Listen Closely" is visible in the main content
     expect(
@@ -36,7 +36,7 @@ describe('SentenceStemsWidget', () => {
   });
 
   it('switches tabs when a sidebar button is clicked', () => {
-    render(<SentenceStemsWidget widget={mockWidget} />);
+    render(<TalkingToolWidget widget={mockWidget} />);
 
     // Find and click the "Share What You Think" button in the sidebar
     const shareButton = screen.getByText('Share What You Think');

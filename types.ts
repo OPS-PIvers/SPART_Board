@@ -32,7 +32,7 @@ export type WidgetType =
   | 'recessGear'
   | 'pdf'
   | 'quiz'
-  | 'sentence-stems'
+  | 'talking-tool'
   | 'breathing';
 
 // --- ROSTER SYSTEM TYPES ---
@@ -881,7 +881,7 @@ export interface QuizConfig {
   resultsSessionId: string | null;
 }
 
-export type SentenceStemsConfig = Record<string, never>;
+export type TalkingToolConfig = Record<string, never>;
 
 // Union of all widget configs
 export type WidgetConfig =
@@ -918,7 +918,7 @@ export type WidgetConfig =
   | RecessGearConfig
   | PdfConfig
   | QuizConfig
-  | SentenceStemsConfig
+  | TalkingToolConfig
   | BreathingConfig;
 
 // Helper type to get config type for a specific widget
@@ -988,8 +988,8 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                 ? PdfConfig
                                                                 : T extends 'quiz'
                                                                   ? QuizConfig
-                                                                  : T extends 'sentence-stems'
-                                                                    ? SentenceStemsConfig
+                                                                  : T extends 'talking-tool'
+                                                                    ? TalkingToolConfig
                                                                     : T extends 'breathing'
                                                                       ? BreathingConfig
                                                                       : never;
