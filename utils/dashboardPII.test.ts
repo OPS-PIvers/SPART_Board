@@ -5,23 +5,27 @@ import {
   mergeDashboardPII,
   dashboardHasPII,
 } from './dashboardPII';
-import { Dashboard } from '../types';
+import { Dashboard, WidgetConfig } from '../types';
 
 describe('dashboardPII', () => {
   const mockDashboardNoPii: Dashboard = {
     id: 'dashboard-1',
     name: 'Test Dashboard',
-    ownerId: 'user-1',
     createdAt: 1234567890,
+    background: 'bg',
     widgets: [
       {
         id: 'widget-1',
-        type: 'ClockWidget',
+        type: 'clock',
         x: 0,
         y: 0,
+        w: 2,
+        h: 2,
+        z: 1,
+        flipped: false,
         config: {
           style: 'analog',
-        },
+        } as unknown as WidgetConfig,
       },
     ],
   };
@@ -29,39 +33,51 @@ describe('dashboardPII', () => {
   const mockDashboardWithPii: Dashboard = {
     id: 'dashboard-2',
     name: 'Test Dashboard PII',
-    ownerId: 'user-1',
     createdAt: 1234567890,
+    background: 'bg',
     widgets: [
       {
         id: 'widget-1',
-        type: 'RandomWidget',
+        type: 'random',
         x: 0,
         y: 0,
+        w: 2,
+        h: 2,
+        z: 1,
+        flipped: false,
         config: {
           mode: 'wheel',
           firstNames: 'Alice\nBob',
           lastNames: 'Smith\nJones',
           remainingStudents: ['Alice', 'Bob'],
-        },
+        } as unknown as WidgetConfig,
       },
       {
         id: 'widget-2',
-        type: 'SeatingChartWidget',
+        type: 'seating-chart',
         x: 1,
         y: 1,
+        w: 2,
+        h: 2,
+        z: 1,
+        flipped: false,
         config: {
           layout: 'grid',
           names: ['Alice Smith', 'Bob Jones'],
-        },
+        } as unknown as WidgetConfig,
       },
       {
         id: 'widget-3',
-        type: 'ClockWidget',
+        type: 'clock',
         x: 2,
         y: 2,
+        w: 2,
+        h: 2,
+        z: 1,
+        flipped: false,
         config: {
           style: 'digital',
-        },
+        } as unknown as WidgetConfig,
       },
     ],
   };
