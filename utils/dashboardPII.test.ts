@@ -70,7 +70,7 @@ describe('dashboardPII', () => {
       },
       {
         id: 'widget-3',
-        type: 'lunch-count',
+        type: 'lunchCount',
         x: 2,
         y: 2,
         w: 2,
