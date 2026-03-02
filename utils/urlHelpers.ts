@@ -59,9 +59,7 @@ export const convertToEmbedUrl = (url: string): string => {
 
   // Google Vids  (vids.google.com/vids/{id}  or  vids.google.com/u/0/vids/{id})
   const vidsMatch =
-    /vids\.google\.com\/(?:u\/\d+\/)?vids\/([a-zA-Z0-9_-]+)/.exec(
-      trimmedUrl
-    );
+    /vids\.google\.com\/(?:u\/\d+\/)?vids\/([a-zA-Z0-9_-]+)/.exec(trimmedUrl);
   if (vidsMatch) {
     return `https://vids.google.com/vids/${vidsMatch[1]}/preview`;
   }
