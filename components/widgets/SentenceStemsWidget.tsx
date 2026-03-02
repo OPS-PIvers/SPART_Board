@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Quote } from 'lucide-react';
-import { WidgetComponentProps, SentenceStemsConfig } from '@/types';
+import { WidgetComponentProps } from '@/types';
 import { WidgetLayout } from './WidgetLayout';
-import { useDashboard } from '@/context/useDashboard';
 
 interface Category {
   id: string;
@@ -51,21 +50,8 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-export const SentenceStemsWidget: React.FC<WidgetComponentProps> = ({
-  widget,
-}) => {
-  const { updateWidget } = useDashboard();
-  const config = widget.config as SentenceStemsConfig;
-  const expandedIndex = config.expandedIndex; // 0, 1, 2 or null
-
-  const toggleCategory = (index: number) => {
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        expandedIndex: expandedIndex === index ? null : index,
-      },
-    });
-  };
+export const SentenceStemsWidget: React.FC<WidgetComponentProps> = () => {
+  const [activeTab, setActiveTab] = useState<string | null>('listen');
 
   return (
     <WidgetLayout
@@ -97,19 +83,19 @@ export const SentenceStemsWidget: React.FC<WidgetComponentProps> = ({
       }
       content={
         <div
-          className="flex-1 overflow-y-auto custom-scrollbar"
+          className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar"
           style={{ padding: 'min(8px, 2cqmin)' }}
         >
           <div className="flex flex-col" style={{ gap: 'min(8px, 2cqmin)' }}>
-            {CATEGORIES.map((cat, idx) => {
-              const isExpanded = expandedIndex === idx;
+            {CATEGORIES.map((cat) => {
+              const isExpanded = activeTab === cat.id;
               return (
                 <div
                   key={cat.id}
                   className="border border-slate-100 rounded-xl overflow-hidden shadow-sm"
                 >
                   <button
-                    onClick={() => toggleCategory(idx)}
+                    onClick={() => setActiveTab(isExpanded ? null : cat.id)}
                     className="w-full flex items-center justify-between bg-white hover:bg-slate-50 transition-colors"
                     style={{ padding: 'min(12px, 3cqmin)' }}
                   >
@@ -187,6 +173,7 @@ export const SentenceStemsWidget: React.FC<WidgetComponentProps> = ({
           </div>
         </div>
       }
+      padding="p-0"
     />
   );
 };

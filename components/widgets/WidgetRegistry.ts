@@ -425,8 +425,8 @@ export const WIDGET_SCALING_CONFIG: Record<WidgetType, ScalingConfig> = {
     padding: 0,
   },
   'sentence-stems': {
-    baseWidth: 300,
-    baseHeight: 400,
+    baseWidth: 320,
+    baseHeight: 450,
     canSpread: true,
     skipScaling: true,
     padding: 0,

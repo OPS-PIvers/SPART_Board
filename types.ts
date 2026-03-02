@@ -881,9 +881,7 @@ export interface QuizConfig {
   resultsSessionId: string | null;
 }
 
-export interface SentenceStemsConfig {
-  expandedIndex?: number | null;
-}
+export type SentenceStemsConfig = Record<string, never>;
 
 // Union of all widget configs
 export type WidgetConfig =
@@ -1127,6 +1125,10 @@ export interface ToolMetadata {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   color: string;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  minWidth?: number;
+  minHeight?: number;
 }
 
 export type AccessLevel = 'admin' | 'beta' | 'public';
