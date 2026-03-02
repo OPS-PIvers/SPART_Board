@@ -240,6 +240,26 @@ describe('useStorage', () => {
 
       expect(mockDriveService.deleteFile).toHaveBeenCalledWith('admin-file-id');
     });
+
+    it('should extract file ID from webContentLink uc?id= format', async () => {
+      mockUseGoogleDrive.mockReturnValue({
+        driveService: mockDriveService,
+      });
+      mockDriveService.deleteFile.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useStorage());
+
+      await act(async () => {
+        await result.current.deleteFile(
+          'https://drive.google.com/uc?export=download&id=webContentFileId'
+        );
+      });
+
+      expect(mockDeleteObject).not.toHaveBeenCalled();
+      expect(mockDriveService.deleteFile).toHaveBeenCalledWith(
+        'webContentFileId'
+      );
+    });
   });
 
   describe('uploadPdf', () => {

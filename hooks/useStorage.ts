@@ -156,7 +156,7 @@ export const useStorage = () => {
         try {
           const match =
             /\/file\/d\/([^/?#]+)/.exec(filePath) ??
-            /[?&]id=([^&]+)/.exec(filePath);
+            /[?&]id=([^&#]+)/.exec(filePath);
           if (match) {
             await driveService.deleteFile(match[1]);
           }
