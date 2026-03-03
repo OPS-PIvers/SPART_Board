@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import {
   WidgetData,
   ScheduleConfig,
   ScheduleItem,
   WidgetType,
+  DailySchedule,
+  DayOfWeek,
 } from '../../../types';
 import {
   Type,
@@ -19,6 +21,9 @@ import {
   Timer,
   Palette,
   Settings2,
+  Calendar,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Toggle } from '../../common/Toggle';
 import { Button } from '../../common/Button';
@@ -49,6 +54,16 @@ const FONTS = [
   { id: 'font-handwritten', label: 'School', icon: '✏️' },
 ];
 
+const DAYS_OF_WEEK: DayOfWeek[] = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
 /** Parses "HH:MM" → minutes since midnight, or Infinity for items without times (pushed to end). */
 const parseTimeForSort = (t: string | undefined): number => {
   if (!t || !t.includes(':')) return Infinity;
@@ -70,10 +85,107 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as ScheduleConfig;
-  const items = config.items ?? [];
+
+  // Migration logic for settings view
+  const schedules = useMemo(() => {
+    const existingSchedules = config.schedules ?? [];
+    if (existingSchedules.length > 0) return existingSchedules;
+
+    const legacyItems = config.items ?? [];
+    return [
+      {
+        id: 'default-schedule',
+        name: 'Default Schedule',
+        days: [],
+        items: legacyItems,
+      },
+    ] as DailySchedule[];
+  }, [config.schedules, config.items]);
+
+  const [selectedScheduleIndex, setSelectedScheduleIndex] = useState(0);
+  const activeSchedule = schedules[selectedScheduleIndex] || schedules[0];
+  const items = activeSchedule?.items ?? [];
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [tempItem, setTempItem] = useState<ScheduleItem | null>(null);
+
+  const updateSchedules = (newSchedules: DailySchedule[]) => {
+    // Ensure we always have at least one schedule
+    const finalSchedules =
+      newSchedules.length > 0
+        ? newSchedules
+        : [
+            {
+              id: crypto.randomUUID(),
+              name: 'Default Schedule',
+              days: [],
+              items: [],
+            },
+          ];
+
+    // Find the current active items to keep config.items in sync for backward compatibility
+    // (Actually ScheduleWidget.tsx handles the live selection, but we can sync the first one)
+    updateWidget(widget.id, {
+      config: {
+        ...config,
+        schedules: finalSchedules,
+        items: finalSchedules[0].items,
+      } as ScheduleConfig,
+    });
+  };
+
+  const handleAddSchedule = () => {
+    const newSchedule: DailySchedule = {
+      id: crypto.randomUUID(),
+      name: `New Schedule ${schedules.length + 1}`,
+      days: [],
+      items: [],
+    };
+    updateSchedules([...schedules, newSchedule]);
+    setSelectedScheduleIndex(schedules.length);
+  };
+
+  const handleDeleteSchedule = (index: number) => {
+    if (schedules.length <= 1) return;
+    if (confirm('Are you sure you want to delete this entire schedule?')) {
+      const newSchedules = schedules.filter((_, i) => i !== index);
+      updateSchedules(newSchedules);
+      setSelectedScheduleIndex(Math.max(0, index - 1));
+    }
+  };
+
+  const handleRenameSchedule = (index: number, name: string) => {
+    const newSchedules = [...schedules];
+    newSchedules[index] = { ...newSchedules[index], name };
+    updateSchedules(newSchedules);
+  };
+
+  const handleToggleDay = (scheduleIndex: number, day: DayOfWeek) => {
+    if (schedules.length <= 1) return; // Disable day assignment if only one schedule
+
+    const newSchedules = [...schedules];
+    const schedule = newSchedules[scheduleIndex];
+    const days = schedule.days.includes(day)
+      ? schedule.days.filter((d) => d !== day)
+      : [...schedule.days, day];
+
+    newSchedules[scheduleIndex] = { ...schedule, days };
+    updateSchedules(newSchedules);
+  };
+
+  const handleMoveSchedule = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === schedules.length - 1) return;
+
+    const newSchedules = [...schedules];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    [newSchedules[index], newSchedules[targetIndex]] = [
+      newSchedules[targetIndex],
+      newSchedules[index],
+    ];
+    updateSchedules(newSchedules);
+    setSelectedScheduleIndex(targetIndex);
+  };
 
   const handleStartEdit = (index: number) => {
     setEditingIndex(index);
@@ -94,18 +206,15 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   };
 
   const handleSave = () => {
-    if (!tempItem) return;
+    if (!tempItem || !activeSchedule) return;
 
-    // Sync legacy time field with startTime when startTime is non-empty
     const shouldSyncStartTime =
       typeof tempItem.startTime === 'string' &&
       tempItem.startTime.trim() !== '';
 
     const itemToSave: ScheduleItem = {
       ...tempItem,
-      // Sync time from startTime, or omit if both are empty
       time: shouldSyncStartTime ? tempItem.startTime : tempItem.time,
-      // Ensure ID
       id: tempItem.id ?? crypto.randomUUID(),
     };
 
@@ -116,9 +225,13 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       newItems[editingIndex] = itemToSave;
     }
 
-    updateWidget(widget.id, {
-      config: { ...config, items: sortByTime(newItems) } as ScheduleConfig,
-    });
+    const newSchedules = [...schedules];
+    newSchedules[selectedScheduleIndex] = {
+      ...activeSchedule,
+      items: sortByTime(newItems),
+    };
+    updateSchedules(newSchedules);
+
     setEditingIndex(null);
     setTempItem(null);
   };
@@ -127,9 +240,12 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     if (confirm('Are you sure you want to delete this event?')) {
       const newItems = [...items];
       newItems.splice(index, 1);
-      updateWidget(widget.id, {
-        config: { ...config, items: newItems } as ScheduleConfig,
-      });
+      const newSchedules = [...schedules];
+      newSchedules[selectedScheduleIndex] = {
+        ...activeSchedule,
+        items: newItems,
+      };
+      updateSchedules(newSchedules);
     }
   };
 
@@ -144,9 +260,12 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       newItems[index],
     ];
 
-    updateWidget(widget.id, {
-      config: { ...config, items: newItems } as ScheduleConfig,
-    });
+    const newSchedules = [...schedules];
+    newSchedules[selectedScheduleIndex] = {
+      ...activeSchedule,
+      items: newItems,
+    };
+    updateSchedules(newSchedules);
   };
 
   // Render Edit Form
@@ -294,11 +413,124 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   return (
     <div className="space-y-6">
+      {/* Schedule Management */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
+            <Calendar className="w-3 h-3" /> Daily Schedules
+          </label>
+          <button
+            onClick={handleAddSchedule}
+            className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <Plus className="w-3 h-3" /> Add Schedule
+          </button>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          {schedules.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => setSelectedScheduleIndex(i)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                selectedScheduleIndex === i
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {s.name || `Schedule ${i + 1}`}
+            </button>
+          ))}
+        </div>
+
+        {activeSchedule && (
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold"
+                value={activeSchedule.name}
+                onChange={(e) =>
+                  handleRenameSchedule(selectedScheduleIndex, e.target.value)
+                }
+                placeholder="Schedule Name"
+              />
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleMoveSchedule(selectedScheduleIndex, 'up')}
+                  disabled={selectedScheduleIndex === 0}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                  aria-label="Move schedule up"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() =>
+                    handleMoveSchedule(selectedScheduleIndex, 'down')
+                  }
+                  disabled={selectedScheduleIndex === schedules.length - 1}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                  aria-label="Move schedule down"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteSchedule(selectedScheduleIndex)}
+                  disabled={schedules.length <= 1}
+                  className="p-1.5 text-slate-400 hover:text-red-500 disabled:opacity-30"
+                  aria-label="Delete schedule"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xxs text-slate-400 uppercase tracking-widest mb-2 block">
+                Assigned Days
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {DAYS_OF_WEEK.map((day) => {
+                  const isSelected = activeSchedule.days.includes(day);
+                  const isOnlySchedule = schedules.length <= 1;
+                  return (
+                    <button
+                      key={day}
+                      onClick={() =>
+                        handleToggleDay(selectedScheduleIndex, day)
+                      }
+                      disabled={isOnlySchedule}
+                      className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all border ${
+                        isSelected
+                          ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                          : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                      } ${isOnlySchedule ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {day.substring(0, 3)}
+                    </button>
+                  );
+                })}
+              </div>
+              {schedules.length <= 1 ? (
+                <p className="text-[10px] text-slate-400 mt-1 italic">
+                  Cannot assign days to the only schedule.
+                </p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-1">
+                  If no days are selected, this schedule acts as a default
+                  fallback.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Schedule Items */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-            <Clock className="w-3 h-3" /> Schedule Events
+            <Clock className="w-3 h-3" /> Events for{' '}
+            {activeSchedule?.name || 'this schedule'}
           </label>
           <button
             onClick={handleStartAdd}

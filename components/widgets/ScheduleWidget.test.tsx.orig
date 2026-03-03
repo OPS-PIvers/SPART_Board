@@ -48,8 +48,6 @@ vi.mock('lucide-react', () => ({
   GripVertical: () => <div>Grip Icon</div>,
   Settings2: () => <div>Settings2 Icon</div>,
   Calendar: () => <div>Calendar Icon</div>,
-  ChevronUp: () => <div>Up Icon</div>,
-  ChevronDown: () => <div>Down Icon</div>,
   Ban: () => <div>Ban Icon</div>,
 }));
 

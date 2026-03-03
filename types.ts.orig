@@ -147,23 +147,6 @@ export interface ScheduleItem {
   spawnedWidgetIds?: string[];
 }
 
-export type DayOfWeek =
-  | 'Monday'
-  | 'Tuesday'
-  | 'Wednesday'
-  | 'Thursday'
-  | 'Friday'
-  | 'Saturday'
-  | 'Sunday';
-
-export interface DailySchedule {
-  id: string;
-  name: string;
-  /** Days of the week this schedule is active on */
-  days: DayOfWeek[];
-  items: ScheduleItem[];
-}
-
 export interface CalendarEvent {
   date: string;
   time?: string;
@@ -549,7 +532,6 @@ export interface CalendarGlobalConfig {
 
 export interface ScheduleConfig {
   items: ScheduleItem[];
-  schedules?: DailySchedule[];
   localEvents?: CalendarEvent[];
   isBuildingSyncEnabled?: boolean;
   lastSyncedBuildingId?: string;

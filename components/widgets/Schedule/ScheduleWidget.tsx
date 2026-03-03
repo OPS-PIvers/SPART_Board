@@ -15,6 +15,8 @@ import {
   ClockConfig,
   DEFAULT_GLOBAL_STYLE,
   ScheduleGlobalConfig,
+  DailySchedule,
+  DayOfWeek,
 } from '@/types';
 import { Circle, CheckCircle2, Clock, Timer } from 'lucide-react';
 import { ScaledEmptyState } from '@/components/common/ScaledEmptyState';
@@ -85,6 +87,12 @@ const hexToRgba = (hex: string, alpha: number): string => {
   const b = parseInt(clean.slice(4, 6), 16);
   if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${a})`;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+
+const getTodayName = (): DayOfWeek => {
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(
+    new Date()
+  ) as DayOfWeek;
 };
 
 interface CountdownDisplayProps {
@@ -346,7 +354,54 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const { subscribeToPermission } = useFeaturePermissions();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
-  const items = useMemo(() => config.items ?? [], [config.items]);
+
+  // Track current day for schedule selection
+  const [currentDay, setCurrentDay] = useState<DayOfWeek>(getTodayName);
+
+  // Migration and Active Schedule Logic
+  const schedules = useMemo(() => {
+    const existingSchedules = config.schedules ?? [];
+    if (existingSchedules.length > 0) return existingSchedules;
+
+    // If no schedules exist, migrate from legacy items
+    const legacyItems = config.items ?? [];
+    return [
+      {
+        id: 'default-schedule',
+        name: 'Default Schedule',
+        days: [], // No assigned days means it's the fallback
+        items: legacyItems,
+      },
+    ] as DailySchedule[];
+  }, [config.schedules, config.items]);
+
+  const activeSchedule = useMemo(() => {
+    if (schedules.length === 0) return null;
+    if (schedules.length === 1) return schedules[0];
+
+    // Find schedule for today
+    const todaySchedule = schedules.find((s) => s.days.includes(currentDay));
+    if (todaySchedule) return todaySchedule;
+
+    // If none assigned to today, find first schedule with NO assigned days (default fallback)
+    const fallbackSchedule = schedules.find((s) => s.days.length === 0);
+    if (fallbackSchedule) return fallbackSchedule;
+
+    // Ultimate fallback is the first schedule
+    return schedules[0];
+  }, [schedules, currentDay]);
+
+  const items = useMemo(() => activeSchedule?.items ?? [], [activeSchedule]);
+
+  useEffect(() => {
+    const checkDay = () => {
+      const day = getTodayName();
+      if (day !== currentDay) setCurrentDay(day);
+    };
+    const id = setInterval(checkDay, 60000); // Check every minute
+    return () => clearInterval(id);
+  }, [currentDay]);
+
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
 
   const {
@@ -379,7 +434,18 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
             updateWidget(widget.id, {
               config: {
                 ...config,
-                items: defaults.items,
+                schedules: schedules.map((s, idx) => {
+                  // If we are migrating or have only the default schedule, update its items
+                  if (idx === 0) {
+                    return { ...s, items: defaults.items };
+                  }
+                  return s;
+                }),
+                // Also update legacy items field for backwards compatibility if the active one is the first one
+                items:
+                  schedules[0]?.id === activeSchedule?.id
+                    ? defaults.items
+                    : config.items,
                 lastSyncedBuildingId: buildingId,
               } as ScheduleConfig,
             });
@@ -395,6 +461,8 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     config,
     widget.id,
     updateWidget,
+    schedules,
+    activeSchedule,
   ]);
 
   // Single shared ticker for all CountdownDisplay instances in this widget.
@@ -515,16 +583,33 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const toggle = useCallback(
     (idx: number) => {
       const currentConfig = configRef.current;
-      const currentItems = itemsRef.current;
-      const newItems = [...currentItems];
-      if (newItems[idx]) {
-        newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
-        updateWidget(widget.id, {
-          config: { ...currentConfig, items: newItems } as ScheduleConfig,
-        });
-      }
+      const currentSchedules = currentConfig.schedules ?? schedules;
+      const activeSched = activeSchedule;
+      if (!activeSched) return;
+
+      const newSchedules = currentSchedules.map((s) => {
+        if (s.id === activeSched.id) {
+          const newItems = [...s.items];
+          if (newItems[idx]) {
+            newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+          }
+          return { ...s, items: newItems };
+        }
+        return s;
+      });
+
+      const updatedActiveItems =
+        newSchedules.find((s) => s.id === activeSched.id)?.items ?? [];
+
+      updateWidget(widget.id, {
+        config: {
+          ...currentConfig,
+          schedules: newSchedules,
+          items: updatedActiveItems, // Keep legacy items in sync with active schedule items
+        } as ScheduleConfig,
+      });
     },
-    [updateWidget, widget.id]
+    [updateWidget, widget.id, schedules, activeSchedule]
   );
 
   const handleStartTimer = useCallback(
@@ -623,11 +708,14 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     const checkTime = () => {
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      let changed = false;
       const currentItems = itemsRef.current;
       const currentConfig = configRef.current;
+      const currentSchedules = currentConfig.schedules ?? schedules;
+      const activeSched = activeSchedule;
+      if (!activeSched) return;
 
-      const newItems = currentItems.map((item, index) => {
+      let itemsChanged = false;
+      const newActiveItems = currentItems.map((item, index) => {
         let isDone = false;
         let completionTime = -1;
 
@@ -651,15 +739,22 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
           isDone = true;
 
         if (item.done !== isDone) {
-          changed = true;
+          itemsChanged = true;
           return { ...item, done: isDone };
         }
         return item;
       });
 
-      if (changed) {
+      if (itemsChanged) {
+        const newSchedules = currentSchedules.map((s) =>
+          s.id === activeSched.id ? { ...s, items: newActiveItems } : s
+        );
         updateWidget(widget.id, {
-          config: { ...currentConfig, items: newItems } as ScheduleConfig,
+          config: {
+            ...currentConfig,
+            schedules: newSchedules,
+            items: newActiveItems,
+          } as ScheduleConfig,
         });
       }
     };
@@ -667,7 +762,14 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     const interval = setInterval(checkTime, 10000);
     checkTime();
     return () => clearInterval(interval);
-  }, [autoProgress, hasClock, widget.id, updateWidget]);
+  }, [
+    autoProgress,
+    hasClock,
+    widget.id,
+    updateWidget,
+    schedules,
+    activeSchedule,
+  ]);
 
   const getFontClass = () => {
     if (fontFamily === 'global') return `font-${globalStyle.fontFamily}`;
