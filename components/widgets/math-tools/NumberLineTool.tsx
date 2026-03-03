@@ -31,15 +31,10 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
   const padR = 32;
   const axisY = 44;
 
-  // Safety cap: limit the visual range so the tick loop never becomes unbounded.
-  // Input validation in MathToolWidget clamps persisted values to ±1000, but
-  // this secondary guard keeps rendering safe even with unvalidated props.
   const MAX_RANGE = 200;
   const safeMax = Math.min(max, min + MAX_RANGE);
-  // Guard against division by zero: ensure range is at least 1 even if min >= max
   const range = Math.max(1, safeMax - min);
 
-  // Decide tick spacing based on mode
   let tickCount: number;
   let subTicks: number;
   let denom = 1;
@@ -48,10 +43,9 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
     subTicks = 0;
   } else if (mode === 'decimals') {
     tickCount = range;
-    subTicks = 10; // tenths
+    subTicks = 10;
   } else {
-    // fractions
-    denom = 4; // quarters
+    denom = 4;
     tickCount = range * denom;
     subTicks = 0;
   }
@@ -115,7 +109,6 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
       );
     }
   } else {
-    // fractions mode
     for (let i = 0; i <= range * denom; i++) {
       const valNumer = min * denom + i;
       const x = padL + (i / denom) * pxPerUnit;
@@ -168,50 +161,61 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
   const modes: NumberLineMode[] = ['integers', 'decimals', 'fractions'];
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Mode toggle */}
-      {onModeChange && (
-        <div className="flex gap-1 justify-center">
-          {modes.map((m) => (
-            <button
-              key={m}
-              onClick={() => onModeChange(m)}
-              className={`px-2 py-0.5 rounded-full text-xxs font-black uppercase tracking-wider transition-colors border ${
-                mode === m
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      )}
-      {/* Range controls */}
-      {onRangeChange && (
-        <div className="flex items-center gap-2 justify-center text-xs text-slate-500">
-          <label className="flex items-center gap-1">
-            Min:
-            <input
-              type="number"
-              value={min}
-              onChange={(e) => onRangeChange(Number(e.target.value), max)}
-              className="w-14 px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center text-xs"
-            />
-          </label>
-          <label className="flex items-center gap-1">
-            Max:
-            <input
-              type="number"
-              value={max}
-              onChange={(e) => onRangeChange(min, Number(e.target.value))}
-              className="w-14 px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center text-xs"
-            />
-          </label>
-        </div>
-      )}
+    <div
+      className="flex flex-col h-full w-full"
+      style={{ gap: 'min(8px, 2cqmin)' }}
+    >
+      {/* Mode toggle and Range controls - Flex wrap and adaptive sizing */}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 shrink-0">
+        {onModeChange && (
+          <div className="flex gap-1">
+            {modes.map((m) => (
+              <button
+                key={m}
+                onClick={() => onModeChange(m)}
+                className={`px-2 py-0.5 rounded-full font-black uppercase tracking-wider transition-colors border ${
+                  mode === m
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                }`}
+                style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        )}
+        {onRangeChange && (
+          <div
+            className="flex items-center gap-2 text-slate-500 font-bold"
+            style={{ fontSize: 'min(11px, 3.8cqmin)' }}
+          >
+            <label className="flex items-center gap-1">
+              Min:
+              <input
+                type="number"
+                value={min}
+                onChange={(e) => onRangeChange(Number(e.target.value), max)}
+                className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center"
+                style={{ width: 'min(56px, 15cqw)' }}
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              Max:
+              <input
+                type="number"
+                value={max}
+                onChange={(e) => onRangeChange(min, Number(e.target.value))}
+                className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center"
+                style={{ width: 'min(56px, 15cqw)' }}
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
       {/* Number line SVG */}
-      <div className="overflow-x-auto">
+      <div className="flex-1 overflow-x-auto custom-scrollbar bg-slate-50/50 rounded-xl border border-slate-100">
         <svg
           width={svgW}
           height={svgH}
@@ -220,7 +224,6 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
           role="img"
           aria-label={`Number line from ${min} to ${safeMax}`}
         >
-          {/* Arrow line */}
           <defs>
             <marker
               id="arrowL"
