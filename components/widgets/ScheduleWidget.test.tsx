@@ -8,7 +8,6 @@ import {
   act,
 } from '@testing-library/react';
 import { ScheduleWidget, ScheduleSettings } from './Schedule';
-import { ScheduleConfig } from '../../types';
 import { useDashboard } from '../../context/useDashboard';
 import { useAuth } from '../../context/useAuth';
 import { useFeaturePermissions } from '../../hooks/useFeaturePermissions';
