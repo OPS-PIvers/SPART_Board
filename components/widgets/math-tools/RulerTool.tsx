@@ -77,7 +77,7 @@ export const InchRuler: React.FC<{ pixelsPerInch?: number }> = ({
   }
 
   return (
-    <div className="overflow-x-auto custom-scrollbar no-scrollbar-y py-1">
+    <div className="overflow-x-auto custom-scrollbar no-scrollbar py-1">
       <svg
         width={rulerWidth + 2}
         height={rulerHeight}
@@ -187,7 +187,7 @@ export const MetricRuler: React.FC<{ pixelsPerInch?: number }> = ({
   }
 
   return (
-    <div className="overflow-x-auto custom-scrollbar no-scrollbar-y py-1">
+    <div className="overflow-x-auto custom-scrollbar no-scrollbar py-1">
       <svg
         width={rulerWidth + 2}
         height={rulerHeight}

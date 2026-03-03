@@ -344,6 +344,7 @@ export const CalculatorTool: React.FC = () => {
         style={{
           padding: 'min(12px, 3cqmin)',
           gap: 'min(8px, 2cqmin)',
+          gridTemplateRows: 'repeat(5, 1fr)',
         }}
       >
         {rows.flat().map((btn, idx) => (
