@@ -38,7 +38,7 @@ import {
 } from '../../types';
 import { TOOLS } from '../../config/tools';
 import { isLunchCountBuilding } from '../../config/buildings';
-import { getWidgetGradeLevels } from '../../config/widgetGradeLevels';
+import { getWidgetGradeLevels } from '@/config/widgetGradeLevels';
 import { AddWidgetOverrides } from '../../types';
 import { getJoinUrl } from '../../utils/urlHelpers';
 import ClassRosterMenu from './ClassRosterMenu';
