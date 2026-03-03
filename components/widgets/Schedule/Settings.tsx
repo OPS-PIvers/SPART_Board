@@ -456,7 +456,9 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
               />
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => handleMoveSchedule(selectedScheduleIndex, 'up')}
+                  onClick={() =>
+                    handleMoveSchedule(selectedScheduleIndex, 'up')
+                  }
                   disabled={selectedScheduleIndex === 0}
                   className="p-1.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
                   aria-label="Move schedule up"
