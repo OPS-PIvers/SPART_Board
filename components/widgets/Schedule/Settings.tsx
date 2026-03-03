@@ -74,7 +74,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   // Migration: wrap items into a schedule if they exist but schedules do not
   React.useEffect(() => {
-    if (!config.schedules && config.items?.length > 0) {
+    if (!config.schedules && config.items && config.items.length > 0) {
       updateWidget(widget.id, {
         config: {
           ...config,
@@ -89,9 +89,12 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         } as ScheduleConfig,
       });
     }
-  }, [config.items, config.schedules, updateWidget, widget.id]);
+  }, [config, updateWidget, widget.id]);
 
-  const schedules = config.schedules ?? [];
+  const schedules = React.useMemo(
+    () => config.schedules ?? [],
+    [config.schedules]
+  );
   const [activeScheduleId, setActiveScheduleId] = React.useState<string | null>(
     schedules[0]?.id ?? null
   );
@@ -107,7 +110,6 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
   const activeSchedule = schedules.find((s) => s.id === activeScheduleId);
   const items = activeSchedule?.items ?? [];
-
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [tempItem, setTempItem] = useState<ScheduleItem | null>(null);
@@ -146,7 +148,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       id: tempItem.id ?? crypto.randomUUID(),
     };
 
-    const nextItems = editingIndex === -1 ? [...items, itemToSave] : items.map((it, idx) => idx === editingIndex ? itemToSave : it);
+    const nextItems =
+      editingIndex === -1
+        ? [...items, itemToSave]
+        : items.map((it, idx) => (idx === editingIndex ? itemToSave : it));
     const newItems = sortByTime(nextItems);
 
     const nextConfig = { ...config };
@@ -393,7 +398,10 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                       sc.id === s.id ? { ...sc, name: e.target.value } : sc
                     );
                     updateWidget(widget.id, {
-                      config: { ...config, schedules: nextSchedules } as ScheduleConfig,
+                      config: {
+                        ...config,
+                        schedules: nextSchedules,
+                      } as ScheduleConfig,
                     });
                   }}
                   placeholder="Schedule Name"
@@ -412,10 +420,17 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                   {schedules.length > 1 && (
                     <button
                       onClick={() => {
-                        if (confirm("Delete this schedule and all its events?")) {
-                          const nextSchedules = schedules.filter((sc) => sc.id !== s.id);
+                        if (
+                          confirm('Delete this schedule and all its events?')
+                        ) {
+                          const nextSchedules = schedules.filter(
+                            (sc) => sc.id !== s.id
+                          );
                           updateWidget(widget.id, {
-                            config: { ...config, schedules: nextSchedules } as ScheduleConfig,
+                            config: {
+                              ...config,
+                              schedules: nextSchedules,
+                            } as ScheduleConfig,
                           });
                         }
                       }}
@@ -430,7 +445,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
               {schedules.length > 1 && (
                 <div className="flex items-center gap-1">
-                  {["S", "M", "T", "W", "T", "F", "S"].map((dayName, idx) => {
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayName, idx) => {
                     const isSelected = s.days.includes(idx);
                     return (
                       <button
@@ -451,8 +466,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                         }}
                         className={`w-7 h-7 rounded-lg text-[10px] font-bold flex items-center justify-center transition-all ${
                           isSelected
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "bg-white border border-slate-200 text-slate-400 hover:border-slate-300"
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'bg-white border border-slate-200 text-slate-400 hover:border-slate-300'
                         }`}
                       >
                         {dayName}

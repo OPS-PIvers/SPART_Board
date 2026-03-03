@@ -577,8 +577,18 @@ describe('ScheduleSettings', () => {
   it('allows switching between schedules', () => {
     const widget = createWidget({
       schedules: [
-        { id: 's1', name: 'Schedule 1', items: [{ task: 'Task 1' }], days: [1] },
-        { id: 's2', name: 'Schedule 2', items: [{ task: 'Task 2' }], days: [2] },
+        {
+          id: 's1',
+          name: 'Schedule 1',
+          items: [{ task: 'Task 1' }],
+          days: [1],
+        },
+        {
+          id: 's2',
+          name: 'Schedule 2',
+          items: [{ task: 'Task 2' }],
+          days: [2],
+        },
       ],
     });
     render(<ScheduleSettings widget={widget} />);
@@ -613,7 +623,10 @@ describe('ScheduleSettings', () => {
       expect.objectContaining({
         config: expect.objectContaining({
           schedules: expect.arrayContaining([
-            expect.objectContaining({ id: 's1', days: expect.arrayContaining([1, 3]) }),
+            expect.objectContaining({
+              id: 's1',
+              days: expect.arrayContaining([1, 3]),
+            }),
           ]),
         }),
       })

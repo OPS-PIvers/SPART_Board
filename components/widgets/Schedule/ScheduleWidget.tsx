@@ -534,13 +534,17 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         if (nextConfig.schedules && nextConfig.schedules.length > 0) {
           const today = new Date().getDay();
           // Find which schedule we are currently showing so we update the correct one
-          const schedIdx = nextConfig.schedules.length === 1
-            ? 0
-            : nextConfig.schedules.findIndex(s => s.days.includes(today));
+          const schedIdx =
+            nextConfig.schedules.length === 1
+              ? 0
+              : nextConfig.schedules.findIndex((s) => s.days.includes(today));
 
           if (schedIdx !== -1) {
             const nextSchedules = [...nextConfig.schedules];
-            nextSchedules[schedIdx] = { ...nextSchedules[schedIdx], items: newItems };
+            nextSchedules[schedIdx] = {
+              ...nextSchedules[schedIdx],
+              items: newItems,
+            };
             nextConfig.schedules = nextSchedules;
           }
         } else {
@@ -687,13 +691,17 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         const nextConfig = { ...currentConfig };
         if (nextConfig.schedules && nextConfig.schedules.length > 0) {
           const today = new Date().getDay();
-          const schedIdx = nextConfig.schedules.length === 1
-            ? 0
-            : nextConfig.schedules.findIndex(s => s.days.includes(today));
+          const schedIdx =
+            nextConfig.schedules.length === 1
+              ? 0
+              : nextConfig.schedules.findIndex((s) => s.days.includes(today));
 
           if (schedIdx !== -1) {
             const nextSchedules = [...nextConfig.schedules];
-            nextSchedules[schedIdx] = { ...nextSchedules[schedIdx], items: newItems };
+            nextSchedules[schedIdx] = {
+              ...nextSchedules[schedIdx],
+              items: newItems,
+            };
             nextConfig.schedules = nextSchedules;
           }
         } else {
