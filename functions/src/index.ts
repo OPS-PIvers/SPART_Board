@@ -658,11 +658,9 @@ export const triggerJulesWidgetGeneration = functionsV2.https.onCall<JulesData>(
 
     // Generate OAuth 2.0 Access Token
 
-
     const auth = new GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
     });
-
 
     const accessToken = await auth.getAccessToken();
 
