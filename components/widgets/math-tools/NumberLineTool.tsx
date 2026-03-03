@@ -196,7 +196,8 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
                 type="number"
                 value={min}
                 onChange={(e) => onRangeChange(Number(e.target.value), max)}
-                className="w-14 px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center"
+                className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center"
+                style={{ width: 'min(56px, 15cqw)' }}
               />
             </label>
             <label className="flex items-center gap-1">
@@ -205,7 +206,8 @@ export const NumberLineTool: React.FC<NumberLineToolProps> = ({
                 type="number"
                 value={max}
                 onChange={(e) => onRangeChange(min, Number(e.target.value))}
-                className="w-14 px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center"
+                className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-center"
+                style={{ width: 'min(56px, 15cqw)' }}
               />
             </label>
           </div>
