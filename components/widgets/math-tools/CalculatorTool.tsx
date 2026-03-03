@@ -161,7 +161,12 @@ export const CalculatorTool: React.FC = () => {
       const toggled = prev.display.startsWith('-')
         ? prev.display.slice(1)
         : '-' + prev.display;
-      return { ...prev, display: toggled };
+      // When waitingForOperand=true the operator already committed the first
+      // operand into expression; leave that half intact.
+      const expression = prev.waitingForOperand
+        ? prev.expression
+        : prev.expression.slice(0, -prev.display.length) + toggled;
+      return { ...prev, display: toggled, expression };
     });
   }, []);
 
@@ -170,7 +175,10 @@ export const CalculatorTool: React.FC = () => {
       if (prev.hasError) return prev;
       const val = parseFloat(prev.display) / 100;
       const displayResult = val.toString();
-      return { ...prev, display: displayResult };
+      const expression = prev.waitingForOperand
+        ? prev.expression
+        : prev.expression.slice(0, -prev.display.length) + displayResult;
+      return { ...prev, display: displayResult, expression };
     });
   }, []);
 
@@ -179,7 +187,9 @@ export const CalculatorTool: React.FC = () => {
       if (prev.hasError || prev.waitingForOperand) return prev;
       const newDisplay =
         prev.display.length > 1 ? prev.display.slice(0, -1) : '0';
-      return { ...prev, display: newDisplay };
+      const expression =
+        prev.expression.slice(0, -prev.display.length) + newDisplay;
+      return { ...prev, display: newDisplay, expression };
     });
   }, []);
 
@@ -301,7 +311,7 @@ export const CalculatorTool: React.FC = () => {
       {/* Display */}
       <div className="px-4 pt-4 pb-2 bg-slate-900">
         <div className="text-slate-500 text-right font-mono text-xs h-4 truncate">
-          {calc.expression}
+          {calc.expression.replace(/-/g, '−')}
         </div>
         <div
           className={`text-right font-mono font-bold text-white mt-1 truncate ${

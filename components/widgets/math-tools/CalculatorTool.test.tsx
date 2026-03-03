@@ -13,6 +13,14 @@ function getDisplay(container: HTMLElement): HTMLElement {
   return container.querySelector('.font-bold.font-mono') as HTMLElement;
 }
 
+/**
+ * Return the small expression preview line above the main display.
+ * Uses the distinctive text-slate-500 + font-mono combination.
+ */
+function getExpression(container: HTMLElement): HTMLElement {
+  return container.querySelector('.text-slate-500.font-mono') as HTMLElement;
+}
+
 /** Click a calculator button by its accessible label. */
 function clickBtn(name: string) {
   fireEvent.click(screen.getByRole('button', { name }));
@@ -150,6 +158,86 @@ describe('CalculatorTool', () => {
       clickBtn('2');
       clickBtn('=');
       expect(getDisplay(container).textContent).toBe('−5');
+    });
+  });
+
+  // -------------------------------------------------------------------
+  // Expression preview sync
+  //
+  // The small expression line above the display must always reflect the
+  // current operand value, including after +/−, %, and ⌫.  Before this
+  // fix these operations updated only display, leaving expression stale.
+  // -------------------------------------------------------------------
+  describe('expression preview sync', () => {
+    it('expression matches display after typing digits', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('4');
+      clickBtn('2');
+      expect(getExpression(container).textContent).toBe('42');
+    });
+
+    it('expression updates when sign is toggled', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('7');
+      clickBtn('+/−');
+      // Expression should reflect the negated value with Unicode minus
+      expect(getExpression(container).textContent).toBe('−7');
+    });
+
+    it('expression reverts when sign is toggled back', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('7');
+      clickBtn('+/−');
+      clickBtn('+/−');
+      expect(getExpression(container).textContent).toBe('7');
+    });
+
+    it('expression updates when percent is applied', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('5');
+      clickBtn('0');
+      clickBtn('%');
+      expect(getExpression(container).textContent).toBe('0.5');
+    });
+
+    it('expression updates when backspace removes a digit', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('5');
+      clickBtn('3');
+      clickBtn('⌫');
+      // display and expression should both be '5'
+      expect(getDisplay(container).textContent).toBe('5');
+      expect(getExpression(container).textContent).toBe('5');
+    });
+
+    it('expression shows correct second operand after an operator', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('3');
+      clickBtn('+');
+      clickBtn('4');
+      // expression should be '3 + 4' at this point
+      expect(getExpression(container).textContent).toBe('3 + 4');
+    });
+
+    it('expression correctly reflects negated second operand', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('3');
+      clickBtn('+');
+      clickBtn('4');
+      clickBtn('+/−');
+      // The second operand was toggled, expression tail should update
+      expect(getExpression(container).textContent).toBe('3 + −4');
+    });
+
+    it('expression shows stale-free result history after equals', () => {
+      const { container } = render(<CalculatorTool />);
+      clickBtn('5');
+      clickBtn('+/−');
+      clickBtn('+');
+      clickBtn('3');
+      clickBtn('=');
+      // fullExpr built from expression at press-equals time: '−5 + 3 ='
+      expect(getExpression(container).textContent).toBe('−5 + 3 =');
     });
   });
 });
