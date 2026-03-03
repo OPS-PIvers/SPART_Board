@@ -145,6 +145,9 @@ describe('TextWidget', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
       config: { ...mockConfig, content: '' },
     });
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
+
+    mockUpdateWidget.mockClear();
 
     editableDiv.innerHTML = '<div><br></div>';
     fireEvent.input(editableDiv);
@@ -152,6 +155,7 @@ describe('TextWidget', () => {
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
       config: { ...mockConfig, content: '' },
     });
+    expect(mockUpdateWidget).toHaveBeenCalledTimes(1);
   });
 });
 
