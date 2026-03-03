@@ -197,9 +197,6 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
-  // Common height for exactly 4 cards: (100% - 3 gaps) / 4
-  const rowHeight = `calc((100% - 3 * ${GAP_STYLE}) / 4)`;
-
   return (
     <WidgetLayout
       padding="p-0"
@@ -247,31 +244,37 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
               return (
                 <div
                   key={`${event.date}-${event.title}-${idx}`}
-                  className={`w-full flex flex-col justify-center px-4 rounded-2xl transition-all relative shrink-0 snap-start ${
+                  className={`w-full flex flex-col justify-center px-4 py-3 rounded-2xl transition-all relative shrink-0 snap-start ${
                     isToday
-                      ? 'bg-brand-blue-lighter/50 border-[min(6px,1.5cqmin)] border-brand-blue-primary shadow-md z-10'
+                      ? 'bg-brand-blue-50 border border-brand-blue-200 shadow-sm'
                       : 'bg-white border border-slate-200 shadow-sm'
                   }`}
-                  style={{
-                    height: rowHeight,
-                    flex: `0 0 ${rowHeight}`,
-                  }}
                 >
-                  {isToday && (
-                    <div
-                      className="absolute top-0 right-0 bg-brand-blue-primary text-white font-black uppercase tracking-widest px-2 py-1 rounded-bl-xl z-20"
-                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                    >
-                      Now
-                    </div>
-                  )}
                   <div className="flex flex-col min-w-0">
-                    <span
-                      className="font-black text-slate-400 uppercase tracking-widest"
-                      style={{ fontSize: 'min(10px, 2.5cqmin)' }}
-                    >
-                      {isToday ? 'Today' : event.date}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="font-black text-slate-400 uppercase tracking-widest"
+                        style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                      >
+                        {isToday ? 'Today' : event.date}
+                      </span>
+                      {event.time && (
+                        <>
+                          <span
+                            className="text-slate-300"
+                            style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                          >
+                            •
+                          </span>
+                          <span
+                            className="font-bold text-slate-400"
+                            style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                          >
+                            {event.time}
+                          </span>
+                        </>
+                      )}
+                    </div>
                     <span
                       className="font-black text-slate-800 truncate leading-tight mt-0.5"
                       style={{ fontSize: 'min(16px, 4cqmin)' }}

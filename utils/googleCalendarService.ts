@@ -91,9 +91,21 @@ export class GoogleCalendarService {
       // Format to YYYY-MM-DD for consistency
       const dateOnly = startValue.split('T')[0];
 
+      let time: string | undefined = undefined;
+      if (item.start.dateTime) {
+        const dateObj = new Date(item.start.dateTime);
+        if (!isNaN(dateObj.getTime())) {
+          time = dateObj.toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+          });
+        }
+      }
+
       return {
         title: item.summary,
         date: dateOnly,
+        ...(time ? { time } : {}),
       };
     });
   }

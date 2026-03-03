@@ -149,6 +149,7 @@ export interface ScheduleItem {
 
 export interface CalendarEvent {
   date: string;
+  time?: string;
   title: string;
 }
 
