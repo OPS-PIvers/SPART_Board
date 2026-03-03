@@ -556,6 +556,11 @@ export interface CalendarConfig {
   daysVisible?: number;
   /** Individual Google Calendar IDs added by the user */
   personalCalendarIds?: string[];
+  fontFamily?: string;
+  /** Card background color as a hex string, e.g. '#ffffff'. Default: '#ffffff'. */
+  cardColor?: string;
+  /** Card background opacity, 0 (fully transparent) to 1 (fully opaque). Default: 1. */
+  cardOpacity?: number;
 }
 
 export interface LunchMenuDay {

@@ -5,6 +5,7 @@ import {
   CalendarConfig,
   CalendarGlobalConfig,
   CalendarEvent,
+  DEFAULT_GLOBAL_STYLE,
 } from '../../types';
 import {
   Calendar as CalendarIcon,
@@ -16,6 +17,8 @@ import {
   HelpCircle,
   ExternalLink,
   ShieldCheck,
+  Type,
+  Palette,
 } from 'lucide-react';
 import { ScaledEmptyState } from '../common/ScaledEmptyState';
 import { WidgetLayout } from './WidgetLayout';
@@ -25,6 +28,28 @@ import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { Toggle } from '../common/Toggle';
 
 const GAP_STYLE = 'min(10px, 2cqmin)';
+
+/** Converts a hex color + alpha into an rgba() CSS string. */
+const hexToRgba = (hex: string, alpha: number): string => {
+  const clean = (hex ?? '#ffffff').replace('#', '');
+  const a =
+    typeof alpha === 'number' && !isNaN(alpha)
+      ? Math.max(0, Math.min(1, alpha))
+      : 1;
+  if (clean.length !== 6) return `rgba(255, 255, 255, ${a})`;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${a})`;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+
+const FONTS = [
+  { id: 'global', label: 'Inherit', icon: 'G' },
+  { id: 'font-mono', label: 'Digital', icon: '01' },
+  { id: 'font-sans', label: 'Modern', icon: 'Aa' },
+  { id: 'font-handwritten', label: 'School', icon: '✏️' },
+];
 
 /**
  * Attempts to extract a Google Calendar ID from a pasted URL.
@@ -53,9 +78,11 @@ const extractCalendarId = (input: string): string => {
 export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
+  const { activeDashboard } = useDashboard();
   const { selectedBuildings } = useAuth();
   const { subscribeToPermission } = useFeaturePermissions();
   const { calendarService, isConnected } = useGoogleCalendar();
+  const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as CalendarConfig;
   const localEvents = useMemo(() => config.events ?? [], [config.events]);
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
@@ -63,6 +90,12 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     () => config.personalCalendarIds ?? [],
     [config.personalCalendarIds]
   );
+
+  const {
+    fontFamily = 'global',
+    cardOpacity = 1,
+    cardColor = '#ffffff',
+  } = config;
 
   const [globalConfig, setGlobalConfig] = useState<CalendarGlobalConfig | null>(
     null
@@ -178,6 +211,14 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
     return globalConfig?.blockedDates?.includes(today);
   }, [isBuildingSyncEnabled, globalConfig]);
 
+  const getFontClass = () => {
+    if (fontFamily === 'global') return `font-${globalStyle.fontFamily}`;
+    if (fontFamily.startsWith('font-')) return fontFamily;
+    return `font-${fontFamily}`;
+  };
+
+  const bgColor = hexToRgba(cardColor, cardOpacity);
+
   if (isBlocked) {
     return (
       <WidgetLayout
@@ -226,7 +267,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
       }
       content={
         <div
-          className="h-full w-full flex flex-col overflow-hidden"
+          className={`h-full w-full flex flex-col overflow-hidden ${getFontClass()}`}
           style={{ padding: 'min(12px, 2.5cqmin)' }}
         >
           <div
@@ -246,9 +287,10 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                   key={`${event.date}-${event.title}-${idx}`}
                   className={`w-full flex flex-col justify-center px-4 py-3 rounded-2xl transition-all relative shrink-0 snap-start ${
                     isToday
-                      ? 'bg-brand-blue-50 border border-brand-blue-200 shadow-sm'
-                      : 'bg-white border border-slate-200 shadow-sm'
+                      ? 'border-[min(6px,1.5cqmin)] border-[#2d3f89] shadow-md z-10'
+                      : 'border border-slate-200 shadow-sm'
                   }`}
+                  style={{ backgroundColor: bgColor }}
                 >
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-1.5">
@@ -276,7 +318,7 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
                       )}
                     </div>
                     <span
-                      className="font-black text-slate-800 truncate leading-tight mt-0.5"
+                      className="font-black text-slate-700 truncate leading-tight mt-0.5"
                       style={{ fontSize: 'min(16px, 4cqmin)' }}
                     >
                       {event.title}
@@ -410,6 +452,109 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
               }
               className="w-16 px-2 py-1 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
+          </div>
+        </div>
+      </section>
+
+      <hr className="border-slate-100" />
+
+      {/* Typography */}
+      <section>
+        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <Type className="w-3 h-3" /> Typography
+        </label>
+        <div className="grid grid-cols-4 gap-2">
+          {FONTS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() =>
+                updateWidget(widget.id, {
+                  config: { ...config, fontFamily: f.id } as CalendarConfig,
+                })
+              }
+              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
+                config.fontFamily === f.id ||
+                (!config.fontFamily && f.id === 'global')
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-100 hover:border-slate-200'
+              }`}
+            >
+              <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
+              <span className="text-xxxs uppercase text-slate-600">
+                {f.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <hr className="border-slate-100" />
+
+      {/* Card Style */}
+      <section>
+        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+          <Palette className="w-3 h-3" /> Card Style
+        </label>
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+          {/* Card Color */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">
+                Card Color
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-mono">
+                  {config.cardColor ?? '#ffffff'}
+                </span>
+                <input
+                  type="color"
+                  value={config.cardColor ?? '#ffffff'}
+                  onChange={(e) =>
+                    updateWidget(widget.id, {
+                      config: {
+                        ...config,
+                        cardColor: e.target.value,
+                      } as CalendarConfig,
+                    })
+                  }
+                  className="w-8 h-8 rounded cursor-pointer border border-slate-200 p-0.5"
+                  aria-label="Card color"
+                  title="Choose card background color"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card Opacity */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-slate-700">
+                Card Opacity
+              </span>
+              <span className="text-xs text-slate-500 tabular-nums">
+                {Math.round((config.cardOpacity ?? 1) * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={config.cardOpacity ?? 1}
+              onChange={(e) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    cardOpacity: parseFloat(e.target.value),
+                  } as CalendarConfig,
+                })
+              }
+              aria-label="Card opacity"
+              className="w-full accent-blue-500"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Set to 0% for fully transparent cards.
+            </p>
           </div>
         </div>
       </section>
