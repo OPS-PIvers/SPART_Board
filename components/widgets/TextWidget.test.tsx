@@ -76,7 +76,7 @@ describe('TextWidget', () => {
     }
   });
 
-  it('clears placeholder content when focused', () => {
+  it('clears placeholder content when focused (empty content)', () => {
     const emptyWidget: WidgetData = {
       ...mockWidget,
       config: { ...mockConfig, content: '' },
@@ -87,6 +87,26 @@ describe('TextWidget', () => {
     ) as HTMLElement;
 
     expect(editableDiv).not.toBeNull();
+
+    // In JSDOM, setting focus to it triggers the focus event
+    fireEvent.focus(editableDiv);
+
+    // Empty innerHTML is expected
+    expect(editableDiv.innerHTML).toBe('');
+  });
+
+  it('clears placeholder content when focused (placeholder content)', () => {
+    const placeholderWidget: WidgetData = {
+      ...mockWidget,
+      config: { ...mockConfig, content: 'Click to edit...' },
+    };
+    const { container } = render(<TextWidget widget={placeholderWidget} />);
+    const editableDiv = container.querySelector(
+      'div[contentEditable="true"]'
+    ) as HTMLElement;
+
+    expect(editableDiv).not.toBeNull();
+    expect(editableDiv.innerHTML).toBe('Click to edit...');
 
     // In JSDOM, setting focus to it triggers the focus event
     fireEvent.focus(editableDiv);
@@ -108,6 +128,29 @@ describe('TextWidget', () => {
 
     expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
       config: { ...mockConfig, content: 'Immediate Save' },
+    });
+  });
+
+  it('normalizes empty browser markup to empty string on input', () => {
+    const { container } = render(<TextWidget widget={mockWidget} />);
+    const editableDiv = container.querySelector(
+      'div[contentEditable="true"]'
+    ) as HTMLElement;
+
+    expect(editableDiv).not.toBeNull();
+
+    editableDiv.innerHTML = '<br>';
+    fireEvent.input(editableDiv);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      config: { ...mockConfig, content: '' },
+    });
+
+    editableDiv.innerHTML = '<div><br></div>';
+    fireEvent.input(editableDiv);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      config: { ...mockConfig, content: '' },
     });
   });
 });
