@@ -4,11 +4,9 @@ import { CSS_PPI, cmToPx, inchesToPx } from './mathToolUtils';
 interface RulerToolProps {
   units: 'in' | 'cm' | 'both';
   pixelsPerInch?: number;
-  /** If true renders cm ruler, else inch */
   metric?: boolean;
 }
 
-/** Inch ruler SVG – physically accurate when pixelsPerInch matches screen DPI */
 export const InchRuler: React.FC<{ pixelsPerInch?: number }> = ({
   pixelsPerInch = CSS_PPI,
 }) => {
@@ -23,7 +21,7 @@ export const InchRuler: React.FC<{ pixelsPerInch?: number }> = ({
 
   for (let sixteenth = 0; sixteenth <= totalInches * 16; sixteenth++) {
     const x = (sixteenth / 16) * ppi;
-    const isMajor = sixteenth % 16 === 0; // inch
+    const isMajor = sixteenth % 16 === 0;
     const isHalf = sixteenth % 8 === 0 && !isMajor;
     const isQuarter = sixteenth % 4 === 0 && !isMajor && !isHalf;
     const isEighth = sixteenth % 2 === 0 && !isQuarter && !isMajor && !isHalf;
@@ -79,53 +77,54 @@ export const InchRuler: React.FC<{ pixelsPerInch?: number }> = ({
   }
 
   return (
-    <svg
-      width={rulerWidth + 2}
-      height={rulerHeight}
-      viewBox={`0 0 ${rulerWidth + 2} ${rulerHeight}`}
-      style={{ display: 'block', userSelect: 'none' }}
-      role="img"
-      aria-label="12-inch ruler"
-    >
-      {/* Ruler body */}
-      <rect
-        x={0}
-        y={bodyTop}
-        width={rulerWidth}
-        height={bodyH}
-        rx={3}
-        fill="#fef9c3"
-        stroke="#ca8a04"
-        strokeWidth={1.5}
-      />
-      {/* Edge highlight */}
-      <rect
-        x={1}
-        y={bodyTop + 1}
-        width={rulerWidth - 2}
-        height={4}
-        rx={2}
-        fill="rgba(255,255,255,0.45)"
-      />
-      {/* Ticks and labels */}
-      {ticks}
-      {/* "in" label */}
-      <text
-        x={rulerWidth - 4}
-        y={bodyTop + 10}
-        textAnchor="end"
-        fontSize={Math.max(7, Math.round(ppi * 0.09))}
-        fill="#92400e"
-        fontFamily="monospace"
-        fontWeight="bold"
+    <div className="overflow-x-auto custom-scrollbar no-scrollbar-y py-1">
+      <svg
+        width={rulerWidth + 2}
+        height={rulerHeight}
+        viewBox={`0 0 ${rulerWidth + 2} ${rulerHeight}`}
+        style={{
+          display: 'block',
+          userSelect: 'none',
+          minWidth: rulerWidth + 2,
+        }}
+        role="img"
+        aria-label="12-inch ruler"
       >
-        in
-      </text>
-    </svg>
+        <rect
+          x={0}
+          y={bodyTop}
+          width={rulerWidth}
+          height={bodyH}
+          rx={3}
+          fill="#fef9c3"
+          stroke="#ca8a04"
+          strokeWidth={1.5}
+        />
+        <rect
+          x={1}
+          y={bodyTop + 1}
+          width={rulerWidth - 2}
+          height={4}
+          rx={2}
+          fill="rgba(255,255,255,0.45)"
+        />
+        {ticks}
+        <text
+          x={rulerWidth - 4}
+          y={bodyTop + 10}
+          textAnchor="end"
+          fontSize={Math.max(7, Math.round(ppi * 0.09))}
+          fill="#92400e"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
+          in
+        </text>
+      </svg>
+    </div>
   );
 };
 
-/** Metric (cm) ruler SVG */
 export const MetricRuler: React.FC<{ pixelsPerInch?: number }> = ({
   pixelsPerInch = CSS_PPI,
 }) => {
@@ -140,7 +139,7 @@ export const MetricRuler: React.FC<{ pixelsPerInch?: number }> = ({
 
   for (let mm = 0; mm <= totalCm * 10; mm++) {
     const x = (mm / 10) * cmToPx(1, ppi);
-    const isMajor = mm % 10 === 0; // cm
+    const isMajor = mm % 10 === 0;
     const isHalf = mm % 5 === 0 && !isMajor;
 
     let tickH: number;
@@ -188,45 +187,51 @@ export const MetricRuler: React.FC<{ pixelsPerInch?: number }> = ({
   }
 
   return (
-    <svg
-      width={rulerWidth + 2}
-      height={rulerHeight}
-      viewBox={`0 0 ${rulerWidth + 2} ${rulerHeight}`}
-      style={{ display: 'block', userSelect: 'none' }}
-      role="img"
-      aria-label="30 centimeter ruler"
-    >
-      <rect
-        x={0}
-        y={bodyTop}
-        width={rulerWidth}
-        height={bodyH}
-        rx={3}
-        fill="#dcfce7"
-        stroke="#16a34a"
-        strokeWidth={1.5}
-      />
-      <rect
-        x={1}
-        y={bodyTop + 1}
-        width={rulerWidth - 2}
-        height={4}
-        rx={2}
-        fill="rgba(255,255,255,0.45)"
-      />
-      {ticks}
-      <text
-        x={rulerWidth - 4}
-        y={bodyTop + 10}
-        textAnchor="end"
-        fontSize={Math.max(7, Math.round(cmToPx(0.22, ppi)))}
-        fill="#14532d"
-        fontFamily="monospace"
-        fontWeight="bold"
+    <div className="overflow-x-auto custom-scrollbar no-scrollbar-y py-1">
+      <svg
+        width={rulerWidth + 2}
+        height={rulerHeight}
+        viewBox={`0 0 ${rulerWidth + 2} ${rulerHeight}`}
+        style={{
+          display: 'block',
+          userSelect: 'none',
+          minWidth: rulerWidth + 2,
+        }}
+        role="img"
+        aria-label="30 centimeter ruler"
       >
-        cm
-      </text>
-    </svg>
+        <rect
+          x={0}
+          y={bodyTop}
+          width={rulerWidth}
+          height={bodyH}
+          rx={3}
+          fill="#dcfce7"
+          stroke="#16a34a"
+          strokeWidth={1.5}
+        />
+        <rect
+          x={1}
+          y={bodyTop + 1}
+          width={rulerWidth - 2}
+          height={4}
+          rx={2}
+          fill="rgba(255,255,255,0.45)"
+        />
+        {ticks}
+        <text
+          x={rulerWidth - 4}
+          y={bodyTop + 10}
+          textAnchor="end"
+          fontSize={Math.max(7, Math.round(cmToPx(0.22, ppi)))}
+          fill="#14532d"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
+          cm
+        </text>
+      </svg>
+    </div>
   );
 };
 
@@ -240,9 +245,11 @@ export const RulerTool: React.FC<RulerToolProps> = ({
   if (units === 'cm') {
     return <MetricRuler pixelsPerInch={pixelsPerInch} />;
   }
-  // both: stack vertically
   return (
-    <div className="flex flex-col gap-1">
+    <div
+      className="flex flex-col h-full w-full"
+      style={{ gap: 'min(8px, 2cqmin)' }}
+    >
       <InchRuler pixelsPerInch={pixelsPerInch} />
       <MetricRuler pixelsPerInch={pixelsPerInch} />
     </div>

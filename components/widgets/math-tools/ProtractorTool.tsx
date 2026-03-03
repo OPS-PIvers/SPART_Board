@@ -4,19 +4,14 @@ interface ProtractorToolProps {
   pixelsPerInch?: number;
 }
 
-/**
- * 180° semicircular protractor SVG.
- * Renders at a fixed physical size (≈3in diameter when PPI=96).
- * User can drag the angle arm to measure angles interactively.
- */
 export const ProtractorTool: React.FC<ProtractorToolProps> = ({
   pixelsPerInch = 96,
 }) => {
-  const radius = pixelsPerInch * 1.4; // ~1.4 inches radius
+  const radius = pixelsPerInch * 1.4;
   const cx = radius;
   const cy = radius;
   const svgW = radius * 2;
-  const svgH = radius + 20; // semicircle + base
+  const svgH = radius + 20;
 
   const [angleDeg, setAngleDeg] = useState<number>(90);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -36,7 +31,6 @@ export const ProtractorTool: React.FC<ProtractorToolProps> = ({
     [cx, cy]
   );
 
-  // Degree markings
   const ticks: React.ReactNode[] = [];
   for (let d = 0; d <= 180; d++) {
     const rad = ((180 - d) * Math.PI) / 180;
@@ -89,38 +83,37 @@ export const ProtractorTool: React.FC<ProtractorToolProps> = ({
     }
   }
 
-  // Angle arm
   const armRad = ((180 - angleDeg) * Math.PI) / 180;
   const armLen = radius - 4;
   const armX = cx + armLen * Math.cos(armRad);
   const armY = cy - armLen * Math.sin(armRad);
 
-  // Arc path
   const arcStartX = cx + (radius - 2) * Math.cos(0);
   const arcStartY = cy - (radius - 2) * Math.sin(0);
   const arcEndX = cx + (radius - 2) * Math.cos(Math.PI);
   const arcEndY = cy - (radius - 2) * Math.sin(Math.PI);
 
   return (
-    <div className="select-none" style={{ cursor: 'crosshair' }}>
+    <div
+      className="select-none flex flex-col items-center h-full w-full overflow-auto custom-scrollbar"
+      style={{ cursor: 'crosshair' }}
+    >
       <svg
         ref={svgRef}
         width={svgW}
         height={svgH}
         viewBox={`0 0 ${svgW} ${svgH}`}
-        style={{ display: 'block', touchAction: 'none' }}
+        style={{ display: 'block', touchAction: 'none', minWidth: svgW }}
         onPointerMove={handlePointerMove}
         role="img"
         aria-label={`Protractor showing ${angleDeg}°`}
       >
-        {/* Semicircle body */}
         <path
           d={`M ${arcEndX} ${arcEndY} A ${radius - 2} ${radius - 2} 0 0 1 ${arcStartX} ${arcStartY} L ${cx} ${cy} Z`}
           fill="rgba(224, 242, 254, 0.85)"
           stroke="#0284c7"
           strokeWidth={1.5}
         />
-        {/* Base line */}
         <line
           x1={0}
           y1={cy}
@@ -129,11 +122,8 @@ export const ProtractorTool: React.FC<ProtractorToolProps> = ({
           stroke="#0284c7"
           strokeWidth={1.8}
         />
-        {/* Tick marks & labels */}
         {ticks}
-        {/* Center dot */}
         <circle cx={cx} cy={cy} r={4} fill="#0284c7" />
-        {/* Angle indicator arc */}
         {angleDeg > 0 && angleDeg < 180 && (
           <path
             d={`M ${cx + 24} ${cy} A 24 24 0 ${angleDeg > 90 ? 1 : 0} 1 ${cx + 24 * Math.cos(armRad)} ${cy - 24 * Math.sin(armRad)}`}
@@ -142,7 +132,6 @@ export const ProtractorTool: React.FC<ProtractorToolProps> = ({
             strokeWidth={1.5}
           />
         )}
-        {/* Movable arm */}
         <line
           x1={cx}
           y1={cy}
@@ -152,7 +141,6 @@ export const ProtractorTool: React.FC<ProtractorToolProps> = ({
           strokeWidth={2}
           strokeLinecap="round"
         />
-        {/* Angle readout */}
         <rect
           x={cx - 26}
           y={cy - radius * 0.55}
@@ -175,8 +163,8 @@ export const ProtractorTool: React.FC<ProtractorToolProps> = ({
         </text>
       </svg>
       <p
-        className="text-center text-slate-400 mt-1"
-        style={{ fontSize: Math.max(10, radius * 0.07) }}
+        className="text-center text-slate-400 mt-1 font-bold italic shrink-0"
+        style={{ fontSize: 'min(10px, 3.5cqmin)' }}
       >
         Drag inside to measure angle
       </p>

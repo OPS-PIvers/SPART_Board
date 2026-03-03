@@ -156,13 +156,9 @@ export const CalculatorTool: React.FC = () => {
   const pressToggleSign = useCallback(() => {
     setCalc((prev) => {
       if (prev.hasError || prev.display === '0') return prev;
-      // Use ASCII '-' internally so parseFloat() parses correctly.
-      // The display renders it as the Unicode '−' glyph (see JSX below).
       const toggled = prev.display.startsWith('-')
         ? prev.display.slice(1)
         : '-' + prev.display;
-      // When waitingForOperand=true the operator already committed the first
-      // operand into expression; leave that half intact.
       const expression = prev.waitingForOperand
         ? prev.expression
         : prev.expression.slice(0, -prev.display.length) + toggled;
@@ -307,28 +303,57 @@ export const CalculatorTool: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col w-full max-w-[220px] mx-auto rounded-2xl overflow-hidden bg-slate-900 shadow-lg border border-slate-700">
+    <div className="flex flex-col w-full h-full rounded-2xl overflow-hidden bg-slate-900 shadow-lg border border-slate-700">
       {/* Display */}
-      <div className="px-4 pt-4 pb-2 bg-slate-900">
-        <div className="text-slate-500 text-right font-mono text-xs h-4 truncate">
+      <div
+        className="bg-slate-900 shrink-0 flex flex-col justify-end"
+        style={{
+          padding: 'min(16px, 4cqh) min(16px, 4cqw)',
+          minHeight: '25%',
+        }}
+      >
+        <div
+          className="text-slate-500 text-right font-mono truncate"
+          style={{
+            fontSize: 'min(14px, 3.5cqmin)',
+            height: 'min(18px, 4cqmin)',
+          }}
+        >
           {calc.expression.replace(/-/g, '−')}
         </div>
         <div
-          className={`text-right font-mono font-bold text-white mt-1 truncate ${
-            calc.display.length > 10 ? 'text-xl' : 'text-3xl'
-          } ${calc.hasError ? 'text-red-400' : ''}`}
+          className={`text-right font-mono font-bold text-white truncate ${
+            calc.hasError ? 'text-red-400' : ''
+          }`}
+          style={{
+            fontSize:
+              calc.display.length > 10
+                ? 'min(32px, 8cqmin)'
+                : 'min(48px, 12cqmin)',
+            marginTop: 'min(4px, 1cqmin)',
+            lineHeight: 1,
+          }}
         >
           {calc.display.replace('-', '−')}
         </div>
       </div>
 
       {/* Buttons */}
-      <div className="p-3 pt-2 grid grid-cols-4 gap-2">
+      <div
+        className="flex-1 min-h-0 grid grid-cols-4"
+        style={{
+          padding: 'min(12px, 3cqmin)',
+          gap: 'min(8px, 2cqmin)',
+        }}
+      >
         {rows.flat().map((btn, idx) => (
           <button
             key={idx}
             onClick={btn.action}
-            className={`${btn.style} rounded-xl text-sm font-black py-3 transition-all active:scale-95 select-none`}
+            className={`${btn.style} rounded-xl font-black transition-all active:scale-95 select-none flex items-center justify-center`}
+            style={{
+              fontSize: 'min(18px, 4.5cqmin)',
+            }}
           >
             {btn.label}
           </button>

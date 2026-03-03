@@ -42,7 +42,6 @@ export const AlgebraTilesTool: React.FC = () => {
     setTiles((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Build expression string
   const expr = (() => {
     const x2 =
       tiles.filter((t) => t.kind === 'x2-pos').length -
@@ -60,12 +59,10 @@ export const AlgebraTilesTool: React.FC = () => {
     return parts.length > 0 ? parts.join(' + ').replace('+ −', '− ') : '0';
   })();
 
-  // Layout tiles in a grid
   const PAD = 12;
   const TILE_GAP = 6;
   const CANVAS_W = 420;
 
-  // Arrange by kind groups
   const groups: Tile['kind'][] = [
     'x2-pos',
     'x2-neg',
@@ -109,19 +106,28 @@ export const AlgebraTilesTool: React.FC = () => {
   const CANVAS_H = Math.max(180, curY + rowH + PAD);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      className="flex flex-col h-full w-full"
+      style={{ gap: 'min(8px, 2cqmin)' }}
+    >
       {/* Expression display */}
-      <div className="flex items-center justify-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100">
-        <span className="text-xxs font-black text-slate-400 uppercase tracking-widest">
+      <div className="flex items-center justify-center gap-2 p-2 bg-slate-50/80 rounded-xl border border-slate-100 shrink-0">
+        <span
+          className="font-black text-slate-400 uppercase tracking-widest"
+          style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+        >
           Expression:
         </span>
-        <span className="font-mono font-bold text-indigo-700 text-sm">
+        <span
+          className="font-mono font-bold text-indigo-700 tabular-nums"
+          style={{ fontSize: 'min(14px, 4cqmin)' }}
+        >
           {expr}
         </span>
       </div>
 
       {/* Palette */}
-      <div className="flex flex-wrap gap-1 p-2 bg-slate-50 rounded-xl border border-slate-100">
+      <div className="flex flex-wrap items-center justify-center gap-1 p-2 bg-slate-50/50 rounded-xl border border-slate-100 shrink-0">
         {PALETTE_KINDS.map((kind) => {
           const meta = ALGEBRA_TILE_META[kind];
           return (
@@ -129,8 +135,12 @@ export const AlgebraTilesTool: React.FC = () => {
               key={kind}
               onClick={() => addTile(kind)}
               title={`Add ${meta.label}`}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-slate-200 text-xxs font-black"
-              style={{ color: meta.textColor }}
+              className="flex items-center gap-1 rounded-lg hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-slate-200 font-black"
+              style={{
+                color: meta.textColor,
+                fontSize: 'min(10px, 3.5cqmin)',
+                padding: 'min(4px, 1cqmin) min(8px, 1.8cqmin)',
+              }}
             >
               <span>{getTileValue(kind)}</span>
               <span>{meta.label.replace('−', '')}</span>
@@ -140,7 +150,7 @@ export const AlgebraTilesTool: React.FC = () => {
       </div>
 
       {/* Canvas */}
-      <div className="overflow-x-auto rounded-xl border border-slate-100 bg-white">
+      <div className="flex-1 overflow-x-auto custom-scrollbar rounded-xl border border-slate-100 bg-white shadow-inner shadow-slate-50">
         <svg
           width={CANVAS_W}
           height={CANVAS_H}
@@ -194,7 +204,10 @@ export const AlgebraTilesTool: React.FC = () => {
           )}
         </svg>
       </div>
-      <p className="text-xxs text-slate-400 text-center">
+      <p
+        className="text-slate-400 text-center font-bold italic shrink-0"
+        style={{ fontSize: 'min(9px, 3.2cqmin)' }}
+      >
         Click a tile to remove it
       </p>
     </div>

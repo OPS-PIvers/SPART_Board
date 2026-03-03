@@ -8,7 +8,6 @@ interface Block {
   id: string;
 }
 
-/** Renders a single base-10 block (unit square, rod, or flat) */
 function BlockShape({ type }: { type: Block['type'] }) {
   if (type === 'unit') {
     return (
@@ -23,7 +22,6 @@ function BlockShape({ type }: { type: Block['type'] }) {
     );
   }
   if (type === 'rod') {
-    // 10 units tall
     return (
       <g>
         {Array.from({ length: 10 }).map((_, i) => (
@@ -42,7 +40,6 @@ function BlockShape({ type }: { type: Block['type'] }) {
       </g>
     );
   }
-  // flat: 10×10
   return (
     <g>
       {Array.from({ length: 10 }).map((_, row) =>
@@ -120,10 +117,16 @@ export const Base10BlocksTool: React.FC = () => {
   const svgW = Math.max(360, xOffset + 8);
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xxs font-black text-slate-400 uppercase tracking-widest">
+    <div
+      className="flex flex-col h-full w-full"
+      style={{ gap: 'min(8px, 2cqmin)' }}
+    >
+      {/* Toolbar - Adaptive sizing */}
+      <div className="flex items-center gap-x-3 gap-y-2 flex-wrap shrink-0">
+        <span
+          className="font-black text-slate-400 uppercase tracking-widest"
+          style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+        >
           Add:
         </span>
         {(
@@ -136,18 +139,25 @@ export const Base10BlocksTool: React.FC = () => {
           <button
             key={type}
             onClick={() => addBlock(type)}
-            className={`${color} text-white text-xxs font-black px-2 py-1 rounded-lg shadow-sm hover:opacity-90 transition-opacity`}
+            className={`${color} text-white font-black rounded-lg shadow-sm hover:opacity-90 transition-opacity whitespace-nowrap`}
+            style={{
+              fontSize: 'min(10px, 3.5cqmin)',
+              padding: 'min(4px, 1cqmin) min(8px, 1.8cqmin)',
+            }}
           >
             + {label}
           </button>
         ))}
-        <span className="ml-auto text-sm font-black text-slate-700">
+        <span
+          className="ml-auto font-black text-slate-700 tabular-nums"
+          style={{ fontSize: 'min(14px, 4cqmin)' }}
+        >
           Total: <span className="text-indigo-600">{total}</span>
         </span>
       </div>
 
       {/* Block canvas */}
-      <div className="overflow-x-auto rounded-xl border border-slate-100 bg-slate-50">
+      <div className="flex-1 overflow-x-auto custom-scrollbar rounded-xl border border-slate-100 bg-slate-50/50">
         <svg
           width={svgW}
           height={svgH}
@@ -156,7 +166,6 @@ export const Base10BlocksTool: React.FC = () => {
           role="img"
           aria-label={`Base-10 blocks showing ${total}`}
         >
-          {/* Ground line */}
           <line
             x1={4}
             y1={svgH - 4}
@@ -175,7 +184,6 @@ export const Base10BlocksTool: React.FC = () => {
               aria-label={`Remove ${type} block`}
             >
               <BlockShape type={type} />
-              {/* × remove overlay */}
               <rect
                 width={blockW(type)}
                 height={blockH(type)}
@@ -198,7 +206,10 @@ export const Base10BlocksTool: React.FC = () => {
           )}
         </svg>
       </div>
-      <p className="text-xxs text-slate-400 text-center">
+      <p
+        className="text-slate-400 text-center font-bold italic shrink-0"
+        style={{ fontSize: 'min(9px, 3.2cqmin)' }}
+      >
         Click a block to remove it
       </p>
     </div>

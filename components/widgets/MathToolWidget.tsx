@@ -7,6 +7,7 @@ import {
   MATH_TOOL_META,
 } from './math-tools/mathToolUtils';
 import { StickerPieceSVG } from './math-tools/StickerPieces';
+import { WidgetLayout } from './WidgetLayout';
 
 // Lazy load all tool components to keep the bundle lean
 const RulerTool = lazy(() =>
@@ -169,43 +170,46 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
 
   // ---- Normal mode: header badge + tool content ----
   const meta = getMathToolMeta(config.toolType ?? 'ruler-in');
-  return (
-    <div className="h-full w-full flex flex-col overflow-auto p-2 gap-2">
-      {/* Tool header badge */}
-      <div
-        className="flex items-center shrink-0"
-        style={{ gap: 'min(8px, 2cqmin)' }}
+
+  const header = (
+    <div
+      className="flex items-center shrink-0"
+      style={{ gap: 'min(8px, 2cqmin)' }}
+    >
+      <span className="leading-none" style={{ fontSize: 'min(24px, 10cqmin)' }}>
+        {meta.emoji}
+      </span>
+      <span
+        className="font-black text-slate-600 uppercase tracking-widest"
+        style={{ fontSize: 'min(12px, 4.5cqmin)' }}
       >
-        <span
-          className="leading-none"
-          style={{ fontSize: 'min(24px, 10cqmin)' }}
-        >
-          {meta.emoji}
-        </span>
-        <span
-          className="font-black text-slate-600 uppercase tracking-widest"
-          style={{ fontSize: 'min(12px, 4.5cqmin)' }}
-        >
-          {meta.label}
-        </span>
-        <span
-          className="ml-auto text-slate-300 font-mono"
-          style={{ fontSize: 'min(10px, 3.5cqmin)' }}
-        >
-          {config.pixelsPerInch ?? CSS_PPI} px/in
-        </span>
-      </div>
-      {/* Tool content */}
-      <Suspense
-        fallback={
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-            Loading…
-          </div>
-        }
+        {meta.label}
+      </span>
+      <span
+        className="ml-auto text-slate-300 font-mono"
+        style={{ fontSize: 'min(10px, 3.5cqmin)' }}
       >
-        <ToolContent config={config} onUpdate={handleUpdate} />
-      </Suspense>
+        {config.pixelsPerInch ?? CSS_PPI} px/in
+      </span>
     </div>
+  );
+
+  return (
+    <WidgetLayout
+      header={header}
+      contentClassName="flex-1 min-h-0 overflow-auto"
+      content={
+        <Suspense
+          fallback={
+            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+              Loading…
+            </div>
+          }
+        >
+          <ToolContent config={config} onUpdate={handleUpdate} />
+        </Suspense>
+      }
+    />
   );
 };
 
