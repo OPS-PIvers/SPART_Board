@@ -82,7 +82,9 @@ describe('TextWidget', () => {
       config: { ...mockConfig, content: '' },
     };
     const { container } = render(<TextWidget widget={emptyWidget} />);
-    const editableDiv = container.querySelector('div[contentEditable="true"]') as HTMLElement;
+    const editableDiv = container.querySelector(
+      'div[contentEditable="true"]'
+    ) as HTMLElement;
 
     expect(editableDiv).not.toBeNull();
 
@@ -95,7 +97,9 @@ describe('TextWidget', () => {
 
   it('updates content on input', () => {
     const { container } = render(<TextWidget widget={mockWidget} />);
-    const editableDiv = container.querySelector('div[contentEditable="true"]') as HTMLElement;
+    const editableDiv = container.querySelector(
+      'div[contentEditable="true"]'
+    ) as HTMLElement;
 
     expect(editableDiv).not.toBeNull();
 
