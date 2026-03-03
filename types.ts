@@ -553,6 +553,8 @@ export interface CalendarConfig {
   isBuildingSyncEnabled?: boolean;
   lastSyncedBuildingId?: string;
   daysVisible?: number;
+  /** Individual Google Calendar IDs added by the user */
+  personalCalendarIds?: string[];
 }
 
 export interface LunchMenuDay {
