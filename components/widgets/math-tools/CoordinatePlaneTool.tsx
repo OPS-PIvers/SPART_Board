@@ -276,6 +276,13 @@ export const CoordinatePlaneTool: React.FC = () => {
               <g
                 key={pt.id}
                 onClick={(e) => removePoint(pt.id, e)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setPoints((prev) => prev.filter((p) => p.id !== pt.id));
+                  }
+                }}
+                tabIndex={0}
                 style={{ cursor: 'pointer' }}
                 role="button"
                 aria-label={`Point ${pt.label} (${pt.x}, ${pt.y})`}

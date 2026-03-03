@@ -209,6 +209,13 @@ export const GeoboardTool: React.FC = () => {
                   strokeWidth={2}
                   style={{ cursor: 'pointer', transition: 'r 0.15s' }}
                   onClick={() => handlePegClick(row, col)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handlePegClick(row, col);
+                    }
+                  }}
+                  tabIndex={0}
                   role="button"
                   aria-label={`Peg row ${row + 1} col ${col + 1}`}
                 />

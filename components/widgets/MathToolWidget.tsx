@@ -90,7 +90,10 @@ function ToolContent({
           max={config.numberLineMax ?? 10}
           onModeChange={(mode) => onUpdate({ numberLineMode: mode })}
           onRangeChange={(min, max) =>
-            onUpdate({ numberLineMin: min, numberLineMax: max })
+            onUpdate({
+              numberLineMin: Math.max(-1000, Math.min(1000, min)),
+              numberLineMax: Math.max(-1000, Math.min(1000, max)),
+            })
           }
         />
       );
@@ -169,12 +172,26 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <div className="h-full w-full flex flex-col overflow-auto p-2 gap-2">
       {/* Tool header badge */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-lg leading-none">{meta.emoji}</span>
-        <span className="text-xs font-black text-slate-600 uppercase tracking-widest">
+      <div
+        className="flex items-center shrink-0"
+        style={{ gap: 'min(8px, 2cqmin)' }}
+      >
+        <span
+          className="leading-none"
+          style={{ fontSize: 'min(24px, 10cqmin)' }}
+        >
+          {meta.emoji}
+        </span>
+        <span
+          className="font-black text-slate-600 uppercase tracking-widest"
+          style={{ fontSize: 'min(12px, 4.5cqmin)' }}
+        >
           {meta.label}
         </span>
-        <span className="ml-auto text-xxs text-slate-300 font-mono">
+        <span
+          className="ml-auto text-slate-300 font-mono"
+          style={{ fontSize: 'min(10px, 3.5cqmin)' }}
+        >
           {config.pixelsPerInch ?? CSS_PPI} px/in
         </span>
       </div>

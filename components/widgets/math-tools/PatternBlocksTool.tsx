@@ -175,7 +175,16 @@ export const PatternBlocksTool: React.FC = () => {
                     : 'none',
               }}
               onClick={(e) => handleBlockClick(block.id, e)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelected((prev) => (prev === block.id ? null : block.id));
+                }
+              }}
+              tabIndex={0}
               role="button"
+              aria-pressed={block.id === selected}
               aria-label={`${block.shape} block`}
             />
           ))}
