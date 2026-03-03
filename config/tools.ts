@@ -27,6 +27,7 @@ import {
   FileText,
   ClipboardList,
   Wand2,
+  Quote,
   Wind,
   Ruler,
 } from 'lucide-react';
@@ -115,6 +116,16 @@ export const TOOLS: ToolMetadata[] = [
   },
   { type: 'pdf', icon: FileText, label: 'PDF Viewer', color: 'bg-red-700' },
   { type: 'quiz', icon: ClipboardList, label: 'Quiz', color: 'bg-violet-600' },
+  {
+    type: 'talking-tool',
+    icon: Quote,
+    label: 'Talking Tool',
+    color: 'bg-sky-500',
+    defaultWidth: 500,
+    defaultHeight: 450,
+    minWidth: 400,
+    minHeight: 350,
+  },
   { type: 'breathing', icon: Wind, label: 'Breathing', color: 'bg-sky-400' },
   {
     type: 'mathTools',

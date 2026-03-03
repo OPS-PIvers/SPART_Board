@@ -32,6 +32,7 @@ export type WidgetType =
   | 'recessGear'
   | 'pdf'
   | 'quiz'
+  | 'talking-tool'
   | 'breathing'
   | 'mathTools'
   | 'mathTool';
@@ -989,6 +990,8 @@ export interface QuizConfig {
   resultsSessionId: string | null;
 }
 
+export type TalkingToolConfig = Record<string, never>;
+
 // Union of all widget configs
 export type WidgetConfig =
   | ClockConfig
@@ -1024,6 +1027,7 @@ export type WidgetConfig =
   | RecessGearConfig
   | PdfConfig
   | QuizConfig
+  | TalkingToolConfig
   | BreathingConfig
   | MathToolsConfig
   | MathToolConfig;
@@ -1095,13 +1099,15 @@ export type ConfigForWidget<T extends WidgetType> = T extends 'clock'
                                                                 ? PdfConfig
                                                                 : T extends 'quiz'
                                                                   ? QuizConfig
-                                                                  : T extends 'breathing'
-                                                                    ? BreathingConfig
-                                                                    : T extends 'mathTools'
-                                                                      ? MathToolsConfig
-                                                                      : T extends 'mathTool'
-                                                                        ? MathToolConfig
-                                                                        : never;
+                                                                  : T extends 'talking-tool'
+                                                                    ? TalkingToolConfig
+                                                                    : T extends 'breathing'
+                                                                      ? BreathingConfig
+                                                                      : T extends 'mathTools'
+                                                                        ? MathToolsConfig
+                                                                        : T extends 'mathTool'
+                                                                          ? MathToolConfig
+                                                                          : never;
 
 export interface WidgetComponentProps {
   widget: WidgetData;
@@ -1234,6 +1240,10 @@ export interface ToolMetadata {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   color: string;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  minWidth?: number;
+  minHeight?: number;
 }
 
 export type AccessLevel = 'admin' | 'beta' | 'public';

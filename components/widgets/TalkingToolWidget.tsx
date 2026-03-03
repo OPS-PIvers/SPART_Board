@@ -1,0 +1,188 @@
+import React, { useState } from 'react';
+import { Ear, MessageCircle, BookOpen, Quote } from 'lucide-react';
+import { WidgetComponentProps } from '@/types';
+
+interface Category {
+  id: string;
+  label: string;
+  color: string;
+  icon: React.ElementType;
+  stems: string[];
+}
+
+const CATEGORIES: Category[] = [
+  {
+    id: 'listen',
+    label: 'Listen Closely',
+    color: '#008ab6',
+    icon: Ear,
+    stems: [
+      'What do you mean by ________?',
+      'Can you tell me more about ________?',
+      'What evidence supports your idea?',
+      'How does your idea relate to ________?',
+    ],
+  },
+  {
+    id: 'share',
+    label: 'Share What You Think',
+    color: '#009cc3',
+    icon: MessageCircle,
+    stems: [
+      'I think ________ because ________.',
+      'First, ________. Also, ________. Finally, ________.',
+      'I agree and I will add that ________.',
+      'I disagree because ________.',
+      'I hear you say that ________. This makes me think that ________.',
+      'I hear you say that ________. However, ________.',
+    ],
+  },
+  {
+    id: 'support',
+    label: 'Support What You Say',
+    color: '#5aafd1',
+    icon: BookOpen,
+    stems: [
+      'In the text, ________.',
+      'For example, ________.',
+      'One reason is ________. Another reason is ________.',
+      'This evidence shows ________.',
+      'This evidence means ________.',
+      'This evidence is important because ________.',
+    ],
+  },
+];
+
+export const TalkingToolWidget: React.FC<WidgetComponentProps> = () => {
+  const [activeTab, setActiveTab] = useState<string>('listen');
+  const activeCat = CATEGORIES.find((c) => c.id === activeTab) ?? CATEGORIES[0];
+
+  return (
+    <div className="flex h-full w-full bg-white select-none overflow-hidden rounded-lg">
+      {/* Sidebar Navigation */}
+      <div
+        className="flex flex-col border-r border-slate-200 bg-slate-50 shrink-0"
+        style={{ width: 'min(140px, 35cqw)' }}
+      >
+        <div
+          className="border-b border-slate-200 bg-white"
+          style={{ padding: 'min(12px, 3cqmin)' }}
+        >
+          <label
+            className="font-black uppercase text-slate-400 tracking-widest block"
+            style={{
+              fontSize: 'min(9px, 2.2cqmin)',
+              marginBottom: 'min(4px, 1cqmin)',
+            }}
+          >
+            Scaffolding
+          </label>
+          <div
+            className="flex items-center text-slate-700 font-bold uppercase tracking-tight"
+            style={{ gap: 'min(6px, 1.5cqmin)', fontSize: 'min(12px, 3cqmin)' }}
+          >
+            <Quote
+              className="text-slate-400"
+              style={{
+                width: 'min(14px, 3.5cqmin)',
+                height: 'min(14px, 3.5cqmin)',
+              }}
+            />
+            Stems
+          </div>
+        </div>
+
+        <div
+          className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar"
+          style={{ padding: 'min(8px, 2cqmin)' }}
+        >
+          {CATEGORIES.map((cat) => {
+            const isActive = activeTab === cat.id;
+            const Icon = cat.icon;
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveTab(cat.id)}
+                className={`w-full flex flex-col items-center justify-center transition-all border ${
+                  isActive
+                    ? 'shadow-md text-white scale-100'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100 scale-95'
+                }`}
+                style={{
+                  padding: 'min(12px, 3cqmin)',
+                  borderRadius: 'min(12px, 3cqmin)',
+                  marginBottom: 'min(8px, 2cqmin)',
+                  ...(isActive
+                    ? { backgroundColor: cat.color, borderColor: cat.color }
+                    : {
+                        borderBottomColor: cat.color,
+                        borderBottomWidth: '3px',
+                      }),
+                }}
+              >
+                <Icon
+                  className="mb-2"
+                  style={{
+                    width: 'min(22px, 5.5cqmin)',
+                    height: 'min(22px, 5.5cqmin)',
+                    color: isActive ? '#ffffff' : cat.color,
+                  }}
+                />
+                <span
+                  className="font-bold text-center leading-tight uppercase tracking-tight"
+                  style={{ fontSize: 'min(11px, 2.8cqmin)' }}
+                >
+                  {cat.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div
+        className="flex-1 overflow-y-auto bg-white custom-scrollbar"
+        style={{ padding: 'min(20px, 5cqmin)' }}
+      >
+        <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+          <h3
+            className="font-black mb-4 uppercase tracking-tight flex items-center"
+            style={{
+              color: activeCat.color,
+              fontSize: 'min(18px, 4.5cqmin)',
+              gap: 'min(8px, 2cqmin)',
+              marginBottom: 'min(16px, 4cqmin)',
+            }}
+          >
+            <activeCat.icon
+              style={{
+                width: 'min(20px, 5cqmin)',
+                height: 'min(20px, 5cqmin)',
+              }}
+            />
+            {activeCat.label}
+          </h3>
+          <ul className="flex flex-col" style={{ gap: 'min(12px, 3cqmin)' }}>
+            {activeCat.stems.map((stem, idx) => (
+              <li
+                key={idx}
+                className="font-medium text-slate-700 border-l-4 leading-relaxed shadow-sm bg-slate-50 rounded-r-lg"
+                style={{
+                  borderLeftColor: activeCat.color,
+                  fontSize: 'min(14px, 3.5cqmin)',
+                  paddingLeft: 'min(16px, 4cqmin)',
+                  paddingTop: 'min(8px, 2cqmin)',
+                  paddingBottom: 'min(8px, 2cqmin)',
+                }}
+              >
+                {stem}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};

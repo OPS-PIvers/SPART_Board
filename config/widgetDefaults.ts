@@ -216,6 +216,11 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetData>> = {
       resultsSessionId: null,
     },
   },
+  'talking-tool': {
+    w: 500,
+    h: 450,
+    config: {},
+  },
   breathing: {
     w: 400,
     h: 400,
