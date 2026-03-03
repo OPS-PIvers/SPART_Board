@@ -49,6 +49,22 @@ const FONTS = [
   { id: 'font-handwritten', label: 'School', icon: '✏️' },
 ];
 
+/** Parses "HH:MM" → minutes since midnight, or Infinity for items without times (pushed to end). */
+const parseTimeForSort = (t: string | undefined): number => {
+  if (!t || !t.includes(':')) return Infinity;
+  const [h, m] = t.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return Infinity;
+  return h * 60 + m;
+};
+
+/** Returns a copy of items sorted chronologically by start time. Items without times go last. */
+const sortByTime = (items: ScheduleItem[]): ScheduleItem[] =>
+  [...items].sort(
+    (a, b) =>
+      parseTimeForSort(a.startTime ?? a.time) -
+      parseTimeForSort(b.startTime ?? b.time)
+  );
+
 export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   widget,
 }) => {
@@ -101,7 +117,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     }
 
     updateWidget(widget.id, {
-      config: { ...config, items: newItems } as ScheduleConfig,
+      config: { ...config, items: sortByTime(newItems) } as ScheduleConfig,
     });
     setEditingIndex(null);
     setTempItem(null);
@@ -477,7 +493,7 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
       <div>
         <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <CheckCircle2 className="w-3 h-3" /> Auto-Checkoff
+          <CheckCircle2 className="w-3 h-3" /> Auto-Checkoff &amp; Scroll
         </label>
 
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
@@ -500,6 +516,33 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 
           <p className="text-xs text-slate-500">
             Automatically check off items when their time passes.
+          </p>
+
+          <hr className="border-slate-200" />
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-slate-700">
+                Auto-Scroll View
+              </span>
+            </div>
+            <Toggle
+              checked={config.autoScroll ?? false}
+              onChange={(checked) =>
+                updateWidget(widget.id, {
+                  config: {
+                    ...config,
+                    autoScroll: checked,
+                  } as ScheduleConfig,
+                })
+              }
+            />
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Shows 4 items at a time — 1 completed, 1 active, 2 upcoming — and
+            smoothly scrolls forward as the day progresses. Resets automatically
+            at the start of each day.
           </p>
         </div>
       </div>

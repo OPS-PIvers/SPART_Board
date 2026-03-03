@@ -17,6 +17,15 @@ vi.mock('../../context/useDashboard');
 vi.mock('../../context/useAuth');
 vi.mock('../../hooks/useFeaturePermissions');
 
+// jsdom does not implement HTMLElement.prototype.scrollTo.
+// Define it once as a vi.fn() stub so that the widget's useLayoutEffect does
+// not throw and vi.spyOn can wrap it in individual tests.
+Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+  configurable: true,
+  writable: true,
+  value: vi.fn(),
+});
+
 // Mock useScaledFont to return a fixed size
 vi.mock('../../hooks/useScaledFont', () => ({
   useScaledFont: () => 16,
@@ -310,6 +319,104 @@ describe('ScheduleWidget', () => {
 
     expect(mockUpdateWidget).not.toHaveBeenCalled();
   });
+
+  describe('autoScroll', () => {
+    it('gives rows flex:0 0 25% height when autoScroll is enabled', () => {
+      const widget = createWidget({ autoScroll: true });
+      const { container } = render(<ScheduleWidget widget={widget} />);
+      // Each ScheduleRow should have flex: '0 0 25%' in its style.
+      const rows = container.querySelectorAll('[style*="25%"]');
+      expect(rows.length).toBe(3); // default 3 items in createWidget
+    });
+
+    it('does not apply 25% height style when autoScroll is disabled', () => {
+      const widget = createWidget({ autoScroll: false });
+      const { container } = render(<ScheduleWidget widget={widget} />);
+      const rows = container.querySelectorAll('[style*="25%"]');
+      expect(rows.length).toBe(0);
+    });
+
+    it('calls scrollTo when an item is currently active and autoScroll is on', () => {
+      // 09:15 — inside the 09:00–10:00 Reading window.
+      const date = new Date();
+      date.setHours(9, 15, 0, 0);
+      vi.setSystemTime(date);
+
+      const scrollToSpy = vi.spyOn(HTMLElement.prototype, 'scrollTo');
+
+      const widget = createWidget({ autoScroll: true });
+      render(<ScheduleWidget widget={widget} />);
+
+      expect(scrollToSpy).toHaveBeenCalled();
+      scrollToSpy.mockRestore();
+    });
+
+    it('does not call scrollTo when autoScroll is disabled', () => {
+      const date = new Date();
+      date.setHours(9, 15, 0, 0);
+      vi.setSystemTime(date);
+
+      const scrollToSpy = vi.spyOn(HTMLElement.prototype, 'scrollTo');
+
+      const widget = createWidget({ autoScroll: false });
+      render(<ScheduleWidget widget={widget} />);
+
+      expect(scrollToSpy).not.toHaveBeenCalled();
+      scrollToSpy.mockRestore();
+    });
+
+    it('identifies the active item correctly when items are in non-chronological array order', () => {
+      // 09:30 — falls inside the 09:00–10:00 window (Reading), which is stored
+      // at array index 2 in this intentionally reversed list.
+      const date = new Date();
+      date.setHours(9, 30, 0, 0);
+      vi.setSystemTime(date);
+
+      const scrollToSpy = vi.spyOn(HTMLElement.prototype, 'scrollTo');
+
+      const widget = createWidget({
+        autoScroll: true,
+        items: [
+          // Deliberately reversed — Recess first, Math last.
+          {
+            id: '3',
+            time: '10:00',
+            startTime: '10:00',
+            task: 'Recess',
+            done: false,
+            mode: 'clock' as const,
+            linkedWidgets: [],
+          },
+          {
+            id: '2',
+            time: '09:00',
+            startTime: '09:00',
+            task: 'Reading',
+            done: false,
+            mode: 'clock' as const,
+            linkedWidgets: [],
+          },
+          {
+            id: '1',
+            time: '08:00',
+            startTime: '08:00',
+            task: 'Math',
+            done: false,
+            mode: 'clock' as const,
+            linkedWidgets: [],
+          },
+        ],
+      });
+      render(<ScheduleWidget widget={widget} />);
+
+      // scrollTo should be called — the active item (Reading at index 1) was found
+      // even though items are not in chronological array order.
+      expect(scrollToSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: 'smooth' })
+      );
+      scrollToSpy.mockRestore();
+    });
+  });
 });
 
 describe('ScheduleSettings', () => {
@@ -340,5 +447,70 @@ describe('ScheduleSettings', () => {
 
     expect(screen.getByText(/typography/i)).toBeInTheDocument();
     expect(screen.getByText(/auto-checkoff/i)).toBeInTheDocument();
+  });
+
+  it('renders the Auto-Scroll View toggle', () => {
+    render(<ScheduleSettings widget={createWidget()} />);
+    expect(screen.getByText('Auto-Scroll View')).toBeInTheDocument();
+  });
+
+  it('saves autoScroll:true when the Auto-Scroll View toggle is clicked', () => {
+    render(<ScheduleSettings widget={createWidget({ autoScroll: false })} />);
+
+    // The settings panel contains three role="switch" toggles in order:
+    // 0 = Auto-Complete Items, 1 = Auto-Scroll View, 2 = Sync Building Schedule.
+    const switches = screen.getAllByRole('switch');
+    const autoScrollToggle = switches[1];
+    fireEvent.click(autoScrollToggle);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith(
+      'schedule-1',
+      expect.objectContaining({
+        config: expect.objectContaining({ autoScroll: true }),
+      })
+    );
+  });
+
+  it('sorts items chronologically when a new item is saved via the add form', () => {
+    // Start with one item at 10:00.
+    const widget = createWidget({
+      items: [
+        {
+          id: 'existing',
+          time: '10:00',
+          startTime: '10:00',
+          task: 'Later Class',
+          done: false,
+          mode: 'clock' as const,
+          linkedWidgets: [],
+        },
+      ],
+    });
+    const { container } = render(<ScheduleSettings widget={widget} />);
+
+    // Open the add-event form.
+    fireEvent.click(screen.getByRole('button', { name: /add event/i }));
+
+    // Fill in task name.
+    const taskInput = container.querySelector(
+      'input[placeholder="e.g. Math Class"]'
+    ) as HTMLInputElement;
+    fireEvent.change(taskInput, { target: { value: 'Early Class' } });
+
+    // Fill in start time (first <input type="time"> in the form).
+    const [startTimeInput] = container.querySelectorAll('input[type="time"]');
+    fireEvent.change(startTimeInput, { target: { value: '08:00' } });
+
+    // Submit the form.
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    // The saved items must be sorted: Early Class (08:00) before Later Class (10:00).
+    const savedItems = (
+      mockUpdateWidget.mock.calls[0][1] as {
+        config: { items: { task: string }[] };
+      }
+    ).config.items;
+    expect(savedItems[0].task).toBe('Early Class');
+    expect(savedItems[1].task).toBe('Later Class');
   });
 });
