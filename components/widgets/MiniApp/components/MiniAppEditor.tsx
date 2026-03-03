@@ -48,6 +48,7 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
           <button
             onClick={onCancel}
             className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+            aria-label={editingId ? 'Close mini-app editor' : 'Cancel new mini-app'}
           >
             <X className="w-5 h-5" />
           </button>
@@ -62,7 +63,7 @@ export const MiniAppEditor: React.FC<MiniAppEditorProps> = ({
                 if (e.key === 'Escape') setShowPromptInput(false);
               }}
             >
-              <div className="w-full max-sm space-y-4">
+              <div className="w-full max-w-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-black text-indigo-600 flex items-center gap-2 uppercase tracking-tight">
                     <Sparkles className="w-5 h-5" /> Magic Generator

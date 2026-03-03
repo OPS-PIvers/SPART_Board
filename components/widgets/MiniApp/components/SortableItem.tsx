@@ -90,6 +90,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({
           className="bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors"
           style={{ padding: 'min(8px, 2cqmin)' }}
           title="Run App"
+          aria-label="Run App"
         >
           <Play
             className="fill-current"
@@ -113,6 +114,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({
           className="text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors"
           style={{ padding: 'min(8px, 2cqmin)' }}
           title="Edit"
+          aria-label="Edit"
         >
           <Pencil
             style={{
@@ -126,6 +128,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({
           className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
           style={{ padding: 'min(8px, 2cqmin)' }}
           title="Delete"
+          aria-label="Delete"
         >
           <Trash2
             style={{
