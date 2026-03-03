@@ -164,7 +164,11 @@ export const WidgetLibrary = forwardRef<HTMLDivElement, WidgetLibraryProps>(
         // Hide if already in the dock
         if (visibleTools.includes(tool.type)) return false;
         // In normal (non-edit) mode, apply building-based grade-level filter
-        if (!isEditMode && matchesUserBuilding && !matchesUserBuilding(tool.type))
+        if (
+          !isEditMode &&
+          matchesUserBuilding &&
+          !matchesUserBuilding(tool.type)
+        )
           return false;
         return true;
       });
