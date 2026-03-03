@@ -4,27 +4,33 @@
 
 ## 📋 Overview
 
-SPART Board is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing specialized classroom tools—from timers and noise meters to polling and lunch counts. All data is synchronized in real-time using **Firebase**.
+SPART Board is an interactive, widget-based application built with **React 19**, **TypeScript**, and **Vite**. It provides teachers with a customizable, drag-and-drop interface containing over 20 specialized classroom tools—from timers and noise meters to polling and lunch counts. All data is synchronized in real-time using **Firebase**.
 
 ## ✨ Key Features
 
 - **🧩 Widget System:** 21+ interactive widgets including Timers, Stopwatches, Noise Meters, Drawing Boards, Random Pickers, Traffic Lights, Expectations, and more.
 - **☁️ Real-Time Persistence:** Dashboards are saved and synced instantly via Firebase Firestore.
-- **🔐 Authentication:** Secure Google Sign-In integration via Firebase Auth.
+- **🔐 Authentication:** Secure Google Sign-In integration.
 - **🛡️ Admin Controls:** Granular feature permissions (Public/Beta/Admin) and user management.
-- **🎓 Grade Level Filtering:** Tailor the widget dock to specific educational stages (K-2, 3-5, 6-8, 9-12).
 - **🎨 Customization:** Drag-and-drop layout, resizable widgets, custom backgrounds, and a professional design system featuring 'Lexend' and 'Patrick Hand' fonts.
-- **🤖 AI Integration:** Features powered by **Gemini 3 Flash Preview** (e.g., OCR text extraction in the Webcam widget, intelligent mini-app generation).
+- **🤖 AI Integration:** Features powered by Google Gemini (e.g., OCR text extraction in the Webcam widget, intelligent mini-app generation).
 - **📶 Resilience:** Multi-proxy fallback mechanism for weather and API-driven widgets to bypass CORS restrictions.
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Option 1: GitHub Codespaces (Recommended)
 
-- **Node.js:** v20+ recommended.
-- **pnpm:** This project uses `pnpm` for package management.
+The easiest way to start coding is with GitHub Codespaces. This environment comes pre-configured with the Gemini CLI and all necessary dependencies.
 
-### Installation & Setup
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=OPS-PIvers/SPART_Board)
+
+1.  Click the button above.
+2.  Wait for the environment to load.
+3.  Follow the prompts in the terminal to authenticate with Gemini.
+
+### Option 2: Local Development
+
+**Prerequisites:** Node.js (v20+ recommended)
 
 1.  **Clone the repository:**
 
