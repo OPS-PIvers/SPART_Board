@@ -40,7 +40,11 @@ describe('GoogleCalendarService', () => {
 
     expect(events).toHaveLength(2);
     expect(events[0]).toEqual({ title: 'All Day Event', date: '2026-03-01' });
-    expect(events[1]).toEqual({ title: 'Timed Event', date: '2026-03-02' });
+    expect(events[1]).toEqual({
+      title: 'Timed Event',
+      date: '2026-03-02',
+      time: '10:00 AM',
+    });
   });
 
   it('handles API errors gracefully by throwing', async () => {
