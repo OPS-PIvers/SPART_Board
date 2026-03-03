@@ -342,7 +342,7 @@ describe('ScheduleWidget', () => {
       expect(rowsFalse.length).toBe(3);
     });
 
-    it('highlights the currently active item with "Current" badge', () => {
+    it('highlights the currently active item with "Now" badge', () => {
       // 09:15 — inside the 09:00–10:00 Reading window.
       const date = new Date();
       date.setHours(9, 15, 0, 0);
@@ -357,13 +357,12 @@ describe('ScheduleWidget', () => {
       });
       render(<ScheduleWidget widget={widget} />);
 
-      // "Current" badge should be visible
-      expect(screen.getByText(/current/i)).toBeInTheDocument();
+      // "Now" badge should be visible
+      expect(screen.getByText(/now/i)).toBeInTheDocument();
       // Should be associated with the "Reading" item
       const readingItem = screen.getByText('Reading').closest('.relative');
-      expect(readingItem).toHaveTextContent(/current/i);
+      expect(readingItem).toHaveTextContent(/now/i);
     });
-
     it('calls scrollTo when an item is currently active and autoScroll is on', () => {
       // 09:15 — inside the 09:00–10:00 Reading window.
       const date = new Date();

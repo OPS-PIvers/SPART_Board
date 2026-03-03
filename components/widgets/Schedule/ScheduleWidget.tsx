@@ -246,11 +246,11 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
 
     return (
       <div
-        className={`w-full flex items-center rounded-2xl transition-all relative ${
+        className={`w-full flex items-center rounded-2xl transition-all relative snap-start ${
           isActive
             ? 'border-[min(6px,1.5cqmin)] border-[#2d3f89] shadow-md z-10'
             : 'border border-slate-200 shadow-sm'
-        } ${item.done ? '' : ''}`}
+        }`}
         style={rowStyle}
       >
         {isActive && (
@@ -258,7 +258,7 @@ const ScheduleRow = React.memo<ScheduleRowProps>(
             className="absolute top-0 right-0 bg-[#2d3f89] text-white font-black uppercase tracking-widest px-2 py-1 rounded-bl-xl z-20"
             style={{ fontSize: 'min(10px, 2.5cqmin)' }}
           >
-            Current
+            Now
           </div>
         )}
         <button
@@ -685,8 +685,12 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         >
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto custom-scrollbar flex flex-col min-h-0"
-            style={{ gap: GAP_STYLE }}
+            className="flex-1 overflow-y-auto no-scrollbar flex flex-col min-h-0 snap-y snap-mandatory"
+            style={{
+              gap: GAP_STYLE,
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
           >
             {items.map((item: ScheduleItem, i: number) => (
               <ScheduleRow
