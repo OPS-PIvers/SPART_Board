@@ -471,7 +471,7 @@ describe('ScheduleWidget', () => {
           },
         ],
       },
-    } as any;
+    } as unknown as WidgetData;
 
     const { rerender } = render(<ScheduleWidget widget={widget} />);
     expect(screen.getByText('Math')).toBeInTheDocument();
@@ -508,7 +508,7 @@ describe('ScheduleWidget', () => {
           },
         ],
       },
-    } as any;
+    } as unknown as WidgetData;
 
     render(<ScheduleWidget widget={widget} />);
     expect(screen.queryByText('Math')).not.toBeInTheDocument();

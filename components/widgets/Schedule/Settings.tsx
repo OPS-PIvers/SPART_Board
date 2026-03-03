@@ -20,7 +20,6 @@ import {
   Timer,
   Palette,
   Settings2,
-  Calendar,
   ChevronRight,
   LayoutGrid,
 } from 'lucide-react';

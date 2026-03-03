@@ -423,7 +423,8 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   }, [
     subscribeToPermission,
     isBuildingSyncEnabled,
-    items.length,
+    schedules.length,
+    legacyItems.length,
     selectedBuildings,
     config,
     widget.id,
