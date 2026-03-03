@@ -75,6 +75,37 @@ describe('TextWidget', () => {
       });
     }
   });
+
+  it('clears placeholder content when focused', () => {
+    const emptyWidget: WidgetData = {
+      ...mockWidget,
+      config: { ...mockConfig, content: '' },
+    };
+    const { container } = render(<TextWidget widget={emptyWidget} />);
+    const editableDiv = container.querySelector('div[contentEditable="true"]') as HTMLElement;
+
+    expect(editableDiv).not.toBeNull();
+
+    // In JSDOM, setting focus to it triggers the focus event
+    fireEvent.focus(editableDiv);
+
+    // Empty innerHTML is expected
+    expect(editableDiv.innerHTML).toBe('');
+  });
+
+  it('updates content on input', () => {
+    const { container } = render(<TextWidget widget={mockWidget} />);
+    const editableDiv = container.querySelector('div[contentEditable="true"]') as HTMLElement;
+
+    expect(editableDiv).not.toBeNull();
+
+    editableDiv.innerHTML = 'Immediate Save';
+    fireEvent.input(editableDiv);
+
+    expect(mockUpdateWidget).toHaveBeenCalledWith('test-widget', {
+      config: { ...mockConfig, content: 'Immediate Save' },
+    });
+  });
 });
 
 describe('TextSettings', () => {
