@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../../context/useDashboard';
 import {
   WidgetData,
   ScheduleConfig,
   ScheduleItem,
+  DailySchedule,
   WidgetType,
 } from '../../../types';
 import {
@@ -19,6 +20,9 @@ import {
   Timer,
   Palette,
   Settings2,
+  Calendar,
+  ChevronRight,
+  LayoutGrid,
 } from 'lucide-react';
 import { Toggle } from '../../common/Toggle';
 import { Button } from '../../common/Button';
@@ -40,6 +44,16 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string }[] = [
   { type: 'scoreboard', label: 'Scoreboard' },
   { type: 'weather', label: 'Weather' },
   { type: 'lunchCount', label: 'Lunch Count' },
+];
+
+const DAYS = [
+  { id: 0, label: 'S' },
+  { id: 1, label: 'M' },
+  { id: 2, label: 'T' },
+  { id: 3, label: 'W' },
+  { id: 4, label: 'T' },
+  { id: 5, label: 'F' },
+  { id: 6, label: 'S' },
 ];
 
 const FONTS = [
@@ -70,10 +84,27 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
 }) => {
   const { updateWidget } = useDashboard();
   const config = widget.config as ScheduleConfig;
-  const items = config.items ?? [];
 
+  // Migration logic for settings view
+  const schedules = useMemo(() => {
+    const list = [...(config.schedules ?? [])];
+    if (list.length === 0 && (config.items?.length ?? 0) > 0) {
+      list.push({
+        id: 'default',
+        name: 'Default Schedule',
+        items: config.items ?? [],
+        days: [],
+      });
+    }
+    return list;
+  }, [config.schedules, config.items]);
+
+  const [activeScheduleId, setActiveScheduleId] = useState<string | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [tempItem, setTempItem] = useState<ScheduleItem | null>(null);
+
+  const activeSchedule = schedules.find((s) => s.id === activeScheduleId);
+  const items = activeSchedule?.items ?? [];
 
   const handleStartEdit = (index: number) => {
     setEditingIndex(index);
@@ -109,27 +140,43 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       id: tempItem.id ?? crypto.randomUUID(),
     };
 
-    const newItems = [...items];
-    if (editingIndex === -1) {
-      newItems.push(itemToSave);
-    } else if (editingIndex !== null) {
-      newItems[editingIndex] = itemToSave;
-    }
+    const newItems = sortByTime(
+      editingIndex === -1
+        ? [...items, itemToSave]
+        : items.map((it, i) => (i === editingIndex ? itemToSave : it))
+    );
 
-    updateWidget(widget.id, {
-      config: { ...config, items: sortByTime(newItems) } as ScheduleConfig,
-    });
+    if (activeScheduleId === 'default') {
+      updateWidget(widget.id, {
+        config: { ...config, items: newItems } as ScheduleConfig,
+      });
+    } else {
+      const newSchedules = schedules.map((s) =>
+        s.id === activeScheduleId ? { ...s, items: newItems } : s
+      );
+      updateWidget(widget.id, {
+        config: { ...config, schedules: newSchedules } as ScheduleConfig,
+      });
+    }
     setEditingIndex(null);
     setTempItem(null);
   };
 
   const handleDelete = (index: number) => {
     if (confirm('Are you sure you want to delete this event?')) {
-      const newItems = [...items];
-      newItems.splice(index, 1);
-      updateWidget(widget.id, {
-        config: { ...config, items: newItems } as ScheduleConfig,
-      });
+      const newItems = items.filter((_, i) => i !== index);
+      if (activeScheduleId === 'default') {
+        updateWidget(widget.id, {
+          config: { ...config, items: newItems } as ScheduleConfig,
+        });
+      } else {
+        const newSchedules = schedules.map((s) =>
+          s.id === activeScheduleId ? { ...s, items: newItems } : s
+        );
+        updateWidget(widget.id, {
+          config: { ...config, schedules: newSchedules } as ScheduleConfig,
+        });
+      }
     }
   };
 
@@ -144,9 +191,84 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       newItems[index],
     ];
 
+    if (activeScheduleId === 'default') {
+      updateWidget(widget.id, {
+        config: { ...config, items: newItems } as ScheduleConfig,
+      });
+    } else {
+      const newSchedules = schedules.map((s) =>
+        s.id === activeScheduleId ? { ...s, items: newItems } : s
+      );
+      updateWidget(widget.id, {
+        config: { ...config, schedules: newSchedules } as ScheduleConfig,
+      });
+    }
+  };
+  const handleAddSchedule = () => {
+    const newSchedule: DailySchedule = {
+      id: crypto.randomUUID(),
+      name: 'New Schedule',
+      items: [],
+      days: [],
+    };
     updateWidget(widget.id, {
-      config: { ...config, items: newItems } as ScheduleConfig,
+      config: {
+        ...config,
+        schedules: [...schedules, newSchedule],
+      } as ScheduleConfig,
     });
+    setActiveScheduleId(newSchedule.id);
+  };
+
+  const handleUpdateSchedule = (
+    id: string,
+    updates: Partial<DailySchedule>
+  ) => {
+    if (id === 'default') {
+      // Convert legacy to first real schedule on update
+      const newSchedule: DailySchedule = {
+        id: crypto.randomUUID(),
+        name: updates.name ?? 'Default Schedule',
+        items: config.items ?? [],
+        days: updates.days ?? [],
+      };
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          items: [],
+          schedules: [newSchedule],
+        } as ScheduleConfig,
+      });
+      if (activeScheduleId === 'default') setActiveScheduleId(newSchedule.id);
+      return;
+    }
+
+    const newSchedules = schedules.map((s) =>
+      s.id === id ? { ...s, ...updates } : s
+    );
+    updateWidget(widget.id, {
+      config: { ...config, schedules: newSchedules } as ScheduleConfig,
+    });
+  };
+
+  const handleDeleteSchedule = (id: string) => {
+    if (schedules.length <= 1) {
+      alert('You must have at least one schedule.');
+      return;
+    }
+    if (confirm('Are you sure you want to delete this schedule?')) {
+      if (id === 'default') {
+        updateWidget(widget.id, {
+          config: { ...config, items: [] } as ScheduleConfig,
+        });
+      } else {
+        const newSchedules = schedules.filter((s) => s.id !== id);
+        updateWidget(widget.id, {
+          config: { ...config, schedules: newSchedules } as ScheduleConfig,
+        });
+      }
+      if (activeScheduleId === id) setActiveScheduleId(null);
+    }
   };
 
   // Render Edit Form
@@ -292,20 +414,124 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
     );
   }
 
+  if (!activeScheduleId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
+              <LayoutGrid className="w-3 h-3" /> Daily Schedules
+            </label>
+            <button
+              onClick={handleAddSchedule}
+              className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <Plus className="w-3 h-3" /> Add Schedule
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {schedules.map((s) => (
+              <div
+                key={s.id}
+                className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-blue-200 transition-colors group"
+              >
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <input
+                    type="text"
+                    value={s.name}
+                    onChange={(e) =>
+                      handleUpdateSchedule(s.id, { name: e.target.value })
+                    }
+                    className="font-bold text-slate-700 bg-transparent border-none p-0 focus:ring-0 truncate flex-1"
+                    placeholder="Schedule Name"
+                  />
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setActiveScheduleId(s.id)}
+                      className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                      title="Edit items"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSchedule(s.id)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+                      title="Delete schedule"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    {DAYS.map((d) => {
+                      const isSelected = s.days.includes(d.id);
+                      const isOnly = schedules.length === 1;
+                      return (
+                        <button
+                          key={d.id}
+                          disabled={isOnly}
+                          onClick={() => {
+                            const newDays = isSelected
+                              ? s.days.filter((id) => id !== d.id)
+                              : [...s.days, d.id];
+                            handleUpdateSchedule(s.id, { days: newDays });
+                          }}
+                          className={`w-6 h-6 rounded-md text-[10px] font-bold transition-colors ${
+                            isSelected
+                              ? 'bg-blue-500 text-white'
+                              : isOnly
+                                ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setActiveScheduleId(s.id)}
+                    className="text-xxs font-bold text-blue-500 hover:underline flex items-center gap-0.5"
+                  >
+                    {s.items.length} Items <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <hr className="border-slate-100" />
+        {renderGlobalSettings()}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Schedule Items */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-            <Clock className="w-3 h-3" /> Schedule Events
-          </label>
           <button
-            onClick={handleStartAdd}
-            className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+            onClick={() => setActiveScheduleId(null)}
+            className="text-xxs text-slate-400 uppercase tracking-widest hover:text-blue-500 flex items-center gap-1"
           >
-            <Plus className="w-3 h-3" /> Add Event
+            <LayoutGrid className="w-3 h-3" /> Schedules
           </button>
+          <div className="flex items-center gap-3">
+            <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
+              <Clock className="w-3 h-3" /> {activeSchedule?.name}
+            </label>
+            <button
+              onClick={handleStartAdd}
+              className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <Plus className="w-3 h-3" /> Add Event
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -390,192 +616,201 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       </div>
 
       <hr className="border-slate-100" />
+      {renderGlobalSettings()}
+    </div>
+  );
 
-      {/* Typography */}
-      <div>
-        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Type className="w-3 h-3" /> Typography
-        </label>
-        <div className="grid grid-cols-4 gap-2">
-          {FONTS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() =>
-                updateWidget(widget.id, {
-                  config: { ...config, fontFamily: f.id } as ScheduleConfig,
-                })
-              }
-              className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                config.fontFamily === f.id ||
-                (!config.fontFamily && f.id === 'global')
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-slate-100 hover:border-slate-200'
-              }`}
-            >
-              <span className={`text-sm ${f.id} text-slate-900`}>{f.icon}</span>
-              <span className="text-xxxs uppercase text-slate-600">
-                {f.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Card Style */}
-      <div>
-        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Palette className="w-3 h-3" /> Card Style
-        </label>
-        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
-          {/* Card Color */}
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">
-                Card Color
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-mono">
-                  {config.cardColor ?? '#ffffff'}
+  function renderGlobalSettings() {
+    return (
+      <>
+        {/* Typography */}
+        <div>
+          <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <Type className="w-3 h-3" /> Typography
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {FONTS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, fontFamily: f.id } as ScheduleConfig,
+                  })
+                }
+                className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
+                  config.fontFamily === f.id ||
+                  (!config.fontFamily && f.id === 'global')
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-100 hover:border-slate-200'
+                }`}
+              >
+                <span className={`text-sm ${f.id} text-slate-900`}>
+                  {f.icon}
                 </span>
-                <input
-                  type="color"
-                  value={config.cardColor ?? '#ffffff'}
-                  onChange={(e) =>
-                    updateWidget(widget.id, {
-                      config: {
-                        ...config,
-                        cardColor: e.target.value,
-                      } as ScheduleConfig,
-                    })
-                  }
-                  className="w-8 h-8 rounded cursor-pointer border border-slate-200 p-0.5"
-                  aria-label="Card color"
-                  title="Choose card background color"
-                />
+                <span className="text-xxxs uppercase text-slate-600">
+                  {f.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Card Style */}
+        <div>
+          <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <Palette className="w-3 h-3" /> Card Style
+          </label>
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+            {/* Card Color */}
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700">
+                  Card Color
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-mono">
+                    {config.cardColor ?? '#ffffff'}
+                  </span>
+                  <input
+                    type="color"
+                    value={config.cardColor ?? '#ffffff'}
+                    onChange={(e) =>
+                      updateWidget(widget.id, {
+                        config: {
+                          ...config,
+                          cardColor: e.target.value,
+                        } as ScheduleConfig,
+                      })
+                    }
+                    className="w-8 h-8 rounded cursor-pointer border border-slate-200 p-0.5"
+                    aria-label="Card color"
+                    title="Choose card background color"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Card Opacity */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-slate-700">
-                Card Opacity
-              </span>
-              <span className="text-xs text-slate-500 tabular-nums">
-                {Math.round((config.cardOpacity ?? 1) * 100)}%
-              </span>
+            {/* Card Opacity */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-slate-700">
+                  Card Opacity
+                </span>
+                <span className="text-xs text-slate-500 tabular-nums">
+                  {Math.round((config.cardOpacity ?? 1) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={config.cardOpacity ?? 1}
+                onChange={(e) =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      cardOpacity: parseFloat(e.target.value),
+                    } as ScheduleConfig,
+                  })
+                }
+                aria-label="Card opacity"
+                className="w-full accent-blue-500"
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Set to 0% for fully transparent cards — schedule items appear as
+                floating text on the board background.
+              </p>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={config.cardOpacity ?? 1}
-              onChange={(e) =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    cardOpacity: parseFloat(e.target.value),
-                  } as ScheduleConfig,
-                })
-              }
-              aria-label="Card opacity"
-              className="w-full accent-blue-500"
-            />
-            <p className="text-xs text-slate-400 mt-1">
-              Set to 0% for fully transparent cards — schedule items appear as
-              floating text on the board background.
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <CheckCircle2 className="w-3 h-3" /> Auto-Checkoff &amp; Scroll
+          </label>
+
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">
+                Auto-Complete Items
+              </span>
+              <Toggle
+                checked={config.autoProgress ?? false}
+                onChange={(checked) =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      autoProgress: checked,
+                    } as ScheduleConfig,
+                  })
+                }
+              />
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Automatically check off items when their time passes.
+            </p>
+
+            <hr className="border-slate-200" />
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-slate-700">
+                  Auto-Scroll View
+                </span>
+              </div>
+              <Toggle
+                checked={config.autoScroll ?? false}
+                onChange={(checked) =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      autoScroll: checked,
+                    } as ScheduleConfig,
+                  })
+                }
+              />
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Shows 4 items at a time — 1 completed, 1 active, 2 upcoming — and
+              smoothly scrolls forward as the day progresses. Resets
+              automatically at the start of each day.
             </p>
           </div>
         </div>
-      </div>
 
-      <div>
-        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <CheckCircle2 className="w-3 h-3" /> Auto-Checkoff &amp; Scroll
-        </label>
+        <hr className="border-slate-100" />
 
-        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">
-              Auto-Complete Items
-            </span>
-            <Toggle
-              checked={config.autoProgress ?? false}
-              onChange={(checked) =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    autoProgress: checked,
-                  } as ScheduleConfig,
-                })
-              }
-            />
-          </div>
-
-          <p className="text-xs text-slate-500">
-            Automatically check off items when their time passes.
-          </p>
-
-          <hr className="border-slate-200" />
-
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-0.5">
+        {/* Building Sync */}
+        <div>
+          <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <Settings2 className="w-3 h-3" /> Building Integration
+          </label>
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-700">
-                Auto-Scroll View
+                Sync Building Schedule
               </span>
+              <Toggle
+                checked={config.isBuildingSyncEnabled ?? true}
+                onChange={(checked) =>
+                  updateWidget(widget.id, {
+                    config: {
+                      ...config,
+                      isBuildingSyncEnabled: checked,
+                    } as ScheduleConfig,
+                  })
+                }
+              />
             </div>
-            <Toggle
-              checked={config.autoScroll ?? false}
-              onChange={(checked) =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    autoScroll: checked,
-                  } as ScheduleConfig,
-                })
-              }
-            />
+            <p className="text-xs text-slate-500">
+              Automatically show district defaults for your building.
+            </p>
           </div>
-
-          <p className="text-xs text-slate-500">
-            Shows 4 items at a time — 1 completed, 1 active, 2 upcoming — and
-            smoothly scrolls forward as the day progresses. Resets automatically
-            at the start of each day.
-          </p>
         </div>
-      </div>
-
-      <hr className="border-slate-100" />
-
-      {/* Building Sync */}
-      <div>
-        <label className="text-xxs text-slate-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
-          <Settings2 className="w-3 h-3" /> Building Integration
-        </label>
-        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">
-              Sync Building Schedule
-            </span>
-            <Toggle
-              checked={config.isBuildingSyncEnabled ?? true}
-              onChange={(checked) =>
-                updateWidget(widget.id, {
-                  config: {
-                    ...config,
-                    isBuildingSyncEnabled: checked,
-                  } as ScheduleConfig,
-                })
-              }
-            />
-          </div>
-          <p className="text-xs text-slate-500">
-            Automatically show district defaults for your building.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+      </>
+    );
+  }
 };

@@ -12,6 +12,7 @@ import {
   WidgetData,
   ScheduleItem,
   ScheduleConfig,
+  DailySchedule,
   ClockConfig,
   DEFAULT_GLOBAL_STYLE,
   ScheduleGlobalConfig,
@@ -346,7 +347,38 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const { subscribeToPermission } = useFeaturePermissions();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
-  const items = useMemo(() => config.items ?? [], [config.items]);
+  const { schedules = [], items: legacyItems = [] } = config;
+
+  // Migration & Selection Logic
+  const activeSchedule = useMemo(() => {
+    // 1. Resolve all available schedules (including legacy migration)
+    const allSchedules: DailySchedule[] = [...schedules];
+    if (legacyItems.length > 0 && allSchedules.length === 0) {
+      allSchedules.push({
+        id: 'default',
+        name: 'Default Schedule',
+        items: legacyItems,
+        days: [], // No specific days = always show if it's the only one
+      });
+    }
+
+    if (allSchedules.length === 0) return null;
+    if (allSchedules.length === 1) return allSchedules[0];
+
+    // 2. Filter by current day of the week
+    const today = new Date().getDay(); // 0 (Sun) to 6 (Sat)
+    const dayMatch = allSchedules.find((s) => s.days.includes(today));
+    if (dayMatch) return dayMatch;
+
+    // 3. Fallback: If no match, check if there's a default (no assigned days)
+    // Requirement says: "If a schedule doesn’t have an assigned day then it doesn’t display unless it’s the only schedule."
+    // But it also says "the first schedule is the default".
+    // Interpretation: if multiple schedules exist, ONLY show the one matching the day.
+    // If none match the day, show nothing (return null).
+    return null;
+  }, [schedules, legacyItems]);
+
+  const items = useMemo(() => activeSchedule?.items ?? [], [activeSchedule]);
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
 
   const {
@@ -369,7 +401,8 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         // 4. We haven't synced this building yet
         if (
           isBuildingSyncEnabled &&
-          items.length === 0 &&
+          schedules.length === 0 &&
+          legacyItems.length === 0 &&
           selectedBuildings?.[0] &&
           config.lastSyncedBuildingId !== selectedBuildings[0]
         ) {
@@ -515,14 +548,47 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const toggle = useCallback(
     (idx: number) => {
       const currentConfig = configRef.current;
-      const currentItems = itemsRef.current;
-      const newItems = [...currentItems];
-      if (newItems[idx]) {
-        newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
-        updateWidget(widget.id, {
-          config: { ...currentConfig, items: newItems } as ScheduleConfig,
-        });
+      const { schedules = [], items: legacyItems = [] } = currentConfig;
+
+      // Resolve the active schedule ID to update the correct one in the array
+      const today = new Date().getDay();
+      let targetScheduleId: string | undefined;
+
+      if (schedules.length === 0 && legacyItems.length > 0) {
+        targetScheduleId = 'default';
+      } else if (schedules.length === 1) {
+        targetScheduleId = schedules[0].id;
+      } else {
+        targetScheduleId = schedules.find((s) => s.days.includes(today))?.id;
       }
+
+      if (!targetScheduleId) return;
+
+      if (targetScheduleId === 'default') {
+        const newItems = [...legacyItems];
+        if (newItems[idx]) {
+          newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+          updateWidget(widget.id, {
+            config: { ...currentConfig, items: newItems } as ScheduleConfig,
+          });
+        }
+        return;
+      }
+
+      const newSchedules = schedules.map((s) => {
+        if (s.id === targetScheduleId) {
+          const newItems = [...s.items];
+          if (newItems[idx]) {
+            newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+          }
+          return { ...s, items: newItems };
+        }
+        return s;
+      });
+
+      updateWidget(widget.id, {
+        config: { ...currentConfig, schedules: newSchedules } as ScheduleConfig,
+      });
     },
     [updateWidget, widget.id]
   );
@@ -658,9 +724,35 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       });
 
       if (changed) {
-        updateWidget(widget.id, {
-          config: { ...currentConfig, items: newItems } as ScheduleConfig,
-        });
+        const { schedules = [], items: legacyItems = [] } = currentConfig;
+        const today = new Date().getDay();
+        let targetScheduleId: string | undefined;
+
+        if (schedules.length === 0 && legacyItems.length > 0) {
+          targetScheduleId = 'default';
+        } else if (schedules.length === 1) {
+          targetScheduleId = schedules[0].id;
+        } else {
+          targetScheduleId = schedules.find((s) => s.days.includes(today))?.id;
+        }
+
+        if (!targetScheduleId) return;
+
+        if (targetScheduleId === 'default') {
+          updateWidget(widget.id, {
+            config: { ...currentConfig, items: newItems } as ScheduleConfig,
+          });
+        } else {
+          const newSchedules = schedules.map((s) =>
+            s.id === targetScheduleId ? { ...s, items: newItems } : s
+          );
+          updateWidget(widget.id, {
+            config: {
+              ...currentConfig,
+              schedules: newSchedules,
+            } as ScheduleConfig,
+          });
+        }
       }
     };
 
