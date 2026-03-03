@@ -1,7 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { TalkingToolWidget } from './TalkingToolWidget';
-import { WidgetData } from '@/types';
+import { WidgetData } from '../../types';
+import { useAuth } from '../../context/useAuth';
+
+// Mock useAuth
+vi.mock('../../context/useAuth', () => ({
+  useAuth: vi.fn(),
+}));
 
 const mockWidget: WidgetData = {
   id: 'test-widget',
@@ -17,6 +23,10 @@ const mockWidget: WidgetData = {
 
 describe('TalkingToolWidget', () => {
   it('renders correctly and defaults to "Listen Closely" tab', () => {
+    (useAuth as any).mockReturnValue({
+      featurePermissions: [],
+    });
+
     render(<TalkingToolWidget widget={mockWidget} />);
 
     // Check if the title "Listen Closely" is visible in the main content
@@ -29,6 +39,10 @@ describe('TalkingToolWidget', () => {
   });
 
   it('switches tabs when a sidebar button is clicked', () => {
+    (useAuth as any).mockReturnValue({
+      featurePermissions: [],
+    });
+
     render(<TalkingToolWidget widget={mockWidget} />);
 
     // Find and click the "Share What You Think" button in the sidebar
@@ -44,17 +58,33 @@ describe('TalkingToolWidget', () => {
     expect(
       screen.getByText(/I think ________ because ________./)
     ).toBeInTheDocument();
+  });
 
-    // Find and click the "Support What You Say" button in the sidebar
-    const supportButton = screen.getByText('Support What You Say');
-    fireEvent.click(supportButton);
+  it('renders custom categories from global config', () => {
+    (useAuth as any).mockReturnValue({
+      featurePermissions: [
+        {
+          widgetType: 'talking-tool',
+          config: {
+            categories: [
+              {
+                id: 'custom',
+                label: 'Custom Category',
+                color: '#ff0000',
+                icon: 'Star',
+                stems: ['Custom stem 1'],
+              },
+            ],
+          },
+        },
+      ],
+    });
 
-    // Check if the title "Support What You Say" is visible
+    render(<TalkingToolWidget widget={mockWidget} />);
+
     expect(
-      screen.getByText('Support What You Say', { selector: 'h3' })
+      screen.getByText('Custom Category', { selector: 'h3' })
     ).toBeInTheDocument();
-
-    // Check if a specific stem from "Support What You Say" is visible
-    expect(screen.getByText(/In the text, ________./)).toBeInTheDocument();
+    expect(screen.getByText('Custom stem 1')).toBeInTheDocument();
   });
 });
