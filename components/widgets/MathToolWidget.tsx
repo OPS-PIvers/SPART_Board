@@ -1,5 +1,11 @@
 import React, { Suspense, lazy, useState } from 'react';
-import { WidgetData, MathToolConfig, NumberLineMode } from '@/types';
+import { RotateCcw, RotateCw } from 'lucide-react';
+import {
+  WidgetData,
+  MathToolConfig,
+  NumberLineMode,
+  MathToolType,
+} from '@/types';
 import { useDashboard } from '@/context/useDashboard';
 import {
   CSS_PPI,
@@ -58,6 +64,43 @@ const CalculatorTool = lazy(() =>
     default: m.CalculatorTool,
   }))
 );
+
+const ROTATABLE_TOOLS: MathToolType[] = [
+  'ruler-in',
+  'ruler-cm',
+  'protractor',
+  'pattern-blocks',
+];
+
+const RotationOverlay: React.FC<{
+  rotation: number;
+  onRotate: (newRotation: number) => void;
+}> = ({ rotation, onRotate }) => {
+  return (
+    <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRotate((rotation + 15) % 360);
+        }}
+        className="p-1.5 bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-white hover:text-indigo-600 active:scale-95 transition-all pointer-events-auto"
+        title="Rotate Clockwise (15°)"
+      >
+        <RotateCw size={14} />
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRotate((rotation - 15 + 360) % 360);
+        }}
+        className="p-1.5 bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-white hover:text-indigo-600 active:scale-95 transition-all pointer-events-auto"
+        title="Rotate Counter-Clockwise (15°)"
+      >
+        <RotateCcw size={14} />
+      </button>
+    </div>
+  );
+};
 
 function ToolContent({
   config,
@@ -139,14 +182,28 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
     updateWidget(widget.id, { config: { ...config, ...updates } });
   };
 
+  const isRotatable = ROTATABLE_TOOLS.includes(config.toolType);
+  const rotation = config.rotation ?? 0;
+
   // ---- Sticker mode: bare SVG piece, no header chrome ----
   if (config.stickerMode && config.stickerPiece) {
     return (
-      <div className="h-full w-full flex items-center justify-center p-1">
-        <StickerPieceSVG
-          toolType={config.toolType}
-          pieceId={config.stickerPiece}
-        />
+      <div className="h-full w-full flex items-center justify-center p-1 group relative overflow-visible">
+        <div
+          className="transition-transform duration-200 will-change-transform"
+          style={{ transform: `rotate(${rotation}deg)` }}
+        >
+          <StickerPieceSVG
+            toolType={config.toolType}
+            pieceId={config.stickerPiece}
+          />
+        </div>
+        {isRotatable && (
+          <RotationOverlay
+            rotation={rotation}
+            onRotate={(r) => handleUpdate({ rotation: r })}
+          />
+        )}
       </div>
     );
   }
@@ -154,7 +211,7 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
   // ---- Sticker mode: whole tool (ruler / protractor) without header badge ----
   if (config.stickerMode) {
     return (
-      <div className="h-full w-full overflow-auto">
+      <div className="h-full w-full overflow-visible group relative">
         <Suspense
           fallback={
             <div className="h-full flex items-center justify-center text-slate-400 text-sm">
@@ -162,7 +219,18 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           }
         >
-          <ToolContent config={config} onUpdate={handleUpdate} />
+          <div
+            className="h-full w-full flex items-center justify-center transition-transform duration-200 will-change-transform"
+            style={{ transform: `rotate(${rotation}deg)` }}
+          >
+            <ToolContent config={config} onUpdate={handleUpdate} />
+          </div>
+          {isRotatable && (
+            <RotationOverlay
+              rotation={rotation}
+              onRotate={(r) => handleUpdate({ rotation: r })}
+            />
+          )}
         </Suspense>
       </div>
     );
@@ -197,7 +265,7 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
   return (
     <WidgetLayout
       header={header}
-      contentClassName="flex flex-col flex-1 min-h-0 overflow-auto"
+      contentClassName="flex flex-col flex-1 min-h-0 overflow-visible relative group"
       content={
         <Suspense
           fallback={
@@ -206,7 +274,18 @@ export const MathToolWidget: React.FC<{ widget: WidgetData }> = ({
             </div>
           }
         >
-          <ToolContent config={config} onUpdate={handleUpdate} />
+          <div
+            className="flex-1 flex items-center justify-center transition-transform duration-200 will-change-transform"
+            style={{ transform: `rotate(${rotation}deg)` }}
+          >
+            <ToolContent config={config} onUpdate={handleUpdate} />
+          </div>
+          {isRotatable && (
+            <RotationOverlay
+              rotation={rotation}
+              onRotate={(r) => handleUpdate({ rotation: r })}
+            />
+          )}
         </Suspense>
       }
     />
@@ -224,6 +303,7 @@ export const MathToolSettings: React.FC<{ widget: WidgetData }> = ({
 
   // Derived from the canonical MATH_TOOL_META — no local duplication
   const TOOL_TYPES = MATH_TOOL_META;
+  const isRotatable = ROTATABLE_TOOLS.includes(config.toolType);
 
   const numberLineModes: NumberLineMode[] = [
     'integers',
@@ -259,6 +339,53 @@ export const MathToolSettings: React.FC<{ widget: WidgetData }> = ({
           ))}
         </div>
       </div>
+
+      {/* Rotation control */}
+      {isRotatable && (
+        <div className="space-y-2 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+          <div className="flex justify-between items-center">
+            <label className="text-xxs font-black text-indigo-400 uppercase tracking-widest block">
+              Rotation ({config.rotation ?? 0}°)
+            </label>
+            <button
+              onClick={() =>
+                updateWidget(widget.id, { config: { ...config, rotation: 0 } })
+              }
+              className="text-[10px] font-black text-indigo-600 hover:underline"
+            >
+              Reset
+            </button>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={359}
+            step={1}
+            value={config.rotation ?? 0}
+            onChange={(e) =>
+              updateWidget(widget.id, {
+                config: { ...config, rotation: Number(e.target.value) },
+              })
+            }
+            className="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+          />
+          <div className="flex gap-1 justify-center mt-1">
+            {[0, 45, 90, 180, 270].map((deg) => (
+              <button
+                key={deg}
+                onClick={() =>
+                  updateWidget(widget.id, {
+                    config: { ...config, rotation: deg },
+                  })
+                }
+                className="px-1.5 py-0.5 text-[9px] font-bold bg-white border border-indigo-100 rounded text-indigo-600 hover:bg-indigo-50"
+              >
+                {deg}°
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Number line settings */}
       {config.toolType === 'number-line' && (
