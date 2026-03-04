@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BUILDINGS } from '@/config/buildings';
 import {
   ScheduleGlobalConfig,
@@ -15,7 +15,25 @@ import {
   Pencil,
   ChevronRight,
   LayoutGrid,
+  ArrowUpDown,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ScheduleConfigurationPanelProps {
   config: ScheduleGlobalConfig;
@@ -48,6 +66,88 @@ const sortByTime = (items: ScheduleItem[]): ScheduleItem[] =>
       parseTimeForSort(b.startTime ?? b.time)
   );
 
+interface SortableItemProps {
+  item: ScheduleItem;
+  onUpdate: (updates: Partial<ScheduleItem>) => void;
+  onDelete: () => void;
+}
+
+const SortableItem: React.FC<SortableItemProps> = ({
+  item,
+  onUpdate,
+  onDelete,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id || '' });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white border rounded-lg p-2 flex items-center gap-3 shadow-sm group ${
+        isDragging
+          ? 'border-brand-blue-primary shadow-lg opacity-50'
+          : 'border-slate-200'
+      }`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-slate-600 transition-colors"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+      <div className="flex-1 grid grid-cols-12 gap-2">
+        <div className="col-span-6">
+          <input
+            type="text"
+            value={item.task}
+            onChange={(e) => onUpdate({ task: e.target.value })}
+            placeholder="Task Name"
+            className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:border-brand-blue-primary outline-none"
+          />
+        </div>
+        <div className="col-span-2">
+          <input
+            type="time"
+            value={item.startTime}
+            onChange={(e) => onUpdate({ startTime: e.target.value })}
+            className="w-full px-1 py-1.5 text-xs border border-slate-200 rounded outline-none"
+          />
+        </div>
+        <div className="col-span-2">
+          <input
+            type="time"
+            value={item.endTime}
+            onChange={(e) => onUpdate({ endTime: e.target.value })}
+            className="w-full px-1 py-1.5 text-xs border border-slate-200 rounded outline-none"
+          />
+        </div>
+        <div className="col-span-2 flex items-center justify-end">
+          <button
+            onClick={onDelete}
+            className="text-red-400 hover:text-red-600 p-1 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const ScheduleConfigurationPanel: React.FC<
   ScheduleConfigurationPanelProps
 > = ({ config, onChange }) => {
@@ -57,12 +157,41 @@ export const ScheduleConfigurationPanel: React.FC<
 
   const [activeScheduleId, setActiveScheduleId] = useState<string | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const buildingDefaults = config.buildingDefaults ?? {};
   const currentBuildingConfig = buildingDefaults[selectedBuildingId] ?? {
     buildingId: selectedBuildingId,
     items: [],
     schedules: [],
   };
+
+  const handleUpdateBuilding = useCallback(
+    (updates: Partial<BuildingScheduleDefaults>) => {
+      onChange({
+        ...config,
+        buildingDefaults: {
+          ...buildingDefaults,
+          [selectedBuildingId]: {
+            ...currentBuildingConfig,
+            ...updates,
+          },
+        },
+      });
+    },
+    [
+      config,
+      buildingDefaults,
+      selectedBuildingId,
+      currentBuildingConfig,
+      onChange,
+    ]
+  );
 
   // Migrate legacy items into a "Default Schedule" if no schedules exist yet
   const schedules: DailySchedule[] = (() => {
@@ -81,18 +210,26 @@ export const ScheduleConfigurationPanel: React.FC<
   const activeSchedule = schedules.find((s) => s.id === activeScheduleId);
   const items = activeSchedule?.items ?? [];
 
-  const handleUpdateBuilding = (updates: Partial<BuildingScheduleDefaults>) => {
-    onChange({
-      ...config,
-      buildingDefaults: {
-        ...buildingDefaults,
-        [selectedBuildingId]: {
-          ...currentBuildingConfig,
-          ...updates,
-        },
-      },
+  // Ensure all items have IDs for dnd-kit compatibility
+  React.useEffect(() => {
+    let changed = false;
+    const newSchedules = schedules.map((s) => {
+      let scheduleChanged = false;
+      const updatedItems = s.items.map((item) => {
+        if (!item.id) {
+          scheduleChanged = true;
+          changed = true;
+          return { ...item, id: crypto.randomUUID() };
+        }
+        return item;
+      });
+      return scheduleChanged ? { ...s, items: updatedItems } : s;
     });
-  };
+
+    if (changed) {
+      handleUpdateBuilding({ schedules: newSchedules });
+    }
+  }, [schedules, handleUpdateBuilding]);
 
   const handleAddSchedule = () => {
     const newSchedule: DailySchedule = {
@@ -115,7 +252,8 @@ export const ScheduleConfigurationPanel: React.FC<
     handleUpdateBuilding({ schedules: newSchedules });
   };
 
-  const handleDeleteSchedule = (id: string) => {
+  const handleDeleteSchedule = (id: string | null) => {
+    if (!id) return;
     if (confirm('Are you sure you want to delete this schedule?')) {
       const newSchedules = schedules.filter((s) => s.id !== id);
       handleUpdateBuilding({ schedules: newSchedules });
@@ -139,7 +277,8 @@ export const ScheduleConfigurationPanel: React.FC<
       endTime: '09:00',
       mode: 'clock',
     };
-    const newItems = sortByTime([...items, newItem]);
+    // Append to end instead of sorting by time immediately, to respect manual ordering preference
+    const newItems = [...items, newItem];
     handleUpdateActiveItems(newItems);
   };
 
@@ -147,17 +286,11 @@ export const ScheduleConfigurationPanel: React.FC<
     const newItems = items.map((item) =>
       item.id === itemId ? { ...item, ...updates } : item
     );
-    handleUpdateActiveItems(newItems); // Sort is handled on save in settings, but we can do it automatically here if we want or just let them stay. Let's do it on blur or keep it simple.
+    handleUpdateActiveItems(newItems);
   };
 
-  const handleUpdateItemAndSort = (
-    itemId: string,
-    updates: Partial<ScheduleItem>
-  ) => {
-    const newItems = items.map((item) =>
-      item.id === itemId ? { ...item, ...updates } : item
-    );
-    handleUpdateActiveItems(sortByTime(newItems));
+  const handleSortByTime = () => {
+    handleUpdateActiveItems(sortByTime(items));
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -165,18 +298,16 @@ export const ScheduleConfigurationPanel: React.FC<
     handleUpdateActiveItems(newItems);
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === items.length - 1) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-    const newItems = [...items];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newItems[index], newItems[targetIndex]] = [
-      newItems[targetIndex],
-      newItems[index],
-    ];
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
 
-    handleUpdateActiveItems(newItems);
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      handleUpdateActiveItems(newItems);
+    }
   };
 
   return (
@@ -239,7 +370,7 @@ export const ScheduleConfigurationPanel: React.FC<
                       onChange={(e) =>
                         handleUpdateSchedule(s.id, { name: e.target.value })
                       }
-                      className="font-bold text-slate-700 bg-transparent border-none p-0 focus:ring-0 truncate flex-1 outline-none text-sm"
+                      className="font-bold text-slate-700 bg-transparent border-none p-0 focus:ring-0 truncate flex-1 outline-none text-sm hover:bg-slate-50 rounded px-1 -ml-1 transition-colors"
                       placeholder="Schedule Name"
                     />
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -313,102 +444,60 @@ export const ScheduleConfigurationPanel: React.FC<
                 <LayoutGrid className="w-3 h-3" /> Schedules
               </button>
               <div className="flex items-center gap-3">
-                <label className="text-xxs text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-                  <Clock className="w-3 h-3" /> {activeSchedule?.name}
-                </label>
-                <button
-                  onClick={handleAddItem}
-                  className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  <Plus className="w-3 h-3" /> Add Event
-                </button>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <input
+                    type="text"
+                    value={activeSchedule?.name ?? ''}
+                    onChange={(e) =>
+                      handleUpdateSchedule(activeScheduleId, {
+                        name: e.target.value,
+                      })
+                    }
+                    className="text-xxs font-bold text-slate-600 uppercase tracking-widest bg-transparent border-b border-dashed border-slate-300 focus:border-brand-blue-primary outline-none px-1 py-0.5"
+                    placeholder="Schedule Name"
+                  />
+                </div>
+                <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-200">
+                  <button
+                    onClick={handleSortByTime}
+                    className="text-xxs flex items-center gap-1 text-slate-500 hover:text-brand-blue-primary font-bold uppercase transition-colors"
+                    title="Sort items by start time"
+                  >
+                    <ArrowUpDown className="w-3 h-3" /> Sort
+                  </button>
+                  <button
+                    onClick={handleAddItem}
+                    className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-bold"
+                  >
+                    <Plus className="w-3 h-3" /> Add Event
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              {items.map((item, i) => (
-                <div
-                  key={item.id}
-                  className="bg-white border border-slate-200 rounded-lg p-2 flex items-center gap-3 shadow-sm group"
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={items.map((item) => item.id || '')}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <div className="flex flex-col items-center gap-0.5 text-slate-300">
-                    <button
-                      type="button"
-                      onClick={() => handleMove(i, 'up')}
-                      disabled={i === 0}
-                      className="hover:text-slate-600 disabled:opacity-30"
-                    >
-                      <GripVertical className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(i, 'down')}
-                      disabled={i === items.length - 1}
-                      className="hover:text-slate-600 disabled:opacity-30"
-                    >
-                      <GripVertical className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <div className="flex-1 grid grid-cols-12 gap-2">
-                    <div className="col-span-6">
-                      <input
-                        type="text"
-                        value={item.task}
-                        onChange={(e) =>
-                          item.id &&
-                          handleUpdateItem(item.id, { task: e.target.value })
-                        }
-                        placeholder="Task Name"
-                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:border-brand-blue-primary outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="time"
-                        value={item.startTime}
-                        onChange={(e) =>
-                          item.id &&
-                          handleUpdateItem(item.id, {
-                            startTime: e.target.value,
-                          })
-                        }
-                        onBlur={(e) =>
-                          item.id &&
-                          handleUpdateItemAndSort(item.id, {
-                            startTime: e.target.value,
-                          })
-                        }
-                        className="w-full px-1 py-1.5 text-xs border border-slate-200 rounded outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="time"
-                        value={item.endTime}
-                        onChange={(e) =>
-                          item.id &&
-                          handleUpdateItem(item.id, { endTime: e.target.value })
-                        }
-                        onBlur={(e) =>
-                          item.id &&
-                          handleUpdateItemAndSort(item.id, {
-                            endTime: e.target.value,
-                          })
-                        }
-                        className="w-full px-1 py-1.5 text-xs border border-slate-200 rounded outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2 flex items-center justify-end">
-                      <button
-                        onClick={() => item.id && handleDeleteItem(item.id)}
-                        className="text-red-400 hover:text-red-600 p-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  {items.map((item) => (
+                    <SortableItem
+                      key={item.id}
+                      item={item}
+                      onUpdate={(updates) =>
+                        item.id && handleUpdateItem(item.id, updates)
+                      }
+                      onDelete={() => item.id && handleDeleteItem(item.id)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
               {items.length === 0 && (
                 <div className="text-center py-6 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xxs italic">
                   No items configured for this schedule.

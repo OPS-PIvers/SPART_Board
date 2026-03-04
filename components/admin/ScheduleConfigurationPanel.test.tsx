@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScheduleConfigurationPanel } from './ScheduleConfigurationPanel';
@@ -78,7 +79,7 @@ describe('ScheduleConfigurationPanel', () => {
     fireEvent.click(editButton);
 
     // Now we should be in the items view
-    expect(screen.getByText('Test Schedule')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Test Schedule')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Task 1')).toBeInTheDocument();
 
     const addEventButton = screen.getByText('Add Event');
@@ -88,8 +89,44 @@ describe('ScheduleConfigurationPanel', () => {
     const lastCall = mockOnChange.mock.calls[0][0] as ScheduleGlobalConfig;
     const testSchedule = lastCall.buildingDefaults.b1.schedules?.[0];
     expect(testSchedule?.items).toHaveLength(2);
-    // Since sortByTime is used, "New Task" at 08:00 should come before "Task 1" at 09:00
-    expect(testSchedule?.items[0].task).toBe('New Task');
+    // items are now appended to the end to respect manual ordering
+    expect(testSchedule?.items[1].task).toBe('New Task');
+  });
+
+  it('sorts items by time when Sort button is clicked', () => {
+    const StatefulWrapper = () => {
+      const [config, setConfig] = useState(mockConfig);
+      return (
+        <ScheduleConfigurationPanel
+          config={config}
+          onChange={(newConfig) => {
+            setConfig(newConfig);
+            mockOnChange(newConfig);
+          }}
+        />
+      );
+    };
+
+    render(<StatefulWrapper />);
+
+    // Enter edit view
+    fireEvent.click(screen.getByTitle('Edit items'));
+
+    // Add a new event (default 08:00)
+    fireEvent.click(screen.getByText('Add Event'));
+
+    // Current order should have Task 1 (09:00) first, then New Task (08:00)
+    // because we removed auto-sort on add
+    expect(screen.getAllByDisplayValue(/Task/)[0]).toHaveValue('Task 1');
+    expect(screen.getAllByDisplayValue(/Task/)[1]).toHaveValue('New Task');
+
+    // Click Sort
+    fireEvent.click(screen.getByText('Sort'));
+
+    // After sort: New Task (08:00) should be first
+    const inputs = screen.getAllByDisplayValue(/Task/);
+    expect(inputs[0]).toHaveValue('New Task');
+    expect(inputs[1]).toHaveValue('Task 1');
   });
 
   it('switches buildings', () => {
