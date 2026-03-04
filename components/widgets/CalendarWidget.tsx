@@ -229,7 +229,10 @@ export const CalendarWidget: React.FC<{ widget: WidgetData }> = ({
             <p className="text-xs font-black uppercase text-rose-500 tracking-widest">
               Calendar Blocked
             </p>
-            <p className="text-xxs text-rose-400 font-medium mt-1 leading-tight">
+            <p
+              className="text-rose-400 font-medium mt-1 leading-tight"
+              style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+            >
               A district-wide blocked date is active today.
             </p>
           </div>
@@ -717,7 +720,10 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
               className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 shadow-sm group"
             >
               <div className="min-w-0">
-                <div className="text-xxs font-black text-rose-500 uppercase tracking-wider">
+                <div
+                  className="font-black text-rose-500 uppercase tracking-wider"
+                  style={{ fontSize: 'min(10px, 2.5cqmin)' }}
+                >
                   {event.date}
                 </div>
                 <div className="text-sm font-bold text-slate-700 truncate">
@@ -741,7 +747,9 @@ export const CalendarSettings: React.FC<{ widget: WidgetData }> = ({
           ))}
           {events.length === 0 && (
             <div className="text-center py-6 text-slate-400 border-2 border-dashed rounded-2xl bg-slate-50/50">
-              <p className="text-xxs italic">No local events added.</p>
+              <p className="italic" style={{ fontSize: 'min(10px, 2.5cqmin)' }}>
+                No local events added.
+              </p>
             </div>
           )}
         </div>
