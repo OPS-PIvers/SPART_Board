@@ -6,6 +6,7 @@ import {
   GlobalFeaturePermission,
   GlobalFeature,
   GradeLevel,
+  WidgetConfig,
 } from '../types';
 
 export interface AuthContextType {
@@ -38,6 +39,10 @@ export interface AuthContextType {
    *   is safe from background timers. Pass false only from direct user gestures.
    */
   refreshGoogleToken: (silent?: boolean) => Promise<string | null>;
+  /** Global saved configs for complex widgets */
+  savedWidgetConfigs: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
+  /** Save a widget's config globally (debounced Firestore write) */
+  saveWidgetConfig: (type: WidgetType, config: Partial<WidgetConfig>) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

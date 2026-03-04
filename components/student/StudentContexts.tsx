@@ -37,6 +37,10 @@ const mockAuth: AuthContextType = {
   refreshGoogleToken: () => {
     return Promise.resolve(null);
   },
+  savedWidgetConfigs: {},
+  saveWidgetConfig: () => {
+    // No-op
+  },
 };
 
 // --- MOCK DASHBOARD ---

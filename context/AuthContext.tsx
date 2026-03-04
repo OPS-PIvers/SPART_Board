@@ -32,6 +32,7 @@ import {
   GlobalFeaturePermission,
   GlobalFeature,
   GradeLevel,
+  WidgetConfig,
 } from '../types';
 import { AuthContext } from './AuthContextValue';
 import { getBuildingGradeLevels } from '../config/buildings';
@@ -175,6 +176,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     GlobalFeaturePermission[]
   >([]);
   const [selectedBuildings, setSelectedBuildingsState] = useState<string[]>([]);
+  const [savedWidgetConfigs, setSavedWidgetConfigs] = useState<
+    Partial<Record<WidgetType, Partial<WidgetConfig>>>
+  >({});
   // Initialise from i18n.language. If i18n.init() hasn't resolved its async
   // language detection yet, the useEffect below will sync the state once it fires.
   const [language, setLanguageState] = useState<string>(
@@ -182,6 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   // Tracks the latest setSelectedBuildings / setLanguage call to detect and suppress stale writes
   const writeTokenRef = useRef(0);
+  const widgetConfigTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Prevents concurrent proactive token refresh calls from the checkToken interval
   const isRefreshingRef = useRef(false);
 
@@ -442,6 +447,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setLanguageState(savedLang);
             void i18n.changeLanguage(savedLang);
           }
+
+          // Load savedWidgetConfigs
+          if (
+            'savedWidgetConfigs' in data &&
+            typeof data.savedWidgetConfigs === 'object' &&
+            data.savedWidgetConfigs !== null
+          ) {
+            setSavedWidgetConfigs(data.savedWidgetConfigs as Partial<Record<WidgetType, Partial<WidgetConfig>>>);
+          }
+
           return;
         }
         // Profile exists but has no valid data; clear any previous selection
@@ -499,6 +514,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error('Error saving language preference:', error);
         }
       }
+    },
+    [user]
+  );
+
+  const saveWidgetConfig = useCallback(
+    (type: WidgetType, config: Partial<WidgetConfig>) => {
+      setSavedWidgetConfigs((prev) => {
+        const newConfigs = {
+          ...prev,
+          [type]: {
+            ...(prev[type] || {}),
+            ...config,
+          },
+        };
+
+        if (widgetConfigTimeoutRef.current) {
+          clearTimeout(widgetConfigTimeoutRef.current);
+        }
+
+        widgetConfigTimeoutRef.current = setTimeout(() => {
+          if (!user || isAuthBypass) return;
+          const myToken = ++writeTokenRef.current;
+          setDoc(
+            doc(db, 'users', user.uid, 'userProfile', 'profile'),
+            { savedWidgetConfigs: newConfigs },
+            { merge: true }
+          ).catch((error) => {
+            if (myToken === writeTokenRef.current) {
+              console.error('Error saving widget configs:', error);
+            }
+          });
+        }, 1000);
+
+        return newConfigs;
+      });
     },
     [user]
   );
@@ -657,6 +707,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         language,
         setLanguage,
         refreshGoogleToken,
+        savedWidgetConfigs,
+        saveWidgetConfig,
       }}
     >
       {children}

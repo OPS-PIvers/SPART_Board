@@ -49,6 +49,10 @@ const mockAuthContext = (
     /* mock */
   },
   refreshGoogleToken: () => Promise.resolve(null),
+  savedWidgetConfigs: {},
+  saveWidgetConfig: () => {
+    /* mock */
+  },
   ...overrides,
 });
 

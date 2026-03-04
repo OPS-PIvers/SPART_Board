@@ -53,6 +53,14 @@ const serializeDashboard = (d: Dashboard): string =>
     libraryOrder: d.libraryOrder,
   });
 
+const PERSISTED_WIDGET_TYPES: WidgetType[] = [
+  'schedule',
+  'calendar',
+  'lunchCount',
+  'weather',
+  'instructionalRoutines',
+];
+
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -62,6 +70,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
     refreshGoogleToken,
     featurePermissions,
     selectedBuildings,
+    savedWidgetConfigs,
+    saveWidgetConfig,
   } = useAuth();
   const { driveService, userDomain } = useGoogleDrive();
   const {
@@ -1527,10 +1537,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
             z: maxZ + 1,
             ...defaults,
             ...overrides,
-            // Layer order: widget defaults → admin building defaults → explicit overrides
+            // Layer order: widget defaults → admin building defaults → saved global config → explicit overrides
             config: {
               ...(defaults.config ?? {}),
               ...adminConfig,
+              ...(PERSISTED_WIDGET_TYPES.includes(type)
+                ? savedWidgetConfigs?.[type] ?? {}
+                : {}),
               ...(overrides?.config ?? {}),
             } as WidgetConfig,
           };
@@ -1538,7 +1551,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
     },
-    [activeId, getAdminBuildingConfig]
+    [activeId, getAdminBuildingConfig, savedWidgetConfigs]
   );
 
   const addWidgets = useCallback(
@@ -1577,10 +1590,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               flipped: false,
               z: maxZ,
               ...defaults,
-              // Layer order: widget defaults → admin building defaults → explicit item config
+              // Layer order: widget defaults → admin building defaults → saved global config → explicit item config
               config: {
                 ...(defaults.config ?? {}),
                 ...adminConfig,
+                ...(PERSISTED_WIDGET_TYPES.includes(item.type)
+                  ? savedWidgetConfigs?.[item.type] ?? {}
+                  : {}),
                 ...(item.config ?? {}),
               },
             } as WidgetData;
@@ -1590,7 +1606,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
     },
-    [activeId, getAdminBuildingConfig]
+    [activeId, getAdminBuildingConfig, savedWidgetConfigs]
   );
 
   const removeWidget = useCallback(
@@ -1675,24 +1691,36 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
+          
+          let widgetType: WidgetType | undefined;
+          
+          const newWidgets = d.widgets.map((w) => {
+            if (w.id === id) {
+              widgetType = w.type;
+              return {
+                ...w,
+                ...updates,
+                config: updates.config
+                  ? { ...w.config, ...updates.config }
+                  : w.config,
+              };
+            }
+            return w;
+          });
+
+          // If the widget type is in our persistence list, and config was updated, save it globally
+          if (widgetType && updates.config && PERSISTED_WIDGET_TYPES.includes(widgetType)) {
+            saveWidgetConfig(widgetType, updates.config);
+          }
+
           return {
             ...d,
-            widgets: d.widgets.map((w) =>
-              w.id === id
-                ? {
-                    ...w,
-                    ...updates,
-                    config: updates.config
-                      ? { ...w.config, ...updates.config }
-                      : w.config,
-                  }
-                : w
-            ),
+            widgets: newWidgets,
           };
         })
       );
     },
-    []
+    [saveWidgetConfig]
   );
 
   const bringToFront = useCallback((id: string) => {

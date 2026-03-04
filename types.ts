@@ -1235,6 +1235,10 @@ export interface DashboardSettings {
 export interface UserProfile {
   /** IDs of the buildings the user works in (matches Building.id in config/buildings.ts) */
   selectedBuildings: string[];
+  /** Optional language preference */
+  language?: string;
+  /** Global saved widget configs for complex widgets */
+  savedWidgetConfigs?: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
 }
 
 export interface SharedGroup {
