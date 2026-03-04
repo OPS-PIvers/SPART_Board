@@ -12,6 +12,7 @@ import {
   WidgetData,
   ScheduleItem,
   ScheduleConfig,
+  DailySchedule,
   ClockConfig,
   DEFAULT_GLOBAL_STYLE,
   ScheduleGlobalConfig,
@@ -73,6 +74,44 @@ const formatScheduleTime = (
 };
 
 /** Converts a hex color + alpha into an rgba() CSS string. */
+/** Result of resolving the active schedule. */
+interface ResolvedSchedule {
+  /** The actual schedule object (might be a migrated legacy one). */
+  schedule: DailySchedule;
+  /** Whether this is the legacy config.items schedule. */
+  isLegacy: boolean;
+}
+
+/** Resolves the active schedule based on current rules. */
+const resolveActiveSchedule = (
+  schedules: DailySchedule[],
+  legacyItems: ScheduleItem[],
+  today: number
+): ResolvedSchedule | null => {
+  // 1. Check legacy mode (no schedules defined yet)
+  if (schedules.length === 0) {
+    if (legacyItems.length === 0) return null;
+    return {
+      isLegacy: true,
+      schedule: {
+        id: 'default',
+        name: 'Default Schedule',
+        items: legacyItems,
+        days: [],
+      },
+    };
+  }
+
+  // 2. Single schedule mode
+  if (schedules.length === 1) {
+    return { isLegacy: false, schedule: schedules[0] };
+  }
+
+  // 3. Multi-schedule mode (select by day)
+  const match = schedules.find((s) => s.days.includes(today));
+  return match ? { isLegacy: false, schedule: match } : null;
+};
+
 const hexToRgba = (hex: string, alpha: number): string => {
   const clean = (hex ?? '#ffffff').replace('#', '');
   const a =
@@ -85,6 +124,33 @@ const hexToRgba = (hex: string, alpha: number): string => {
   const b = parseInt(clean.slice(4, 6), 16);
   if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${a})`;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+/** Result of resolving the active schedule. */
+interface ActiveScheduleResult {
+  id: string;
+  isLegacy: boolean;
+}
+
+/** Resolves the ID of the active schedule based on current rules. */
+const getActiveScheduleId = (
+  schedules: DailySchedule[],
+  legacyItems: ScheduleItem[],
+  today: number
+): ActiveScheduleResult | null => {
+  // 1. Check legacy mode (no schedules defined yet)
+  if (schedules.length === 0) {
+    return legacyItems.length > 0 ? { id: 'default', isLegacy: true } : null;
+  }
+
+  // 2. Single schedule mode
+  if (schedules.length === 1) {
+    return { id: schedules[0].id, isLegacy: false };
+  }
+
+  // 3. Multi-schedule mode (select by day)
+
+  const match = schedules.find((s) => s.days.includes(today));
+  return match ? { id: match.id, isLegacy: false } : null;
 };
 
 interface CountdownDisplayProps {
@@ -346,7 +412,35 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const { subscribeToPermission } = useFeaturePermissions();
   const globalStyle = activeDashboard?.globalStyle ?? DEFAULT_GLOBAL_STYLE;
   const config = widget.config as ScheduleConfig;
-  const items = useMemo(() => config.items ?? [], [config.items]);
+  const { schedules = [], items: legacyItems = [] } = config;
+
+  // Single shared ticker for all CountdownDisplay instances in this widget.
+  const [nowSeconds, setNowSeconds] = useState(() => {
+    const n = new Date();
+    return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      setNowSeconds(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds());
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Derived current day from single-source-of-truth ticker to ensure
+  // schedule switches automatically at midnight.
+  const currentDay = new Date(
+    new Date().setHours(0, 0, 0, 0) + nowSeconds * 1000
+  ).getDay();
+
+  // Resolve active schedule using shared logic
+  const resolved = useMemo(
+    () => resolveActiveSchedule(schedules, legacyItems, currentDay),
+    [schedules, legacyItems, currentDay]
+  );
+  const activeSchedule = resolved?.schedule ?? null;
+
+  const items = useMemo(() => activeSchedule?.items ?? [], [activeSchedule]);
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
 
   const {
@@ -369,7 +463,8 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
         // 4. We haven't synced this building yet
         if (
           isBuildingSyncEnabled &&
-          items.length === 0 &&
+          schedules.length === 0 &&
+          legacyItems.length === 0 &&
           selectedBuildings?.[0] &&
           config.lastSyncedBuildingId !== selectedBuildings[0]
         ) {
@@ -390,25 +485,13 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   }, [
     subscribeToPermission,
     isBuildingSyncEnabled,
-    items.length,
+    schedules.length,
+    legacyItems.length,
     selectedBuildings,
     config,
     widget.id,
     updateWidget,
   ]);
-
-  // Single shared ticker for all CountdownDisplay instances in this widget.
-  const [nowSeconds, setNowSeconds] = useState(() => {
-    const n = new Date();
-    return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
-  });
-  useEffect(() => {
-    const id = setInterval(() => {
-      const n = new Date();
-      setNowSeconds(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds());
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   // Scroll container ref used for programmatic auto-scroll.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -515,12 +598,39 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const toggle = useCallback(
     (idx: number) => {
       const currentConfig = configRef.current;
-      const currentItems = itemsRef.current;
-      const newItems = [...currentItems];
-      if (newItems[idx]) {
-        newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+      const { schedules = [], items: legacyItems = [] } = currentConfig;
+
+      const active = resolveActiveSchedule(
+        schedules,
+        legacyItems,
+        new Date().getDay()
+      );
+      if (!active) return;
+
+      if (active.isLegacy) {
+        const newItems = [...legacyItems];
+        if (newItems[idx]) {
+          newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+          updateWidget(widget.id, {
+            config: { ...currentConfig, items: newItems } as ScheduleConfig,
+          });
+        }
+      } else {
+        const newSchedules = schedules.map((s) => {
+          if (s.id === active.schedule.id) {
+            const newItems = [...s.items];
+            if (newItems[idx]) {
+              newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
+            }
+            return { ...s, items: newItems };
+          }
+          return s;
+        });
         updateWidget(widget.id, {
-          config: { ...currentConfig, items: newItems } as ScheduleConfig,
+          config: {
+            ...currentConfig,
+            schedules: newSchedules,
+          } as ScheduleConfig,
         });
       }
     },
@@ -658,9 +768,30 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       });
 
       if (changed) {
-        updateWidget(widget.id, {
-          config: { ...currentConfig, items: newItems } as ScheduleConfig,
-        });
+        const { schedules = [], items: legacyItems = [] } = currentConfig;
+        const active = getActiveScheduleId(
+          schedules,
+          legacyItems,
+          now.getDay()
+        );
+
+        if (!active) return;
+
+        if (active.isLegacy) {
+          updateWidget(widget.id, {
+            config: { ...currentConfig, items: newItems } as ScheduleConfig,
+          });
+        } else {
+          const newSchedules = schedules.map((s) =>
+            s.id === active.id ? { ...s, items: newItems } : s
+          );
+          updateWidget(widget.id, {
+            config: {
+              ...currentConfig,
+              schedules: newSchedules,
+            } as ScheduleConfig,
+          });
+        }
       }
     };
 

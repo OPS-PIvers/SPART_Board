@@ -48,6 +48,8 @@ vi.mock('lucide-react', () => ({
   GripVertical: () => <div>Grip Icon</div>,
   Settings2: () => <div>Settings2 Icon</div>,
   Calendar: () => <div>Calendar Icon</div>,
+  LayoutGrid: () => <div>LayoutGrid Icon</div>,
+  ChevronRight: () => <div>ChevronRight Icon</div>,
   Ban: () => <div>Ban Icon</div>,
 }));
 
@@ -444,6 +446,75 @@ describe('ScheduleWidget', () => {
       scrollToSpy.mockRestore();
     });
   });
+
+  it('renders the schedule matching the current day', () => {
+    // Force date to Monday
+    const monday = new Date(2023, 0, 2); // Jan 2, 2023 is Monday
+    vi.setSystemTime(monday);
+
+    const widget = {
+      id: 'schedule-1',
+      type: 'schedule',
+      config: {
+        schedules: [
+          {
+            id: 's1',
+            name: 'Monday Schedule',
+            items: [{ time: '09:00', task: 'Math', done: false }],
+            days: [1], // Monday
+          },
+          {
+            id: 's2',
+            name: 'Tuesday Schedule',
+            items: [{ time: '09:00', task: 'Science', done: false }],
+            days: [2], // Tuesday
+          },
+        ],
+      },
+    } as unknown as WidgetData;
+
+    const { rerender } = render(<ScheduleWidget widget={widget} />);
+    expect(screen.getByText('Math')).toBeInTheDocument();
+    expect(screen.queryByText('Science')).not.toBeInTheDocument();
+
+    // Force date to Tuesday
+    const tuesday = new Date(2023, 0, 3); // Jan 3, 2023 is Tuesday
+    vi.setSystemTime(tuesday);
+    rerender(<ScheduleWidget widget={widget} />);
+    expect(screen.getByText('Science')).toBeInTheDocument();
+    expect(screen.queryByText('Math')).not.toBeInTheDocument();
+  });
+
+  it('renders nothing if no schedule matches the current day (when multiple exist)', () => {
+    const sunday = new Date(2023, 0, 1); // Jan 1, 2023 is Sunday
+    vi.setSystemTime(sunday);
+
+    const widget = {
+      id: 'schedule-1',
+      type: 'schedule',
+      config: {
+        schedules: [
+          {
+            id: 's1',
+            name: 'Monday Schedule',
+            items: [{ time: '09:00', task: 'Math', done: false }],
+            days: [1],
+          },
+          {
+            id: 's2',
+            name: 'Tuesday Schedule',
+            items: [{ time: '09:00', task: 'Science', done: false }],
+            days: [2],
+          },
+        ],
+      },
+    } as unknown as WidgetData;
+
+    render(<ScheduleWidget widget={widget} />);
+    expect(screen.queryByText('Math')).not.toBeInTheDocument();
+    expect(screen.queryByText('Science')).not.toBeInTheDocument();
+    expect(screen.getByText('No Schedule')).toBeInTheDocument();
+  });
 });
 
 describe('ScheduleSettings', () => {
@@ -514,6 +585,9 @@ describe('ScheduleSettings', () => {
       ],
     });
     const { container } = render(<ScheduleSettings widget={widget} />);
+
+    // Select the default schedule first
+    fireEvent.click(screen.getByTitle(/edit items/i));
 
     // Open the add-event form.
     fireEvent.click(screen.getByRole('button', { name: /add event/i }));
