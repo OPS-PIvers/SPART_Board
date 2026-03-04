@@ -1542,7 +1542,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
               ...(defaults.config ?? {}),
               ...adminConfig,
               ...(PERSISTED_WIDGET_TYPES.includes(type)
-                ? savedWidgetConfigs?.[type] ?? {}
+                ? (savedWidgetConfigs?.[type] ?? {})
                 : {}),
               ...(overrides?.config ?? {}),
             } as WidgetConfig,
@@ -1595,7 +1595,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
                 ...(defaults.config ?? {}),
                 ...adminConfig,
                 ...(PERSISTED_WIDGET_TYPES.includes(item.type)
-                  ? savedWidgetConfigs?.[item.type] ?? {}
+                  ? (savedWidgetConfigs?.[item.type] ?? {})
                   : {}),
                 ...(item.config ?? {}),
               },
@@ -1691,9 +1691,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
       setDashboards((prev) =>
         prev.map((d) => {
           if (d.id !== activeIdRef.current) return d;
-          
+
           let widgetType: WidgetType | undefined;
-          
+
           const newWidgets = d.widgets.map((w) => {
             if (w.id === id) {
               widgetType = w.type;
@@ -1709,7 +1709,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({
           });
 
           // If the widget type is in our persistence list, and config was updated, save it globally
-          if (widgetType && updates.config && PERSISTED_WIDGET_TYPES.includes(widgetType)) {
+          if (
+            widgetType &&
+            updates.config &&
+            PERSISTED_WIDGET_TYPES.includes(widgetType)
+          ) {
             saveWidgetConfig(widgetType, updates.config);
           }
 

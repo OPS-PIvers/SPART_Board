@@ -454,7 +454,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             typeof data.savedWidgetConfigs === 'object' &&
             data.savedWidgetConfigs !== null
           ) {
-            setSavedWidgetConfigs(data.savedWidgetConfigs as Partial<Record<WidgetType, Partial<WidgetConfig>>>);
+            setSavedWidgetConfigs(
+              data.savedWidgetConfigs as Partial<
+                Record<WidgetType, Partial<WidgetConfig>>
+              >
+            );
           }
 
           return;
@@ -524,7 +528,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const newConfigs = {
           ...prev,
           [type]: {
-            ...(prev[type] || {}),
+            ...(prev[type] ?? {}),
             ...config,
           },
         };
