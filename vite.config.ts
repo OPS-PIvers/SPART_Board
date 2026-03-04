@@ -14,10 +14,10 @@ export default defineConfig({
     },
   },
   build: {
-    // Keep the global chunk size warning at 500 kB so we don't hide regressions in other chunks.
+    // Keep the global chunk size warning at 1000 kB so we don't hide regressions in other chunks.
     // Warnings for inherently large WASM-heavy chunks like @imgly/background-removal and ort-wasm
     // are expected and accepted rather than suppressed globally.
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {

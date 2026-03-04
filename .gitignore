@@ -45,3 +45,4 @@ coverage/
 
 .gemini/
 gha-creds-*.json
+*.pem
