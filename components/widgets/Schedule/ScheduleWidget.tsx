@@ -87,15 +87,32 @@ const hexToRgba = (hex: string, alpha: number): string => {
   if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255, 255, 255, ${a})`;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
+/** Result of resolving the active schedule. */
+interface ActiveScheduleResult {
+  id: string;
+  isLegacy: boolean;
+}
+
 /** Resolves the ID of the active schedule based on current rules. */
 const getActiveScheduleId = (
   schedules: DailySchedule[],
-  legacyItems: ScheduleItem[]
-): string | undefined => {
-  if (schedules.length === 0 && legacyItems.length > 0) return 'default';
-  if (schedules.length === 1) return schedules[0].id;
-  const today = new Date().getDay();
-  return schedules.find((s) => s.days.includes(today))?.id;
+  legacyItems: ScheduleItem[],
+  today: number
+): ActiveScheduleResult | null => {
+  // 1. Check legacy mode (no schedules defined yet)
+  if (schedules.length === 0) {
+    return legacyItems.length > 0 ? { id: 'default', isLegacy: true } : null;
+  }
+
+  // 2. Single schedule mode
+  if (schedules.length === 1) {
+    return { id: schedules[0].id, isLegacy: false };
+  }
+
+  // 3. Multi-schedule mode (select by day)
+
+  const match = schedules.find((s) => s.days.includes(today));
+  return match ? { id: match.id, isLegacy: false } : null;
 };
 
 interface CountdownDisplayProps {
@@ -359,6 +376,25 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
   const config = widget.config as ScheduleConfig;
   const { schedules = [], items: legacyItems = [] } = config;
 
+  // Single shared ticker for all CountdownDisplay instances in this widget.
+  const [nowSeconds, setNowSeconds] = useState(() => {
+    const n = new Date();
+    return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      setNowSeconds(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds());
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Derived current day from single-source-of-truth ticker to ensure
+  // schedule switches automatically at midnight.
+  const currentDay = new Date(
+    new Date().setHours(0, 0, 0, 0) + nowSeconds * 1000
+  ).getDay();
+
   // Migration & Selection Logic
   const activeSchedule = useMemo(() => {
     // 1. Resolve all available schedules (including legacy migration)
@@ -376,8 +412,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     if (allSchedules.length === 1) return allSchedules[0];
 
     // 2. Filter by current day of the week
-    const today = new Date().getDay(); // 0 (Sun) to 6 (Sat)
-    const dayMatch = allSchedules.find((s) => s.days.includes(today));
+    const dayMatch = allSchedules.find((s) => s.days.includes(currentDay));
     if (dayMatch) return dayMatch;
 
     // 3. Fallback: If no match, check if there's a default (no assigned days)
@@ -386,7 +421,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     // Interpretation: if multiple schedules exist, ONLY show the one matching the day.
     // If none match the day, show nothing (return null).
     return null;
-  }, [schedules, legacyItems]);
+  }, [schedules, legacyItems, currentDay]);
 
   const items = useMemo(() => activeSchedule?.items ?? [], [activeSchedule]);
   const isBuildingSyncEnabled = config.isBuildingSyncEnabled ?? true;
@@ -440,19 +475,6 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
     widget.id,
     updateWidget,
   ]);
-
-  // Single shared ticker for all CountdownDisplay instances in this widget.
-  const [nowSeconds, setNowSeconds] = useState(() => {
-    const n = new Date();
-    return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
-  });
-  useEffect(() => {
-    const id = setInterval(() => {
-      const n = new Date();
-      setNowSeconds(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds());
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   // Scroll container ref used for programmatic auto-scroll.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -561,11 +583,15 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       const currentConfig = configRef.current;
       const { schedules = [], items: legacyItems = [] } = currentConfig;
 
-      const targetScheduleId = getActiveScheduleId(schedules, legacyItems);
+      const active = getActiveScheduleId(
+        schedules,
+        legacyItems,
+        new Date().getDay()
+      );
 
-      if (!targetScheduleId) return;
+      if (!active) return;
 
-      if (targetScheduleId === 'default') {
+      if (active.isLegacy) {
         const newItems = [...legacyItems];
         if (newItems[idx]) {
           newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
@@ -577,7 +603,7 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
       }
 
       const newSchedules = schedules.map((s) => {
-        if (s.id === targetScheduleId) {
+        if (s.id === active.id) {
           const newItems = [...s.items];
           if (newItems[idx]) {
             newItems[idx] = { ...newItems[idx], done: !newItems[idx].done };
@@ -726,17 +752,21 @@ export const ScheduleWidget: React.FC<{ widget: WidgetData }> = ({
 
       if (changed) {
         const { schedules = [], items: legacyItems = [] } = currentConfig;
-        const targetScheduleId = getActiveScheduleId(schedules, legacyItems);
+        const active = getActiveScheduleId(
+          schedules,
+          legacyItems,
+          now.getDay()
+        );
 
-        if (!targetScheduleId) return;
+        if (!active) return;
 
-        if (targetScheduleId === 'default') {
+        if (active.isLegacy) {
           updateWidget(widget.id, {
             config: { ...currentConfig, items: newItems } as ScheduleConfig,
           });
         } else {
           const newSchedules = schedules.map((s) =>
-            s.id === targetScheduleId ? { ...s, items: newItems } : s
+            s.id === active.id ? { ...s, items: newItems } : s
           );
           updateWidget(widget.id, {
             config: {

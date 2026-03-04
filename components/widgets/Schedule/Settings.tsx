@@ -46,13 +46,13 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string }[] = [
 ];
 
 const DAYS = [
-  { id: 0, label: 'S' },
-  { id: 1, label: 'M' },
-  { id: 2, label: 'T' },
-  { id: 3, label: 'W' },
-  { id: 4, label: 'T' },
-  { id: 5, label: 'F' },
-  { id: 6, label: 'S' },
+  { id: 0, label: 'Su', fullName: 'Sunday' },
+  { id: 1, label: 'M', fullName: 'Monday' },
+  { id: 2, label: 'Tu', fullName: 'Tuesday' },
+  { id: 3, label: 'W', fullName: 'Wednesday' },
+  { id: 4, label: 'Th', fullName: 'Thursday' },
+  { id: 5, label: 'F', fullName: 'Friday' },
+  { id: 6, label: 'Sa', fullName: 'Saturday' },
 ];
 
 const FONTS = [
@@ -145,14 +145,19 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
         : items.map((it, i) => (i === editingIndex ? itemToSave : it))
     );
 
-    if (activeScheduleId === 'default') {
+    const isLegacy =
+      activeScheduleId === 'default' && (config.schedules?.length ?? 0) === 0;
+
+    if (isLegacy) {
       updateWidget(widget.id, {
         config: { ...config, items: newItems } as ScheduleConfig,
       });
     } else {
-      const newSchedules = schedules.map((s) =>
-        s.id === activeScheduleId ? { ...s, items: newItems } : s
-      );
+      const newSchedules = schedules
+        .filter((s) => s.id !== 'default')
+        .map((s) =>
+          s.id === activeScheduleId ? { ...s, items: newItems } : s
+        );
       updateWidget(widget.id, {
         config: { ...config, schedules: newSchedules } as ScheduleConfig,
       });
@@ -164,14 +169,19 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
   const handleDelete = (index: number) => {
     if (confirm('Are you sure you want to delete this event?')) {
       const newItems = items.filter((_, i) => i !== index);
-      if (activeScheduleId === 'default') {
+      const isLegacy =
+        activeScheduleId === 'default' && (config.schedules?.length ?? 0) === 0;
+
+      if (isLegacy) {
         updateWidget(widget.id, {
           config: { ...config, items: newItems } as ScheduleConfig,
         });
       } else {
-        const newSchedules = schedules.map((s) =>
-          s.id === activeScheduleId ? { ...s, items: newItems } : s
-        );
+        const newSchedules = schedules
+          .filter((s) => s.id !== 'default')
+          .map((s) =>
+            s.id === activeScheduleId ? { ...s, items: newItems } : s
+          );
         updateWidget(widget.id, {
           config: { ...config, schedules: newSchedules } as ScheduleConfig,
         });
@@ -190,14 +200,19 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       newItems[index],
     ];
 
-    if (activeScheduleId === 'default') {
+    const isLegacy =
+      activeScheduleId === 'default' && (config.schedules?.length ?? 0) === 0;
+
+    if (isLegacy) {
       updateWidget(widget.id, {
         config: { ...config, items: newItems } as ScheduleConfig,
       });
     } else {
-      const newSchedules = schedules.map((s) =>
-        s.id === activeScheduleId ? { ...s, items: newItems } : s
-      );
+      const newSchedules = schedules
+        .filter((s) => s.id !== 'default')
+        .map((s) =>
+          s.id === activeScheduleId ? { ...s, items: newItems } : s
+        );
       updateWidget(widget.id, {
         config: { ...config, schedules: newSchedules } as ScheduleConfig,
       });
@@ -210,12 +225,34 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       items: [],
       days: [],
     };
-    updateWidget(widget.id, {
-      config: {
-        ...config,
-        schedules: [...schedules, newSchedule],
-      } as ScheduleConfig,
-    });
+
+    // Check if we are currently in legacy mode (migrated in-memory)
+    const hasLegacyItems = (config.items?.length ?? 0) > 0;
+    const hasNoSchedules = (config.schedules?.length ?? 0) === 0;
+
+    if (hasLegacyItems && hasNoSchedules) {
+      // Migrate legacy default schedule into a real schedule with UUID first
+      const migratedSchedule: DailySchedule = {
+        id: crypto.randomUUID(),
+        name: 'Default Schedule',
+        items: config.items ?? [],
+        days: [],
+      };
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          items: [],
+          schedules: [migratedSchedule, newSchedule],
+        } as ScheduleConfig,
+      });
+    } else {
+      updateWidget(widget.id, {
+        config: {
+          ...config,
+          schedules: [...(config.schedules ?? []), newSchedule],
+        } as ScheduleConfig,
+      });
+    }
     setActiveScheduleId(newSchedule.id);
   };
 
@@ -256,12 +293,17 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
       return;
     }
     if (confirm('Are you sure you want to delete this schedule?')) {
-      if (id === 'default') {
+      const isLegacy =
+        id === 'default' && (config.schedules?.length ?? 0) === 0;
+
+      if (isLegacy) {
         updateWidget(widget.id, {
           config: { ...config, items: [] } as ScheduleConfig,
         });
       } else {
-        const newSchedules = schedules.filter((s) => s.id !== id);
+        const newSchedules = schedules
+          .filter((s) => s.id !== 'default')
+          .filter((s) => s.id !== id);
         updateWidget(widget.id, {
           config: { ...config, schedules: newSchedules } as ScheduleConfig,
         });
@@ -472,6 +514,8 @@ export const ScheduleSettings: React.FC<{ widget: WidgetData }> = ({
                         <button
                           key={d.id}
                           disabled={isOnly}
+                          aria-label={d.fullName}
+                          title={d.fullName}
                           onClick={() => {
                             const newDays = isSelected
                               ? s.days.filter((id) => id !== d.id)
