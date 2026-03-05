@@ -318,6 +318,9 @@ export interface ExpectationsBuildingConfig {
   volumeOverrides?: Record<number, ExpectationsOptionOverride>;
   groupOverrides?: Record<string, ExpectationsOptionOverride>;
   interactionOverrides?: Record<string, ExpectationsOptionOverride>;
+  showVolume?: boolean;
+  showGroup?: boolean;
+  showInteraction?: boolean;
 }
 
 export interface ExpectationsGlobalConfig {
