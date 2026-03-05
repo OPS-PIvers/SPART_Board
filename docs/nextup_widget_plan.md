@@ -124,6 +124,7 @@ if (!config.driveFileId) return;
 if (config.viewMode === 'kiosk') {
 return {
 content: (
+
 <div className="flex flex-col items-center justify-center h-full p-6 bg-slate-50">
 <h2 className="text-3xl font-bold text-slate-800 mb-6">Take a Number</h2>
 <input
@@ -150,6 +151,7 @@ const waitingStudents = queue.filter(q => q.status === 'waiting');
 
 return {
 header: (
+
 <div className="flex justify-between items-center bg-slate-800 text-white p-3 rounded-t-xl">
 <h3 className="font-bold text-lg">Next Up</h3>
 <button 
