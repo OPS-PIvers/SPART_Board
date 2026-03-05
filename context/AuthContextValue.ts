@@ -39,6 +39,12 @@ export interface AuthContextType {
    *   is safe from background timers. Pass false only from direct user gestures.
    */
   refreshGoogleToken: (silent?: boolean) => Promise<string | null>;
+  /**
+   * Reconnect Google Drive without affecting Firebase auth state.
+   * Tries a silent GIS refresh first; falls back to a popup on failure.
+   * Safe to call from user-triggered UI (e.g. the disconnect banner).
+   */
+  connectGoogleDrive: () => Promise<void>;
   /** Global saved configs for complex widgets */
   savedWidgetConfigs: Partial<Record<WidgetType, Partial<WidgetConfig>>>;
   /** Save a widget's config globally (debounced Firestore write) */

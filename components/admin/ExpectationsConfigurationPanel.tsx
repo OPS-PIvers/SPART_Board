@@ -25,6 +25,9 @@ export const ExpectationsConfigurationPanel: React.FC<
     volumeOverrides: {},
     groupOverrides: {},
     interactionOverrides: {},
+    showVolume: true,
+    showGroup: true,
+    showInteraction: true,
   };
 
   const handleUpdateBuilding = (
@@ -55,14 +58,35 @@ export const ExpectationsConfigurationPanel: React.FC<
     onUpdateMap: (
       map: Record<string | number, ExpectationsOptionOverride>
     ) => void,
-    hasSub: boolean
+    hasSub: boolean,
+    categoryEnabled: boolean,
+    onToggleCategory: (enabled: boolean) => void
   ) => {
     return (
-      <div className="space-y-3 mb-6">
-        <h5 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-          {title}
-        </h5>
-        <div className="space-y-2">
+      <div className="space-y-3 mb-8 last:mb-0">
+        <div className="flex items-center justify-between">
+          <h5 className="text-xs font-black text-slate-700 uppercase tracking-widest">
+            {title}
+          </h5>
+          <div className="flex items-center gap-2">
+            <span className="text-xxxs font-black text-slate-400 uppercase">
+              Enable Category
+            </span>
+            <Toggle
+              checked={categoryEnabled}
+              onChange={onToggleCategory}
+              size="sm"
+            />
+          </div>
+        </div>
+
+        <div
+          className={`space-y-2 transition-all duration-200 ${
+            categoryEnabled
+              ? 'opacity-100'
+              : 'opacity-40 grayscale pointer-events-none'
+          }`}
+        >
           {options.map((opt) => {
             const override = overrideMap[opt.id] ?? { enabled: true };
             return (
@@ -168,7 +192,9 @@ export const ExpectationsConfigurationPanel: React.FC<
           VOLUME_OPTIONS as OptionBase[],
           currentBuildingConfig.volumeOverrides,
           (map) => handleUpdateBuilding({ volumeOverrides: map }),
-          true
+          true,
+          currentBuildingConfig.showVolume ?? true,
+          (enabled) => handleUpdateBuilding({ showVolume: enabled })
         )}
 
         {renderOptionEditor(
@@ -176,7 +202,9 @@ export const ExpectationsConfigurationPanel: React.FC<
           GROUP_OPTIONS.filter((o) => o.id !== null) as OptionBase[],
           currentBuildingConfig.groupOverrides,
           (map) => handleUpdateBuilding({ groupOverrides: map }),
-          false
+          false,
+          currentBuildingConfig.showGroup ?? true,
+          (enabled) => handleUpdateBuilding({ showGroup: enabled })
         )}
 
         {renderOptionEditor(
@@ -184,7 +212,9 @@ export const ExpectationsConfigurationPanel: React.FC<
           INTERACTION_OPTIONS.filter((o) => o.id !== null) as OptionBase[],
           currentBuildingConfig.interactionOverrides,
           (map) => handleUpdateBuilding({ interactionOverrides: map }),
-          false
+          false,
+          currentBuildingConfig.showInteraction ?? true,
+          (enabled) => handleUpdateBuilding({ showInteraction: enabled })
         )}
       </div>
     </div>

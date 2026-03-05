@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth';
 import { DashboardProvider } from './context/DashboardContext';
 import { UpdateNotification } from './components/layout/UpdateNotification';
+import { DriveDisconnectBanner } from './components/common/DriveDisconnectBanner';
 import { isConfigured } from './config/firebase';
 import { StudentProvider } from './components/student/StudentContexts';
 
@@ -74,6 +75,7 @@ const AuthenticatedApp: React.FC = () => {
         <DashboardView />
       </Suspense>
       <UpdateNotification />
+      <DriveDisconnectBanner />
     </DashboardProvider>
   );
 };
