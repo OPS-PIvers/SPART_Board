@@ -121,6 +121,7 @@ Unifier is responsible for maintaining a consistent look and feel across all SPA
 
 **Drift:** Discovered multiple hardcoded z-index values (`z-[9985]`, `zIndex: 9990`, `zIndex: 10100`, `zIndex: 10000`) in `AnnouncementOverlay.tsx`, `ClassRosterMenu.tsx`, and `LiveControl.tsx` that bypassed the centralized `Z_INDEX` registry.
 **Fix:**
+
 1. Added `announcementOverlay: 9985` and `announcementMaximized: 9990` to `config/zIndex.ts` and exposed them as utility classes in `tailwind.config.js`.
 2. Refactored `AnnouncementOverlay.tsx` to use the new `z-announcement-overlay` and `z-announcement-maximized` classes and inline `Z_INDEX` values.
 3. Updated `ClassRosterMenu.tsx` to use `Z_INDEX.modalNested` (10100).
