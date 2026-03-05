@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BUILDINGS } from '@/config/buildings';
 import {
   ScheduleGlobalConfig,
@@ -187,12 +187,19 @@ export const ScheduleConfigurationPanel: React.FC<
     [config, selectedBuildingId, onChange]
   );
 
-  const buildingDefaults = config.buildingDefaults ?? {};
-  const currentBuildingConfig = buildingDefaults[selectedBuildingId] ?? {
-    buildingId: selectedBuildingId,
-    items: [],
-    schedules: [],
-  };
+  const buildingDefaults = useMemo(
+    () => config.buildingDefaults ?? {},
+    [config.buildingDefaults]
+  );
+  const currentBuildingConfig = useMemo(
+    () =>
+      buildingDefaults[selectedBuildingId] ?? {
+        buildingId: selectedBuildingId,
+        items: [],
+        schedules: [],
+      },
+    [buildingDefaults, selectedBuildingId]
+  );
 
   // Migrate legacy items into a "Default Schedule" if no schedules exist yet
   const schedules: DailySchedule[] = (() => {
