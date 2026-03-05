@@ -11,6 +11,9 @@ import {
   Highlighter,
   Calculator,
   Droplet,
+  Box,
+  Bookmark,
+  BookCheck,
 } from 'lucide-react';
 
 export interface MaterialItem {
@@ -30,6 +33,13 @@ export const MATERIAL_ITEMS: MaterialItem[] = [
     textColor: 'text-white',
   },
   {
+    id: 'chromebook',
+    label: 'Chromebook',
+    icon: Laptop,
+    color: 'bg-slate-700',
+    textColor: 'text-white',
+  },
+  {
     id: 'pencil',
     label: 'Pencil',
     icon: Pencil,
@@ -41,6 +51,20 @@ export const MATERIAL_ITEMS: MaterialItem[] = [
     label: 'Notebook',
     icon: Book,
     color: 'bg-red-500',
+    textColor: 'text-white',
+  },
+  {
+    id: 'learn_book',
+    label: 'Learn Book',
+    icon: BookCheck,
+    color: 'bg-emerald-500',
+    textColor: 'text-white',
+  },
+  {
+    id: 'math_journal',
+    label: 'Math Journal',
+    icon: FileText,
+    color: 'bg-blue-600',
     textColor: 'text-white',
   },
   {
@@ -62,6 +86,13 @@ export const MATERIAL_ITEMS: MaterialItem[] = [
     label: 'Textbook',
     icon: BookOpen,
     color: 'bg-emerald-600',
+    textColor: 'text-white',
+  },
+  {
+    id: 'book_to_read',
+    label: 'Book to read',
+    icon: Bookmark,
+    color: 'bg-rose-500',
     textColor: 'text-white',
   },
   {
@@ -104,6 +135,13 @@ export const MATERIAL_ITEMS: MaterialItem[] = [
     label: 'Calculator',
     icon: Calculator,
     color: 'bg-gray-600',
+    textColor: 'text-white',
+  },
+  {
+    id: 'book_bin',
+    label: 'Book Bin',
+    icon: Box,
+    color: 'bg-amber-600',
     textColor: 'text-white',
   },
 ];
