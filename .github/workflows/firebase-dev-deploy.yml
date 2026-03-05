@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
       - run: pnpm run install:ci
       - run: pnpm run lint
       - run: pnpm run format:check
@@ -32,6 +35,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
       - run: pnpm run install:ci
       - run: pnpm run type-check:all
 
@@ -44,6 +50,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
       - run: pnpm run install:ci
       - run: pnpm run test
         env:
@@ -66,6 +75,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            functions/pnpm-lock.yaml
       - run: pnpm run install:ci
       
       - name: Build project
