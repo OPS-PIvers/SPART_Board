@@ -172,6 +172,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
     queue,
     config,
     updateWidget,
+    sessionId,
   ]);
 
   const syncToDrive = useCallback(
