@@ -164,16 +164,7 @@ export const NextUpWidget: React.FC<WidgetComponentProps> = ({ widget }) => {
 
       void processEntries();
     });
-  }, [
-    config.isActive,
-    config.activeDriveFileId,
-    driveService,
-    widget.id,
-    queue,
-    config,
-    updateWidget,
-    sessionId,
-  ]);
+  }, [sessionId, driveService, queue, config, widget.id, updateWidget]);
 
   const syncToDrive = useCallback(
     async (updatedQueue: NextUpQueueItem[]) => {
@@ -458,7 +449,7 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
     if (fileId) {
       // 1. Create/Update Firestore Session (for student access)
       // ID is [teacherUid]_[widgetId] to ensure ownership across account merges
-      const sessionId = `${user.uid}_${widget.id}`;
+      const fsSessionId = `${user.uid}_${widget.id}`;
       const sessionData: NextUpSession = {
         id: widget.id,
         teacherUid: user.uid,
@@ -468,7 +459,7 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
         createdAt: Date.now(),
         lastUpdated: Date.now(),
       };
-      await setDoc(doc(db, SESSIONS_COLLECTION, sessionId), sessionData);
+      await setDoc(doc(db, SESSIONS_COLLECTION, fsSessionId), sessionData);
 
       // 2. Update Local Widget Config
       updateWidget(widget.id, {
@@ -501,8 +492,8 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
 
     // 1. Deactivate in Firestore
     if (user) {
-      const sessionId = `${user.uid}_${widget.id}`;
-      await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
+      const fsSessionId = `${user.uid}_${widget.id}`;
+      await updateDoc(doc(db, SESSIONS_COLLECTION, fsSessionId), {
         isActive: false,
       }).catch(console.error); // Silent fail if doc doesn't exist or permissions changed
     }
@@ -520,8 +511,8 @@ export const NextUpSettings: React.FC<{ widget: WidgetData }> = ({
 
   const copyLink = () => {
     if (!user) return;
-    const sessionId = `${user.uid}_${widget.id}`;
-    const url = `${window.location.origin}/nextup?id=${sessionId}`;
+    const fsSessionId = `${user.uid}_${widget.id}`;
+    const url = `${window.location.origin}/nextup?id=${fsSessionId}`;
     void navigator.clipboard.writeText(url);
     setCopy(true);
     setTimeout(() => setCopy(false), 2000);
