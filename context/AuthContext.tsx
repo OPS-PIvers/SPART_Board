@@ -227,14 +227,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             hint: email,
             callback: (response: google.accounts.oauth2.TokenResponse) => {
               if (response.access_token) {
-                setGoogleAccessToken(response.access_token);
+                const expiryMs =
+                  Date.now() +
+                  (parseInt(response.expires_in ?? '3600', 10) || 3600) * 1000;
+                // Write both token and expiry to localStorage atomically so a
+                // fast page reload can't find an expiry key without its token.
+                localStorage.setItem(
+                  GOOGLE_ACCESS_TOKEN_KEY,
+                  response.access_token
+                );
                 localStorage.setItem(
                   GOOGLE_TOKEN_EXPIRY_KEY,
-                  (
-                    Date.now() +
-                    (parseInt(response.expires_in ?? '3600', 10) || 3600) * 1000
-                  ).toString()
+                  expiryMs.toString()
                 );
+                setGoogleAccessToken(response.access_token);
                 resolve(response.access_token);
               } else {
                 resolve(null);
@@ -275,6 +281,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [user?.email]
   );
+
+  /**
+   * Reconnect Google Drive without touching Firebase auth state.
+   * Tries a silent GIS refresh first; falls back to a popup on failure.
+   */
+  const connectGoogleDrive = useCallback(async (): Promise<void> => {
+    if (isAuthBypass) {
+      setGoogleAccessToken(MOCK_ACCESS_TOKEN);
+      return;
+    }
+    await refreshGoogleToken(false);
+  }, [refreshGoogleToken]);
+
+  // On startup: if the user has a Firebase session but the Drive token is
+  // missing or expired, attempt a silent GIS refresh automatically.
+  // This handles the common case where the 1-hour token expires between
+  // sessions and the user reloads without going through the sidebar.
+  useEffect(() => {
+    if (isAuthBypass || !user) return;
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as
+      | string
+      | undefined;
+    if (!clientId) return;
+
+    const stored = localStorage.getItem(GOOGLE_ACCESS_TOKEN_KEY);
+    const expiry = localStorage.getItem(GOOGLE_TOKEN_EXPIRY_KEY);
+    const hasValidToken =
+      stored && expiry && Date.now() < parseInt(expiry, 10) - 5 * 60 * 1000;
+
+    if (hasValidToken) return;
+
+    // GIS script is loaded async — give it a moment before calling
+    const timer = setTimeout(() => {
+      if (typeof window.google !== 'undefined') {
+        void refreshGoogleToken(true);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [user, refreshGoogleToken]);
 
   // Check for Google token expiry every minute; proactively refresh before expiry
   // so the Drive connection stays alive without user interaction.
@@ -711,6 +758,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         language,
         setLanguage,
         refreshGoogleToken,
+        connectGoogleDrive,
         savedWidgetConfigs,
         saveWidgetConfig,
       }}
