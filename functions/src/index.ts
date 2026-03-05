@@ -344,6 +344,13 @@ export const generateWithAI = functionsV1
 
       const ai = new GoogleGenAI({ apiKey });
 
+      const sanitizePrompt = (text?: string) => {
+        if (!text) return '';
+        return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      };
+
+      const sanitizedUserInput = sanitizePrompt(data?.prompt);
+
       const promptMap: Record<
         string,
         () => { systemPrompt: string; userPrompt: string }
@@ -356,14 +363,14 @@ export const generateWithAI = functionsV1
           2. Use Tailwind CDN.
           3. Return JSON: { "title": "...", "html": "..." }
         `,
-          userPrompt: `User Request: <user_request>${data?.prompt}</user_request>`,
+          userPrompt: `User Request: <user_request>${sanitizedUserInput}</user_request>`,
         }),
         poll: () => ({
           systemPrompt: `
           You are an expert teacher. Create a 4-option multiple choice poll JSON based on the topic provided within <topic> tags:
           { "question": "...", "options": ["...", "...", "...", "..."] }
         `,
-          userPrompt: `Topic: <topic>${data?.prompt}</topic>`,
+          userPrompt: `Topic: <topic>${sanitizedUserInput}</topic>`,
         }),
         'dashboard-layout': () => ({
           systemPrompt: `
@@ -401,7 +408,7 @@ export const generateWithAI = functionsV1
           2. Return JSON: { "widgets": [{ "type": "...", "config": {} }] }
           3. 'config' should be an empty object {} unless you are setting a specific property known to that widget (like 'question' for 'poll').
         `,
-          userPrompt: `Lesson/Activity Description: <lesson_description>${data?.prompt}</lesson_description>`,
+          userPrompt: `Lesson/Activity Description: <lesson_description>${sanitizedUserInput}</lesson_description>`,
         }),
         'instructional-routine': () => ({
           systemPrompt: `
@@ -423,7 +430,7 @@ export const generateWithAI = functionsV1
             ]
           }
         `,
-          userPrompt: `Description: <description>${data?.prompt}</description>`,
+          userPrompt: `Description: <description>${sanitizedUserInput}</description>`,
         }),
         ocr: () => ({
           systemPrompt: `
